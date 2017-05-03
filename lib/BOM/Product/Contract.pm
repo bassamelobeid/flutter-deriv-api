@@ -702,27 +702,6 @@ sub _build_opposite_contract_for_sale {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
 
-    # we still want to set for_sale for a forward_starting contracts
-    $opp_parameters{for_sale} = 1;
-    # delete traces of this contract were a forward starting contract before.
-    delete $opp_parameters{starts_as_forward_starting};
-    # duration could be set for an opposite contract from bad hash reference reused.
-    delete $opp_parameters{duration};
-
-    if (not $self->is_forward_starting) {
-        if ($self->entry_tick) {
-            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                if (defined $self->$barrier) {
-                    $opp_parameters{$barrier} = $self->$barrier->as_absolute;
-                    $opp_parameters{'supplied_' . $barrier} = $self->$barrier->as_absolute;
-                }
-            }
-        }
-        # We should be looking to move forward in time to a bet starting now.
-        $opp_parameters{date_start}  = $self->date_pricing;
-        $opp_parameters{pricing_new} = 1;
-    }
-
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
 
     if (my $role = $opp_parameters{role}) {
