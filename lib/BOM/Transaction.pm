@@ -38,6 +38,12 @@ use BOM::Database::Helper::RejectedTrade;
 use BOM::Database::ClientDB;
 use BOM::Transaction::Validation;
 
+=head1 NAME
+
+    BOM::Transaction
+
+=cut
+
 has client => (
     is  => 'ro',
     isa => 'Client::Account',
@@ -878,6 +884,8 @@ sub sell_by_shortcode {
     return;
 }
 
+=head1 METHODS
+
 =head2 C<< $self->_recover($error) >>
 
 This function tries to recover from an unsuccessful buy/sell.
@@ -1496,3 +1504,14 @@ no Moose;
 __PACKAGE__->meta->make_immutable;
 
 1;
+
+=head1 TEST
+
+    # run all test scripts # 
+    make test
+    # run one script # 
+    prove t/BOM/001_structure.t
+    # run one script with perl # 
+    perl -MBOM::Test t/BOM/001_structure.t
+
+=cut
