@@ -1339,7 +1339,7 @@ sub sell_expired_contracts {
                     $stats_failure{$logging_class}{_normalize_error($cpve)}++;
                     $failure->{reason} = $cpve->message;
                 } else {
-                    $failure->{reason} = "Unknown failure in sell_expired_contracts, shortcode: ".$contract->shortcode;
+                    $failure->{reason} = "Unknown failure in sell_expired_contracts, shortcode: " . $contract->shortcode;
                 }
                 push @{$result->{failures}}, $failure;
             }
