@@ -27,7 +27,7 @@ sub BUILD {
                 message_to_client => [$ERROR_MAPPING->{SameBarriersNotAllowed}],
             });
             # these are dummy barriers that so that the calculation will not die
-            my $min_barrier = $self->underlying->market->integer_barrier ? 1 : $self->pip_size;
+            my $min_barrier      = $self->underlying->market->integer_barrier ? 1 : $self->pip_size;
             my $new_low_barrier  = $self->make_barrier($barrier1->as_absolute - $min_barrier);
             my $new_high_barrier = $self->make_barrier($barrier2->as_absolute + $min_barrier);
             $self->low_barrier($new_low_barrier);
