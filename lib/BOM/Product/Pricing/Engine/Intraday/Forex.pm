@@ -2,7 +2,7 @@ package BOM::Product::Pricing::Engine::Intraday::Forex;
 
 use Moose;
 extends 'BOM::Product::Pricing::Engine';
-with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
+with 'BOM::Product::Pricing::Engine::Role::RiskMarkup';
 
 use List::Util qw(max min sum first);
 use Array::Utils qw(:all);
