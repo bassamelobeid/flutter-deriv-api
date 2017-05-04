@@ -1284,7 +1284,7 @@ sub sell_expired_contracts {
             next;
         }
 
-        my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
+        my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code} or warn "No logging class found for contract type " . $contract->code;
         $stats_attempt{$logging_class}++;
         if (not $contract->is_settleable) {
             $stats_failure{$logging_class}{'NotExpired'}++;
