@@ -28,6 +28,7 @@ use Quant::Framework::VolSurface::Utils;
 use List::Util qw( first );
 use Quant::Framework;
 use BOM::Platform::Chronicle;
+use VolSurface::IntradayFX;
 
 has file => (
     is         => 'ro',
@@ -223,6 +224,7 @@ sub run {
             }
         }
     }
+    $self->warmup_intradayfx_cache();
     $self->SUPER::run();
     return 1;
 }
@@ -270,6 +272,35 @@ sub passes_additional_check {
     }
 
     return !$volsurface->validation_error;
+}
+
+sub warmup_intradayfx_cache {
+    my $self = shift;
+
+    foreach my $symbol (@{$self->symbols_to_update}) {
+        my $cr = BOM::Platform::Chronicle::get_chronicle_reader(1);
+        my $cw = BOM::Platform::Chronicle::get_chronicle_writer();
+        my $u  = create_underlying($symbol);
+        try {
+            my $vs = VolSurface::IntradayFX->new(
+                underlying       => $u,
+                chronicle_reader => $cr,
+                chronicle_writer => $cw,
+                warmup_cache     => 1,
+            );
+            $vs->get_volatility({
+                from => time,
+                to   => time + 900,
+            });
+            $vs->get_volatility({
+                    from                          => time,
+                    to                            => time + 900,
+                    include_economic_event_impact => 1,
+
+            });
+        }
+    }
+    return;
 }
 
 no Moose;
