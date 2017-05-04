@@ -123,7 +123,6 @@ subtest 'First Term is 7' => sub {
         file              => $test_file,
         symbols_to_update => [qw(AS51)]);    # wrong symbol
     $au->run;
-$DB::single=1;
     cmp_ok($au->report->{AS51}->{success}, '==', 1);
 
 };

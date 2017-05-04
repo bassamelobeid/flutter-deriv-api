@@ -136,24 +136,14 @@ sub run {
                 surface          => $raw_volsurface->{surface},
             });
             if ($volsurface->is_valid) {
-                $DB::single = 1;
-                if (exists $otc_list{'OTC_' . $symbol}) {
-                    my $otc         = create_underlying('OTC_' . $symbol);
-                    my $otc_surface = $volsurface->clone({
-                        underlying => $otc,
-                    });
-                    if (exists $volsurface->surface->{7}) {
-                        $otc_surface->save;
-                        $self->report->{$symbol}->{success} = 1;
-                    } else {
-                        $self->report->{$symbol} = {
-                            success => 0,
-                            reason  => 'Term 7 is missing from datasource for ' . $symbol,
-                        };
-                    }
-                }
-
                 if (exists $volsurface->surface->{7}) {
+                    if (exists $otc_list{'OTC_' . $symbol}) {
+                        my $otc         = create_underlying('OTC_' . $symbol);
+                        my $otc_surface = $volsurface->clone({
+                            underlying => $otc,
+                        });
+                        $otc_surface->save;
+                    }
                     $volsurface->save;
                     $self->report->{$symbol}->{success} = 1;
                 } else {
