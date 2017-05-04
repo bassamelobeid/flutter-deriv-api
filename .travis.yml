@@ -17,16 +17,15 @@ before_install:
     - . /tmp/travis-scripts/setup_perl.sh
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - sudo ifconfig lo:1 172.28.128.3
-    - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets
     - sudo mkdir -p /home/git
     - sudo rm -f /tmp/unittest_*
 
-    - /tmp/travis-scripts/setup_cpan.sh
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
+    - /tmp/travis-scripts/parallel_clone_branch.sh
+      regentmarkets/bom-test
+      regentmarkets/bom
+      regentmarkets/bom-platform
+      regentmarkets/bom-postgres
     - /tmp/travis-scripts/redis.sh
 
 install:
