@@ -20,15 +20,14 @@ before_install:
     - /tmp/travis-scripts/fixHostName.sh
     - dpkg -l | grep postgres
     - pg_lsclusters
-    - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
 
-    - /tmp/travis-scripts/setup_cpan.sh
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
-    - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
+    - /tmp/travis-scripts/parallel_clone_branch.sh
+      regentmarkets/bom-test
+      regentmarkets/bom-platform
+      regentmarkets/bom-postgres
+      binary-com/translations-websockets-api
 
 
     - /tmp/travis-scripts/postgres_restart.sh
