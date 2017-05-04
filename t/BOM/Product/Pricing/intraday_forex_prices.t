@@ -25,6 +25,9 @@ use Data::Decimate qw(decimate);
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
+my $volsurfaces = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_volsurfaces.yml');
+my $news        = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_news.yml');
+my $holidays    = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_holidays.yml');
 
 my $expected   = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/intraday_forex_config.yml');
 my $date_start = Date::Utility->new(1352345145);
@@ -34,7 +37,7 @@ my $date_expiry     = $date_start->plus_time_interval('1000s');
 my $underlying      = create_underlying('frxUSDJPY', $date_pricing);
 my $barrier         = 'S3P';
 my $barrier_low     = 'S-3P';
-my $payout          = 100;
+my $payout          = 10000;
 my $payout_currency = 'GBP';
 my $duration        = 3600;
 
@@ -71,6 +74,7 @@ foreach my $single_data (@$decimate_data) {
 }
 
 my $recorded_date = $date_start->truncate_to_day;
+
 Test::BOM::UnitTestPrice::create_pricing_data($underlying->symbol, $payout_currency, $recorded_date);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -84,6 +88,20 @@ my %equal = (
     CALLE => 1,
     PUTE  => 1,
 );
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {events => $news});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'holiday',
+    {
+        recorded_date => Date::Utility->new(1352345145),
+        calendar      => $holidays
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxUSDJPY',
+        recorded_date => Date::Utility->new($volsurfaces->{frxUSDJPY}->{date}),
+        surface       => $volsurfaces->{frxUSDJPY}->{surfaces}->{'New York 10:00'},
+    });
 my @ct = grep { !$equal{$_} } get_offerings_with_filter(
     $offerings_cfg,
     'contract_type',
@@ -117,7 +135,7 @@ subtest 'prices without economic events' => sub {
                     %$barrier,
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct ask probability [' . $c->shortcode . ']';
+                is $c->ask_price, $expected->{$c->shortcode}, 'correct ask price [' . $c->shortcode . ']';
             }
             'survived';
         }
@@ -139,7 +157,7 @@ subtest 'atm prices without economic events' => sub {
                     barrier      => 'S0P',
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct ask probability [event_' . $c->shortcode . ']';
+                is $c->ask_price, $expected->{$c->shortcode}, 'correct ask price [' . $c->shortcode . ']';
             }
             'survived';
         }
@@ -147,25 +165,12 @@ subtest 'atm prices without economic events' => sub {
 };
 
 subtest 'prices with economic events' => sub {
-    my $event_date = $date_start->minus_time_interval('15m');
-    my $event      = [{
-            symbol       => 'USD',
-            impact       => 5,
-            release_date => $event_date->epoch,
-            event_name   => 'Construction Spending m/m'
-        }];
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'economic_events',
-        {
-            recorded_date => $event_date,
-            events        => $event,
-        });
     Volatility::Seasonality->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
         )->generate_economic_event_seasonality({
             underlying_symbol => $underlying->symbol,
-            economic_events   => $event
+            economic_events   => $news
         });
 
     foreach my $contract_type (@ct) {
@@ -190,8 +195,7 @@ subtest 'prices with economic events' => sub {
                     %$barrier,
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                cmp_ok abs($c->theo_probability->amount - $expected->{'event_' . $c->shortcode}) / $c->theo_probability->amount, '<', 0.02,
-                    'correct ask probability within 2% [event_' . $c->shortcode . ']';
+                is $c->ask_price, $expected->{'event_' . $c->shortcode}, 'correct ask price [event_' . $c->shortcode . ']';
             }
             'survived';
         }
@@ -213,8 +217,7 @@ subtest 'atm prices with economic events' => sub {
                     barrier      => 'S0P',
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                cmp_ok abs($c->theo_probability->amount - $expected->{'event_' . $c->shortcode}) / $c->theo_probability->amount, '<', 0.02,
-                    'correct ask probability within 2% [event_' . $c->shortcode . ']';
+                is $c->ask_price, $expected->{'event_' . $c->shortcode}, 'correct ask price [event_' . $c->shortcode . ']';
             }
             'survived';
         }
