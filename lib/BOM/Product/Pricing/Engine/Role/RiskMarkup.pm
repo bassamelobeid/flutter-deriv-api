@@ -1,8 +1,8 @@
-package BOM::Product::Pricing::Engine::Role::StandardMarkup;
+package BOM::Product::Pricing::Engine::Role::RiskMarkup;
 
 =head1 NAME
 
-BOM::Product::Pricing::Engine::Role::StandardMarkup
+BOM::Product::Pricing::Engine::Role::RiskMarkup
 
 =head1 DESCRIPTION
 
@@ -98,7 +98,7 @@ sub _build_butterfly_markup {
     my $comm = Math::Util::CalculatedValue::Validatable->new({
         name        => 'butterfly_markup',
         description => 'high butterfly adjustment',
-        set_by      => 'Role::StandardMarkup',
+        set_by      => 'Role::RiskMarkup',
         base_amount => 0,
         minimum     => 0,
         maximum     => 0.1,
@@ -121,7 +121,7 @@ sub _build_butterfly_markup {
     my $butterfly_greater_than_cutoff = Math::Util::CalculatedValue::Validatable->new({
         name        => 'butterfly_greater_than_cutoff',
         description => 'Boolean indicator of a butterfly greater than the cutoff',
-        set_by      => 'Role::StandardMarkup',
+        set_by      => 'Role::RiskMarkup',
         base_amount => $butterfly_cutoff_breached,
     });
     $comm->include_adjustment('reset', $butterfly_greater_than_cutoff);
@@ -150,7 +150,7 @@ sub _build_butterfly_markup {
         my $difference_of_theoretical_values = Math::Util::CalculatedValue::Validatable->new({
             name        => 'difference_of_theoretical_values',
             description => 'The difference of theoretical values',
-            set_by      => 'Role::StandardMarkup',
+            set_by      => 'Role::RiskMarkup',
         });
 
         $difference_of_theoretical_values->include_adjustment('reset',    $actual_theoretical_value);
@@ -160,7 +160,7 @@ sub _build_butterfly_markup {
         my $absolute_difference_of_theoretical_values = Math::Util::CalculatedValue::Validatable->new({
             name        => 'absoute_difference_of_theoretical_values',
             description => 'The absolute difference of theoretical values',
-            set_by      => 'Role::StandardMarkup',
+            set_by      => 'Role::RiskMarkup',
             base_amount => abs($actual_theoretical_value_amount - $butterfly_cutoff_theoretical_value_amount),
         });
 
