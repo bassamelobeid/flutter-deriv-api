@@ -973,6 +973,11 @@ subtest $method => sub {
 };
 
 $method = 'get_financial_assessment';
+my $japan_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'JP',
+});
+my $token_japan = $m->create_token($japan_client->loginid, 'test token');
+
 subtest $method => sub {
     my $args = {"get_financial_assessment" => 1};
     my $res = $c->tcall(
@@ -982,6 +987,14 @@ subtest $method => sub {
             args  => $args
         });
     is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token_japan
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for japan account");
 
     $res = $c->tcall(
         $method,
@@ -1023,6 +1036,14 @@ subtest $method => sub {
             args  => $args
         });
     is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token_japan
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for japan account");
 
     $res = $c->tcall(
         $method,
