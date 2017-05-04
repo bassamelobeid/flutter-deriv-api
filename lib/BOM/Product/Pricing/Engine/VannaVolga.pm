@@ -55,7 +55,7 @@ use Moose;
 use namespace::autoclean;
 
 extends 'BOM::Product::Pricing::Engine';
-with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
+with 'BOM::Product::Pricing::Engine::Role::RiskMarkup';
 with 'BOM::Product::Pricing::Engine::Role::MarketPricedPortfolios';
 
 use BOM::Product::ContractFactory qw( make_similar_contract );
@@ -195,16 +195,6 @@ sub _build_base_probability {
 
     return $base_probability;
 }
-
-override '_build_bs_probability' => sub {
-    my $self = shift;
-    my $bet  = $self->bet;
-
-    my $new_bet = BOM::Product::ContractFactory::make_similar_contract($bet, {pricing_vol => $bet->atm_vols->{fordom}});
-
-    return BOM::Product::Pricing::Engine::BlackScholes->new({bet => $new_bet})->bs_probability;
-
-};
 
 sub _build_vanna_correction {
     my $vanna = Math::Util::CalculatedValue::Validatable->new({
