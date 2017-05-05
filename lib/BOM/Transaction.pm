@@ -1345,7 +1345,14 @@ sub sell_expired_contracts {
             }
         }
         catch {
-            warn 'SellExpiredContract Exception: ' . __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
+            my $err = $_;
+            if ($err =~ /^Requesting for historical period data without a valid DB connection/) {
+                # seems an issue in /Quant/Framework/EconomicEventCalendar.pm get_latest_events_for_period:
+                # live pricing condition was not ok and get_for_period was called for
+                # Data::Chronicle::Reader without dbh
+                $err .= "Data::Chronicle::Reader get_for_period call without dbh: Details: contract shortcode: " . $contract->shortcode . "\n";
+            }
+            warn 'SellExpiredContract Exception: ' . __PACKAGE__ . ':(' . __LINE__ . '): ' . $err;    # log it
         };
     }
 
