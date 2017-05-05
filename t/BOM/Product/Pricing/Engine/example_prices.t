@@ -158,14 +158,16 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol => $_,
     }) for qw( AED AED-USD);
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_delta',
-    {
-        symbol        => $_,
-        recorded_date => $recorded_date,
-        surface       => $volsurface->{$_}{surfaces},
-    }) for qw(frxUSDJPY frxEURUSD frxGBPUSD);
-
+for my $d ($recorded_date, Date::Utility->new('19-Nov-2015')) {
+    warn $d->datetime;
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $_,
+            recorded_date => $d,
+            surface       => $volsurface->{$_}{surfaces},
+        }) for qw(frxUSDJPY frxEURUSD frxGBPUSD);
+}
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
@@ -266,7 +268,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 }
             },
         },
-        recorded_date => $recorded_date,
+        recorded_date => Date::Utility->new('19-Nov-2015'),
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
