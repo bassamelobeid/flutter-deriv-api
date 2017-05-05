@@ -366,9 +366,7 @@ sub get_bid {
             return;
         }
 
-        $response->{is_settleable}         = $contract->is_settleable;
-        $response->{has_corporate_actions} = 1
-            if @{$contract->corporate_actions};
+        $response->{is_settleable} = $contract->is_settleable;
 
         $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
         if ($contract->entry_spot) {
@@ -377,16 +375,10 @@ sub get_bid {
             $response->{entry_spot}      = $entry_spot;
             $response->{entry_tick_time} = $contract->entry_spot_epoch;
             if ($contract->two_barriers) {
-                $response->{high_barrier}          = $contract->high_barrier->as_absolute;
-                $response->{low_barrier}           = $contract->low_barrier->as_absolute;
-                $response->{original_high_barrier} = $contract->original_high_barrier->as_absolute
-                    if defined $contract->original_high_barrier;
-                $response->{original_low_barrier} = $contract->original_low_barrier->as_absolute
-                    if defined $contract->original_low_barrier;
+                $response->{high_barrier} = $contract->high_barrier->as_absolute;
+                $response->{low_barrier}  = $contract->low_barrier->as_absolute;
             } elsif ($contract->barrier) {
-                $response->{barrier}          = $contract->barrier->as_absolute;
-                $response->{original_barrier} = $contract->original_barrier->as_absolute
-                    if defined $contract->original_barrier;
+                $response->{barrier} = $contract->barrier->as_absolute;
             }
         }
 
@@ -568,7 +560,7 @@ sub longcode {
             $longcode = $contract->longcode;
         }
         catch {
-            warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($$params);
+            warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($params);
         };
         $longcodes->{$s} = localize($longcode);
     }
