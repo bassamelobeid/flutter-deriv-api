@@ -13,7 +13,6 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use HTML::Entities;
 
-use BOM::MarketData::Fetcher::CorporateAction;
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
 use BOM::BloombergCalendar;
@@ -140,43 +139,6 @@ Bar("Update the tentative events");
 print BOM::TentativeEvents::generate_tentative_events_form({
     upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_tentative_events.cgi'),
 });
-
-Bar("Corporate Actions");
-my $corp_dm = BOM::MarketData::Fetcher::CorporateAction->new;
-my $list    = $corp_dm->get_underlyings_with_corporate_action;
-
-my ($disabled, $monitor);
-foreach my $underlying_symbol (keys %$list) {
-    my $actions = $list->{$underlying_symbol};
-    foreach my $action_id (keys %$actions) {
-        my $action = $actions->{$action_id};
-        if ($action->{suspend_trading} xor $action->{enable}) {
-            $disabled->{$underlying_symbol}->{action_id}       = $action_id;
-            $disabled->{$underlying_symbol}->{description}     = $action->{description};
-            $disabled->{$underlying_symbol}->{suspension_date} = $action->{disabled_date};
-            $disabled->{$underlying_symbol}->{effective_date}  = $action->{effective_date};
-            $disabled->{$underlying_symbol}->{comment}         = $action->{comment} if $action->{comment};
-            $disabled->{$underlying_symbol}->{enable}          = $action->{enable} if $action->{enable};
-        }
-
-        if ($action->{monitor}) {
-            $monitor->{$underlying_symbol}->{action_id}      = $action_id;
-            $monitor->{$underlying_symbol}->{description}    = $action->{description};
-            $monitor->{$underlying_symbol}->{effective_date} = $action->{effective_date};
-            $monitor->{$underlying_symbol}->{comment}        = $action->{comment} if $action->{comment};
-        }
-    }
-}
-my $corp_table;
-BOM::Backoffice::Request::template->process(
-    'backoffice/corporate_action.html.tt',
-    {
-        disabled => $disabled,
-        monitor  => $monitor
-    },
-    \$corp_table
-) || die BOM::Backoffice::Request::template->error;
-print $corp_table;
 
 code_exit_BO();
 
