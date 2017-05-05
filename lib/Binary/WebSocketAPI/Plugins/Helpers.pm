@@ -33,6 +33,7 @@ sub register {
     $app->helper(
         l => sub {
             my $c = shift;
+            my ($content, @params) = @_;
 
             state %handles;
             my $language = $c->stash->{language} || 'EN';
@@ -40,8 +41,24 @@ sub register {
             $handles{$language} //= Locale::Maketext::ManyPluralForms->get_handle(lc $language);
 
             die("could not build locale for language $language") unless $handles{$language};
+            my @texts = ();
+            if (ref $content eq 'ARRAY') {
+                # first one is always text string
+                push @texts, shift @$content;
+                # followed by parameters
+                foreach my $elm (@$content) {
+                    # some params also need localization (longcode)
+                    if (ref $elm eq 'ARRAY' and scalar @$elm) {
+                        push @texts, $handles{$language}->maketext(@$elm);
+                    } else {
+                        push @texts, $elm;
+                    }
+                }
+            } else {
+                @texts = ($content, @params);
+            }
 
-            return $handles{$language}->maketext(@_);
+            return $handles{$language}->maketext(@texts);
         });
 
     $app->helper(
