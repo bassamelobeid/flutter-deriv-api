@@ -311,10 +311,10 @@ sub _get_redis_connections {
         for my $c (values %{$app->active_connections // {}}) {
             push @redises, $c->redis if $c->stash->{redis};
         }
-        push @redises, $app->shared_redis if $app->shared_redis;
-        push @redises, $app->redis_pricer if $app->redis_pricer;
+        push @redises, $app->shared_redis    if $app->shared_redis;
+        push @redises, $app->redis_pricer    if $app->redis_pricer;
         push @redises, $app->ws_redis_master if $app->ws_redis_master;
-        push @redises, $app->ws_redis_slave if $app->ws_redis_slave;
+        push @redises, $app->ws_redis_slave  if $app->ws_redis_slave;
     }
     for my $r (@redises) {
         my $con = $r->{connections} // {};
