@@ -98,12 +98,11 @@ sub prepare_market_data {
             recorded_date => $date
         }) for ('USD', 'JPY-USD', 'JPY');
 
-    Volatility::Seasonality->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-        )->generate_economic_event_seasonality({
-            underlying_symbol => $underlying->symbol,
-            economic_events   => $news->{$date->epoch}});
+    Volatility::Seasonality::generate_economic_event_seasonality({
+            chronicle_reader   => BOM::Platform::Chronicle::get_chronicle_reader,
+            chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer,
+            underlying_symbols => [$underlying->symbol],
+            economic_events    => $news->{$date->epoch}});
 }
 prepare_market_data($now);
 

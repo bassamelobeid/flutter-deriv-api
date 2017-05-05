@@ -114,6 +114,11 @@ if ($save_economic_event) {
                 chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
             })->save;
+        Volatility::Seasonality::generate_economic_event_seasonality({
+            underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
+            economic_events    => $ref->{events},
+            chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+        });
 
         print 'Econmic Announcement saved!</br></br>';
         $save_economic_event = 0;
