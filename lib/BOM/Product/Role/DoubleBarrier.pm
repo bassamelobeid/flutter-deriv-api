@@ -26,18 +26,13 @@ sub BUILD {
                 message           => 'High and low barriers must be different',
                 message_to_client => [$ERROR_MAPPING->{SameBarriersNotAllowed}],
             });
-            $self->low_barrier(
-                $barrier1->adjust({
-                        modifier => 'subtract',
-                        amount   => $self->pip_size,
-                        reason   => 'High and low barriers same'
-                    }));
-            $self->high_barrier(
-                $barrier2->adjust({
-                        modifier => 'add',
-                        amount   => $self->pip_size,
-                        reason   => 'High and low barriers same'
-                    }));
+            # these are dummy barriers that so that the calculation will not die
+            my $min_barrier      = $self->underlying->market->integer_barrier ? 1 : $self->pip_size;
+            my $new_low_barrier  = $self->make_barrier($barrier1->as_absolute - $min_barrier);
+            my $new_high_barrier = $self->make_barrier($barrier2->as_absolute + $min_barrier);
+            $self->low_barrier($new_low_barrier);
+            $self->high_barrier($new_high_barrier);
+
         }
     }
 
@@ -45,11 +40,6 @@ sub BUILD {
 }
 
 has [qw(supplied_high_barrier supplied_low_barrier)] => (is => 'ro');
-
-has [qw(original_high_barrier original_low_barrier)] => (
-    is  => 'rw',
-    isa => 'Maybe[BOM::Product::Contract::Strike]'
-);
 
 has high_barrier => (
     is      => 'rw',
@@ -62,7 +52,6 @@ sub _build_high_barrier {
     my $self = shift;
 
     my $high_barrier = $self->make_barrier($self->supplied_high_barrier);
-    $self->original_high_barrier($self->initial_barrier) if defined $self->initial_barrier;
     return $high_barrier;
 }
 
@@ -77,7 +66,6 @@ sub _build_low_barrier {
     my $self = shift;
 
     my $low_barrier = $self->make_barrier($self->supplied_low_barrier);
-    $self->original_low_barrier($self->initial_barrier) if defined $self->initial_barrier;
     return $low_barrier;
 }
 has barriers_for_pricing => (
