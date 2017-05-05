@@ -560,7 +560,7 @@ sub longcode {
             $longcode = $contract->longcode;
         }
         catch {
-            warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($$params);
+            warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($params);
         };
         $longcodes->{$s} = localize($longcode);
     }
