@@ -340,12 +340,6 @@ sub _get_overview {
             value => sprintf($number_format, $bet->_pricing_args->{iv} * 100) . '%'
         },
         {
-            label => 'Use discrete dividend',
-            value => ($bet->underlying->market->prefer_discrete_dividend)
-            ? 'yes'
-            : 'no',
-        },
-        {
             label => 'Dividend rate (of base)',
             value => sprintf($number_format, $bet->q_rate * 100) . '%',
         },
