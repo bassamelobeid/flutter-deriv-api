@@ -1,0 +1,1190 @@
+---
+1485129600:
+  Wellington Anniversary Day:
+    - NZD
+1485302400:
+  Sao Paulo Anniversary:
+    - BOVESPA
+    - BMF
+1485388800:
+  Australia Day Holiday:
+    - AUD
+    - ASX
+    - SFE
+    - ASX_S
+  Republic Day:
+    - INR
+    - BSE
+    - SYNBSE
+    - NSE
+1485475200:
+  Lunar New Year:
+    - KRW
+    - KRX
+    - SZSE
+    - SSE
+  Lunar New Year's Eve:
+    - SGX
+1485734400:
+  Auckland Anniversary:
+    - NZD
+  Chinese New Year:
+    - SGX
+  Chinese New Year (obs):
+    - SGD
+  Day After Lunar New Year:
+    - HKD
+  Lunar New Year:
+    - HKF
+    - SZSE
+    - SES
+    - HKSE
+    - SYNHKSE
+    - SSE
+  Lunar New Year (obs):
+    - KRW
+    - KRX
+1485820800:
+  Day After Lunar New Year:
+    - HKD
+  Lunar New Year:
+    - SZSE
+    - SSE
+    - HKSE
+    - HKF
+1485907200:
+  Lunar New Year:
+    - SZSE
+    - SSE
+1485993600:
+  Lunar New Year:
+    - SZSE
+    - SSE
+1486080000:
+  Lunar New Year:
+    - SZSE
+    - SSE
+1486339200:
+  Constitution Day:
+    - MXN
+  Waitangi Day:
+    - NZD
+    - NZSE
+1487548800:
+  Family Day:
+    - CAD
+    - TRSE
+  Presidents' Day:
+    - USD
+    - NYSE_SPC
+    - SYNNYSE_SPC
+    - NASDAQ
+    - SYNNYSE_DJI
+    - SP_GSCI
+    - NYSE
+    - NASDAQ_INDEX
+1487808000:
+  Defender Of The Fatherland:
+    - RUB
+    - RTS
+    - MOF
+1487894400:
+  Bank Holiday:
+    - RUB
+  Mahashivratri:
+    - BSE
+    - NSE
+    - INR
+1488153600:
+  Carnival:
+    - BOVESPA
+    - BMF
+    - BRL
+1488240000:
+  Carnival:
+    - BOVESPA
+    - BMF
+    - BRL
+1488326400:
+  Independence Day:
+    - KRW
+  Independence Movement Day:
+    - KRX
+1488931200:
+  International Women's Day:
+    - RTS
+    - MOF
+  Womens Day:
+    - RUB
+1489363200:
+  Holi:
+    - BSE
+    - NSE
+    - INR
+1489968000:
+  Juarez Birthday:
+    - MXN
+  Vernal Equinox Day:
+    - SYNTSE
+    - TSE_S
+    - TSE
+    - OSE
+    - JPY
+1490054400:
+  Human Rights Day:
+    - JSE
+    - ZAR
+1490659200:
+  Saka New Year:
+    - JSC
+    - IDR
+1491177600:
+  Ching Ming Festival Eve:
+    - SZSE
+    - SSE
+1491264000:
+  Ching Ming Festival:
+    - HKD
+    - HKSE
+    - HKF
+    - SZSE
+    - SSE
+  Ram Navami:
+    - BSE
+    - NSE
+    - INR
+1491350400:
+  Ching Ming Festival:
+    - HKF
+    - SZSE
+    - HKSE
+    - SYNHKSE
+    - SSE
+1492041600:
+  Bank Holiday:
+    - NOK
+  Holy Thursday:
+    - MXN
+  Maundy Thursday:
+    - OSLO
+    - NOK
+1492128000:
+  Ambedkar Jayanti:
+    - INR
+  Bank Holiday:
+    - NOK
+    - SEK
+  Dr. Ambedkar Jayanti:
+    - BSE
+    - SYNBSE
+    - NSE
+  Good Friday:
+    - ICE_LIFFE
+    - EEI_PA
+    - EEI_LI
+    - NYSE_SPC
+    - CME
+    - ASX
+    - OMX
+    - SYNFSE
+    - HKF
+    - BOVESPA
+    - SWX
+    - TRSE
+    - SBF
+    - SYNSTOXX
+    - EURONEXT
+    - SYNTSE
+    - SYNSWX
+    - OSLO
+    - LSE
+    - JSC
+    - SES
+    - NZSE
+    - SYNLSE
+    - EEI_BU
+    - SFE
+    - EUREX
+    - SYNNYSE_SPC
+    - ISE
+    - ODLS
+    - STOXX
+    - JSE
+    - NASDAQ
+    - EEI_AM
+    - BI
+    - FSE
+    - MEFF
+    - BM
+    - ASX_S
+    - SYNEURONEXT
+    - SYNNYSE_DJI
+    - HKSE
+    - SP_GSCI
+    - NYSE
+    - EUREX_SWISS
+    - BMF
+    - SYNHKSE
+    - NASDAQ_INDEX
+    - IDM
+    - ZAR
+    - NZD
+    - HKD
+    - CAD
+    - BRL
+    - SGD
+    - AUD
+    - CHF
+    - MXN
+    - GBP
+    - METAL
+    - IDR
+    - NOK
+    - CZK
+    - EUR
+    - INR
+    - SEK
+  Good Friday (not Fed Hol):
+    - USD
+1492387200:
+  Bank Holiday:
+    - NOK
+    - EUR
+    - SEK
+  Day After Good Friday:
+    - HKD
+  Easter Monday:
+    - EEI_PA
+    - EEI_LI
+    - ASX
+    - OMX
+    - SYNFSE
+    - HKF
+    - SWX
+    - SBF
+    - SYNSTOXX
+    - EURONEXT
+    - SYNSWX
+    - OSLO
+    - LSE
+    - NZSE
+    - SYNLSE
+    - EEI_BU
+    - SFE
+    - EUREX
+    - ISE
+    - ODLS
+    - STOXX
+    - EEI_AM
+    - BI
+    - FSE
+    - MEFF
+    - BM
+    - ASX_S
+    - SYNEURONEXT
+    - HKSE
+    - EUREX_SWISS
+    - SYNHKSE
+    - IDM
+    - NZD
+    - AUD
+    - CHF
+    - GBP
+    - ICE_LIFFE
+    - PLN
+    - NOK
+    - CZK
+    - EUR
+    - SEK
+  Family Day:
+    - JSE
+    - ZAR
+1492732800:
+  Tiradentes Day:
+    - BOVESPA
+    - BMF
+    - BRL
+1492992000:
+  Isra Mihraj Nabi Muhammad:
+    - JSC
+    - IDR
+  Lailat Al Miraj:
+    - DFM
+    - AED
+1493078400:
+  Anzac Day:
+    - NZSE
+    - SFE
+    - NZD
+    - AUD
+    - ASX
+    - ASX_S
+  Easter Monday:
+    - ASX
+    - ASX_S
+1493251200:
+  Freedom Day:
+    - JSE
+    - ZAR
+1493596800:
+  Bank Holiday:
+    - NOK
+    - SEK
+  Early May Bank Holiday:
+    - LSE
+    - SYNLSE
+    - ODLS
+    - ICE_LIFFE
+    - GBP
+  International Labor Day:
+    - RTS
+    - MOF
+    - RUB
+  Labor Day:
+    - BOVESPA
+    - BMF
+    - BRL
+    - KRW
+    - TRY
+    - MXN
+    - PLN
+    - CHF
+    - SEK
+  Labour And Solidarity Day:
+    - BIS
+  Labour Day:
+    - EEI_PA
+    - EEI_LI
+    - KRX
+    - OMX
+    - SYNFSE
+    - HKF
+    - SWX
+    - SBF
+    - SYNSTOXX
+    - SZSE
+    - EURONEXT
+    - SYNSWX
+    - OSLO
+    - SES
+    - EEI_BU
+    - EUREX
+    - STOXX
+    - EEI_AM
+    - BI
+    - FSE
+    - MEFF
+    - BM
+    - SYNEURONEXT
+    - HKSE
+    - EUREX_SWISS
+    - SYNHKSE
+    - SSE
+    - IDM
+    - HKD
+    - SGD
+    - JSC
+    - IDR
+    - EUR
+  Maharashtra Day:
+    - INR
+  May Bank Holiday:
+    - ISE
+  May Day:
+    - BSE
+    - SYNBSE
+    - NSE
+    - GBP
+    - CZK
+  Public Holiday:
+    - NOK
+  'Spring Bank Holiday, International Labor Day':
+    - RUB
+  Worker's Day:
+    - ZAR
+  Workers' Day:
+    - JSE
+1493769600:
+  Buddha's Birthday:
+    - KRX
+    - HKF
+    - HKSE
+    - SYNHKSE
+    - HKD
+    - KRW
+  Constitution Day:
+    - SYNTSE
+    - TSE_S
+    - TSE
+    - PLN
+  Constitution Memorial Day:
+    - OSE
+    - JPY
+1493856000:
+  Greenery Day:
+    - SYNTSE
+    - TSE_S
+    - TSE
+    - OSE
+    - JPY
+1493942400:
+  Children's Day:
+    - KRX
+    - SYNTSE
+    - TSE_S
+    - TSE
+    - OSE
+    - KRW
+    - JPY
+1494201600:
+  Bank Holiday:
+    - RUB
+  Bridge Day:
+    - RTS
+    - MOF
+  Liberation Day:
+    - CZK
+1494288000:
+  Victory Day:
+    - RUB
+    - RTS
+    - MOF
+1494374400:
+  Buddha Pournima:
+    - BSE
+    - SYNBSE
+    - NSE
+    - INR
+  Vesak Day:
+    - SGD
+  Vesak Poya Day:
+    - SES
+1494460800:
+  Waisak Day:
+    - JSC
+    - IDR
+1494979200:
+  Bank Holiday:
+    - NOK
+  Constitution Day:
+    - OSLO
+    - NOK
+1495152000:
+  Youth And Sports Day:
+    - BIS
+    - TRY
+1495411200:
+  Victoria Day:
+    - TRSE
+    - CAD
+1495670400:
+  Ascension:
+    - OMX
+    - OSLO
+    - CHF
+  Ascension Day:
+    - SWX
+    - SYNSWX
+    - EUREX_SWISS
+    - NOK
+    - SEK
+  Ascension Day Of Jesus:
+    - JSC
+    - IDR
+  Bank Holiday:
+    - NOK
+    - SEK
+1496016000:
+  Dragon Boat Festival:
+    - SZSE
+    - SSE
+  Late May Bank Holiday:
+    - LSE
+    - SYNLSE
+    - ODLS
+    - ICE_LIFFE
+  Memorial Day:
+    - NYSE_SPC
+    - SYNNYSE_SPC
+    - NASDAQ
+    - SYNNYSE_DJI
+    - SP_GSCI
+    - NYSE
+    - NASDAQ_INDEX
+    - USD
+  Spring Bank Holiday:
+    - GBP
+1496102400:
+  Tuen Ng Festival:
+    - HKF
+    - SZSE
+    - HKSE
+    - SYNHKSE
+    - SSE
+    - HKD
+1496275200:
+  Pancasila Day:
+    - JSC
+    - IDR
+1496620800:
+  Bank Holiday:
+    - NOK
+  June Bank Holiday:
+    - ISE
+  'June Holiday - No Trading':
+    - ISE
+  Queen's Birthday:
+    - NZSE
+    - NZD
+  Whit Monday:
+    - SWX
+    - SYNSWX
+    - OSLO
+    - EUREX_SWISS
+    - CHF
+    - FSE
+    - NOK
+1496707200:
+  Bank Holiday:
+    - SEK
+  Memorial Day:
+    - KRX
+    - KRW
+  National Day:
+    - OMX
+    - SEK
+1497225600:
+  Day Of Russia:
+    - RUB
+  Declaration Of Rsfsr:
+    - RTS
+    - MOF
+  Queen's Birthday:
+    - SFE
+  Queen's Birthday Holiday:
+    - ASX
+    - ASX_S
+    - AUD
+1497484800:
+  Corpus Christi:
+    - BOVESPA
+    - BMF
+    - BRL
+  Corpus Christi Day:
+    - PLN
+1497571200:
+  Youth Day:
+    - JSE
+    - ZAR
+1498176000:
+  Bank Holiday:
+    - SEK
+  Midsummer Eve:
+    - SEK
+  Midsummer Holiday:
+    - OMX
+1498348800:
+  Eid Al-fitr:
+    - DFM
+    - SAS
+    - AED
+1498435200:
+  Eid Al-fitr:
+    - DFM
+    - SAR
+    - AED
+  Hari Raya Aidilfitri:
+    - IDR
+  Hari Raya Puasa:
+    - SES
+  Hari Raya Puasa (obs):
+    - SGD
+  Id-ul-fitr:
+    - BSE
+    - NSE
+    - INR
+  Idul Fitri:
+    - JSC
+  Ramadan (shaker) Bairam 1:
+    - BIS
+  Ramazan (seker Bayram):
+    - TRY
+1498521600:
+  Eid Al-fitr:
+    - DFM
+    - SAR
+  Hari Raya Aidilfitri:
+    - IDR
+  Idul Fitri 2*:
+    - JSC
+  Ramadan (shaker) Bairam 2:
+    - BIS
+  Ramazan (seker Bayram):
+    - TRY
+1498608000:
+  Eid Al-fitr:
+    - SAR
+  Hari Raya Aidilfitri:
+    - IDR
+  Idul Fitri:
+    - JSC
+1498694400:
+  Hari Raya Aidilfitri:
+    - IDR
+  Idul Fitri:
+    - JSC
+1498780800:
+  Hari Raya Aidilfitri:
+    - IDR
+  Idul Fitri:
+    - JSC
+1499040000:
+  Canada Day:
+    - CAD
+  Canada Day Obs:
+    - TRSE
+1499126400:
+  Independence Day:
+    - NYSE_SPC
+    - NASDAQ
+    - SP_GSCI
+    - NYSE
+    - NASDAQ_INDEX
+    - USD
+1499212800:
+  Ss. Cyril And Methodius:
+    - CZK
+1499299200:
+  Jan Hus:
+    - CZK
+1500249600:
+  Marine Day:
+    - TSE_S
+    - TSE
+    - OSE
+    - JPY
+1501545600:
+  National Day:
+    - SWX
+    - EUREX_SWISS
+    - CHF
+1502064000:
+  Bank Holiday:
+    - AUD
+  Civic Holiday:
+    - TRSE
+    - CAD
+1502236800:
+  National Day:
+    - SES
+    - SGD
+  Womens Day:
+    - JSE
+    - ZAR
+1502409600:
+  Mountain Day:
+    - TSE_S
+    - TSE
+    - JPY
+    - OSE
+1502755200:
+  Assumption Day:
+    - BI
+    - IDM
+  Assumption Of The Blessed Virgin Mary:
+    - PLN
+  Independence Day:
+    - KRX
+    - BSE
+    - NSE
+    - INR
+  Liberation Day:
+    - KRW
+1502928000:
+  Independence Day:
+    - JSC
+    - IDR
+1503619200:
+  Ganesh Chaturthi:
+    - BSE
+    - NSE
+1503878400:
+  Summer Bank Holiday:
+    - LSE
+    - ODLS
+    - GBP
+    - ICE_LIFFE
+1504051200:
+  Eid Al-adha:
+    - SAS
+  Victory Day:
+    - BIS
+    - TRY
+1504137600:
+  Arafat Day:
+    - AED
+  Eid Al-adha:
+    - DFM
+    - SAS
+1504224000:
+  Hari Raya Aidiladha:
+    - IDR
+  Hari Raya Haji:
+    - SES
+    - SGD
+  Idul Adha:
+    - JSC
+  Kurban Bairam 4:
+    - BIS
+  Kurban Bayrami:
+    - TRY
+1504396800:
+  Eid Al-adha:
+    - SAS
+    - SAR
+    - AED
+  El-adha 4:
+    - DFM
+1504483200:
+  Kurban Bairam 3:
+    - BIS
+  Kurban Bayrami:
+    - TRY
+  Labor Day:
+    - NYSE_SPC
+    - TRSE
+    - NASDAQ
+    - SP_GSCI
+    - NYSE
+    - NASDAQ_INDEX
+    - CAD
+    - USD
+1504742400:
+  Brazilian Independence:
+    - BOVESPA
+    - BMF
+    - BRL
+1505692800:
+  Respect-for-the-aged Day:
+    - TSE_S
+    - TSE
+    - OSE
+    - JPY
+1505952000:
+  First Day Of Muharram:
+    - JSC
+  Hijri New Year:
+    - AED
+  Hijriyah New Year:
+    - IDR
+  Islamic New Year:
+    - DFM
+1506038400:
+  First Day Of Muharram:
+    - JSC
+1506211200:
+  National Day Obs:
+    - SAS
+1506297600:
+  Heritage Day (obs):
+    - JSE
+    - ZAR
+1506556800:
+  Day Of Czech Statehood:
+    - CZK
+1506902400:
+  Day After National Day:
+    - HKD
+  Gandhi Jayanthi:
+    - INR
+  Labour Day:
+    - AUD
+  Mahatma Gandhi's Birthday:
+    - BSE
+    - NSE
+  National Day:
+    - SZSE
+    - SSE
+  National Day (obs):
+    - HKF
+    - HKSE
+1506988800:
+  Day Of German Unity:
+    - FSE
+  Harvest Moon Day (chusok):
+    - KRW
+  National Day:
+    - SZSE
+    - SSE
+  National Foundation Day:
+    - KRX
+1507075200:
+  Harvest Moon Day (chusok):
+    - KRX
+    - KRW
+  National Day:
+    - SZSE
+    - SSE
+1507161600:
+  Day After Mid-autumn Fest:
+    - HKF
+    - HKSE
+    - HKD
+  Harvest Moon Day (chusok):
+    - KRX
+    - KRW
+  National Day:
+    - SZSE
+    - SSE
+1507248000:
+  Harvest Moon Day (chusok):
+    - KRX
+  Harvest Moon(chusok)(obs):
+    - KRW
+  National Day:
+    - SZSE
+    - SSE
+1507507200:
+  Columbus Day (exch Open):
+    - USD
+  Hangul Day:
+    - KRX
+    - KRW
+  Health-sports Day:
+    - TSE_S
+    - TSE
+    - OSE
+    - JPY
+  Thanksgiving:
+    - TRSE
+    - CAD
+1507766400:
+  Our Lady Of Aparecida:
+    - BOVESPA
+    - BMF
+    - BRL
+1508284800:
+  Deepavali:
+    - SES
+    - SGD
+1508371200:
+  Diwali:
+    - INR
+  Diwali Amavasya (laxmi Pujan):
+    - BSE
+    - NSE
+1508457600:
+  'Diwali - Balipratipada':
+    - NSE
+  Diwali Balipratipada:
+    - BSE
+1508716800:
+  Labour Day:
+    - NZSE
+    - NZD
+1509408000:
+  Day Of Reformation:
+    - FSE
+1509494400:
+  All Saints Day:
+    - PLN
+1509580800:
+  All Souls Day:
+    - BOVESPA
+    - BMF
+    - BRL
+    - MXN
+1509667200:
+  Culture Day:
+    - TSE_S
+    - TSE
+    - OSE
+    - JPY
+1509926400:
+  Bank Holiday:
+    - RUB
+  National Unity Day:
+    - RTS
+    - MOF
+1510531200:
+  Remembrance Day-exch Open:
+    - CAD
+1510704000:
+  Proclamation Of The Repub.:
+    - BOVESPA
+    - BMF
+    - BRL
+1510876800:
+  Freedom And Democracy Day:
+    - CZK
+1511136000:
+  Black Consciousness Day:
+    - BOVESPA
+    - BMF
+  Mexican Revolution:
+    - MXN
+1511395200:
+  Labor Thanksgiving Day:
+    - TSE_S
+    - TSE
+    - OSE
+    - JPY
+  Thanksgiving:
+    - NYSE_SPC
+    - NASDAQ
+    - NYSE
+    - SP_GSCI
+    - NASDAQ_INDEX
+    - USD
+1512000000:
+  Martyrs' Day:
+    - DFM
+  "Martyrs' Day, Prophets Birthday":
+    - AED
+1512086400:
+  Birthday Of Prophet Muhamm:
+    - JSC
+  Maulid Nabi Muhammad S.a.w:
+    - IDR
+1512259200:
+  National Day:
+    - DFM
+    - AED
+1513036800:
+  Our Lady Of Guadalupe:
+    - MXN
+1513728000:
+  Election Day:
+    - KRX
+    - KRW
+1514160000:
+  Christmas:
+    - SWX
+    - EUREX_SWISS
+    - NOK
+  Christmas Day:
+    - EEI_PA
+    - ICE_LIFFE
+    - EEI_LI
+    - NYSE_SPC
+    - CME
+    - ASX
+    - OMX
+    - KRX
+    - BSE
+    - HKF
+    - BOVESPA
+    - TRSE
+    - SBF
+    - EURONEXT
+    - OSLO
+    - LSE
+    - JSC
+    - NZSE
+    - SES
+    - EEI_BU
+    - SFE
+    - ISE
+    - ODLS
+    - NSE
+    - STOXX
+    - JSE
+    - EEI_AM
+    - NASDAQ
+    - BI
+    - FSE
+    - BM
+    - MEFF
+    - ASX_S
+    - HKSE
+    - NYSE
+    - SP_GSCI
+    - BMF
+    - NASDAQ_INDEX
+    - IDM
+    - ZAR
+    - NZD
+    - IDR
+    - HKD
+    - CAD
+    - BRL
+    - SGD
+    - USD
+    - AUD
+    - KRW
+    - CZK
+    - EUR
+    - CHF
+    - MXN
+    - INR
+    - GBP
+    - SEK
+    - FOREX
+    - METAL
+  Christmas Holiday:
+    - PLN
+1514246400:
+  Boxing Day:
+    - ICE_LIFFE
+    - ASX
+    - OMX
+    - TRSE
+    - OSLO
+    - LSE
+    - NZSE
+    - SFE
+    - ODLS
+    - ASX_S
+    - NZD
+    - AUD
+    - NOK
+    - GBP
+    - SEK
+  Boxing Day (obs):
+    - CAD
+  Christmas Day:
+    - IDR
+    - CZK
+  Christmas Holiday:
+    - PLN
+    - EUR
+  Christmas Holiday (obs):
+    - EEI_PA
+    - EEI_LI
+    - HKF
+    - SBF
+    - EURONEXT
+    - EEI_BU
+    - STOXX
+    - EEI_AM
+    - BI
+    - FSE
+    - BM
+    - MEFF
+    - HKSE
+    - IDM
+  Day After Christmas:
+    - HKD
+  Day Of Goodwill:
+    - JSE
+    - ZAR
+  Public Holiday:
+    - JSC
+  St. Stephen's Day:
+    - SWX
+    - ISE
+    - EUREX_SWISS
+    - CHF
+1514505600:
+  Last Working Day Of Year:
+    - KRX
+1514764800:
+  Bank Holiday:
+    - GBP
+    - SEK
+  New Year's Day:
+    - ICE_LIFFE
+    - EEI_PA
+    - EEI_LI
+    - BIS
+    - NYSE_SPC
+    - CME
+    - ASX
+    - KRX
+    - OMX
+    - HKF
+    - SWX
+    - TRSE
+    - SBF
+    - DFM
+    - SZSE
+    - EURONEXT
+    - TSE_S
+    - TSE
+    - OSLO
+    - RTS
+    - LSE
+    - OSE
+    - JSC
+    - SES
+    - NZSE
+    - EEI_BU
+    - SFE
+    - ISE
+    - ODLS
+    - STOXX
+    - SGX
+    - JSE
+    - EEI_AM
+    - NASDAQ
+    - BI
+    - FSE
+    - MEFF
+    - BM
+    - ASX_S
+    - HKSE
+    - SP_GSCI
+    - NYSE
+    - EUREX_SWISS
+    - MOF
+    - NASDAQ_INDEX
+    - SSE
+    - IDM
+    - FOREX
+    - METAL
+    - NZD
+    - IDR
+    - HKD
+    - CAD
+    - BRL
+    - SGD
+    - USD
+    - AUD
+    - KRW
+    - TRY
+    - NOK
+    - EUR
+    - CHF
+    - MXN
+    - JPY
+1514851200:
+  Bank Holiday:
+    - TSE_S
+    - TSE
+    - OSE
+  Berchtold's Day:
+    - CHF
+  Berchtoldstag:
+    - SWX
+    - EUREX_SWISS
+  New Year's Day:
+    - JPY
+  New Year's Day (obs):
+    - NZSE
+  New Year's Holiday:
+    - RTS
+    - MOF
+    - NZD
+1514937600:
+  Bank Holiday:
+    - TSE_S
+    - TSE
+    - OSE
+    - JPY
+1515369600:
+  Coming-of-age Day:
+    - TSE_S
+    - TSE
+    - OSE
+    - JPY
+1515974400:
+  Martin L. King Day:
+    - NYSE_SPC
+    - NASDAQ
+    - SP_GSCI
+    - NYSE
+    - NASDAQ_INDEX
+    - USD
+1516579200:
+  Wellington Anniversary Day:
+    - NZD
