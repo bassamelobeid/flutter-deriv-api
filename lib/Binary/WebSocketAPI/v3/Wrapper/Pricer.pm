@@ -423,10 +423,11 @@ sub _process_proposal_open_contract_response {
                     next;
                 } else {
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                    $args->{contract_id} = $contract->{contract_id};
+                    my $copy_args = {%$args};
+                    $copy_args->{contract_id} = $contract->{contract_id};
                     Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel(
                         $c, 'subscribe', delete $contract->{account_id},    # should not go to client
-                        $uuid, $args
+                        $uuid, $copy_args
                     );
                 }
             }
