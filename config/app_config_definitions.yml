@@ -175,7 +175,7 @@ quants:
       global: 1
       default: '{}'
     custom_otm_threshold:
-      description: "Custom OTM threshold specification. This is used to set the minimum ask probability of a contract."
+      description: "min ask probability for contracts specified using 'Custom OTM Threshold' b/o tool"
       isa: json_string
       global: 1
       default: '{}'
