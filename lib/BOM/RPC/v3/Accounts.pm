@@ -1227,7 +1227,7 @@ sub set_financial_assessment {
     my $client         = $params->{client};
     my $client_loginid = $client->loginid;
 
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+    return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual or $client->landing_company->short eq 'japan');
 
     my ($response, $subject, $message);
     try {
@@ -1270,7 +1270,7 @@ sub get_financial_assessment {
     my $params = shift;
 
     my $client = $params->{client};
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+    return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual or $client->landing_company->short eq 'japan');
 
     my $response             = {};
     my $financial_assessment = $client->financial_assessment();
