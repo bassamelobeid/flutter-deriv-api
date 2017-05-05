@@ -26,7 +26,7 @@ install:
 
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - /etc/rmg/bin/prove --timer -lr --exec 'perl -MTest::FailWarnings=-allow_deps,1 -MBOM::Test'  t/
+    - /etc/rmg/bin/prove --timer -lr --exec 'perl -MTest::FailWarnings=-allow_deps,1'  t/
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
