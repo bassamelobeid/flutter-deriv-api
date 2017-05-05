@@ -531,6 +531,7 @@ sub process_transaction_updates {
                             $c->call_rpc({
                                     url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
                                     args        => $args,
+                                    msg_type    => 'transaction',
                                     method      => 'get_contract_details',
                                     call_params => {
                                         token           => $c->stash('token'),
