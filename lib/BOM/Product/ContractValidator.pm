@@ -95,6 +95,7 @@ sub _confirm_validity {
     push @validation_methods, '_validate_lifetime';
     push @validation_methods, '_validate_barrier'                                         unless $args->{skip_barrier_validation};
     push @validation_methods, '_validate_barrier_type'                                    unless $self->for_sale;
+    push @validation_methods, '_validate_entry_tick'                                      if $self->for_sale;
     push @validation_methods, '_validate_feed';
     push @validation_methods, '_validate_price'                                           unless $self->skips_price_validation;
     push @validation_methods, '_validate_volsurface'                                      unless $self->volsurface->type eq 'flat';
@@ -207,6 +208,22 @@ sub _validate_offerings {
     return;
 }
 
+sub _validate_entry_tick {
+    my $self = shift;
+
+    return if $self->starts_as_forward_starting;
+
+    my $underlying = $self->underlying;
+
+    if (not $self->entry_spot) {
+        return {
+            message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
+            message_to_client => [$ERROR_MAPPING->{EntryTickMissing}],
+        };
+    }
+
+    return;
+}
 sub _validate_feed {
     my $self = shift;
 
