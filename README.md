@@ -39,25 +39,8 @@ Input: www.forexfactory.com
 
 Output: category='economic_events'at Chronicle
 
-(3) bin/update_corp_actions.pl
 
-A script runs Bloomberg::CorporateAction to process the corporate actions of offered stocks and update corporate action chronicle documents. It will also set trading suspended on those stocks that has bankruptcy action.
-
-```
-To update corporate actions: bin/update_corp_actions.pl
-```
-
-Source: Bloomberg Data License
-
-Package dependency: Bloomberg::CorporateAction, Bloomberg::FileDownloader, Quant::Framework::CorporateAction
-
-Frequency of this script being called: 06GMT, 12GMT and 23GMT. (Although it runs for several time per day, the content is remaining the same as we are only getting corporate action from Bloomberg once per day.)
-
-Input: corporate actions file type from Bloomberg::FileDownloader e.g. corporate.csv.enc 
-
-Output: category='corporate_actions' at Chronicle
-
-(4) bin/update_interest_rates.pl
+(3) bin/update_interest_rates.pl
 
 A script run BOM::MarketDataAutoUpdater::InterestRates to update currency interest rate. 
 
@@ -75,7 +58,7 @@ Input: interest rates file type from Bloomberg::FileDownloader e.g. interest_rat
 
 Output: category='interest_rates' at Chronicle
 
-(5) bin/update_implied_interest_rates.pl
+(4) bin/update_implied_interest_rates.pl
 
 A script run BOM::MarketDataAutoUpdater::ImpliedInterestRates to update implied interest rate. For each currency pair, to hold the interest rate parity, the rate of one the currency need to be implied from the forward rate of pair and the market rate of corresponding currency. Example: USDJPY, interest rate of JPY on this pair need to implied from the forward rate of USDJPY and the market rate of USD.
 
@@ -96,7 +79,7 @@ forward rates file type from Bloomberg::FileDownloader e.g. forward_rates.csv
 
 Output: category='interest_rates' at Chronicle
 
-(6) bin/update_smartfx_rate.pl
+(5) bin/update_smartfx_rate.pl
 
 A scripts to update interest rate of smart fx based on the rate of the forex pairs of the basket.
 
@@ -113,7 +96,7 @@ Frequency of this script being called: 00GMT on daily basic
 Input: 'interest_rates' at Chronicle <br/>
 Output: 'interest_rates' at Chronicle
 
-(7) bin/updatevol.pl
+(6) bin/updatevol.pl
 
 A script runs BOM::MarketDataAutoUpdater::Indices to update vol of indices and stocks and BOM::MarketDataAutoUpdater::Forex to update vol of forex and commodities
 
