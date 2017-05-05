@@ -167,19 +167,7 @@ has [qw(opposite_contract opposite_contract_for_sale)] => (
     lazy_build => 1
 );
 
-has corporate_actions => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has tentative_events => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-# We adopt "near-far" methodology to price in dividends by adjusting spot and strike.
-# This returns a hash reference with spot and barrrier adjustment for the bet period.
-has dividend_adjustment => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -196,7 +184,7 @@ has risk_profile => (
     init_arg   => undef,
 );
 
-# pricing_spot - The spot used in pricing.  It may have been adjusted for corporate actions.
+# pricing_spot - The spot used in pricing.
 has pricing_spot => (
     is         => 'ro',
     lazy_build => 1,
@@ -743,60 +731,6 @@ sub _build_opposite_contract {
     return $opp_contract;
 }
 
-sub _build_corporate_actions {
-    my $self = shift;
-
-    my @actions;
-    my $underlying = $self->underlying;
-
-    if ($underlying->market->affected_by_corporate_actions) {
-        my $first_day_close = $underlying->calendar->closing_on($self->date_start);
-        if ($first_day_close and not $self->date_expiry->is_before($first_day_close)) {
-            @actions = $self->underlying->get_applicable_corporate_actions_for_period({
-                start => $self->date_start,
-                end   => $self->date_pricing,
-            });
-        }
-    }
-
-    return \@actions;
-}
-
-sub _build_dividend_adjustment {
-    my $self = shift;
-
-    my $dividend_adjustment = $self->underlying->dividend_adjustments_for_period({
-        start => $self->date_pricing,
-        end   => $self->date_expiry,
-    });
-
-    my @corporate_actions = $self->underlying->get_applicable_corporate_actions_for_period({
-        start => $self->date_pricing->truncate_to_day,
-        end   => Date::Utility->new,
-    });
-
-    my $dividend_recorded_date = $dividend_adjustment->{recorded_date};
-
-    if (scalar @corporate_actions
-        and (my $action = first { Date::Utility->new($_->{effective_date})->is_after($dividend_recorded_date) } @corporate_actions))
-    {
-
-        warn "Missing dividend data: corp actions are " . join(',', @corporate_actions) . " and found date for action " . $action;
-        $self->_add_error({
-            message => 'Dividend is not updated  after corporate action'
-                . "[dividend recorded date : "
-                . $dividend_recorded_date->datetime . "] "
-                . "[symbol: "
-                . $self->underlying->symbol . "]",
-            message_to_client => [$ERROR_MAPPING->{MissingDividendMarketData}],
-        });
-
-    }
-
-    return $dividend_adjustment;
-
-}
-
 sub _build_payout {
     my ($self) = @_;
 
@@ -866,10 +800,6 @@ sub _build_pricing_spot {
                 . $self->underlying->symbol . "]",
             message_to_client => [$ERROR_MAPPING->{CannotProcessContract}],
         });
-    }
-
-    if ($self->underlying->market->prefer_discrete_dividend) {
-        $initial_spot += $self->dividend_adjustment->{spot};
     }
 
     return $initial_spot;
@@ -1076,13 +1006,6 @@ sub pricing_details {
         push @comment_fields, news_fct => $news_factor->amount;
         my $news_impact = $news_factor->peek('news_impact');
         push @comment_fields, news_impact => $news_impact->amount if $news_impact;
-    }
-
-    if (@{$self->corporate_actions}) {
-        push @comment_fields,
-            corporate_action => 1,
-            actions          => join '|',
-            map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$self->corporate_actions};
     }
 
     if ($self->entry_spot) {
