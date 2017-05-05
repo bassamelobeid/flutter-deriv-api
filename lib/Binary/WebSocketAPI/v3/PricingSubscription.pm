@@ -31,11 +31,11 @@ sub _build_redis_server {
 sub subscribe {
     my ($self, $c) = @_;
 
-    $self->redis_server->{shared_info}{$self->channel_name}{\$c + 0} = $c;
+    $self->redis_server->{shared_info}{$self->channel_name}{$c + 0} = $c;
 
     stats_inc('bom_websocket_api.v_3.pricing_subscriptions.clients');
 
-    Scalar::Util::weaken($self->redis_server->{shared_info}{$self->channel_name}{\$c + 0});
+    Scalar::Util::weaken($self->redis_server->{shared_info}{$self->channel_name}{$c + 0});
     $self->redis_server->subscribe([$self->channel_name], sub { });
 
     return $self;
