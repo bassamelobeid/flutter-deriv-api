@@ -83,7 +83,6 @@ sub generate {
         $bet_params->{underlying} = $cached_underlyings{$underlying_symbol}
             if ($cached_underlyings{$underlying_symbol});
         my $bet = produce_contract($bet_params);
-        if ($bet->is_spread) { next; }
         $cached_underlyings{$underlying_symbol} ||= $bet->underlying;
 
         if (   not $bet->underlying->spot
