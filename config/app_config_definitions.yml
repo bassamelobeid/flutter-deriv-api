@@ -149,11 +149,6 @@ quants:
       description: "Underlying-specific variables"
       isa: section
       contains:
-        disabled_due_to_corporate_actions:
-          description: "An array reference of disabled underlying(s) due to corporate actions, e.g.: UKAAL,UKHSBA"
-          isa: ArrayRef
-          default: []
-          global: 1
         disable_autoupdate_vol:
           description: "Disable autoupdate volatility for the following underlyings, eg: frxGBPUSD"
           isa: ArrayRef
