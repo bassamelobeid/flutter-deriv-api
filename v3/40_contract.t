@@ -164,27 +164,7 @@ my $forget = decode_json($t->message->[1]);
 note explain $forget;
 is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 
-my (undef, $call_params) = call_mocked_client(
-    $t,
-    {
-        get_corporate_actions => 1,
-        symbol                => "FPFP",
-        start                 => "2013-03-27",
-        end                   => "2013-03-30",
-    });
-ok !$call_params->{token};
-
-$t = $t->send_ok({
-        json => {
-            get_corporate_actions => 1,
-            symbol                => "FPFP",
-            start                 => "2013-03-27",
-            end                   => "2013-03-30",
-        }})->message_ok;
-my $corporate_actions = decode_json($t->message->[1]);
-is $corporate_actions->{msg_type}, 'get_corporate_actions';
-
-(undef, $call_params) = call_mocked_client($t, {portfolio => 1});
+my (undef, $call_params) = call_mocked_client($t, {portfolio => 1});
 is $call_params->{token}, $token;
 
 $t = $t->send_ok({json => {portfolio => 1}})->message_ok;
