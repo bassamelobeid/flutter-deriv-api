@@ -9,11 +9,11 @@ use Net::EmptyPort qw( check_port );
 use Time::HiRes qw( usleep );
 
 sub config {
-    return {} unless $ENV{PRICING_URL};
-    my $port = (split /:/, $ENV{PRICING_URL})[-1];
+    return {} unless $ENV{PRICING_RPC_URL};
+    my $port = (split /:/, $ENV{PRICING_RPC_URL})[-1];
     $port =~ s{/}{}g;
     my $cfg = {
-        url         => $ENV{PRICING_URL},
+        url         => $ENV{PRICING_RPC_URL},
         port        => $port,
         config_file => '/tmp/pricing.cfg',
         pid_file    => '/tmp/bom-pricing.pid',
