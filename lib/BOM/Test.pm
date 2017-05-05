@@ -73,6 +73,7 @@ BEGIN {
 
         $ENV{DB_POSTFIX} = '_test';
         $ENV{RPC_URL}    = 'http://127.0.0.1:15005/';
+        $ENV{PRICING_URL} = 'http://127.0.0.1:15006/';
     }
     $ENV{TEST_DATABASE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
 }
