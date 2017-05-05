@@ -553,8 +553,7 @@ sub _build_economic_events_spot_risk_markup {
 sub _get_economic_events {
     my ($self) = @_;
 
-    my $qfs = Volatility::Seasonality->new;
-    my $events = $qfs->categorize_events($self->bet->underlying->symbol, $self->economic_events);
+    my $events = Volatility::Seasonality::categorize_events($self->bet->underlying->symbol, $self->economic_events);
 
     return $events;
 }
