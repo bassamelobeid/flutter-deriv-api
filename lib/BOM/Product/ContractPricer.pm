@@ -757,14 +757,7 @@ sub _build_q_rate {
     my $underlying = $self->underlying;
     my $q_rate     = $underlying->dividend_rate_for($self->timeinyears->amount);
 
-    my $rate;
-    if ($underlying->market->prefer_discrete_dividend) {
-        $rate = 0;
-    } else {
-        $rate = $q_rate;
-    }
-
-    return $rate;
+    return $q_rate;
 }
 
 sub _build_pricing_new {

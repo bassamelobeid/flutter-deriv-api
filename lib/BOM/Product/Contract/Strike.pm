@@ -61,12 +61,6 @@ has barrier_type => (
     lazy_build => 1,
 );
 
-has adjustment => (
-    is        => 'ro',
-    isa       => 'HashRef',
-    predicate => 'has_adjustments',
-);
-
 sub _build_supplied_type {
     my $self = shift;
 
@@ -189,14 +183,8 @@ has for_shortcode => (
 sub _build_for_shortcode {
     my $self = shift;
 
-    # Shortcode version can't change based on any adjustments added after the fact.
     # We'll reapply them on rebuild.
     my $strike = $self;
-
-    while ($strike->has_adjustments) {
-        # Keep on down the rabbit hole until we find the bottom which is unadjusted.
-        $strike = $strike->adjustment->{prev_obj};
-    }
 
     return $strike->as_relative if ($strike->supplied_type eq 'relative' or $strike->supplied_type eq 'difference');
 
@@ -228,10 +216,6 @@ sub _build_display_text {
 
     # We don't have the display text to change as well for immutable longcode's sake.
     my $strike = $self;
-    while ($strike->has_adjustments) {
-        # Keep on down the rabbit hole until we find the bottom which is unadjusted.
-        $strike = $strike->adjustment->{prev_obj};
-    }
 
     if ($barrier_type eq 'absolute') {
         $display_barrier = [$strike->as_absolute];
@@ -284,36 +268,6 @@ my %modifiers = (
         }
     },
 );
-
-sub adjust {
-    my ($self, $args) = @_;
-
-    die 'Adjust requires a proper modifier, numeric amount and reason string'
-        unless ($args->{reason} and looks_like_number($args->{amount}) and (my $modifier = $modifiers{$args->{modifier}}));
-
-    # We have to do this here to retain barrier type of a contract.
-    # This affects long code.
-    my $new_supp_barrier;
-    if ($self->supplied_type eq 'relative') {
-        my $adjusted_barrier = $self->_proper_value($modifier->{code}->($self->as_absolute, $args->{amount}));
-        my $relative_to      = $self->basis_tick;
-        my $diff             = $adjusted_barrier - $relative_to->quote;
-        my $pip_diff         = roundnear(1, $diff / $self->underlying->pip_size);
-        $new_supp_barrier = 'S' . $pip_diff . 'P';
-    } else {
-        $new_supp_barrier = $self->_proper_value($modifier->{code}->($self->as_absolute, $args->{amount}));
-    }
-
-    return __PACKAGE__->new(
-        underlying       => $self->underlying,
-        supplied_barrier => $new_supp_barrier,
-        adjustment       => {
-            desc     => $modifier->{display} . $args->{amount} . ' -- ' . $args->{reason},
-            prev_obj => $self,
-        },
-        basis_tick => $self->basis_tick,
-    );
-}
 
 sub strike_string {
     my ($class, $string, $underlying, $bet_type_code) = @_;
