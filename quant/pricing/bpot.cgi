@@ -22,7 +22,7 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::PricingDetails;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Request qw(request localize);
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -50,6 +50,7 @@ my $bet = do {
     my ($shortcode, $currency) = map { request()->param($_) } qw(shortcode currency);
 
     if ($landing_company and $shortcode and $currency) {
+
         my $contract_parameters = shortcode_to_parameters($shortcode, $currency);
         $contract_parameters->{landing_company} = $landing_company;
         $contract_object = produce_contract($contract_parameters);
@@ -87,9 +88,7 @@ if ($bet) {
 BOM::Backoffice::Request::template->process(
     'backoffice/bpot.html.tt',
     {
-        longcode   => localize($bet->longcode),
-        shortcode  => $bet->shortcode,
-        currency   => $bet->currency,
+        bet        => $bet,
         start      => $start ? $start->datetime : '',
         end        => $end ? $end->datetime : '',
         timestep   => $timestep ? $timestep->as_concise_string : '',
