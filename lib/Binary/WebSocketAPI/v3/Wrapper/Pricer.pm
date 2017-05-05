@@ -698,7 +698,7 @@ sub process_ask_event {
                     $type    => {
                         %$adjusted_results,
                         id       => $stash_data->{uuid},
-                        longcode => $stash_data->{cache}->{longcode},
+                        longcode => $c->l($stash_data->{cache}->{longcode}),
                     },
                 };
             }
@@ -771,7 +771,7 @@ sub _price_stream_results_adjustment {
                 message_to_client => $c->l($error_map->{$error->{error_code}}->($error->{error_details} || [])),
                 code              => 'ContractBuyValidationError',
                 details           => {
-                    longcode      => $contract_parameters->{longcode},
+                    longcode      => $c->l($contract_parameters->{longcode}),
                     display_value => $price_calculator->ask_price,
                     payout        => $price_calculator->payout,
                 },
