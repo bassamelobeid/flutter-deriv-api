@@ -119,7 +119,10 @@ sub shared_redis {
             if ($self->{shared_info}{$channel}) {
                 foreach my $c_key (keys %{$self->{shared_info}{$channel}}) {
                     next unless looks_like_number($c_key);
-                    unless ($self->{shared_info}{$channel}{$c_key} && ref $self->{shared_info}{$channel}{$c_key}) {
+                    unless ($self->{shared_info}{$channel}{$c_key}
+                        && ref $self->{shared_info}{$channel}{$c_key}
+                        && $self->{shared_info}{$channel}{$c_key}{c})
+                    {
                         delete $self->{shared_info}{$channel}{$c_key};
                         next;
                     }

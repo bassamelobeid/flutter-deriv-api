@@ -42,9 +42,9 @@ sub website_status {
                     $website_status->{$_} = $rpc_response->{$_} for qw|api_call_limits clients_country supported_languages terms_conditions_version|;
                     my $shared_info = ws_redis_master->{shared_info};
                     Scalar::Util::weaken(my $c_copy = $self);
-                    $shared_info->{broadcast_notifications}{\$self + 0}{'c'}            = $c_copy;
-                    $shared_info->{broadcast_notifications}{\$self + 0}{echo}           = $args;
-                    $shared_info->{broadcast_notifications}{\$self + 0}{website_status} = $rpc_response;
+                    $shared_info->{broadcast_notifications}{$self + 0}{'c'}            = $c_copy;
+                    $shared_info->{broadcast_notifications}{$self + 0}{echo}           = $args;
+                    $shared_info->{broadcast_notifications}{$self + 0}{website_status} = $rpc_response;
 
                     ### to config
                     my $current_state = ws_redis_slave->get("NOTIFY::broadcast::state");
@@ -64,11 +64,11 @@ sub website_status {
     };
 
     if (!$args->{subscribe} || $args->{subscribe} == 0) {
-        delete $shared_info->{broadcast_notifications}{\$self + 0};
+        delete $shared_info->{broadcast_notifications}{$self + 0};
         &$callback();
         return;
     }
-    if ($shared_info->{broadcast_notifications}{\$self + 0}) {
+    if ($shared_info->{broadcast_notifications}{$self + 0}) {
         &$callback();
         return;
     }
@@ -353,7 +353,7 @@ sub _feed_channel_subscribe {
     # we use stash hash ( = stash hash address) as user id,
     # as we don't want to deal with user_login, user_id, user_email
     # unauthorized users etc.
-    weaken($shared_info->{\$c + 0}{c} = $c);
+    weaken($shared_info->{$c + 0}{c} = $c);
 
     # check that the current worker is already (globally) subscribed
     if (!$shared_info->{symbols}->{$symbol}) {
@@ -412,7 +412,7 @@ sub _feed_channel_unsubscribe {
 
     my $shared_info = shared_redis->{shared_info}{"FEED::$symbol"};
 
-    my $per_user_info = $shared_info->{\$c + 0} //= {};
+    my $per_user_info = $shared_info->{$c + 0} //= {};
 
     my $feed_channel_type  = $c->stash('feed_channel_type')  // {};
     my $feed_channel_cache = $c->stash('feed_channel_cache') // {};
@@ -429,7 +429,7 @@ sub _feed_channel_unsubscribe {
     # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
     _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
 
-    delete $shared_info->{\$c + 0};
+    delete $shared_info->{$c + 0};
     if (!keys %{$shared_info // {}}) {
         $shared_info->{symbols}->{$symbol} = 0;
         shared_redis->unsubscribe(["FEED::$symbol"], sub { });
@@ -453,7 +453,7 @@ sub _transaction_channel {
             $uuid = _generate_uuid_string();
 
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
-            $redis->{shared_info}{$channel_name}{\$c + 0}{c} = $c;
+            $redis->{shared_info}{$channel_name}{$c + 0}{c} = $c;
             ### TODO: Move to shared_info
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
@@ -463,7 +463,7 @@ sub _transaction_channel {
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
             delete $channel->{$type};
             unless (keys %$channel) {
-                delete $redis->{shared_info}{$channel_name}{\$c + 0};
+                delete $redis->{shared_info}{$channel_name}{$c + 0};
                 $redis->unsubscribe([$channel_name], sub { });
                 delete $c->stash->{transaction_channel};
             }
