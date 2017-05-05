@@ -54,26 +54,12 @@ sub script_run {
         print "stored " . (scalar @$events_received) . " events ($tentative_count are tentative events) in chronicle...\n";
 
         my @underlying_symbols = create_underlying_db->symbols_for_intraday_fx;
-        my $qfs                = Volatility::Seasonality->new(
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-        );
 
-        # we will not need that many economic events for seasonality.
-        my $yesterday       = Date::Utility->new->minus_time_interval('1d')->truncate_to_day;
-        my $five_days_ahead = $yesterday->plus_time_interval('6d');
-        my @trimmed_events =
-            grep { $_->{release_date} >= $yesterday->epoch && $_->{release_date} <= $five_days_ahead->epoch }
-            grep { $_->{release_date} } @$events_received;
-
-        foreach my $symbol (@underlying_symbols) {
-            $qfs->generate_economic_event_seasonality({
-                underlying_symbol => $symbol,
-                economic_events   => \@trimmed_events,
-            });
-        }
-
-        BOM::Platform::Chronicle::get_chronicle_writer()->set('seasonality', 'economic_events_updated', {ts => time}, Date::Utility->new(), 0);
+        Volatility::Seasonality::generate_economic_event_seasonality({
+            underlying_symbols => \@underlying_symbols,
+            economic_events    => \@trimmed_events,
+            cache_writer       => BOM::Platform::Chronicle::get_chronicle_writer(),
+        });
 
         print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.";
 
