@@ -282,9 +282,10 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             # We've already done the check for top-level { error => { ... } } by this point,
                             # so if we don't have the proposals key then something very unexpected happened.
                             warn "Invalid entry in proposal_array response - " . encode_json($res);
-                            $c->send(
-                                {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))})
-                                if $c and $c->tx;
+                            $c->send({
+                                    json => $c->wsp_error(
+                                        $msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))}
+                            ) if $c and $c->tx;
                             return;
                         }
                     }
@@ -306,7 +307,8 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                 }
                 catch {
                     warn "proposal_array exception - $_";
-                    $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))})
+                    $c->send(
+                        {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))})
                         if $c and $c->tx;
                 };
             }));
