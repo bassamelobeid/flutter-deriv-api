@@ -37,24 +37,23 @@ before_install:
 
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - /tmp/travis-scripts/fixHostName.sh
-    - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
 
-    - /tmp/travis-scripts/setup_cpan.sh
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-websocket-tests
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-feed
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-populator
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-rpc
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-pricing
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-transaction
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/php-mt5-webapi
-    - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
-    - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
+    - /tmp/travis-scripts/parallel_clone_branch.sh
+      regentmarkets/bom-test
+      regentmarkets/bom-websocket-tests
+      regentmarkets/bom
+      regentmarkets/bom-platform
+      regentmarkets/bom-feed
+      regentmarkets/bom-populator
+      regentmarkets/bom-rpc
+      regentmarkets/bom-postgres
+      regentmarkets/bom-pricing
+      regentmarkets/bom-market
+      regentmarkets/bom-transaction
+      regentmarkets/php-mt5-webapi
+      binary-com/translations-websockets-api
+      binary-com/websocket-bench
     - /tmp/travis-scripts/redis.sh
 
 install:
