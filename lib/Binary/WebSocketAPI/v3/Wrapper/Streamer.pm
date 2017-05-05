@@ -540,10 +540,7 @@ sub process_transaction_updates {
 
                                 if (exists $rpc_response->{error}) {
                                     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                                    return $c->new_error(
-                                        'transaction',
-                                        $rpc_response->{error}->{code},
-                                        $rpc_response->{error}->{message_to_client});
+                                    return $c->new_error('transaction', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                                 } else {
                                     $details->{$type}->{contract_id}   = $payload->{financial_market_bet_id};
                                     $details->{$type}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
