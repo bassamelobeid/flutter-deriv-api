@@ -641,7 +641,9 @@ sub process_proposal_array_event {
 
                         # Make sure that we don't override any of the values for next time (e.g. ask_price)
                         my $copy = {contract_parameters => {%{$stashed_contract_parameters->{contract_parameters}}}};
-                        return _price_stream_results_adjustment($c, $stash_data->{args}, $copy, $price, $theo_probability);
+                        my $res = _price_stream_results_adjustment($c, $stash_data->{args}, $copy, $price, $theo_probability);
+                        $res->{longcode} = $c->l($res->{longcode}) if $res->{longcode};
+                        return $res;
                     }
                 }
                 catch {
