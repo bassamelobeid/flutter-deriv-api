@@ -305,14 +305,17 @@ sub _get_redis_connections {
     my @redises     = ();
     my %uniq;
 
-    for my $c (values %{$app->active_connections // {}}) {
-        push @redises, $c->redis;
-    }
-    push @redises, $app->shared_redis;
-    push @redises, $app->redis_pricer;
-    push @redises, $app->ws_redis_master;
-    push @redises, $app->ws_redis_slave;
     push @redises, values %{Binary::WebSocketAPI::v3::Instance::Redis::instances()};
+    unless (scalar @redises > 1) {
+        # redises are not moved to Instance::Redis yet...
+        for my $c (values %{$app->active_connections // {}}) {
+            push @redises, $c->redis if $c->stash->{redis};
+        }
+        push @redises, $app->shared_redis if $app->shared_redis;
+        push @redises, $app->redis_pricer if $app->redis_pricer;
+        push @redises, $app->ws_redis_master if $app->ws_redis_master;
+        push @redises, $app->ws_redis_slave if $app->ws_redis_slave;
+    }
     for my $r (@redises) {
         my $con = $r->{connections} // {};
         for my $c (values %$con) {
