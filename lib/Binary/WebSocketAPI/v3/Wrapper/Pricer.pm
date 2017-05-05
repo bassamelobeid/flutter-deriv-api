@@ -274,7 +274,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                         if (exists $res->{proposals}) {
                             for my $contract_type (keys %{$res->{proposals}}) {
                                 my @prices = @{$res->{proposals}{$contract_type}};
-                                $_->{error}{message} = delete $_->{error}{message_to_client} for grep { ; exists $_->{error} } @prices;
+                                $_->{error}{message} = $c->l(delete $_->{error}{message_to_client}) for grep { ; exists $_->{error} } @prices;
                                 warn "Barrier mismatch - expected " . @expected_barriers . " but had " . @prices unless @prices == @expected_barriers;
                                 push @{$proposal_array{$contract_type}}, @prices;
                             }
@@ -283,7 +283,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             # so if we don't have the proposals key then something very unexpected happened.
                             warn "Invalid entry in proposal_array response - " . encode_json($res);
                             $c->send(
-                                {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')})
+                                {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))})
                                 if $c and $c->tx;
                             return;
                         }
@@ -306,7 +306,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                 }
                 catch {
                     warn "proposal_array exception - $_";
-                    $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')})
+                    $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))})
                         if $c and $c->tx;
                 };
             }));
