@@ -9,13 +9,10 @@ __PACKAGE__->meta->setup(
     schema   => 'payment',
 
     columns => [
-        payment_id        => { type => 'bigint', not_null => 1 },
-        transaction_type  => { type => 'varchar', length => 15, not_null => 1 },
-        trace_id          => { type => 'bigint', not_null => 1 },
-        created_by        => { type => 'varchar', length => 50 },
-        payment_processor => { type => 'varchar', length => 50, not_null => 1 },
-        ip_address        => { type => 'varchar', length => 64 },
-        transaction_id    => { type => 'varchar', length => 100 },
+        payment_id       => { type => 'bigint', not_null => 1 },
+        transaction_type => { type => 'varchar', length => 15, not_null => 1 },
+        ip_address       => { type => 'varchar', length => 64 },
+        transaction_id   => { type => 'varchar', length => 100 },
     ],
 
     primary_key_columns => [ 'payment_id' ],
