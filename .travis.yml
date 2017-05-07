@@ -1,17 +1,20 @@
+sudo: required
+dist: precise
+group: deprecated-2017Q1
 language: perl
 perl:
     - "5.14.2-thr"
 matrix:
     fast_finish: true
-addons:
-    postgresql: "9.4"
 services:
     - redis-server
 cache: apt
 sudo: required
 env:
     - TEST_SUITE=test SH=bash
-    - TEST_SUITE=suite_schema SH=bash
+    - TEST_SUITE=json_schema_1
+    - TEST_SUITE=json_schema_2
+
 before_install:
     - git clone https://d4a95fecbf54180e8fd6ad876e49b62083f3fb62@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
     - /tmp/travis-scripts-init/clone_branch.sh regentmarkets/travis-scripts
@@ -20,22 +23,21 @@ before_install:
     - sudo mkdir -p /home/git/regentmarkets
     - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/fixHostName.sh
-    - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
 
-    - /tmp/travis-scripts/setup_cpan.sh
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-feed
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-populator
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-websocket-tests
-    - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/php-mt5-webapi
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-transaction
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-pricing
+    - /tmp/travis-scripts/parallel_clone_branch.sh
+      regentmarkets/bom-test
+      regentmarkets/bom
+      regentmarkets/bom-platform
+      regentmarkets/bom-feed
+      regentmarkets/bom-populator
+      regentmarkets/bom-postgres
+      regentmarkets/bom-websocket-tests
+      binary-com/translations-websockets-api
+      regentmarkets/bom-market
+      regentmarkets/php-mt5-webapi
+      regentmarkets/bom-transaction
+      regentmarkets/bom-pricing
 
     - /tmp/travis-scripts/redis.sh
 
