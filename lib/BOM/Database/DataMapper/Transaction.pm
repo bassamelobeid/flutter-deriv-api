@@ -318,7 +318,8 @@ sub get_transactions_ws {
                 b.sell_time,
                 b.payout_price,
                 p.payment_time,
-                p.remark AS payment_remark
+                p.remark AS payment_remark,
+                t1.id AS buy_tr_id
             FROM
                 (
                     SELECT * FROM transaction.transaction
@@ -333,6 +334,8 @@ sub get_transactions_ws {
                 ) t
                 LEFT JOIN bet.financial_market_bet b
                     ON (t.financial_market_bet_id = b.id)
+                LEFT JOIN transaction.transaction t1
+                    ON (t1.action_type = $$buy$$ AND t.action_type = $$sell$$ AND t.financial_market_bet_id = t1.financial_market_bet_id)
                 LEFT JOIN payment.payment p
                     ON (t.payment_id = p.id)
                 ORDER BY t.transaction_time DESC
@@ -622,9 +625,13 @@ sub get_details_by_transaction_ref {
         b.sell_time as sell_time,
         b.purchase_time as purchase_time,
         d.requested_price as order_price,
-        d.spot as pricing_spot,
+        d.spot as current_spot,
         d.iv as high_barrier_vol,
-        d.iv_2 as low_barrier_vol
+        d.iv_2 as low_barrier_vol,
+        d.pricing_spot as pricing_spot,
+        d.news_adjusted_pricing_vol as news_adjusted_pricing_vol,
+        d.long_term_prediction as long_term_prediction,
+        d.volatility_scaling_factor as volatility_scaling_factor
       FROM
         transaction.transaction t
         JOIN bet.financial_market_bet b ON t.financial_market_bet_id=b.id
