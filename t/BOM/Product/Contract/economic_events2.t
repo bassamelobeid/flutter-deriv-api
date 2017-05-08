@@ -70,14 +70,12 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     },
 );
 
-my $vs = Volatility::Seasonality->new(
-    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-    chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-);
-
-foreach my $u (qw(frxUSDJPY frxGBPUSD frxGBPJPY)) {
-    $vs->generate_economic_event_seasonality({underlying_symbol => $u});
-}
+Volatility::Seasonality::generate_economic_event_seasonality({
+    underlying_symbols => [qw(frxUSDJPY frxGBPUSD frxGBPJPY)],
+    chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer,
+    economic_events    => [],
+    date               => $now,
+});
 
 test_economic_events_markup(0.0122153991947796,  0.0122153991947796,  'frxUSDJPY');
 test_economic_events_markup(0.00884422105306016, 0.00884422105306016, 'frxGBPUSD');
@@ -101,7 +99,8 @@ sub test_economic_events_markup {
     my $bet = produce_contract($params);
     is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
     is($bet->pricing_engine->economic_events_spot_risk_markup->amount, $expected_ee_srmarkup, 'correct spot risk markup');
-
+use Data::Dumper;
+warn Dumper $bet->pricing_engine->economic_events_volatility_risk_markup->amount;
     my $amount;
     like(
         warning { $amount = $bet->pricing_engine->economic_events_volatility_risk_markup->amount },
