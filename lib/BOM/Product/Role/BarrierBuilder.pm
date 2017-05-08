@@ -56,26 +56,6 @@ sub make_barrier {
         %$extra_params,,
     );
 
-    my @corporate_actions = @{$self->corporate_actions};
-    if (@corporate_actions) {
-        $self->initial_barrier($barrier);
-        foreach my $action (@corporate_actions) {
-            try {
-                $barrier = $barrier->adjust({
-                    modifier => $action->{modifier},
-                    amount   => $action->{value},
-                    reason   => $action->{type} . ': ' . $action->{description} . '(' . $action->{effective_date} . ')',
-                });
-            }
-            catch {
-                $self->_add_error({
-                    severity          => 100,
-                    message           => "Could not apply corporate action [error: $_]",
-                    message_to_client => [$ERROR_MAPPING->{SettlementError}],
-                });
-            };
-        }
-    }
     return $barrier;
 }
 
@@ -155,12 +135,6 @@ sub _apply_barrier_adjustment {
         my $dir                 = ($barrier > $self->current_spot) ? 1 : -1;                     # Move in same direction from spot.
         my $shift               = exp($dir * 0.5826 * $used_vol * sqrt($generation_interval));
         $barrier *= $shift;
-    }
-
-    if ($self->underlying->market->prefer_discrete_dividend) {
-        my $barrier_adjustment       = $self->dividend_adjustment->{barrier};
-        my $barrier_adj_future_value = $barrier_adjustment * exp($self->r_rate * $self->timeinyears->amount);
-        $barrier += $barrier_adj_future_value;
     }
 
     return $barrier;
