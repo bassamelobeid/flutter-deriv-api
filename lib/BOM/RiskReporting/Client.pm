@@ -51,7 +51,6 @@ sub _client_details {
         $worksheet->write( "B$count", $self->client->$key );
     }
 
-
     return;
 }
 
@@ -64,7 +63,6 @@ sub generate {
     $self->_client_details;
     # $self->_total_deposits_withdrawals;
     # $self->_documents_on_file;
-    # $self->_financial_assessment_results;
     # $self->_change_of_IP;
     # $self->_change_of_status;
     # $self->_review_of_trades_bets;
