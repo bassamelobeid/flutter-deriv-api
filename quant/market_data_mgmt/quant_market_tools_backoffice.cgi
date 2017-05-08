@@ -119,6 +119,7 @@ if ($save_economic_event) {
             economic_events    => $ref->{events},
             chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
         });
+        BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
 
         print 'Econmic Announcement saved!</br></br>';
         $save_economic_event = 0;
