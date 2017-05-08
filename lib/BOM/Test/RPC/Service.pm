@@ -4,9 +4,13 @@ use Mojo::Base -base;
 use BOM::Test;
 use Path::Tiny;
 use Net::EmptyPort qw( check_port );
-use Time::HiRes qw( usleep );
+use File::Basename;
 
-has qw(name url script);
+has qw(url script);
+
+has name => sub {
+    return basename(shift->script);
+};
 
 has port => sub {
     return Mojo::URL->new(shift->url)->port;
@@ -91,7 +95,7 @@ sub stop_pricing {
         chomp(my $pid = $pfile->slurp);
         if (kill(0, $pid)) {
             my $cmd = path("/proc/$pid/cmdline")->slurp;
-            kill 'SIGTERM', $pid if $cmd =~ /pricing/;
+            kill 'SIGTERM', $pid if $cmd =~ /$self->name/;
             wait_till_exit($pid, 10);
         }
         unlink $self->config_file;
@@ -103,7 +107,6 @@ sub wait_till_exit {
     my ($pid, $timeout) = @_;
     my $start = time;
     while (time - $start < $timeout and kill ZERO => $pid) {
-        #usleep 1e5;
         print "wait $pid...\n";
         sleep 1;
     }
