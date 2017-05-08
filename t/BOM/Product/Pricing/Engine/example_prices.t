@@ -159,7 +159,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw( AED AED-USD);
 
 for my $d ($recorded_date, Date::Utility->new('19-Nov-2015')) {
-    warn $d->datetime;
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
