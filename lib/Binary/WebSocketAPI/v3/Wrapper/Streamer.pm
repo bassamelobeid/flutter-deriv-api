@@ -17,34 +17,35 @@ use utf8;
 use Try::Tiny;
 
 sub website_status {
-    my ($self, $req_storage) = @_;
+    my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
 
     ### TODO: to config
     my $channel_name = "NOTIFY::broadcast::channel";
-    my $redis        = $self->ws_redis_master;
-    my $shared_info  = $self->redis_connections($channel_name);
+    my $redis        = $c->ws_redis_master;
+    my $shared_info  = $c->redis_connections($channel_name);
 
     my $callback = sub {
-        $self->call_rpc({
+        $c->call_rpc({
                 args        => $args,
                 method      => 'website_status',
                 call_params => {
-                    country_code => $self->country_code,
+                    country_code => $c->country_code,
                 },
                 response => sub {
                     my $rpc_response   = shift;
                     my $website_status = {};
                     $rpc_response->{clients_country} //= '';
                     $website_status->{$_} = $rpc_response->{$_} for qw|api_call_limits clients_country supported_languages terms_conditions_version|;
-                    my $shared_info = $self->redis_connections($channel_name);
-                    Scalar::Util::weaken(my $c_copy = $self);
-                    $shared_info->{broadcast_notifications}{\$self + 0}{'c'}            = $c_copy;
-                    $shared_info->{broadcast_notifications}{\$self + 0}{echo}           = $args;
-                    $shared_info->{broadcast_notifications}{\$self + 0}{website_status} = $rpc_response;
+                    my $shared_info = $c->redis_connections($channel_name);
+                    $shared_info->{broadcast_notifications}{$c + 0}{'c'}            = $c;
+                    $shared_info->{broadcast_notifications}{$c + 0}{echo}           = $args;
+                    $shared_info->{broadcast_notifications}{$c + 0}{website_status} = $rpc_response;
 
-                    my $slave_redis = $self->ws_redis_slave;
+                    Scalar::Util::weaken($shared_info->{broadcast_notifications}{$c + 0}{'c'});
+
+                    my $slave_redis = $c->ws_redis_slave;
                     ### to config
                     my $current_state = undef;
                     $current_state = $slave_redis->get("NOTIFY::broadcast::state")
@@ -65,11 +66,11 @@ sub website_status {
     };
 
     if (!$args->{subscribe} || $args->{subscribe} == 0) {
-        delete $shared_info->{broadcast_notifications}{\$self + 0};
+        delete $shared_info->{broadcast_notifications}{$c + 0};
         &$callback();
         return;
     }
-    if ($shared_info->{broadcast_notifications}{\$self + 0}) {
+    if ($shared_info->{broadcast_notifications}{$c + 0}) {
         &$callback();
         return;
     }
