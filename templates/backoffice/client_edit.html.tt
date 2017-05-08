@@ -197,11 +197,22 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">Tax Residence</td>
-        <td>:[% client.tax_residence %]
+        <td>:
+            <select name="tax_residence">
+                <option value="">Not selected</option>
+            [% FOREACH country = countries %]
+                [% IF country_codes.$country == client.tax_residence %]
+                   <option value="[% country_codes.$country %]" selected="selected">[% country %]</option>
+                [% ELSE %]
+                   <option value="[% country_codes.$country %]">[% country %]</option>
+                [% END %]
+            [% END %]
+            </select>
+        </td>
     </tr>
     <tr>
         <td class="label">Tax Identification Number</td>
-        <td>:[% client.tax_identification_number %]
+        <td>: <input type="text" name="tax_identification_number" value="[% client.tax_identification_number %]" size="10" /></td>
     </tr>
     <tr>
         <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
