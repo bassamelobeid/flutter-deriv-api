@@ -14,6 +14,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase;
+use Date::Utility;
 build_test_R_50_data();
 my $t = build_wsapi_test();
 
@@ -72,7 +73,7 @@ my %contractParameters = (
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
-    epoch      => time +2,
+    epoch      => Date::Utility->new->epoch + 2,
     quote      => 100
 });
 
