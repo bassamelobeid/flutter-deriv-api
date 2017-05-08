@@ -3,8 +3,10 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
+use JSON qw(from_json);
 use Price::Calculator;
 use Math::Util::CalculatedValue::Validatable;
+use List::Util qw(max);
 use List::MoreUtils qw(none all);
 use LandingCompany::Commission qw(get_underlying_base_commission);
 
@@ -445,7 +447,29 @@ sub _build_forqqq {
 sub _build_otm_threshold {
     my $self = shift;
 
-    return 0.2 if ($self->timeindays->amount <= 7 and not $self->is_atm_bet and $self->market->name ne 'volidx');
+    my $custom_otm       = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold // {});
+    my @known_conditions = qw(expiry_type is_atm_bet);
+    my %mapper           = (
+        underlying_symbol => $self->underlying->symbol,
+        market            => $self->market->name,
+    );
+
+    # underlying symbol supercedes market
+    foreach my $symbol (qw(underlying_symbol market)) {
+        my $value = 0;
+        foreach my $data_ref (values %$custom_otm) {
+            my $conditions = $data_ref->{conditions};
+
+            if (defined $conditions->{$symbol} and $conditions->{$symbol} eq $mapper{$symbol}) {
+                my $match = not first { $conditions->{$_} ne $self->$_ } grep { $conditions->{$_} } @known_conditions;
+                $value = max($value, $data_ref->{value}) if $match;
+            }
+        }
+        # returns if it is a non-zero value
+        return $value if $value > 0;
+    }
+
+    # this is the default depp OTM threshold set in yaml per market
     return $self->market->deep_otm_threshold;
 }
 
