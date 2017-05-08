@@ -18,10 +18,10 @@ has port => sub {
 
 has file_base = sub {
     return '/tmp/' . shift->name;
-    }
-    has config_file = sub {
+};
+has config_file = sub {
     return shift->file_base . '.cfg';
-    };
+};
 
 has pid_file => sub {
     return shift->file_base . '.pid';
