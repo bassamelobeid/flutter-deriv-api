@@ -264,7 +264,7 @@ sub _build_intradayfx_volsurface {
         underlying       => $self->underlying,
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-        backprice        => ($self->underlying->for_date) ? 1 : 0;
+        backprice        => ($self->underlying->for_date) ? 1 : 0,
     );
 }
 
