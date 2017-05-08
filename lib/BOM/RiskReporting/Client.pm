@@ -34,7 +34,7 @@ sub _build_workbook {
 
 has _workbook_file => (
     is => 'rw',
-    default => sub {return tmpnam()}
+    default => sub {return tmpnam() . '.xlsx'}
 );
 
 
@@ -54,21 +54,41 @@ sub _client_details {
     return;
 }
 
+sub _documents_on_file {
+    my $self = shift;
+
+    my $worksheet = $self->workbook->add_worksheet('documents on file');
+
+    my $today = Date::Utility->today;
+    my @docs  = $self->client->client_authentication_document or return;
+    my $count = 0;
+    for my $doc (@docs) {
+        $count++;
+        $worksheet->write( "$count", 0, $doc->document_type || '' );
+        $worksheet->write( "$count", 1, $doc->document_format || '' );
+        $worksheet->write( "$count", 2, $doc->document_path || '' );
+        $worksheet->write( "$count", 3, $doc->expiration_date || 'none' );
+        $worksheet->write( "$count", 4, $doc->comments || 'none' );
+    }
+
+    return;
+}
+
 sub generate {
     my $self = shift;
-    my $loginid = shift;
 
     $self->db_broker_code($self->client->broker);
 
     $self->_client_details;
+    $self->_documents_on_file;
     # $self->_total_deposits_withdrawals;
-    # $self->_documents_on_file;
     # $self->_change_of_IP;
     # $self->_change_of_status;
     # $self->_review_of_trades_bets;
     # $self->_comments;
 
-    print $self->_workbook_file;
+    $self->workbook->close;
+    return $self->_workbook_file;
 }
 
 no Moose;
