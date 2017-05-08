@@ -5,8 +5,9 @@ use BOM::Test;
 use Path::Tiny;
 use Net::EmptyPort qw( check_port );
 use File::Basename;
+use Mojo::URL;
 
-has qw(url script);
+has [qw(url script)];
 
 has name => sub {
     return basename(shift->script);
@@ -57,7 +58,7 @@ EOC
 sub start_rpc_if_not_running {
     my $self = shift;
     return unless $self->url;
-    return check_port($self->port) || $self->start_pricing();
+    return check_port($self->port) || $self->start_rpc();
 }
 
 sub start_rpc {
