@@ -54,13 +54,13 @@ has config => sub {
 EOC
 };
 
-sub start_pricing_if_not_running {
+sub start_rpc_if_not_running {
     my $self = shift;
     return unless $self->url;
     return check_port($self->port) || $self->start_pricing();
 }
 
-sub start_pricing {
+sub start_rpc {
     my $self        = shift;
     my $config_file = $self->config_file;
     my $script      = $self->script;
