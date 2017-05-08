@@ -100,15 +100,21 @@ sub _change_of_country {
     return;
 }
 
+sub _change_of_status {
+    my $self = shift;
+
+    my $worksheet = $self->workbook->add_worksheet('change of status');
+
+    return;
+}
+
 sub generate {
     my $self = shift;
 
-    $self->db_broker_code($self->client->broker);
-
     $self->_client_details;
     $self->_documents_on_file;
-    $self->_change_of_country;
     # $self->_total_deposits_withdrawals;
+    $self->_change_of_country;
     # $self->_change_of_status;
     # $self->_review_of_trades_bets;
     # $self->_comments;

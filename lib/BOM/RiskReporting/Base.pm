@@ -36,19 +36,20 @@ has send_alerts => (
     default => 1,
 );
 
-has db_broker_code => (
-    is      => 'rw',
-    lazy_build => 1,
+has client => (
+    is => 'rw',
 );
 
-sub _build_db_broker_code {
-    return 'FOG';
+sub _db_broker_code {
+    my $self = shift;
+    return 'FOG' if not $self->client;
+    return $self->client->broker;
 }
 
-has _db_operation => (
-    is      => 'rw',
-    default => sub { (shift->db_broker_code eq 'FOG')? 'collector': 'replica' },
-);
+sub _db_operation {
+    my $self = shift;
+    return ($self->_db_broker_code eq 'FOG')? 'collector': 'replica';
+}
 
 sub _build_end {
     return Date::Utility->new;
@@ -82,8 +83,8 @@ sub _build__connection_builder {
     my $self = shift;
 
     my $cdb = BOM::Database::ClientDB->new({
-        broker_code => self->db_broker_code,
-        operation   => self->_db_operation,
+        broker_code => $self->_db_broker_code,
+        operation   => $self->_db_operation,
     });
     $cdb->db->dbh->do("SET statement_timeout TO 0");
     return $cdb;
