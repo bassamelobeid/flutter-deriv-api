@@ -12,6 +12,7 @@ use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
 initialize_realtime_ticks_db;
 
@@ -282,7 +283,7 @@ subtest 'date start blackouts' => sub {
 
     Cache::RedisDB->flushall;
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
-    my $rollover    = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on(Date::Utility->new($weekday));
+    my $rollover    = NY1700_rollover_date_on(Date::Utility->new($weekday));
     my $date_start  = $rollover->minus_time_interval('59m59s');
     my $valid_start = $rollover->minus_time_interval('1h1s');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
