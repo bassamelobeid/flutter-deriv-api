@@ -14,17 +14,17 @@
         <tr>
             <td>Market: </td>
             <td><input type="text" name="market" value=''></input></td>
-            <td> e.g. forex</td>
+            <td> e.g. forex. Supports comma separated string.</td>
         </tr>
         <tr>
             <td>Submarket: </td>
             <td><input type="text" name="submarket" value=''></input></td>
-            <td> e.g. major_pairs</td>
+            <td> e.g. major_pairs. Supports comma separated string.</td>
         </tr>
         <tr>
             <td>Underlying symbol: </td>
             <td><input type="text" name="underlying_symbol" value=''></input></td>
-            <td> e.g. frxUSDJPY</td>
+            <td> e.g. frxUSDJPY. Supports comma separated string.</td>
         </tr>
         <tr>
             <td>Contract category: </td>
