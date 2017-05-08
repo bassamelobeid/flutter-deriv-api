@@ -92,7 +92,7 @@ sub start_rpc {
 
 }
 
-sub stop_pricing {
+sub stop_rpc{
     my $self = shift;
     return unless $self->url;
     my $pfile = path( $self->pid_file );
