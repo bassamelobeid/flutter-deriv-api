@@ -9,7 +9,7 @@ BEGIN {
     if ($ENV{PRICING_RPC_URL}) {
         $service = BOM::Test::RPC::Service->new({
             url    => $ENV{PRICING_RPC_URL},
-            script => '/home/git/regentmarkets/cpan/local/bin/hypnotoad /home/git/regentmarkets/bom-pricing/bin/binary_pricing_rpc.pl'
+            script => '/home/git/regentmarkets/bom-pricing/bin/binary_pricing_rpc.pl'
         });
         $service->start_rpc_if_not_running;
     }
