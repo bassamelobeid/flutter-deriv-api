@@ -37,12 +37,17 @@ has send_alerts => (
 );
 
 has db_broker_code => (
-    default => sub {'FOG'},
+    is      => 'rw',
+    lazy_build => 1,
 );
+
+sub _build_db_broker_code {
+    return 'FOG';
+}
 
 has _db_operation => (
     is      => 'rw',
-    default => sub {(shift->db_broker_code =='FOG')? 'collector': 'replica'},
+    default => sub { (shift->db_broker_code eq 'FOG')? 'collector': 'replica' },
 );
 
 sub _build_end {
