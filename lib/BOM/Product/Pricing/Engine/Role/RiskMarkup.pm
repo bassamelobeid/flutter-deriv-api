@@ -24,8 +24,9 @@ use Quant::Framework::EconomicEventCalendar;
 
 use Pricing::Engine::Markup::SpotSpread;
 use Pricing::Engine::Markup::VolSpread;
+use Pricing::Engine::Markup::SmileUncertainty;
 
-has [qw(smile_uncertainty_markup butterfly_markup risk_markup forward_starting_markup economic_events_markup)] => (
+has [qw(butterfly_markup risk_markup forward_starting_markup economic_events_markup)] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
@@ -296,17 +297,10 @@ sub _build_economic_events_markup {
     return $economic_events_markup;
 }
 
-# Generally for indices and stocks the minimum available tenor for smile is 30 days.
-# We use this to price short term contracts, so adding a 5% markup for the volatility uncertainty.
-sub _build_smile_uncertainty_markup {
+sub smile_uncertainty_markup {
     my $self = shift;
 
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'smile_uncertainty_markup',
-        description => 'markup to account for volatility uncertainty for short term contracts on indices and stocks',
-        set_by      => __PACKAGE__,
-        base_amount => 0.05,
-    });
+    return Pricing::Engine::Markup::SmileUncertainty->new->markup;
 }
 
 1;
