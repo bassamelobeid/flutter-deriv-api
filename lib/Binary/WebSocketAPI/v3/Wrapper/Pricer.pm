@@ -547,6 +547,7 @@ sub _create_pricer_channel {
 sub process_pricing_events {
     my ($c, $message, $channel_name) = @_;
 
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal') unless $c->tx;
     return if not $message or not $c->tx;
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$channel_name};
