@@ -101,7 +101,8 @@ sub stop_rpc{
         chomp( my $pid = $pfile->slurp );
         if ( kill( 0, $pid ) ) {
             my $cmd = path("/proc/$pid/cmdline")->slurp;
-            kill 'SIGTERM', $pid if $cmd =~ /$self->name/;
+            my $name = $self->name;
+            kill 'SIGTERM', $pid if $cmd =~ /$name/;
             wait_till_exit( $pid, 10 );
         }
         unlink $self->config_file;
