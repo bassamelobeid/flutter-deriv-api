@@ -16,10 +16,10 @@ has port => sub {
     return Mojo::URL->new(shift->url)->port;
 };
 
-has file_base = sub {
+has file_base => sub {
     return '/tmp/' . shift->name;
 };
-has config_file = sub {
+has config_file => sub {
     return shift->file_base . '.cfg';
 };
 
