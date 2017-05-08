@@ -24,13 +24,11 @@ use Quant::Framework::EconomicEventCalendar;
 
 use Pricing::Engine::Markup::SpotSpread;
 
-has [
-    qw(smile_uncertainty_markup butterfly_markup vol_spread vol_spread_markup risk_markup forward_starting_markup economic_events_markup)
-    ] => (
+has [qw(smile_uncertainty_markup butterfly_markup vol_spread vol_spread_markup risk_markup forward_starting_markup economic_events_markup)] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
-    );
+);
 
 has [qw(uses_dst_shifted_seasonality)] => (
     is         => 'ro',
@@ -209,7 +207,7 @@ sub butterfly_cutoff_theoretical_value_amount {
 }
 
 sub spot_spread_markup {
-    my $self = shift;
+    my $self      = shift;
     my $ss_markup = Pricing::Engine::Markup::SpotSpread->new(
         bet_delta   => $self->bet->delta,
         spot_spread => $self->bet->underlying->spot_spread,
