@@ -29,10 +29,16 @@ PrintContentType();
 BrokerPresentation('Product Management');
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
-my $staff          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
-my $r              = request();
-my $limit_profile  = BOM::Platform::Config::quants->{risk_profile};
-my %known_profiles = map { $_ => 1 } keys %$limit_profile;
+my $staff            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $r                = request();
+my $limit_profile    = BOM::Platform::Config::quants->{risk_profile};
+my %known_profiles   = map { $_ => 1 } keys %$limit_profile;
+my %allowed_multiple = (
+    market            => 1,
+    submarket         => 1,
+    underlying_symbol => 1,
+    landing_company   => 1,
+);
 
 if ($r->param('update_limit')) {
     my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
@@ -44,7 +50,9 @@ if ($r->param('update_limit')) {
 
     foreach my $key (@known_keys) {
         if (my $value = $r->param($key)) {
-            if (first { $value eq $_ } @{$known_values{$key}}) {
+            if (first { $value =~ $_ } @{$known_values{$key}}) {
+                # we should not allow more than one value for risk_profile
+                die 'You could not specify multiple value for ' . $key if not $allowed_multiple{$key} and $value =~ /,/;
                 $ref{$key} = $value;
             } else {
                 print "Unrecognized value[" . encode_entities($r->param($key)) . "] for $key. Nothing is updated!!";
@@ -53,7 +61,7 @@ if ($r->param('update_limit')) {
         }
     }
 
-    my $uniq_key = substr(md5_hex(join('_', sort { $a cmp $b } values %ref)), 0, 16);
+    my $uniq_key = substr(md5_hex(sort { $a cmp $b } values %ref), 0, 16);
 
     # if we just want to add client into watchlist, custom conditions is not needed
     my $has_custom_conditions = keys %ref;
@@ -116,6 +124,45 @@ if ($r->param('delete_client')) {
     my $current        = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
     delete $current->{$client_loginid};
     BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
+    BOM::Platform::Runtime->instance->app_config->save_dynamic;
+}
+
+if ($r->param('update_otm')) {
+    my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold);
+    unless (($r->param('underlying_symbol') or $r->param('market')) and $r->param('otm_value')) {
+        die 'Must specify either underlying symbol/market and otm value to set custom OTM threshold';
+    }
+
+    if ($r->param('otm_value') > 1) {
+        die 'Maximum value of OTM threshold is 1.';
+    }
+
+    # underlying symbol supercedes market
+    my $which = $r->param('underlying_symbol') ? 'underlying_symbol' : 'market';
+    my @common_inputs = qw(expiry_type is_atm_bet);
+    foreach my $key (map { my $input = $_; $input =~ s/\s+//; $input } split ',', $r->param($which)) {
+        my $string = join '', map { $r->param($_) } grep { $r->param($_) ne '' } @common_inputs;
+        my $uniq_key = substr(md5_hex($key . $string), 0, 16);
+        $current->{$uniq_key} = {
+            conditions => {
+                $which => $key,
+                map { $_ => $r->param($_) } grep { $r->param($_) ne '' } @common_inputs
+            },
+            value => $r->param('otm_value'),
+        };
+    }
+    BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json($current));
+    BOM::Platform::Runtime->instance->app_config->save_dynamic;
+}
+
+if ($r->param('delete_otm')) {
+    my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold);
+    unless ($r->param('otm_id')) {
+        die 'Please specify otm id to delete.';
+    }
+
+    delete $current->{$r->param('otm_id')};
+    BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json($current));
     BOM::Platform::Runtime->instance->app_config->save_dynamic;
 }
 
@@ -204,6 +251,15 @@ BOM::Backoffice::Request::template->process(
     'backoffice/update_limit.html.tt',
     {
         url => request()->url_for('backoffice/quant/product_management.cgi'),
+    }) || die BOM::Backoffice::Request::template->error;
+
+Bar("Custom OTM Threshold");
+
+BOM::Backoffice::Request::template->process(
+    'backoffice/update_otm_threshold.html.tt',
+    {
+        url             => request()->url_for('backoffice/quant/product_management.cgi'),
+        existing_custom => from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold),
     }) || die BOM::Backoffice::Request::template->error;
 
 code_exit_BO();
