@@ -13,7 +13,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
-
+use BOM::Test::Data::Utility::FeedTestDatabase;
 build_test_R_50_data();
 my $t = build_wsapi_test();
 
@@ -69,6 +69,12 @@ my %contractParameters = (
     "duration"      => "2",
     "duration_unit" => "m",
 );
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'R_50',
+    epoch      => time +2,
+    quote      => 100
+});
 
 $t = $t->send_ok({
         json => {
@@ -248,6 +254,7 @@ while (1) {
 
     # note explain $res;
     is $res->{msg_type}, 'sell';
+$DB::single=1;
     ok $res->{sell};
     ok($res->{sell}{contract_id} && $res->{sell}{contract_id} == $contract_id, "check contract ID");
     ok($res->{sell}{reference_id} == $buy_txn_id, "check buy transaction ID");
