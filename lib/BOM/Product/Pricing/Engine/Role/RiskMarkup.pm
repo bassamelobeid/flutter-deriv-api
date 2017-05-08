@@ -22,8 +22,10 @@ use BOM::Platform::Config;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 
+use Pricing::Engine::Markup::SpotSpread;
+
 has [
-    qw(smile_uncertainty_markup butterfly_markup vol_spread vol_spread_markup spot_spread_markup risk_markup forward_starting_markup economic_events_markup)
+    qw(smile_uncertainty_markup butterfly_markup vol_spread vol_spread_markup risk_markup forward_starting_markup economic_events_markup)
     ] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
@@ -206,37 +208,13 @@ sub butterfly_cutoff_theoretical_value_amount {
     return $butterfly_cutoff_bet->pricing_engine->base_probability->amount;
 }
 
-sub _build_spot_spread_markup {
-
+sub spot_spread_markup {
     my $self = shift;
-
-    my $ss_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'spot_spread_markup',
-        description => 'Reflects the spread in market bid-ask for the underlying',
-        set_by      => __PACKAGE__,
-        base_amount => 0,
-        minimum     => 0,
-        maximum     => 0.01,
-    });
-
-    my $bet_delta = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'bet_delta',
-        description => 'The absolute value of delta of the priced option',
-        set_by      => 'BOM::Product::Pricing::Engine::Role::MarketPricedPortfolios',
-        base_amount => abs($self->bet->delta),
-    });
-
-    my $spot_spread = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'spot_spread',
-        description => 'Underlying bid-ask spread',
-        set_by      => 'Quant::Framework::Underlying',
-        base_amount => $self->bet->underlying->spot_spread,
-    });
-
-    $ss_markup->include_adjustment('reset',    $bet_delta);
-    $ss_markup->include_adjustment('multiply', $spot_spread);
-
-    return $ss_markup;
+    my $ss_markup = Pricing::Engine::Markup::SpotSpread->new(
+        bet_delta   => $self->bet->delta,
+        spot_spread => $self->bet->underlying->spot_spread,
+    );
+    return $ss_markup->markup;
 }
 
 # Hard-coded values to interpolate against
