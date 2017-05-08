@@ -81,7 +81,24 @@ sub _build_master_surface {
 sub debug_link {
     my ($self) = @_;
 
-    my $bet           = $self->bet;
+    my $bet = $self->bet;
+
+    # try to find a way of better prefixes, to allow multiple simultaneous requests
+    # like to tie to worker index
+    Volatility::Seasonality::set_prefix('bo_');
+    my $EEC = Quant::Framework::EconomicEventCalendar->new({
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
+    my $events = $EEC->get_latest_events_for_period({
+            from => $bet->date_start,
+            to   => $bet->date_start->plus_time_interval('6d'),});
+    Volatility::Seasonality::generate_economic_event_seasonality({
+        underlying_symbols => [$self->bet->underlying->symbol],
+        economic_events    => $events,
+        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
+
     my $number_format = $self->number_format;
 
     my $attr_content = $self->_get_overview();
@@ -118,7 +135,7 @@ sub debug_link {
             ? $self->_get_moneyness_surface()
             : $self->_get_volsurface();
     }
-    catch { 'Surface display error.' };
+    catch { 'Surface display error:' . $_ };
     push @{$tabs_content},
         {
         label   => 'Vol Surface',
@@ -145,6 +162,7 @@ sub debug_link {
         \$debug_link
     ) || die BOM::Backoffice::Request::template->error;
 
+    Volatility::Seasonality::set_prefix('');
     return $debug_link;
 }
 
