@@ -23,9 +23,10 @@ use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 
 use Pricing::Engine::Markup::SpotSpread;
+use Pricing::Engine::Markup::VolSpread;
 
 has [
-    qw(smile_uncertainty_markup butterfly_markup vol_spread vol_spread_markup risk_markup forward_starting_markup economic_events_markup)
+    qw(smile_uncertainty_markup butterfly_markup risk_markup forward_starting_markup economic_events_markup)
     ] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
@@ -36,7 +37,6 @@ has [qw(uses_dst_shifted_seasonality)] => (
     is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
-);
 
 has _volatility_seasonality_step_size => (
     is      => 'ro',
@@ -44,50 +44,18 @@ has _volatility_seasonality_step_size => (
     default => 100,
 );
 
-sub _build_vol_spread {
+sub vol_spread_markup {
     my $self = shift;
 
     my $bet = $self->bet;
-
-    my $vol_spread = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'vol_spread',
-            description => 'The vol spread for this time',
-            set_by      => 'Quant::Framework::VolSurface',
-            base_amount => $bet->volsurface->get_spread({
-                    sought_point => 'max',
-                    day          => $bet->timeindays->amount
-                }
-            ),
-        });
-
-    return $vol_spread;
-}
-
-sub _build_vol_spread_markup {
-    my $self = shift;
-
-    my $vsm = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'vol_spread_markup',
-        description => 'vol spread adjustment',
-        set_by      => __PACKAGE__,
-        base_amount => 0,
-        minimum     => 0,
-        maximum     => 0.7,
-    });
-
-    my $bet = $self->bet;
-
-    my $vega = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'bet_vega',
-        description => 'The vega of the priced option',
-        set_by      => 'BOM::Product::Pricing::Engine::Role::MarketPricedPortfolios',
-        base_amount => abs($bet->vega),
-    });
-
-    $vsm->include_adjustment('reset',    $self->vol_spread);
-    $vsm->include_adjustment('multiply', $vega);
-
-    return $vsm;
+    return Pricing::Engine::Markup::VolSpread->new(
+        bet_vega   => $bet->vega,
+        vol_spread => $bet->volsurface->get_spread({
+                sought_point => 'max',
+                day          => $bet->timeindays->amount
+            }
+        ),
+    )->markup;
 }
 
 sub _build_butterfly_markup {
