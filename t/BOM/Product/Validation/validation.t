@@ -1364,6 +1364,50 @@ subtest 'invalid digits barrier' => sub {
     $c = produce_contract($params);
     ok $c->is_valid_to_buy, 'valid to buy';
 };
+subtest 'entry tick validation' => sub {
+
+    plan tests => 4;
+
+    my $underlying = create_underlying('frxAUDUSD');
+    my $starting   = Date::Utility->new('2014-10-08 13:00:00');
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxAUDUSD',
+        recorded_date => $starting,
+    });
+    my $tick = Postgres::FeedDB::Spot::Tick->new({
+            underlying => 'frxAUDUSD',
+            epoch      => $starting->epoch,
+            quote      => 100,
+        });
+    my $bet_params = {
+        underlying   => $underlying,
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $starting,
+        date_pricing => $starting->epoch + 1,
+        duration     => '2d',
+        barrier      => 'S0P',
+        current_tick => $tick,
+    };
+
+    my $bet = produce_contract($bet_params);
+    ok !$bet->is_valid_to_sell, 'not valid to sell';
+    like($bet->primary_validation_error->{message}, qr/Waiting for entry tick/, 'throws error');
+
+    $bet_params->{starts_as_forward_starting} = 1;
+    $bet = produce_contract($bet_params);
+    ok $bet->is_valid_to_sell, 'valid to sell for forward starting even no entry tick';
+
+    delete   $bet_params->{starts_as_forward_starting};
+    $bet_params->{entry_tick} = $tick;
+    $bet = produce_contract($bet_params);
+    ok $bet->is_valid_to_sell, 'valid to sell with  entry tick';
+
+};
 
 # Let's not surprise anyone else
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_contract_types($orig_suspended),
