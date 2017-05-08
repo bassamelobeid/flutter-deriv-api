@@ -194,6 +194,7 @@ subtest 'valid bet passing and stuff' => sub {
         duration     => '30m',
         barrier      => 'S0P',
         current_tick => $tick,
+        starts_as_forward_starting => 1
     };
 
     $bet = produce_contract($bet_params);
@@ -1230,11 +1231,7 @@ subtest 'integer barrier' => sub {
     warning { $valid_to_buy = $c->is_valid_to_buy }, qr/spot too far from surface reference/;
     ok !$valid_to_buy, 'not valid to buy if barrier is non integer';
     like($c->primary_validation_error->message, qr/Barrier is not an integer/, 'correct error');
-    $params->{date_pricing} = $now->epoch + 1;
-    $c = produce_contract($params);
-    my $valid_to_sell;
-    warning { $valid_to_sell = $c->is_valid_to_sell }, qr/spot too far from surface reference/;
-    ok $valid_to_sell, 'valid to sell at non integer barrier';
+
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
