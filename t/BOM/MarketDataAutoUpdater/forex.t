@@ -12,9 +12,10 @@ use Test::More qw( no_plan );
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
-use LandingCompany::Offerings qw(reinitialise_offerings);
-
 use Postgres::FeedDB::Spot;
+use LandingCompany::Offerings qw(reinitialise_offerings);
+use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
+
 my $module = Test::MockModule->new('Postgres::FeedDB::Spot');
 $module->mock(
     'spot_tick',
@@ -265,7 +266,7 @@ subtest "Friday after close, weekend, won't open check." => sub {
 };
 
 subtest 'do not update one hour after rollover' => sub {
-    my $rollover_date = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($fake_date);
+    my $rollover_date = NY1700_rollover_date_on($fake_date);
 
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],

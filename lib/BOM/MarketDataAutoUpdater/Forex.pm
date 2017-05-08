@@ -24,7 +24,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::VolSurface::Delta;
-use Quant::Framework::VolSurface::Utils;
+use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 use List::Util qw( first );
 use VolSurface::IntradayFX;
 
@@ -174,7 +174,7 @@ sub run {
         quanto_only => 1,
     );
 
-    my $rollover_date           = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on(Date::Utility->new);
+    my $rollover_date           = NY1700_rollover_date_on(Date::Utility->new);
     my $one_hour_after_rollover = $rollover_date->plus_time_interval('1h');
     my $surfaces_from_file      = $self->surfaces_from_file;
     foreach my $symbol (@{$self->symbols_to_update}) {
