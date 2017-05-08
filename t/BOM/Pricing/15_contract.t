@@ -454,13 +454,15 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 
     set_fixed_time($now->epoch);
 
+    create_ticks([964, $now->epoch +1, 'R_50']);
+
     $contract = _create_contract(
         date_expiry  => $now->epoch + 900,
         bet_type     => 'ONETOUCH',
         barrier      => 963.3055,
         date_pricing => $now->epoch - 100,
+        date_start   => $now->epoch - 101,
     );
-
     $params = {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
