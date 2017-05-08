@@ -18,7 +18,7 @@ use BOM::Platform::Runtime;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
-BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
+BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 

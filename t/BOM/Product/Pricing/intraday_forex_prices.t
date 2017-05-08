@@ -23,7 +23,7 @@ use BOM::Platform::RedisReplicated;
 use BOM::Market::DataDecimate;
 use Data::Decimate qw(decimate);
 
-BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
+BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 my $volsurfaces = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_volsurfaces.yml');
 my $news        = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_news.yml');
