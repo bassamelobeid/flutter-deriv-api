@@ -91,8 +91,9 @@ sub debug_link {
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     });
     my $events = $EEC->get_latest_events_for_period({
-            from => $bet->date_start,
-            to   => $bet->date_start->plus_time_interval('6d'),});
+        from => $bet->date_start,
+        to   => $bet->date_start->plus_time_interval('6d'),
+    });
     Volatility::Seasonality::generate_economic_event_seasonality({
         underlying_symbols => [$self->bet->underlying->symbol],
         economic_events    => $events,
