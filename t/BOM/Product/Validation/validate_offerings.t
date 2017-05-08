@@ -68,7 +68,6 @@ subtest 'invalid underlying - contract type combination' => sub {
     $bet_params->{date_start} = $bet_params->{date_pricing};
 };
 
-
 subtest 'custom suspend trading' => sub {
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;
     BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
