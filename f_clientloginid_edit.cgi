@@ -492,6 +492,14 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->myaffiliates_token($input{$key}) if $input{$key};
         }
 
+        if ($key eq 'tax_residence') {
+            $client->tax_residence($input{$key});
+        }
+
+        if ($key eq 'tax_identification_number') {
+            $client->tax_identification_number($input{$key});
+        }
+
         $client->allow_omnibus($input{allow_omnibus});
     }
 
