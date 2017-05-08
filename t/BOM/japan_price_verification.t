@@ -102,6 +102,7 @@ sub prepare_market_data {
             chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer,
             underlying_symbols => [$underlying->symbol],
             economic_events    => $news->{$date->epoch},
+            date => $date,
         });
 }
 prepare_market_data($now);
