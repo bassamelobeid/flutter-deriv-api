@@ -5,10 +5,11 @@ use warnings;
 
 use List::MoreUtils qw(none all);
 use VolSurface::IntradayFX;
-use Quant::Framework::VolSurface;
 use BOM::Market::DataDecimate;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Static;
+use Quant::Framework::VolSurface;
+use Quant::Framework::VolSurface::Utils qw(effective_date_for);
 
 ## ATTRIBUTES  #######################
 
@@ -241,11 +242,10 @@ sub _build_volsurface {
         major_pairs => 1,
         minor_pairs => 1
     );
-    my $vol_utils = Quant::Framework::VolSurface::Utils->new;
     my $cutoff_str;
     if ($submarkets{$self->underlying->submarket->name}) {
         my $calendar       = $self->calendar;
-        my $effective_date = $vol_utils->effective_date_for($self->date_pricing);
+        my $effective_date = effective_date_for($self->date_pricing);
         $effective_date = $calendar->trades_on($effective_date) ? $effective_date : $calendar->trade_date_after($effective_date);
         my $cutoff_date = $calendar->closing_on($effective_date);
 
