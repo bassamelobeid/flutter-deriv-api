@@ -14,6 +14,7 @@ use strict;
 use warnings;
 use Moose;
 extends 'BOM::RiskReporting::Base';
+use BOM::Platform::User;
 
 use Excel::Writer::XLSX;
 use File::Temp qw(tmpnam);
@@ -64,11 +65,36 @@ sub _documents_on_file {
     my $count = 0;
     for my $doc (@docs) {
         $count++;
-        $worksheet->write( "$count", 0, $doc->document_type || '' );
-        $worksheet->write( "$count", 1, $doc->document_format || '' );
-        $worksheet->write( "$count", 2, $doc->document_path || '' );
-        $worksheet->write( "$count", 3, $doc->expiration_date || 'none' );
-        $worksheet->write( "$count", 4, $doc->comments || 'none' );
+        $worksheet->write( $count, 0, $doc->document_type || '' );
+        $worksheet->write( $count, 1, $doc->document_format || '' );
+        $worksheet->write( $count, 2, $doc->document_path || '' );
+        $worksheet->write( $count, 3, $doc->expiration_date || 'none' );
+        $worksheet->write( $count, 4, $doc->comments || 'none' );
+    }
+
+    return;
+}
+
+sub _change_of_country {
+    my $self = shift;
+
+    my $worksheet = $self->workbook->add_worksheet('change of country');
+
+    my $user = BOM::Platform::User->new({email => $self->client->email});
+    my $login_history = $user->find_login_history(
+        sort_by => 'history_date',
+    );
+    my $count = 0;
+    my $last_country='';
+    for my $h (@$login_history) {
+        if ($h->environment =~ /IP=([0-9a-z\.:]+) IP_COUNTRY=([A-Z]{1,3})/ and $last_country ne $2) {
+            $count++;
+            $last_country = $2;
+            $worksheet->write( $count, 0, $h->history_date || '' );
+            $worksheet->write( $count, 1, $1 || '' );
+            $worksheet->write( $count, 2, $2 || '' );
+            $worksheet->write( $count, 3, $h->environment || '' );
+        }
     }
 
     return;
@@ -81,8 +107,8 @@ sub generate {
 
     $self->_client_details;
     $self->_documents_on_file;
+    $self->_change_of_country;
     # $self->_total_deposits_withdrawals;
-    # $self->_change_of_IP;
     # $self->_change_of_status;
     # $self->_review_of_trades_bets;
     # $self->_comments;
