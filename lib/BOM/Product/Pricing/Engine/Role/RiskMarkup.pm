@@ -25,9 +25,7 @@ use Quant::Framework::EconomicEventCalendar;
 use Pricing::Engine::Markup::SpotSpread;
 use Pricing::Engine::Markup::VolSpread;
 
-has [
-    qw(smile_uncertainty_markup butterfly_markup risk_markup forward_starting_markup economic_events_markup)
-    ] => (
+has [qw(smile_uncertainty_markup butterfly_markup risk_markup forward_starting_markup economic_events_markup)] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
@@ -37,6 +35,7 @@ has [qw(uses_dst_shifted_seasonality)] => (
     is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
+);
 
 has _volatility_seasonality_step_size => (
     is      => 'ro',
