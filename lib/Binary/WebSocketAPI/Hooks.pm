@@ -10,6 +10,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Fcntl qw/ :flock /;
 use Mojo::IOLoop;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
+use Data::Dumper;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -246,8 +247,9 @@ sub output_validation {
 sub error_check {
     my ($c, $req_storage, $rpc_response) = @_;
     my $result = $rpc_response->result;
-    if (ref($result) eq 'HASH' && $result->{error} && $result->{error}->{code} eq 'InvalidAppID') {
-        $req_storage->{close_connection} = 1;
+    if (ref($result) eq 'HASH' && $result->{error}) {
+        $c->stash->{introspection}{last_rpc_error} = $result->{error};
+        $req_storage->{close_connection} = 1 if $result->{error}->{code} eq 'InvalidAppID';
     }
     return;
 }
@@ -293,6 +295,8 @@ sub on_client_connect {
     # We use a weakref in case the disconnect is never called
     warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
+
+    $c->app->stat->{cumulative_client_connections}++;
     $c->rate_limitations_load;
     return;
 }
@@ -307,6 +311,27 @@ sub on_client_disconnect {
     my $timer_id = $c->stash->{rate_limitations_timer};
     Mojo::IOLoop->remove($timer_id) if $timer_id;
 
+    return;
+}
+
+sub introspection_before_forward {
+    my ($c, $req_storage) = @_;
+    my %args_copy = %{$req_storage->{origin_args}};
+    $c->stash->{introspection}{last_call_received} = \%args_copy;
+
+    $c->stash->{introspection}{msg_type}{received}{$req_storage->{method}}++;
+    use bytes;
+    $c->stash->{introspection}{received_bytes} += bytes::length(Dumper($req_storage->{origin_args}));
+    return;
+}
+
+sub introspection_before_send_response {
+    my ($c, $req_storage, $api_response) = @_;
+    my %copy = %{$api_response};
+    $c->stash->{introspection}{last_message_sent} = \%copy;
+    $c->stash->{introspection}{msg_type}{sent}{$api_response->{msg_type}}++;
+    use bytes;
+    $c->stash->{introspection}{sent_bytes} += bytes::length(Dumper($api_response));
     return;
 }
 

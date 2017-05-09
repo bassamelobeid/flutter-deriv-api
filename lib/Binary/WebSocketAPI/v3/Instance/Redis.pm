@@ -23,6 +23,10 @@ my $instances = {
     shared_redis    => undef,
 };
 
+sub instances {
+    return $instances;
+}
+
 sub create {
     my $name = shift;
 

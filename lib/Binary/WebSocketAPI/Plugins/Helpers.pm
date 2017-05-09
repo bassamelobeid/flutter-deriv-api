@@ -7,6 +7,7 @@ use warnings;
 use feature "state";
 use Sys::Hostname;
 use YAML::XS;
+use Guard;
 use Scalar::Util ();
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
@@ -27,7 +28,15 @@ sub register {
     # Weakrefs to active $c instances
     $app->helper(
         active_connections => sub {
-            state $connections = {};
+            my $app = shift->app;
+            return $app->{_binary_connections} //= {};
+        });
+
+    # for storing various statistic data
+    $app->helper(
+        stat => sub {
+            my $app = shift->app;
+            return $app->{_binary_introspection_stats} //= {};
         });
 
     $app->helper(
