@@ -16,8 +16,10 @@ use POSIX qw(strftime);
 use JSON::XS;
 use Scalar::Util qw(blessed);
 use Variable::Disposition qw(retain_future);
-
 use Socket qw(:crlf);
+use Proc::ProcessTable;
+use feature 'state';
+use Binary::WebSocketAPI::v3::Instance::Redis;
 
 # How many seconds to allow per command - anything that takes more than a few milliseconds
 # is probably a bad idea, please do not rely on this for any meaningful protection
@@ -66,7 +68,7 @@ sub start_server {
                             # Allow deferred results
                             $rslt = Future->done($rslt) unless blessed($rslt) && $rslt->isa('Future');
                             retain_future(
-                                Future->needs_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->then(
+                                Future->wait_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->then(
                                     sub {
                                         my ($resp) = @_;
                                         my $output = encode_json($resp);
@@ -75,8 +77,12 @@ sub start_server {
                                         Future->done;
                                     },
                                     sub {
-                                        my ($resp) = @_;
-                                        my $output = encode_json($resp);
+                                        my ($exception, $category, @details) = @_;
+                                        my $output = encode_json({
+                                            error    => $exception,
+                                            category => $category,
+                                            details  => \@details
+                                        });
                                         warn "$command (@args) failed - $output\n";
                                         $stream->write("ERR - $output$CRLF");
                                         Future->done;
@@ -213,17 +219,35 @@ We also want to add this information, but it's not yet available:
 
 command connections => sub {
     my ($self, $app) = @_;
+
     Future->done({
             connections => [
                 map {
-                    ;
+                    my $pc = 0;
+                    my $ch = 0;
+                    for my $k (keys %{$_->pricing_subscriptions}) {
+                        ++$pc if defined $_->pricing_subscriptions->{$k};
+                    }
+                    for my $k (keys($_->stash->{pricing_channel} || [])) {
+                        next if $k eq 'uuid';
+                        next if $k eq 'price_daemon_cmd';
+                        $ch += scalar keys $_->stash->{pricing_channel}{$k};
+                    }
                     +{
-                        app_id          => $_->stash->{source},
-                        landing_company => $_->landing_company_name,
-                        ip              => $_->stash->{client_ip},
-                        country         => $_->country_code,
-                        client          => $_->stash->{loginid},
-                        count           => scalar keys($_->stash->{pricing_channel} || []),
+                        app_id                         => $_->stash->{source},
+                        landing_company                => $_->landing_company_name,
+                        ip                             => $_->stash->{client_ip},
+                        country                        => $_->country_code,
+                        client                         => $_->stash->{loginid},
+                        pricing_channel_count          => $ch,
+                        last_call_received_from_client => $_->stash->{introspection}{last_call_received},
+                        last_message_sent_to_client    => $_->stash->{introspection}{last_message_sent},
+                        received_bytes_from_client     => $_->stash->{introspection}{received_bytes},
+                        sent_bytes_to_client           => $_->stash->{introspection}{sent_bytes},
+                        messages_received_from_client  => $_->stash->{introspection}{msg_type}{received},
+                        messages_sent_to_client        => $_->stash->{introspection}{msg_type}{sent},
+                        last_rpc_error                 => $_->stash->{introspection}{last_rpc_error},
+                        pricer_subscription_count      => $pc,
                         }
                     }
                     grep {
@@ -264,8 +288,42 @@ Returns a summary of current stats. Placeholder, not yet implemented.
 =cut
 
 command stats => sub {
-    Future->fail('unimplemented');
+    my ($self, $app) = @_;
+    state $pt = Proc::ProcessTable->new;
+    my $me = (grep { $_->pid == $$ } @{$pt->table})[0];
+    Future->done({
+            cumulative_client_connections => $app->stat->{cumulative_client_connections},
+            current_redis_connections     => _get_redis_connections($app),
+            uptime                        => time - $^T,
+            rss                           => $me->rss,
+            cumulative_redis_errors       => $app->stat->{redis_errors}});
 };
+
+sub _get_redis_connections {
+    my $app         = shift;
+    my $connections = 0;
+    my @redises     = ();
+    my %uniq;
+
+    push @redises, values %{Binary::WebSocketAPI::v3::Instance::Redis::instances()};
+    unless (scalar @redises > 1) {
+        # redises are not moved to Instance::Redis yet...
+        for my $c (values %{$app->active_connections // {}}) {
+            push @redises, $c->redis if $c->stash->{redis};
+        }
+        push @redises, $app->shared_redis    if $app->shared_redis;
+        push @redises, $app->redis_pricer    if $app->redis_pricer;
+        push @redises, $app->ws_redis_master if $app->ws_redis_master;
+        push @redises, $app->ws_redis_slave  if $app->ws_redis_slave;
+    }
+    for my $r (@redises) {
+        my $con = $r->{connections} // {};
+        for my $c (values %$con) {
+            $connections++ if $c->{id} && !$uniq{$c->{id}}++;
+        }
+    }
+    return $connections;
+}
 
 =head2 dumpmem
 
