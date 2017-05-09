@@ -37,7 +37,7 @@ note "Introspection port: $intro_port\n";
 socket(my $socket, PF_INET, SOCK_STREAM, 0)
       or die "socket: $!";
 connect($socket, pack_sockaddr_in($intro_port, inet_aton("localhost")))
-     or die "connect: $!";      
+     or die "connect: $!";
 
 my ($res, $ticks, $intro_stats, $intro_conn);
 
@@ -145,16 +145,12 @@ my %contract = (
 
 $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
 
-$intro_stats = send_introspection_cmd('stats');
-cmp_ok $intro_stats->{current_redis_connections}, '==', 3, '3 redis connections after proposal subscription';
-
 $t->{_bom}{redis_server}->stop;
 
 $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
 
 $intro_stats = send_introspection_cmd('stats');
-cmp_ok $intro_stats->{current_redis_connections}, '==', 2, '2 connections after redis stop and connection attempt';
-cmp_ok $intro_stats->{cumulative_redis_errors}, '==', 1, 'Got 1 redis error';
+cmp_ok $intro_stats->{cumulative_redis_errors}, '>', 1, 'Got redis error';
 
 $t->{_bom}{redis_server}->start;
 
