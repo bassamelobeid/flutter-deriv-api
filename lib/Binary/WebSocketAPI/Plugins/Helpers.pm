@@ -126,7 +126,7 @@ sub register {
                                 $app->stat->{redis_errors}++;
                             });
                 $c->stash($redis_name => $redis);
-
+                return $c->stash($redis_name) if $c->stash($redis_name);
             });
     }
 
