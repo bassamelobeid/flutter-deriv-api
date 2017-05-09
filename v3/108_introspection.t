@@ -150,7 +150,6 @@ require Test::FailWarnings;
 {
     local $SIG{__WARN__} = sub{};
 
-    no Test::FailWarnings;
 
     $t->{_bom}{redis_server}->stop;
 
