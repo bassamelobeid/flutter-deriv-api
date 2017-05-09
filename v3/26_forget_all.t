@@ -15,6 +15,10 @@ use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
+{
+local $SIG{__WARN__} = sub{};
+
+
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
     epoch      => Date::Utility->new->epoch,
@@ -121,5 +125,5 @@ test_schema('forget_all', $res);
 cmp_bag(\@ids, \@forget_ids, 'correct forget ids for ticks history');
 
 $t->finish_ok;
-
+}
 done_testing();
