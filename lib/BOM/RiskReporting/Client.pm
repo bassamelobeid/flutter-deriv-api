@@ -122,8 +122,10 @@ sub generate {
     my $self = shift;
 
     $self->_client_details;
-    $self->_documents_on_file;
     # $self->_total_deposits_withdrawals;
+    # $self->_deposit_withdrawal_systems;
+    $self->_documents_on_file;
+    #$self->_financial_assessment # not inlcuded based on discussion.
     $self->_change_of_country;
     $self->_change_of_status;
     # $self->_review_of_trades_bets;
