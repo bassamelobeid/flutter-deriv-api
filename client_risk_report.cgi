@@ -26,11 +26,4 @@ if (not $loginid) {
 
 my $client = Client::Account::get_instance({'loginid' => $loginid}) || die "bad client $loginid";
 
-BOM::Backoffice::Request::template->process(
-    "email/cliet_risk_report.html.tt",
-    {
-    },
-    \$lost_pass_email
-);
-
 code_exit_BO();
