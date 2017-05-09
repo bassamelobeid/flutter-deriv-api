@@ -100,8 +100,16 @@ sub register {
         $app->helper(
             $redis_name => sub {
                 my $c = shift;
-                $c->stash($redis_name => Binary::WebSocketAPI::v3::Instance::Redis->$redis_name());
-                return $c->stash($redis_name);
+                return $c->stash($redis_name) if $c->stash($redis_name);
+
+                my $redis = Binary::WebSocketAPI::v3::Instance::Redis->$redis_name();
+                $redis->on( error => sub {
+                                my ($self, $err) = @_;
+                                warn("Redis $redis_name error: $err");
+                                $app->stat->{redis_errors}++;
+                            });
+                $c->stash($redis_name => $redis);
+
             });
     }
 
