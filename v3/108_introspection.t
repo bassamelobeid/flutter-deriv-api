@@ -18,8 +18,6 @@ use Try::Tiny;
 use BOM::Database::Model::OAuth;
 use BOM::MarketData qw(create_underlying);
 
-no Test::FailWarnings;
-
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
@@ -147,14 +145,22 @@ my %contract = (
 
 $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
 
-$t->{_bom}{redis_server}->stop;
+require Test::FailWarnings;
 
-$t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+{
+    local $SIG{__WARN__} = sub{};
 
-$intro_stats = send_introspection_cmd('stats');
-cmp_ok $intro_stats->{cumulative_redis_errors}, '>', 1, 'Got redis error';
+    no Test::FailWarnings;
 
-$t->{_bom}{redis_server}->start;
+    $t->{_bom}{redis_server}->stop;
+
+    $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+
+    $intro_stats = send_introspection_cmd('stats');
+    cmp_ok $intro_stats->{cumulative_redis_errors}, '>', 1, 'Got redis error';
+
+    $t->{_bom}{redis_server}->start;
+}
 
 
 ## connections
