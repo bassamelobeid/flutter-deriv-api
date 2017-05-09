@@ -253,7 +253,19 @@ sub init_redis_connections {
 
 sub forget_all {
     my $c = shift;
-    # stop all recurring
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'balance');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'transaction');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'proposal_open_contract');
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal_open_contract');
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'ticks');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'candles');
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_proposal_array($c);
+
     delete $c->stash->{redis};
     delete $c->stash->{redis_pricer};
 
