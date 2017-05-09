@@ -18,6 +18,8 @@ use Try::Tiny;
 use BOM::Database::Model::OAuth;
 use BOM::MarketData qw(create_underlying);
 
+no Test::FailWarnings;
+
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
