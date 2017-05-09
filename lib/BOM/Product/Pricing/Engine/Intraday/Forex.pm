@@ -178,6 +178,7 @@ sub _tentative_events_markup {
         });
     }
 
+    my $pricing_args = $bet->_pricing_args;
     return Pricing::Engine::Markup::TentativeEvents->new(
         tentative_events       => $bet->tentative_events,
         ticks                  => $self->ticks_for_trend,
@@ -187,7 +188,7 @@ sub _tentative_events_markup {
         asset_symbol           => $bet->underlying->asset_symbol,
         quoted_currency_symbol => $bet->underlying->quoted_currency_symbol,
         long_term_prediction   => $self->long_term_prediction->amount,
-        (map { $_ => $pricing_args->{$_} } qw(iv spot t payouttime_code)));
+        map { $_ => $pricing_args->{$_} } qw(iv spot t payouttime_code)
     )->markup;
 }
 
