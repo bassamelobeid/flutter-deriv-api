@@ -7,7 +7,6 @@ use Test::More;
 use Test::MockModule;
 
 use Test::Exception;
-no Test::FailWarnings;
 
 use Client::Account;
 
@@ -264,9 +263,16 @@ lives_ok {
 'following validation';
 
 lives_ok {
-    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-    $balance -= $buy_price;
-    is($balance_after + 0, $balance, 'correct balance_after');
+    require Test::FailWarnings;
+
+    {
+        local $SIG{__WARN__} = sub{};
+
+        ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
+
+        $balance -= $buy_price;
+        is($balance_after + 0, $balance, 'correct balance_after');
+    }
 }
 'bought USD bet';
 
