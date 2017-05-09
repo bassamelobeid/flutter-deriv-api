@@ -166,8 +166,8 @@ sub _tentative_events_markup {
     my $self = shift;
     my $bet  = $self->bet;
 
-    #Don't calculate tentative event shfit if contract is ATM
-    #In this case, economic events markup will be calculated using normal formula
+    # Don't calculate tentative event shfit if contract is ATM
+    # In this case, economic events markup will be calculated using normal formula
     if ($bet->is_atm_bet) {
         return Math::Util::CalculatedValue::Validatable->new({
             name        => 'economic_events_volatility_risk_markup',
@@ -177,119 +177,17 @@ sub _tentative_events_markup {
         });
     }
 
-    my $barrier          = $bet->barrier->as_absolute;
-    my $adjusted_barrier = $self->_get_barrier_for_tentative_events($barrier);
-
-    return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'economic_events_volatility_risk_markup',
-            description => 'markup to account for volatility risk of economic events',
-            set_by      => __PACKAGE__,
-            base_amount => 0,
-        }) if $barrier == $adjusted_barrier;
-
-    # There is a change needed in the barriers due to tentative events:
-    my $type = $bet->code;
-    #For one-touch and no-touch, If barrier crosses the spot because of our barrier adjustments, just make sure prob will be 100%
-    if ($type eq 'ONETOUCH' or $type eq 'NOTOUCH') {
-        if (   ($barrier < $bet->pricing_spot and $adjusted_barrier >= $bet->pricing_spot)
-            or ($barrier > $bet->pricing_spot and $adjusted_barrier <= $bet->pricing_spot))
-        {
-            return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'economic_events_volatility_risk_markup',
-                description => 'markup to account for volatility risk of economic events',
-                set_by      => __PACKAGE__,
-                base_amount => 1.0,
-            });
-        }
-    }
-
-    my %args = (map { $_ => $bet->_pricing_args->{$_} } qw(spot t payouttime_code));
-
-    my $vol    = $bet->_pricing_args->{iv};
-    my $engine = Pricing::Engine::Intraday::Forex::Base->new(
-        ticks                => $self->ticks_for_trend,
-        strikes              => [$adjusted_barrier],
-        vol                  => $vol,
-        contract_type        => $bet->pricing_code,
-        payout_type          => 'binary',
-        underlying_symbol    => $bet->underlying->symbol,
-        long_term_prediction => $self->long_term_prediction->amount,
-        discount_rate        => 0,
-        mu                   => 0,
-        %args,
-    );
-    my $new_prob = $engine->base_probability;
-
-    $new_prob = $new_prob->amount if Scalar::Util::blessed($new_prob) && $new_prob->isa('Math::Util::CalculatedValue::Validatable');
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_volatility_risk_markup',
-        description => 'markup to account for volatility risk of economic events',
-        set_by      => __PACKAGE__,
-        base_amount => max(0, $new_prob - $self->base_probability->amount),
-    });
-}
-
-sub _get_barrier_for_tentative_events {
-    my $self    = shift;
-    my $barrier = shift;
-
-    my $bet = $self->bet;
-
-    #When pricing options during the news event period, the tentative event  shifts the strikes/barriers so that prices are marked up. Here are examples for each contract type:
-    #A binary call strike = 105 and an tentative event  of 2% will be priced as a binary call strike = 105/(1+2%)
-    #A binary put strike = 105 and an tentative event shift of 2% will be priced as a binary put strike = 105*(1+2%)
-    #A touch (upper) barrier = 105 and an tentative event shift of 2% will be priced as a touch barrier = 105/(1+2%)
-    #A touch (lower) barrier = 105 and an tentative event shift of 2% will be priced as a touch barrier = 105*(1+2%)
-    #A no-touch (upper) barrier = 105 and an tentative event shift of 2% will be priced as a no-touch barrier = 105*(1+2%)
-    #A no-touch (lower) barrier = 105 and an tentative event shift of 2% will be priced as a no-touch barrier = 105/(1+2%)
-    #get a list of applicable tentative economic events
-    my $tentative_events = $bet->tentative_events;
-
-    my $tentative_event_shift = 0;
-
-    foreach my $event (@{$tentative_events}) {
-        my $shift = $event->{tentative_event_shift} // 0;
-
-        #We add-up all tentative event shfit  applicable for any of symbols of the currency pair
-        if ($event->{symbol} eq $bet->underlying->asset_symbol) {
-            $tentative_event_shift += $shift;
-        } elsif ($event->{symbol} eq $bet->underlying->quoted_currency_symbol) {
-            $tentative_event_shift += $shift;
-        }
-    }
-
-    #quickly return if there is no shift
-    return $barrier if $tentative_event_shift == 0;
-
-    $tentative_event_shift /= 100;
-
-    my $er_factor = 1 + $tentative_event_shift;
-    my $barrier_u = $barrier >= $bet->pricing_spot;
-    my $barrier_d = $barrier <= $bet->pricing_spot;
-    my $type      = $bet->code;
-
-    #final barrier is either "Barrier * (1+ER)" or "Barrier * (1-ER)"
-    if ((
-               $type eq 'CALL'
-            or $type eq 'CALLE'
-        )
-        or ($type eq 'ONETOUCH'     && $barrier_u)
-        or ($type eq 'NOTOUCH'      && $barrier_d)
-        or ($type eq 'EXPIRYRANGE'  && $barrier_u)
-        or ($type eq 'EXPIRYRANGEE' && $barrier_u)
-        or ($type eq 'EXPIRYMISS'   && $barrier_d)
-        or ($type eq 'EXPIRYMISSE'  && $barrier_d)
-        or ($type eq 'RANGE'        && $barrier_d)
-        or ($type eq 'UPORDOWN'     && $barrier_u))
-    {
-
-        $er_factor = 1 - $tentative_event_shift;
-    }
-
-    $barrier *= $er_factor;
-
-    return $barrier;
+    return Pricing::Engine::Markup::TentativeEvents->new(
+        tentative_events       => $bet->tentative_events,
+        ticks                  => $self->ticks_for_trend,
+        barrier                => $pricing_args->{barrier1},
+        contract_type          => $bet->pricing_code,
+        underlying_symbol      => $bet->underlying->symbol,
+        asset_symbol           => $bet->underlying->asset_symbol,
+        quoted_currency_symbol => $bet->underlying->quoted_currency_symbol,
+        long_term_prediction   => $self->long_term_prediction->amount,
+        (map { $_ => $pricing_args->{$_} } qw(iv spot t payouttime_code)));
+    )->markup;
 }
 
 has ticks_for_trend => (
