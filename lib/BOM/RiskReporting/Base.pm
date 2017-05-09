@@ -48,7 +48,7 @@ sub _db_broker_code {
 
 sub _db_operation {
     my $self = shift;
-    return ($self->_db_broker_code eq 'FOG')? 'collector': 'replica';
+    return ($self->_db_broker_code eq 'FOG') ? 'collector' : 'replica';
 }
 
 sub _build_end {
