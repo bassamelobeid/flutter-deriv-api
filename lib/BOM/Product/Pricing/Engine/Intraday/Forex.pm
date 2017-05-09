@@ -467,7 +467,7 @@ sub economic_events_volatility_risk_markup {
     my $pricing_args = $self->bet->_pricing_args;
     return Pricing::Engine::Markup::EconomicEventsVolRisk->new(
         iv                   => $pricing_args->{iv},
-	iv_with_news         => $pricing_args->{iv_with_news},
+        iv_with_news         => $pricing_args->{iv_with_news},
         ticks                => $self->ticks_for_trend,
         strikes              => [$pricing_args->{barrier1}],
         contract_type        => $bet->pricing_code,
