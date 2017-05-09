@@ -57,7 +57,7 @@ sub script_run {
 
         Volatility::Seasonality::generate_economic_event_seasonality({
             underlying_symbols => \@underlying_symbols,
-            economic_events    => \@trimmed_events,
+            economic_events    => $events_received,
             chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
         });
 
