@@ -516,7 +516,7 @@ sub _build_economic_events_spot_risk_markup {
     my $five_minutes = 5 * 60;
     my @news_array =
         grep { $_->{magnitude} > 1 && $_->{release_epoch} >= $start->epoch - $five_minutes && $_->{release_epoch} <= $end->epoch + $five_minutes }
-        Volatility::Seasonality::categorize_events($bet->underlying->symbol, $self->economic_events) // [];
+        @{Volatility::Seasonality::categorize_events($bet->underlying->symbol, $self->economic_events)};
 
     my $base_amount = @news_array ? 0.01 : 0;
     my $spot_risk_markup = Math::Util::CalculatedValue::Validatable->new({
