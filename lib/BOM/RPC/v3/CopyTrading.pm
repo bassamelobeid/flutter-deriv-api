@@ -49,11 +49,6 @@ sub copy_start {
 
     my $client = $params->{client};
 
-    if ($client->broker_code ne 'CR') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidAccount',
-                message_to_client => localize('Copy trading is only available with real money accounts.')});
-    }
     if ($client->allow_copiers) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'CopyTradingNotAllowed',

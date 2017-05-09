@@ -655,8 +655,6 @@ sub set_settings {
             $err = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
         }
 
-        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
-
         my $missed_field;
         if ($missed_field = (grep { !$args->{$_} } qw/address_line_1 address_city phone/)[0]) {
             $err = BOM::RPC::v3::Utility::create_error({

@@ -266,7 +266,7 @@ lives_ok {
     require Test::FailWarnings;
 
     {
-        local $SIG{__WARN__} = sub{};
+        local $SIG{__WARN__} = sub { };
 
         ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
 
