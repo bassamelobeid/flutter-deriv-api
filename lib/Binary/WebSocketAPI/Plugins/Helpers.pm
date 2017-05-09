@@ -7,6 +7,7 @@ use warnings;
 use feature "state";
 use Sys::Hostname;
 use YAML::XS;
+use Guard;
 use Scalar::Util ();
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
@@ -27,7 +28,15 @@ sub register {
     # Weakrefs to active $c instances
     $app->helper(
         active_connections => sub {
-            state $connections = {};
+            my $app = shift->app;
+            return $app->{_binary_connections} //= {};
+        });
+
+    # for storing various statistic data
+    $app->helper(
+        stat => sub {
+            my $app = shift->app;
+            return $app->{_binary_introspection_stats} //= {};
         });
 
     $app->helper(
@@ -113,17 +122,19 @@ sub register {
         [ws_redis_slave => $redis_url->($ws_redis_cfg->{read})],
     );
 
+    my $redis_on_error_sub = sub {
+        my ($redis, $err) = @_;
+        $app->log->warn("redis error: $err");
+        $app->stat->{redis_errors}++;
+    };
+
     for my $redis_info (@redises) {
         my ($helper_name, $redis_url, $on_message, $on_msg_sub) = @$redis_info;
         $app->helper(
             $helper_name => sub {
                 state $redis = do {
                     my $redis = Mojo::Redis2->new(url => $redis_url);
-                    $redis->on(
-                        error => sub {
-                            my ($self, $err) = @_;
-                            $app->log->warn("redis error: $err");
-                        });
+                    $redis->on(error => $redis_on_error_sub);
                     $redis->on(message => $on_msg_sub) if $on_message;
                     $redis;
                 };
@@ -137,11 +148,7 @@ sub register {
         shared_redis => sub {
             state $redis = do {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        $app->log->warn("redis error: $err");
-                    });
+                $redis->on(error => $redis_on_error_sub);
                 $redis->on(
                     message => sub {
                         my ($self, $msg, $channel) = @_;
@@ -184,11 +191,7 @@ sub register {
 
             if (not $c->stash->{redis}) {
                 my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        warn("error: $err");
-                    });
+                $redis->on(error => $redis_on_error_sub);
                 $redis->on(
                     message => sub {
                         my ($self, $msg, $channel) = @_;
