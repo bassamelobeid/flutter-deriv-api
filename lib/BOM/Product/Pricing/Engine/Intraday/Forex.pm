@@ -15,6 +15,7 @@ use Math::Function::Interpolator;
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
 use Pricing::Engine::Markup::EconomicEventsVolRisk;
+use Pricing::Engine::Markup::TentativeEvents;
 
 =head2 tick_source
 
