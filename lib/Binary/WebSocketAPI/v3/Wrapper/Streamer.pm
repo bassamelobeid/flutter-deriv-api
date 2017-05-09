@@ -85,6 +85,11 @@ sub send_notification {
     return if !$shared || !ref $shared || !$shared->{broadcast_notifications} || !ref $shared->{broadcast_notifications};
     my $is_on_key = 0;
     foreach my $c_addr (keys %{$shared->{broadcast_notifications}}) {
+        unless (defined $shared->{broadcast_notifications}{$c_addr}{c}) {
+            # connection gone...
+            delete $shared->{broadcast_notifications}{$c_addr};
+            next;
+        }
         my $client_shared = $shared->{broadcast_notifications}{$c_addr};
         unless (defined $client_shared->{c}->tx) {
             my $redis = $client_shared->{c}->ws_redis_master;
