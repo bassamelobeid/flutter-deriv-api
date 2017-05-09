@@ -5,13 +5,11 @@ use warnings;
 
 no indirect;
 use Try::Tiny;
+use Data::Dumper;
 use Format::Util::Numbers qw(roundnear);
-use Binary::WebSocketAPI::v3::Wrapper::System;
-use Binary::WebSocketAPI::v3::PricingSubscription;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday tv_interval);
-use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Format::Util::Numbers qw(to_monetary_number_format);
@@ -19,11 +17,14 @@ use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min);
-use Data::Dumper;
 
 use Future::Mojo          ();
 use Future::Utils         ();
 use Variable::Disposition ();
+
+use Binary::WebSocketAPI::v3::Wrapper::System;
+use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::PricingSubscription;
 
 # Number of RPC requests a single active websocket call
 # can issue in parallel. Used for proposal_array.
@@ -275,7 +276,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                         if (exists $res->{proposals}) {
                             for my $contract_type (keys %{$res->{proposals}}) {
                                 my @prices = @{$res->{proposals}{$contract_type}};
-                                $_->{error}{message} = delete $_->{error}{message_to_client} for grep { ; exists $_->{error} } @prices;
+                                $_->{error}{message} = $c->l(delete $_->{error}{message_to_client}) for grep { ; exists $_->{error} } @prices;
                                 warn "Barrier mismatch - expected " . @expected_barriers . " but had " . @prices unless @prices == @expected_barriers;
                                 push @{$proposal_array{$contract_type}}, @prices;
                             }
@@ -283,9 +284,10 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             # We've already done the check for top-level { error => { ... } } by this point,
                             # so if we don't have the proposals key then something very unexpected happened.
                             warn "Invalid entry in proposal_array response - " . encode_json($res);
-                            $c->send(
-                                {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')})
-                                if $c and $c->tx;
+                            $c->send({
+                                    json => $c->wsp_error(
+                                        $msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))}
+                            ) if $c and $c->tx;
                             return;
                         }
                     }
@@ -307,7 +309,8 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                 }
                 catch {
                     warn "proposal_array exception - $_";
-                    $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')})
+                    $c->send(
+                        {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))})
                         if $c and $c->tx;
                 };
             }));
@@ -640,7 +643,9 @@ sub process_proposal_array_event {
 
                         # Make sure that we don't override any of the values for next time (e.g. ask_price)
                         my $copy = {contract_parameters => {%{$stashed_contract_parameters->{contract_parameters}}}};
-                        return _price_stream_results_adjustment($c, $stash_data->{args}, $copy, $price, $theo_probability);
+                        my $res = _price_stream_results_adjustment($c, $stash_data->{args}, $copy, $price, $theo_probability);
+                        $res->{longcode} = $c->l($res->{longcode}) if $res->{longcode};
+                        return $res;
                     }
                 }
                 catch {
@@ -700,7 +705,7 @@ sub process_ask_event {
                     $type    => {
                         %$adjusted_results,
                         id       => $stash_data->{uuid},
-                        longcode => $stash_data->{cache}->{longcode},
+                        longcode => $c->l($stash_data->{cache}->{longcode}),
                     },
                 };
             }
@@ -773,7 +778,7 @@ sub _price_stream_results_adjustment {
                 message_to_client => $c->l($error_map->{$error->{error_code}}->($error->{error_details} || [])),
                 code              => 'ContractBuyValidationError',
                 details           => {
-                    longcode      => $contract_parameters->{longcode},
+                    longcode      => $c->l($contract_parameters->{longcode}),
                     display_value => $price_calculator->ask_price,
                     payout        => $price_calculator->payout,
                 },
