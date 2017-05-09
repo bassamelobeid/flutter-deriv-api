@@ -11,7 +11,10 @@ use BOM::Market::DataDecimate;
 use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
+
 use Pricing::Engine::Intraday::Forex::Base;
+use Pricing::Engine::Markup::EconomicEventsSpotRisk;
+use Pricing::Engine::Markup::EconomicEventsVolRisk;
 
 =head2 tick_source
 
@@ -452,12 +455,7 @@ sub _build_risk_markup {
     return $risk_markup;
 }
 
-has [qw(economic_events_volatility_risk_markup economic_events_spot_risk_markup)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_economic_events_volatility_risk_markup {
+sub economic_events_volatility_risk_markup {
     my $self = shift;
 
     # Tentative event markup takes precedence
@@ -465,69 +463,28 @@ sub _build_economic_events_volatility_risk_markup {
         return $tentative_events_markup;
     }
 
-    my $markup_base_amount = 0;
-
-    # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
-    my $pricing_args              = $self->bet->_pricing_args;
-    my $news_adjusted_pricing_vol = $pricing_args->{iv_with_news};
-    return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'economic_events_volatility_risk_markup',
-            description => 'markup to account for volatility risk of economic events',
-            set_by      => __PACKAGE__,
-            base_amount => 0,
-        }) if $pricing_args->{iv} == $news_adjusted_pricing_vol;
-
-    # Otherwise, we fall back to news-adjusted probability
-    my $tv_without_news = $self->base_probability->amount;
-
-    # Re-calculate  base probability using the news_adjusted_pricing_vol
-
-    my %args = (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code));
-
-    my $engine = Pricing::Engine::Intraday::Forex::Base->new(
+    my $bet          = $self->bet;
+    my $pricing_args = $self->bet->_pricing_args;
+    return Pricing::Engine::Markup::EconomicEventsVolRisk->new(
         ticks                => $self->ticks_for_trend,
         strikes              => [$pricing_args->{barrier1}],
-        vol                  => $news_adjusted_pricing_vol,
-        contract_type        => $self->bet->pricing_code,
-        payout_type          => 'binary',
-        underlying_symbol    => $self->bet->underlying->symbol,
+        contract_type        => $bet->pricing_code,
+        underlying_symbol    => $bet->underlying->symbol,
         long_term_prediction => $self->long_term_prediction->amount,
-        discount_rate        => 0,
-        mu                   => 0,
-        %args,
-    );
-    my $tv_with_news = $engine->base_probability->amount;
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_volatility_risk_markup',
-        description => 'markup to account for volatility risk of economic events',
-        set_by      => __PACKAGE__,
-        base_amount => max(0, $tv_with_news - $tv_without_news),
-    });
+        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
+    )->markup;
 }
 
-sub _build_economic_events_spot_risk_markup {
+sub economic_events_spot_risk_markup {
     my $self = shift;
 
-    my $bet   = $self->bet;
-    my $start = $bet->effective_start;
-    my $end   = $bet->date_expiry;
-
-    my $five_minutes = 5 * 60;
-    my $qfs          = Volatility::Seasonality->new;
-    my @news_array =
-        grep { $_->{magnitude} > 1 && $_->{release_epoch} >= $start->epoch - $five_minutes && $_->{release_epoch} <= $end->epoch + $five_minutes }
-        @{$qfs->categorize_events($bet->underlying->symbol, $self->economic_events) // []};
-
-    my $base_amount = @news_array ? 0.01 : 0;
-    my $spot_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_spot_risk_markup',
-        description => 'flat 1% markup to account for spot risk if there\'s applicable economic events',
-        set_by      => __PACKAGE__,
-        base_amount => $base_amount,
-    });
-
-    return $spot_risk_markup;
+    my $bet = $self->bet;
+    return Pricing::Engine::Markup::EconomicEventsSpotRisk->new(
+        effective_start   => $bet->effective_start,
+        date_expiry       => $bet->date_expiry,
+        economic_events   => $self->economic_events,
+        underlying_symbol => $bet->underlying->symbol,
+    )->markup;
 }
 
 has volatility_scaling_factor => (
