@@ -71,12 +71,6 @@ my %contractParameters = (
     "duration_unit" => "m",
 );
 
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'R_50',
-    epoch      => Date::Utility->new->epoch + 2,
-    quote      => 100
-});
-
 $t = $t->send_ok({
         json => {
             "proposal" => 1,
@@ -205,6 +199,13 @@ sleep 1;
 is $call_params->{token}, $token;
 ok $call_params->{contract_parameters};
 
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'R_50',
+    epoch      => Date::Utility->new->epoch + 2,
+    quote      => '963'
+});
+
+
 $t = $t->send_ok({
         json => {
             buy        => 1,
@@ -220,7 +221,6 @@ while (1) {
     my $res = decode_json($t->message->[1]);
     note explain $res;
     next if $res->{msg_type} eq 'proposal';
-
     # note explain $res;
     is $res->{msg_type}, 'buy';
     ok $res->{buy};
@@ -252,10 +252,8 @@ while (1) {
     my $res = decode_json($t->message->[1]);
     note explain $res;
     next if $res->{msg_type} ne 'sell';
-
-    # note explain $res;
+    #note explain $res;
     is $res->{msg_type}, 'sell';
-$DB::single=1;
     ok $res->{sell};
     ok($res->{sell}{contract_id} && $res->{sell}{contract_id} == $contract_id, "check contract ID");
     ok($res->{sell}{reference_id} == $buy_txn_id, "check buy transaction ID");
