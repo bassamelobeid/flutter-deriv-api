@@ -65,7 +65,7 @@ has _supported_types => (
     },
 );
 
-has [qw(base_probability probability long_term_prediction economic_events_markup intraday_vanilla_delta risk_markup)] => (
+has [qw(base_probability probability long_term_prediction intraday_vanilla_delta risk_markup)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -118,7 +118,7 @@ sub _build_probability {
     return $ifx_prob;
 }
 
-sub _build_economic_events_markup {
+sub economic_events_markup {
     my $self = shift;
     my $bet  = $self->bet;
     my $markup;
