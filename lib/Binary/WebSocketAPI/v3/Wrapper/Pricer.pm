@@ -5,13 +5,11 @@ use warnings;
 
 no indirect;
 use Try::Tiny;
+use Data::Dumper;
 use Format::Util::Numbers qw(roundnear);
-use Binary::WebSocketAPI::v3::Wrapper::System;
-use Binary::WebSocketAPI::v3::PricingSubscription;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday tv_interval);
-use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Format::Util::Numbers qw(to_monetary_number_format);
@@ -19,10 +17,13 @@ use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min);
-
 use Future::Mojo          ();
 use Future::Utils         ();
 use Variable::Disposition ();
+
+use Binary::WebSocketAPI::v3::Wrapper::System;
+use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::PricingSubscription;
 
 # Number of RPC requests a single active websocket call
 # can issue in parallel. Used for proposal_array.
