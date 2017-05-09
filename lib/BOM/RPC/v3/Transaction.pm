@@ -33,21 +33,27 @@ sub trade_copiers {
     ### Note: this array of hashes will be modified by BOM::Transaction with the results per each client
     my @multiple = map { +{loginid => $_} } @$copiers;
     my $trx = BOM::Transaction->new({
-            client   => $params->{client},
-            multiple => \@multiple,
-            contract => $params->{contract},
-            price    => ($params->{price} || 0),
-            (defined $params->{payout})      ? (payout        => $params->{payout})        : (),
-            (defined $params->{amount_type}) ? (amount_type   => $params->{amount_type})   : (),
-            ($params->{action} eq 'buy')     ? (purchase_date => $params->{purchase_date}) : (),
-            source        => $params->{source},
-            purchase_date => Date::Utility->new()});
+        client   => $params->{client},
+        multiple => \@multiple,
+        contract => $params->{contract},
+        price    => ($params->{price} || 0),
+        source   => $params->{source},
+        (defined $params->{payout})      ? (payout        => $params->{payout})        : (),
+        (defined $params->{amount_type}) ? (amount_type   => $params->{amount_type})   : (),
+        ($params->{action} eq 'buy')     ? (purchase_date => $params->{purchase_date}) : (),
+    });
 
-    $params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode;
+    my $res = ($params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode);
+    warn "[COPY TRADING "
+        . uc($params->{action}) . "] "
+        . encode_json({
+            trader_id => $params->{client}->loginid,
+            code      => $res->{-type},
+            error     => $res->{-mesg}}) if $res;
 
     for my $el (grep { $_->{error} } @multiple) {
         warn "[COPY TRADING "
-            . uc $params->{action} . "] "
+            . uc($params->{action}) . "] "
             . encode_json({
                 trader_id => $params->{client}->loginid,
                 copier    => $el->{loginid},
