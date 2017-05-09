@@ -16,6 +16,10 @@ my $instances = {
     pricer_write => undef,
 };
 
+sub instances {
+    return $instances;
+}
+
 sub create {
     my $name = shift;
 
