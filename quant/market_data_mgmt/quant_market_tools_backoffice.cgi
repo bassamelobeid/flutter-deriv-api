@@ -25,6 +25,7 @@ use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Backoffice::Request qw(request);
 use Quant::Framework::CorrelationMatrix;
+use BOM::MarketDataAutoUpdater::Forex;
 my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
