@@ -1,3 +1,6 @@
+sudo: required
+dist: precise
+group: deprecated-2017Q1
 language: perl
 perl:
     - "5.14.2-thr"
@@ -8,7 +11,6 @@ addons:
 services:
     - redis-server
 cache: apt
-sudo: required
 
 env:
     matrix:
