@@ -4,10 +4,6 @@ use warnings;
 use Test::Most;
 use Test::FailWarnings;
 use Test::Warnings qw/warning/;
-use Test::MockModule;
-use File::Spec;
-use JSON qw(decode_json);
-use Cache::RedisDB;
 
 use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
@@ -22,7 +18,6 @@ initialize_realtime_ticks_db();
 use BOM::Product::ContractFactory qw( produce_contract );
 
 my $now = Date::Utility->new('7-Jan-14 12:00');
-
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -37,24 +32,16 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now->minus_time_interval('10m'),
     });
 
-my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
-$mocked->mock(
-    '_get_economic_events',
-    sub {
-        [{
-                'bias'          => 0.010000,
-                'duration'      => 60.000000,
-                'magnitude'     => 1.000000,
-                'release_epoch' => 1389096000,
-            }];
-    });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
     {
-        symbol           => 'USD',
-        release_date     => $now,
-        recorded_date    => Date::Utility->new(),
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        recorded_date => $now->minus_time_interval('10m'),
+        events => [{
+            symbol           => 'USD',
+            release_date     => $now->epoch,
+            event_name => 'Construction Spending m/m',
+            impact => 5,
+        }]
     },
 );
 
@@ -74,14 +61,12 @@ my $bet = produce_contract($params);
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
 
 my $amount;
-like(
-    warning { $amount = $bet->pricing_engine->economic_events_volatility_risk_markup->amount },
-    qr/No basis tick for/,
-    'Got warning for no basis tick'
-);
+warning_like {
+$amount = $bet->pricing_engine->economic_events_volatility_risk_markup->amount;
+} qr/basis tick/, 'warns';
 
-is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.15, 'correct spot risk markup');
+is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.01, 'correct spot risk markup');
 cmp_ok($amount, '<', $bet->pricing_engine->economic_events_spot_risk_markup->amount, 'vol risk markup is lower than higher range');
-is($bet->pricing_engine->economic_events_markup->amount, 0.15, 'economic events markup is max of spot or vol risk markup');
+is($bet->pricing_engine->economic_events_markup->amount, 0.01, 'economic events markup is max of spot or vol risk markup');
 
 done_testing;
