@@ -38,9 +38,9 @@ sub trade_copiers {
         contract => $params->{contract},
         price    => ($params->{price} || 0),
         source   => $params->{source},
-        (defined $params->{payout})      ? (payout        => $params->{payout})        : (),
-        (defined $params->{amount_type}) ? (amount_type   => $params->{amount_type})   : (),
-        ($params->{action} eq 'buy')     ? (purchase_date => $params->{purchase_date}) : (),
+        (defined $params->{payout})      ? (payout      => $params->{payout})      : (),
+        (defined $params->{amount_type}) ? (amount_type => $params->{amount_type}) : (),
+        purchase_date => $params->{purchase_date},
     });
 
     my $res = ($params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode);
@@ -394,9 +394,9 @@ sub sell {
         currency  => $client->currency
     };
     $contract_parameters->{landing_company} = $client->landing_company->short;
-
-    my $trx = BOM::Transaction->new({
-        purchase_date       => Date::Utility->new(),
+    my $purchase_date = time;
+    my $trx           = BOM::Transaction->new({
+        purchase_date       => $purchase_date,
         client              => $client,
         contract_parameters => $contract_parameters,
         contract_id         => $id,
@@ -414,11 +414,12 @@ sub sell {
 
     try {
         trade_copiers({
-                action   => 'sell',
-                client   => $client,
-                contract => $trx->contract,
-                price    => $args->{price},
-                source   => $source
+                action        => 'sell',
+                client        => $client,
+                contract      => $trx->contract,
+                price         => $args->{price},
+                source        => $source,
+                purchase_date => $purchase_date,
             }) if $client->allow_copiers;
     }
     catch {
