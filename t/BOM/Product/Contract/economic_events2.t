@@ -70,14 +70,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     },
 );
 
-# we don't use it. should it be removed?
-#Volatility::Seasonality::generate_economic_event_seasonality({
-#    underlying_symbols => [qw(frxUSDJPY frxGBPUSD frxGBPJPY)],
-#    chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer,
-#    economic_events    => [],
-#    date               => $now,
-#});
-
 test_economic_events_markup(0.01,  0.01,  'frxUSDJPY');
 test_economic_events_markup(0.01, 0.01, 'frxGBPUSD');
 test_economic_events_markup(0.01, 0.01, 'frxGBPJPY');
