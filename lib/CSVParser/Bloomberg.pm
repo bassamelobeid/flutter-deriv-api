@@ -405,7 +405,7 @@ sub _get_notes {
         . sprintf("%.3f", $self->bet->vanna) . ' vol='
         . sprintf("%.3f", $self->bet->volga)
         . ' avol='
-        . sprintf("%.3f", $self->bet->pricing_args->{iv}) . ' tv='
+        . sprintf("%.3f", $self->bet->_pricing_args->{iv}) . ' tv='
         . sprintf("%.3f", $self->bet->bs_probability->amount);
 }
 
@@ -452,10 +452,10 @@ sub get_csv_line {
     }
     $line .=
           $base_numeraire . ','
-        . $self->bet->pricing_args->{spot} . ','
-        . $self->bet->pricing_args->{iv} . ','
+        . $self->bet->_pricing_args->{spot} . ','
+        . $self->bet->_pricing_args->{iv} . ','
         . ($fields->[$header->{'Volatility'}] / 100) . ','
-        . abs($self->bet->pricing_args->{iv} - $fields->[$header->{'Volatility'}] / 100) . ','
+        . abs($self->bet->_pricing_args->{iv} - $fields->[$header->{'Volatility'}] / 100) . ','
         . $self->bet->bs_probability->amount . ','
         . $bb_tv . ','
         . abs(sprintf("%.2f", $self->bet->bs_probability->amount) - $bb_tv) . ','
