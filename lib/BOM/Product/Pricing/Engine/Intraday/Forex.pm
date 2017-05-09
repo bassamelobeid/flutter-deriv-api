@@ -512,71 +512,32 @@ sub _build_economic_events_spot_risk_markup {
     my $bet   = $self->bet;
     my $start = $bet->effective_start;
     my $end   = $bet->date_expiry;
-    my @time_samples;
-    for (my $i = $start->epoch; $i <= $end->epoch; $i += 15) {
-        push @time_samples, $i;
-    }
 
-    my $contract_duration = $bet->remaining_time->seconds;
-    my $lookback          = $start->minus_time_interval($contract_duration + 3600);
-    my $news_array        = $self->_get_economic_events;
+    my $five_minutes = 5 * 60;
+    my $qfs          = Volatility::Seasonality->new;
+    my @news_array =
+        grep { $_->{magnitude} > 1 && $_->{release_epoch} >= $start->epoch - $five_minutes && $_->{release_epoch} <= $end->epoch + $five_minutes }
+        @{$qfs->categorize_events($bet->underlying->symbol, $self->economic_events) // []};
 
-    my @combined = (0) x scalar(@time_samples);
-    foreach my $news (@$news_array) {
-        my $effective_news_time = _get_effective_news_time($news->{release_epoch}, $start->epoch, $contract_duration);
-        # +1e-9 is added to prevent a division by zero error if news magnitude is 1
-        my $decay_coef = -log(2 / ($news->{magnitude} + 1e-9)) / $news->{duration};
-        my $bias = $news->{bias};
-        my @triangle;
-        foreach my $time (@time_samples) {
-            if ($time < $effective_news_time) {
-                push @triangle, 0;
-            } else {
-                my $chunk = $bias * exp(-$decay_coef * ($time - $effective_news_time));
-                push @triangle, $chunk;
-            }
-        }
-        @combined = map { max($triangle[$_], $combined[$_]) } (0 .. $#time_samples);
-    }
-
+    my $base_amount = @news_array ? 0.01 : 0;
     my $spot_risk_markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_spot_risk_markup',
-        description => 'markup to account for spot risk of economic events',
+        description => 'flat 1% markup to account for spot risk if there\'s applicable economic events',
         set_by      => __PACKAGE__,
-        maximum     => 0.15,
-        base_amount => sum(@combined) / scalar(@combined),
+        base_amount => $base_amount,
     });
 
     return $spot_risk_markup;
 }
 
-sub _get_economic_events {
-    my ($self) = @_;
+has volatility_scaling_factor => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_volatility_scaling_factor',
+);
 
-    my $qfs = Volatility::Seasonality->new;
-    my $events = $qfs->categorize_events($self->bet->underlying->symbol, $self->economic_events);
-
-    return $events;
-}
-
-sub _get_effective_news_time {
-    my ($news_time, $contract_start, $contract_duration) = @_;
-
-    my $five_minutes_in_seconds = 5 * 60;
-    my $shift_seconds           = 0;
-    my $contract_end            = $contract_start + $contract_duration;
-    if ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
-        $shift_seconds = $contract_start - $news_time;
-    } elsif ($news_time < $contract_end + $five_minutes_in_seconds and $news_time > $contract_end - $five_minutes_in_seconds) {
-        # Always shifts to the contract start time if duration is less than 5 minutes.
-        my $max_shift = min($five_minutes_in_seconds, $contract_duration);
-        my $desired_start = $contract_end - $max_shift;
-        $shift_seconds = $desired_start - $news_time;
-    }
-
-    my $effective_time = $news_time + $shift_seconds;
-
-    return $effective_time;
+sub _build_volatility_scaling_factor {
+    return shift->bet->_pricing_args->{volatility_scaling_factor};
 }
 
 has vol_spread => (
