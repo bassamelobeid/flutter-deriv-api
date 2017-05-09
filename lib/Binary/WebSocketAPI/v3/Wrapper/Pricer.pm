@@ -19,6 +19,7 @@ use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min);
+use Data::Dumper;
 
 use Future::Mojo          ();
 use Future::Utils         ();
