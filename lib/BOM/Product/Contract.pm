@@ -179,7 +179,7 @@ has is_sold => (
 );
 
 has is_valid_exit_tick => (
-    is      => 'ro',
+    is      => 'rw',
     isa     => 'Bool',
     default => 0
 );
