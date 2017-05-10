@@ -36,12 +36,12 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
     {
         recorded_date => $now->minus_time_interval('10m'),
-        events => [{
-            symbol           => 'USD',
-            release_date     => $now->epoch,
-            event_name => 'Construction Spending m/m',
-            impact => 5,
-        }]
+        events        => [{
+                symbol       => 'USD',
+                release_date => $now->epoch,
+                event_name   => 'Construction Spending m/m',
+                impact       => 5,
+            }]
     },
 );
 
@@ -62,8 +62,9 @@ is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 
 
 my $amount;
 warning_like {
-$amount = $bet->pricing_engine->economic_events_volatility_risk_markup->amount;
-} qr/basis tick/, 'warns';
+    $amount = $bet->pricing_engine->economic_events_volatility_risk_markup->amount;
+}
+qr/basis tick/, 'warns';
 
 is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.01, 'correct spot risk markup');
 cmp_ok($amount, '<', $bet->pricing_engine->economic_events_spot_risk_markup->amount, 'vol risk markup is lower than higher range');
