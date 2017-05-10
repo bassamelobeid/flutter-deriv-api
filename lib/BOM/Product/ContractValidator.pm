@@ -125,7 +125,7 @@ sub _validate_settlement_conditions {
             # A start now contract will not be bought if we have missing feed.
             # We are doing the same thing for forward starting contracts.
             $message = 'entry tick is too old';
-        } elsif (not $self->exit_tick) {
+        } elsif (not $self->is_valid_exit_tick) {
             $message            = 'exit tick is undefined';
             $hold_for_exit_tick = 1;
         } elsif ($self->entry_tick->epoch == $self->exit_tick->epoch) {

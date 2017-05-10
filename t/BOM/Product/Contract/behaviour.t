@@ -206,9 +206,11 @@ subtest 'intraday duration contract settlement' => sub {
     create_ticks([101, $now->epoch + 1, 'R_100']);
     $c = produce_contract($bet_params);
     ok $c->is_after_expiry, 'after expiry';
-    ok !$c->is_expired, 'is not expired as no exit tick';
+    ok $c->is_expired, 'it is expireable';
+    $DB::single=1;
+    ok !$c->is_settleable, 'it is not settleable as no exit tick';
     ok $c->is_after_settlement, 'after settlement';
-    ok !$c->exit_tick,           'no exit tick';
+    ok $c->exit_tick,           'there is exit tick';
     ok !$c->is_valid_to_sell,    'not valid to sell';
     ok !$c->missing_market_data, 'no missing market data while waiting for exit tick after expiry';
     like($c->primary_validation_error->message, qr/exit tick is undefined/, 'throws error');
