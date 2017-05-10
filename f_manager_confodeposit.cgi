@@ -227,10 +227,11 @@ $to_client_db->unfreeze if $toLoginID;
 code_exit_BO() if $leave;
 
 my $today = Date::Utility->today;
-if ($ttype eq 'CREDIT' and $params{payment_type} !~ /^(?:affiliate_reward|arbitrary_markup|free_gift)$/) {
+if ($ttype eq 'CREDIT' and $params{payment_type} !~ /^affiliate_reward|arbitrary_markup|free_gift$/) {
     # we need to set paymentagent_expiration_date for manual deposit
     # check with compliance if you want to change this
     try {
+        warn "Expiration date: " . $client_pa_exp->loginid . ' for payment type ' . $params{payment_type} . "\n";
         $client_pa_exp->payment_agent_withdrawal_expiration_date($today->date_yyyymmdd);
         $client_pa_exp->save;
     }
