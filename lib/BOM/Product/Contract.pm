@@ -178,6 +178,13 @@ has is_sold => (
     default => 0
 );
 
+has is_valid_exit_tick => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0
+);
+
+
 has risk_profile => (
     is         => 'ro',
     lazy_build => 1,
@@ -864,6 +871,7 @@ sub _build_exit_tick {
         if (@ticks_since_start == $tick_number) {
             $exit_tick = $ticks_since_start[-1];
             $self->date_expiry(Date::Utility->new($exit_tick->epoch));
+            $self->is_valid_exit_tick(1);
         }
     } elsif ($self->is_after_expiry and not $self->is_after_settlement) {
         # After expiry and yet pass the settlement, use current tick at the date_expiry
@@ -872,8 +880,19 @@ sub _build_exit_tick {
     } elsif ($self->expiry_daily or $self->date_expiry->is_same_as($self->calendar->closing_on($self->date_expiry))) {
         # Expiration based on daily OHLC
         $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
+        $self->is_valid_exit_tick(1);
     } else {
-        $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
+        # For short term contract, date settlement is same as date expiry, hence sometime after pass expiry (settlement time), there is still no exit tick.
+        # So we will show the contract's value based one the last available tick 
+        my $valid_tick_at_expiry = $underlying->tick_at($self->date_expiry->epoch);
+
+        if (not $valid_tick_at_expiry){
+           $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1});
+        }else{
+
+           $exit_tick = $valid_tick_at_expiry;
+           $self->is_valid_exit_tick(1);
+        }
     }
 
     if ($self->entry_tick and $exit_tick) {
