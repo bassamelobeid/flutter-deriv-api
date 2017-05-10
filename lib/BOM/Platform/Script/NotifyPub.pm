@@ -101,8 +101,9 @@ sub _master_db_connections {
 
 sub _db {
     my $ip = shift;
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
     return DBI->connect(
-        "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432;application_name=notify_pub;sslmode=require",
+        "dbi:Pg:dbname=regentmarkets$db_postfix;host=$ip;port=5432;application_name=notify_pub;sslmode=require",
         'write',
         $conn->{$ip},
         {
