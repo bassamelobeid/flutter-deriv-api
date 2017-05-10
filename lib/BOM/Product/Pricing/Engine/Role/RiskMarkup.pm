@@ -26,7 +26,7 @@ use Pricing::Engine::Markup::SpotSpread;
 use Pricing::Engine::Markup::VolSpread;
 use Pricing::Engine::Markup::SmileUncertainty;
 
-has [qw(butterfly_markup risk_markup forward_starting_markup economic_events_markup)] => (
+has [qw(butterfly_markup risk_markup forward_starting_markup)] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
@@ -279,22 +279,15 @@ This markup should be built respectively by its engine or it will take zero as d
 
 =cut
 
-has economic_events_markup => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_economic_events_markup {
+sub economic_events_markup {
     my $self = shift;
 
-    my $economic_events_markup = Math::Util::CalculatedValue::Validatable->new({
+    return Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_markup',
         description => 'the maximum of spot or volatility risk markup of economic events',
         set_by      => __PACKAGE__,
         base_amount => 0,
     });
-
-    return $economic_events_markup;
 }
 
 sub smile_uncertainty_markup {
