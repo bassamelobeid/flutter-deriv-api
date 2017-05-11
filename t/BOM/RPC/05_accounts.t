@@ -108,12 +108,17 @@ my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client_disabled->set_status('disabled', 1, 'test disabled');
 $test_client_disabled->save();
 
+my $japan_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'JP',
+});
+
 my $m              = BOM::Database::Model::AccessToken->new;
 my $token1         = $m->create_token($test_loginid, 'test token');
 my $token_21       = $m->create_token($test_client_cr->loginid, 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
+my $token_japan    = $m->create_token($japan_client->loginid, 'test token');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -987,6 +992,14 @@ subtest $method => sub {
         $method,
         {
             args  => $args,
+            token => $token_japan
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for japan account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
             token => $token1
         });
     is_deeply($res, {}, 'empty assessment details');
@@ -1023,6 +1036,14 @@ subtest $method => sub {
             args  => $args
         });
     is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token_japan
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for japan account");
 
     $res = $c->tcall(
         $method,
