@@ -6,7 +6,8 @@ use Getopt::Long;
 use Path::Tiny;
 
 my $pid_file;
-GetOptions("pid-file=s" => \$pid_file) || die "Bad options";
+
+GetOptions("pid-file=s" => \$pid_file) || die "Usage: $0 --pid-file=/tmp/$0.pid\n";
 if ($pid_file) {
     $pid_file = Path::Tiny->new($pid_file);
     $pid_file->spew($$);
