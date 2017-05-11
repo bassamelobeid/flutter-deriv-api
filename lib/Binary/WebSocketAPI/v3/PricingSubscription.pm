@@ -2,7 +2,7 @@ package Binary::WebSocketAPI::v3::PricingSubscription;
 
 use strict;
 use warnings;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| pricer_write |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 use Moo;
 
@@ -25,17 +25,17 @@ sub BUILD {
 }
 
 sub _build_redis_server {
-    return pricer_write;
+    return redis_pricer;
 }
 
 sub subscribe {
     my ($self, $c) = @_;
 
-    $self->redis_server->{shared_info}{$self->channel_name}{\$c + 0} = $c;
+    $self->redis_server->{shared_info}{$self->channel_name}{$c + 0} = $c;
 
     stats_inc('bom_websocket_api.v_3.pricing_subscriptions.clients');
 
-    Scalar::Util::weaken($self->redis_server->{shared_info}{$self->channel_name}{\$c + 0});
+    Scalar::Util::weaken($self->redis_server->{shared_info}{$self->channel_name}{$c + 0});
     $self->redis_server->subscribe([$self->channel_name], sub { });
 
     return $self;
@@ -48,7 +48,7 @@ sub DEMOLISH {
 
     delete $self->redis_server->{shared_info}{$self->channel_name};
     $self->redis_server->unsubscribe([$self->channel_name]);
-    $self->redis_server->del($self->channel_name, 1);
+    $self->redis_server->del($self->channel_name);
     return;
 }
 
