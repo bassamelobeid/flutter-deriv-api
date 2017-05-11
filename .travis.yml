@@ -1,3 +1,6 @@
+sudo: required
+dist: precise
+group: deprecated-2017Q1
 language: perl
 perl:
     - "5.14.2-thr"
@@ -8,7 +11,6 @@ addons:
 services:
     - redis-server
 cache: apt
-sudo: required
 
 env:
     matrix:
@@ -33,7 +35,7 @@ before_install:
     - sudo mkdir -p /home/git/regentmarkets
     - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/setup_ssh.sh
-    - /tmp/travis-scripts/websocket_schema_update.sh
+# - /tmp/travis-scripts/websocket_schema_update.sh
 
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - /tmp/travis-scripts/fixHostName.sh

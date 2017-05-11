@@ -10,6 +10,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Fcntl qw/ :flock /;
 use Mojo::IOLoop;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
+use Data::Dumper;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -243,18 +244,20 @@ sub output_validation {
     return;
 }
 
-sub init_redis_connections {
-    my $c = shift;
-    $c->redis;
-    $c->redis_pricer;
-    return;
-}
-
 sub forget_all {
     my $c = shift;
-    # stop all recurring
-    delete $c->stash->{redis};
-    delete $c->stash->{redis_pricer};
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'balance');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'transaction');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'proposal_open_contract');
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal_open_contract');
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'ticks');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'candles');
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_proposal_array($c);
 
     return;
 }
@@ -262,8 +265,9 @@ sub forget_all {
 sub error_check {
     my ($c, $req_storage, $rpc_response) = @_;
     my $result = $rpc_response->result;
-    if (ref($result) eq 'HASH' && $result->{error} && $result->{error}->{code} eq 'InvalidAppID') {
-        $req_storage->{close_connection} = 1;
+    if (ref($result) eq 'HASH' && $result->{error}) {
+        $c->stash->{introspection}{last_rpc_error} = $result->{error};
+        $req_storage->{close_connection} = 1 if $result->{error}->{code} eq 'InvalidAppID';
     }
     return;
 }
@@ -309,7 +313,8 @@ sub on_client_connect {
     # We use a weakref in case the disconnect is never called
     warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
-    init_redis_connections($c);
+
+    $c->app->stat->{cumulative_client_connections}++;
     $c->rate_limitations_load;
     return;
 }
@@ -318,12 +323,34 @@ sub on_client_disconnect {
     my ($c) = @_;
     warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
     forget_all($c);
+
     delete $c->app->active_connections->{$c};
     $c->rate_limitations_save;
 
     my $timer_id = $c->stash->{rate_limitations_timer};
     Mojo::IOLoop->remove($timer_id) if $timer_id;
 
+    return;
+}
+
+sub introspection_before_forward {
+    my ($c, $req_storage) = @_;
+    my %args_copy = %{$req_storage->{origin_args}};
+    $c->stash->{introspection}{last_call_received} = \%args_copy;
+
+    $c->stash->{introspection}{msg_type}{received}{$req_storage->{method}}++;
+    use bytes;
+    $c->stash->{introspection}{received_bytes} += bytes::length(Dumper($req_storage->{origin_args}));
+    return;
+}
+
+sub introspection_before_send_response {
+    my ($c, $req_storage, $api_response) = @_;
+    my %copy = %{$api_response};
+    $c->stash->{introspection}{last_message_sent} = \%copy;
+    $c->stash->{introspection}{msg_type}{sent}{$api_response->{msg_type}}++;
+    use bytes;
+    $c->stash->{introspection}{sent_bytes} += bytes::length(Dumper($api_response));
     return;
 }
 

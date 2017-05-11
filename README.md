@@ -10,3 +10,16 @@ It manages request rate limits using [RateLimitations::Pluggable](https://github
 
 To run tests you need get [bom-websocket-tests](https://github.com/regentmarkets/bom-websocket-tests).
 
+## Introspection
+
+Binary WebSocket API proxy server also starts HTTP server for debug/monitoring poproses.
+Server binds to local IP and listens on a random port, which is logged during WS API start. Port is random for reload safety.
+Server waits a command to be received and sends back JSON formatted output.
+Commands are:
+
+* `connections` Returns a list of active connections.
+* `subscriptions` Returns a list of all subscribed Redis channels. Placeholder, not yet implemented.
+* `stats` Returns a summary of current stats.
+* `dumpmem` Writes a dumpfile using L<Devel::MAT::Dumper>.
+* `help` Returns a list of available commands.
+
