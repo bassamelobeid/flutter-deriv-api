@@ -15,6 +15,9 @@ use BOM::Platform::Runtime;
 use Bloomberg::UnderlyingConfig;
 use Quant::Framework::ImpliedRate;
 use Quant::Framework::Currency;
+use Quant::Framework;
+use Quant::Framework::ExpiryConventions;
+use BOM::Platform::Chronicle;
 
 has file => (
     is         => 'ro',
@@ -90,9 +93,14 @@ sub run {
         #    - While for other tenors other than ON:
         #      Implied rate = ((Tenor_forward_outright * (1 + asset_currency_rate/100 * tiy))/spot - 1)/ tiy
 
+        my $trading_calendar  = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+        my $expiry_convention = Quant::Framework::ExpiryConventions->new(
+            calendar   => $trading_calendar,
+            underlying => $underlying,
+        );
         my $implied_rates;
         foreach my $tenor (@tenors) {
-            my $forward_day              = $self->_tenor_mapper($tenor, $underlying);
+            my $forward_day              = $self->_tenor_mapper($tenor, $expiry_convention);
             my $asset_currency_daycount  = $underlying->asset->daycount;
             my $quoted_currency_daycount = $underlying->quoted_currency->daycount;
             my $tiy                      = $forward_day / 365;
@@ -193,13 +201,13 @@ sub run {
 }
 
 sub _tenor_mapper {
-    my ($self, $tenor, $underlying) = @_;
+    my ($self, $tenor, $expiry_convention) = @_;
 
     my $date = Date::Utility->new();
 
-    my $expiry_spot_date = $underlying->_spot_date($date);
+    my $expiry_spot_date = $expiry_convention->_spot_date($date);
 
-    my $forward_expiry_date = $underlying->forward_expiry_date({
+    my $forward_expiry_date = $expiry_convention->forward_expiry_date({
         from => $date,
         term => $tenor,
     });
