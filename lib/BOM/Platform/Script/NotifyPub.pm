@@ -61,6 +61,8 @@ sub run {
         }
     };
 
+    local $SIG{TERM} = $SIG{INT};
+
     for (1 .. $forks) {
         my $pid = wait();
         say "Parent saw $pid exiting";
