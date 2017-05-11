@@ -5,6 +5,7 @@ use BOM::Platform::Script::NotifyPub;
 use Getopt::Long;
 use Path::Tiny;
 
+# pid_file is used by external program to manage the process.
 my $pid_file;
 
 GetOptions("pid-file=s" => \$pid_file) || die "Usage: $0 --pid-file=/tmp/$0.pid\n";
