@@ -186,7 +186,6 @@ sub get_settings_by_group {
                 quants.markets.disabled
                 quants.features.suspend_contract_types
                 quants.underlyings.disable_autoupdate_vol
-                quants.underlyings.disabled_due_to_corporate_actions
                 quants.underlyings.suspend_buy
                 quants.underlyings.suspend_trades
                 )
