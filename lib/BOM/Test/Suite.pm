@@ -60,7 +60,10 @@ sub set_date {
     my ($target_date) = @_;
     my $date = Date::Utility->new($target_date);
     set_fixed_time($date->epoch);
-    open my $fh, '>>', $mocked_time_file;
+    while (utime($date->epoch, $date->epoch, $mocked_time_file)) {
+        open my $fh, '>>', $mocked_time_file;
+        close $fh;
+    }
     return;
 }
 
