@@ -58,7 +58,7 @@ subtest 'CR' => sub {
         $client->clr_status('disabled');
         $client->set_status('cashier_locked', 1, 'test');
         $client->save;
-        $c->call_ok($method, $params)->has_error->error_message_is('Sorry, this feature is not available.', 'invalid token');
+        ok $c->call_ok($method, $params)->has_no_error->result->{account_balance}, "Got limits for cashier locked clients";
 
         $client->clr_status('cashier_locked');
         $client->save;
@@ -119,7 +119,7 @@ subtest 'CR' => sub {
             authentication_method_code => 'ID_DOCUMENT'
         });
         $client->save;
-        $c->call_ok($method, $params)->has_error->error_message_is('Sorry, this feature is not available.', 'invalid token');
+        ok $c->call_ok($method, $params)->has_no_error->result->{account_balance}, "Got limits for client with expired docs";
     };
 };
 

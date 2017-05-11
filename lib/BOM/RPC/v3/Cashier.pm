@@ -386,7 +386,7 @@ sub get_limits {
     my $client         = $params->{client};
     my $client_loginid = $client->loginid;
 
-    if ($client->get_status('cashier_locked') or $client->documents_expired or $client->is_virtual) {
+    if ($client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'FeatureNotAvailable',
                 message_to_client => localize('Sorry, this feature is not available.')});
