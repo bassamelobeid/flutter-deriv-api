@@ -25,6 +25,8 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Platform::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
 use LandingCompany::Offerings qw(reinitialise_offerings);
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
