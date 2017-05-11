@@ -13,6 +13,8 @@ use BOM::MarketData::Types;
 use BOM::Backoffice::GNUPlot;
 use List::Util qw(uniq);
 use Try::Tiny;
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 
 =head1 surface
 
@@ -242,10 +244,11 @@ sub get_forward_vol {
         $implied_vols{$day} = $smile->{$atm_key};
     }
 
+    my $trading_calendar =
+        Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($volsurface->for_date), $volsurface->for_date);
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
-        $weights{$i} = create_underlying($volsurface->symbol, $volsurface->for_date)
-            ->_builder->build_trading_calendar->weight_on($volsurface->recorded_date->epoch + $i * 86400);
+        $weights{$i} = $trading_calendar->weight_on($volsurface->underlying, $volsurface->recorded_date->epoch + $i * 86400);
     }
 
     my $forward_vols;
