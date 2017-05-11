@@ -25,13 +25,20 @@ has transaction => (is => 'ro');
 sub validate_trx_sell {
     my $self = shift;
     ### Client-depended checks
-    for my $c (@{$self->clients}) {
+    my $clients = $self->transaction->multiple || $self->clients;
+    CLI: for my $c (@clients) {
         for (qw/ check_trade_status _validate_iom_withdrawal_limit _validate_available_currency _validate_currency /) {
             my $res = $self->$_($c);
-            return $res if $res;
+            next unless $res;
+            if ( $self->transaction->multiple ) {
+                $c->{code}  = $res->get_type;
+                $c->{error} = $res->{-message_to_client};
+                next CLI;
+            }
+            return $res;
         }
     }
-    for (qw/ _is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing /) {
+    for (qw/ _is_valid_to_sell _validate_sell_pricing_adjustment /) {
         my $res = $self->$_();
         return $res if $res;
     }
@@ -44,7 +51,8 @@ sub validate_trx_buy {
     # database related validations MUST be implemented in the database
     # ask your friendly DBA team if in doubt
     my $res;
-    for my $c (@{$self->clients}) {
+    my $clients = $self->transaction->multiple || $self->clients;
+    CLI: for my $c (@clients) {
         for (
             qw/
             check_trade_status
@@ -60,7 +68,13 @@ sub validate_trx_buy {
             )
         {
             $res = $self->$_($c);
-            return $res if $res;
+            next unless $res;
+            if ( $self->transaction->multiple ) {
+                $c->{code}  = $res->get_type;
+                $c->{error} = $res->{-message_to_client};
+                next CLI;
+            }
+            return $res;
         }
     }
     ### Order is very important
@@ -69,15 +83,18 @@ sub validate_trx_buy {
     $res = $self->_validate_trade_pricing_adjustment();
     return $res if $res;
 
-    for my $c (@{$self->clients}) {
+    CLI: for my $c (@clients) {
         for (qw/ _validate_payout_limit _validate_stake_limit /) {
             $res = $self->$_($c);
-            return $res if $res;
+            next unless $res;
+            if ( $self->transaction->multiple ) {
+                $c->{code}  = $res->get_type;
+                $c->{error} = $res->{-message_to_client};
+                next CLI;
+            }
+            return $res;
         }
     }
-    ### we should check pricing time just before DB query
-    $res = $self->_validate_date_pricing();
-    return $res if $res;
 
     return;
 }
@@ -330,21 +347,6 @@ sub _is_valid_to_sell {
             -message_to_client => localize($contract->primary_validation_error->message_to_client));
     }
 
-    return;
-}
-
-sub _validate_date_pricing {
-    my $self     = shift;
-    my $contract = $self->transaction->contract;
-
-    if (not $contract->is_expired
-        and abs(time - $contract->date_pricing->epoch) > 20)
-    {
-        return Error::Base->cuss(
-            -type              => 'InvalidDatePricing',
-            -mesg              => 'Bet was validated for a time [' . $contract->date_pricing->epoch . '] too far from now[' . time . ']',
-            -message_to_client => localize('This contract cannot be properly validated at this time.'));
-    }
     return;
 }
 
