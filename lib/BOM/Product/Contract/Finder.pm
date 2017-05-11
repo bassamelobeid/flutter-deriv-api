@@ -9,6 +9,8 @@ use Time::Duration::Concise;
 use List::Util qw(first);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 use Finance::Contract::Category;
 use LandingCompany::Offerings qw(get_offerings_flyby);
 
@@ -48,11 +50,12 @@ sub available_contracts_for_symbol {
 
     my $now        = Date::Utility->new;
     my $underlying = create_underlying($symbol);
-    my $calendar   = $underlying->calendar;
+    my $exchange   = $underlying->exchange;
+    my $calendar   = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
     my ($open, $close);
-    if ($calendar->trades_on($now)) {
-        $open  = $calendar->opening_on($now)->epoch;
-        $close = $calendar->closing_on($now)->epoch;
+    if ($calendar->trades_on($underlying->exchange, $now)) {
+        $open = $calendar->opening_on($exchange, $now)->epoch;
+        $close = $calendar->closing_on($exchange, $now)->epoch;
     }
 
     my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company);
@@ -69,12 +72,12 @@ sub available_contracts_for_symbol {
         if ($o->{start_type} eq 'forward') {
             my @trade_dates;
             for (my $date = $now; @trade_dates < 3; $date = $date->plus_time_interval('1d')) {
-                $date = $calendar->trade_date_after($date) unless $calendar->trades_on($date);
+                $date = $calendar->trade_date_after($exchange, $date) unless $calendar->trades_on($exchange, $date);
                 push @trade_dates, $date;
             }
             $o->{forward_starting_options} = [
                 map { {date => Date::Utility->new($_->{open})->truncate_to_day->epoch, open => $_->{open}, close => $_->{close}} }
-                map { @{$calendar->trading_period($_)} } @trade_dates
+                map { @{$calendar->trading_period($exchange, $_)} } @trade_dates
             ];
         }
 
