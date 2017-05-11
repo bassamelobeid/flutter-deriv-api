@@ -76,9 +76,10 @@ install:
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
     - perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1 | grep -Ev '(connection has been closed unexpectedly)|(terminating connection due to administrator)' &
     - export RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis
-    - perl -MBOM::Test::Time /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
+    - export MOCKTIME=1
+    - perl /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
     - export RPC_CONFIG=/home/git/regentmarkets/bom-pricing/pricing_rpc.conf.travis
-    - perl -MBOM::Test::Time /home/git/regentmarkets/bom-pricing/bin/binary_pricing_rpc.pl  daemon -m production -l http://*:5006/jsonrpc  &
+    - perl /home/git/regentmarkets/bom-pricing/bin/binary_pricing_rpc.pl  daemon -m production -l http://*:5006/jsonrpc  &
 
 before_script:
     - /tmp/travis-scripts/wait_for_rpc.sh
