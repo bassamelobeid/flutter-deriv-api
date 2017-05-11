@@ -25,12 +25,16 @@ has transaction => (is => 'ro');
 sub validate_trx_sell {
     my $self = shift;
     ### Client-depended checks
-    my $clients = $self->transaction->multiple || $self->clients;
+    my $clients = [];
+    $clients = $self->transaction->multiple if $self->transaction;
+    $clients = [map { +{client => $_} } @{$self->clients}] unless scalar @$clients;
+    use DDP;
     CLI: for my $c (@$clients) {
+        next CLI if !$c->{client} || $c->{code};
         for (qw/ check_trade_status _validate_iom_withdrawal_limit _validate_available_currency _validate_currency /) {
-            my $res = $self->$_($c);
+            my $res = $self->$_($c->{client});
             next unless $res;
-            if ($self->transaction->multiple) {
+            if ($self->transaction && $self->transaction->multiple) {
                 $c->{code}  = $res->get_type;
                 $c->{error} = $res->{-message_to_client};
                 next CLI;
@@ -51,8 +55,13 @@ sub validate_trx_buy {
     # database related validations MUST be implemented in the database
     # ask your friendly DBA team if in doubt
     my $res;
-    my $clients = $self->transaction->multiple || $self->clients;
+    ### TODO: It's temporary trick for copy trading. Needs to refactor in BOM::Transaction ( remove multiple, change client to clients )
+    my $clients = [];
+    $clients = $self->transaction->multiple if $self->transaction;
+    $clients = [map { +{client => $_} } @{$self->clients}] unless scalar @$clients;
+
     CLI: for my $c (@$clients) {
+        next CLI if !$c->{client} || $c->{code};
         for (
             qw/
             check_trade_status
@@ -67,10 +76,10 @@ sub validate_trx_buy {
             /
             )
         {
-            $res = $self->$_($c);
+            $res = $self->$_($c->{client});
             next unless $res;
 
-            if ($self->transaction->multiple) {
+            if ($self->transaction && $self->transaction->multiple) {
                 $c->{code}  = $res->get_type;
                 $c->{error} = $res->{-message_to_client};
                 next CLI;
@@ -85,10 +94,11 @@ sub validate_trx_buy {
     return $res if $res;
 
     CLI: for my $c (@$clients) {
+        next CLI if !$c->{client} || $c->{code};
         for (qw/ _validate_payout_limit _validate_stake_limit /) {
-            $res = $self->$_($c);
+            $res = $self->$_($c->{client});
             next unless $res;
-            if ($self->transaction->multiple) {
+            if ($self->transaction && $self->transaction->multiple) {
                 $c->{code}  = $res->get_type;
                 $c->{error} = $res->{-message_to_client};
                 next CLI;
