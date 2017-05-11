@@ -25,6 +25,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::App;
 use Time::HiRes qw(tv_interval gettimeofday);
+use Test::MockTime qw( :all );
 
 # Needs to be at top-level scope since _set_allow_omnibus and _get_stashed need access,
 # populated in the main run() loop
@@ -54,19 +55,7 @@ my $ticks_inserted;
 sub set_date {
     my ($target_date) = @_;
     my $date = Date::Utility->new($target_date);
-    # We have had various problems in Travis with this date step failing,
-    # so we want to capture any output we can that might indicate what's
-    # happening
-    my @cmd = (qw(sudo date -s), $date->datetime_yyyymmdd_hhmmss, '+%F %T');
-    diag "Running date command (time=" . time . "): @cmd";
-    my ($stdout, $stderr, $exitcode) = capture {
-        system @cmd;
-    };
-    $stdout //= '';
-    $stderr //= '';
-    diag "Completed date command (time=" . time . "): @cmd";
-    die "Failed to set date using this command:\n@cmd\nDo we have sudo access? (return code = $exitcode, stdout = $stdout, stderr = $stderr)"
-        unless $stdout eq $date->datetime_yyyymmdd_hhmmss . "\n";
+    set_fixed_time($date->epoch);
     return;
 }
 
