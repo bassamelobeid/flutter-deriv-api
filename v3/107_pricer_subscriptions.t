@@ -5,10 +5,10 @@ use Test::More;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema launch_redis build_mojo_test build_test_R_50_data/;
+use BOM::Test::Helper qw/test_schema build_mojo_test build_test_R_50_data/;
 
 use Devel::Refcount qw| refcount |;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| pricer_write |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 my $subs_count = 3;
 
@@ -49,12 +49,12 @@ subtest "Born and die" => sub {
     is(scalar keys %{$test_server->app->pricing_subscriptions()}, 1, "Subscription created");
     $channel = [keys %{$test_server->app->pricing_subscriptions()}]->[0];
     is(refcount($test_server->app->pricing_subscriptions()->{$channel}), 1, "check refcount");
-    ok(pricer_write->get($channel), "check redis subscription");
+    ok(redis_pricer->get($channel), "check redis subscription");
     $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
 
     is($test_server->app->pricing_subscriptions()->{$channel}, undef, "Killed");
     ### Mojo::Redis2 has not method PUBSUB
-    ok(!pricer_write->get($channel), "check redis subscription");
+    ok(!redis_pricer->get($channel), "check redis subscription");
 
     $t->finish_ok;
 };
