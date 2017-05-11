@@ -6,8 +6,6 @@ perl:
     - "5.14.2-thr"
 matrix:
     fast_finish: true
-addons:
-    postgresql: "9.3"
 services:
     - redis-server
 cache: apt
