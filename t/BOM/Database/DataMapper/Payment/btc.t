@@ -22,6 +22,6 @@ my $dupe = $payment_data_mapper->is_duplicate_payment({transaction_id => 'MY_LEA
 
 is($dupe, undef, 'we should not have a duplicate payment yet');
 
-my $dupe = $payment_data_mapper->is_duplicate_payment({transaction_id => 'MY_FAVORITE_BITCOIN'});
+$dupe = $payment_data_mapper->is_duplicate_payment({transaction_id => 'MY_FAVORITE_BITCOIN'});
 
 is($dupe, 1, 'we have a duplicate');
