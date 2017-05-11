@@ -79,9 +79,9 @@ foreach my $u (qw(frxUSDJPY frxGBPUSD frxGBPJPY)) {
     $vs->generate_economic_event_seasonality({underlying_symbol => $u});
 }
 
-test_economic_events_markup(0.0122153991947796,  0.0122153991947796,  'frxUSDJPY');
-test_economic_events_markup(0.00884422105306016, 0.00884422105306016, 'frxGBPUSD');
-test_economic_events_markup(0.00880771221334573, 0.00880771221334573, 'frxGBPJPY');
+test_economic_events_markup(0.01, 0.01, 'frxUSDJPY');
+test_economic_events_markup(0.01, 0.01, 'frxGBPUSD');
+test_economic_events_markup(0.01, 0.01, 'frxGBPJPY');
 
 sub test_economic_events_markup {
     my ($expected_ee_srmarkup, $expected_ee_markup, $underlying) = @_;

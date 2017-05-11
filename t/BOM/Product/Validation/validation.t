@@ -897,69 +897,6 @@ subtest 'invalid lifetimes.. how rude' => sub {
     test_error_list('buy', $bet, $expected_reasons);
 };
 
-subtest 'underlying with critical corporate actions' => sub {
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'currency',
-        {
-            symbol        => 'GBP',
-            recorded_date => $an_hour_earlier,
-        });
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'index',
-        {
-            symbol => 'USAAPL',
-            date   => Date::Utility->new,
-        });
-
-    my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions;
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions([]);
-    my $underlying = create_underlying('USAAPL');
-    my $starting   = $trading_calendar->opening_on($underlying->exchange, Date::Utility->new('2013-03-28'))->plus_time_interval('1h');
-
-    my $bet_params = {
-        underlying   => $underlying,
-        bet_type     => 'CALL',
-        currency     => 'USD',
-        payout       => 100,
-        date_start   => $starting->plus_time_interval('5m1s'),
-        duration     => '30m',
-        barrier      => 'S0P',
-        current_tick => $tick,
-        date_pricing => $starting,
-    };
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'index',
-        {
-            symbol        => 'USAAPL',
-            date          => Date::Utility->new,
-            recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_moneyness',
-        {
-            symbol         => 'USAAPL',
-            recorded_date  => Date::Utility->new($bet_params->{date_pricing}),
-            spot_reference => $tick->quote,
-        });
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_moneyness',
-        {
-            symbol         => 'USAAPL',
-            recorded_date  => Date::Utility->new,
-            spot_reference => $tick->quote,
-        });
-    my $bet = produce_contract($bet_params);
-    my $confirm_validity;
-    warning { $confirm_validity = $bet->_confirm_validity }, qr/spot too far from surface reference/;
-    ok $confirm_validity, 'can buy stock';
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['USAAPL']);
-    $bet = produce_contract($bet_params);
-    my $expected_reasons = [qr/Underlying.*suspended/];
-    test_error_list('buy', $bet, $expected_reasons);
-    $bet = produce_contract($bet_params);
-    test_error_list('sell', $bet, $expected_reasons);
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions($orig);
-};
-
 subtest '10% barrier check for double barrier contract' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',

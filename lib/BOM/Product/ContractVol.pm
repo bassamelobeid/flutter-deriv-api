@@ -5,10 +5,11 @@ use warnings;
 
 use List::MoreUtils qw(none all);
 use VolSurface::IntradayFX;
-use Quant::Framework::VolSurface;
 use BOM::Market::DataDecimate;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Static;
+use Quant::Framework::VolSurface;
+use Quant::Framework::VolSurface::Utils qw(effective_date_for);
 
 ## ATTRIBUTES  #######################
 
