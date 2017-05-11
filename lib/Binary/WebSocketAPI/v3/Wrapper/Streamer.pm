@@ -19,7 +19,7 @@ use utf8;
 use Try::Tiny;
 
 sub website_status {
-    my ($self, $req_storage) = @_;
+    my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
 
@@ -29,22 +29,23 @@ sub website_status {
     my $shared_info  = $redis->{shared_info};
 
     my $callback = sub {
-        $self->call_rpc({
+        $c->call_rpc({
                 args        => $args,
                 method      => 'website_status',
                 call_params => {
-                    country_code => $self->country_code,
+                    country_code => $c->country_code,
                 },
                 response => sub {
                     my $rpc_response   = shift;
                     my $website_status = {};
                     $rpc_response->{clients_country} //= '';
                     $website_status->{$_} = $rpc_response->{$_} for qw|api_call_limits clients_country supported_languages terms_conditions_version|;
-                    my $shared_info = ws_redis_master->{shared_info};
-                    Scalar::Util::weaken(my $c_copy = $self);
-                    $shared_info->{broadcast_notifications}{$self + 0}{'c'}            = $c_copy;
-                    $shared_info->{broadcast_notifications}{$self + 0}{echo}           = $args;
-                    $shared_info->{broadcast_notifications}{$self + 0}{website_status} = $rpc_response;
+
+                    $shared_info->{broadcast_notifications}{$c + 0}{'c'}            = $c;
+                    $shared_info->{broadcast_notifications}{$c + 0}{echo}           = $args;
+                    $shared_info->{broadcast_notifications}{$c + 0}{website_status} = $rpc_response;
+
+                    Scalar::Util::weaken($shared_info->{broadcast_notifications}{$c + 0}{'c'});
 
                     ### to config
                     my $current_state = ws_redis_slave->get("NOTIFY::broadcast::state");
@@ -64,11 +65,11 @@ sub website_status {
     };
 
     if (!$args->{subscribe} || $args->{subscribe} == 0) {
-        delete $shared_info->{broadcast_notifications}{$self + 0};
+        delete $shared_info->{broadcast_notifications}{$c + 0};
         &$callback();
         return;
     }
-    if ($shared_info->{broadcast_notifications}{$self + 0}) {
+    if ($shared_info->{broadcast_notifications}{$c + 0}) {
         &$callback();
         return;
     }
@@ -83,6 +84,11 @@ sub send_notification {
     return if !$shared || !ref $shared || !$shared->{broadcast_notifications} || !ref $shared->{broadcast_notifications};
     my $is_on_key = 0;
     foreach my $c_addr (keys %{$shared->{broadcast_notifications}}) {
+        unless (defined $shared->{broadcast_notifications}{$c_addr}{c}) {
+            # connection gone...
+            delete $shared->{broadcast_notifications}{$c_addr};
+            next;
+        }
         my $client_shared = $shared->{broadcast_notifications}{$c_addr};
         unless (defined $client_shared->{c}->tx) {
             delete $shared->{broadcast_notifications}{$c_addr};

@@ -244,6 +244,24 @@ sub output_validation {
     return;
 }
 
+sub forget_all {
+    my $c = shift;
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'balance');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'transaction');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'proposal_open_contract');
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal_open_contract');
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'ticks');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'candles');
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_proposal_array($c);
+
+    return;
+}
+
 sub error_check {
     my ($c, $req_storage, $rpc_response) = @_;
     my $result = $rpc_response->result;
@@ -307,7 +325,7 @@ sub on_client_disconnect {
 
     delete $c->app->active_connections->{$c};
     $c->rate_limitations_save;
-
+    forget_all();
     my $timer_id = $c->stash->{rate_limitations_timer};
     Mojo::IOLoop->remove($timer_id) if $timer_id;
 
