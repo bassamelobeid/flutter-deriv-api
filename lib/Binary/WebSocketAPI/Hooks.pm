@@ -244,13 +244,6 @@ sub output_validation {
     return;
 }
 
-sub init_redis_connections {
-    my $c = shift;
-    $c->redis;
-    $c->redis_pricer;
-    return;
-}
-
 sub forget_all {
     my $c = shift;
 
@@ -265,9 +258,6 @@ sub forget_all {
     Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'candles');
 
     Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_proposal_array($c);
-
-    delete $c->stash->{redis};
-    delete $c->stash->{redis_pricer};
 
     return;
 }
@@ -323,8 +313,8 @@ sub on_client_connect {
     # We use a weakref in case the disconnect is never called
     warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
+
     $c->app->stat->{cumulative_client_connections}++;
-    init_redis_connections($c);
     $c->rate_limitations_load;
     return;
 }
@@ -333,6 +323,7 @@ sub on_client_disconnect {
     my ($c) = @_;
     warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
     forget_all($c);
+
     delete $c->app->active_connections->{$c};
     $c->rate_limitations_save;
 
