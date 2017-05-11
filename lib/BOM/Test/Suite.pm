@@ -38,6 +38,8 @@ my $global_test_iteration = 0;
 $ENV{BOM_TEST_RATE_LIMITATIONS} =    ## no critic (Variables::RequireLocalizedPunctuationVars)
     '/home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/rate_limitations.yml';
 
+our $mocked_time_file = '/tmp/mocked_time';
+
 # Return entire contents of file as string
 sub read_file {
     my $path = shift;
@@ -52,10 +54,20 @@ my $ticks_inserted;
 
 # Change system date/time. Accepts anything that Date::Utility
 # can handle - epoch time, 'YYYY-mm-dd HH:MM:SS', etc.
+#
+# here we set mocked time for current process
 sub set_date {
     my ($target_date) = @_;
     my $date = Date::Utility->new($target_date);
     set_fixed_time($date->epoch);
+    open my $fh, '>>', $mocked_time_file;
+    return;
+}
+
+# and here we set mocked time, as requested by another process
+sub set_date_from_file {
+    my $ts = -M $mocked_time_file;
+    set_fixed_time($ts);
     return;
 }
 
