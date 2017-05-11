@@ -14,5 +14,11 @@ BEGIN {
     }
 }
 
+END {
+    if ($script) {
+        $script->stop_script;
+    }
+}
+
 1;
 

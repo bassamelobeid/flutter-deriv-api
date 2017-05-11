@@ -3,13 +3,21 @@ use BOM::Test::RPC::Service;
 use strict;
 use warnings;
 
+my $service;
+
 BEGIN {
     if ($ENV{PRICING_RPC_URL}) {
-        my $service = BOM::Test::RPC::Service->new({
+        $service = BOM::Test::RPC::Service->new({
             url    => $ENV{PRICING_RPC_URL},
             script => '/home/git/regentmarkets/bom-pricing/bin/binary_pricing_rpc.pl'
         });
         $service->start_rpc_if_not_running;
+    }
+}
+
+END {
+    if ($service) {
+        $service->stop_rpc;
     }
 }
 
