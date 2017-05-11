@@ -195,7 +195,7 @@ my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
 my $method = 'payout_currencies';
 subtest $method => sub {
-    is_deeply($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD)], 'invalid token will get all currencies');
+    is_deeply($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD XBT)], 'invalid token will get all currencies');
     is_deeply(
         $c->tcall(
             $method,
@@ -208,7 +208,7 @@ subtest $method => sub {
     );
 
     is_deeply($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
-    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)], "will return legal currencies if no token");
+    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD XBT)], "will return legal currencies if no token");
 };
 
 $method = 'landing_company';
