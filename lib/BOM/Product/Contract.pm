@@ -872,7 +872,7 @@ sub _build_exit_tick {
             $self->date_expiry(Date::Utility->new($exit_tick->epoch));
             $self->is_valid_exit_tick(1);
         }
-    } else {
+    } elsif ($self->is_after_expiry) {
         # For a daily contract or a contract expired at the close of trading, the valid exit tick should be the daily close else should be the tick at expiry date
         my $valid_exit_tick_at_expiry = (
                    $self->expiry_daily

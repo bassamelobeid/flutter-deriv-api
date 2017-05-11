@@ -115,6 +115,7 @@ subtest 'range' => sub {
         ok !$c->hit_tick, 'no hit tick';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
         delete $args->{exit_tick};
+        delete $args->{is_valid_exit_tick};
     }
     'expiry checks';
 };

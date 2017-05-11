@@ -29,7 +29,11 @@ override is_expired => sub {
 override is_settleable => sub {
     my $self = shift;
 
-    return $self->is_expired // 0;
+    # only settleable if it is hit or when it has a valid exit tick. 
+    # Do not settle if it is at pre-settlement stage
+    my $is_settleable = ($self->is_expired and ($self->hit_tick or ($self->exit_tick and $self->is_valid_exit_tick))) ? 1 : 0;
+
+    return $is_settleable;
 };
 
 has hit_tick => (
@@ -90,7 +94,7 @@ sub get_high_low_for_contract_period {
                 })}{'high', 'low', 'close'};
         # The two intraday queries run off different tables, so we have to make sure our consistent
         # exit tick was included. expiry_daily may have differences, but should be fine anyway.
-        $ok_through_expiry = 1 if ($self->is_valid_exit_tick and $close and ($self->expiry_daily or $exit_tick->quote == $close));
+        $ok_through_expiry = 1 if ($self->exit_tick and $close and ($self->expiry_daily or $exit_tick->quote == $close));
     }
 
     return ($high, $low, $ok_through_expiry);
