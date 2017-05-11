@@ -67,7 +67,7 @@ sub run {
         my $pid = wait();
         say "Parent saw $pid exiting";
     }
-    return;
+    return 0;
 }
 
 sub _publish {
