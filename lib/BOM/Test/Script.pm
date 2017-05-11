@@ -22,7 +22,7 @@ sub pid {
     my $pid = $self->pid_file->slurp;
     chomp($pid);
     return $pid;
-};
+}
 
 sub start_script_if_not_running {
     my $self = shift;
@@ -32,7 +32,7 @@ sub start_script_if_not_running {
 
 sub check_script {
     my $self = shift;
-    my $pid = $self->pid;
+    my $pid  = $self->pid;
     return 0 unless $pid;
     my $name = $self->name;
     system("/usr/bin/pgrep $name | grep $pid");
@@ -44,9 +44,9 @@ sub start_script {
     my $script   = $self->script;
     my $pid_file = $self->pid_file;
     $pid_file->remove;
-    my $args     = $self->args // '';
+    my $args = $self->args // '';
     system("$script --pid-file $pid_file $args &");
-    for(1..5){
+    for (1 .. 5) {
         last if $pid_file->exists;
         sleep 1;
     }
