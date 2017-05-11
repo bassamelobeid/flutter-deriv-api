@@ -5,6 +5,7 @@ use warnings;
 
 use Dir::Self;
 use Cwd qw/abs_path/;
+use POSIX qw(setsid);
 
 =head1 NAME
 
@@ -42,6 +43,7 @@ will use test redis instance instead of development.
 =cut
 
 BEGIN {
+    setsid $$;
     my $env = do {
         local @ARGV = ('/etc/rmg/environment');
         readline;
@@ -76,6 +78,10 @@ BEGIN {
         $ENV{PRICING_RPC_URL} = 'http://127.0.0.1:15006/';
     }
     $ENV{TEST_DATABASE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
+}
+
+END {
+    kill TERM => -$$;
 }
 
 1;
