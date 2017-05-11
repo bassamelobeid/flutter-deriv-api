@@ -28,7 +28,7 @@ sub validate_trx_sell {
     my $clients = [];
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless scalar @$clients;
-    use DDP;
+
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
         for (qw/ check_trade_status _validate_iom_withdrawal_limit _validate_available_currency _validate_currency /) {
