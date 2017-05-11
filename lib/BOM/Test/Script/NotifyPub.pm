@@ -19,3 +19,6 @@ END {
         $script->stop_script;
     }
 }
+
+1;
+
