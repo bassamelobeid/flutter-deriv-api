@@ -9,6 +9,8 @@ use HTML::Entities;
 use f_brokerincludeall;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 use BOM::MarketData::Types;
 use Finance::Asset::Market::Registry;
 use Proc::Killall;
@@ -109,12 +111,13 @@ print "<tr><td bgcolor=FFFFCE>* bets offered</td>";
 foreach my $p (@providerlist) { print "<td bgcolor=FFFFCE><b>" . uc($p) . "</td>"; }
 print "</tr>";
 
-my $all = request()->param('what');
+my $all      = request()->param('what');
+my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
 foreach my $i (@instrumentlist) {
 
     my $underlying = create_underlying($i);
 
-    next unless $all or $underlying->calendar->is_open;
+    next unless $all or $calendar->is_open($underlying->exchange);
 
     my $MAXDIFF = 0.002;
     if ($underlying->instrument_type eq 'individualstock') { $MAXDIFF = 0.004; }    #stocks are more volatile
