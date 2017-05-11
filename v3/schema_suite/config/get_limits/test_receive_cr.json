@@ -83,7 +83,7 @@
                                   },
                                   "turnover_limit": {
                                       "type": "integer",
-                                      "pattern": "^10000$"
+                                      "pattern": "^1000$"
                                   }
                               }
                           },
