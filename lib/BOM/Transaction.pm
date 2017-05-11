@@ -1342,8 +1342,13 @@ sub sell_expired_contracts {
 
                 push @quants_bet_variables, $quants_bet_variables;
             } else {
-                $stats_failure{$logging_class}{_normalize_error($contract->primary_validation_error)}++;
-                $failure->{reason} = $contract->primary_validation_error->message;
+                my $cpve = $contract->primary_validation_error;
+                if ($cpve) {
+                    $stats_failure{$logging_class}{_normalize_error($cpve)}++;
+                    $failure->{reason} = $cpve->message;
+                } else {
+                    $failure->{reason} = "Unknown failure in sell_expired_contracts, shortcode: " . $contract->shortcode;
+                }
                 push @{$result->{failures}}, $failure;
             }
         }
