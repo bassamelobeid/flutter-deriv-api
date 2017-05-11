@@ -26,11 +26,11 @@ sub validate_trx_sell {
     my $self = shift;
     ### Client-depended checks
     my $clients = $self->transaction->multiple || $self->clients;
-    CLI: for my $c (@clients) {
+    CLI: for my $c (@$clients) {
         for (qw/ check_trade_status _validate_iom_withdrawal_limit _validate_available_currency _validate_currency /) {
             my $res = $self->$_($c);
             next unless $res;
-            if ( $self->transaction->multiple ) {
+            if ($self->transaction->multiple) {
                 $c->{code}  = $res->get_type;
                 $c->{error} = $res->{-message_to_client};
                 next CLI;
@@ -52,7 +52,7 @@ sub validate_trx_buy {
     # ask your friendly DBA team if in doubt
     my $res;
     my $clients = $self->transaction->multiple || $self->clients;
-    CLI: for my $c (@clients) {
+    CLI: for my $c (@$clients) {
         for (
             qw/
             check_trade_status
@@ -69,7 +69,8 @@ sub validate_trx_buy {
         {
             $res = $self->$_($c);
             next unless $res;
-            if ( $self->transaction->multiple ) {
+
+            if ($self->transaction->multiple) {
                 $c->{code}  = $res->get_type;
                 $c->{error} = $res->{-message_to_client};
                 next CLI;
@@ -83,11 +84,11 @@ sub validate_trx_buy {
     $res = $self->_validate_trade_pricing_adjustment();
     return $res if $res;
 
-    CLI: for my $c (@clients) {
+    CLI: for my $c (@$clients) {
         for (qw/ _validate_payout_limit _validate_stake_limit /) {
             $res = $self->$_($c);
             next unless $res;
-            if ( $self->transaction->multiple ) {
+            if ($self->transaction->multiple) {
                 $c->{code}  = $res->get_type;
                 $c->{error} = $res->{-message_to_client};
                 next CLI;
