@@ -8,7 +8,7 @@ use Path::Tiny;
 my $pid_file;
 GetOptions("pid-file=s" => \$pid_file) || die "Bad options";
 if ($pid_file) {
-    $pid_file = Path::Tiny($pid_file);
+    $pid_file = Path::Tiny->new($pid_file);
     $pid_file->spew($$);
 }
 exit BOM::Platform::Script::NotifyPub::run();
