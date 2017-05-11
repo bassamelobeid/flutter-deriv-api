@@ -21,9 +21,9 @@ has pid => sub {
     my $pid = $self->pid_file->slurp;
     chomp($pid);
     return $pid;
-    }
+};
 
-    sub start_script_if_not_running {
+sub start_script_if_not_running {
     my $self = shift;
     return unless $self->script;
     return $self->check_script() || $self->start_script();
