@@ -23,8 +23,8 @@ my %pricers_on_ip;
 for (@keys) {
     my %entry = @{decode_json($redis->get($_))};
     $pricers_on_ip{$entry{ip}} = [] unless exists $pricers_on_ip{$entry{ip}};
-    $entry{'diff'}       = time - $entry{time};
-    $entry{'key'}        = $_;
+    $entry{'diff'}             = time - $entry{time};
+    $entry{'key'}              = $_;
     #reconsructed hash that has the ip address of the pricer as key and the stats (including calculated time difference) of each fork that it has as an array.
     $pricers_on_ip{$entry{ip}}[$entry{fork_index}] = \%entry;
 }
@@ -54,15 +54,17 @@ for my $ip (keys %$ip_list) {
             DataDog::DogStatsd::Helper::stats_timing("pricer_daemon.forks.last_active.$e->{'fork_index'}",
                 $e->{'diff'}, {tags => ['tag:' . $e->{'ip'}]});
             #to be printed to log.
-			send_pd("pricer_daemon with an ip: $e->{'ip'} has a fork with PID: $e->{'pid'} thats not doing any work for $e->{'diff'}seconds.", "trigger", "PricerStatus_$e->{'ip'}_$e->{'fork_index'}")
-				if $e->{'diff'} > 60 ;
-	
+            send_pd("pricer_daemon with an ip: $e->{'ip'} has a fork with PID: $e->{'pid'} thats not doing any work for $e->{'diff'}seconds.",
+                "trigger", "PricerStatus_$e->{'ip'}_$e->{'fork_index'}")
+                if $e->{'diff'} > 60;
+
         }
     } else {
-		DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.failed.count', {tags => ['tag:' . $ip]});
+        DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.failed.count', {tags => ['tag:' . $ip]});
         #the pricer is registered, but its not doing any work.
         #send PD alert
-        send_pd("pricer_daemon with an ip: $ip is not doing any pricing while its set to be a pricer in env: $ip_list->{$ip}", "trigger", "PricerStatus_$ip");
+        send_pd("pricer_daemon with an ip: $ip is not doing any pricing while its set to be a pricer in env: $ip_list->{$ip}",
+            "trigger", "PricerStatus_$ip");
     }
 }
 
@@ -70,7 +72,7 @@ for my $ip (keys %$ip_list) {
 #this subrotine is used in production environment.
 sub get_ips {
     my $env = shift;
-    my $ua = Mojo::UserAgent->new;
+    my $ua  = Mojo::UserAgent->new;
     my $res;
     my $tx = $ua->get("http://172.30.0.60/$env")->success;
     die unless $tx;
@@ -82,7 +84,7 @@ sub get_ips {
 
 #This subrotine is used for testing, in development mode only.
 sub get_ips_dev {
-	my $env = shift;
+    my $env = shift;
     my %ip_list;
     open FILE, "/tmp/" . $env . "_ip_list" or die $!;
     while (my $line = <FILE>) {
@@ -102,22 +104,22 @@ sub send_pd {
     my $PD_apiKey     = $ENV{'PD_API_KEY'};
     my $PD_enabled    = $ENV{'PD_ENABLED'};
 
-	warn $error_msg;
+    warn $error_msg;
 
-	return unless $PD_enabled; 
+    return unless $PD_enabled;
 
-    my $ua            = Mojo::UserAgent->new;
+    my $ua = Mojo::UserAgent->new;
     my $tx = $ua->post(
-    	'https://events.pagerduty.com/generic/2010-04-15/create_event.json' => {
-        "Authorization" => "Token token=$PD_apiKey",
-        "Content-type"  => "application/json",
-        "Accept"        => "application/vnd.pagerduty+json;version=2"
-        } => json => {
-        	"service_key" => $PD_serviceKey,
-            "event_type"  => $type,
-            "description" => $error_msg,
-			"incident_key" => $incident_key
-        });
+        'https://events.pagerduty.com/generic/2010-04-15/create_event.json' => {
+            "Authorization" => "Token token=$PD_apiKey",
+            "Content-type"  => "application/json",
+            "Accept"        => "application/vnd.pagerduty+json;version=2"
+            } => json => {
+            "service_key"  => $PD_serviceKey,
+            "event_type"   => $type,
+            "description"  => $error_msg,
+            "incident_key" => $incident_key
+            });
     if (my $res = $tx->success) { return 0; }
     else {
         warn $tx->error->{code};
