@@ -319,7 +319,7 @@ sub startup {
             $request_start = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});
             $vsz_start = current_vsz();
-            BOM::Test::Suite::set_date_from_file() if defined $INC{'BOM/Test/Suite.pm'};
+            BOM::Test::Time::set_date_from_file() if defined $INC{'BOM/Test/Time.pm'};
         });
 
     $app->hook(
