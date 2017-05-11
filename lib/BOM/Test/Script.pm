@@ -65,3 +65,5 @@ sub wait_till_exit {
     }
     return;
 }
+
+1;
