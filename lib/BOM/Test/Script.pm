@@ -16,7 +16,7 @@ has pid_file => sub {
     return path(shift->file_base . '.pid');
 };
 
-has pid => sub {
+sub pid {
     my $self = shift;
     return unless $self->pid_file->exists;
     my $pid = $self->pid_file->slurp;
@@ -35,7 +35,7 @@ sub check_script {
     my $name = $self->name;
     return 0 unless $self->pid;
     my $pid = $self->pid;
-    system("/usr/bin/pgrep --ns $pid $name");
+    system("/usr/bin/pgrep $name | grep $pid");
     return !$?;    # return  true if pgrep success
 }
 
@@ -43,16 +43,25 @@ sub start_script {
     my $self     = shift;
     my $script   = $self->script;
     my $pid_file = $self->pid_file;
+    $pid_file->remove;
     my $args     = $self->args // '';
     system("$script --pid-file $pid_file $args &");
+    for(1..5){
+        last if $pid_file->exists;
+        sleep 1;
+    }
+    return;
 }
 
 sub stop_script {
     my $self = shift;
     my $pid  = $self->pid;
+    print "prepare to kill $pid\n";
     return unless $self->check_script;
-    kill 'SIGTERM' => $pid;
+    print "killing\n";
+    kill TERM => $pid;
     wait_till_exit($pid, 10);
+    print "killed\n";
     return;
 }
 

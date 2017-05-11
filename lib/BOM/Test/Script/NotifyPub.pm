@@ -16,6 +16,7 @@ BEGIN {
 
 END {
     if ($script) {
+print "exiting.....";
         $script->stop_script;
     }
 }
