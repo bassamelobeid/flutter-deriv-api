@@ -203,7 +203,7 @@ subtest $method => sub {
                 token => undef,
             }
         ),
-        [qw(USD EUR GBP AUD)],
+        [qw(USD EUR GBP AUD XBT)],
         'undefined token will get all currencies'
     );
 
