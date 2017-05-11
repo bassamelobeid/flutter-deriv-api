@@ -38,7 +38,7 @@ sub validate_trx_sell {
             return $res;
         }
     }
-    for (qw/ _is_valid_to_sell _validate_sell_pricing_adjustment /) {
+    for (qw/ _is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing /) {
         my $res = $self->$_();
         return $res if $res;
     }
@@ -97,7 +97,8 @@ sub validate_trx_buy {
         }
     }
 
-    return;
+    ### we should check pricing time just before DB query
+    return $self->_validate_date_pricing();
 }
 
 sub _validate_available_currency {
@@ -348,6 +349,21 @@ sub _is_valid_to_sell {
             -message_to_client => localize($contract->primary_validation_error->message_to_client));
     }
 
+    return;
+}
+
+sub _validate_date_pricing {
+    my $self     = shift;
+    my $contract = $self->transaction->contract;
+
+    if (not $contract->is_expired
+        and abs(time - $contract->date_pricing->epoch) > 20)
+    {
+        return Error::Base->cuss(
+            -type              => 'InvalidDatePricing',
+            -mesg              => 'Bet was validated for a time [' . $contract->date_pricing->epoch . '] too far from now[' . time . ']',
+            -message_to_client => localize('This contract cannot be properly validated at this time.'));
+    }
     return;
 }
 
