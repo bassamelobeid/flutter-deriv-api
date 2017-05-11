@@ -136,9 +136,12 @@ subtest 'expiry conditions' => sub {
         quote      => 100.010,
     });
     $c = produce_contract($args);
-    ok !$c->exit_tick,  'no exit tick';
-    ok !$c->is_expired, 'not expired without exit tick';
-    cmp_ok $c->value, '==', 0;
+    ok $c->exit_tick,  'There is exit tick';
+    ok !$c->is_valid_exit_tick, 'The exit tick is not valid';
+    ok $c->is_expired, 'Is expired';
+    ok !$c->is_settleable, 'It is not settleable as there is no valid exit tick';
+    ok !$c->is_valid_to_sell, 'It is not valid to sell due to no valid exit tick';
+    cmp_ok $c->value, '==', 10;
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
         epoch      => $now->epoch + 601,

@@ -873,7 +873,6 @@ sub _build_exit_tick {
             $self->is_valid_exit_tick(1);
         }
     } else {
-
         # For a daily contract or a contract expired at the close of trading, the valid exit tick should be the daily close else should be the tick at expiry date
         my $valid_exit_tick_at_expiry = (
                    $self->expiry_daily
@@ -881,7 +880,7 @@ sub _build_exit_tick {
         ) ? $underlying->closing_tick_on($self->date_expiry->date) : $underlying->tick_at($self->date_expiry->epoch);
 
         # There are few scenarios where we still do not have valid exit tick as follow. In those case, we will use last available tick at the expiry time to determine the pre-settlement value but will not be settle based on that tick
-        # 1) For long term contract, after expiry yet pass the settlement time, waiting for daily contract to be updated
+        # 1) For long term contract, after expiry yet pass the settlement time, waiting for daily ohlc to be updated
         # 2) For short term contract, waiting for next tick to arrive after expiry to determine the valid exit tick at expiry
         if (not $valid_exit_tick_at_expiry) {
             $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1});
