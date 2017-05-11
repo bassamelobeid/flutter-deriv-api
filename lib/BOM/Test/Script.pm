@@ -17,6 +17,7 @@ has pid_file => sub {
 };
 
 has pid => sub {
+    my $self = shift;
     return unless $self->pid_file->exists;
     my $pid = $self->pid_file->slurp;
     chomp($pid);
