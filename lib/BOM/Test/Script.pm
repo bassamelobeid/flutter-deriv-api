@@ -32,9 +32,9 @@ sub start_script_if_not_running {
 
 sub check_script {
     my $self = shift;
-    my $name = $self->name;
-    return 0 unless $self->pid;
     my $pid = $self->pid;
+    return 0 unless $pid;
+    my $name = $self->name;
     system("/usr/bin/pgrep $name | grep $pid");
     return !$?;    # return  true if pgrep success
 }
@@ -56,12 +56,9 @@ sub start_script {
 sub stop_script {
     my $self = shift;
     my $pid  = $self->pid;
-    print "prepare to kill $pid\n";
     return unless $self->check_script;
-    print "killing\n";
     kill TERM => $pid;
     wait_till_exit($pid, 10);
-    print "killed\n";
     return;
 }
 
