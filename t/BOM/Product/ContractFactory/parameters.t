@@ -54,7 +54,7 @@ subtest 'shortcode_to_parameters' => sub {
     my $put = shortcode_to_parameters('PUT_frxUSDJPY_100.00_1352351000_1352494800_80_90', 'USD');
     is($put->{bet_type},    'PUT',                                            'parsed bet_type');
     is($put->{date_start},  Date::Utility->new(1352351000)->epoch,            'parsed start time');
-    is($put->{date_expiry}, Date::Utility->new('2012-11-09 21:00:00')->epoch, 'parsed expiry time');
+    is($put->{date_expiry}, '1352494800', 'parsed expiry time');
 
     my $tickup = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_9T_0_0', 'USD');
     $expected = {

@@ -227,7 +227,7 @@ sub _validate_feed {
             message           => "No realtime data [symbol: " . $underlying->symbol . "]",
             message_to_client => [$ERROR_MAPPING->{MissingTickMarketData}],
         };
-    } elsif ($self->calendar->is_open_at($self->date_pricing)
+    } elsif ($self->trading_calendar->is_open_at($underlying->exchange, $self->date_pricing)
         and $self->date_pricing->epoch - $underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch)
     {
         # only throw errors for quote too old, if the exchange is open at pricing time
@@ -368,7 +368,7 @@ sub _validate_input_parameters {
         };
     } elsif ($self->expiry_daily) {
         my $date_expiry = $self->date_expiry;
-        my $closing     = $self->calendar->closing_on($date_expiry);
+        my $closing = $self->trading_calendar->closing_on($self->underlying->exchange, $date_expiry);
         if ($closing and not $date_expiry->is_same_as($closing)) {
             return {
                 message => 'daily expiry must expire at close '
@@ -389,13 +389,14 @@ sub _validate_trading_times {
     my $args = shift;
 
     my $underlying  = $self->underlying;
-    my $calendar    = $underlying->calendar;
+    my $exchange    = $underlying->exchange;
+    my $calendar    = $self->trading_calendar;
     my $date_expiry = $self->date_expiry;
     my $date_start  = $self->date_start;
     my $volidx_flag = 1;
     my ($markets, $lc);
 
-    if (not($calendar->trades_on($date_start) and $calendar->is_open_at($date_start))) {
+    if (not($calendar->trades_on($exchange, $date_start) and $calendar->is_open_at($exchange, $date_start))) {
         if ($args->{landing_company}) {
             $lc          = LandingCompany::Registry::get($args->{landing_company});
             $markets     = $lc->legal_allowed_markets if $lc;
@@ -411,7 +412,7 @@ sub _validate_trading_times {
         return {
             message => 'underlying is closed at start ' . "[symbol: " . $underlying->symbol . "] " . "[start: " . $date_start->datetime . "]",
             message_to_client => [$message]};
-    } elsif (not $calendar->trades_on($date_expiry)) {
+    } elsif (not $calendar->trades_on($exchange, $date_expiry)) {
         return ({
             message           => "Exchange is closed on expiry date [expiry: " . $date_expiry->date . "]",
             message_to_client => [$ERROR_MAPPING->{TradingDayExpiry}],
@@ -419,12 +420,12 @@ sub _validate_trading_times {
     }
 
     if ($self->is_intraday) {
-        if (not $calendar->is_open_at($date_expiry)) {
+        if (not $calendar->is_open_at($exchange, $date_expiry)) {
             return {
                 message => 'underlying closed at expiry ' . "[symbol: " . $underlying->symbol . "] " . "[expiry: " . $date_expiry->datetime . "]",
                 message_to_client => [$ERROR_MAPPING->{TradingHoursExpiry}],
             };
-        } elsif ($underlying->intradays_must_be_same_day and $calendar->closing_on($date_start)->epoch < $date_expiry->epoch) {
+        } elsif ($underlying->intradays_must_be_same_day and $calendar->closing_on($exchange, $date_start)->epoch < $date_expiry->epoch) {
             return {
                 message           => "Intraday duration must expire on same day [symbol: " . $underlying->symbol . "]",
                 message_to_client => [$ERROR_MAPPING->{SameTradingDayExpiry}],
@@ -432,15 +433,15 @@ sub _validate_trading_times {
         }
     } elsif ($self->expiry_daily and not $self->is_atm_bet) {
         # For definite ATM contracts we do not have to check for upcoming holidays.
-        my $trading_days = $self->calendar->trading_days_between($date_start, $date_expiry);
-        my $holiday_days = $self->calendar->holiday_days_between($date_start, $date_expiry);
+        my $trading_days = $calendar->trading_days_between($exchange, $date_start, $date_expiry);
+        my $holiday_days = $calendar->holiday_days_between($exchange, $date_start, $date_expiry);
         my $calendar_days = $date_expiry->days_between($date_start);
 
         if ($underlying->market->equity and $trading_days <= 4 and $holiday_days >= 2) {
             my $safer_expiry = $date_expiry;
             my $trade_count  = $trading_days;
             while ($trade_count < 4) {
-                $safer_expiry = $underlying->trade_date_after($safer_expiry);
+                $safer_expiry = $calendar->trade_date_after($exchange, $safer_expiry);
                 $trade_count++;
             }
             my $message =
@@ -559,8 +560,10 @@ sub _validate_lifetime {
         ($min_duration, $max_duration) = ($min_duration->seconds, $max_duration->seconds);
         $message = 'Intraday duration not acceptable';
     } else {
-        my $calendar = $self->calendar;
-        $duration = $calendar->trading_date_for($self->date_expiry)->days_between($calendar->trading_date_for($self->date_start));
+        my $calendar = $self->trading_calendar;
+        my $exchange = $self->underlying->exchange;
+        $duration =
+            $calendar->trading_date_for($exchange, $self->date_expiry)->days_between($calendar->trading_date_for($exchange, $self->date_start));
         ($min_duration, $max_duration) = ($min_duration->days, $max_duration->days);
         $message = 'Daily duration is outside acceptable range';
     }
@@ -606,7 +609,7 @@ sub _validate_volsurface {
         $exceeded = '6h';
     } elsif ($self->market->name eq 'indices' and $surface_age > 24 and not $self->is_atm_bet) {
         $exceeded = '24h';
-    } elsif ($volsurface->recorded_date->days_between($self->calendar->trade_date_before($now)) < 0) {
+    } elsif ($volsurface->recorded_date->days_between($self->trading_calendar->trade_date_before($self->underlying->exchange, $now)) < 0) {
         # will discuss if this can be removed.
         $exceeded = 'different day';
     }
@@ -711,7 +714,7 @@ sub _build_date_expiry_blackouts {
     my $date_start = $self->date_start;
 
     if ($self->is_intraday) {
-        my $end_of_trading = $underlying->calendar->closing_on($self->date_start);
+        my $end_of_trading = $self->trading_calendar->closing_on($underlying->exchange, $self->date_start);
         if ($end_of_trading and my $expiry_blackout = $underlying->eod_blackout_expiry) {
             push @periods, [$end_of_trading->minus_time_interval($expiry_blackout)->epoch, $end_of_trading->epoch];
         }
@@ -738,11 +741,11 @@ sub _build_date_start_blackouts {
 
     my @periods;
     my $underlying = $self->underlying;
-    my $calendar   = $underlying->calendar;
+    my $calendar   = $self->trading_calendar;
     my $start      = $self->date_start;
 
     # We need to set sod_blackout_start for forex on Monday morning because otherwise, if there is no tick ,it will always take Friday's last tick and trigger the missing feed check
-    if (my $sod = $calendar->opening_on($start)) {
+    if (my $sod = $calendar->opening_on($underlying->exchange, $start)) {
         my $sod_blackout =
               ($underlying->sod_blackout_start) ? $underlying->sod_blackout_start
             : ($underlying->market->name eq 'forex' and $self->is_forward_starting and $start->day_of_week == 1) ? '10m'
@@ -752,7 +755,7 @@ sub _build_date_start_blackouts {
         }
     }
 
-    my $end_of_trading = $calendar->closing_on($start);
+    my $end_of_trading = $calendar->closing_on($underlying->exchange, $start);
     if ($end_of_trading) {
         if ($self->is_intraday) {
             my $eod_blackout =
