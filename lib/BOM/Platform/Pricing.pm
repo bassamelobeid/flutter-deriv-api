@@ -14,7 +14,7 @@ sub call_rpc {
 
     state $client = MojoX::JSON::RPC::Client->new();
     $client->ua->request_timeout(10);
-    my $url = BOM::Platform::Config::node->{pricing_rpc_url} . "/v3/$method";
+    my $url = ($ENV{PRICING_RPC_URL} || BOM::Platform::Config::node->{pricing_rpc_url}) . "/v3/$method";
 
     $params->{language} = request()->language;
 

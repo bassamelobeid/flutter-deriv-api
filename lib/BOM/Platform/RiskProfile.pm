@@ -9,6 +9,8 @@ A risk profile defines the maximum payout per contract and/or daily turnover lim
 =cut
 
 use Moose;
+
+use List::Util qw(first);
 use JSON qw(from_json);
 
 use LandingCompany::Offerings qw(get_offerings_with_filter);
@@ -276,11 +278,11 @@ sub _match_conditions {
     foreach my $key (keys %$custom) {
         next if exists $_no_condition{$key};    # skip test
         $real_tests_performed = 1;
-        next if exists $ci->{$key} and $custom->{$key} eq $ci->{$key};    # match: continue with next condition
-        return;                                                           # no match
+        next if exists $ci->{$key} and first { $ci->{$key} eq $_ } (split ',', $custom->{$key});    # match: continue with next condition
+        return;                                                                                     # no match
     }
 
-    return $real_tests_performed;                                         # all conditions match
+    return $real_tests_performed;                                                                   # all conditions match
 }
 
 no Moose;
