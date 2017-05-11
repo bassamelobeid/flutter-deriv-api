@@ -12,20 +12,19 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use Date::Utility;
 use Format::Util::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract );
-use Quant::Framework::VolSurface::Utils;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Platform::Runtime;
 use LandingCompany::Offerings qw(reinitialise_offerings);
+use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
-BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
+BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $test_date = Date::Utility->new('8-Nov-12');
-my $util      = Quant::Framework::VolSurface::Utils->new();
 # If this moves, the test might be otherwise wonky.
-my $ro_epoch = $util->NY1700_rollover_date_on($test_date)->epoch;
+my $ro_epoch = NY1700_rollover_date_on($test_date)->epoch;
 is($ro_epoch, 1352412000, 'Correct rollover time');
 
 my $date_start = $ro_epoch - (60 * 3);

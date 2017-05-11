@@ -22,13 +22,15 @@ use BOM::Platform::Config;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 
-has [
-    qw(smile_uncertainty_markup butterfly_markup vol_spread vol_spread_markup spot_spread_markup risk_markup forward_starting_markup economic_events_markup)
-    ] => (
+use Pricing::Engine::Markup::SpotSpread;
+use Pricing::Engine::Markup::VolSpread;
+use Pricing::Engine::Markup::SmileUncertainty;
+
+has [qw(butterfly_markup risk_markup forward_starting_markup)] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
-    );
+);
 
 has [qw(uses_dst_shifted_seasonality)] => (
     is         => 'ro',
@@ -42,50 +44,18 @@ has _volatility_seasonality_step_size => (
     default => 100,
 );
 
-sub _build_vol_spread {
+sub vol_spread_markup {
     my $self = shift;
 
     my $bet = $self->bet;
-
-    my $vol_spread = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'vol_spread',
-            description => 'The vol spread for this time',
-            set_by      => 'Quant::Framework::VolSurface',
-            base_amount => $bet->volsurface->get_spread({
-                    sought_point => 'max',
-                    day          => $bet->timeindays->amount
-                }
-            ),
-        });
-
-    return $vol_spread;
-}
-
-sub _build_vol_spread_markup {
-    my $self = shift;
-
-    my $vsm = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'vol_spread_markup',
-        description => 'vol spread adjustment',
-        set_by      => __PACKAGE__,
-        base_amount => 0,
-        minimum     => 0,
-        maximum     => 0.7,
-    });
-
-    my $bet = $self->bet;
-
-    my $vega = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'bet_vega',
-        description => 'The vega of the priced option',
-        set_by      => 'BOM::Product::Pricing::Engine::Role::MarketPricedPortfolios',
-        base_amount => abs($bet->vega),
-    });
-
-    $vsm->include_adjustment('reset',    $self->vol_spread);
-    $vsm->include_adjustment('multiply', $vega);
-
-    return $vsm;
+    return Pricing::Engine::Markup::VolSpread->new(
+        bet_vega   => $bet->vega,
+        vol_spread => $bet->volsurface->get_spread({
+                sought_point => 'max',
+                day          => $bet->timeindays->amount
+            }
+        ),
+    )->markup;
 }
 
 sub _build_butterfly_markup {
@@ -206,37 +176,13 @@ sub butterfly_cutoff_theoretical_value_amount {
     return $butterfly_cutoff_bet->pricing_engine->base_probability->amount;
 }
 
-sub _build_spot_spread_markup {
-
-    my $self = shift;
-
-    my $ss_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'spot_spread_markup',
-        description => 'Reflects the spread in market bid-ask for the underlying',
-        set_by      => __PACKAGE__,
-        base_amount => 0,
-        minimum     => 0,
-        maximum     => 0.01,
-    });
-
-    my $bet_delta = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'bet_delta',
-        description => 'The absolute value of delta of the priced option',
-        set_by      => 'BOM::Product::Pricing::Engine::Role::MarketPricedPortfolios',
-        base_amount => abs($self->bet->delta),
-    });
-
-    my $spot_spread = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'spot_spread',
-        description => 'Underlying bid-ask spread',
-        set_by      => 'Quant::Framework::Underlying',
-        base_amount => $self->bet->underlying->spot_spread,
-    });
-
-    $ss_markup->include_adjustment('reset',    $bet_delta);
-    $ss_markup->include_adjustment('multiply', $spot_spread);
-
-    return $ss_markup;
+sub spot_spread_markup {
+    my $self      = shift;
+    my $ss_markup = Pricing::Engine::Markup::SpotSpread->new(
+        bet_delta   => $self->bet->delta,
+        spot_spread => $self->bet->underlying->spot_spread,
+    );
+    return $ss_markup->markup;
 }
 
 # Hard-coded values to interpolate against
@@ -333,35 +279,21 @@ This markup should be built respectively by its engine or it will take zero as d
 
 =cut
 
-has economic_events_markup => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_economic_events_markup {
+sub economic_events_markup {
     my $self = shift;
 
-    my $economic_events_markup = Math::Util::CalculatedValue::Validatable->new({
+    return Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_markup',
         description => 'the maximum of spot or volatility risk markup of economic events',
         set_by      => __PACKAGE__,
         base_amount => 0,
     });
-
-    return $economic_events_markup;
 }
 
-# Generally for indices and stocks the minimum available tenor for smile is 30 days.
-# We use this to price short term contracts, so adding a 5% markup for the volatility uncertainty.
-sub _build_smile_uncertainty_markup {
+sub smile_uncertainty_markup {
     my $self = shift;
 
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'smile_uncertainty_markup',
-        description => 'markup to account for volatility uncertainty for short term contracts on indices and stocks',
-        set_by      => __PACKAGE__,
-        base_amount => 0.05,
-    });
+    return Pricing::Engine::Markup::SmileUncertainty->new->markup;
 }
 
 1;

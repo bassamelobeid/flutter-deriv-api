@@ -11,7 +11,11 @@ use BOM::Market::DataDecimate;
 use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
+
 use Pricing::Engine::Intraday::Forex::Base;
+use Pricing::Engine::Markup::EconomicEventsSpotRisk;
+use Pricing::Engine::Markup::EconomicEventsVolRisk;
+use Pricing::Engine::Markup::TentativeEvents;
 
 =head2 tick_source
 
@@ -61,7 +65,7 @@ has _supported_types => (
     },
 );
 
-has [qw(base_probability probability long_term_prediction economic_events_markup intraday_vanilla_delta risk_markup)] => (
+has [qw(base_probability probability long_term_prediction intraday_vanilla_delta risk_markup)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -114,7 +118,7 @@ sub _build_probability {
     return $ifx_prob;
 }
 
-sub _build_economic_events_markup {
+sub economic_events_markup {
     my $self = shift;
     my $bet  = $self->bet;
     my $markup;
@@ -132,39 +136,12 @@ sub _build_economic_events_markup {
     return $markup;
 }
 
-=head2 _tentative_events_markup
-
-As part of the Japanese regulatory requirement, we are required to provide bid and ask prices at all times during 
-trading hours. One of our backoffice controls, namely the tentative blackout period tool which stops sales of 
-**non-ATM** intraday contracts spanning a tentative period does not to fulfill this requirement. 
-
-This branch aims to the generalise the blackout period tool, by introducing a new measure called ‘expected returns’ 
-to control the range of option prices (of all types) across strike/barrier prices. 
-
-For an x% expected return input, all **non-ATM** intraday contracts (< 5 hours) spanning a tentative period are re-priced as follow:
- 
--   Binary calls at strike prices K will be priced as binary calls at strike prices K*(1-x%)
- 
--   Binary puts at strike prices K will be priced as binary puts at strike prices K*(1+x%)
- 
--   Touch options with upper barriers K will be priced as touch options with upper barriers K*(1-x%)
-
--   Touch options with lower barriers K will be priced as touch options with lower barriers K*(1+x%)
- 
--   No-touch options with upper barriers K will be priced as no-touch options with upper barrier K*(1+x%)
- 
--   No-touch options with lower barriers K will be priced as no-touch options with lower barriers K*(1-x%)
-
-Note: The tool does not affect intraday **ATM** contracts.
-
-=cut
-
 sub _tentative_events_markup {
     my $self = shift;
     my $bet  = $self->bet;
 
-    #Don't calculate tentative event shfit if contract is ATM
-    #In this case, economic events markup will be calculated using normal formula
+    # Don't calculate tentative event shfit if contract is ATM
+    # In this case, economic events markup will be calculated using normal formula
     if ($bet->is_atm_bet) {
         return Math::Util::CalculatedValue::Validatable->new({
             name        => 'economic_events_volatility_risk_markup',
@@ -174,119 +151,19 @@ sub _tentative_events_markup {
         });
     }
 
-    my $barrier          = $bet->barrier->as_absolute;
-    my $adjusted_barrier = $self->_get_barrier_for_tentative_events($barrier);
-
-    return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'economic_events_volatility_risk_markup',
-            description => 'markup to account for volatility risk of economic events',
-            set_by      => __PACKAGE__,
-            base_amount => 0,
-        }) if $barrier == $adjusted_barrier;
-
-    # There is a change needed in the barriers due to tentative events:
-    my $type = $bet->code;
-    #For one-touch and no-touch, If barrier crosses the spot because of our barrier adjustments, just make sure prob will be 100%
-    if ($type eq 'ONETOUCH' or $type eq 'NOTOUCH') {
-        if (   ($barrier < $bet->pricing_spot and $adjusted_barrier >= $bet->pricing_spot)
-            or ($barrier > $bet->pricing_spot and $adjusted_barrier <= $bet->pricing_spot))
-        {
-            return Math::Util::CalculatedValue::Validatable->new({
-                name        => 'economic_events_volatility_risk_markup',
-                description => 'markup to account for volatility risk of economic events',
-                set_by      => __PACKAGE__,
-                base_amount => 1.0,
-            });
-        }
-    }
-
-    my %args = (map { $_ => $bet->_pricing_args->{$_} } qw(spot t payouttime_code));
-
-    my $vol    = $bet->_pricing_args->{iv};
-    my $engine = Pricing::Engine::Intraday::Forex::Base->new(
-        ticks                => $self->ticks_for_trend,
-        strikes              => [$adjusted_barrier],
-        vol                  => $vol,
-        contract_type        => $bet->pricing_code,
-        payout_type          => 'binary',
-        underlying_symbol    => $bet->underlying->symbol,
-        long_term_prediction => $self->long_term_prediction->amount,
-        discount_rate        => 0,
-        mu                   => 0,
-        %args,
-    );
-    my $new_prob = $engine->base_probability;
-
-    $new_prob = $new_prob->amount if Scalar::Util::blessed($new_prob) && $new_prob->isa('Math::Util::CalculatedValue::Validatable');
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_volatility_risk_markup',
-        description => 'markup to account for volatility risk of economic events',
-        set_by      => __PACKAGE__,
-        base_amount => max(0, $new_prob - $self->base_probability->amount),
-    });
-}
-
-sub _get_barrier_for_tentative_events {
-    my $self    = shift;
-    my $barrier = shift;
-
-    my $bet = $self->bet;
-
-    #When pricing options during the news event period, the tentative event  shifts the strikes/barriers so that prices are marked up. Here are examples for each contract type:
-    #A binary call strike = 105 and an tentative event  of 2% will be priced as a binary call strike = 105/(1+2%)
-    #A binary put strike = 105 and an tentative event shift of 2% will be priced as a binary put strike = 105*(1+2%)
-    #A touch (upper) barrier = 105 and an tentative event shift of 2% will be priced as a touch barrier = 105/(1+2%)
-    #A touch (lower) barrier = 105 and an tentative event shift of 2% will be priced as a touch barrier = 105*(1+2%)
-    #A no-touch (upper) barrier = 105 and an tentative event shift of 2% will be priced as a no-touch barrier = 105*(1+2%)
-    #A no-touch (lower) barrier = 105 and an tentative event shift of 2% will be priced as a no-touch barrier = 105/(1+2%)
-    #get a list of applicable tentative economic events
-    my $tentative_events = $bet->tentative_events;
-
-    my $tentative_event_shift = 0;
-
-    foreach my $event (@{$tentative_events}) {
-        my $shift = $event->{tentative_event_shift} // 0;
-
-        #We add-up all tentative event shfit  applicable for any of symbols of the currency pair
-        if ($event->{symbol} eq $bet->underlying->asset_symbol) {
-            $tentative_event_shift += $shift;
-        } elsif ($event->{symbol} eq $bet->underlying->quoted_currency_symbol) {
-            $tentative_event_shift += $shift;
-        }
-    }
-
-    #quickly return if there is no shift
-    return $barrier if $tentative_event_shift == 0;
-
-    $tentative_event_shift /= 100;
-
-    my $er_factor = 1 + $tentative_event_shift;
-    my $barrier_u = $barrier >= $bet->pricing_spot;
-    my $barrier_d = $barrier <= $bet->pricing_spot;
-    my $type      = $bet->code;
-
-    #final barrier is either "Barrier * (1+ER)" or "Barrier * (1-ER)"
-    if ((
-               $type eq 'CALL'
-            or $type eq 'CALLE'
-        )
-        or ($type eq 'ONETOUCH'     && $barrier_u)
-        or ($type eq 'NOTOUCH'      && $barrier_d)
-        or ($type eq 'EXPIRYRANGE'  && $barrier_u)
-        or ($type eq 'EXPIRYRANGEE' && $barrier_u)
-        or ($type eq 'EXPIRYMISS'   && $barrier_d)
-        or ($type eq 'EXPIRYMISSE'  && $barrier_d)
-        or ($type eq 'RANGE'        && $barrier_d)
-        or ($type eq 'UPORDOWN'     && $barrier_u))
-    {
-
-        $er_factor = 1 - $tentative_event_shift;
-    }
-
-    $barrier *= $er_factor;
-
-    return $barrier;
+    my $pricing_args = $bet->_pricing_args;
+    return Pricing::Engine::Markup::TentativeEvents->new(
+        tentative_events       => $bet->tentative_events,
+        ticks                  => $self->ticks_for_trend,
+        barrier                => $pricing_args->{barrier1},
+        contract_type          => $bet->pricing_code,
+        underlying_symbol      => $bet->underlying->symbol,
+        asset_symbol           => $bet->underlying->asset_symbol,
+        quoted_currency_symbol => $bet->underlying->quoted_currency_symbol,
+        long_term_prediction   => $self->long_term_prediction->amount,
+        vol                    => $pricing_args->{iv},
+        map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)
+    )->markup;
 }
 
 has ticks_for_trend => (
@@ -452,12 +329,7 @@ sub _build_risk_markup {
     return $risk_markup;
 }
 
-has [qw(economic_events_volatility_risk_markup economic_events_spot_risk_markup)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_economic_events_volatility_risk_markup {
+sub economic_events_volatility_risk_markup {
     my $self = shift;
 
     # Tentative event markup takes precedence
@@ -465,118 +337,40 @@ sub _build_economic_events_volatility_risk_markup {
         return $tentative_events_markup;
     }
 
-    my $markup_base_amount = 0;
-
-    # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
-    my $pricing_args              = $self->bet->_pricing_args;
-    my $news_adjusted_pricing_vol = $pricing_args->{iv_with_news};
-    return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'economic_events_volatility_risk_markup',
-            description => 'markup to account for volatility risk of economic events',
-            set_by      => __PACKAGE__,
-            base_amount => 0,
-        }) if $pricing_args->{iv} == $news_adjusted_pricing_vol;
-
-    # Otherwise, we fall back to news-adjusted probability
-    my $tv_without_news = $self->base_probability->amount;
-
-    # Re-calculate  base probability using the news_adjusted_pricing_vol
-
-    my %args = (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code));
-
-    my $engine = Pricing::Engine::Intraday::Forex::Base->new(
+    my $bet          = $self->bet;
+    my $pricing_args = $self->bet->_pricing_args;
+    return Pricing::Engine::Markup::EconomicEventsVolRisk->new(
+        iv                   => $pricing_args->{iv},
+        iv_with_news         => $pricing_args->{iv_with_news},
         ticks                => $self->ticks_for_trend,
         strikes              => [$pricing_args->{barrier1}],
-        vol                  => $news_adjusted_pricing_vol,
-        contract_type        => $self->bet->pricing_code,
-        payout_type          => 'binary',
-        underlying_symbol    => $self->bet->underlying->symbol,
+        contract_type        => $bet->pricing_code,
+        underlying_symbol    => $bet->underlying->symbol,
         long_term_prediction => $self->long_term_prediction->amount,
-        discount_rate        => 0,
-        mu                   => 0,
-        %args,
-    );
-    my $tv_with_news = $engine->base_probability->amount;
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_volatility_risk_markup',
-        description => 'markup to account for volatility risk of economic events',
-        set_by      => __PACKAGE__,
-        base_amount => max(0, $tv_with_news - $tv_without_news),
-    });
+        map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)
+    )->markup;
 }
 
-sub _build_economic_events_spot_risk_markup {
+sub economic_events_spot_risk_markup {
     my $self = shift;
 
-    my $bet   = $self->bet;
-    my $start = $bet->effective_start;
-    my $end   = $bet->date_expiry;
-    my @time_samples;
-    for (my $i = $start->epoch; $i <= $end->epoch; $i += 15) {
-        push @time_samples, $i;
-    }
-
-    my $contract_duration = $bet->remaining_time->seconds;
-    my $lookback          = $start->minus_time_interval($contract_duration + 3600);
-    my $news_array        = $self->_get_economic_events;
-
-    my @combined = (0) x scalar(@time_samples);
-    foreach my $news (@$news_array) {
-        my $effective_news_time = _get_effective_news_time($news->{release_epoch}, $start->epoch, $contract_duration);
-        # +1e-9 is added to prevent a division by zero error if news magnitude is 1
-        my $decay_coef = -log(2 / ($news->{magnitude} + 1e-9)) / $news->{duration};
-        my $bias = $news->{bias};
-        my @triangle;
-        foreach my $time (@time_samples) {
-            if ($time < $effective_news_time) {
-                push @triangle, 0;
-            } else {
-                my $chunk = $bias * exp(-$decay_coef * ($time - $effective_news_time));
-                push @triangle, $chunk;
-            }
-        }
-        @combined = map { max($triangle[$_], $combined[$_]) } (0 .. $#time_samples);
-    }
-
-    my $spot_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_spot_risk_markup',
-        description => 'markup to account for spot risk of economic events',
-        set_by      => __PACKAGE__,
-        maximum     => 0.15,
-        base_amount => sum(@combined) / scalar(@combined),
-    });
-
-    return $spot_risk_markup;
+    my $bet = $self->bet;
+    return Pricing::Engine::Markup::EconomicEventsSpotRisk->new(
+        effective_start   => $bet->effective_start,
+        date_expiry       => $bet->date_expiry,
+        economic_events   => $self->economic_events,
+        underlying_symbol => $bet->underlying->symbol,
+    )->markup;
 }
 
-sub _get_economic_events {
-    my ($self) = @_;
+has volatility_scaling_factor => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_volatility_scaling_factor',
+);
 
-    my $qfs = Volatility::Seasonality->new;
-    my $events = $qfs->categorize_events($self->bet->underlying->symbol, $self->economic_events);
-
-    return $events;
-}
-
-sub _get_effective_news_time {
-    my ($news_time, $contract_start, $contract_duration) = @_;
-
-    my $five_minutes_in_seconds = 5 * 60;
-    my $shift_seconds           = 0;
-    my $contract_end            = $contract_start + $contract_duration;
-    if ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
-        $shift_seconds = $contract_start - $news_time;
-    } elsif ($news_time < $contract_end + $five_minutes_in_seconds and $news_time > $contract_end - $five_minutes_in_seconds) {
-        # Always shifts to the contract start time if duration is less than 5 minutes.
-        my $max_shift = min($five_minutes_in_seconds, $contract_duration);
-        my $desired_start = $contract_end - $max_shift;
-        $shift_seconds = $desired_start - $news_time;
-    }
-
-    my $effective_time = $news_time + $shift_seconds;
-
-    return $effective_time;
+sub _build_volatility_scaling_factor {
+    return shift->bet->_pricing_args->{volatility_scaling_factor};
 }
 
 has vol_spread => (
