@@ -6,6 +6,7 @@ extends 'BOM::MarketDataAutoUpdater';
 use Text::CSV::Slurp;
 use File::Slurp;
 
+use BOM::Platform::Chronicle;
 use Date::Utility;
 use Finance::Asset::Market::Registry;
 use BOM::MarketData qw(create_underlying);
@@ -13,8 +14,10 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Runtime;
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
+use Quant::Framework;
+use BOM::Platform::Chronicle
 
-has directory_to_save => (
+    has directory_to_save => (
     is      => 'ro',
     default => sub {
         return BOM::Platform::Runtime->instance->app_config->system->directory->feed . '/market';
@@ -54,6 +57,8 @@ sub run {
         exclude_disabled  => 1,
     );
 
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+
     foreach my $file (@files) {
         my @bloomberg_result_lines = read_file($file);
 
@@ -79,7 +84,7 @@ sub run {
             my $underlying = create_underlying($bom_underlying_symbol);
             my $now        = Date::Utility->new;
 
-            next if (not $underlying->trades_on($now));
+            next if (not $trading_calendar->trades_on($underlying->exchange, $now));
 
             if (my $validation_error = $self->_passes_sanity_check($data, $bom_underlying_symbol, @symbols_to_update)) {
                 $report->{$bom_underlying_symbol} = {
@@ -209,15 +214,15 @@ sub verify_ohlc_update {
 
         next if (-M $db_file and -M $db_file >= 20);    # do only those that were modified in last 20 days (others are junk/tests)
 
-        # we are checking back past 10 day OHLC, so start to look back calendar from that day
-        my $underlying = create_underlying({
-                symbol   => $underlying_symbol,
-                for_date => $now->minus_time_interval('10d')});
+        my $underlying = create_underlying($underlying_symbol);
 
-        next if $underlying->has_holiday_on($now);
+        # we are checking back past 10 day OHLC, so start to look back calendar from that day
+        my $for_date = $now->minus_time_interval('10d');
+        my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
+        next if $calendar->is_holiday_for($underlying->exchange, $now);
         next if ($underlying->submarket->is_OTC);
         if (my @filelines = read_file($db_file)) {
-            $self->_check_file($underlying, @filelines);
+            $self->_check_file($underlying, $calendar, @filelines);
         } else {
             die('Could not open file: ' . $db_file);
         }
@@ -228,7 +233,7 @@ sub verify_ohlc_update {
 }
 
 sub _check_file {
-    my ($self, $underlying, @filelines) = @_;
+    my ($self, $underlying, $calendar, @filelines) = @_;
 
     my $suspicious_move   = $underlying->market->suspicious_move;
     my $p_suspicious_move = $suspicious_move * 100;
@@ -246,7 +251,7 @@ sub _check_file {
             my $close = $5;
 
             my $when = Date::Utility->new($date);
-            next if (not $underlying->calendar->trades_on($when));
+            next if (not $calendar->trades_on($underlying->exchange, $when));
 
             if ($now->days_between($when) <= 10)    #don't bug cron with old suspicions
             {
@@ -276,7 +281,7 @@ sub _check_file {
                 if ($prevwhen and $when->is_same_as($prevwhen)) {
                     warn("--ERROR : $underlying_symbol $date appears twice");
                 } elsif ($prevdate) {
-                    if (my $trading_days_between = $underlying->calendar->trading_days_between($prevwhen, $when)) {
+                    if (my $trading_days_between = $calendar->trading_days_between($underlying->exchange, $prevwhen, $when)) {
                         warn(
                             "--Warning: $underlying_symbol MISSING DATES between $prevdate and $date (trading days between is: $trading_days_between)."
                         );
@@ -308,7 +313,7 @@ sub _check_file {
     #Sunday or Monday, or Saturday (db won't update until Monday's first tick)
     if ($now->is_a_weekend or $now->day_of_week == 1 and $date ne $now->date_ddmmmyy and $date ne $yesterday->date_ddmmmyy) {
         # Make sure we traded yesterday
-        if ($underlying->calendar->trades_on($yesterday)) {
+        if ($calendar->trades_on($underlying->exchange, $yesterday)) {
             warn("--$underlying_symbol ERROR can't find yesterday's data (" . $yesterday->date_ddmmmyy . ")");
         }
     }

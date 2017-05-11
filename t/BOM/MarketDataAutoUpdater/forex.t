@@ -16,6 +16,8 @@ use Postgres::FeedDB::Spot;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
+$ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = 0;
+use Postgres::FeedDB::Spot;
 my $module = Test::MockModule->new('Postgres::FeedDB::Spot');
 $module->mock(
     'spot_tick',
@@ -251,7 +253,6 @@ subtest "Friday after close, weekend, won't open check." => sub {
                 underlying    => $usdjpy,
                 recorded_date => Date::Utility->new($details->{datetime}),
             });
-
         my $result = $auf->passes_additional_check($surface);
         cmp_ok($result, '==', $details->{success}, "Surface with recorded_date for the '$name' test doesn't update.");
 
