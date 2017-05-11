@@ -3,13 +3,13 @@ package BOM::Test::Data::Utility::FeedTestDatabase;
 use strict;
 use warnings;
 
+use BOM::Test;
+use Cache::RedisDB;
 use MooseX::Singleton;
 use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::Tick;
 use Postgres::FeedDB::Spot::OHLC;
 use Try::Tiny;
-use BOM::Test;
-use Cache::RedisDB;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( setup_ticks );
@@ -73,9 +73,9 @@ sub setup_ticks {
     $command .= " -h localhost ";
     $command .= " $feed_file";
 
-    my $exit_status = system($command);
-    return 1 if $exit_status == 0;
-    warn "setup ticks failed: $?";
+    my $error = `$command 2>&1`;
+    return 1 if $? >> 8 == 0;
+    warn "setup ticks failed: $error";
 
     return;
 }
