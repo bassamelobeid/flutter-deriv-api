@@ -5,7 +5,7 @@ use warnings;
 
 use Dir::Self;
 use Cwd qw/abs_path/;
-use POSIX qw(setsid);
+use POSIX qw/setsid/;
 
 =head1 NAME
 
@@ -42,8 +42,10 @@ will use test redis instance instead of development.
 
 =cut
 
+my $sid;
+
 BEGIN {
-    setsid $$;
+    $sid = setsid();
     my $env = do {
         local @ARGV = ('/etc/rmg/environment');
         readline;
@@ -81,7 +83,7 @@ BEGIN {
 }
 
 END {
-    kill TERM => -$$;
+    kill TERM => -$sid;
 }
 
 1;
