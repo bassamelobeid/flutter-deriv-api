@@ -1,6 +1,6 @@
 package BOM::Test::Script;
 
-use MOJO::Base -base;
+use Mojo::Base -base;
 use Path::Tiny;
 use File::Basename;
 
