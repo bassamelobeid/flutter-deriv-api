@@ -3,6 +3,8 @@ package BOM::BloombergCalendar;
 use strict;
 use warnings;
 
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 use Quant::Framework::Holiday;
 use Quant::Framework::PartialTrading;
 use BOM::Backoffice::Request;
@@ -159,11 +161,10 @@ sub _process {
 sub _save_early_closes_calendar {
     my $data = shift;
     my $calendar_data;
+    my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
     foreach my $exchange_name (keys %$data) {
-        my $calendar = Quant::Framework::TradingCalendar->new({
-                exchange         => $exchange_name,
-                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader()});
-        my $partial_trading = $calendar->market_times->{partial_trading};
+        my $exchange        = Quant::Framework::Exchange->create_exchange($exchange_name);
+        my $partial_trading = $exchange->market_times->{partial_trading};
         if (not $partial_trading) {
             print "$exchange_name does not have partial trading configuration but it has early closes. Please check. \n";
             next;
@@ -174,7 +175,7 @@ sub _save_early_closes_calendar {
             my $epoch = Date::Utility->new($date)->epoch;
 
             my $description =
-                  $calendar->is_in_dst_at($epoch)
+                  $calendar->is_in_dst_at($exchange, $epoch)
                 ? $partial_trading->{dst_close}->interval
                 : $partial_trading->{standard_close}->interval;
             push @{$calendar_data->{$date}{$description}}, $exchange_name;
