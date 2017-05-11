@@ -308,9 +308,9 @@ lives_ok {
             id => $fmbid,
         });
 
-    ok($copier_acc_mapper->get_balance - $copier_balance + $sell_price < 1, "correct copier balance");
+    is($copier_acc_mapper->get_balance, $copier_balance + $sell_price, "correct copier balance");
 
-    ok($trader_acc_mapper->get_balance - $trader_balance + $sell_price < 1, "correct trader balance");
+    is($trader_acc_mapper->get_balance, $trader_balance + $sell_price, "correct trader balance");
 }
 'sell 2nd a bet';
 
@@ -330,9 +330,9 @@ lives_ok {
     my $trader_balance = $trader_acc_mapper->get_balance + 0;
 
     ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-    ok($copier_acc_mapper->get_balance - $copier_balance < 1, "correct copier balance");
+    is($copier_acc_mapper->get_balance, $copier_balance, "correct copier balance");
 
-    ok($trader_acc_mapper->get_balance - $trader_balance - $buy_price < 1, "correct trader balance");
+    is($trader_acc_mapper->get_balance, $trader_balance - $buy_price, "correct trader balance");
 
 }
 'unfollowing';
