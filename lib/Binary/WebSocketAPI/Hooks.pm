@@ -322,10 +322,11 @@ sub on_client_connect {
 sub on_client_disconnect {
     my ($c) = @_;
     warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
+    forget_all($c);
 
     delete $c->app->active_connections->{$c};
     $c->rate_limitations_save;
-    forget_all();
+
     my $timer_id = $c->stash->{rate_limitations_timer};
     Mojo::IOLoop->remove($timer_id) if $timer_id;
 
