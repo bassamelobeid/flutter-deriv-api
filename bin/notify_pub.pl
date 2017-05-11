@@ -11,4 +11,7 @@ if ($pid_file) {
     $pid_file = Path::Tiny->new($pid_file);
     $pid_file->spew($$);
 }
-exit BOM::Platform::Script::NotifyPub::run();
+my $exit_code = BOM::Platform::Script::NotifyPub::run();
+$pid_file->remove if ($pid_file);
+exit $exit_code;
+
