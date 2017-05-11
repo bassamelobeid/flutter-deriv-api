@@ -25,9 +25,9 @@ has transaction => (is => 'ro');
 sub validate_trx_sell {
     my $self = shift;
     ### Client-depended checks
-    my $clients = [];
+    my $clients;
     $clients = $self->transaction->multiple if $self->transaction;
-    $clients = [map { +{client => $_} } @{$self->clients}] unless scalar @$clients;
+    $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
@@ -56,9 +56,9 @@ sub validate_trx_buy {
     # ask your friendly DBA team if in doubt
     my $res;
     ### TODO: It's temporary trick for copy trading. Needs to refactor in BOM::Transaction ( remove multiple, change client to clients )
-    my $clients = [];
+    my $clients;
     $clients = $self->transaction->multiple if $self->transaction;
-    $clients = [map { +{client => $_} } @{$self->clients}] unless scalar @$clients;
+    $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
