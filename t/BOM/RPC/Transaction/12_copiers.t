@@ -50,8 +50,9 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 sub create_client {
+    my $is_mf = shift;
     return Client::Account->register_and_return_new_client({
-        broker_code      => 'CR',
+        broker_code => ($is_mf ? 'MF' : 'CR'),
         client_password  => BOM::Platform::Password::hashpw('12345678'),
         salutation       => 'Mr',
         last_name        => 'Doe',
@@ -212,7 +213,7 @@ lives_ok {
 
     isnt($trader_acc = $trader->find_account(query => [currency_code => 'USD'])->[0], undef, 'got USD account');
 
-    is($trader_acc_mapper->get_balance + 0, 15000, 'USD balance is 15000 got: ' . $balance);
+    is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $balance);
 }
 'trader funded';
 
@@ -263,6 +264,22 @@ lives_ok {
 'following validation';
 
 lives_ok {
+    my $wrong_copier = create_client(1);
+    top_up $wrong_copier, 'EUR', 1000;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
+
+    my $res = BOM::RPC::v3::CopyTrading::copy_start({
+            args => {
+                copy_start  => $token,
+                trade_types => 'CALL',
+            },
+            client => $wrong_copier
+        });
+    is($res->{error}{code}, 'CopyTradingWrongCurrency', 'check currency');
+}
+'Wrong currency';
+
+lives_ok {
     require Test::FailWarnings;
 
     {
@@ -271,7 +288,7 @@ lives_ok {
         ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
 
         $balance -= $buy_price;
-        is($balance_after + 0, $balance, 'correct balance_after');
+        is(int $balance_after, int $balance, 'correct balance_after');
     }
 }
 'bought USD bet';
@@ -284,15 +301,16 @@ lives_ok {
         'currency_code'  => 'USD',
     });
 
-    is($copier_acc_mapper->get_balance + 0, 15000, 'USD balance is 15000 got: ' . $balance);
+    is(int $copier_acc_mapper->get_balance, 15000, 'USD balance is 15000 got: ' . $balance);
 }
 'copier funded';
 
 lives_ok {
     ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-    is($copier_acc_mapper->get_balance + 0, 15000 - $buy_price, 'correct copier balance');
+
+    is(int $copier_acc_mapper->get_balance, int(15000 - $buy_price), 'correct copier balance');
     $balance -= $buy_price;
-    is($balance_after + 0, $balance, 'correct balance_after');
+    is(int $balance_after, int $balance, 'correct balance_after');
 }
 'bought 2nd USD bet';
 
@@ -308,9 +326,9 @@ lives_ok {
             id => $fmbid,
         });
 
-    is($copier_acc_mapper->get_balance, $copier_balance + $sell_price, "correct copier balance");
+    is(int $copier_acc_mapper->get_balance, int($copier_balance + $sell_price), "correct copier balance");
 
-    is($trader_acc_mapper->get_balance, $trader_balance + $sell_price, "correct trader balance");
+    is(int $trader_acc_mapper->get_balance, int($trader_balance + $sell_price), "correct trader balance");
 }
 'sell 2nd a bet';
 
@@ -330,9 +348,9 @@ lives_ok {
     my $trader_balance = $trader_acc_mapper->get_balance + 0;
 
     ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-    is($copier_acc_mapper->get_balance, $copier_balance, "correct copier balance");
+    is(int($copier_acc_mapper->get_balance), int($copier_balance), "correct copier balance");
 
-    is($trader_acc_mapper->get_balance, $trader_balance - $buy_price, "correct trader balance");
+    is(int($trader_acc_mapper->get_balance), int($trader_balance - $buy_price), "correct trader balance");
 
 }
 'unfollowing';

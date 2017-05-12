@@ -206,7 +206,7 @@ subtest '_validate_start_end' => sub {
         'If sent adjust_start_time param then it should return ticks with shifted start time';
 
     set_fixed_time($now->plus_time_interval('5h')->epoch);
-    my $ul = create_underlying('HSI');
+    my $ul               = create_underlying('HSI');
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
     $params->{args}->{end}   = $trading_calendar->closing_on($ul->exchange, $now)->plus_time_interval('1m')->epoch;
     $params->{args}->{start} = $trading_calendar->closing_on($ul->exchange, $now)->minus_time_interval('39m')->epoch;

@@ -55,6 +55,13 @@ sub copy_start {
                 message_to_client => localize('Traders are not allowed to copy trades.')});
     }
 
+    unless ($client->currency eq $trader->currency) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'CopyTradingWrongCurrency',
+            message_to_client => localize('Your account currency and trader currency must be same.'),
+        });
+    }
+
     my @trade_types = ref($args->{trade_types}) eq 'ARRAY' ? @{$args->{trade_types}} : $args->{trade_types};
     my $contract_types = Finance::Contract::Category::get_all_contract_types();
     for my $type (grep { $_ } @trade_types) {
