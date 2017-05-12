@@ -70,16 +70,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     },
 );
 
-my $vs = Volatility::Seasonality->new(
-    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-    chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-);
-
-foreach my $u (qw(frxUSDJPY frxGBPUSD frxGBPJPY)) {
-    $vs->generate_economic_event_seasonality({underlying_symbol => $u});
-}
-
-test_economic_events_markup(0.01, 0.01, 'frxUSDJPY');
+test_economic_events_markup(0.01,  0.01,  'frxUSDJPY');
 test_economic_events_markup(0.01, 0.01, 'frxGBPUSD');
 test_economic_events_markup(0.01, 0.01, 'frxGBPJPY');
 

@@ -165,13 +165,12 @@ subtest 'atm prices without economic events' => sub {
 };
 
 subtest 'prices with economic events' => sub {
-    Volatility::Seasonality->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-        )->generate_economic_event_seasonality({
-            underlying_symbol => $underlying->symbol,
-            economic_events   => $news
-        });
+    Volatility::Seasonality::generate_economic_event_seasonality({
+        underlying_symbols => [$underlying->symbol],
+        economic_events    => $news,
+        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer,
+        date               => $date_start,
+    });
 
     foreach my $contract_type (@ct) {
         my @barriers = @{
