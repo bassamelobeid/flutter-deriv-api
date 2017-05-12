@@ -96,7 +96,7 @@ subtest 'Numbers and stuff.' => sub {
     my $bet_params = {
         bet_type     => 'CALL',
         date_expiry  => '13-Feb-08',    # 13-Feb-08 107.36 108.38 106.99 108.27
-        date_pricing => '13-Feb-08',
+        date_pricing => '2008-02-13 23:59:59',
         date_start   => 1200614400,     # 18-Jan-08 106.42 107.59 106.38 106.88
         underlying   => 'frxUSDJPY',
         payout       => 1,
@@ -198,26 +198,6 @@ subtest 'Range on R_100.' => sub {
         [qw(barrier1 barrier2 iv payouttime_code q_rate r_rate spot t mu discount_rate)],
         'pricing_args has expected keys.'
     );
-};
-
-subtest 'Exchange' => sub {
-    plan tests => 1;
-
-    my $bet_params = {
-        bet_type     => 'RANGE',
-        date_start   => '1-Nov-12',
-        date_expiry  => '2-Nov-12',
-        underlying   => 'R_100',
-        high_barrier => 80000,
-        low_barrier  => 70000,
-        payout       => 100,
-        currency     => 'USD',
-        current_spot => 70000,
-    };
-
-    my $bet = produce_contract($bet_params);
-    is($bet->calendar->exchange_symbol, $bet->underlying->calendar->exchange_symbol, ' Bet exchange matches that of underlying');
-
 };
 
 done_testing;

@@ -45,6 +45,7 @@ use Date::Utility;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Time::Duration::Concise;
 
+use Quant::Framework;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 use Postgres::FeedDB::Spot::Tick;
@@ -154,12 +155,19 @@ has build_parameters => (
     required => 1,
 );
 
-has calendar => (
+has trading_calendar => (
     is      => 'ro',
-    isa     => 'Quant::Framework::TradingCalendar',
     lazy    => 1,
-    default => sub { return shift->underlying->calendar; },
+    builder => '_build_trading_calendar',
 );
+
+sub _build_trading_calendar {
+    my $self = shift;
+
+    my $for_date = $self->underlying->for_date;
+
+    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
+}
 
 has [qw(opposite_contract opposite_contract_for_sale)] => (
     is         => 'ro',
@@ -419,13 +427,13 @@ When the contract was settled (can be C<undef>).
 =cut
 
 sub date_settlement {
-    my $self       = shift;
-    my $end_date   = $self->date_expiry;
-    my $underlying = $self->underlying;
+    my $self     = shift;
+    my $end_date = $self->date_expiry;
+    my $exchange = $self->underlying->exchange;
 
     my $date_settlement = $end_date;    # Usually we settle when we expire.
-    if ($self->expiry_daily and $self->calendar->trades_on($end_date)) {
-        $date_settlement = $self->calendar->settlement_on($end_date);
+    if ($self->expiry_daily and $self->trading_calendar->trades_on($exchange, $end_date)) {
+        $date_settlement = $self->trading_calendar->settlement_on($exchange, $end_date);
     }
 
     return $date_settlement;
@@ -475,7 +483,7 @@ sub longcode {
         $when_end = [$self->get_time_to_expiry({from => $self->date_start})->as_string];
         $when_start = ($forward_starting_contract) ? [$self->date_start->db_timestamp . ' GMT'] : [$generic_mapping->{contract_start_time}];
     } elsif ($expiry_type eq 'daily') {
-        my $close = $self->underlying->calendar->closing_on($self->date_expiry);
+        my $close = $self->trading_calendar->closing_on($self->underlying->exchange, $self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
             $when_end = [$self->date_expiry->datetime . ' GMT'];
         } else {
@@ -539,14 +547,16 @@ sub _check_is_intraday {
 
     return 0 if $contract_duration > 86400;
 
+    my $trading_calendar = $self->trading_calendar;
+    my $exchange         = $self->underlying->exchange;
     # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
-    my $closing = $self->calendar->closing_on($self->date_expiry);
+    my $closing = $trading_calendar->closing_on($exchange, $self->date_expiry);
 
     # An intraday if the market is close on expiry
     return 1 unless $closing;
-    my $calendar = $self->calendar;
     # daily trading seconds based on the market's trading hour
-    my $daily_trading_seconds = $calendar->closing_on($date_expiry)->epoch - $calendar->opening_on($date_expiry)->epoch;
+    my $daily_trading_seconds =
+        $trading_calendar->closing_on($exchange, $date_expiry)->epoch - $trading_calendar->opening_on($exchange, $date_expiry)->epoch;
     return 0 if $closing->is_same_as($self->date_expiry) and $contract_duration >= $daily_trading_seconds;
 
     return 1;
@@ -889,14 +899,13 @@ sub _build_exit_tick {
             $exit_tick = $valid_exit_tick_at_expiry;
             $self->is_valid_exit_tick(1);
         }
-
     }
 
     if ($self->entry_tick and $exit_tick) {
         my ($entry_tick_date, $exit_tick_date) = map { Date::Utility->new($_) } ($self->entry_tick->epoch, $exit_tick->epoch);
         if (    not $self->expiry_daily
             and $underlying->intradays_must_be_same_day
-            and $self->calendar->trading_days_between($entry_tick_date, $exit_tick_date))
+            and $self->trading_calendar->trading_days_between($underlying->exchange, $entry_tick_date, $exit_tick_date))
         {
             $self->_add_error({
                 message => 'Exit tick date differs from entry tick date on intraday '
