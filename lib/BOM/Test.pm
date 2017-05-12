@@ -46,6 +46,7 @@ my $sid;
 
 BEGIN {
     $sid = setsid();
+    $sid = $$ if $sid == -1;
     my $env = do {
         local @ARGV = ('/etc/rmg/environment');
         readline;
