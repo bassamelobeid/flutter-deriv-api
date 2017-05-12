@@ -25,6 +25,7 @@ use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Backoffice::Request qw(request);
 use Quant::Framework::CorrelationMatrix;
+use BOM::MarketDataAutoUpdater::Forex;
 my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
@@ -114,6 +115,12 @@ if ($save_economic_event) {
                 chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
             })->save;
+        Volatility::Seasonality::generate_economic_event_seasonality({
+            underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
+            economic_events    => $ref->{events},
+            chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+        });
+        BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
 
         print 'Econmic Announcement saved!</br></br>';
         $save_economic_event = 0;
