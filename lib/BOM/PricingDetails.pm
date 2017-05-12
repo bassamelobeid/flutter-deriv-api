@@ -85,7 +85,7 @@ sub debug_link {
 
     # try to find a way of better prefixes, to allow multiple simultaneous requests
     # like to tie to worker index
-    Volatility::Seasonality::set_prefix('bo_'.time."_");
+    Volatility::Seasonality::set_prefix('bo_' . time . "_");
     my $EEC = Quant::Framework::EconomicEventCalendar->new({
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
