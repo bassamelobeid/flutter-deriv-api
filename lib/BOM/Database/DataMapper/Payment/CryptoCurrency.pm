@@ -1,4 +1,4 @@
-package BOM::Database::DataMapper::Payment::Btc;
+package BOM::Database::DataMapper::Payment::CryptoCurrency;
 
 use Moose;
 extends 'BOM::Database::DataMapper::Payment';
@@ -7,7 +7,7 @@ has '_mapper_required_objects' => (
     is       => 'ro',
     isa      => 'ArrayRef[Str]',
     init_arg => undef,
-    default  => sub { return ['btc'] },
+    default  => sub { return ['cryptocurrency'] },
 );
 
 =item is_duplicate_payment
@@ -21,7 +21,7 @@ sub is_duplicate_payment {
     my $args = shift;
 
     # transaction id should be unique since it's BTC address
-    my ($payment) = $self->db->dbh->selectrow_array('SELECT TRUE FROM payment.btc WHERE transaction_id = ?', undef, $args->{'transaction_id'});
+    my ($payment) = $self->db->dbh->selectrow_array('SELECT TRUE FROM payment.cryptocurrency WHERE address = ?', undef, $args->{'address'});
     return $payment;
 }
 
@@ -32,6 +32,6 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-BOM::Database::DataMapper::Payment::Btc
+BOM::Database::DataMapper::Payment::CryptoCurrency
 
 =cut
