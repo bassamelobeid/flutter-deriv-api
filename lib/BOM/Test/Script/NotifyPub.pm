@@ -16,7 +16,7 @@ BEGIN {
 
 END {
     if ($script) {
-        $script->stop_script;
+        #$script->stop_script;
     }
 }
 
