@@ -12,7 +12,7 @@ has '_mapper_required_objects' => (
 
 =item is_duplicate_payment
 
-Check the trace_id, transaction_id of payments to find duplicate, used during BTC validation
+Check the trace_id, transaction_id of payments to find duplicate, used during CTC validation
 
 =cut
 
@@ -21,7 +21,7 @@ sub is_duplicate_payment {
     my $args = shift;
 
     # transaction id should be unique since it's BTC address
-    my ($payment) = $self->db->dbh->selectrow_array('SELECT TRUE FROM payment.cryptocurrency WHERE address = ?', undef, $args->{'address'});
+    my ($payment) = $self->db->dbh->selectrow_array('SELECT TRUE FROM payment.cryptocurrency WHERE address = ? AND currency_code = ?', undef, $args->{'address'}, $self->{currency_code});
     return $payment;
 }
 

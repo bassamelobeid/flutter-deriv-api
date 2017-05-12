@@ -13,7 +13,8 @@ my $payment_data_mapper;
 
 lives_ok {
     $payment_data_mapper = BOM::Database::DataMapper::Payment::CryptoCurrency->new({
-        broker_code => 'CR',
+        broker_code     => 'CR',
+        currency_code   => 'XBT'
     });
 }
 'Expect to initialize the object';
