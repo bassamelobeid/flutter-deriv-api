@@ -95,15 +95,13 @@ sub DailyTurnOverReport {
         foreach my $curr (@all_currencies) {
             my $rate = $rates{$curr};
 
-            my $b    = $aggregate_transactions->{$when->date_yyyymmdd}->{$action_bb}->{$curr}->{'amount'};
-            my $buys = $b;
-            $USDbuys += $b * $rate;
-            $allbuys{$curr} += $b;
+            my $buys = $aggregate_transactions->{$when->date_yyyymmdd}->{$action_bb}->{$curr}->{'amount'} // 0;
+            $USDbuys += $buys * $rate;
+            $allbuys{$curr} += $buys;
 
-            my $s     = $aggregate_transactions->{$when->date_yyyymmdd}->{$action_ss}->{$curr}->{'amount'};
-            my $sells = $s;
-            $USDsells += $s * $rate;
-            $allsells{$curr} += $s;
+            my $sells = $aggregate_transactions->{$when->date_yyyymmdd}->{$action_ss}->{$curr}->{'amount'} // 0;
+            $USDsells += $sells * $rate;
+            $allsells{$curr} += $sells;
 
             $tday{buys}->{$curr}  = int $buys;
             $tday{sells}->{$curr} = int $sells;
@@ -118,7 +116,7 @@ sub DailyTurnOverReport {
         $tday{pl} = int $pl;
 
         # aggregate outstanding bets
-        my $aggbets = int($eod_market_values->{$when->epoch}->{market_value});
+        my $aggbets = int($eod_market_values->{$when->epoch}->{market_value} // 0);
         $tday{agg_bets} = $aggbets;
 
         if ($aggbets and ($USDbuys > 1 or $USDsells > 1)) {
