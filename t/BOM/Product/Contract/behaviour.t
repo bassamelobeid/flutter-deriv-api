@@ -207,7 +207,6 @@ subtest 'intraday duration contract settlement' => sub {
     $c = produce_contract($bet_params);
     ok $c->is_after_expiry, 'after expiry';
     ok $c->is_expired, 'it is expireable';
-    $DB::single=1;
     ok !$c->is_settleable, 'it is not settleable as no exit tick';
     ok $c->is_after_settlement, 'after settlement';
     ok $c->exit_tick,           'there is exit tick';
