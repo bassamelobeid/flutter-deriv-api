@@ -19,7 +19,7 @@ lives_ok {
 }
 'Expect to initialize the object';
 
-my $dupe = $payment_data_mapper->is_duplicate_payment({address => 'MY_LEAST_FAVORITE_BITCOIN'});
+my $dupe = $payment_data_mapper->is_duplicate_payment({address => 'MY_LEAST_FAVORITE_BITCOIN', client_loginid => 'MT1500'});
 
 is($dupe, undef, 'we should not have a duplicate payment yet');
 
