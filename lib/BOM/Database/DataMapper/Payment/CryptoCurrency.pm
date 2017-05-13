@@ -22,7 +22,9 @@ sub is_duplicate_payment {
 
     # transaction id should be unique since it's BTC address
     # we have to allow a match on the same loginid since for withdrawals, we first create a record in here and then proceed with further processing, which includes a call here ;-)
-    my ($payment) = $self->db->dbh->selectrow_array('SELECT TRUE FROM payment.cryptocurrency WHERE address = ? AND currency_code = ? AND loginid != ?', undef, $args->{'address'}, $self->{'currency_code'}, $self->{'client_loginid'});
+    # in at least the test environment, we may not have a {'client_logind'} class property, so we will accept an optional key in the $args
+    my $loginid = $self->{'client_loginid'} || $args->{'client_loginid'} || die "We need a loginid in order to properly check for a dupe";
+    my ($payment) = $self->db->dbh->selectrow_array('SELECT TRUE FROM payment.cryptocurrency WHERE address = ? AND currency_code = ? AND loginid != ?', undef, $args->{'address'}, $self->{'currency_code'}, $loginid);
     return $payment;
 }
 
