@@ -25,7 +25,7 @@ sub is_duplicate_payment {
     # in at least the test environment, we may not have a {'client_logind'} class property, so we will accept an optional key in the $args
     my $loginid = $self->{'client_loginid'} || $args->{'client_loginid'} || die "We need a loginid in order to properly check for a dupe";
     # Adding coalesce on loginid since we would never match on NULL and I'm not sure that the value will always be there... A NOT NULL constraint on that table column would do it, but have to save that for another day.
-    my ($payment) = $self->db->dbh->selectrow_array('SELECT TRUE FROM payment.cryptocurrency WHERE address = ? AND currency_code = ? AND COALESCE(loginid, '') != ?', undef, $args->{'address'}, $self->{'currency_code'}, $loginid);
+    my ($payment) = $self->db->dbh->selectrow_array("SELECT TRUE FROM payment.cryptocurrency WHERE address = ? AND currency_code = ? AND COALESCE(loginid, '') != ?", undef, $args->{'address'}, $self->{'currency_code'}, $loginid);
     return $payment;
 }
 
