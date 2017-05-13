@@ -23,6 +23,6 @@ my $dupe = $payment_data_mapper->is_duplicate_payment({address => 'MY_LEAST_FAVO
 
 is($dupe, undef, 'we should not have a duplicate payment yet');
 
-$dupe = $payment_data_mapper->is_duplicate_payment({address => 'MY_FAVORITE_BITCOIN'});
+$dupe = $payment_data_mapper->is_duplicate_payment({address => 'SOMEBODY_ELSES_COIN', client_loginid => 'MT1500'});
 
 is($dupe, 1, 'we have a duplicate');
