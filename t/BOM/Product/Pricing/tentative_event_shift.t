@@ -68,13 +68,12 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         events        => $events,
     });
 
-Volatility::Seasonality->new(
-    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-    chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-    )->generate_economic_event_seasonality({
-        underlying_symbol => 'frxEURUSD',
-        economic_events   => $events
-    });
+Volatility::Seasonality::generate_economic_event_seasonality({
+    underlying_symbols => ['frxEURUSD'],
+    economic_events    => $events,
+    chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer,
+    date               => $now,
+});
 
 my $contract_args = {
     underlying   => 'frxEURUSD',
