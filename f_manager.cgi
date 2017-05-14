@@ -116,8 +116,14 @@ if (request()->param('ctc_sent')) {
     $dbh->do("UPDATE payment.cryptocurrency SET status='SENT' WHERE address = ?", undef, $ctc_sent);
 }
 
-my $btc_trxs = $dbh->selectall_arrayref("SELECT * FROM payment.cryptocurrency WHERE currency_code='XBT' AND transaction_type='withdrawal' AND status='LOCKED'", {});
-$tt->process('backoffice/account/manager_btc_trxs.tt', { trxs => $btc_trxs }) || die $tt->error();
+my $btc_trxs = $dbh->selectall_arrayref("
+    SELECT * FROM payment.cryptocurrency
+    WHERE currency_code='XBT' AND transaction_type='withdrawal' AND status='LOCKED'
+", { Slice => {} });
+$tt->process('backoffice/account/manager_btc_trxs.tt', {
+    trxs => $btc_trxs,
+    broker => $broker,
+}) || die $tt->error();
 
 
 code_exit_BO();

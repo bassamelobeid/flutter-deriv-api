@@ -17,7 +17,7 @@
         <td>[% trx.amount %]</td>
         <td>[% trx.creation_date %]</td>
         <td>[% trx.currency_code %]</td>
-        <td>?ctc_sent=[% trx.address %]</td>
+        <td><a href="?broker=[% broker %]&ctc_sent=[% trx.address %]">Mark as SENT</a></td>
     </tr>
     [% END %]
 
