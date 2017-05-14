@@ -22,3 +22,5 @@
     [% END %]
 
 </table>
+
+<p><a href="?broker=[% broker %]&ctc_recent=1">View Recent 50 SENTs</a></p>

@@ -113,13 +113,26 @@ my $dbh = $clientdb->db->dbh;
 
 if (request()->param('ctc_sent')) {
     my $ctc_sent = request()->param('ctc_sent');
-    $dbh->do("UPDATE payment.cryptocurrency SET status='SENT' WHERE address = ?", undef, $ctc_sent);
+    $dbh->do("
+        UPDATE payment.cryptocurrency
+        SET status='SENT', withdrawal_sent_date=NOW()
+        WHERE address = ?
+    ", undef, $ctc_sent);
 }
 
-my $btc_trxs = $dbh->selectall_arrayref("
-    SELECT * FROM payment.cryptocurrency
-    WHERE currency_code='XBT' AND transaction_type='withdrawal' AND status='LOCKED'
-", { Slice => {} });
+my $btc_trxs;
+if (request()->param('ctc_recent')) {
+    $btc_trxs = $dbh->selectall_arrayref("
+        SELECT * FROM payment.cryptocurrency
+        WHERE currency_code='XBT' AND transaction_type='withdrawal' AND status='SENT'
+        ORDER BY withdrawal_sent_date DESC LIMIT 50
+    ", { Slice => {} });
+} else {
+    $btc_trxs = $dbh->selectall_arrayref("
+        SELECT * FROM payment.cryptocurrency
+        WHERE currency_code='XBT' AND transaction_type='withdrawal' AND status='LOCKED'
+    ", { Slice => {} });
+}
 $tt->process('backoffice/account/manager_btc_trxs.tt', {
     trxs => $btc_trxs,
     broker => $broker,
