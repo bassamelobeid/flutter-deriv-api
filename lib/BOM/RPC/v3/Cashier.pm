@@ -214,7 +214,7 @@ sub cashier {
 
     ## if currency == XBT, use btc cashier
     if ($currency eq 'XBT') {
-        return _get_btc_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
+        return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
     }
 
     # hit DF's CreateCustomer API
@@ -357,7 +357,7 @@ sub _get_epg_cashier_url {
     return _get_cashier_url('epg', @_);
 }
 
-sub _get_btc_cashier_url {
+sub _get_cryptocurrency_cashier_url {
     return _get_cashier_url('btc', @_);
 }
 
@@ -370,9 +370,17 @@ sub _get_cashier_url {
 
     my $url = 'https://';
     if (($website_name // '') =~ /qa/) {
-        $url .= 'www.' . lc($website_name) . "/$prefix";
+        if ($prefix eq 'epg') {
+            $url .= 'www.' . lc($website_name) . "/$prefix";
+        } else {
+            $url .= 'www.' . lc($website_name) . "/cryptocurrency/$prefix";
+        }
     } else {
-        $url .= "$prefix.binary.com/$prefix";
+        if ($prefix eq 'epg') {
+            $url .= "$prefix.binary.com/$prefix";
+        } else{
+            $url .= "cryptocurrency.binary.com/cryptocurrency/$prefix";
+        }
     }
 
     $url .= "/handshake?token=" . _get_handoff_token_key($loginid) . "&loginid=$loginid&currency=$currency&action=$action&l=$language";
