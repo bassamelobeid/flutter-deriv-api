@@ -24,12 +24,6 @@ sub pid {
     return $pid;
 }
 
-sub start_script_if_not_running {
-    my $self = shift;
-    return unless $self->script;
-    return $self->check_script() || $self->start_script();
-}
-
 sub check_script {
     my $self = shift;
     my $pid  = $self->pid;
@@ -40,8 +34,9 @@ sub check_script {
 }
 
 sub start_script {
-    my $self     = shift;
-    my $script   = $self->script;
+    my $self   = shift;
+    my $script = $self->script;
+    return unless $script;
     my $pid_file = $self->pid_file;
     $pid_file->remove;
     my $args = $self->args // '';
