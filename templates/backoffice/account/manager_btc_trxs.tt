@@ -37,5 +37,5 @@
 <p><a href="?broker=[% broker %]&ctc_recent_sent=1">View Recent 50 SENTs</a></p>
 [% END %]
 [% IF view_type != 'locked' %]
-<p><a href="?broker=[% broker %]&ctc_recent_sent=1">View Pending</a></p>
+<p><a href="?broker=[% broker %]">View Pending</a></p>
 [% END %]
