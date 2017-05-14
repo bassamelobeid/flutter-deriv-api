@@ -102,4 +102,22 @@ Bar("BATCH CREDIT/DEBIT CLIENTS ACCOUNT: DOUGHFLOW");
 
 $tt->process('backoffice/account/manager_batch_doughflow.tt') || die $tt->error();
 
+## CTC
+Bar("BTC withdrawal list");
+
+use BOM::Database::ClientDB;
+my $clientdb = BOM::Database::ClientDB->new({
+    broker_code => 'CR'
+});
+my $dbh = $clientdb->db->dbh;
+
+if (request()->param('ctc_sent')) {
+    my $ctc_sent = request()->param('ctc_sent');
+    $dbh->do("UPDATE payment.cryptocurrency SET status='SENT' WHERE address = ?", undef, $ctc_sent);
+}
+
+my $btc_trxs = $dbh->selectall_arrayref("SELECT * FROM payment.cryptocurrency WHERE currency_code='XBT' AND transaction_type='withdrawal' AND status='LOCKED'", {});
+$tt->process('backoffice/account/manager_btc_trxs.tt', { trxs => $btc_trxs }) || die $tt->error();
+
+
 code_exit_BO();

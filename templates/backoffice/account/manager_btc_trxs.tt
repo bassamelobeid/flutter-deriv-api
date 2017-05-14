@@ -1,0 +1,24 @@
+
+<p>Please send it manually then mark it as SENT:</p>
+
+<table class="csv">
+    <tr>
+        <th>Address</th>
+        <th>LoginID</th>
+        <th>Amount</th>
+        <th>Creation Date</th>
+        <th>Currency</th>
+        <th>Action</th>
+    </tr>
+    [% FOREACH trx IN trxs %]
+    <tr>
+        <td>[% trx.address %]</td>
+        <td>[% trx.loginid %]</td>
+        <td>[% trx.amount %]</td>
+        <td>[% trx.creation_date %]</td>
+        <td>[% trx.currency_code %]</td>
+        <td>?ctc_sent=[% trx.address %]</td>
+    </tr>
+    [% END %]
+
+</table>
