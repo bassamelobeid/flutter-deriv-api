@@ -7,6 +7,9 @@
         <th>LoginID</th>
         <th>Amount</th>
         <th>Creation Date</th>
+        [% IF view_type == 'recent_sent' %]
+        <td>Sent Date</td>
+        [% END %]
         <th>Currency</th>
         <th>Action</th>
     </tr>
@@ -16,6 +19,9 @@
         <td>[% trx.loginid %]</td>
         <td>[% trx.amount %]</td>
         <td>[% trx.creation_date %]</td>
+        [% IF view_type == 'recent_sent' %]
+        <td>[% trx.withdrawal_sent_date %]</td>
+        [% END %]
         <td>[% trx.currency_code %]</td>
         <td>
             [% IF view_type == 'locked' %]
@@ -29,4 +35,7 @@
 
 [% IF view_type != 'recent_sent' %]
 <p><a href="?broker=[% broker %]&ctc_recent_sent=1">View Recent 50 SENTs</a></p>
+[% END %]
+[% IF view_type != 'locked' %]
+<p><a href="?broker=[% broker %]&ctc_recent_sent=1">View Pending</a></p>
 [% END %]
