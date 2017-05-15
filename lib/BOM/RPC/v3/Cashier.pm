@@ -378,7 +378,7 @@ sub _get_cashier_url {
     } else {
         if ($prefix eq 'epg') {
             $url .= "$prefix.binary.com/$prefix";
-        } else{
+        } else {
             $url .= "cryptocurrency.binary.com/cryptocurrency/$prefix";
         }
     }
