@@ -536,6 +536,9 @@ sub get_contract_details {
         date_expiry  => $contract->date_expiry->epoch
     };
 
+    # do not have any other information on legacy contract
+    return $response if $contract->is_legacy;
+
     if ($contract->two_barriers) {
         $response->{high_barrier} = $contract->high_barrier->supplied_barrier;
         $response->{low_barrier}  = $contract->low_barrier->supplied_barrier;
