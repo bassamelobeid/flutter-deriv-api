@@ -123,14 +123,14 @@ my $ctc_view_type;
 if (request()->param('ctc_recent_sent')) {
     $btc_trxs = $dbh->selectall_arrayref("
         SELECT * FROM payment.cryptocurrency
-        WHERE currency_code='XBT' AND transaction_type='withdrawal' AND status='SENT'
+        WHERE currency_code='BTC' AND transaction_type='withdrawal' AND status='SENT'
         ORDER BY withdrawal_sent_date DESC LIMIT 50
     ", {Slice => {}});
     $ctc_view_type = 'recent_sent';
 } else {
     $btc_trxs = $dbh->selectall_arrayref("
         SELECT * FROM payment.cryptocurrency
-        WHERE currency_code='XBT' AND transaction_type='withdrawal' AND status='LOCKED'
+        WHERE currency_code='BTC' AND transaction_type='withdrawal' AND status='LOCKED'
     ", {Slice => {}});
     $ctc_view_type = 'locked';
 }
