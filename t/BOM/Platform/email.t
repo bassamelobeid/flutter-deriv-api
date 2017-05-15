@@ -6,6 +6,8 @@ use Test::MockModule;
 use Test::Warnings qw(warning);
 use Brands;
 use BOM::Platform::Context qw(request);
+use  Email::MIME::Attachment::Stripper;
+use File::Basename;
 
 BEGIN { use_ok('BOM::Platform::Email', qw(send_email)); }
 
@@ -85,11 +87,23 @@ subtest 'with template' => sub {
 };
 
 subtest attachment => sub {
-    $args->{attachment} = __FILE__;
+    my $att1 = __FILE__;
+    $args->{attachment} = $att1;
     ok(send_email($args));
     my @deliveries = $transport->deliveries;
-    my $email      = $deliveries[-1]{email};
-    diag(ref($email));
+    my $email      = $deliveries[-1]{email}->object;
+    my @attachments = Email::MIME::Attachment::Stripper->new($email)->attachments;
+    is(scalar @attachments, 2);
+    is($attachments[1]{filename}, basename(__FILE__));
+    my $att2 = $att1 . '.attachment';
+    $args->{attachment} = [$att1,$att2];
+   ok(send_email($args)); 
+   @deliveries = $transport->deliveries;
+   $email = $deliveries[-1]{email}->object;
+   @attachments= Email::MIME::Attachment::Stripper->new($email)->attachments;
+    is(scalar @attachments, 3);
+    is($attachments[1]{filename}, basename($att1));
+    is($attachments[2]{filename}, basename($att2));
 };
 
 done_testing();
