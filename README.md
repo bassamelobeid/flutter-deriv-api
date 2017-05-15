@@ -128,3 +128,12 @@ get the extra pricing information of the contract. Is it necessary for Japan but
 
 \->extra\_info('string'); # returns a string of information separated by underscore
 \->extra\_info('arrayref'); # returns an array reference of information
+
+# TEST
+
+    # run all test scripts
+    make test
+    # run one script
+    prove t/BOM/001_structure.t
+    # run one script with perl
+    perl -MBOM::Test t/BOM/001_structure.t
