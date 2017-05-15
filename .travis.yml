@@ -6,8 +6,6 @@ perl:
     - "5.14.2-thr"
 matrix:
     fast_finish: true
-addons:
-    postgresql: "9.3"
 services:
     - redis-server
 cache: apt
@@ -35,7 +33,7 @@ before_install:
     - sudo mkdir -p /home/git/regentmarkets
     - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/setup_ssh.sh
-# - /tmp/travis-scripts/websocket_schema_update.sh
+    - /tmp/travis-scripts/websocket_schema_update.sh
 
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - /tmp/travis-scripts/fixHostName.sh
