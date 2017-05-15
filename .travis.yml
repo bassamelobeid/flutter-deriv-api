@@ -31,6 +31,7 @@ before_install:
       regentmarkets/bom-market
       regentmarkets/bom-myaffiliates
       regentmarkets/bom-transaction
+      regentmarkets/bom-marketdataautoupdater
     - /tmp/travis-scripts/redis.sh
 
 install:
