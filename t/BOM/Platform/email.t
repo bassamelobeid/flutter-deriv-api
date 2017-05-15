@@ -88,7 +88,7 @@ subtest 'with template' => sub {
 };
 
 subtest attachment => sub {
-    my $att1 = '/tmp/attachment1.txt';
+    my $att1 = '/tmp/attachment1.csv';
     path($att1)->spew('This is attachment1');
     $args->{attachment} = $att1;
     ok(send_email($args));
@@ -97,7 +97,7 @@ subtest attachment => sub {
     my @attachments = Email::MIME::Attachment::Stripper->new($email)->attachments;
     is(scalar @attachments,       2);
     is($attachments[1]{filename}, basename($att1));
-    my $att2 = '/tmp/attachment2.txt';
+    my $att2 = '/tmp/attachment2.csv';
     path($att2)->spew('This is attachment2');
     $args->{attachment} = [$att1, $att2];
     ok(send_email($args));
