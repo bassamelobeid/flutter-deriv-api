@@ -212,8 +212,8 @@ sub cashier {
         return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
     }
 
-    ## if currency == XBT, use btc cashier
-    if ($currency eq 'XBT') {
+    ## if currency == BTC, use cryptocurrency cashier
+    if ($currency eq 'BTC') {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
     }
 
