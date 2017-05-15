@@ -320,7 +320,6 @@ sub on_client_connect {
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
 
     $c->app->stat->{cumulative_client_connections}++;
-    $c->rate_limitations_load;
     return;
 }
 
