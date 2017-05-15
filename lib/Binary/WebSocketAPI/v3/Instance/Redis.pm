@@ -7,14 +7,25 @@ use Exporter qw| import   |;
 use DataDog::DogStatsd::Helper qw| stats_inc stats_dec |;
 use Try::Tiny;
 use Mojo::Redis2;
+use Scalar::Util qw(looks_like_number);
 
 my $config = {
-    pricer_write => LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write},
+    shared_redis    => LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml')->{read},
+    redis_pricer    => LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write},
+    ws_redis_slave  => LoadFile($ENV{BOM_TEST_WS_REDIS}         // '/etc/rmg/ws-redis.yml')->{read},
+    ws_redis_master => LoadFile($ENV{BOM_TEST_WS_REDIS}         // '/etc/rmg/ws-redis.yml')->{write},
 };
 
 my $instances = {
-    pricer_write => undef,
+    redis_pricer    => undef,
+    ws_redis_slave  => undef,
+    ws_redis_master => undef,
+    shared_redis    => undef,
 };
+
+sub instances {
+    return $instances;
+}
 
 sub create {
     my $name = shift;
@@ -55,8 +66,8 @@ sub check_connections {
     return 1;
 }
 
-sub pricer_write {
-    my $name = 'pricer_write';
+sub redis_pricer {
+    my $name = 'redis_pricer';
     return $instances->{$name} if defined $instances->{$name};
 
     $instances->{$name} = create($name);
@@ -70,6 +81,59 @@ sub pricer_write {
                         next;
                     }
                     Binary::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($self->{shared_info}{$channel}{$c_key}, $msg, $channel);
+                }
+            }
+        });
+    $instances->{$name}{shared_info} = {};
+    return $instances->{$name};
+}
+
+sub ws_redis_master {
+    my $name = 'ws_redis_master';
+    return $instances->{$name} if defined $instances->{$name};
+
+    $instances->{$name} = create($name);
+    $instances->{$name}->on(
+        message => sub {
+            my ($self, $msg, $channel) = @_;
+            return unless $channel eq 'NOTIFY::broadcast::channel';
+            Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($self->{shared_info}, $msg, $channel);
+        });
+    $instances->{$name}{shared_info} = {};
+    return $instances->{$name};
+}
+
+sub ws_redis_slave {
+    my $name = 'ws_redis_slave';
+    return $instances->{$name} if defined $instances->{$name};
+
+    return create($name);
+}
+
+sub shared_redis {
+    my $name = 'shared_redis';
+    return $instances->{$name} if defined $instances->{$name};
+
+    $instances->{$name} = create($name);
+    $instances->{$name}->on(
+        message => sub {
+            my ($self, $msg, $channel) = @_;
+            return unless $channel =~ /^FEED::/ || $channel =~ /^TXNUPDATE::transaction_/;
+
+            if ($self->{shared_info}{$channel}) {
+                foreach my $c_key (keys %{$self->{shared_info}{$channel}}) {
+                    next unless looks_like_number($c_key);
+                    unless ($self->{shared_info}{$channel}{$c_key}
+                        && ref $self->{shared_info}{$channel}{$c_key}
+                        && $self->{shared_info}{$channel}{$c_key}{c})
+                    {
+                        delete $self->{shared_info}{$channel}{$c_key};
+                        next;
+                    }
+                    Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($self->{shared_info}{$channel}{$c_key}, $msg, $channel)
+                        if $channel =~ /^FEED::/;
+                    Binary::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($self->{shared_info}{$channel}{$c_key}, $msg, $channel)
+                        if $channel =~ /^TXNUPDATE::transaction_/;
                 }
             }
         });
