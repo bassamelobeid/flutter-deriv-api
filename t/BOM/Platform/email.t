@@ -7,6 +7,7 @@ use Test::Warnings qw(warning);
 use Brands;
 use BOM::Platform::Context qw(request);
 use Email::MIME::Attachment::Stripper;
+use Path::Tiny;
 use File::Basename;
 
 BEGIN { use_ok('BOM::Platform::Email', qw(send_email)); }
@@ -87,23 +88,25 @@ subtest 'with template' => sub {
 };
 
 subtest attachment => sub {
-    my $att1 = __FILE__;
+    my $att1 = path('/tmp/attachment1.txt');
+    $att1->spew('This is attachment1');
     $args->{attachment} = $att1;
     ok(send_email($args));
     my @deliveries  = $transport->deliveries;
     my $email       = $deliveries[-1]{email}->object;
     my @attachments = Email::MIME::Attachment::Stripper->new($email)->attachments;
     is(scalar @attachments,       2);
-    is($attachments[1]{filename}, basename(__FILE__));
-    my $att2 = $att1 . '.attachment';
+    is($attachments[1]{filename}, basename("$att1"));
+    my $att2 = path('/tmp/attachment2.txt');
+    $att2->spew('This is attachment2');
     $args->{attachment} = [$att1, $att2];
     ok(send_email($args));
     @deliveries  = $transport->deliveries;
     $email       = $deliveries[-1]{email}->object;
     @attachments = Email::MIME::Attachment::Stripper->new($email)->attachments;
     is(scalar @attachments,       3);
-    is($attachments[1]{filename}, basename($att1));
-    is($attachments[2]{filename}, basename($att2));
+    is($attachments[1]{filename}, basename("$att1"));
+    is($attachments[2]{filename}, basename("$att2"));
 };
 
 done_testing();
