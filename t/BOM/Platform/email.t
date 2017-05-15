@@ -84,4 +84,12 @@ subtest 'with template' => sub {
 
 };
 
+subtest attachment => sub {
+  $args->{attachment} = __FILE__;
+  ok(send_email($args));
+  my @deliveries = $transport->deliveries;
+  my $email      = $deliveries[-1]{email};
+  diag(ref($email));
+}
+
 done_testing();
