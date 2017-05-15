@@ -106,9 +106,7 @@ $tt->process('backoffice/account/manager_batch_doughflow.tt') || die $tt->error(
 Bar("BTC withdrawal list");
 
 use BOM::Database::ClientDB;
-my $clientdb = BOM::Database::ClientDB->new({
-    broker_code => 'CR'
-});
+my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
 my $dbh = $clientdb->db->dbh;
 
 if (request()->param('ctc_sent')) {
@@ -120,26 +118,28 @@ if (request()->param('ctc_sent')) {
     ", undef, $ctc_sent);
 }
 
-my $btc_trxs; my $ctc_view_type;
+my $btc_trxs;
+my $ctc_view_type;
 if (request()->param('ctc_recent_sent')) {
     $btc_trxs = $dbh->selectall_arrayref("
         SELECT * FROM payment.cryptocurrency
         WHERE currency_code='XBT' AND transaction_type='withdrawal' AND status='SENT'
         ORDER BY withdrawal_sent_date DESC LIMIT 50
-    ", { Slice => {} });
+    ", {Slice => {}});
     $ctc_view_type = 'recent_sent';
 } else {
     $btc_trxs = $dbh->selectall_arrayref("
         SELECT * FROM payment.cryptocurrency
         WHERE currency_code='XBT' AND transaction_type='withdrawal' AND status='LOCKED'
-    ", { Slice => {} });
+    ", {Slice => {}});
     $ctc_view_type = 'locked';
 }
-$tt->process('backoffice/account/manager_btc_trxs.tt', {
-    trxs => $btc_trxs,
-    broker => $broker,
-    view_type => $ctc_view_type,
-}) || die $tt->error();
-
+$tt->process(
+    'backoffice/account/manager_btc_trxs.tt',
+    {
+        trxs      => $btc_trxs,
+        broker    => $broker,
+        view_type => $ctc_view_type,
+    }) || die $tt->error();
 
 code_exit_BO();
