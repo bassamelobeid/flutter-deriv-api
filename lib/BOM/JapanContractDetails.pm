@@ -161,10 +161,10 @@ sub verify_with_shortcode {
     # due to complexity in $action_type, this is a hacky fix.
     my @contracts = (
         [$contract, $verify_ask],
-        [$contract->opposite_contract, ($verify_bid ? $contract->discounted_probability->amount * $contract->payout - $verify_bid : undef)]);
+        [$contract->opposite_contract_for_sale, ($verify_bid ? $contract->discounted_probability->amount * $contract->payout - $verify_bid : undef)]);
 
     my ($verified_contract, $verified_opposite) = map { $contracts[$_]->[0] } (0 .. $#contracts);
-    my $traded_contract = $action_type eq 'buy' ? $verified_contract : $verified_contract->opposite_contract;
+    my $traded_contract = $action_type eq 'buy' ? $verified_contract : $verified_contract->opposite_contract_for_sale;
     my $discounted_probability = $verified_contract->discounted_probability;
 
     my $pricing_parameters = get_pricing_parameter({
