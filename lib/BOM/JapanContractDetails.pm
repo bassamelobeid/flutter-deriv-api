@@ -273,11 +273,11 @@ sub _get_pricing_parameter_from_IH_pricer {
     my $intraday_delta_correction = $pe->base_probability->peek_amount('intraday_delta_correction');
     $pricing_parameters->{intraday_delta_correction} = {
         short_term_delta_correction => $contract->get_time_to_expiry->minutes < 10
-        ? $pe->base_probability->peek_amount('delta_correction_short_term_value')
+        ? $intraday_delta_correction
         : $contract->get_time_to_expiry->minutes > 20 ? 0
         : $pe->base_probability->peek_amount('delta_correction_short_term_value'),
         long_term_delta_correction => $contract->get_time_to_expiry->minutes > 20
-        ? $pe->base_probability->peek_amount('delta_correction_long_term_value')
+        ? $intraday_delta_correction
         : $contract->get_time_to_expiry->minutes < 10 ? 0
         :                                               $pe->base_probability->peek_amount('delta_correction_long_term_value'),
     };
