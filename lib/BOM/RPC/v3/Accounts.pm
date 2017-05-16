@@ -656,6 +656,16 @@ sub set_settings {
         }
 
         $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
+
+        if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
+            $err = BOM::RPC::v3::Utility::create_error({
+                    code              => 'InputValidationFailed',
+                    message_to_client => localize("Input validation failed: address_postcode"),
+                    details           => {
+                        address_postcode => "is missing and it is required",
+                    },
+                });
+        }
     }
 
     return $err if $err->{error};
