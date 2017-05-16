@@ -161,10 +161,10 @@ sub verify_with_shortcode {
     # due to complexity in $action_type, this is a hacky fix.
     my @contracts = (
         [$contract, $verify_ask],
-        [$contract->opposite_contract, ($verify_bid ? $contract->discounted_probability->amount * $contract->payout - $verify_bid : undef)]);
+        [$contract->opposite_contract_for_sale, ($verify_bid ? $contract->discounted_probability->amount * $contract->payout - $verify_bid : undef)]);
 
     my ($verified_contract, $verified_opposite) = map { $contracts[$_]->[0] } (0 .. $#contracts);
-    my $traded_contract = $action_type eq 'buy' ? $verified_contract : $verified_contract->opposite_contract;
+    my $traded_contract = $action_type eq 'buy' ? $verified_contract : $verified_contract->opposite_contract_for_sale;
     my $discounted_probability = $verified_contract->discounted_probability;
 
     my $pricing_parameters = get_pricing_parameter({
@@ -272,12 +272,10 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     my $intraday_delta_correction = $pe->base_probability->peek_amount('intraday_delta_correction');
     $pricing_parameters->{intraday_delta_correction} = {
-        short_term_delta_correction => $contract->get_time_to_expiry->minutes < 10
-        ? $pe->base_probability->peek_amount('delta_correction_short_term_value')
+          short_term_delta_correction => $contract->get_time_to_expiry->minutes < 10 ? $intraday_delta_correction
         : $contract->get_time_to_expiry->minutes > 20 ? 0
         : $pe->base_probability->peek_amount('delta_correction_short_term_value'),
-        long_term_delta_correction => $contract->get_time_to_expiry->minutes > 20
-        ? $pe->base_probability->peek_amount('delta_correction_long_term_value')
+        long_term_delta_correction => $contract->get_time_to_expiry->minutes > 20 ? $intraday_delta_correction
         : $contract->get_time_to_expiry->minutes < 10 ? 0
         :                                               $pe->base_probability->peek_amount('delta_correction_long_term_value'),
     };
