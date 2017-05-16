@@ -2,6 +2,9 @@
 FCHI:
   quote: 3563.07
   epoch: 1278660480
+frxBTCUSD:
+  quote: 1700.984
+  epoch: 1284009381
 frxAUDJPY:
   quote: 76.984
   epoch: 1284009381
