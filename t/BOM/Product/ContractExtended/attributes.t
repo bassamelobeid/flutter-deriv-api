@@ -106,7 +106,7 @@ subtest 'Numbers and stuff.' => sub {
     };
 
     my $bet = produce_contract($bet_params);
-    like(warning { $res = $bet->pricing_vol }, qr/Volatility error:/, 'Got warning for volatility for pricing vol');
+    $res = $bet->pricing_vol;
     ok(looks_like_number($res),             'Pricing iv looks like a number.');
     ok(looks_like_number($bet->pricing_mu), 'Pricing mu looks like a number.');
     like(warning { $res = $bet->bid_price }, qr/Volatility error:/, 'Got warning for volatility for bid price');
