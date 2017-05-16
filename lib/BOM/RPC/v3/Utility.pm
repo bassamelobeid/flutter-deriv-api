@@ -70,7 +70,7 @@ sub currencies_config {
         'GBP' => {fractional_digits => 2},
         'USD' => {fractional_digits => 2},
         'JPY' => {fractional_digits => 2},
-        'XBT' => {fractional_digits => 8}};
+        'BTC' => {fractional_digits => 8}};
 }
 
 sub invalid_token_error {
