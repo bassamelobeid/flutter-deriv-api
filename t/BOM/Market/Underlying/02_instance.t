@@ -5,7 +5,6 @@ use Test::MockTime qw( set_absolute_time );
 use Test::MockModule;
 
 use Test::Most;
-use Test::FailWarnings;
 use Test::Warn;
 use File::Slurp;
 use List::Util qw(max min);
@@ -232,11 +231,6 @@ subtest 'all attributes on a variety of underlyings' => sub {
             epoch => time,
             quote => 8
         });
-        ok(looks_like_number($underlying->_builder->build_trading_calendar->closed_weight), 'Closed weight is numeric');
-        Cache::RedisDB->del('QUOTE', $underlying->symbol);
-        cmp_ok($underlying->_builder->build_trading_calendar->closed_weight, '>=', 0, ' nonnegative');
-        cmp_ok($underlying->_builder->build_trading_calendar->closed_weight, '<',  1, ' and smaller than 1');
-
         my $license = $underlying->feed_license;
         is((scalar grep { $license eq $_ } qw(chartonly delayed daily realtime)), 1, 'Feed license is exactly one of our allowed values');
 
@@ -247,7 +241,13 @@ subtest 'all attributes on a variety of underlyings' => sub {
         is((scalar grep { $underlying->instrument_type eq $_ } qw(forex stockindex commodities config futures)),
             1, 'Instrument type is exactly one of our allowed values');
 
-        my $month_hence = $underlying->vol_expiry_date({
+        my $expiry_conventions = Quant::Framework::ExpiryConventions->new(
+            underlying       => $underlying,
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date),
+            calendar         => $underlying->calendar,
+        );
+
+        my $month_hence = $expiry_conventions->vol_expiry_date({
             from => Date::Utility->today,
             term => '1M'
         });
@@ -363,11 +363,18 @@ subtest vol_expiry_date => sub {
         ['2009-12-24', 4, 'Crosses weekend and special day Dec 25, which happens to be on a Friday.'],
         ['2013-01-10', 1, 'Normal day, but covers Jan 11 for regression purposes.'],
     );
+ 
+        my $expiry_conventions = Quant::Framework::ExpiryConventions->new(
+            underlying       => $underlying,
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date),
+            calendar         => $underlying->calendar,
+        );
+
 
     foreach my $test (@tests) {
         my ($date, $expected_days, $comment) = @{$test};
         $date = Date::Utility->new($date);
-        my $vol_expiry_date = $underlying->vol_expiry_date({
+        my $vol_expiry_date = $expiry_conventions->vol_expiry_date({
             from => $date,
             term => 'ON'
         });
@@ -500,17 +507,16 @@ subtest 'all methods on a selection of underlyings' => sub {
         is($EURUSD->spot_source->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
     };
 
-    my $eod = Quant::Framework::TradingCalendar->new({
-            exchange           => 'NYSE',
-            underlying       => create_underlying('DJI'),
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader()})->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
+        my $ul = create_underlying('DJI', Date::Utility->new('2016-04-05'));
+        my $eod = $ul->calendar->closing_on($ul->exchange, Date::Utility->new('2016-04-05'));
         my $date = $eod->minus_time_interval('1s');
         my $worm = create_underlying($pair, $date);
-        is($worm->is_in_quiet_period($date), 0, $worm->symbol . ' not in a quiet period before New York closes');
+ 
+        is($worm->calendar->is_in_quiet_period($worm,$date), 0, $worm->symbol . ' not in a quiet period before New York closes');
         $date = $eod->plus_time_interval('1s');
         $worm = create_underlying($pair, $date);
-        ok($worm->is_in_quiet_period($date), $worm->symbol . ' is quiet after New York closes');
+        ok($worm->calendar->is_in_quiet_period($worm,$date), $worm->symbol . ' is quiet after New York closes');
     }
 
     Quant::Framework::Utils::Test::create_doc(
@@ -523,23 +529,19 @@ subtest 'all methods on a selection of underlyings' => sub {
         });
 
     my $today  = Date::Utility->today;
-    my $audusd = create_underlying('frxAUDUSD');
+    my $audusd = create_underlying('frxAUDUSD', $today);
     foreach my $ul ($AS51, $audusd) {
         my $prev_weight = 0;
-        my $builder     = Quant::Framework::Utils::Builder->new({
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-            underlying       => $ul,
-        });
-        my $trading_calendar = $builder->build_trading_calendar;
+        my $closed_weight = ($ul->market->name eq 'indices') ? 0.55 : 0.06;
+        my $trading_calendar = $ul->calendar;
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
-            my $day_weight    = $trading_calendar->weight_on($test_day);
-            my $period_weight = $trading_calendar->weighted_days_in_period($today, $test_day);
-            if ($trading_calendar->pseudo_holidays->{$test_day->days_since_epoch} and $trading_calendar->trades_on($test_day) and $ul->market->name eq 'indices'){
+            my $day_weight    = $trading_calendar->weight_on($ul,$test_day->epoch);
+            my $period_weight = $trading_calendar->weighted_days_in_period($ul,$today, $test_day);
+            if ($trading_calendar->_get_pseudo_holidays('exchange', $test_day)->{$test_day->days_since_epoch} and $trading_calendar->trades_on($ul->exchange,$test_day) and $ul->market->name eq 'indices'){
                 cmp_ok(
                 $day_weight, '<',
-                $trading_calendar->closed_weight,
+                $closed_weight,
                 $ul->display_name . ' weight for ' . $test_day->date . ' For indices, the weight is lower than closed weight during pseudo_holidays'
             );
 
@@ -547,7 +549,7 @@ subtest 'all methods on a selection of underlyings' => sub {
             }else{
             cmp_ok(
                 $day_weight, '>=',
-                $trading_calendar->closed_weight,
+                $closed_weight,
                 $ul->display_name . ' weight for ' . $test_day->date . ' is at least as big as the closed weight'
             );
             }
@@ -597,7 +599,7 @@ subtest combined_realtime => sub {
     set_absolute_time($eleventh->epoch);    # before opening time
 
     my $SPC = create_underlying('SPC');
-    ok($SPC->trades_on($eleventh), 'SPC trades on our chosen date.');
+    ok($SPC->calendar->trades_on($SPC->exchange,$eleventh), 'SPC trades on our chosen date.');
 
     Cache::RedisDB->del('QUOTE', $SPC->symbol);
 
@@ -657,9 +659,9 @@ subtest 'last_licensed_display_epoch' => sub {
     ok $GDAXI->last_licensed_display_epoch < $time - 10 * 60, "Can't display latest 10 minutes for GDAXI";
     ok $GDAXI->last_licensed_display_epoch > $time - 20 * 60, "Can display ticks older than 20 minutes for GDAXI";
     # daily license
-    my $N225  = create_underlying('N225');
     my $today = Date::Utility->today;
-    my $close = $N225->calendar->closing_on($today);
+    my $N225 = create_underlying('N225');
+    my $close = $N225->calendar->closing_on($N225->exchange,$today);
     if (not $close or time < $close->epoch) {
         ok $N225->last_licensed_display_epoch < $today->epoch, "Do not display any ticks for today before opening";
     } else {
