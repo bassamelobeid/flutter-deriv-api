@@ -70,3 +70,16 @@ sub startup {
 }
 
 1;
+
+=head1 NAME
+
+bom-oauth
+
+=head1 TEST
+
+    # run all test scripts
+    make test
+    # run one script
+    prove t/BOM/001_structure.t
+    # run one script with perl
+    perl -MBOM::Test t/BOM/001_structure.t
