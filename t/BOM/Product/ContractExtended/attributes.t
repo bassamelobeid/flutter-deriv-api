@@ -86,7 +86,6 @@ use BOM::Product::ContractFactory qw( produce_contract );
 
 my $res;
 subtest 'Numbers and stuff.' => sub {
-    plan tests => 13;
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
@@ -126,6 +125,8 @@ subtest 'Numbers and stuff.' => sub {
     my $max_ted = $bet->_max_tick_expiry_duration;
     isa_ok($max_ted, 'Time::Duration::Concise', 'max_tick_expiry_duration');
     cmp_ok($max_ted->minutes, '>=', 1, ' of at least one minute.');
+
+    done_testing;
 };
 
 subtest 'Probabilities etc.' => sub {
