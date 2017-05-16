@@ -52,3 +52,14 @@ Update Translation
 * under `/home/git/regentmarkets/bom-backoffice`, run `make i18n`
 * In `/home/git/binary-com/translations-websockets-api`, `*.po , .pot` files will be updated. After `git push origin translations`, new text will appear in Weblate for translation
 * Once translation is done on Weblate, create PR from `translations` branch to `master` for `/home/git/binary-com/translations-websockets-api`
+
+TEST
+====
+
+    # run all test scripts
+    make test
+    # run one script
+    prove t/BOM/001_structure.t
+    # run one script with perl
+    perl -MBOM::Test t/BOM/pricing_details.t
+
