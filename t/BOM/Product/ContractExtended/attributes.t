@@ -86,7 +86,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 
 my $res;
 subtest 'Numbers and stuff.' => sub {
-    plan tests => 14;
+    plan tests => 13;
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
