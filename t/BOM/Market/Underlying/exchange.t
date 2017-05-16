@@ -72,26 +72,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(AUD GBP EUR USD HKD);
 
-my $chronicle_r = BOM::Platform::Chronicle::get_chronicle_reader($date);
 
-my $ul_LSE = create_underlying('FTSE');
-my $LSE    = Quant::Framework::TradingCalendar->new({
-    exchange           => 'LSE',
-    underlying       => $ul_LSE,
-    chronicle_reader => $chronicle_r,
-    for_date         => $date
-});
-
-is $ul_LSE->exchange->symbol, $LSE->exchange->symbol, "This underlying's exchange is what we expect";
-
-# Gold has the same exchange as FOREX.
-# Yng Shan is planning to create a commodities exchange in the near future.
 # This test will fail when that happens.
 my $gold = create_underlying('frxXAUUSD');
-is $gold->calendar->standard_closing_on($friday)->epoch, $friday->plus_time_interval('21h')->epoch, 'standard close for friday is 21:00 GMT';
-is $gold->calendar->standard_closing_on($normal_thursday)->epoch, $normal_thursday->plus_time_interval('23h59m59s')->epoch,
+is $gold->calendar->standard_closing_on($gold->exchange,$friday)->epoch, $friday->plus_time_interval('21h')->epoch, 'standard close for friday is 21:00 GMT';
+is $gold->calendar->standard_closing_on($gold->exchange,$normal_thursday)->epoch, $normal_thursday->plus_time_interval('23h59m59s')->epoch,
     'normal standard closing is 23:59:59 GMT';
-is $gold->calendar->standard_closing_on($early_close_thursday)->epoch, $early_close_thursday->plus_time_interval('23h59m59s')->epoch,
+is $gold->calendar->standard_closing_on($gold->exchange,$early_close_thursday)->epoch, $early_close_thursday->plus_time_interval('23h59m59s')->epoch,
     'normal standard closing is 23:59:59 GMT';
 
 done_testing;
