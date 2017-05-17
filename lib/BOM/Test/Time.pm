@@ -1,7 +1,9 @@
 package BOM::Test::Time;
 use strict;
 use warnings;
+use Time::HiRes;
 use Test::MockTime qw( :all );
+use Test::MockTime::HiRes;
 use Date::Utility;
 
 use Exporter qw( import );
@@ -20,7 +22,7 @@ our $mocked_time_file = '/tmp/mocked_time';
 sub set_date {
     my ($target_date) = @_;
     my $date = Date::Utility->new($target_date);
-    set_fixed_time($date->epoch);
+    set_absolute_time($date->epoch);
     while (!utime($date->epoch, $date->epoch, $mocked_time_file)) {
         open my $fh, '>>', $mocked_time_file;
         close $fh;
@@ -31,7 +33,7 @@ sub set_date {
 # and here we set mocked time, as requested by another process
 sub set_date_from_file {
     my $ts = (stat($mocked_time_file))[9];
-    set_fixed_time($ts);
+    set_absolute_time($ts);
     return;
 }
 
