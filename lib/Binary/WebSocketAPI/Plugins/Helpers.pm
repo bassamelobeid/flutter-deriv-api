@@ -44,6 +44,8 @@ sub register {
             my $c = shift;
             my ($content, @params) = @_;
 
+            return '' unless $content;
+
             state %handles;
             my $language = $c->stash->{language} || 'EN';
 
@@ -52,6 +54,7 @@ sub register {
             die("could not build locale for language $language") unless $handles{$language};
             my @texts = ();
             if (ref $content eq 'ARRAY') {
+                return '' unless scalar @$content;
                 # first one is always text string
                 push @texts, shift @$content;
                 # followed by parameters
