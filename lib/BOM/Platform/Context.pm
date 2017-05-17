@@ -88,6 +88,8 @@ It handles following cases for localization and returns localized string
 sub localize {
     my ($content, @params) = @_;
 
+    return '' unless $content;
+
     my $request = request();
     my $language = $request ? $request->language : 'EN';
 
@@ -96,6 +98,7 @@ sub localize {
 
     my @texts = ();
     if (ref $content eq 'ARRAY') {
+        return '' unless scalar @$content;
         # first one is always text string
         push @texts, shift @$content;
         # followed by parameters
