@@ -221,7 +221,7 @@ command connections => sub {
     my ($self, $app) = @_;
 
     my @active_connections = values %{$app->active_connections};
-    my @connections = map {
+    my @connections        = map {
         my $pc = 0;
         my $ch = 0;
         for my $k (keys %{$_->pricing_subscriptions}) {
@@ -249,9 +249,11 @@ command connections => sub {
             pricer_subscription_count      => $pc,
         };
         $connection_info;
-    }
-    grep { defined }
-    sort @active_connections;
+        }
+        grep {
+        defined
+        }
+        sort @active_connections;
 
     my $result = {
         connections => \@connections,
