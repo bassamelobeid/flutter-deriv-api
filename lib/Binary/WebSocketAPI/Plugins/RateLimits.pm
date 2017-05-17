@@ -59,7 +59,7 @@ sub _update_redis {
     my $redis     = $c->app->ws_redis_master;
     my $redis_key = $name . $client_id;
     my $f         = Future::Mojo->new;
-    $redis->incr(
+    $redis->incrby(
         $redis_key,
         $diff,
         sub {
