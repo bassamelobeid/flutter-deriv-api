@@ -40,22 +40,18 @@ sub register {
 
     $app->{_binary}{rates_config} = \%rates_config;
 
-    $app->helper(
-        # returns future, which will be 'done' if services usage limit wasn't hit,
-        # and 'fail' otherwise
-        check_limits => sub {
-            _check_limits(@_);
-        });
+    # returns future, which will be 'done' if services usage limit wasn't hit,
+    # and 'fail' otherwise
+    $app->helper(check_limits => \&_check_limits);
 }
 
-sub _check_single_limit {
-    my ($c, $limit_descriptor) = @_;
-    my $name = $limit_descriptor->{name};
+sub _update_redis {
+    my ($c, $name, $ttl) = @_;
     my $local_storage = $c->stash->{rate_limits} //= {};
-    # update value speculatively (i.e. before getting real values from redis)
-    my $value = ++($local_storage->{$name} //= 0);
-    my $result = $value <= $limit_descriptor->{limit};
-    print "[debug] $name check => $result ($value)\n";
+    my $diff = $local_storage->{$name}{pending};
+
+    $local_storage->{$name}{pending}            = 0;
+    $local_storage->{$name}{update_in_progress} = 1;
 
     my $client_id = $c->rate_limitations_key;
     my $redis     = $c->app->ws_redis_master;
@@ -63,6 +59,7 @@ sub _check_single_limit {
     my $f         = Future::Mojo->new;
     $redis->incr(
         $redis_key,
+        $diff,
         sub {
             my ($redis, $error, $count) = @_;
             if ($error) {
@@ -70,12 +67,13 @@ sub _check_single_limit {
                 return $f->fail($error) if $error;
             }
             # overwrite by force speculatively calculated value
-            $local_storage->{$name} = $count;
-            print "[debug] $name => $count\n";
+            $local_storage->{$name}{value}              = $count;
+            $local_storage->{$name}{update_in_progress} = 0;
+            # print "[debug] update from redis $name => $count\n";
             if ($count == 1) {
                 $redis->expire(
                     $redis_key,
-                    $limit_descriptor->{ttl},
+                    $ttl,
                     sub {
                         my ($redis, $error, $confirmation) = @_;
                         $c->app->log->warn("Expiration on $redis_key was not confirmed")
@@ -85,7 +83,28 @@ sub _check_single_limit {
             } else {
                 $f->done;
             }
+            # retrigger scheduled updates
+            if ($local_storage->{$name}{pending}) {
+                _update_redis($c, $name, $ttl);
+            }
         });
+    return $f;
+}
+
+sub _check_single_limit {
+    my ($c, $limit_descriptor) = @_;
+    my $name = $limit_descriptor->{name};
+    my $local_storage = $c->stash->{rate_limits} //= {};
+    # update value speculatively (i.e. before getting real values from redis)
+    my $value           = ++($local_storage->{$name}{value}   //= 0);
+    my $pending_updates = ++($local_storage->{$name}{pending} //= 0);
+    my $result          = $value <= $limit_descriptor->{limit};
+    # print "[debug] $name check => $result (value: $value)\n";
+
+    my $f =
+        $local_storage->{$name}{update_in_progress}
+        ? Future->done
+        : _update_redis($c, $name, $limit_descriptor->{ttl});
     return ($result, $f);
 }
 
