@@ -43,6 +43,8 @@ sub register {
     # returns future, which will be 'done' if services usage limit wasn't hit,
     # and 'fail' otherwise
     $app->helper(check_limits => \&_check_limits);
+
+    return;
 }
 
 sub _update_redis {
