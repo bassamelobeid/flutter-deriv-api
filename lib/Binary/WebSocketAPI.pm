@@ -83,10 +83,11 @@ sub startup {
     apply_usergroup $app->config->{hypnotoad}, sub {
         $log->info(@_);
     };
-    $app->plugin(
-        'Binary::WebSocketAPI::Plugins::Introspection' => {
-            port => 0,
-        });
+
+    # binary.com plugins
+    push @{$app->plugins->namespaces}, 'Binary::WebSocketAPI::Plugins';
+    $app->plugin('Introspection' => {port => 0});
+    $app->plugin('RateLimits');
 
     $app->hook(
         before_dispatch => sub {
