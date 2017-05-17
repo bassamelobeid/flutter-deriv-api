@@ -24,7 +24,9 @@ my $encoded_loginID         = encode_entities($loginID);
 my $depositswithdrawalsonly = request()->param('depositswithdrawalsonly') // '';
 my $startdate               = request()->param('startdate');
 my $enddate                 = request()->param('enddate');
+my $months                  = request()->param('months') // 6;
 my $broker;
+
 if ($loginID =~ /^([A-Z]+)/) {
     $broker = $1;
 }
@@ -68,6 +70,13 @@ my $statement = client_statement_for_backoffice({
     currency => $currency,
 });
 
+my $summary = client_statement_summary({
+    client   => $client,
+    currency => $currency,
+    after    => Date::Utility->new(time - $months * 31 * 86400)->datetime,
+    before   => Date::Utility->new()->datetime,
+});
+
 BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
     {
@@ -80,6 +89,7 @@ BOM::Backoffice::Request::template->process(
         contract_details        => \&BOM::ContractInfo::get_info,
         clientedit_url          => request()->url_for('backoffice/f_clientloginid_edit.cgi'),
         self_post               => request()->url_for('backoffice/f_manager_history.cgi'),
+        summary                 => $summary,
         client                  => {
             name      => $client_name,
             email     => $client_email,

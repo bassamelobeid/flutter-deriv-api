@@ -345,6 +345,41 @@ sub show_client_id_docs {
     return $links;
 }
 
+sub client_statement_summary {
+    my $args = shift;
+    my ($client, $before, $after) = @{$args}{'client', 'before', 'after'};
+    my $max_number_of_lines = 65535;    #why not?
+    my $currency;
+    return {
+            deposits => { 'paycard'=> 100,'wirecard'=>1234, 'total'=>2100},
+            withdrawals => { 'paycard'=>50, 'hz'=>40, 'total'=> 90},
+    };
+    $currency = $args->{currency} if exists $args->{currency};
+    $currency //= $client->currency;
+    my $db = BOM::Database::ClientDB->new({
+            client_loginid => $client->loginid,
+        })->db;
+
+    my $txn_dm = BOM::Database::DataMapper::Transaction->new({
+        client_loginid => $client->loginid,
+        currency_code  => $currency,
+        db             => $db,
+    });
+    my $transactions = $txn_dm->get_payments({
+        before => $before,
+        after  => $after,
+        limit  => $max_number_of_lines
+    });
+    my $summary = {};
+
+    foreach my $transaction (@{$transactions}) {
+        my $k = $transaction->{amount} >= 0 ? 'deposits' : 'withdrawals';
+        my $payment_system = '';
+        $summary->{$k}{$_} += $transaction->{amount} for ($payment_system, 'total');
+    }
+    return $summary;
+}
+
 sub client_statement_for_backoffice {
     my $args = shift;
     my ($client, $before, $after, $max_number_of_lines) = @{$args}{'client', 'before', 'after', 'max_number_of_lines'};
