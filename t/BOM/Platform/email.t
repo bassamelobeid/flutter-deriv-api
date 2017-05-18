@@ -6,6 +6,9 @@ use Test::MockModule;
 use Test::Warnings qw(warning);
 use Brands;
 use BOM::Platform::Context qw(request);
+use Email::MIME::Attachment::Stripper;
+use Path::Tiny;
+use File::Basename;
 
 BEGIN { use_ok('BOM::Platform::Email', qw(send_email)); }
 
@@ -82,6 +85,28 @@ subtest 'with template' => sub {
     $email      = $deliveries[-1]{email};
     like $email->get_body, qr/line1\r\nline2/s, "text not turn to html";
 
+};
+
+subtest attachment => sub {
+    my $att1 = '/tmp/attachment1.csv';
+    path($att1)->spew('This is attachment1');
+    $args->{attachment} = $att1;
+    ok(send_email($args));
+    my @deliveries  = $transport->deliveries;
+    my $email       = $deliveries[-1]{email}->object;
+    my @attachments = Email::MIME::Attachment::Stripper->new($email)->attachments;
+    is(scalar @attachments,       2);
+    is($attachments[1]{filename}, basename($att1));
+    my $att2 = '/tmp/attachment2.csv';
+    path($att2)->spew('This is attachment2');
+    $args->{attachment} = [$att1, $att2];
+    ok(send_email($args));
+    @deliveries  = $transport->deliveries;
+    $email       = $deliveries[-1]{email}->object;
+    @attachments = Email::MIME::Attachment::Stripper->new($email)->attachments;
+    is(scalar @attachments,       3);
+    is($attachments[1]{filename}, basename($att1));
+    is($attachments[2]{filename}, basename($att2));
 };
 
 done_testing();
