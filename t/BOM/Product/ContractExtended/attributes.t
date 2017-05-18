@@ -108,7 +108,7 @@ subtest 'Numbers and stuff.' => sub {
     $res = $bet->pricing_vol;
     ok(looks_like_number($res),             'Pricing iv looks like a number.');
     ok(looks_like_number($bet->pricing_mu), 'Pricing mu looks like a number.');
-    like(warning { $res = $bet->bid_price }, qr/Volatility error:/, 'Got warning for volatility for bid price');
+    $res = $bet->bid_price;
     ok(looks_like_number($res), 'Bid price looks like a number.');
 
     ok(looks_like_number($bet->payout),     'Payout looks like a number.');
