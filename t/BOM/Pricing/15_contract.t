@@ -11,7 +11,6 @@ use Date::Utility;
 
 use Data::Dumper;
 use Quant::Framework::Utils::Test;
-use Quant::Framework::StorageAccessor;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -32,11 +31,6 @@ reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 my $now   = Date::Utility->new('2005-09-21 06:46:00');
 my $email = 'test@binary.com';
-
-my $storage_accessor = Quant::Framework::StorageAccessor->new(
-    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-    chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
