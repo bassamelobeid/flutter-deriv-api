@@ -350,10 +350,7 @@ sub client_statement_summary {
     my ($client, $before, $after) = @{$args}{'client', 'before', 'after'};
     my $max_number_of_lines = 65535;    #why not?
     my $currency;
-    return {
-            deposits => { 'paycard'=> 100,'wirecard'=>1234, 'total'=>2100},
-            withdrawals => { 'paycard'=>50, 'hz'=>40, 'total'=> 90},
-    };
+
     $currency = $args->{currency} if exists $args->{currency};
     $currency //= $client->currency;
     my $db = BOM::Database::ClientDB->new({
@@ -373,8 +370,9 @@ sub client_statement_summary {
     my $summary = {};
 
     foreach my $transaction (@{$transactions}) {
-        my $k = $transaction->{amount} >= 0 ? 'deposits' : 'withdrawals';
+        my $k = $transaction->{action_type} eq 'deposit' ? 'deposits' : 'withdrawals';
         my $payment_system = '';
+        $payment_system = $1 if $transaction =~ /payment_processor=(\S+)/;
         $summary->{$k}{$_} += $transaction->{amount} for ($payment_system, 'total');
     }
     return $summary;

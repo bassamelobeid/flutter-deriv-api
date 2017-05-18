@@ -1,0 +1,25 @@
+<table>
+<tr>
+<td colspan="2">Last <select name="months">
+[% FOR i IN [1..6] %]
+<option value="[% i %]"
+[% IF i == months %]
+selected
+[% END %]
+>[% i %] months</option>
+[% END %]
+</select> months overview</td></tr>
+<tr>
+[% FOR t IN ['deposits', 'withdrawals'] %]
+<td><table>
+    <tr><td colspan="2">[% t %]</td></tr>
+    [% FOR ps IN summary.$t.keys.sort %]
+        <tr>
+        <td>[% ps %]</td>
+        <td>[% summary.$t.$ps %]</td>
+        </tr>
+    [% END %]
+    </table></td>
+[% END %]
+</tr>
+</table>

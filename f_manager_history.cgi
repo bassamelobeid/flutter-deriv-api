@@ -90,6 +90,7 @@ BOM::Backoffice::Request::template->process(
         clientedit_url          => request()->url_for('backoffice/f_clientloginid_edit.cgi'),
         self_post               => request()->url_for('backoffice/f_manager_history.cgi'),
         summary                 => $summary,
+        months                  => $months,
         client                  => {
             name      => $client_name,
             email     => $client_email,

@@ -15,10 +15,12 @@
 <input type=submit value=view>
 <input type=checkbox value=yes name=depositswithdrawalsonly>Deposits and Withdrawals only
 </td>
-</form></tr>
+</tr>
 </table>
 <hr>
 
+[% INCLUDE 'backoffice/account/statement_summary.html.tt' %]
+</form>
 
 [% client.name %] Email: [% client.email %] Country: [% client.country %] Residence: [% client.residence %] Tel: [% client.tel %]
 <br>
