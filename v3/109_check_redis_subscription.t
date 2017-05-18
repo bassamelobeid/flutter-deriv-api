@@ -2,19 +2,15 @@ use strict;
 use warnings;
 
 use Test::Most;
-use Test::MockTime qw/:all/;
 use JSON;
-use Mojo::IOLoop;
-use Data::Dumper;
 use Date::Utility;
-use File::Temp q(tempfile);
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
+
+use BOM::Test::Helper qw/build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
-use BOM::Test;
 use BOM::Test::RPC::BomRpc;
 use BOM::Test::RPC::PricingRpc;
 
