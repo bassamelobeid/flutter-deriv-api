@@ -1255,6 +1255,14 @@ subtest 'get and set self_exclusion' => sub {
             'details'           => 'max_balance',
             'code'              => 'SetSelfExclusionError'
         });
+
+    # don't send previous required fields, should be okay
+    $params->{args} = {
+        set_self_exclusion => 1,
+        max_30day_turnover => 100000
+    };
+    is($c->tcall($method, $params)->{status}, 1, "update self_exclusion ok");
+
     $params->{args} = {
         set_self_exclusion     => 1,
         max_balance            => 9999,

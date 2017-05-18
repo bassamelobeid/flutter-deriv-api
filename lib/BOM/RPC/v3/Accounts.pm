@@ -917,7 +917,7 @@ sub set_self_exclusion {
         }
         next if $is_valid;
 
-        if ($self_exclusion->{$field}) {
+        if ($val and $self_exclusion->{$field}) {
             return $error_sub->(localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
         } else {
             delete $args{$field};
