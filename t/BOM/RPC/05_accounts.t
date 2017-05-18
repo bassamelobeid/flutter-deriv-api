@@ -1153,12 +1153,7 @@ subtest $method => sub {
 
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
-
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Input validation failed: address_line_1',
-        "has error because address line 1 cannot be null"
-    );
+    is($c->tcall($method, $params)->{status}, 1, 'can update without sending all required fields');
 
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
