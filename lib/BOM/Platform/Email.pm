@@ -28,9 +28,10 @@ sub send_email {
     my $subject            = $args_ref->{'subject'} // '';
     my @message            = @{$args_ref->{'message'} // []};
     my $use_email_template = $args_ref->{'use_email_template'};
-    my $attachment         = $args_ref->{'attachment'};
-    my $skip_text2html     = $args_ref->{'skip_text2html'};
-    my $template_loginid   = $args_ref->{template_loginid};
+    my $attachment         = $args_ref->{'attachment'} // [];
+    $attachment = ref($attachment) eq 'ARRAY' ? $attachment : [$attachment];
+    my $skip_text2html   = $args_ref->{'skip_text2html'};
+    my $template_loginid = $args_ref->{template_loginid};
 
     my $request = request();
     my $language = $request ? $request->language : 'EN';
@@ -86,8 +87,8 @@ sub send_email {
         $email_stuffer->text_body($mail_message);
     }
 
-    if ($attachment) {
-        $email_stuffer->attach_file($attachment);
+    for my $attach_file (@$attachment) {
+        $email_stuffer->attach_file($attach_file);
     }
 
     unless ($email_stuffer->send) {
