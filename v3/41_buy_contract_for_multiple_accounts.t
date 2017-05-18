@@ -13,7 +13,8 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
-
+use BOM::Test::Data::Utility::FeedTestDatabase;
+use Date::Utility;
 build_test_R_50_data();
 my $t = build_wsapi_test();
 
@@ -174,6 +175,12 @@ subtest "2nd try: dummy tokens => success", sub {
     # note explain $forget;
     is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 };
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'R_50',
+    epoch      => Date::Utility->new->epoch + 2,
+    quote      => '963'
+});
 
 my $tokens_for_sell = [];
 my $trx_ids = {};
