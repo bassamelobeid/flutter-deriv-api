@@ -56,49 +56,70 @@ sub mt5_new_account {
     my $mt5_suspended = _is_mt5_suspended();
     return $mt5_suspended if $mt5_suspended;
 
-    my $client           = $params->{client};
-    my $args             = $params->{args};
+    my ($client, $args) = @{$params}{qw/client args/};
     my $account_type     = delete $args->{account_type};
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $brand            = Brands->new(name => request()->brand);
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidAccountType',
+            message_to_client => localize('Invalid account type.')}) if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
+
+    my $residence = $client->residence;
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'NoResidence',
+            message_to_client => localize('Please set your country of residence.')}) unless $residence;
+
+    my $countries_list = $brand->countries_instance->countries_list;
+    return BOM::RPC::v3::Utility::permission_error()
+        unless $countries_list->{$residence};
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'MT5SamePassword',
             message_to_client => localize('Investor password cannot be same as main password.')}
     ) if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
 
-    my $group;
+    my $invalid_sub_type_error = BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidSubAccountType',
+            message_to_client => localize('Invalid sub account type.')});
+
+    my $get_company_name = sub {
+        my $type = shift;
+
+        $type = 'mt_' . $type . '_company';
+        if (defined $countries_list->{$residence}->{$type}) {
+            # get MT company from countries.yml
+            return $countries_list->{$residence}->{$type};
+        }
+
+        return 'none';
+    };
+
+    my ($mt_company, $group);
     if ($account_type eq 'demo') {
-        if ($client and $client->residence eq 'jp') {
-            $group = 'demo\japan_virtual';
+        # demo will have demo for financial and demo for gaming
+        if ($mt5_account_type) {
+            return $invalid_sub_type_error unless ($mt5_account_type =~ /^cent|standard|stp$/);
+
+            return BOM::RPC::v3::Utility::permission_error() if (($mt_company = $get_company_name->('financial')) eq 'none');
+
+            $group = 'demo\\' . $mt_company . '_' . $mt5_account_type;
         } else {
-            $group = 'demo\\' . $brand->name . '_virtual';
+            return BOM::RPC::v3::Utility::permission_error() if (($mt_company = $get_company_name->('gaming')) eq 'none');
+            $group = 'demo\\' . $mt_company;
         }
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
         # 5 Sept 2016: only CR and Champion fully authenticated client can open MT real a/c
-        return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ /^(?:costarica|champion)$/);
+        return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ /^costarica|champion$/);
+
+        return BOM::RPC::v3::Utility::permission_error() if (($mt_company = $get_company_name->($account_type)) eq 'none');
 
         if ($account_type eq 'financial') {
+            return $invalid_sub_type_error unless $mt5_account_type =~ /^cent|standard|stp$/;
+
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'FinancialAssessmentMandatory',
                     message_to_client => localize('Please complete financial assessment.')}) unless $client->financial_assessment();
-
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'InvalidSubAccountType',
-                    message_to_client => localize('Invalid sub account type.')}) unless ($mt5_account_type =~ /^(?:cent|standard|stp)$/);
-        }
-
-        # get MT company from countries.yml
-        my $mt_key         = 'mt_' . $account_type . '_company';
-        my $mt_company     = 'none';
-        my $residence      = $client->residence;
-        my $countries_list = $brand->countries_instance->countries_list;
-        if (defined $countries_list->{$residence} && defined $countries_list->{$residence}->{$mt_key}) {
-            $mt_company = $countries_list->{$residence}->{$mt_key};
-        }
-
-        if ($mt_company eq 'none') {
-            return BOM::RPC::v3::Utility::permission_error();
         }
 
         # populate mt5 agent account associated with affiliate token
@@ -107,10 +128,6 @@ sub mt5_new_account {
         $group = 'real\\' . $mt_company;
         $group .= "_$mt5_account_type" if $account_type eq 'financial';
         $group .= "_$residence" if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
-    } else {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidAccountType',
-                message_to_client => localize('Invalid account type.')});
     }
 
     # client can have only 1 MT demo & 1 MT real a/c
