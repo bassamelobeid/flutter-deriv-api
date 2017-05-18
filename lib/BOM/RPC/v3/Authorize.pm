@@ -50,12 +50,11 @@ sub authorize {
 
     my $account = $client->default_account;
 
-    my $token_type;
+    my ($user, $token_type) = (BOM::Platform::User->new({email => $client->email}));
     if (length $token == 15) {
         $token_type = 'api_token';
         # add to login history for api token only as oauth login already creates an entry
-        my $user;
-        if ($params->{args}->{add_to_login_history} && ($user = BOM::Platform::User->new({email => $client->email}))) {
+        if ($params->{args}->{add_to_login_history} && $user) {
             $user->add_login_history({
                 environment => BOM::RPC::v3::Utility::login_env($params),
                 successful  => 't',
@@ -65,6 +64,20 @@ sub authorize {
         }
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         $token_type = 'oauth_token';
+    }
+
+    my @sub_accounts = ();
+    if ($client->allow_omnibus) {
+        my %siblings = map { $_->loginid => $_ } $user->clients;
+        foreach my $account (values %siblings) {
+            if ($client->loginid eq ($account->sub_account_of // '')) {
+                push @sub_accounts,
+                    {
+                    loginid  => $account->loginid,
+                    currency => $account->default_account ? $account->default_account->currency_code : '',
+                    };
+            }
+        }
     }
 
     return {
@@ -78,6 +91,8 @@ sub authorize {
         landing_company_fullname => $lc->name,
         scopes                   => $scopes,
         is_virtual               => ($client->is_virtual ? 1 : 0),
+        allow_omnibus            => $client->allow_omnibus,
+        sub_accounts             => \@sub_accounts,
         stash                    => {
             loginid              => $client->loginid,
             email                => $client->email,
