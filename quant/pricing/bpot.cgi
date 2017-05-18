@@ -31,7 +31,7 @@ use LandingCompany::Registry;
 
 PrintContentType();
 BrokerPresentation('Bet Price Over Time');
-BOM::Backoffice::Auth0::can_access(['Quants']);
+BOM::Backoffice::Auth0::can_access();
 
 Bar("Bet Parameters");
 
