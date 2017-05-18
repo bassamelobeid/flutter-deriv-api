@@ -47,31 +47,33 @@ for my $s (@symbols) {
             recorded_date => $now,
         });
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 102,
+        quote      => 98,
         epoch      => $now->epoch - 2,
         underlying => $s,
     });
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 100,
+        quote      => 99,
         epoch      => $now->epoch - 1,
         underlying => $s,
     });
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 101,
+        quote      => 100,
         epoch      => $now->epoch,
         underlying => $s,
     });
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 102,
+        quote      => 101,
         epoch      => $now->epoch + 1,
         underlying => $s,
     });
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 101,
+        quote      => 102,
         epoch      => $now->epoch + 2,
         underlying => $s,
     });
 }
+
+build_test_R_50_data();
 
 my $t = build_wsapi_test();
 
@@ -114,7 +116,7 @@ $req = {
     "currency"      => "USD",
     "symbol"        => "frxUSDJPY",
     "duration"      => 5,
-    "duration_unit" => "t",
+    "duration_unit" => "m",
 };
 
 
@@ -136,27 +138,12 @@ cmp_ok pricer_sub_count(), '==', 0, "1 pricer sub Ok";
 done_testing();
 
 sub create_propsals {
-    my $symbol = shift;
-    $sub_ids = {};
-    if ($symbol) {
-        for my $d (5, 7, 9) {
-            $req->{duration} = $d;
-            $req->{duration_unit} = 't',
-            $req->{symbol} =  $symbol,
-            $t->send_ok({json => $req})->message_ok;
-            $res = decode_json($t->message->[1]);
-            ok $res->{proposal}->{id}, 'Should return id';
-            $sub_ids->{$d} = $res->{proposal}->{id};
-        }
-    } else {
-        for my $s (@symbols) {
-            $req->{symbol} = $s;
-            $t->send_ok({json => $req})->message_ok;
-            $res = decode_json($t->message->[1]);
-            ok $res->{proposal}->{id}, 'Should return id';
-            $sub_ids->{$s} = $res->{proposal}->{id};
-            print Dumper($res);
-        }
+    for my $s (@symbols) {
+        $req->{symbol} = $s;
+        $t->send_ok({json => $req})->message_ok;
+        $res = decode_json($t->message->[1]);
+        ok $res->{proposal}->{id}, 'Should return id';
+        $sub_ids->{$s} = $res->{proposal}->{id};
     }
 }
 
