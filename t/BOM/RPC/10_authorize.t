@@ -72,6 +72,8 @@ subtest $method => sub {
         'is_virtual'               => '0',
         'country'                  => 'id',
         'landing_company_fullname' => 'Binary (C.R.) S.A.',
+        'allow_omnibus'            => 0,
+        'sub_accounts'             => [],
     };
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
 

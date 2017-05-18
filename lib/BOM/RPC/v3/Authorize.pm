@@ -90,8 +90,8 @@ sub authorize {
         landing_company_name     => $lc->short,
         landing_company_fullname => $lc->name,
         scopes                   => $scopes,
-        is_virtual               => ($client->is_virtual ? 1 : 0),
-        allow_omnibus            => $client->allow_omnibus,
+        is_virtual               => $client->is_virtual ? 1 : 0,
+        allow_omnibus            => $client->allow_omnibus ? 1 : 0,
         sub_accounts             => \@sub_accounts,
         stash                    => {
             loginid              => $client->loginid,
