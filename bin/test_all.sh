@@ -6,6 +6,6 @@ do
     MAKEFILE=$WORKDIR/Makefile
     if [ -d $WORKDIR ] && [ -f $MAKEFILE ] && grep -q '^test:$' $MAKEFILE
     then
-        (cd $WORKDIR && make test)
+        make -C $WORKDIR test
     fi
 done
