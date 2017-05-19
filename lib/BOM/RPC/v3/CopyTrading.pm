@@ -55,7 +55,10 @@ sub copy_start {
                 message_to_client => localize('Traders are not allowed to copy trades.')});
     }
 
-    unless ($client->currency eq $trader->currency) {
+    unless ($client->default_account
+        && $trader->default_account
+        && ($client->default_account->currency_code eq $trader->default_account->currency_code))
+    {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'CopyTradingWrongCurrency',
             message_to_client => localize('Your account currency and trader currency must be same.'),
