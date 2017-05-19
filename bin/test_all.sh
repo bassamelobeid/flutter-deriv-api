@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/bin/sh
 MAIN_DIR=/home/git/regentmarkets
 for d in `ls $MAIN_DIR`
 do
