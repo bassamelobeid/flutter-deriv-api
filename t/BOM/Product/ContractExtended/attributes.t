@@ -86,7 +86,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 
 my $res;
 subtest 'Numbers and stuff.' => sub {
-    plan tests => 14;
+    plan tests => 13;
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
@@ -109,7 +109,6 @@ subtest 'Numbers and stuff.' => sub {
     like(warning { $res = $bet->pricing_vol }, qr/Volatility error:/, 'Got warning for volatility for pricing vol');
     ok(looks_like_number($res),             'Pricing iv looks like a number.');
     ok(looks_like_number($bet->pricing_mu), 'Pricing mu looks like a number.');
-    like(warning { $res = $bet->bid_price }, qr/Volatility error:/, 'Got warning for volatility for bid price');
     ok(looks_like_number($res), 'Bid price looks like a number.');
 
     ok(looks_like_number($bet->payout),     'Payout looks like a number.');
