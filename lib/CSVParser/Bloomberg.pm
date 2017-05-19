@@ -246,15 +246,8 @@ sub _build_bet {
     } else {
         $bet_args->{barrier} = $self->barrier;
     }
-    my $raw_surface = $self->volsurface;
-    my $cutoff_str  = $self->date_start->day_of_week == 5 ? 'UTC 21:00' : 'UTC 23:59';
-    my $vol_surface = $raw_surface->generate_surface_for_cutoff($cutoff_str);
-    my $surface = $raw_surface->clone({
-       surface => $vol_surface,
-       cutoff  => $cutoff_str,
-     });
 
-    $bet_args->{volsurface}   = $surface;
+    $bet_args->{volsurface}   = $self->volsurface;
     $bet_args->{current_tick} = Postgres::FeedDB::Spot::Tick->new(
         underlying => $bet_args->{underlying}->symbol,
         quote      => $bet_args->{current_spot},
@@ -290,10 +283,8 @@ sub _build_price {
 sub _build_theo_prob {
     my $self = shift;
     my $bet  = $self->bet;
-    my $theo =
-          $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
-        ? $bet->pricing_engine->base_probability
-        : $bet->pricing_engine->base_probability->amount;
+    my $theo= $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability->amount;
+
     return $theo;
 }
 
@@ -377,8 +368,8 @@ sub _get_expiry_date_bloomberg {
 sub _get_delivery_date_bloomberg {
     my $self          = shift;
     my $delivery_date = Date::Utility->new($self->expiry_date_bom->epoch + 86400);
-    if (!$self->underlying->calendar->trades_on($delivery_date)) {
-        $delivery_date = $self->underlying->calendar->trade_date_after($delivery_date);
+    if (!$self->underlying->calendar->trades_on($self->underlying->exchange, $delivery_date)) {
+        $delivery_date = $self->underlying->calendar->trade_date_after($self->underlying->exchange,$delivery_date);
     }
     return $delivery_date->month . '/' . $delivery_date->day_of_month . '/' . $delivery_date->year;
 }
@@ -406,7 +397,6 @@ sub _get_notes {
         . sprintf("%.3f", $self->bet->volga)
         . ' avol='
         . sprintf("%.3f", $self->bet->_pricing_args->{iv}) . ' tv='
-        . sprintf("%.3f", $self->bet->bs_probability->amount);
 }
 
 sub get_csv_line {
@@ -456,9 +446,6 @@ sub get_csv_line {
         . $self->bet->_pricing_args->{iv} . ','
         . ($fields->[$header->{'Volatility'}] / 100) . ','
         . abs($self->bet->_pricing_args->{iv} - $fields->[$header->{'Volatility'}] / 100) . ','
-        . $self->bet->bs_probability->amount . ','
-        . $bb_tv . ','
-        . abs(sprintf("%.2f", $self->bet->bs_probability->amount) - $bb_tv) . ','
         . $self->bet->timeinyears->amount . ','
         . $self->bet->timeinyears->amount * 365 . ','
         . $self->r . ','
@@ -479,7 +466,7 @@ sub get_csv_header {
           "External ID#,Portfolio,Trade Date: MM/DD/YYYY,Premium Date: MM/DD/YYYY,B/S,Type,On Shore,Currency Pair,"
         . "Ccy+P/C,Expiration Date: MM/DD/YYYY,Delivery Date: MM/DD/YYYY,Strike,Notional Currency,Notional Amount,"
         . "Strike 2,Notional Amount 2,Barrier,Barrier Type,Barrier 2,Premium Amount,Premium Currency,Settlement Type,"
-        . "ZoneId,Cut Time,base/numeraire,bom_spot,bom_atm,bb_atm,error_atm,bom_tv,bb_tv,error_tv,bom_time_in_year,bom_time_in_days,"
+        . "ZoneId,Cut Time,base/numeraire,bom_spot,bom_atm,bb_atm,error_atm,bom_time_in_year,bom_time_in_days,"
         . "bom_r,bom_q,Notes,date_pricing,bom_bid,bom_ask,bom_spread,bom_mid,bb_mid,error_mid";
 }
 
