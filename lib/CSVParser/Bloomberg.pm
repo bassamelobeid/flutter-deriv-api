@@ -780,7 +780,6 @@ sub price_list {
                 spot       => $contract_args->{current_spot}});
         $contract_args->{volsurface} = $self->get_volsurface($underlying_symbol);
         try {
-$DB::single=1;
             $contract = CSVParser::Bloomberg->new($contract_args);
             $content .= $contract->get_csv_line(\@fields, $headers) . "\n";
         }
