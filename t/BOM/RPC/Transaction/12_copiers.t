@@ -210,6 +210,7 @@ lives_ok {
 
     $balance = 15000;
     top_up $trader, 'USD', $balance;
+    top_up $copier, 'USD', 15000;
 
     isnt($trader_acc = $trader->find_account(query => [currency_code => 'USD'])->[0], undef, 'got USD account');
 
@@ -219,6 +220,8 @@ lives_ok {
 
 lives_ok {
     my $wrong_copier = create_client;
+    top_up $wrong_copier, 'USD', 15000;
+
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
 
     my $res = BOM::RPC::v3::CopyTrading::copy_start({
@@ -294,8 +297,6 @@ lives_ok {
 'bought USD bet';
 
 lives_ok {
-    top_up $copier, 'USD', 15000;
-
     $copier_acc_mapper = BOM::Database::DataMapper::Account->new({
         'client_loginid' => $copier->loginid,
         'currency_code'  => 'USD',
