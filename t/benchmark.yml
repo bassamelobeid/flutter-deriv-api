@@ -23,7 +23,7 @@ mini:
                 max: 0.0327
             ONETOUCH:
                 avg: 0.0128
-                max: 0.0247
+                max: 0.0248
             NOTOUCH:
                 avg: 0.0101
                 max: 0.059
@@ -31,7 +31,7 @@ mini:
                 avg: 0.0109
                 max: 0.0777
             RANGE:
-                avg: 0.0128
+                avg: 0.0129
                 max: 0.1409
     sdfx:
         MAJOR_BASE:
