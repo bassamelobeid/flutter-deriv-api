@@ -27,5 +27,5 @@ This module is used to prepare test environment. It should be used before any ot
 
     # test this repo
     make test
-    # test all repo under regentmarkets
+    # test all repo under regentmarkets and binary-com
     make test_all

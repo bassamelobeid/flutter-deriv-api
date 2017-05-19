@@ -84,7 +84,7 @@ BEGIN {
 
     # test this repo
     make test
-    # test all repo under regentmarkets
+    # test all repo under regentmarkets and binary-com
     make test_all
 
 =cut

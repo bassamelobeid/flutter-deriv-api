@@ -1,5 +1,4 @@
-MAIN_DIR=/home/git/regentmarkets
-SUBDIRS=$(wildcard ${MAIN_DIR}/*)
+SUBDIRS=$(wildcard /home/git/regentmarkets/*) $(wildcard /home/git/binary-com/*)
 
 test_all: $(SUBDIRS)
 
