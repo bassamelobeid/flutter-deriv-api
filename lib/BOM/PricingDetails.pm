@@ -83,9 +83,9 @@ sub debug_link {
 
     my $bet = $self->bet;
 
-    # try to find a way of better prefixes, to allow multiple simultaneous requests
-    # like to tie to worker index
-    Volatility::Seasonality::set_prefix('bo_' . time . "_");
+    my $seasonality_prefix = 'bo_' . time . '_';
+
+    Volatility::Seasonality::set_prefix($seasonality_prefix);
     my $EEC = Quant::Framework::EconomicEventCalendar->new({
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
@@ -150,15 +150,17 @@ sub debug_link {
             {
             label   => 'Rates',
             url     => 'rq',
-            content => $self->_get_rates()};
+            content => $self->_get_rates(),
+            };
     }
 
     my $debug_link;
     BOM::Backoffice::Request::template->process(
         'backoffice/container/debug_link.html.tt',
         {
-            bet_id => $bet->id,
-            tabs   => $tabs_content
+            bet_id             => $bet->id,
+            tabs               => $tabs_content,
+            seasonality_prefix => $seasonality_prefix,
         },
         \$debug_link
     ) || die BOM::Backoffice::Request::template->error;
