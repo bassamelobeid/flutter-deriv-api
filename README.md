@@ -25,4 +25,7 @@ This module is used to prepare test environment. It should be used before any ot
 
 # TEST
 
+    # test this repo
     make test
+    # test all repo under regentmarkets
+    make test_all

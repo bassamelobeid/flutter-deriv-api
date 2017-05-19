@@ -82,7 +82,10 @@ BEGIN {
 
 =head1 TEST
 
+    # test this repo
     make test
+    # test all repo under regentmarkets
+    make test_all
 
 =cut
 
