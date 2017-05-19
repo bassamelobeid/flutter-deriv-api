@@ -683,6 +683,10 @@ sub _build_opposite_contract_for_sale {
             }
         }
         # We should be looking to move forward in time to a bet starting now.
+        # We had issue during pricing when we try to price contract exactly at expiry time,
+        # get_volatility was throwing error, since from and to are equal. Setting
+        # date_start equal to date_start instead of date_pricing here for opposite contract
+        # will solve this issue.
         $opp_parameters{date_start} = ($self->date_pricing->epoch == $self->date_expiry->epoch) ? $self->date_start : $self->date_pricing;
         $opp_parameters{pricing_new} = 1;
         # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
