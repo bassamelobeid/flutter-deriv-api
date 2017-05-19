@@ -139,6 +139,7 @@ subtest 'notouch' => sub {
         $args->{barrier}      = 100.050;
         $args->{date_pricing} = $now->truncate_to_day->plus_time_interval('2d');
         $args->{exit_tick}    = $close_tick;                                       # INJECT OHLC since cannot find it in the test DB.
+        $args->{is_valid_exit_tick}    = 1;
         $c                    = produce_contract($args);
         cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
         ok $c->is_expired, 'expired';

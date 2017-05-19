@@ -109,11 +109,13 @@ subtest 'range' => sub {
         $args->{low_barrier}  = 90;
         $args->{date_pricing} = $now->plus_time_interval('2d');
         $args->{exit_tick}    = $close_tick;                      # INJECT OHLC since cannot find it in the test DB
+        $args->{is_valid_exit_tick} = 1;
         $c                    = produce_contract($args);
         ok $c->is_expired, 'expired';
         ok !$c->hit_tick, 'no hit tick';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
         delete $args->{exit_tick};
+        delete $args->{is_valid_exit_tick};
     }
     'expiry checks';
 };

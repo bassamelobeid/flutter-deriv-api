@@ -132,9 +132,13 @@ subtest 'expiry conditions' => sub {
         quote      => 100,
     });
     $c = produce_contract($args);
-    ok !$c->exit_tick,  'no exit tick';
-    ok !$c->is_expired, 'not expired without exit tick';
-    cmp_ok $c->value, '==', 0;
+    ok $c->exit_tick,  'has exit tick';
+    ok !$c->is_valid_exit_tick, 'is not a valid exit tick';
+    ok $c->is_expired, 'is expired';
+    ok !$c->is_settleable, 'is not settleable as there is no valid exit tick';
+    ok !$c->is_valid_to_sell, 'is not valid to sell';
+    like($c->primary_validation_error->message, qr/exit tick is undefined/, 'throws error');
+    cmp_ok $c->value, '==', 10;
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
         epoch      => $now->epoch + 601,
@@ -143,6 +147,9 @@ subtest 'expiry conditions' => sub {
     $c = produce_contract($args);
     ok $c->is_expired, 'expired';
     ok $c->exit_tick,  'has exit tick';
+    ok $c->is_valid_exit_tick, 'is an valid exit tick';
+    ok $c->is_settleable, 'is settleable as there is valid tick';
+    ok $c->is_valid_to_sell, 'is valid to sell';
     ok $c->exit_tick->quote < $c->barrier->as_absolute;
     cmp_ok $c->value, '==', $c->payout, 'full payout';
 };

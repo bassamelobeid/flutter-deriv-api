@@ -87,6 +87,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 my $res;
 subtest 'Numbers and stuff.' => sub {
 
+
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
         epoch      => 1200614400,
@@ -109,6 +110,7 @@ subtest 'Numbers and stuff.' => sub {
     $res = $bet->pricing_vol;
     ok(looks_like_number($res),             'Pricing iv looks like a number.');
     ok(looks_like_number($bet->pricing_mu), 'Pricing mu looks like a number.');
+
     $res = $bet->bid_price;
     ok(looks_like_number($res), 'Bid price looks like a number.');
 
