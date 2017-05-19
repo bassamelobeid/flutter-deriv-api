@@ -8,3 +8,6 @@ test:
 
 doc:
 	pod2markdown lib/BOM/Test.pm > README.md
+
+test_all:
+	bin/test_all.sh
