@@ -2,30 +2,24 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Deep;
-use Test::MockTime qw/:all/;
 use JSON;
+use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
-use File::Temp;
-use Date::Utility;
-
 use BOM::Database::Model::OAuth;
 use BOM::Platform::RedisReplicated;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
-#use BOM::Test::RPC::BomRpc;
-#use BOM::Test::RPC::PricingRpc;
-
-
 initialize_realtime_ticks_db();
 build_test_R_50_data();
 my $t = build_wsapi_test();
 
+
 subtest "old-tests" => sub {
 
-local $SIG{__WARN__} = sub{};
+#local $SIG{__WARN__} = sub{};
 
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -66,8 +60,6 @@ my ($res, $ticks, @ids);
 for (my $i = 0; $i < 2; $i++) {
     $t->message_ok;
     $res = decode_json($t->message->[1]);
-diag "MESSAGE from ticks\n";
-diag explain $res;
     push @ids, $res->{tick}->{id};
     $ticks->{$res->{tick}->{symbol}}++;
 }
@@ -76,7 +68,6 @@ $t->send_ok({json => {forget_all => 'ticks'}});
 $t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{forget_all}, "Manage to forget_all: ticks" or diag explain $res;
-diag explain $res;
 is scalar(@{$res->{forget_all}}), 2, "Forget the relevant tick channel";
 
 @ids = sort @ids;
