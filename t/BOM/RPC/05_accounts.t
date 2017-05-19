@@ -112,6 +112,12 @@ my $japan_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'JP',
 });
 
+my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MX',
+    residence   => 'gb',
+});
+$test_client_mx->email($email);
+
 my $m              = BOM::Database::Model::AccessToken->new;
 my $token1         = $m->create_token($test_loginid, 'test token');
 my $token_21       = $m->create_token($test_client_cr->loginid, 'test token');
@@ -119,6 +125,7 @@ my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test toke
 my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
 my $token_japan    = $m->create_token($japan_client->loginid, 'test token');
+my $token_mx       = $m->create_token($test_client_mx->loginid, 'test token');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -1189,6 +1196,19 @@ subtest $method => sub {
     like($msgs[0]{body}, qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
 
     is($c->tcall('get_settings', {token => $token1})->{email_consent}, 1, "Was able to set email consent correctly");
+
+    # test that postcode is optional for non-MX clients and required for MX clients
+    $full_args{address_postcode} = '';
+
+    $params->{args} = {%full_args};
+    is($c->tcall($method, $params)->{status}, 1, 'postcode is optional for non-MX clients and can be set to null');
+
+    $params->{token} = $token_mx;
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Input validation failed: address_postcode',
+        'postcode is required for MX clients and cannot be set to null'
+    );
 };
 
 # set_self_exclusion && get_self_exclusion

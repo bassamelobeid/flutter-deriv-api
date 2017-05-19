@@ -709,11 +709,11 @@ sub set_settings {
 
     my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'} // $client->address_1;
-    my $address2        = $args->{'address_line_2'} // $client->address_2 // '';
+    my $address2        = ($args->{'address_line_2'} // $client->address_2) // '';
     my $addressTown     = $args->{'address_city'} // $client->city;
-    my $addressState    = $args->{'address_state'} // $client->state // '';
+    my $addressState    = ($args->{'address_state'} // $client->state) // '';
     my $addressPostcode = $args->{'address_postcode'} // $client->postcode;
-    my $phone           = $args->{'phone'} // $client->phone // '';
+    my $phone           = ($args->{'phone'} // $client->phone) // '';
     my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
 
     my $cil_message;
