@@ -12,9 +12,6 @@ use BOM::Platform::RedisReplicated;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
-$ENV{RPC_URL} = 'http://127.0.0.1:5005/';
-$ENV{PRICING_RPC_URL} = 'http://127.0.0.1:5006/';
-
 initialize_realtime_ticks_db();
 build_test_R_50_data();
 my $now = Date::Utility->new;
@@ -99,7 +96,46 @@ for my $s (@symbols) {
     });
 }
 
+subtest "new-tests" => sub {
 
+my $loginid = $client->loginid;
+my $user    = BOM::Platform::User->create(
+    email    => $email,
+        password => '1234',
+        );
+$user->add_loginid({loginid => $loginid});
+$user->save;
+
+$client->set_default_account('USD');
+$client->smart_payment(
+    currency     => 'USD',
+    amount       => +300000,
+    payment_type => 'external_cashier',
+    remark       => 'test deposit'
+);
+
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
+
+$t = $t->send_ok({json => {authorize => $token}})->message_ok;
+my $authorize = decode_json($t->message->[1]);
+
+my $res;
+
+$t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
+my $prop_id = create_propsals($t, @symbols);
+cmp_ok pricer_sub_count($t), '==', 3,"1 pricer sub Ok";
+
+$t->send_ok({json => {forget => $prop_id}})->message_ok;
+$res = decode_json($t->message->[1]);
+cmp_ok $res->{forget}, '==', 1, 'Correct number of subscription forget';
+cmp_ok pricer_sub_count($t), '==', 2, "2 pricer sub Ok";
+
+$t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
+$res = decode_json($t->message->[1]);
+is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
+cmp_ok pricer_sub_count($t), '==', 0, "1 pricer sub Ok";
+
+};
 
 subtest "old-tests" => sub {
 
@@ -191,48 +227,6 @@ test_schema('forget_all', $res);
 
 @forget_ids = sort @{$res->{forget_all}};
 cmp_bag(\@ids, \@forget_ids, 'correct forget ids for ticks history');
-
-};
-
-subtest "new-tests" => sub {
-
-my $loginid = $client->loginid;
-my $user    = BOM::Platform::User->create(
-    email    => $email,
-        password => '1234',
-        );
-$user->add_loginid({loginid => $loginid});
-$user->save;
-
-$client->set_default_account('USD');
-$client->smart_payment(
-    currency     => 'USD',
-    amount       => +300000,
-    payment_type => 'external_cashier',
-    remark       => 'test deposit'
-);
-
-my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
-
-my $res;
-
-$t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
-my $prop_id = create_propsals($t, @symbols);
-cmp_ok pricer_sub_count($t), '==', 3,"1 pricer sub Ok";
-
-$t->send_ok({json => {forget => $prop_id}})->message_ok;
-$res = decode_json($t->message->[1]);
-cmp_ok $res->{forget}, '==', 1, 'Correct number of subscription forget';
-cmp_ok pricer_sub_count($t), '==', 2, "2 pricer sub Ok";
-
-$t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
-$res = decode_json($t->message->[1]);
-is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
-cmp_ok pricer_sub_count($t), '==', 0, "1 pricer sub Ok";
-
 
 };
 
