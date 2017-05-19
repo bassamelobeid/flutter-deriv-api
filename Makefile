@@ -4,7 +4,7 @@ SUBDIRS=$(wildcard ${MAIN_DIR}/*)
 test_all: $(SUBDIRS)
 
 $(SUBDIRS):
-	@if [ -d $@ ] && [ -f $@/Makefile ] && grep -q '^test:$$' $@/Makefile; then $(MAKE) -C $@ test; else echo Skipping $@; fi
+	@if [ -d $@ ] && [ -f $@/Makefile ] && grep -q '^test:' $@/Makefile; then $(MAKE) -C $@ test; else echo Skipping $@; fi
 
 tidy:
 	find . -name '*.p?.bak' -delete
