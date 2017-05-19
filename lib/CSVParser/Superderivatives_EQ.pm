@@ -87,7 +87,7 @@ sub _build_records {
         my $barrier2 = (defined $record->{barrier2}) ? $record->{barrier2} / 100 * $spot : undef;
         my $bet_type = $record->{bet_type};
 
-        my $closing = $underlying->calendar->closing_on($date_expiry);
+        my $closing = $underlying->calendar->closing_on($underlying->exchange,$date_expiry);
         next unless $closing;
         my $params = {
             spot          => $spot,
