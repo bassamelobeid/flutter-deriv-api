@@ -138,7 +138,7 @@ subtest 'FOREX settlement check on Wednesday' => sub {
     ok !$bet_2->is_valid_to_sell,    'is not valid to sell';
     is($bet_2->primary_validation_error->message, 'waiting for settlement', 'Not valid to sell as it is waiting for settlement');
     ok $bet_2->is_expired, 'is expired';
-    ok !$bet->is_settleable, 'not settleable';
+    ok !$bet_2->is_settleable, 'not settleable';
     is($bet_2->exit_tick->quote, '108',        'exit tick is 108');
     is($bet_2->exit_tick->epoch, '1202936400', 'the exit tick is the one at 21:00');
     is($bet_2->bid_price,        0,            'Indicative outcome is 0 as the high is 108');
@@ -239,7 +239,7 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok !$bet_2->is_valid_to_sell,    'is not valid to sell';
     is($bet_2->primary_validation_error->message, 'waiting for settlement', 'Not valid to sell as it is waiting for settlement');
     ok $bet_2->is_expired,    'is expired';
-    ok $bet_2->is_settleable, 'is settebable';
+    ok !$bet_2->is_settleable, 'is not settebable';
     is($bet_2->exit_tick->quote, '108',        'exit tick is 108');
     is($bet_2->exit_tick->epoch, '1203109200', 'the exit tick is the one at 21:00');
     is($bet_2->bid_price,        1,            'Indicative outcome with full payout as the high is 110');
@@ -250,9 +250,9 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok $bet->is_after_settlement, 'is pass settlement time';
     ok !$bet->is_valid_to_sell, 'is not valid to sell';
     is($bet->primary_validation_error->message, 'exit tick is undefined', 'Not valid to sell as it is waiting for exit tick');
-    ok !$bet->is_expired,    'is not expired';
+    ok $bet->is_expired,    'is expired';
     ok !$bet->is_settleable, 'is not settleable';
-    is($bet->exit_tick, undef, 'exit tick is undef');
+    is($bet->exit_tick->quote, '108', 'exit tick is 108');
 
     $bet_params_2->{date_pricing} = Date::Utility->new('2008-02-16 00:00:00');    # sat morning
     $bet_2 = produce_contract($bet_params_2);
@@ -260,9 +260,9 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok $bet_2->is_after_settlement, 'is pass settlement time';
     ok !$bet_2->is_valid_to_sell, 'is not valid to sell';
     is($bet_2->primary_validation_error->message, 'exit tick is undefined', 'Not valid to sell as it is waiting for exit tick');
-    ok !$bet_2->is_expired,    'is not expired';
+    ok $bet_2->is_expired,    'is not expired';
     ok !$bet_2->is_settleable, 'is not settleable';
-    is($bet_2->exit_tick, undef, 'exit tick is undef');
+    is($bet_2->exit_tick->quote, '108', 'exit tick is 108');
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
@@ -470,7 +470,7 @@ subtest 'Path dependent contracts settlement check' => sub {
     ok !$bet_3->is_valid_to_sell,    'is not valid to sell';
     is($bet_3->primary_validation_error->message, 'waiting for settlement');
     ok $bet_3->is_expired,    'is  expired';
-    ok $bet_3->is_settleable, 'is settleable';
+    ok !$bet_3->is_settleable, 'is not settleable';
     is($bet_3->exit_tick->quote, '110', 'exit tick is last available tick');
 
     $bet_params_3->{date_pricing} = Date::Utility->new('2008-03-01 00:00:00');    # Sat Morning
@@ -479,9 +479,9 @@ subtest 'Path dependent contracts settlement check' => sub {
     ok $bet_3->is_after_settlement, 'is pass settlement time';
     ok !$bet_3->is_valid_to_sell, 'is not valid to sell';
     is($bet_3->primary_validation_error->message, 'exit tick is undefined', 'Not valid to sell as it is waiting for exit tick');
-    ok !$bet_3->is_expired,    'is not expired';
+    ok $bet_3->is_expired,    'is expired';
     ok !$bet_3->is_settleable, 'is not setteable';
-    is($bet_3->exit_tick, undef, 'exit tick is undef');
+    is($bet_3->exit_tick->quote, '110', 'exit tick is last availble tick');
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
