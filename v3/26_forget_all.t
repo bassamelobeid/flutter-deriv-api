@@ -2,21 +2,22 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Deep;
+use Test::MockTime qw/:all/;
 use JSON;
-use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
-use BOM::Database::Model::OAuth;
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
+use File::Temp;
+use Date::Utility;
+
 use BOM::Platform::RedisReplicated;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-
 initialize_realtime_ticks_db();
-build_test_R_50_data();
-my $now = Date::Utility->new;
 
-my $t = build_wsapi_test();
+{
+local $SIG{__WARN__} = sub{};
+
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
@@ -35,112 +36,7 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
     );
 }
 
-my $email  = 'test-binary@binary.com';
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-});
-$client->email($email);
-$client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
-$client->save;
-
-my @symbols = qw(frxUSDJPY frxAUDJPY frxAUDUSD);
-
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'economic_events',
-    {
-        events => [{
-                symbol       => 'USD',
-                release_date => 1,
-                source       => 'forexfactory',
-                impact       => 1,
-                event_name   => 'FOMC',
-            }]});
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'currency',
-    {
-        symbol        => $_,
-        recorded_date => $now,
-    }) for qw(USD JPY AUD JPY-USD AUD-USD AUD-JPY);
-
-for my $s (@symbols) {
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
-        {
-            symbol        => $s,
-            recorded_date => $now,
-        });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 98,
-        epoch      => $now->epoch - 2,
-        underlying => $s,
-    });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 99,
-        epoch      => $now->epoch - 1,
-        underlying => $s,
-    });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 100,
-        epoch      => $now->epoch,
-        underlying => $s,
-    });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 101,
-        epoch      => $now->epoch + 1,
-        underlying => $s,
-    });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 102,
-        epoch      => $now->epoch + 2,
-        underlying => $s,
-    });
-}
-
-subtest "new-tests" => sub {
-
-my $loginid = $client->loginid;
-my $user    = BOM::Platform::User->create(
-    email    => $email,
-        password => '1234',
-        );
-$user->add_loginid({loginid => $loginid});
-$user->save;
-
-$client->set_default_account('USD');
-$client->smart_payment(
-    currency     => 'USD',
-    amount       => +300000,
-    payment_type => 'external_cashier',
-    remark       => 'test deposit'
-);
-
-my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
-
-my $res;
-
-$t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
-my $prop_id = create_propsals($t, @symbols);
-cmp_ok pricer_sub_count($t), '==', 3,"1 pricer sub Ok";
-
-$t->send_ok({json => {forget => $prop_id}})->message_ok;
-$res = decode_json($t->message->[1]);
-cmp_ok $res->{forget}, '==', 1, 'Correct number of subscription forget';
-cmp_ok pricer_sub_count($t), '==', 2, "2 pricer sub Ok";
-
-$t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
-$res = decode_json($t->message->[1]);
-is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
-cmp_ok pricer_sub_count($t), '==', 0, "1 pricer sub Ok";
-
-};
-
-subtest "old-tests" => sub {
-
-local $SIG{__WARN__} = sub{};
-
+my $t = build_wsapi_test();
 
 # both these subscribtion should work as req_id is different
 $t->send_ok({json => {ticks => 'R_50'}});
@@ -228,37 +124,6 @@ test_schema('forget_all', $res);
 @forget_ids = sort @{$res->{forget_all}};
 cmp_bag(\@ids, \@forget_ids, 'correct forget ids for ticks history');
 
-};
-
 $t->finish_ok;
+}
 done_testing();
-
-sub create_propsals {
-    my $t = shift;
-    my $req = {
-        "proposal"      => 1,
-        "subscribe"     => 1,
-        "amount"        => 10,
-        "basis"         => "payout",
-        "contract_type" => "CALL",
-        "currency"      => "USD",
-        "symbol"        => "frxUSDJPY",
-        "duration"      => 5,
-        "duration_unit" => "m",
-    };
-    my $first_prop_id;
-    for my $s (@_) {
-        $req->{symbol} = $s;
-        $t->send_ok({json => $req})->message_ok;
-        my $res = decode_json($t->message->[1]);
-        ok $res->{proposal}->{id}, 'Should return id';
-        $first_prop_id = $res->{proposal}->{id} unless $first_prop_id;
-    }
-    return $first_prop_id;
-}
-
-sub pricer_sub_count {
-    my $t = shift;
-    return scalar @{ $t->app->redis_pricer->keys( 'PRICER_KEYS::*') };
-}
-
