@@ -118,17 +118,17 @@ $req = {
 
 $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
 create_propsals();
-cmp_ok pricer_sub_count(), '==', 3,"1 pricer sub Ok";
+cmp_ok pricer_sub_count(), '==', 3,"3 pricer sub Ok";
 
 $t->send_ok({json => {forget => [values(%$sub_ids)]->[0]}})->message_ok;
 $res = decode_json($t->message->[1]);
 cmp_ok $res->{forget}, '==', 1, 'Correct number of subscription forget';
-cmp_ok pricer_sub_count(), '==', 2, "2 pricer sub Ok";
+cmp_ok pricer_sub_count(), '==', 3, "3 pricer sub Ok";
 
 $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
 $res = decode_json($t->message->[1]);
 is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
-cmp_ok pricer_sub_count(), '==', 0, "1 pricer sub Ok";
+cmp_ok pricer_sub_count(), '==', 3, "3 pricer sub Ok";
 
 
 done_testing();
