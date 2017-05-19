@@ -51,6 +51,13 @@ my $bet_params = {
     current_tick => $fake_tick,
 };
 
+subtest 'missing expiry and duration' => sub {
+
+    my $c = produce_contract($bet_params);
+
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+};
+
 subtest 'invalid start and expiry time' => sub {
     $bet_params->{date_start} = $bet_params->{date_expiry} = $now;
     my $c = produce_contract($bet_params);
