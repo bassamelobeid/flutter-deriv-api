@@ -230,7 +230,8 @@ subtest 'landing_companies_specific' => sub {
     $client_mx->save;
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'GB residence needs to set 30-Day turnover')
-        ->error_message_is('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.', 'GB residence needs to set 30-Day turnover');
+        ->error_message_is('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
+        'GB residence needs to set 30-Day turnover');
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
     $client_jp->set_default_account('JPY');
@@ -267,8 +268,9 @@ subtest 'landing_companies_specific' => sub {
 
 subtest 'all status are covered' => sub {
     my $all_status = Client::Account::client_status_types;
-    # just temporary filter
-    my @temp_status = grep { $_ ne 'crs_tin_information' } keys %$all_status;
+    # as social signup, jp_transaction_detail are flags to represent state
+    # not status for preventing cashier access
+    my @temp_status = grep { $_ !~ /^(?:social_signup|jp_transaction_detail)$/ } keys %$all_status;
     fail("missing status $_") for sort grep !exists $seen{$_}, @temp_status;
     pass("ok to prevent warning 'no tests run");
     done_testing();

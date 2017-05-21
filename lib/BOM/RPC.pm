@@ -11,7 +11,6 @@ use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use Proc::CPUUsage;
 use Time::HiRes;
 use Try::Tiny;
-use Carp qw(cluck);
 use Path::Tiny;
 use JSON::XS;
 
@@ -36,6 +35,7 @@ use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::CopyTrading::Statistics;
 use BOM::RPC::v3::CopyTrading;
+use BOM::Transaction::Validation;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -61,112 +61,25 @@ sub apply_usergroup {
 }
 
 sub _auth {
-    my $params        = shift;
+    my $params = shift;
+
     my $token_details = $params->{token_details};
     return BOM::RPC::v3::Utility::invalid_token_error()
         unless $token_details and exists $token_details->{loginid};
 
     my $client = Client::Account->new({loginid => $token_details->{loginid}});
+
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
     $params->{client} = $client;
     $params->{app_id} = $token_details->{app_id};
-    return $params;
-}
-
-sub _validate_tnc {
-    my $params = shift;
-
-    # we shouldn't get to this error, so we can die it directly
-    my $client = $params->{client} // die "client should be authenticated before calling this action";
-    return $params if $client->is_virtual;
-
-    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
-    my $client_tnc_status   = $client->get_status('tnc_approval');
-    if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version)) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_TNC_APPROVAL',
-            message_to_client => localize('Terms and conditions approval is required.'),
-        });
-    }
-    return $params;
-}
-
-sub _compliance_checks {
-    my $params = shift;
-
-    # we shouldn't get to this error, so we can die it directly
-    my $client = $params->{client} // die "client should be authed before calling this action";
-
-    # checks are not applicable for virtual, costarica and champion clients
-    return $params
-        if ($client->is_virtual
-        or $client->landing_company->short =~ /^(?:costarica|champion)$/);
-
-    # as per compliance for high risk client we need to check
-    # if financial assessment details are completed or not
-    if (($client->aml_risk_classification // '') eq 'high' and not $client->financial_assessment()) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'FinancialAssessmentRequired',
-            message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
-        });
-    }
-
-    return $params;
-}
-
-sub _check_tax_information {
-    my $params = shift;
-
-    # we shouldn't get to this error, so we can die it directly
-    my $client = $params->{client} // die "client should be authed before calling this action";
-
-    if ($client->landing_company->short eq 'maltainvest' and not $client->get_status('crs_tin_information')) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'TINDetailsMandatory',
-                message_to_client => localize(
-                    'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')});
-    }
-
-    return $params;
-}
-
-# don't allow to trade for unwelcome_clients
-# and for MLT and MX we don't allow trading without confirmed age
-sub _check_trade_status {
-    my $params = shift;
-
-    # we shouldn't get to this error, so we can die it directly
-    my $client = $params->{client} // die "client should be authenticated before calling this action";
-    return $params
-        if $client->is_virtual;
-    unless ($client->allow_trade) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'PleaseContactSupport',
-            message_to_client => localize('Please contact customer support for more information.'),
-        });
-    }
-    return $params;
+    return;
 }
 
 sub register {
     my ($method, $code, $before_actions) = @_;
 
-    # check actions at register time
-    my %actions = (
-        auth                  => \&_auth,
-        validate_tnc          => \&_validate_tnc,
-        check_trade_status    => \&_check_trade_status,
-        compliance_checks     => \&_compliance_checks,
-        check_tax_information => \&_check_tax_information,
-    );
-    my @local_before_actions;
-    for my $hook (@$before_actions) {
-        # it shouldn't happen, so we die it directly
-        die "Error: no such hook $hook" unless exists($actions{$hook});
-        push @local_before_actions, $actions{$hook};
-    }
     return MojoX::JSON::RPC::Service->new->register(
         $method,
         sub {
@@ -193,20 +106,33 @@ sub register {
                 $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
             }
 
-            for my $action (@local_before_actions) {
-                my $result;
+            for my $act (@$before_actions) {
+                my $err;
+                if ($act eq 'auth') {
+                    $err = _auth($params);
+                    return $err if $err;
+                    next;
+                }
+                (($err = _auth($params)) and return $err) or next if $act eq 'auth';
+
+                die "Error: no such hook $act" unless BOM::Transaction::Validation->can($act);
+
                 try {
-                    $result = $action->($params);
+                    $err = BOM::Transaction::Validation->new({clients => [$params->{client}]})->$act($params->{client});
                 }
                 catch {
-                    cluck("Error happened when call before_action $action at method $method: $_");
-                    $result = BOM::RPC::v3::Utility::create_error({
-                        code              => 'Internal Error',
-                        message_to_client => localize('Sorry, there is an internal error.'),
+                    warn "Error happened when call before_action $act at method $method: $_";
+                    $err = Error::Base->cuss({
+                        -type              => 'Internal Error',
+                        -mesg              => 'Internal Error',
+                        -message_to_client => localize('Sorry, there is an internal error.'),
                     });
                 };
+                return BOM::RPC::v3::Utility::create_error({
+                        code              => $err->get_type,
+                        message_to_client => $err->{-message_to_client},
+                    }) if defined $err and ref $err eq "Error::Base";
 
-                return $result if (exists $result->{error});
             }
 
             my $verify_app_res;
@@ -288,8 +214,7 @@ sub startup {
             [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]
         ],
 
-        ['active_symbols',        \&BOM::RPC::v3::MarketDiscovery::active_symbols],
-        ['get_corporate_actions', \&BOM::RPC::v3::MarketDiscovery::get_corporate_actions],
+        ['active_symbols', \&BOM::RPC::v3::MarketDiscovery::active_symbols],
 
         ['authorize', \&BOM::RPC::v3::Authorize::authorize],
         ['logout',    \&BOM::RPC::v3::Authorize::logout],

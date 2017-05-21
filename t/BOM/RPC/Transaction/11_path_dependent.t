@@ -9,7 +9,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Database::Model::OAuth;
 
@@ -88,27 +87,15 @@ my $args = {
     barrier      => 'S20P',
 };
 
-my ($contract, $txn);
+my ($txn);
 subtest 'contract creation and purchase' => sub {
-    lives_ok {
-        $contract = produce_contract($args);
-        isa_ok $contract, 'BOM::Product::Contract::Onetouch';
-        is $contract->payouttime,   'hit',      'hit';
-        is $contract->code,         'ONETOUCH', 'ONETOUCH';
-        is $contract->pricing_code, 'ONETOUCH', 'ONETOUCH';
-        is $contract->sentiment,    'high_vol', 'high_vol';
-        ok $contract->is_path_dependent, 'is path dependent';
-        is_deeply $contract->supported_expiries, ['intraday', 'daily'], 'proper expires type';
-    }
-    'generic';
-
     $txn = BOM::Transaction->new({
-        client        => $client,
-        contract      => $contract,
-        price         => $contract->ask_price,
-        purchase_date => $now,
-        amount_type   => 'payout'
+        client              => $client,
+        contract_parameters => $args,
+        purchase_date       => $now,
+        amount_type         => 'payout'
     });
+    $txn->price($txn->contract->ask_price);
 
     my $error = $txn->buy(skip_validation => 1);
     ok(!$error, 'no error in buy');
@@ -127,8 +114,6 @@ subtest 'check hit tick' => sub {
     };
 
     my $result = $app->call_ok('proposal_open_contract', $params)->has_no_system_error->has_no_error->result;
-    $contract = produce_contract($result->{$contract_id}->{shortcode}, 'USD');
-    is $contract->hit_tick->epoch, $result->{$contract_id}->{sell_spot_time}, 'contract hit tick matches proposal sell spot time';
     cmp_ok $result->{$contract_id}->{sell_spot}, '==', '100.030', 'got correct sell spot';
 };
 

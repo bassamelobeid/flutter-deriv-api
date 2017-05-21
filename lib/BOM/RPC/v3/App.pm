@@ -8,6 +8,8 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
 use BOM::Database::Model::OAuth;
 
+use DataDog::DogStatsd::Helper;
+
 sub register {
     my $params = shift;
 

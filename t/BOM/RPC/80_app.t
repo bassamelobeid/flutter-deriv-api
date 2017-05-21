@@ -1,6 +1,11 @@
 use strict;
 use warnings;
+
+no indirect;
+
 use Test::More;
+use Test::Deep;
+use Test::Warnings qw(warnings);
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use TestHelper qw/create_test_user/;
@@ -187,6 +192,8 @@ ok $used_apps->[0]->{last_used}, 'last_used ok';
 $oauth = BOM::Database::Model::OAuth->new;    # re-connect db
 my $is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 1, 'was confirmed';
+
+# revoke app
 $c->call_ok(
     'oauth_apps',
     {

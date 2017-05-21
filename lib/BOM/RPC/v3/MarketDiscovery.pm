@@ -15,87 +15,8 @@ use Client::Account;
 use BOM::Platform::Context qw (localize request);
 use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Platform::Runtime;
-
-my %name_mapper = (
-    DVD_STOCK  => localize('Stock Dividend'),
-    STOCK_SPLT => localize('Stock Split'),
-);
-
-sub get_corporate_actions {
-    my $params = shift;
-
-    my $symbol = $params->{args}->{symbol};
-    my $start  = $params->{args}->{start};
-    my $end    = $params->{args}->{end};
-
-    my ($start_date, $end_date);
-
-    my $response = {
-        actions => [],
-        count   => 0
-    };
-
-    if (not $end) {
-        $end_date = Date::Utility->new;
-    } else {
-        $end_date = Date::Utility->new($end);
-    }
-
-    if (not $start) {
-        $start_date = $end_date->minus_time_interval('365d');
-    } else {
-        $start_date = Date::Utility->new($start);
-    }
-
-    if ($start_date->is_after($end_date)) {
-        $response = BOM::RPC::v3::Utility::create_error({
-            message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
-            code              => "GetCorporateActionsFailure"
-        });
-
-        return $response;
-    }
-
-    try {
-        my @actions;
-        my $underlying = create_underlying($symbol);
-
-        if ($underlying->market->affected_by_corporate_actions) {
-            @actions = $underlying->get_applicable_corporate_actions_for_period({
-                start => $start_date,
-                end   => $end_date,
-            });
-        }
-
-        my @corporate_actions;
-        foreach my $action (@actions) {
-            my $display_date = Date::Utility->new($action->{effective_date})->date_ddmmmyyyy;
-
-            my $struct = {
-                display_date => $display_date,
-                type         => $name_mapper{$action->{type}},
-                value        => $action->{value},
-                modifier     => $action->{modifier},
-            };
-
-            push @corporate_actions, $struct;
-        }
-
-        if (scalar(@corporate_actions)) {
-            $response = {
-                actions => \@corporate_actions,
-            };
-        }
-    }
-    catch {
-        $response = BOM::RPC::v3::Utility::create_error({
-            message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
-            code              => "GetCorporateActionsFailure"
-        });
-    };
-
-    return $response;
-}
+use BOM::Platform::Chronicle;
+use Quant::Framework;
 
 sub active_symbols {
     my $params = shift;
@@ -144,12 +65,13 @@ sub active_symbols {
 }
 
 sub _description {
-    my $symbol = shift;
-    my $by     = shift || 'brief';
-    my $ul     = create_underlying($symbol) || return;
-    my $iim    = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
+    my $symbol           = shift;
+    my $by               = shift || 'brief';
+    my $ul               = create_underlying($symbol) || return;
+    my $trading_calendar = eval { Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader) };
+    my $iim              = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
     # sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
-    my $exchange_is_open = eval { $ul->calendar } ? $ul->calendar->is_open_at(time) : '';
+    my $exchange_is_open = $trading_calendar ? $trading_calendar->is_open_at($ul->exchange, Date::Utility->new) : '';
     my ($spot, $spot_time, $spot_age) = ('', '', '');
     if ($spot = eval { $ul->spot }) {
         $spot_time = $ul->spot_time;

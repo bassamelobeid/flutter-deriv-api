@@ -5,13 +5,13 @@ use warnings;
 use feature 'state';
 use Scalar::Util qw(blessed);
 use BOM::Transaction;
-use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::MarketData qw(create_underlying);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use Postgres::FeedDB;
+use BOM::Transaction;
 
-sub create_contract {
+sub prepare_contract {
     my %args              = @_;
     my $underlying_symbol = $args{underlying} // 'R_50';
     my $is_expired        = $args{is_expired} // 0;
@@ -67,7 +67,19 @@ sub create_contract {
         barrier               => 'S0P',
         app_markup_percentage => $args{app_markup_percentage} // 0
     };
-    return produce_contract($contract_data);
+
+    my $txn;
+    if ($args{client}) {
+        $txn = BOM::Transaction->new({
+            client              => $args{client},
+            contract_parameters => $contract_data,
+            purchase_date       => $start_time,
+            amount_type         => 'payout',
+        });
+        return ($contract_data, $txn);
+    }
+
+    return $contract_data;
 }
 
 sub prepare_contract_db {

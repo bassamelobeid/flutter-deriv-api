@@ -34,7 +34,7 @@ use BOM::Platform::Config;
 use BOM::Platform::AuditLog;
 use BOM::Platform::RiskProfile;
 use BOM::RPC::v3::Utility;
-
+use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::DataMapper::Payment;
@@ -373,7 +373,7 @@ sub get_limits {
     my $client         = $params->{client};
     my $client_loginid = $client->loginid;
 
-    if ($client->get_status('cashier_locked') or $client->documents_expired or $client->is_virtual) {
+    if ($client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'FeatureNotAvailable',
                 message_to_client => localize('Sorry, this feature is not available.')});
@@ -802,7 +802,7 @@ sub paymentagent_withdraw {
             localize('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
     } elsif (not $client->landing_company->allows_payment_agents) {
         return $error_sub->(localize('Payment Agents are not available on this site.'));
-    } elsif (not $client->allow_paymentagent_withdrawal()) {
+    } elsif (not BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client)) {
         # check whether allow to withdraw via payment agent
         return $reject_error_sub->(localize('You are not authorized for withdrawal via payment agent.'));
     } elsif ($client->cashier_setting_password) {
