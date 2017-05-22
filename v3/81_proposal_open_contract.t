@@ -61,9 +61,23 @@ my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $logi
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
+#######################################################################################################################################
+
+my $wait_for = 'proposal_open_contract';
+my $check = sub{
+    ok( $_[0]->{proposal_open_contract} && !keys %{$_[0]->{proposal_open_contract}}, "got proposal");
+};
+$t->tx->on( message => sub {
+                my ($tx, $msg) = @_;
+                my $data = decode_json($msg);
+                if ($data->{msg_type} eq $wait_for ) {
+                    note "CATCH";
+                    $check->($data);
+                    Future->done();
+                }
+            });
 $t = $t->send_ok({json => {proposal_open_contract => 1}})->message_ok;
-my $empty_proposal_open_contract = decode_json($t->message->[1]);
-ok $empty_proposal_open_contract->{proposal_open_contract} && !keys %{$empty_proposal_open_contract->{proposal_open_contract}};
+Future->needs_any;
 
 $t = $t->send_ok({
         json => {
@@ -77,10 +91,11 @@ $t = $t->send_ok({
             "duration"      => "2",
             "duration_unit" => "m"
         }});
+
 BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 $t->message_ok;
 my $proposal = decode_json($t->message->[1]);
-
+note explain $proposal unless $proposal->{proposal};
 sleep 1;
 $t = $t->send_ok({
         json => {
