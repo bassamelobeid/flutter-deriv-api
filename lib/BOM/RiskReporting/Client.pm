@@ -21,16 +21,18 @@ has client => (
     is => 'rw',
 );
 
-
 sub _client_details {
     my $self = shift;
 
     return {
-        name => $self->client->first_name . ' ' . $self->client->last_name,
-        date_joined => $self->client->date_joined,
-        residence => $self->client->residence,
-        citizen => $self->client->citizen || '',
-        id_authentication => ($self->client->get_authentication('ID_NOTARIZED') or $self->client->get_authentication('ID_DOCUMENT') ) ? 'yes' : 'no',
+        name              => $self->client->first_name . ' ' . $self->client->last_name,
+        date_joined       => $self->client->date_joined,
+        residence         => $self->client->residence,
+        citizen           => $self->client->citizen || '',
+        id_authentication => (
+                   $self->client->get_authentication('ID_NOTARIZED')
+                or $self->client->get_authentication('ID_DOCUMENT')
+        ) ? 'yes' : 'no',
     };
 }
 
@@ -38,8 +40,8 @@ sub _documents_on_file {
     my $self = shift;
 
     my @docs  = $self->client->client_authentication_document;
-    my $count=1;
-    my $data = {};
+    my $count = 1;
+    my $data  = {};
     for my $doc (@docs) {
         next if $doc->expiration_date && Date::Utility->new($doc->expiration_date)->is_before(Date::Utility->today);
         $data->{"document$count"} = $doc->document_type;
@@ -58,12 +60,12 @@ sub _change_of_country {
     );
     my $count        = 0;
     my $last_country = '';
-    my $data = [];
+    my $data         = [];
     for my $h (@$login_history) {
         if ($h->environment =~ /IP=([0-9a-z\.:]+) IP_COUNTRY=([A-Z]{1,3})/ and $last_country ne $2) {
-            $data->[$count]->{country} = $2;
+            $data->[$count]->{country}          = $2;
             $data->[$count]->{first_login_date} = $h->history_date->datetime;
-            $last_country = $2;
+            $last_country                       = $2;
             $count++;
         }
     }
