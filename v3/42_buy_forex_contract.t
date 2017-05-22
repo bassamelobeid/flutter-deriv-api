@@ -95,7 +95,7 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
-my $underlying = create_underlying('frxUSDJPY');
+my $underlying       = create_underlying('frxUSDJPY');
 
 SKIP: {
     skip 'Forex test does not work on the weekends.', 1 if not $trading_calendar->is_open_at($underlying->exchange, Date::Utility->new);

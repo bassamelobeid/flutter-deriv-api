@@ -7,7 +7,7 @@ use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_mocked_client build_mojo_test/;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
 
@@ -17,6 +17,8 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::RedisReplicated;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Runtime;
+
+use IO::Async::Loop;
 
 build_test_R_50_data();
 my $t = build_wsapi_test();
@@ -63,87 +65,117 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
 #######################################################################################################################################
 
-my $wait_for = 'proposal_open_contract';
-my $check = sub{
-    ok( $_[0]->{proposal_open_contract} && !keys %{$_[0]->{proposal_open_contract}}, "got proposal");
+my $loop = IO::Async::Loop->new;
+my ($wait_for, $check_callback, $f);
+my $message_callback = sub {
+    my ($tx, $msg) = @_;
+    my $data = decode_json($msg);
+    if ($data->{msg_type} eq $wait_for) {
+        $check_callback->($data);
+        $f->done();
+    }
 };
-$t->tx->on( message => sub {
-                my ($tx, $msg) = @_;
-                my $data = decode_json($msg);
-                if ($data->{msg_type} eq $wait_for ) {
-                    note "CATCH";
-                    $check->($data);
-                    Future->done();
-                }
-            });
-$t = $t->send_ok({json => {proposal_open_contract => 1}})->message_ok;
-Future->needs_any;
 
-$t = $t->send_ok({
-        json => {
-            "proposal"      => 1,
-            "subscribe"     => 1,
-            "amount"        => "2",
-            "basis"         => "payout",
-            "contract_type" => "CALL",
-            "currency"      => "USD",
-            "symbol"        => "R_50",
-            "duration"      => "2",
-            "duration_unit" => "m"
-        }});
+$t->tx->on(message => $message_callback);
 
-BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
-$t->message_ok;
-my $proposal = decode_json($t->message->[1]);
-note explain $proposal unless $proposal->{proposal};
-sleep 1;
-$t = $t->send_ok({
-        json => {
-            buy   => $proposal->{proposal}->{id},
-            price => $proposal->{proposal}->{ask_price}}});
+sub doing_something_useful {
+    (my $action_loop, $wait_for, my $action_sub, $check_callback) = @_;
 
-my ($res, $contract_id);
-## skip proposal until we meet buy
-while (1) {
-    $t   = $t->message_ok;
-    $res = decode_json($t->message->[1]);
-    note explain $res;
-    next if $res->{msg_type} eq 'proposal';
-
-    ok $res->{buy}->{contract_id};
-    $contract_id = $res->{buy}->{contract_id};
-    last;
+    $f = $action_loop->new_future;
+    $action_sub->();
+    $action_loop->await($f);
 }
 
-$t = $t->send_ok({
-        json => {
-            proposal_open_contract => 1,
-            subscribe              => 1
-        }});
+doing_something_useful(
+    $loop,
+    'proposal_open_contract',
+    sub {
+        $t->send_ok({json => {proposal_open_contract => 1}})->message_ok;
+    },
+    sub {
+        ok($_[0]->{proposal_open_contract} && !keys %{$_[0]->{proposal_open_contract}}, "got proposal");
+    });
 
-$t   = $t->message_ok;
-$res = decode_json($t->message->[1]);
-note explain $res;
-is $res->{msg_type}, 'proposal_open_contract';
-ok $res->{echo_req};
-ok $res->{proposal_open_contract}->{contract_id};
-ok $res->{proposal_open_contract}->{id};
-test_schema('proposal_open_contract', $res);
+my $proposal = undef;
+doing_something_useful(
+    $loop,
+    'proposal',
+    sub {
+        $t->send_ok({
+                json => {
+                    "proposal"      => 1,
+                    "subscribe"     => 1,
+                    "amount"        => "2",
+                    "basis"         => "payout",
+                    "contract_type" => "CALL",
+                    "currency"      => "USD",
+                    "symbol"        => "R_50",
+                    "duration"      => "2",
+                    "duration_unit" => "m"
+                }});
 
-is $res->{proposal_open_contract}->{contract_id}, $contract_id, 'got correct contract from proposal open contracts';
+        BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
+        $t->message_ok;
+    },
+    sub {
+        $proposal = shift;
+    },
+);
 
-$t = $t->send_ok({
-        json => {
-            proposal_open_contract => 1,
-            subscribe              => 1,
-            req_id                 => 456,
-            passthrough            => {'sample' => 1},
-        }});
+my ($res, $contract_id);
 
-$t   = $t->message_ok;
-$res = decode_json($t->message->[1]);
+doing_something_useful(
+    $loop, 'buy',
+    sub {
+        $t->send_ok({
+                json => {
+                    buy   => $proposal->{proposal}->{id},
+                    price => $proposal->{proposal}->{ask_price}}});
+        $t->message_ok;
+    },
+    sub {
+        ok($contract_id = shift->{buy}->{contract_id}, "got contract_id");
+    });
 
-is $res->{proposal_open_contract}->{id}, undef, 'passthrough should not allow multiple proposal_open_contract subscription';
+note $contract_id;
+
+doing_something_useful(
+    $loop,
+    'proposal_open_contract',
+    sub {
+        $t = $t->send_ok({
+                json => {
+                    proposal_open_contract => 1,
+                    subscribe              => 1
+                }})->message_ok;
+    },
+    sub {
+        my $res = shift;
+        is $res->{msg_type}, 'proposal_open_contract';
+        ok $res->{echo_req};
+        ok $res->{proposal_open_contract}->{contract_id};
+        ok $res->{proposal_open_contract}->{id};
+        test_schema('proposal_open_contract', $res);
+
+        is $res->{proposal_open_contract}->{contract_id}, $contract_id, 'got correct contract from proposal open contracts';
+    });
+
+doing_something_useful(
+    $loop,
+    'proposal_open_contract',
+    sub {
+        $t->send_ok({
+                json => {
+                    proposal_open_contract => 1,
+                    subscribe              => 1,
+                    req_id                 => 456,
+                    passthrough            => {'sample' => 1},
+                }})->message_ok;
+    },
+    sub {
+        is $res->{proposal_open_contract}->{id}, undef, 'passthrough should not allow multiple proposal_open_contract subscription';
+    },
+);
 
 # It is hack to emulate contract selling and test subcribtion
 my ($url, $call_params);
@@ -172,26 +204,31 @@ my $msg = {
     short_code              => $contract_details->[0]->{short_code},
     currency_code           => 'USD',
 };
-my $json = JSON::to_json($msg);
-BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
 
-$t   = $t->message_ok;
-$res = decode_json($t->message->[1]);
-note explain $res;
-is $res->{msg_type}, 'proposal_open_contract', 'Got message about selling contract';
+doing_something_useful(
+    $loop,
+    'proposal_open_contract',
+    sub {
+        my $json = JSON::to_json($msg);
+        BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
+        $t = $t->message_ok;
+    },
+    sub {
+        is shift->{msg_type}, 'proposal_open_contract', 'Got message about selling contract';
+    },
+);
 
 $module->unmock_all;
 
-$t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}});
-my $flag = 1;
-while ($flag) {
-    $t->message_ok;
-    $res = decode_json($t->message->[1]);
-    if ($res->{msg_type} eq 'forget_all') {
-        $flag = 0;
-    }
-}
-is scalar @{$res->{forget_all}}, 0, 'Forget all returns empty as contracts are already sold';
+doing_something_useful(
+    $loop,
+    'forget_all',
+    sub {
+        $t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}})->message_ok;
+    },
+    sub {
+        is(scalar @{shift->{forget_all}}, 0, 'Forget all returns empty as contracts are already sold');
+    });
 
 ($res, $call_params) = call_mocked_client(
     $t,
@@ -202,35 +239,39 @@ is scalar @{$res->{forget_all}}, 0, 'Forget all returns empty as contracts are a
 is $call_params->{token}, $token;
 is $call_params->{args}->{contract_id}, 1;
 
-$t = $t->send_ok({
-        json => {
-            "proposal"      => 1,
-            "subscribe"     => 1,
-            "amount"        => "2",
-            "basis"         => "payout",
-            "contract_type" => "CALL",
-            "currency"      => "USD",
-            "symbol"        => "R_50",
-            "duration"      => "2",
-            "duration_unit" => "m"
-        }});
-BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
-$t->message_ok;
-$proposal = decode_json($t->message->[1]);
+doing_something_useful(
+    $loop,
+    'proposal',
+    sub {
+        $t = $t->send_ok({
+                json => {
+                    "proposal"      => 1,
+                    "subscribe"     => 1,
+                    "amount"        => "2",
+                    "basis"         => "payout",
+                    "contract_type" => "CALL",
+                    "currency"      => "USD",
+                    "symbol"        => "R_50",
+                    "duration"      => "2",
+                    "duration_unit" => "m"
+                }});
+        BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
+        $t->message_ok;
+    },
+    sub {
+        $proposal = shift;
+    });
 
-sleep 1;
-$t = $t->send_ok({
-        json => {
-            buy   => $proposal->{proposal}->{id},
-            price => $proposal->{proposal}->{ask_price}}});
-
-## skip proposal until we meet buy
-while (1) {
-    $t   = $t->message_ok;
-    $res = decode_json($t->message->[1]);
-    next if $res->{msg_type} eq 'proposal';
-    last;
-}
+doing_something_useful(
+    $loop, 'buy',
+    sub {
+        $t = $t->send_ok({
+                json => {
+                    buy   => $proposal->{proposal}->{id},
+                    price => $proposal->{proposal}->{ask_price}}})->message_ok;
+    },
+    sub {
+    });
 
 my @ids = ();
 $t = $t->send_ok({

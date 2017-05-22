@@ -31,7 +31,6 @@ my %contractParameters = (
 
 $test_server->app->log(Mojo::Log->new(level => 'debug'));
 my $endless_loop_avoid = 0;
-my $url = '/websockets/v3?l=EN&debug=1&app_id=1';
 
 my $channel;
 my $user_first = {};
@@ -71,7 +70,7 @@ subtest "Create Subscribes" => sub {
 
         test_schema('proposal', decode_json $msg );
 
-        $future->done( ) and $tx->finish if ($user_first->{$tx->req->cookie('user')->value} || 0) > 5;
+        $future->done() and $tx->finish if ($user_first->{$tx->req->cookie('user')->value} || 0) > 5;
         ### We need cookies for user identify
         return if $user_first->{$tx->req->cookie('user')->value}++;
         $user_first->{$tx->req->cookie('user')->value} = 1;
@@ -84,27 +83,28 @@ subtest "Create Subscribes" => sub {
     };
     my $i = 1;
 
-    for my $i (0 .. $subs_count-1) {
+    for my $i (0 .. $subs_count - 1) {
         my $t_client = Test::Mojo->new;
         my $t = $test_server->websocket_ok($url => {});
 
         $t->tx->req->cookies({
-            name  => 'user',
-            value => ('#' . ++$i)});
+                name  => 'user',
+                value => ('#' . ++$i)});
 
         $t->tx->on(message => $callback);
 
         $t->send_ok({
-            json => {
-                "proposal"  => 1,
-                "subscribe" => 1,
-                %contractParameters
-            }})->message_ok;
+                json => {
+                    "proposal"  => 1,
+                    "subscribe" => 1,
+                    %contractParameters
+                }})->message_ok;
     }
 
-    $future->on_ready( sub {
-                           note "The operation is complete " . shift;
-                       } );
+    $future->on_ready(
+        sub {
+            note "The operation is complete " . shift;
+        });
 
 };
 
