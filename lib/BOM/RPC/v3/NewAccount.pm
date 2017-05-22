@@ -430,6 +430,7 @@ sub new_sub_account {
         client_id                 => $new_client->loginid,
         landing_company           => $new_client->landing_company->name,
         landing_company_shortcode => $new_client->landing_company->short,
+        oauth_token               => _create_oauth_token($new_client->loginid),
     };
 }
 
