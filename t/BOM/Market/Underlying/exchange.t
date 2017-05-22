@@ -9,7 +9,6 @@ use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::Test::Data::Utility::UnitTestMarketData;
-use Quant::Framework::TradingCalendar;
 
 #tests related to underlying-exchange are moved here because exchange is moved to Q::F
 my $date                 = Date::Utility->new('2013-12-01');    # first of December 2014
