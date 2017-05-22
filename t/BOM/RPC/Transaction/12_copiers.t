@@ -335,6 +335,18 @@ lives_ok {
 'sell 2nd a bet';
 
 lives_ok {
+    my $copiers = BOM::Database::DataMapper::Copier->new(
+        broker_code => $trader->broker_code,
+        operation   => 'replica',
+        )->get_trade_copiers({
+            trader_id => $trader->loginid,
+        });
+    is(scalar @$copiers, 1, 'get_trade_copiers');
+    note explain $copiers;
+}
+'get_trader_copiers';
+
+lives_ok {
     my $loginid = $trader->loginid;
 
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
