@@ -8,11 +8,11 @@ selected
 [% END %]
 >[% i %] months</option>
 [% END %]
-</select> months overview</td></tr>
+</select> overview</td></tr>
 <tr>
 [% FOR t IN ['deposits', 'withdrawals'] %]
 <td><table>
-    <tr><td colspan="2" style="border-bottom: 1px solid #888888;">[% t %], USD</td></tr>
+    <tr><td colspan="2" style="border-bottom: 1px solid #888888;">[% t %], [% currency %]</td></tr>
     [% FOR ps IN summary.$t.keys.sort.reverse %]
         <tr>
         <td width="80"  style="border-right: 1px solid #888888;">[% ps | none %]</td>
