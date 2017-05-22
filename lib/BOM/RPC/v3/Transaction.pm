@@ -29,7 +29,7 @@ sub trade_copiers {
         });
 
     return unless $copiers && ref $copiers eq 'ARRAY' && scalar @$copiers;
-    ### TODO: Add checking of trade permission in copy_start
+
     ### Note: this array of hashes will be modified by BOM::Transaction with the results per each client
     my @multiple = map { +{loginid => $_} } @$copiers;
     my $trx = BOM::Transaction->new({
@@ -43,23 +43,8 @@ sub trade_copiers {
         purchase_date => $params->{purchase_date},
     });
 
-    my $res = ($params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode);
-    warn "[COPY TRADING "
-        . uc($params->{action}) . "] "
-        . encode_json({
-            trader_id => $params->{client}->loginid,
-            code      => $res->{-type},
-            error     => $res->{-mesg}}) if $res;
+    $params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode;
 
-    for my $el (grep { $_->{error} } @multiple) {
-        warn "[COPY TRADING "
-            . uc($params->{action}) . "] "
-            . encode_json({
-                trader_id => $params->{client}->loginid,
-                copier    => $el->{loginid},
-                code      => $el->{code},
-                error     => $el->{error}});
-    }
     return 1;
 }
 
