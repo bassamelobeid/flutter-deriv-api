@@ -408,7 +408,7 @@ Keeping this as a method will allow us to have long-lived objects
 sub is_in_quiet_period {
     my ($self, $date) = @_;
 
-    my $underlying = $self->underlying;
+    my $underlying = $self->bet->underlying;
     die 'date must be specified when requesting for quiet period' unless $date;
 
     my $quiet = 0;
