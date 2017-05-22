@@ -37,7 +37,7 @@ if ($whattodo eq 'create') {
         catch {
             $error = $_;
         };
-        if ($error =~ /currency can only be in USD/) {
+        if ($error && $error =~ /currency can only be in USD/) {
             print 'Payment Agent currency can only be in USD';
         } else {
             my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
