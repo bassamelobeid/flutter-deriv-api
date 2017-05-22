@@ -194,6 +194,18 @@ lives_ok {
 
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
     my $token_details = BOM::RPC::v3::Utility::get_token_details($token);
+    $trader_acc_mapper = BOM::Database::DataMapper::Account->new({
+        'client_loginid' => $trader->loginid,
+        'currency_code'  => 'USD',
+    });
+
+    $balance = 15000;
+    top_up $trader, 'USD', $balance;
+    top_up $copier, 'USD', 1;
+
+    isnt($trader_acc = $trader->find_account(query => [currency_code => 'USD'])->[0], undef, 'got USD account');
+
+    is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $balance);
 
     my $res = BOM::RPC::v3::CopyTrading::copy_start({
             args => {
@@ -203,18 +215,6 @@ lives_ok {
         });
 
     ok($res && $res->{status}, "start following");
-    $trader_acc_mapper = BOM::Database::DataMapper::Account->new({
-        'client_loginid' => $trader->loginid,
-        'currency_code'  => 'USD',
-    });
-
-    $balance = 15000;
-    top_up $trader, 'USD', $balance;
-    top_up $copier, 'USD', 15000;
-
-    isnt($trader_acc = $trader->find_account(query => [currency_code => 'USD'])->[0], undef, 'got USD account');
-
-    is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $balance);
 }
 'trader funded';
 
@@ -297,6 +297,7 @@ lives_ok {
 'bought USD bet';
 
 lives_ok {
+    top_up $copier, 'USD', 14999;
     $copier_acc_mapper = BOM::Database::DataMapper::Account->new({
         'client_loginid' => $copier->loginid,
         'currency_code'  => 'USD',
