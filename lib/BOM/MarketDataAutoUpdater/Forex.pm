@@ -276,7 +276,7 @@ sub passes_additional_check {
 sub warmup_intradayfx_cache {
     my $self = shift;
 
-    foreach my $symbol (create_underlying_db->symbols_for_intradayfx) {
+    foreach my $symbol (create_underlying_db->symbols_for_intraday_fx) {
         my $cr = BOM::Platform::Chronicle::get_chronicle_reader(1);
         my $cw = BOM::Platform::Chronicle::get_chronicle_writer();
         my $u  = create_underlying($symbol);
