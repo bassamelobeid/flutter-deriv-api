@@ -437,7 +437,7 @@ sub _get_intraday_trading_window {
     my @intraday_windows;
 
     my $start_of_day = $date->truncate_to_day;
-    my ($current_hour, $minute, $date_str) = ($date->hour, $date->minute, $date->date);
+    my ($current_hour, $minute) = ($date->hour, $date->minute);
     my $trading_calendar = _trading_calendar($underlying->for_date);
     my $hour             = $minute < 45 ? $current_hour : $current_hour + 1;
     my $even_hour        = $hour - ($hour % 2);
