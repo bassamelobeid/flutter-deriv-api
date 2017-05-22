@@ -31,7 +31,7 @@ use LandingCompany::Registry;
 
 PrintContentType();
 BrokerPresentation('Bet Price Over Time');
-BOM::Backoffice::Auth0::can_access(['Quants']);
+BOM::Backoffice::Auth0::can_access();
 
 Bar("Bet Parameters");
 
@@ -65,7 +65,7 @@ if ($bet) {
         :                                                                            $bet->date_start;
     $end =
           (request()->param('end')) ? Date::Utility->new(request()->param('end'))
-        : ($bet->tick_expiry)       ? $bet->date_start->plus_time_interval($bet->max_tick_expiry_duration)
+        : ($bet->tick_expiry)       ? $bet->date_start->plus_time_interval($bet->_max_tick_expiry_duration)
         :                             $bet->date_expiry;
     $end = Date::Utility->new if ($end->epoch > time);
     my $duration = $end->epoch - $start->epoch;

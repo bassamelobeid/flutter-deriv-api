@@ -31,6 +31,7 @@ before_install:
       regentmarkets/bom-market
       regentmarkets/bom-myaffiliates
       regentmarkets/bom-transaction
+      regentmarkets/bom-marketdataautoupdater
     - /tmp/travis-scripts/redis.sh
 
 install:
@@ -49,6 +50,6 @@ install:
     - /tmp/travis-scripts/setup_postfix.sh
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - make unit_test
+    - make test
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
