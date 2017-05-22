@@ -657,13 +657,12 @@ sub set_settings {
 
         $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
 
-        my $missed_field;
-        if ($missed_field = (grep { !$args->{$_} } qw/address_line_1 address_city phone/)[0]) {
+        if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
             $err = BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
-                    message_to_client => localize("Input validation failed: [_1]", $missed_field),
+                    message_to_client => localize("Input validation failed: address_postcode"),
                     details           => {
-                        $missed_field => "is missing and it is required",
+                        address_postcode => "is missing and it is required",
                     },
                 });
         }
@@ -709,13 +708,13 @@ sub set_settings {
     ) if ($client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
 
     my $now             = Date::Utility->new;
-    my $address1        = $args->{'address_line_1'};
-    my $address2        = $args->{'address_line_2'} // '';
-    my $addressTown     = $args->{'address_city'};
-    my $addressState    = $args->{'address_state'} // '';
-    my $addressPostcode = $args->{'address_postcode'};
-    my $phone           = $args->{'phone'} // '';
-    my $birth_place     = $args->{place_of_birth};
+    my $address1        = $args->{'address_line_1'} // $client->address_1;
+    my $address2        = ($args->{'address_line_2'} // $client->address_2) // '';
+    my $addressTown     = $args->{'address_city'} // $client->city;
+    my $addressState    = ($args->{'address_state'} // $client->state) // '';
+    my $addressPostcode = $args->{'address_postcode'} // $client->postcode;
+    my $phone           = ($args->{'phone'} // $client->phone) // '';
+    my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
 
     my $cil_message;
     if (   ($address1 and $address1 ne $client->address_1)
@@ -918,7 +917,7 @@ sub set_self_exclusion {
         }
         next if $is_valid;
 
-        if ($self_exclusion->{$field}) {
+        if (defined $val and $self_exclusion->{$field}) {
             return $error_sub->(localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
         } else {
             delete $args{$field};
