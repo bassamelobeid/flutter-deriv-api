@@ -54,7 +54,9 @@ my $bet_params = {
 
 subtest 'missing expiry and duration' => sub {
 
-    dies_ok { produce_contract($bet_params) } 'produce_contract() dies with no missing expiry and duration';
+    produce_contract($bet_params);
+
+    dies_ok {$c->is_valid_to_buy} , 'dies ok';
 };
 
 subtest 'invalid start and expiry time' => sub {
