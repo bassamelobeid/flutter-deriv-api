@@ -109,6 +109,7 @@ subtest 'surface has not change' => sub {
 
 my $mocked = Test::MockModule->new('Quant::Framework::VolSurface');
 $mocked->mock('_validate_age', sub {return});
+$mocked->mock('is_valid', sub {return 1;});
 subtest 'First Term is 7' => sub {
     my $test_file = dirname(__FILE__) . '/auto_upload.xls';
     my $existing_surface = Quant::Framework::Utils::Test::create_doc(

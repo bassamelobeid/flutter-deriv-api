@@ -53,6 +53,12 @@ sub run {
         }
     }
 
+    # we need to include rates for BTC here. Currently setting it to zero rates.
+    $rates->{BTC}->{rates} = {
+        0   => 0,
+        365 => 0
+    };
+
     foreach my $currency_symbol (keys %$rates) {
         my $data = $rates->{$currency_symbol}->{rates};
         if (my $validation_error = $self->_passes_sanity_check($data, $currency_symbol)) {
