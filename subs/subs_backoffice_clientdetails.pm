@@ -373,7 +373,7 @@ sub client_statement_summary {
         my $k = $transaction->{action_type} eq 'deposit' ? 'deposits' : 'withdrawals';
         my $payment_system = '';
         $payment_system = $1 if $transaction =~ /payment_processor=(\S+)/;
-        $summary->{$k}{$_} += $transaction->{amount} for ($payment_system, 'total');
+        $summary->{$k}{$_} += $transaction->{amount} for ($payment_system, '<b>total</b>');
     }
     return $summary;
 }

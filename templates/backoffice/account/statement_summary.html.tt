@@ -1,4 +1,4 @@
-<table>
+<table style="border: 1px solid black;">
 <tr>
 <td colspan="2">Last <select name="months">
 [% FOR i IN [1..6] %]
@@ -12,11 +12,11 @@ selected
 <tr>
 [% FOR t IN ['deposits', 'withdrawals'] %]
 <td><table>
-    <tr><td colspan="2">[% t %]</td></tr>
-    [% FOR ps IN summary.$t.keys.sort %]
+    <tr><td colspan="2" style="border-bottom: 1px solid #888888;">[% t %], USD</td></tr>
+    [% FOR ps IN summary.$t.keys.sort.reverse %]
         <tr>
-        <td>[% ps %]</td>
-        <td>[% summary.$t.$ps %]</td>
+        <td width="80"  style="border-right: 1px solid #888888;">[% ps | none %]</td>
+        <td width="30">[% summary.$t.$ps %]</td>
         </tr>
     [% END %]
     </table></td>
