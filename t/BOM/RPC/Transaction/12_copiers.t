@@ -283,16 +283,10 @@ lives_ok {
 'Wrong currency';
 
 lives_ok {
-    require Test::FailWarnings;
+    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
 
-    {
-        local $SIG{__WARN__} = sub { };
-
-        ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-
-        $balance -= $buy_price;
-        is(int $balance_after, int $balance, 'correct balance_after');
-    }
+    $balance -= $buy_price;
+    is(int $balance_after, int $balance, 'correct balance_after');
 }
 'bought USD bet';
 
