@@ -2,6 +2,7 @@
 
 use Test::More;
 use Test::FailWarnings;
+use Test::Exception;
 
 use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
@@ -53,9 +54,7 @@ my $bet_params = {
 
 subtest 'missing expiry and duration' => sub {
 
-    my $c = produce_contract($bet_params);
-
-    ok !$c->is_valid_to_buy, 'not valid to buy';
+    dies_ok { produce_contract($bet_params) } 'produce_contract() dies with no missing expiry and duration';
 };
 
 subtest 'invalid start and expiry time' => sub {

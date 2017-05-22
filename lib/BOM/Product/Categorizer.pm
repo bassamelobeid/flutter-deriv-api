@@ -148,6 +148,8 @@ sub _initialize_contract_parameters {
     die 'currency is required'   unless $pp->{currency};
     die 'underlying is required' unless $pp->{underlying};
 
+    die 'expiry or duration is required' unless $pp->{date_expiry} or $pp->{duration};
+
     # set date start if not given. If we want to price a contract starting now, date_start should never be provided!
     unless ($pp->{date_start}) {
         # An undefined or missing date_start implies that we want a bet which starts now.
