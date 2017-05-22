@@ -19,11 +19,9 @@ use Client::Account;
 
 use utf8;
 
-my $email = 'test' . rand(999) . '@binary.com';
-my ($t, $rpc_ct);
-my ($method, $params, $client_details);
+my ($email, $t, $rpc_ct) = ('test' . rand(999) . '@binary.com');
 
-$client_details = {
+my $client_details = {
     salutation       => 'Mr',
     last_name        => 'Kathuria' . rand(999),
     first_name       => 'Raunak' . rand(999),
@@ -38,7 +36,7 @@ $client_details = {
     secret_answer    => 'test',
 };
 
-$params = {
+my $params = {
     language => 'EN',
     source   => 1,
     country  => 'in',
@@ -53,9 +51,9 @@ subtest 'Initialization' => sub {
     'Initial RPC server and client connection';
 };
 
-$method = 'new_sub_account';
+my $method = 'new_sub_account';
 subtest $method => sub {
-    my ($user, $client, $vclient, $auth_token);
+    my ($user, $client, $vclient, $sub_client, $token);
 
     subtest 'Initialization' => sub {
         lives_ok {
@@ -64,7 +62,6 @@ subtest $method => sub {
                 broker_code => 'CR',
                 email       => 'new_email' . rand(999) . '@binary.com',
             });
-            $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
 
             # Make virtual client with user
             my $password = 'jskjd8292922';
@@ -106,14 +103,14 @@ subtest $method => sub {
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
 
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test real account token');
+        $token = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test real account token');
+        $params->{token} = $token;
         $rpc_ct->call_ok('new_sub_account', $params)
             ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Allow omnibus flag needs to be set to create sub account');
 
         my $real_client = Client::Account->new({loginid => $new_loginid});
         $real_client->allow_omnibus(1);
         $real_client->save();
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($real_client->loginid, 'real account token');
         $rpc_ct->call_ok('new_sub_account', $params)->has_no_system_error->has_error->error_code_is('duplicate name DOB',
             'as details are provided so we will not populate with default values, hence duplicate error');
 
@@ -125,7 +122,7 @@ subtest $method => sub {
         my $sub_account_loginid = $result->{client_id};
         ok $sub_account_loginid =~ /^CR\d+$/, 'new CR sub account loginid';
 
-        my $sub_client = Client::Account->new({loginid => $sub_account_loginid});
+        $sub_client = Client::Account->new({loginid => $sub_account_loginid});
         is $sub_client->sub_account_of, $new_loginid, 'Correct loginid populated for sub_account_of for sub account';
         is $sub_client->email,         $real_client->email,         'Email for master and sub account is same';
         is $sub_client->date_of_birth, $real_client->date_of_birth, 'Date of birth for master and sub account is same';
@@ -133,6 +130,43 @@ subtest $method => sub {
         ok $sub_client->first_name =~ /^$new_loginid\d+$/, "First name of sub account is master account loginid plus time";
         ok $sub_client->last_name =~ /^$new_loginid\d+$/,  "Last name of sub account is master account loginid plus time";
         is $sub_client->address_line_1, $real_client->address_line_1, 'same address as master account';
+    };
+
+    my ($result, $sub_token);
+    subtest 'Api token for sub account' => sub {
+        $params = {
+            language => 'EN',
+            source   => 1,
+            country  => 'in',
+            token    => $token,
+            args     => {
+                new_token        => 'Test Token',
+                new_token_scopes => ['read', 'trade'],
+                sub_account      => $sub_client->loginid,
+            },
+        };
+        $result = $rpc_ct->call_ok('api_token', $params)->has_no_system_error->result;
+
+        $sub_token = $result->{tokens}->[0]->{token};
+        is $result->{sub_account}, $sub_client->loginid, 'token has correct sub account';
+        is $result->{tokens}->[0]->{display_name}, 'Test Token', 'token has correct name';
+        is_deeply([sort @{$result->{tokens}->[0]->{scopes}}], ['read', 'trade'], 'right scopes');
+    };
+
+    subtest 'Authorize' => sub {
+        $params = {
+            language => 'EN',
+            token    => $sub_token
+        };
+        $result = $rpc_ct->call_ok('authorize', $params)->has_no_system_error->result;
+        is scalar @{$result->{sub_accounts}}, 0, 'Sub account cant have sub accounts';
+        is $result->{allow_omnibus}, 0, 'Allow omnibus not set for sub account';
+
+        $params->{token} = $token;
+        $result = $rpc_ct->call_ok('authorize', $params)->has_no_system_error->result;
+        is $result->{allow_omnibus}, 1, 'Allow omnibus not set';
+        is $result->{sub_accounts}->[0]->{loginid}, $sub_client->loginid, 'Correct sub account for omnibus';
+        is_deeply([sort keys %{$result->{sub_accounts}->[0]}], ['currency', 'loginid'], 'correct structure');
     };
 
 };
