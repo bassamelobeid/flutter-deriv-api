@@ -140,7 +140,6 @@ sub generate {
 
     # $self->_change_of_status;
     # $self->_review_of_trades_bets;
-    # $self->_comments;
 
     return $data;
 }
