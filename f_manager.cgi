@@ -110,12 +110,9 @@ my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
 my $dbh = $clientdb->db->dbh;
 
 if (request()->param('ctc_sent')) {
-    my $ctc_sent = request()->param('ctc_sent');
-    $dbh->do("
-        UPDATE payment.cryptocurrency
-        SET status='SENT', withdrawal_sent_date=NOW()
-        WHERE address = ?
-    ", undef, $ctc_sent);
+    my ($found) = $self->dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_sent(?, ?)', undef,
+                                              request()->param('ctc_sent'), 'BTC');
+    # TODO: print warning if not $found
 }
 
 my $btc_trxs;
