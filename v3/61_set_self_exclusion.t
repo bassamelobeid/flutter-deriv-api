@@ -68,9 +68,8 @@ $t = $t->send_ok({
             max_turnover       => 1000,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
-is $res->{msg_type}, 'set_self_exclusion';
-is $res->{error}->{code}, 'SetSelfExclusionError';
-is $res->{error}->{field}, 'max_open_bets', 'max open bets was set so it can not be set to null';
+# can set single field
+ok($res->{set_self_exclusion});
 test_schema('set_self_exclusion', $res);
 
 $t = $t->send_ok({
