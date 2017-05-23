@@ -5,12 +5,14 @@ extends 'BOM::Product::Pricing::Engine';
 with 'BOM::Product::Pricing::Engine::Role::RiskMarkup';
 
 use List::Util qw(max min sum first);
+use List::MoreUtils qw(any);
 use Array::Utils qw(:all);
 
 use BOM::Market::DataDecimate;
 use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
+use Finance::Exchange;
 
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
@@ -275,7 +277,7 @@ sub _build_risk_markup {
     }
 
     if (    $bet->trading_calendar->is_open_at($bet->underlying->exchange, $bet->date_start)
-        and $bet->trading_calendar->is_in_quiet_period($bet->underlying, $bet->date_pricing))
+        and $self->is_in_quiet_period($bet->date_pricing))
     {
         my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'quiet_period_markup',
@@ -391,6 +393,50 @@ sub _build_vol_spread {
     });
 
     return $vol_spread;
+}
+
+=head2 is_in_quiet_period
+
+Are we currently in a quiet traidng period for this underlying?
+Keeping this as a method will allow us to have long-lived objects
+
+=cut
+
+sub is_in_quiet_period {
+    my ($self, $date) = @_;
+
+    my $underlying = $self->bet->underlying;
+    die 'date must be specified when requesting for quiet period' unless $date;
+
+    my $quiet = 0;
+
+    if ($underlying->market->name eq 'forex') {
+        # Pretty much everything trades in these big centers of activity
+        my @check_if_open = ('LSE', 'FSE', 'NYSE');
+
+        my @currencies = ($underlying->asset_symbol, $underlying->quoted_currency_symbol);
+
+        if (grep { $_ eq 'JPY' } @currencies) {
+
+            # The yen is also heavily traded in
+            # Australia, Singapore and Tokyo
+            push @check_if_open, ('ASX', 'SES', 'TSE');
+        } elsif (
+            grep {
+                $_ eq 'AUD'
+            } @currencies
+            )
+        {
+
+            # The Aussie dollar is also heavily traded in
+            # Australia and Singapore
+            push @check_if_open, ('ASX', 'SES');
+        }
+        # If any of the places we've listed have an exchange open, we are not in a quiet period.
+        $quiet = (any { $self->bet->trading_calendar->is_open_at(Finance::Exchange->create_exchange($_), $date) } @check_if_open) ? 0 : 1;
+    }
+
+    return $quiet;
 }
 
 no Moose;
