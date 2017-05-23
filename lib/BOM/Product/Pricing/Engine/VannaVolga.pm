@@ -58,7 +58,6 @@ extends 'BOM::Product::Pricing::Engine';
 with 'BOM::Product::Pricing::Engine::Role::RiskMarkup';
 with 'BOM::Product::Pricing::Engine::Role::MarketPricedPortfolios';
 
-use BOM::Product::ContractFactory qw( make_similar_contract );
 use BOM::Product::Pricing::Engine::BlackScholes;
 
 =head1 ATTRIBUTES
