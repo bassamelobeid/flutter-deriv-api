@@ -4,7 +4,8 @@ perl:
 matrix:
     fast_finish: true
 env:
-    - PERL5LIB=/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/cpan/local/lib/perl5:/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi:/home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib
+    - TEST_SUITE=test
+    - TEST_SUITE=syntax
 services:
     - redis-server
 cache: apt
@@ -35,6 +36,7 @@ before_install:
     - /tmp/travis-scripts/redis.sh
 
 install:
+    - source /tmp/travis-scripts/devbox_path.sh
     - sudo ln -s $PWD /home/git/regentmarkets/bom-backoffice
     - /tmp/travis-scripts/devbox.sh
 
@@ -50,6 +52,6 @@ install:
     - /tmp/travis-scripts/setup_postfix.sh
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - make test
+    - make $TEST_SUITE
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
