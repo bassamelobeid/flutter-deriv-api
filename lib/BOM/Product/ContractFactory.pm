@@ -92,25 +92,19 @@ sub produce_contract {
     $params_ref->{'_produce_contract_ref'} = \&produce_contract;
 
     my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
-    my $contract_obj;
-    if ($role_exists) {
-        #
-        # we're applying role. For speed reasons, we're not using $role->meta->apply($contract_obj),
-        # but create an anonymous class with needed role. This is done only once and cached
-        #
-        $params_ref->{build_parameters}{role} = $role;
-        $contract_class = Moose::Meta::Class->create_anon_class(
-            superclasses => [$contract_class],
-            roles        => [$role],
-            cache        => 1,
-        );
+    return $contract_class->new($params_ref) unless $role_exists;
 
-        $contract_obj = $contract_class->new_object($params_ref);
-    } else {
-        $contract_obj = $contract_class->new($params_ref);
-    }
+    # we're applying role. For speed reasons, we're not using $role->meta->apply($contract_obj),
+    # but create an anonymous class with needed role. This is done only once and cached
 
-    return $contract_obj;
+    $params_ref->{build_parameters}{role} = $role;
+    $contract_class = Moose::Meta::Class->create_anon_class(
+        superclasses => [$contract_class],
+        roles        => [$role],
+        cache        => 1,
+    );
+
+    return $contract_class->new_object($params_ref);
 }
 
 sub produce_batch_contract {
