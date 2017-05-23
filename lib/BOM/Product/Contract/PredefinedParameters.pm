@@ -438,8 +438,8 @@ sub _get_intraday_trading_window {
 
     my $start_of_day = $date->truncate_to_day;
     my ($current_hour, $minute) = ($date->hour, $date->minute);
-    my $hour             = $minute < 45 ? $current_hour : $current_hour + 1;
-    my $even_hour        = $hour - ($hour % 2);
+    my $hour = $minute < 45 ? $current_hour : $current_hour + 1;
+    my $even_hour = $hour - ($hour % 2);
 
     # We only want odd hour of 1, 5, 9, 13
     my $odd_hour = ($hour % 2) ? $hour : $hour - 1;

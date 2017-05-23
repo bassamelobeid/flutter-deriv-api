@@ -101,7 +101,7 @@ The final theoretical probability after corrections.  Math::Util::CalculatedValu
 sub _build_probability {
     my ($self) = @_;
 
-    my $bet  = $self->bet;
+    my $bet = $self->bet;
 
     my $ifx_prob = Math::Util::CalculatedValue::Validatable->new({
         name        => lc($bet->code) . '_theoretical_probability',
