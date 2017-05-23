@@ -102,7 +102,6 @@ sub _build_probability {
     my ($self) = @_;
 
     my $bet  = $self->bet;
-    my $args = $bet->_pricing_args;
 
     my $ifx_prob = Math::Util::CalculatedValue::Validatable->new({
         name        => lc($bet->code) . '_theoretical_probability',
@@ -120,7 +119,6 @@ sub _build_probability {
 
 sub economic_events_markup {
     my $self = shift;
-    my $bet  = $self->bet;
     my $markup;
 
     $markup = Math::Util::CalculatedValue::Validatable->new({
@@ -177,7 +175,6 @@ sub _build_ticks_for_trend {
     my $bet              = $self->bet;
     my $duration_in_secs = $bet->timeindays->amount * 86400;
     my $lookback_secs    = $duration_in_secs * 2;              # lookback twice the duration
-    my $period_start     = $bet->date_pricing->epoch;
 
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
