@@ -135,7 +135,7 @@ sub generate {
     $data->{country_change}                      = $self->_change_of_country;
     $data->{$time}->{financial_assessment}       = $self->_financial_assessment;
     $data->{$time}->{total_deposits_withdrawals} = $self->_total_deposits_withdrawals;
-    $data->{$time}->{clerk}   = $comment if $clerk;
+    $data->{$time}->{clerk}   = $clerk if $clerk;
     $data->{$time}->{comment} = $comment if $comment;
 
     # $self->_change_of_status;
