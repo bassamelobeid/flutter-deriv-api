@@ -16,12 +16,14 @@ bet_limits:
     AUD: 200
     GBP: 200
     JPY: 20000
+    BTC: 0.1
   maximum_payout:
     USD: 50000
     EUR: 50000
     AUD: 50000
     GBP: 50000
     JPY: 5000000
+    BTC: 10
   min_payout:
     default:
       USD: 1
@@ -29,24 +31,28 @@ bet_limits:
       AUD: 1
       GBP: 1
       JPY: 70
+      BTC: 0.0005
     volidx:
       USD: 0.7
       EUR: 0.7
       AUD: 0.7
       GBP: 0.7
       JPY: 70
+      BTC: 0.00035
   min_stake:
     maltainvest:
       USD: 5
       EUR: 5
       AUD: 5
       GBP: 5
+      BTC: 0.0025
   open_positions_payout_per_symbol_and_bet_type_limit:
     USD: 10000
     EUR: 10000
     AUD: 10000
     GBP: 10000
     JPY: 1000000
+    BTC: 10000
 
 risk_profile:
   no_business:
@@ -56,12 +62,14 @@ risk_profile:
           AUD: 0
           GBP: 0
           JPY: 0
+          BTC: 0
       payout:
           USD: 0
           EUR: 0
           AUD: 0
           GBP: 0
           JPY: 0
+          BTC: 0
   extreme_risk:
       turnover:
           USD: 1000
@@ -69,12 +77,14 @@ risk_profile:
           AUD: 1000
           GBP: 1000
           JPY: 100000
+          BTC: 0.5
       payout:
           USD: 100
           EUR: 100
           AUD: 100
           GBP: 100
           JPY: 10000
+          BTC: 0.05
   high_risk:
       turnover:
           USD: 50000
@@ -82,12 +92,14 @@ risk_profile:
           AUD: 50000
           GBP: 50000
           JPY: 5000000
+          BTC: 25
       payout:
           USD: 5000
           EUR: 5000
           AUD: 5000
           GBP: 5000
           JPY: 500000
+          BTC: 2.5
   medium_risk:
       turnover:
           USD: 100000
@@ -95,12 +107,14 @@ risk_profile:
           AUD: 100000
           GBP: 100000
           JPY: 10000000
+          BTC: 50
       payout:
           USD: 20000
           EUR: 20000
           AUD: 20000
           GBP: 20000
           JPY: 2000000
+          BTC: 10
   low_risk:
       turnover:
           USD: 500000
@@ -108,9 +122,11 @@ risk_profile:
           AUD: 500000
           GBP: 500000
           JPY: 50000000
+          BTC: 50
       payout:
           USD: 50000
           EUR: 50000
           AUD: 50000
           GBP: 50000
           JPY: 5000000
+          BTC: 10
