@@ -12,8 +12,8 @@ my $offerings_config = BOM::Platform::Runtime->instance->get_offerings_config;
 subtest 'test offerings' => sub {
     my $symbol = 'frxUSDJPY';
     my $rt     = BOM::Platform::Runtime->instance->app_config->quants->underlyings;
-    test_offerings('underlying_symbol', 'frxUSDJPY', 'suspend_trades',                    $rt, 'suspend trades');
-    test_offerings('underlying_symbol', 'frxUSDJPY', 'suspend_buy',                       $rt, 'suspend buy');
+    test_offerings('underlying_symbol', 'frxUSDJPY', 'suspend_trades', $rt, 'suspend trades');
+    test_offerings('underlying_symbol', 'frxUSDJPY', 'suspend_buy',    $rt, 'suspend buy');
     test_offerings('market', 'forex', 'disabled', BOM::Platform::Runtime->instance->app_config->quants->markets, 'disable market');
     test_offerings(
         'contract_type', 'CALL', 'suspend_contract_types',

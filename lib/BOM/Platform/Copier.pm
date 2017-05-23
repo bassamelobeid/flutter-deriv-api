@@ -40,8 +40,8 @@ sub update_or_create {
     );
 
     for my $p (qw/assets trade_types/) {
-        $args->{$p} ||= '*';
         $args->{$p} = [$args->{$p}] if ref $args->{$p} ne 'ARRAY';
+        $args->{$p} = ['*'] unless grep { defined } @{$args->{$p}};
     }
 
     for my $asset (@{$args->{assets}}) {
