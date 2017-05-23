@@ -158,8 +158,11 @@ sub butterfly_cutoff_theoretical_value_amount {
     my $first_tenor       = $surface_original->original_term_for_smile->[0];
 
 # determine the new 25 and 75 vols based on the original surface's ATM and RR, and the new butterfly_cutoff
+    my $bf_original  = $surface_original->get_market_rr_bf($first_tenor)->{BF_25};
     my $rr_original  = $surface_original->get_market_rr_bf($first_tenor)->{RR_25};
     my $atm_original = $surface_copy_data->{$first_tenor}->{smile}{50};
+    my $c25_original = $surface_copy_data->{$first_tenor}->{smile}{25};
+    my $c75_original = $surface_copy_data->{$first_tenor}->{smile}{75};
     my $bf_modified  = $butterfly_cutoff;
     my $c25_modified = $bf_modified + $atm_original + 0.5 * $rr_original;
     my $c75_modified = $c25_modified - $rr_original;

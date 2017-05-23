@@ -270,7 +270,7 @@ my %modifiers = (
 );
 
 sub strike_string {
-    my (undef, $string, $underlying, $bet_type_code) = @_;
+    my ($class, $string, $underlying, $bet_type_code) = @_;
 
     $string /= FOREX_BARRIER_MULTIPLIER
         if ($bet_type_code !~ /^DIGIT/ and $string and looks_like_number($string) and $underlying->market->absolute_barrier_multiplier);

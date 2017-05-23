@@ -18,7 +18,7 @@ override is_expired => sub {
 override is_settleable => sub {
     my $self = shift;
 
-    my $settleable = ($self->is_after_settlement and $self->exit_tick and $self->is_valid_exit_tick) ? 1 : 0;
+    my $settleable = ($self->is_after_settlement and $self->exit_tick) ? 1 : 0;
 
     return $settleable;
 };
