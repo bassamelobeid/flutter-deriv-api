@@ -212,8 +212,8 @@ sub cashier {
         return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
     }
 
-    ## if currency == BTC, use cryptocurrency cashier
-    if ($currency eq 'BTC') {
+    ## if currency == BTC|ETH, use cryptocurrency cashier
+    if (grep { $currency eq $_ } ('BTC', 'ETH')) {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
     }
 
@@ -358,11 +358,13 @@ sub _get_epg_cashier_url {
 }
 
 sub _get_cryptocurrency_cashier_url {
-    return _get_cashier_url('btc', @_);
+    return _get_cashier_url('cryptocurrency', @_);
 }
 
 sub _get_cashier_url {
     my ($prefix, $loginid, $website_name, $currency, $action, $language) = @_;
+
+    $prefix = lc($currency) if $prefix eq 'cryptocurrency';
 
     BOM::Platform::AuditLog::log("redirecting to $prefix");
 

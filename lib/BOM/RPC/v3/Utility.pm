@@ -71,6 +71,7 @@ sub currencies_config {
         'USD' => {fractional_digits => 2},
         'JPY' => {fractional_digits => 2},
         'BTC' => {fractional_digits => 8}};
+        'ETH' => {fractional_digits => 8}};
 }
 
 sub invalid_token_error {
