@@ -359,6 +359,7 @@ sub _get_pricing_parameter_from_slope_pricer {
     my ($contract, $action_type, $discounted_probability) = @_;
 
     #force createion of debug_information
+    $contract->ask_probability;
     my $debug_information = $contract->debug_information;
     my $pricing_parameters;
     my $contract_type     = $contract->pricing_code;
