@@ -103,24 +103,37 @@ sub get {
 sub _financial_assessment {
     my $self = shift;
 
-    my $f = [];
-    $f = $self->get->{financial_assessment} if $self->get->{financial_assessment};
-    push @$f, JSON::XS::decode_json($self->client->financial_assessment->data) if $self->client->financial_assessment;
+    my $f;
+    $f = JSON::XS::decode_json($self->client->financial_assessment->data) if $self->client->financial_assessment;
     return $f;
 }
 
+sub _total_deposits_withdrawals {
+    my $self = shift;
+
+    my $total;
+    my $payment_mapper = BOM::Database::DataMapper::Payment->new({
+        'client_loginid' => $self->client->loginid,
+        'currency_code'  => $self->client->currency,
+    });
+
+    $total->{deposit}    = $payment_mapper->get_total_deposit_of_account;
+    $total->{withdrawal} = $payment_mapper->get_total_withdrawalk;
+    return $total;
+}
 
 sub generate {
     my $self = shift;
 
     my $data = $self->get;
 
-    $data->{client_details} = $self->_client_details;
-    $data->{documents}      = $self->_documents_on_file;
-    $data->{country_change} = $self->_change_of_country;
-    $data->{financial_assessment} = $self->_financial_assessment;
-    
-    # $self->_total_deposits_withdrawals;
+    my $time = time;
+    $data->{client_details}                      = $self->_client_details;
+    $data->{documents}                           = $self->_documents_on_file;
+    $data->{country_change}                      = $self->_change_of_country;
+    $data->{$time}->{financial_assessment}       = $self->_financial_assessment;
+    $data->{$time}->{total_deposits_withdrawals} = $self->_total_deposits_withdrawals;
+
     # $self->_change_of_status;
     # $self->_review_of_trades_bets;
     # $self->_comments;
