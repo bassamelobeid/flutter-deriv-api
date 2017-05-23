@@ -4,7 +4,7 @@ use Moose;
 
 with 'MooseX::Role::Validatable';
 use Quant::Framework::Underlying;
-use Finance::Contract::Category;
+use Finance::Contract;
 
 has [qw(id display_name)] => (is => 'ro');
 
@@ -43,9 +43,7 @@ sub BUILD {
          max => 1000000,
     };
 
-    $self->number_of_token($self->duration);
-    
-    $self->token_type($self->contract_type );
+    $self->token_type($self->contract_type);
 
     if ($self->number_of_token < $limits{min} or $self->number_of_token > $limits->{max}){
 
