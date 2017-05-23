@@ -10,6 +10,7 @@ subtest 'unused vars' => sub {
     my %skipped_files = (
         'lib/BOM/Product/ContractValidator.pm' => 1,
         'lib/BOM/Product/ContractVol.pm'       => 1,
+        'lib/BOM/Product/ContractPricer.pm'    => 1,
     );
     for my $file (qx{git ls-files lib}) {
         chomp $file;
