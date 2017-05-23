@@ -13,7 +13,7 @@ test:
 	/etc/rmg/bin/prove --timer -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::FailWarnings=-allow_deps,1' t/BOM
 
 syntax:
-	/etc/rmg/bin/prove --timer -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::FailWarnings=-allow_deps,1' t/003_autosyntax.t
+	/etc/rmg/bin/prove --timer -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::FailWarnings=-allow_deps,1' $(wildcard t/0*.t)
 
 i18n:
 	xgettext.pl -P haml=haml -P perl=pl,pm -P tt2=tt,tt2 \
