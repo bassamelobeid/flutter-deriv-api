@@ -196,6 +196,22 @@ sub run {
         $report->{$implied_symbol}->{success} = 1;
     }
 
+    # zero rates BTC as of now, till we use providers
+    foreach my $sym (qw/BTC-USD BTC-EUR BTC-AUD BTC-JPY BTC-NZD BTC-CAD BTC-CHF BTC-GBP BTC-PLN BTC-NOK BTC-MXN BTC-SEK/) {
+        Quant::Framework::ImpliedRate->new(
+            symbol => $sym,
+            rates  => {
+                0   => 0,
+                365 => 0
+            },
+            recorded_date    => Date::Utility->new,
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        )->save;
+
+        $report->{$sym}->{success} = 1;
+    }
+
     $self->SUPER::run();
     return 1;
 }
