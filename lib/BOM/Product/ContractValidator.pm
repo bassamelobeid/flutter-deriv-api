@@ -64,11 +64,15 @@ sub is_valid_to_sell {
                 message_to_client => [$ERROR_MAPPING->{WaitForContractSettlement}],
         });
 
-    } elsif (not $self->is_expired and not $self->opposite_contract_for_sale->is_valid_to_buy($args)) {
-        # Their errors are our errors, now!
-        $self->_add_error($self->opposite_contract_for_sale->primary_validation_error);
-    }
+    } elsif (not $self->is_expired) {
+        if (my $ref = $self->_validate_entry_tick) {
+            $self->_add_error($ref);
 
+        } elsif (not $self->opposite_contract_for_sale->is_valid_to_buy($args)) {
+            # Their errors are our errors, now!
+            $self->_add_error($self->opposite_contract_for_sale->primary_validation_error);
+        }
+    }
     my $passes_validation = $self->primary_validation_error ? 0 : 1;
     return $self->_report_validation_stats('sell', $passes_validation);
 }
@@ -125,7 +129,8 @@ sub _validate_settlement_conditions {
             # A start now contract will not be bought if we have missing feed.
             # We are doing the same thing for forward starting contracts.
             $message = 'entry tick is too old';
-        } elsif (not $self->exit_tick) {
+        } elsif ($self->exit_tick and not $self->is_valid_exit_tick) {
+            # There is pre-settlement exit tick which is not a valid exit tick for settlement
             $message            = 'exit tick is undefined';
             $hold_for_exit_tick = 1;
         } elsif ($self->entry_tick->epoch == $self->exit_tick->epoch) {
@@ -187,6 +192,23 @@ sub _validate_offerings {
         return {
             message           => 'manually disabled by quants',
             message_to_client => $message_to_client,
+        };
+    }
+
+    return;
+}
+
+sub _validate_entry_tick {
+    my $self = shift;
+
+    return if $self->starts_as_forward_starting;
+
+    my $underlying = $self->underlying;
+
+    if (not $self->entry_spot) {
+        return {
+            message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
+            message_to_client => [$ERROR_MAPPING->{EntryTickMissing}],
         };
     }
 
