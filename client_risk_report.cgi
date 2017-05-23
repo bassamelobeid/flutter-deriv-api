@@ -34,12 +34,22 @@ if (request()->param('req') eq 'comment') {
     $data = BOM::RiskReporting::Client->new({client => $client})->add_comment($clerk, request()->param('comment'));
 }
 
+BOM::Backoffice::Request::template->process(
+    'backoffice/client_risk.html.tt',
+    {
+        updated   => 1,
+        old_email => $email,
+        new_email => $new_email,
+        loginids  => [map { $_->loginid } $user->loginid],
+    },
+) || die BOM::Backoffice::Request::template->error();
+
 show_data($data);
 
 sub show_data {
     my $data = shift;
     use Data::Dumper;
 
-    print Data::Dumper::Dumper($data);
+    print '<pr>'.Data::Dumper::Dumper($data).'</pr>';
 }
 code_exit_BO();
