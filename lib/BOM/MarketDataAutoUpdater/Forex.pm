@@ -16,11 +16,10 @@ extends 'BOM::MarketDataAutoUpdater';
 use Bloomberg::FileDownloader;
 use Bloomberg::VolSurfaces;
 use BOM::Platform::Runtime;
-use BOM::MarketData qw(create_underlying_db);
 use Date::Utility;
 use Try::Tiny;
 use File::Find::Rule;
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData qw(create_underlying create_underlying_db);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::VolSurface::Delta;
@@ -286,7 +285,7 @@ sub passes_additional_check {
 sub warmup_intradayfx_cache {
     my $self = shift;
 
-    foreach my $symbol (@{$self->symbols_to_update}) {
+    foreach my $symbol (create_underlying_db->symbols_for_intraday_fx) {
         my $cr = BOM::Platform::Chronicle::get_chronicle_reader(1);
         my $cw = BOM::Platform::Chronicle::get_chronicle_writer();
         my $u  = create_underlying($symbol);
