@@ -81,6 +81,8 @@ ok $stash->{currency},             'Should store currency to stash';
 ok $stash->{landing_company_name}, 'Should store landing_company_name to stash';
 ok exists $stash->{is_virtual}, 'Should store is_virtual to stash';
 ok !$authorize->{authorize}->{account_id}, 'Shouldnt return account_id';
+is $authorize->{authorize}->{allow_omnibus}, 0, 'correct flag for allow_omnibus';
+is scalar @{$authorize->{authorize}->{sub_accounts}}, 0, 'correct number of sub accounts';
 
 ## it's ok after authorize
 $t = $t->send_ok({json => {balance => 1}})->message_ok;
