@@ -48,7 +48,7 @@ sub DEMOLISH {
 
     delete $self->redis_server->{shared_info}{$self->channel_name};
     $self->redis_server->unsubscribe([$self->channel_name]);
-    $self->redis_server->del($self->channel_name);
+
     return;
 }
 
