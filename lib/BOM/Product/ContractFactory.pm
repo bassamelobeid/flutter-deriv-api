@@ -105,7 +105,7 @@ sub produce_contract {
             cache        => 1,
         );
 
-        $contract_obj = $class_with_role->new_object($params_ref);
+        $contract_obj = $contract_class->new_object($params_ref);
     } else {
         $contract_obj = $contract_class->new($params_ref);
     }
