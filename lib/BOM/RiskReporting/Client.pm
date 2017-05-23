@@ -16,6 +16,7 @@ use Moose;
 extends 'BOM::RiskReporting::Base';
 use BOM::Platform::User;
 use Date::Utility;
+use JSON::XS;
 
 has client => (
     is => 'rw',
@@ -99,6 +100,16 @@ sub get {
     return {};
 }
 
+sub _financial_assessment {
+    my $self = shift;
+
+    my $f = [];
+    $f = $self->get->{financial_assessment} if $self->get->{financial_assessment};
+    push @$f, JSON::XS::decode_json($self->client->financial_assessment->data) if $self->client->financial_assessment;
+    return $f;
+}
+
+
 sub generate {
     my $self = shift;
 
@@ -107,6 +118,8 @@ sub generate {
     $data->{client_details} = $self->_client_details;
     $data->{documents}      = $self->_documents_on_file;
     $data->{country_change} = $self->_change_of_country;
+    $data->{financial_assessment} = $self->_financial_assessment;
+    
     # $self->_total_deposits_withdrawals;
     # $self->_change_of_status;
     # $self->_review_of_trades_bets;
