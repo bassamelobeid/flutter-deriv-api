@@ -63,12 +63,9 @@ if (@$pcs) {
     my $expiry_selected;
     $input{expiry_select} //= '2';
     foreach my $label (sort keys %expiry_select) {
-        if ($expiry_select{$label} == $input{expiry_select}) {
-            $expiry_selected = 'selected="selected"';
-        } else {
-            $expiry_selected = '';
-        }
-        print '<option value="' . $expiry_select{$label} . '" ' . $expiry_selected . '>' . $label . '</option>';
+        my $expiry_selected = '';
+        $expiry_selected = ' selected="selected"' if $expiry_select{$label} eq $input{expiry_select};
+        print '<option value="' . $expiry_select{$label} . '"' . $expiry_selected . '>' . $label . '</option>';
     }
     print '</select>';
 
