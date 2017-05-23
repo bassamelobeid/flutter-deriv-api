@@ -206,7 +206,7 @@ sub run {
 
         if (grep { $_ eq $symbol } (@{$non_atm_symbol})) {
             #skip this symbol if it is non atm and rr , bb are undef.
-            next if exists $raw_volsurface->{smile}->{rr_bf_undef} and $raw_volsurface->{smile}->{rr_bf_undef};
+            next if exists $raw_volsurface->{rr_bf_undef} and $raw_volsurface->{rr_bf_undef};
         }
 
         next
