@@ -53,9 +53,6 @@ sub getFeedsFromHistoryServer {
         $line =~ s/t=(\d+)//g;
         my $dt = $1;
 
-        my ($open, $close, $low, $high);
-        my ($ask, $bid, $quote);
-
         if ($args->{'interval'} > 0) {
             $line =~ s/o=(\d*\.?\d*)//g;
             my $open = $1;
@@ -112,7 +109,6 @@ sub processHistoricalFeed {
     }
 
     my $underlying = create_underlying($underlying_symbol);
-    my $now        = Date::Utility->new;
 
     # Check license for requested historical summary of symbol
     my $license_info;
@@ -132,7 +128,6 @@ sub processHistoricalFeed {
         0;
     } or return \@error;
 
-    my $delaymins = $license_info->{delaymins};
     my $licenseTime;
     $licenseTime = $license_info->{licenseTime}
         if defined $license_info->{licenseTime};
@@ -238,8 +233,6 @@ sub getHistoricalFeedFromDB {
     my $beginTime    = $arg_ref->{'beginTime'};
     my $endTime      = $arg_ref->{'endTime'};
     my $limit        = $arg_ref->{'limit'};
-    my $chartID      = $arg_ref->{'chartID'};
-    my $clientID     = $arg_ref->{'clientID'};
     my $licenseTime  = $arg_ref->{'licenseTime'};
 
     my @return_data;
@@ -255,7 +248,6 @@ sub getHistoricalFeedFromDB {
     });
 
     my $counter = 1;
-    my $data;
     foreach my $tick (@{$ticks_data}) {
         my $feed_args = {
             intervalSecs => $intervalSecs,

@@ -81,8 +81,7 @@ sub _build_master_surface {
 sub debug_link {
     my ($self) = @_;
 
-    my $bet           = $self->bet;
-    my $number_format = $self->number_format;
+    my $bet = $self->bet;
 
     my $attr_content = $self->_get_overview();
 
