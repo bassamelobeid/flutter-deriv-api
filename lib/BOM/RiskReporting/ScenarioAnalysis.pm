@@ -57,8 +57,10 @@ sub generate {
 
     my $howmany = scalar @keys;
 
+    my $dbh = $self->_db->dbh;
+
     my $csv = Text::CSV_XS->new({eol => "\n"});
-    my ($scenario_analysis, $sum_of_buyprice, $sum_of_payout);
+    my ($printed_header, $scenario_header, $scenario_analysis, $sum_of_buyprice, $sum_of_payout);
     my $ignored = 0;
     my %cached_underlyings;
     my $subject          = 'Scenario analysis as of ' . $pricing_date->db_timestamp;
@@ -182,6 +184,7 @@ sub _calculate_grid_for_max_exposure {
     my $spot_epsilon = ($bet->market->name eq 'commodities' and not $bet->underlying->symbol eq 'frxXAUUSD') ? 0.15 : 0.08;
     my $current_vol  = $bet->_pricing_args->{iv};
     my $vol_epsilon  = 0.25;
+    my %pricing_args = %{$bet->_pricing_args};
 
     my @prices;
     my %params = %{$bet->build_parameters};

@@ -108,7 +108,8 @@ sub _configure_template_stash_for {
 }
 
 sub _configure_template_for {
-    my (undef, $stash) = @_;
+    my $request = shift;
+    my $stash   = shift;
 
     my @include_path = ('/home/git/regentmarkets/bom-backoffice/templates/');
 

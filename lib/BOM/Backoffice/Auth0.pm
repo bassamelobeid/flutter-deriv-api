@@ -18,7 +18,7 @@ sub user_by_access_token {
         'authorization' => 'Bearer ' . $access_token,
     };
     my $tx = $ua->get(BOM::Platform::Config::third_party->{auth0}->{api_uri} . "/userinfo" => $default_headers);
-    my ($error) = $tx->error;
+    my ($error, $code) = $tx->error;
     if ($error) {
         return;
     }

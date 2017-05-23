@@ -8,6 +8,9 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 
 sub run {
+    my $redis_write = BOM::Platform::RedisReplicated::redis_write;
+    my $redis_read  = BOM::Platform::RedisReplicated::redis_read;
+
 # Exponential moving average
 # The coefficient "k" represents the degree of weighting decrease,
 # a constant smoothing factor between 0 and 1. A higher "k" discounts older observations faster.

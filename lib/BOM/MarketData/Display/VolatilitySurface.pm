@@ -51,8 +51,11 @@ sub rmg_table_format {
 
     my $dates_tt;
     foreach my $date (@{$dates}) {
-        my $surface_date = Date::Utility->new($date);
-
+        my $surface_date   = Date::Utility->new($date);
+        my $new_volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
+            underlying => create_underlying($volsurface->symbol, $volsurface->for_date),
+            for_date   => $surface_date
+        });
         # We are working on a new calibration method.
         # Will replace this once we have the new calibrator.
         my $calibration_error = 'none';
@@ -298,12 +301,14 @@ Output the volatility surface in RMG text format.
 sub rmg_text_format {
     my $self = shift;
 
-    my $volsurface = $self->surface;
+    my $volsurface       = $self->surface;
+    my $atm_spread_point = $volsurface->atm_spread_point;
     my @surface;
 
     my @surface_vol_point    = @{$volsurface->smile_points};
     my @surface_spread_point = @{$volsurface->spread_points};
     my @formated_surface_spread_point;
+    my $vol_type;
 
     foreach my $delta (@surface_spread_point) {
         if ($delta =~ /^\d+/) {
@@ -345,6 +350,7 @@ sub _construct_smile_line {
     my $volsurface = $self->surface;
 
     my @surface_vol_point = @{$volsurface->smile_points};
+    my $vol_type          = $volsurface->type;
 
     my %deltas_to_use = map { $_ => 1 } @surface_vol_point;
 
@@ -457,12 +463,14 @@ sub print_comparison_between_volsurface {
     my @days          = uniq(@new_days, @existing_days);
 
     my @column_names;
+    my $vol_type = $surface->type;
 
     my @surface_vol_point    = @{$surface->smile_points};
     my @surface_spread_point = @{$surface->spread_points};
 
     push @column_names, (@surface_vol_point, @surface_spread_point);
 
+    my $count_cols = scalar @column_names;
     my $count_rows = scalar @days;
 
     my $found_big_difference = 0;

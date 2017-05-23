@@ -54,6 +54,7 @@ sub generate {
     my $open_bets_expired_ref;
 
     my $howmany = scalar @keys;
+    my $expired = 0;
     my %totals  = (
         value => 0,
         delta => 0,
@@ -79,6 +80,9 @@ sub generate {
         # This seems to be the recommended way to do transactions
         $dbh->{AutoCommit} = 0;
         $dbh->{RaiseError} = 1;
+
+        my $book    = [];
+        my $expired = [];
 
         $dbh->do(qq{DELETE FROM accounting.expired_unsold});
         $dbh->do(qq{DELETE FROM accounting.realtime_book});
@@ -130,6 +134,17 @@ sub generate {
             locale   => BOM::Backoffice::Request::request()->language
         );
 
+        my $status =
+              'Total time ['
+            . $howlong->as_string
+            . '] for ['
+            . $howmany
+            . '] positions (['
+            . $total_expired
+            . '] expired, ['
+            . $error_count
+            . '] errors).';
+
         $dbh->do(
             qq{
         INSERT INTO accounting.historical_marked_to_market(calculation_time, market_value, delta, theta, vega, gamma)
@@ -179,6 +194,7 @@ sub sell_expired_contracts {
     my %map_to_bb = reverse Bloomberg::UnderlyingConfig::bloomberg_to_binary();
     my $csv       = Text::CSV->new;
 
+    my $rmgenv = BOM::Platform::Config::env;
     for my $client_id (@client_loginids) {
         my $fmb_infos = $open_bets_ref->{$client_id};
         my $client = Client::Account::get_instance({'loginid' => $client_id});

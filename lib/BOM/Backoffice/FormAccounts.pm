@@ -5,6 +5,8 @@ use warnings;
 use Date::Utility;
 
 sub DOB_YearList {
+    my ($selyear) = @_;
+
     my $curyear = Date::Utility->new->year;
 
     my $maxyear        = $curyear - 17;
