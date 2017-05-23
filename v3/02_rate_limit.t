@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Test::Exception;
 use Test::More;
 use Test::Mojo;
 use Test::MockModule;
@@ -64,9 +65,7 @@ subtest "no limit for 'ping' or 'time'" => sub {
         push @pings, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'ping', 0);
         push @times, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'time', 0);
     }
-    my $f = Future->needs_all(@pings, @times);
-    Mojo::IOLoop->one_tick while !$f->is_ready;
-    ok $f->is_done;
+    lives_ok { Future->needs_all(@pings, @times)->get };
 };
 
 subtest "high real account buy sell pricing limit" => sub {
@@ -78,13 +77,9 @@ subtest "high real account buy sell pricing limit" => sub {
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal',               1);
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal_open_contract', 1);
     }
-    my $f = Future->needs_all(@futures);
-    Mojo::IOLoop->one_tick while !$f->is_ready;
-    ok $f->is_done, "no limits hit";
+    lives_ok { Future->needs_all(@futures)->get }, "no limits hit";
 
-    $f = Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 1);
-    Mojo::IOLoop->one_tick while !$f->is_ready;
-    ok $f->is_failed, "limit hit";
+    dies_ok { Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 1)->get }, "limit hit";
 };
 
 subtest "hit limits 'proposal' / 'proposal_open_contract' for virtual account" => sub {
@@ -93,10 +88,8 @@ subtest "hit limits 'proposal' / 'proposal_open_contract' for virtual account" =
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal',               0);
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal_open_contract', 0);
     }
-    my $f = Future->needs_all(@futures);
-    Mojo::IOLoop->one_tick while !$f->is_ready;
-    ok $f->is_failed;
 
+    dies_ok { Future->needs_all(@futures)->get }, "limit hit";
 };
 
 subtest "hit limits 'portfolio' / 'profit_table' for virtual account" => sub {
@@ -105,13 +98,9 @@ subtest "hit limits 'portfolio' / 'profit_table' for virtual account" => sub {
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio',    0);
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'profit_table', 0);
     }
-    my $f = Future->needs_all(@futures);
-    Mojo::IOLoop->one_tick while !$f->is_ready;
-    ok $f->is_done, "no limits hit";
+    lives_ok { Future->needs_all(@futures)->get }, "no limits hit";
 
-    $f = Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio', 0);
-    Mojo::IOLoop->one_tick while !$f->is_ready;
-    ok $f->is_failed, "limit hit";
+    dies_ok { Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio', 0)->get }, "limit hit";
 };
 
 subtest "limits are persisted across connnections for the same client" => sub {
@@ -119,14 +108,12 @@ subtest "limits are persisted across connnections for the same client" => sub {
 
     my $c2 = $t->app->build_controller;
     my $f = Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'portfolio', 0);
-    Mojo::IOLoop->one_tick while !$f->is_ready;
-    ok $f->is_done, "1st attempt is still allowed";
+    lives_ok { $f->get }, "1st attempt is still allowed";
 
     $process_queue->();
 
     $f = Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'portfolio', 0);
-    Mojo::IOLoop->one_tick while !$f->is_ready;
-    ok $f->is_failed, "but not any longer";
+    dies_ok { $f->get }, "but not any longer";
 };
 
 subtest "get error code (verify_email)" => sub {
