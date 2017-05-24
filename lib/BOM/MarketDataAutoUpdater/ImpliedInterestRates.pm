@@ -239,7 +239,6 @@ sub _tenor_mapper {
 
 sub _get_forward_and_term_from_BB_ticker {
     my ($self, $ticker) = @_;
-    my ($underlying, $term);
 
     my %tickerlist = Bloomberg::UnderlyingConfig::get_forward_tickers_list();
     foreach my $underlying (keys %tickerlist) {

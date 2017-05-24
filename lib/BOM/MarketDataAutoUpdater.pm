@@ -43,7 +43,6 @@ sub run {
             }
         }
     }
-    my $number_successes = scalar @successes - 1;
     my $number_failures  = scalar @failures - 1;
     my $error            = scalar @errors - 1;
     push @successes, "\n\n";
