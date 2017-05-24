@@ -507,18 +507,6 @@ subtest 'all methods on a selection of underlyings' => sub {
         is($EURUSD->spot_source->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
     };
 
-    foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
-        my $ul = create_underlying('DJI', Date::Utility->new('2016-04-05'));
-        my $eod = $ul->calendar->closing_on($ul->exchange, Date::Utility->new('2016-04-05'));
-        my $date = $eod->minus_time_interval('1s');
-        my $worm = create_underlying($pair, $date);
- 
-        is($worm->calendar->is_in_quiet_period($worm,$date), 0, $worm->symbol . ' not in a quiet period before New York closes');
-        $date = $eod->plus_time_interval('1s');
-        $worm = create_underlying($pair, $date);
-        ok($worm->calendar->is_in_quiet_period($worm,$date), $worm->symbol . ' is quiet after New York closes');
-    }
-
     Quant::Framework::Utils::Test::create_doc(
         'volsurface_delta',
         {
@@ -527,42 +515,6 @@ subtest 'all methods on a selection of underlyings' => sub {
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
             recorded_date    => Date::Utility->new,
         });
-
-    my $today  = Date::Utility->today;
-    my $audusd = create_underlying('frxAUDUSD', $today);
-    foreach my $ul ($AS51, $audusd) {
-        my $prev_weight = 0;
-        my $closed_weight = ($ul->market->name eq 'indices') ? 0.55 : 0.06;
-        my $trading_calendar = $ul->calendar;
-        foreach my $days_hence (1 .. 7) {
-            my $test_day      = $today->plus_time_interval($days_hence . 'd');
-            my $day_weight    = $trading_calendar->weight_on($ul,$test_day->epoch);
-            my $period_weight = $trading_calendar->weighted_days_in_period($ul,$today, $test_day);
-            if ($trading_calendar->_get_pseudo_holidays('exchange', $test_day)->{$test_day->days_since_epoch} and $trading_calendar->trades_on($ul->exchange,$test_day) and $ul->market->name eq 'indices'){
-                cmp_ok(
-                $day_weight, '<',
-                $closed_weight,
-                $ul->display_name . ' weight for ' . $test_day->date . ' For indices, the weight is lower than closed weight during pseudo_holidays'
-            );
-
-
-            }else{
-            cmp_ok(
-                $day_weight, '>=',
-                $closed_weight,
-                $ul->display_name . ' weight for ' . $test_day->date . ' is at least as big as the closed weight'
-            );
-            }
-            cmp_ok($day_weight, '<=', 1, 'And no larger than 1');
-            cmp_ok(
-                roundnear(0.01, $period_weight - $prev_weight),
-                '==',
-                roundnear(0.01, $day_weight),
-                $ul->display_name . ' period weight increased by exactly the day weight'
-            );
-            $prev_weight = $period_weight;
-        }
-    }
 
     is($AS51->pipsized_value(100.234567), 100.23,   'Index values are set by pipsized_value');
     is($EURUSD->pipsized_value(1.234567), 1.23457,  'Forex values are chopped to pip size');
