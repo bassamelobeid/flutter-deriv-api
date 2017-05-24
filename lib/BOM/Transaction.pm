@@ -214,7 +214,7 @@ has transaction_parameters => (
 );
 
 sub BUILDARGS {
-    my ($class, $args) = @_;
+    my (undef, $args) = @_;
 
     if (exists $args->{price}) {
         $args->{transaction_parameters}->{price} = $args->{price};
