@@ -5,7 +5,7 @@ use Moose;
 with 'MooseX::Role::Validatable';
 use Quant::Framework::Underlying;
 use Finance::Contract;
-
+use BOM::Platform::Context qw(localize);
 has [qw(id display_name)] => (is => 'ro');
 
 # Actual methods for introspection purposes.
@@ -21,7 +21,7 @@ has _for_sale => (
     isa     => 'Bool',
     default => 0,
 );
-has [qw(number_of_token token_type)] => (
+has [qw(number_of_tokens token_type coin_address)] => (
     is => 'rw',
 );
 
@@ -41,13 +41,14 @@ sub BUILD {
     };
 
     $self->token_type($self->contract_type);
+    $self->coin_address($self->underlying->symbol);
 
-    if ($self->number_of_token < $limits{min} or $self->number_of_token > $limits->{max}) {
+    if ($self->number_of_tokens < $limits{min} or $self->number_of_tokens > $limits->{max}) {
 
         $self->add_errors({
             message => 'number of tokens placed is not within limits '
                 . "[given: "
-                . $self->number_of_token . "] "
+                . $self->number_of_tokens . "] "
                 . "[min: "
                 . $limits->{min} . "] "
                 . "[max: "
@@ -62,21 +63,6 @@ sub BUILD {
     return;
 }
 
-has category_code => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_category_code {
-    my $self = shift;
-    return $self->category->code;
-}
-
-has build_parameters => (
-    is       => 'ro',
-    isa      => 'HashRef',
-    required => 1,
-);
 
 has currency => (
     is       => 'ro',
@@ -162,8 +148,18 @@ has [qw(shortcode)] => (
 sub _build_shortcode {
     my $self = shift;
 
-    my @element = map { uc $_ } ($self->token_type, $self->underlying->symbol, $self->ask_price, $self->number_of_token);
+    my @element = map { uc $_ } ($self->token_type, $self->coin_addresss, $self->ask_price, $self->number_of_tokens);
     return join '_', @element;
+}
+
+
+sub longcode {
+    my $self        = shift;
+    my $description = $self->localizable_description->{'coinauction'};
+    my $coin_naming = $self->token_type eq 'ERC20ICO'? 'ERC20 Ethereum token' : 'ICO coloured coin';
+
+    return localize($description,($coin_naming, $self->coin_address);
+
 }
 
 sub is_expired {
