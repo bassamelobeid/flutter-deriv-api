@@ -98,7 +98,6 @@ sub buy_contract_for_multiple_accounts {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
-    my @result;
 
     my $tokens = $params->{args}{tokens} // [];
 
@@ -203,7 +202,7 @@ sub _check_token_list {
 
         if (    $token_details
             and $loginid = $token_details->{loginid}
-            and grep({ /^trade$/ } @{$token_details->{scopes}}))
+            and grep({/^trade$/} @{$token_details->{scopes}}))
         {
             push @$result,
                 +{
