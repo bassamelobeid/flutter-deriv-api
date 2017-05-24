@@ -12,3 +12,36 @@
         <input type="submit" name="action" value="generate">
     </form>
 </div>
+
+<div style="color:white;border:solid;text-align:left">
+    <b>Loginid: </b> [% data.client_details.loginid %] <br/>
+    <b>Name: </b> [% data.client_details.name %] <br/>
+    <b>Residence: </b> [% data.client_details.residence %] <br/>
+    <b>Citizen: </b> [% data.client_details.citizen %] <br/>
+    <b>Date Joined: </b> [% data.client_details.date_joined %] <br/>
+</div>
+
+
+<div style="color:white;border:solid;text-align:left">
+    [% FOREACH rdate IN data.report.keys.sort %]
+        * <b>staff: </b> [% data.report.$rdate.clerk %] <br/>
+        * <b>date: </b> [% $rdate %] <br/>
+        <br/>
+        [% FOREACH fa IN data.report.$rdate.financial_assessment.keys.sort %] 
+            * <b>[% fa %]: </b> [% data.report.$rdate.financial_assessment.$fa %] <br/>
+        [% END %]
+        <br/>
+        * <b>deposit: </b> [% data.report.$rdate.total_deposits_withdrawals.deposit %] <br/>
+        * <b>withdrawal: </b> [% data.report.$rdate.total_deposits_withdrawals.withdrawal %] <br/>
+        * <b>net: </b> [% data.report.$rdate.total_deposits_withdrawals.deposit - data.report.$rdate.total_deposits_withdrawals.withdrawal %] <br/>
+        * <b>balance: </b> [% data.report.$rdate.total_deposits_withdrawals.balance %] <br/>
+    [% END %]
+</div>
+
+<div style="color:white;border:solid;text-align:left">
+    * <b>authenticated: </b> [% data.client_details.id_authentication %]  <br/>
+    <br/>
+    [% FOREACH key IN data.documents.keys.sort %]
+        * <b>[% key %]: </b> [% data.documents.$key %] <br/>
+    [% END %]
+</div>
