@@ -2,6 +2,7 @@
 
 use Test::More;
 use Test::FailWarnings;
+use Test::Fatal;
 
 use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
@@ -49,6 +50,13 @@ my $bet_params = {
     date_pricing => $now,
     barrier      => 'S0P',
     current_tick => $fake_tick,
+};
+
+subtest 'missing expiry and duration' => sub {
+
+    my $c = produce_contract($bet_params);
+
+    like(exception { $c->is_valid_to_buy }, qr/Call does not support builder method '_build_date_expiry' for attribute/, "exception matches");
 };
 
 subtest 'invalid start and expiry time' => sub {
