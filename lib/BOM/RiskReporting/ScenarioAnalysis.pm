@@ -167,7 +167,9 @@ sub generate {
         . '] out of scope contracts ignored.';
     $scenario_message .= "\n\n" . $status;
     Email::Stuffer->from('Risk reporting <risk-reporting@binary.com>')->to('<x-risk@binary.com>')->subject($subject)->text_body($scenario_message)
-        ->attach_file($scenario_fh, $raw_fh)->send;
+        ->attach_file($scenario_fh->filename)
+        ->attach_file($raw_fh->filename)
+        ->send;
     return;
 }
 
