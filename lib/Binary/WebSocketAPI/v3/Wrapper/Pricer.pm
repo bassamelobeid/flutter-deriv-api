@@ -612,8 +612,6 @@ sub process_proposal_array_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type = 'proposal';
 
-    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-
     unless ($c->stash('proposal_array_collector_running')) {
         $c->stash('proposal_array_collector_running' => 1);
         # start 1 sec proposal_array sender if not started yet
@@ -724,11 +722,7 @@ sub process_ask_event {
 }
 
 sub _price_stream_results_adjustment {
-    my $c                     = shift;
-    my $orig_args             = shift;
-    my $cache                 = shift;
-    my $results               = shift;
-    my $resp_theo_probability = shift;
+    my ($c, undef, $cache, $results, $resp_theo_probability) = @_;
 
     my $contract_parameters = $cache->{contract_parameters};
 
@@ -819,8 +813,6 @@ sub _create_error_message {
     my ($err_code, $err_message, $err_details);
 
     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{cache}{proposal_array_subscription} || $stash_data->{uuid});
-
-    my $error = $response->{error} || {};
 
     if ($response->{error}) {
         $err_code    = $response->{error}->{code};
