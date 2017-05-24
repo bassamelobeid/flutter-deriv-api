@@ -666,8 +666,6 @@ sub prepare_bet_data_for_sell {
     my $self = shift;
     my $contract = shift || $self->contract;
 
-    my $client = $self->client;
-
     $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
 
     my $bet_params = {
