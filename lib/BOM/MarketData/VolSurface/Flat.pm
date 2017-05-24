@@ -84,7 +84,7 @@ USAGE:
 =cut
 
 sub get_volatility {
-    my ($self, $args) = @_;
+    my $self = shift;
 
     # There is no sanity checking on the args, because you
     # get the same answer, not matter what you ask.
