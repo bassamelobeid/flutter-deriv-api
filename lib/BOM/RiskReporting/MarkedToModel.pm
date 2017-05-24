@@ -125,11 +125,6 @@ sub generate {
             };
         }
 
-        my $howlong = Time::Duration::Concise::Localize->new(
-            interval => time - $start,
-            locale   => BOM::Backoffice::Request::request()->language
-        );
-
         $dbh->do(
             qq{
         INSERT INTO accounting.historical_marked_to_market(calculation_time, market_value, delta, theta, vega, gamma)
