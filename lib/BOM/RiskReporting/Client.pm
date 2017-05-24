@@ -103,9 +103,12 @@ sub get {
 sub _financial_assessment {
     my $self = shift;
 
-    my $f;
-    $f = JSON::XS::decode_json($self->client->financial_assessment->data) if $self->client->financial_assessment;
-    return $f;
+    my %f;
+    if ($self->client->financial_assessment) {
+        my $h = JSON::XS::decode_json($self->client->financial_assessment->data);
+        %f = map { $_ => $h->{$_}->{answer} } grep { ref $h->{$_} && $h->{$_}->{answer} } keys %$h;
+    }
+    return \%f;
 }
 
 sub _total_deposits_withdrawals {
@@ -118,7 +121,8 @@ sub _total_deposits_withdrawals {
     });
 
     $total->{deposit}    = $payment_mapper->get_total_deposit_of_account;
-    $total->{withdrawal} = $payment_mapper->get_total_withdrawalk;
+    $total->{withdrawal} = $payment_mapper->get_total_withdrawal;
+    $total->{balance}    = $self->client->default_account->balance;
     return $total;
 }
 
@@ -135,7 +139,7 @@ sub generate {
     $data->{country_change}                      = $self->_change_of_country;
     $data->{$time}->{financial_assessment}       = $self->_financial_assessment;
     $data->{$time}->{total_deposits_withdrawals} = $self->_total_deposits_withdrawals;
-    $data->{$time}->{clerk}   = $clerk if $clerk;
+    $data->{$time}->{clerk}   = $clerk   if $clerk;
     $data->{$time}->{comment} = $comment if $comment;
 
     # $self->_change_of_status;
