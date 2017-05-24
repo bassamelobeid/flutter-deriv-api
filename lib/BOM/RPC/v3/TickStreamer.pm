@@ -124,11 +124,7 @@ sub _ticks {
         limit      => $count,
     });
 
-    return [
-        map {
-            { time => $_->epoch, price => $ul->pipsized_value($_->quote) }
-        } reverse @$ticks
-    ];
+    return [map { {time => $_->epoch, price => $ul->pipsized_value($_->quote)} } reverse @$ticks];
 }
 
 sub _candles {
