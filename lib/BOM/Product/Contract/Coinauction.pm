@@ -15,8 +15,6 @@ sub is_atm_bet          { return 0 }
 sub is_intraday         { return 0 }
 sub is_forward_starting { return 0 }
 
-with 'BOM::Product::Role::Reportable';
-
 # This is to indicate whether this is a sale transaction.
 has _for_sale => (
     is      => 'rw',
@@ -24,7 +22,7 @@ has _for_sale => (
     default => 0,
 );
 has [qw(number_of_token token_type)] => (
-    is         => 'rw',
+    is => 'rw',
 );
 
 has underlying => (
@@ -34,18 +32,17 @@ has underlying => (
     required => 1,
 );
 
-
 sub BUILD {
     my $self = shift;
 
     my $limits = {
-         min => 1, 
-         max => 1000000,
+        min => 1,
+        max => 1000000,
     };
 
     $self->token_type($self->contract_type);
 
-    if ($self->number_of_token < $limits{min} or $self->number_of_token > $limits->{max}){
+    if ($self->number_of_token < $limits{min} or $self->number_of_token > $limits->{max}) {
 
         $self->add_errors({
             message => 'number of tokens placed is not within limits '
@@ -62,10 +59,8 @@ sub BUILD {
         });
     }
 
-
     return;
 }
-
 
 has category_code => (
     is         => 'ro',
@@ -89,19 +84,18 @@ has currency => (
     required => 1,
 );
 
-
 has date_start => (
-    is       => 'ro',
-    isa      => 'date_object',
-    coerce   => 1,
+    is         => 'ro',
+    isa        => 'date_object',
+    coerce     => 1,
     lazy_build => 1,
 );
 
 # TODO: This should be a hardcoded auction period start
 sub _build_date_start {
-   my $self =shift;
+    my $self = shift;
 
-   return $self->trading_period_start;
+    return $self->trading_period_start;
 
 }
 
@@ -128,7 +122,6 @@ sub _build_date_settlement {
     return shift->date_expiry;
 }
 
-
 has [qw(is_valid_to_buy is_valid_to_sell)] => (
     is         => 'ro',
     lazy_build => 1,
@@ -142,15 +135,14 @@ has is_sold => (
 
 sub _build_is_valid_to_buy {
     my $self = shift;
-    return $self->_report_validation_stats('buy', $self->confirm_validity);
+
+    return $self->confirm_validity;
 }
 
 sub _build_is_valid_to_sell {
     my $self = shift;
 
-    $self->_for_sale(1);
-
-    if ($self->is_sold) {
+    if ($self->date_pricing->is_after($self->date_expiry)) {
         $self->add_errors({
             message           => 'Auction already sold',
             severity          => 99,
@@ -158,9 +150,9 @@ sub _build_is_valid_to_sell {
         });
         return 0;
     }
-    return $self->_report_validation_stats('sell', $self->confirm_validity);
-}
 
+    return $self->confirm_validity;
+}
 
 has [qw(shortcode)] => (
     is         => 'ro',
@@ -170,11 +162,7 @@ has [qw(shortcode)] => (
 sub _build_shortcode {
     my $self = shift;
 
-    my @element = map { uc $_ } (
-        $self->token_type,
-        $self->underlying->symbol, $self->ask_price,
-        $self->number_of_token
-    );
+    my @element = map { uc $_ } ($self->token_type, $self->underlying->symbol, $self->ask_price, $self->number_of_token);
     return join '_', @element;
 }
 
@@ -198,12 +186,12 @@ sub _validate_token_type {
     my @err;
     my @supported_token = Finance::Contract::Category->new("coinauction")->{available_types};
 
-    if (grep {$_ ne $self->token_type}) @supported_token {
+    if (grep { $_ ne $self->token_type } @supported_token) {
         push @err,
             {
             message           => "Invalid token type. [symbol: " . $self->token_type . "]",
             severity          => 98,
-            message_to_client => localize('We are not support auction with this token '.  $self->token_type),
+            message_to_client => localize('We are not support auction with this token ' . $self->token_type),
             };
     }
 
@@ -216,12 +204,11 @@ sub _validate_price {
     return 1 if $self->for_sale;
 
     my @err;
-    if ($self->ask_price > 0 )) {
+    if ($self->ask_price > 0) {
         push @err,
             {
-            message => 'The auction bid price can not be less than zero .'
-            severity                => 99,
-            message_to_client       => localize('The auction bid price can not be less than zero.'),
+            message           => 'The auction bid price can not be less than zero .' severity => 99,
+            message_to_client => localize('The auction bid price can not be less than zero.'),
             };
     }
 
@@ -229,7 +216,7 @@ sub _validate_price {
 }
 
 sub _validate_date_pricing {
-   my $self  = shift;
+    my $self = shift;
 
     return 1 if $self->for_sale;
 
@@ -237,13 +224,12 @@ sub _validate_date_pricing {
     if ($self->date_pricing->is_after($self->date_expiry)) {
         push @err,
             {
-            message => 'The auction is already closed.'
-            severity                => 99,
-            message_to_client       => localize('The ICO auction is already closed.'),
+            message           => 'The auction is already closed.' severity => 99,
+            message_to_client => localize('The ICO auction is already closed.'),
             };
     }
 
-   return @err;
+    return @err;
 
 }
 
