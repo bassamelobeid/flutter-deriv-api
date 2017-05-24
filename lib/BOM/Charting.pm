@@ -96,8 +96,8 @@ sub getFeedsFromHistoryServer {
 
 sub processHistoricalFeed {
     my $args = shift;
-    my ($clientID, $chartID, $CLIENT_REMOTE_ADDR, $CLIENT_REMOTE_PORT, $input) =
-        @{$args}{'client_id', 'chart_id', 'remote_addr', 'remote_port', 'input'};
+    my ($clientID, $chartID, $CLIENT_REMOTE_ADDR, $input) =
+        @{$args}{'client_id', 'chart_id', 'remote_addr', 'input'};
 
     my ($underlying_symbol, $intervalSecs, $beginTime, $endTime, $giveDelayedDailyData, $limit) = getParametersForHistoricalFeedRequest($input);
 

@@ -44,8 +44,6 @@ use BOM::Transaction;
 sub generate {
     my $self = shift;
 
-    my $start = time;
-
     my $pricing_date = $self->end;
 
     my $open_bets_ref = $self->live_open_bets;

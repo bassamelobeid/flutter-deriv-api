@@ -442,8 +442,8 @@ will return number of big differences found
 sub print_comparison_between_volsurface {
     my ($self, $args) = @_;
 
-    my ($ref_surface, $warn_diff, $quiet, $ref_surface_source, $surface_source) =
-        @{$args}{qw( ref_surface warn_diff quiet ref_surface_source surface_source )};
+    my ($ref_surface, $quiet, $ref_surface_source, $surface_source) =
+        @{$args}{qw( ref_surface quiet ref_surface_source surface_source )};
 
     return 'Comparison failed because existing surface does not exist'
         unless $ref_surface;
