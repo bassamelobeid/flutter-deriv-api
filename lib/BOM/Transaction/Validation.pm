@@ -139,8 +139,6 @@ sub _validate_sell_pricing_adjustment {
         );
     }
 
-    my $currency = $contract->currency;
-
     my $requested = $self->transaction->price / $self->transaction->payout;
     my ($amount, $recomputed_amount) = ($self->transaction->price, $contract->bid_price);
     # set the requested price and recomputed  price to be store in db
