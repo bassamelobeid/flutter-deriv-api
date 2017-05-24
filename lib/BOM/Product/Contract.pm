@@ -711,11 +711,6 @@ sub _build_opposite_contract_for_sale {
 
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
 
-    if (my $role = $opp_parameters{role}) {
-        $role->require;
-        $role->meta->apply($opp_contract);
-    }
-
     return $opp_contract;
 }
 
@@ -742,11 +737,6 @@ sub _build_opposite_contract {
     $opp_parameters{pricing_new} = 1;
 
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
-
-    if (my $role = $opp_parameters{role}) {
-        $role->require;
-        $role->meta->apply($opp_contract);
-    }
 
     return $opp_contract;
 }
