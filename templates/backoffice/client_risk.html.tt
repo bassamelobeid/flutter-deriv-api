@@ -1,32 +1,14 @@
 <div>
-    <span>
-        [% IF list == 1 %]
-            Client's Email: <b>[% email %]</b></br></br>
-            List of loginids with this email are:
-        [% ELSIF updated == 1 %]
-            Client's email has been changed from <b>[% old_email %] to [% new_email %]</b><br/><br/>
-            Updated clients' accounts are:
-        [% END %]
-    </span>
-    <ul>
-        [% FOREACH loginid IN loginids %]
-            <li> [% loginid %] </li>
-        [% END %]
-    </ul>
-
-    [% IF list == 1 %]
-        <hr>Change client's email for all loginids listed above:</br></br>
-        <form action="[% request.url_for('backoffice/client_risk_report.cgi') | none %]" method="post">
-            <b>Dual Control Code: </b>
-            <input type="text" name="DCcode" placeholder="required">
-            <input type="hidden" value="UPDATECLIENTDETAILS" name="transtype"/>
-            <br><br>
-            <b>New Email: </b>
-            <input type="text" name="new_email" placeholder="required">
-            <input type="hidden" name="email" value="[% email %]">
-            <input type="hidden" name="email_edit" value="1">
-            <input type="submit" value="Update Email">
-            <br><br><b>(Note: This will update email for all the listed loginids above)</b>
-        </form>
-    [% END %]
+    <hr>Client Risk:</br></br>
+    <form action="[% request.url_for('backoffice/client_risk_report.cgi') %]" method="post">
+        <b>Loginid: </b>
+        <input type="text" name="loginid" value="[% loginid %]">
+        <br/>
+        <b>Comment: </b>
+        <input type="text" name="comment">
+        <br/>
+        <input type="submit" name="action" value="show">
+        <input type="submit" name="action" value="comment">
+        <input type="submit" name="action" value="generate">
+    </form>
 </div>

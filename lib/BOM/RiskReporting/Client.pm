@@ -92,14 +92,6 @@ sub _change_of_status {
     return;
 }
 
-sub get {
-    my $self = shift;
-
-    my $data = {};
-
-    return {};
-}
-
 sub _financial_assessment {
     my $self = shift;
 
@@ -126,12 +118,28 @@ sub _total_deposits_withdrawals {
     return $total;
 }
 
+sub get {
+    my $self = shift;
+
+    my $data = {};
+
+    if (my $rows =
+        $self->_db->dbh->selectrow_hashref("SELECT report FROM betonmarkets.risk_report WHERE client_loginid= ?", {}, $self->client->loginid))
+    {
+        $data = JSON::XS::decode_json($rows->{report});
+    }
+
+    return $data;
+}
+
 sub generate {
     my $self    = shift;
     my $clerk   = shift;
     my $comment = shift;
 
     my $data = $self->get;
+    my $insert;
+    $insert = 1 if (!keys %$data);
 
     my $time = time;
     $data->{client_details}                      = $self->_client_details;
@@ -142,8 +150,13 @@ sub generate {
     $data->{$time}->{clerk}   = $clerk   if $clerk;
     $data->{$time}->{comment} = $comment if $comment;
 
-    # $self->_change_of_status;
-    # $self->_review_of_trades_bets;
+    if ($insert) {
+        my $sth = $self->_db->dbh->prepare("insert into betonmarkets.risk_report values ( ?, ?)");
+        my $rows = $sth->execute($self->client->loginid, JSON::XS::encode_json($data));
+    } else {
+        my $sth = $self->_db->dbh->prepare("update betonmarkets.risk_report set report = ? where client_loginid = ?");
+        my $rows = $sth->execute(JSON::XS::encode_json($data), $self->client->loginid);
+    }
 
     return $data;
 }
