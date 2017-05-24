@@ -13,7 +13,7 @@ use List::Util qw(first min max);
 use Math::CDF qw(qnorm);
 use Format::Util::Numbers qw(roundnear);
 use LandingCompany::Offerings qw(get_offerings_flyby);
-use Barriers::PreDefined;
+
 use Finance::Contract::Category;
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::RedisReplicated;
@@ -31,47 +31,6 @@ my %supported_contract_types = (
     ONETOUCH     => 1,
     NOTOUCH      => 1,
 );
-
-my %barrier_configuration = (
-    method_1 => [{
-            types         => [qw/CALLE PUT/],
-            barrier_level => [95, 85, 75, 62, 50, 38, 25, 15, 5],
-        },
-        {
-            types         => [qw/ONETOUCH NOTOUCH/],
-            barrier_level => [95, 85, 75, 62, 38, 25, 15, 5],
-        },
-        {
-            types         => [qw/EXPIRYMISS EXPIRYRANGEE/],
-            barrier_level => [75, 95, 62, 85, 50, 75, 38, 62, 25, 50, 15, 38, 5, 25],
-
-        },
-        {
-            types         => [qw/RANGE UPORDOWN/],
-            barrier_level => [25, 75, 15, 85, 5, 95,]
-        },
-    ],
-
-
-   method_2 => [{
-            types         => [qw/CALLE PUT/],
-            barrier_level => [95, 78, 68, 57, 50, 43, 32, 22, 5],
-        },
-        {
-            types         => [qw/ONETOUCH NOTOUCH/],
-            barrier_level => [95, 78, 68, 57, 43, 32, 22, 5],
-        },
-        {
-            types         => [qw/EXPIRYMISS EXPIRYRANGEE/],
-            barrier_level => [68, 95, 57, 78, 50, 68, 43, 57, 32, 50, 22, 43, 5, 32],
-        },
-        {
-            types         => [qw/RANGE UPORDOWN/],
-            barrier_level => [32, 68, 22, 78, 5, 95]
-        },
-    ] 
-
- );
 
 my $cache_namespace = 'predefined_parameters';
 
