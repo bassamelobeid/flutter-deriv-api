@@ -184,7 +184,6 @@ sub _get_csv_line_from_txn {
     # got everything, so lets make the CSV line:
     my $csv = Text::CSV->new;
     $csv->combine($loginid, 'credit', 'affiliate_reward', $preferred_currency, $preferred_currency_amount, $comment);
-    my $string = trim $csv->string;
 
     return trim $csv->string;
 }
