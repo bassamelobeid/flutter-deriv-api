@@ -22,8 +22,9 @@
 </div>
 
 
-<div style="color:white;border:solid;text-align:left">
-    [% FOREACH rdate IN data.report.keys.sort %]
+
+[% FOREACH rdate IN data.report.keys.sort %]
+    <div style="color:white;border:solid;text-align:left">
         * <b>staff: </b> [% data.report.$rdate.clerk %] <br/>
         * <b>date: </b> [% $rdate %] <br/>
         <br/>
@@ -35,13 +36,24 @@
         * <b>withdrawal: </b> [% data.report.$rdate.total_deposits_withdrawals.withdrawal %] <br/>
         * <b>net: </b> [% data.report.$rdate.total_deposits_withdrawals.deposit - data.report.$rdate.total_deposits_withdrawals.withdrawal %] <br/>
         * <b>balance: </b> [% data.report.$rdate.total_deposits_withdrawals.balance %] <br/>
-    [% END %]
-</div>
+    </div>
+[% END %]
+
+
 
 <div style="color:white;border:solid;text-align:left">
     * <b>authenticated: </b> [% data.client_details.id_authentication %]  <br/>
     <br/>
     [% FOREACH key IN data.documents.keys.sort %]
         * <b>[% key %]: </b> [% data.documents.$key %] <br/>
+    [% END %]
+</div>
+
+
+<div style="color:white;border:solid;text-align:left">
+    [% FOREACH key IN data.country_change.reverse %]
+        * <b>first_login_date: </b> [% key.first_login_date %] <br/>
+        * <b>country: </b> [% key.country %] <br/>
+        <br/>
     [% END %]
 </div>
