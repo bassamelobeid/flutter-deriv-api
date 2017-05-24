@@ -64,8 +64,8 @@ UNITCHECK {
     use BOM::Product::Contract::Upordown;
     use BOM::Product::Contract::Vanilla_call;
     use BOM::Product::Contract::Vanilla_put;
-    use BOM::Product::Contract::BTCICO;
-    use BOM::Product::Contract::ERC20ICO;
+    use BOM::Product::Contract::Btcico;
+    use BOM::Product::Contract::Erc20ico;
 
 }
 

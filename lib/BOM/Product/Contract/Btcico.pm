@@ -1,4 +1,4 @@
-package BOM::Product::Contract::BTCICO;
+package BOM::Product::Contract::Btcico;
 
 use Moose;
 extends 'BOM::Product::Contract::Coinauction';

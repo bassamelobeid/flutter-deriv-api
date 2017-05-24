@@ -1,4 +1,4 @@
-package BOM::Product::Contract::ERC20ICO;
+package BOM::Product::Contract::Erc20ico;
 
 use Moose;
 extends 'BOM::Product::Contract::Coinauction';

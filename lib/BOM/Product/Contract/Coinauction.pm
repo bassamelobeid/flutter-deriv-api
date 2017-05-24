@@ -5,9 +5,8 @@ use Moose;
 with 'MooseX::Role::Validatable';
 use Quant::Framework::Underlying;
 use Finance::Contract;
-use BOM::Platform::Context qw(localize);
-has [qw(id display_name)] => (is => 'ro');
-
+use BOM::Product::Static qw/get_longcodes get_error_mapping/;
+use List::Util qw(first);
 # Actual methods for introspection purposes.
 sub is_coinauction      { return 1 }
 sub is_legacy           { return 0 }
@@ -16,12 +15,15 @@ sub is_intraday         { return 0 }
 sub is_forward_starting { return 0 }
 
 # This is to indicate whether this is a sale transaction.
+
+my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+
 has _for_sale => (
     is      => 'rw',
     isa     => 'Bool',
     default => 0,
 );
-has [qw(number_of_tokens token_type coin_address)] => (
+has [qw(trading_period_start number_of_tokens token_type coin_address ask_price)] => (
     is => 'rw',
 );
 
@@ -32,16 +34,21 @@ has underlying => (
     required => 1,
 );
 
-sub BUILD {
-    my $self = shift;
+has build_parameters => (
+    is       => 'ro',
+    isa      => 'HashRef',
+    required => 1,
+);
 
+sub BUILD {
+    my $self   = shift;
     my $limits = {
         min => 1,
         max => 1000000,
     };
-
-    $self->token_type($self->contract_type);
+    $self->token_type($self->build_parameters->{bet_type});
     $self->coin_address($self->underlying->symbol);
+    $self->trading_period_start($self->build_parameters->{trading_period_start});
 
     if ($self->number_of_tokens < $limits->{min} or $self->number_of_tokens > $limits->{max}) {
 
@@ -53,16 +60,13 @@ sub BUILD {
                 . $limits->{min} . "] "
                 . "[max: "
                 . $limits->{max} . "]",
-            severity => 99,
-            message_to_client =>
-                localize('Number of token placed must be between [_1] and [_2] [_3].', $limits->{min}, $limits->{max}, $self->currency),
-            message_to_client_array => ['Amount Per Point must be between [_1] and [_2] [_3].', $limits->{min}, $limits->{max}, $self->currency],
+            severity          => 99,
+            message_to_client => [$ERROR_MAPPING->{IcoTokenLimits}, $limits->{min}, $limits->{max}],
         });
     }
 
     return;
 }
-
 
 has currency => (
     is       => 'ro',
@@ -128,12 +132,12 @@ sub _build_is_valid_to_buy {
 sub _build_is_valid_to_sell {
     my $self = shift;
 
-    $self->for_sale(1);
+    $self->_for_sale(1);
     if ($self->date_pricing->is_after($self->date_expiry)) {
         $self->add_errors({
-            message           => 'Auction already sold',
+            message           => 'Auction already closed',
             severity          => 99,
-            message_to_client => localize("This auction has been closed."),
+            message_to_client => [$ERROR_MAPPING->{IcoClosed}],
         });
         return 0;
     }
@@ -148,18 +152,15 @@ has [qw(shortcode)] => (
 
 sub _build_shortcode {
     my $self = shift;
-
-    my @element = map { uc $_ } ($self->token_type, $self->coin_addresss, $self->ask_price, $self->number_of_tokens);
+    my @element = map { uc $_ } ($self->token_type, $self->coin_address, $self->ask_price, $self->number_of_tokens);
     return join '_', @element;
 }
 
-
 sub longcode {
     my $self        = shift;
-    my $description = $self->localizable_description->{'coinauction'};
-    my $coin_naming = $self->token_type eq 'ERC20ICO'? 'ERC20 Ethereum token' : 'ICO coloured coin';
-
-    return localize($description,($coin_naming, $self->coin_address));
+    my $description = get_longcodes()->{'coinauction'};
+    my $coin_naming = $self->token_type eq 'ERC20ICO' ? 'ERC20 Ethereum token' : 'ICO coloured coin';
+    return [$description, $coin_naming, $self->coin_address];
 
 }
 
@@ -181,14 +182,14 @@ sub _validate_token_type {
     my $self = shift;
 
     my @err;
-    my @supported_token = Finance::Contract::Category->new("coinauction")->{available_types};
-
-    if (grep { $_ ne $self->token_type } @supported_token) {
+    my $supported_token = Finance::Contract::Category->new("coinauction")->{available_types};
+    my $token_type      = uc($self->token_type);
+    if (not grep(/^$token_type$/, @$supported_token)) {
         push @err,
             {
             message           => "Invalid token type. [symbol: " . $self->token_type . "]",
             severity          => 98,
-            message_to_client => localize('We are not support auction with this token ' . $self->token_type),
+            message_to_client => [$ERROR_MAPPING->{InvalidIcoToken}, $self->token_type],
             };
     }
 
@@ -198,15 +199,15 @@ sub _validate_token_type {
 sub _validate_price {
     my $self = shift;
 
-    return if $self->for_sale;
+    return if $self->_for_sale;
 
     my @err;
-    if ($self->ask_price > 0) {
+    if ($self->ask_price < 0) {
         push @err,
             {
             message           => 'The auction bid price can not be less than zero .',
-            severity => 99,
-            message_to_client => localize('The auction bid price can not be less than zero.'),
+            severity          => 99,
+            message_to_client => [$ERROR_MAPPING->{InvalidIcoBidPrice}],
             };
     }
 
@@ -216,15 +217,15 @@ sub _validate_price {
 sub _validate_date_pricing {
     my $self = shift;
 
-    return if $self->for_sale;
+    return if $self->_for_sale;
 
     my @err;
     if ($self->date_pricing->is_after($self->date_expiry)) {
         push @err,
             {
             message           => 'The auction is already closed.',
-            severity => 99,
-            message_to_client => localize('The ICO auction is already closed.'),
+            severity          => 99,
+            message_to_client => [$ERROR_MAPPING->{IcoClosed}],
             };
     }
 
