@@ -43,7 +43,7 @@ sub BUILD {
     $self->token_type($self->contract_type);
     $self->coin_address($self->underlying->symbol);
 
-    if ($self->number_of_tokens < $limits{min} or $self->number_of_tokens > $limits->{max}) {
+    if ($self->number_of_tokens < $limits->{min} or $self->number_of_tokens > $limits->{max}) {
 
         $self->add_errors({
             message => 'number of tokens placed is not within limits '
@@ -128,6 +128,7 @@ sub _build_is_valid_to_buy {
 sub _build_is_valid_to_sell {
     my $self = shift;
 
+    $self->for_sale(1);
     if ($self->date_pricing->is_after($self->date_expiry)) {
         $self->add_errors({
             message           => 'Auction already sold',
@@ -158,7 +159,7 @@ sub longcode {
     my $description = $self->localizable_description->{'coinauction'};
     my $coin_naming = $self->token_type eq 'ERC20ICO'? 'ERC20 Ethereum token' : 'ICO coloured coin';
 
-    return localize($description,($coin_naming, $self->coin_address);
+    return localize($description,($coin_naming, $self->coin_address));
 
 }
 
@@ -197,13 +198,14 @@ sub _validate_token_type {
 sub _validate_price {
     my $self = shift;
 
-    return 1 if $self->for_sale;
+    return if $self->for_sale;
 
     my @err;
     if ($self->ask_price > 0) {
         push @err,
             {
-            message           => 'The auction bid price can not be less than zero .' severity => 99,
+            message           => 'The auction bid price can not be less than zero .',
+            severity => 99,
             message_to_client => localize('The auction bid price can not be less than zero.'),
             };
     }
@@ -214,13 +216,14 @@ sub _validate_price {
 sub _validate_date_pricing {
     my $self = shift;
 
-    return 1 if $self->for_sale;
+    return if $self->for_sale;
 
     my @err;
     if ($self->date_pricing->is_after($self->date_expiry)) {
         push @err,
             {
-            message           => 'The auction is already closed.' severity => 99,
+            message           => 'The auction is already closed.',
+            severity => 99,
             message_to_client => localize('The ICO auction is already closed.'),
             };
     }
@@ -232,4 +235,3 @@ sub _validate_date_pricing {
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
-A
