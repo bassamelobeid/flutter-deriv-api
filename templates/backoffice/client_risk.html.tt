@@ -26,7 +26,7 @@
 [% FOREACH rdate IN data.report.keys.sort %]
     <div style="color:white;border:solid;text-align:left">
         * <b>staff: </b> [% data.report.$rdate.clerk %] <br/>
-        * <b>date: </b> [% $rdate %] <br/>
+        * <b>date: </b> [% rdate %] <br/>
         <br/>
         [% FOREACH fa IN data.report.$rdate.financial_assessment.keys.sort %] 
             * <b>[% fa %]: </b> [% data.report.$rdate.financial_assessment.$fa %] <br/>
@@ -51,9 +51,16 @@
 
 
 <div style="color:white;border:solid;text-align:left">
-    [% FOREACH key IN data.country_change.reverse %]
-        * <b>first_login_date: </b> [% key.first_login_date %] <br/>
-        * <b>country: </b> [% key.country %] <br/>
+<b>Country change: </b><br/>
+    [% FOREACH key IN data.country_change %]
+        * [% key.first_login_date %] ([% key.country %]) <br/>
+        <br/>
+    [% END %]
+</div>
+
+<div style="color:white;border:solid;text-align:left">
+    [% FOREACH key IN data.comment.keys.sort %]
+        * <b> [% key %] : </b> [% data.comment.$key %] <br/>
         <br/>
     [% END %]
 </div>
