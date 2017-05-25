@@ -81,10 +81,11 @@ sub _change_of_country {
 sub _financial_assessment {
     my $self = shift;
 
+    my @filter = qw(account_turnover education_level employment_industry estimated_worth income_source net_income occupation);
     my %f;
     if ($self->client->financial_assessment) {
         my $h = JSON::XS::decode_json($self->client->financial_assessment->data);
-        %f = map { $_ => $h->{$_}->{answer} } grep { ref $h->{$_} && $h->{$_}->{answer} } keys %$h;
+        %f = map { $_ => $h->{$_}->{answer} } @filter;
     }
     return \%f;
 }
@@ -139,7 +140,10 @@ sub _comment {
     my $comment = shift;
 
     my $time = Date::Utility->new->datetime_ddmmmyy_hhmmss;
-    $data->{comment}->{$time} = $comment if $comment;
+    if ($comment) {
+        $data->{comments}->{$time}->{comment} = $comment;
+        $data->{comments}->{$time}->{clerk}   = $clerk;
+    }
     return;
 }
 

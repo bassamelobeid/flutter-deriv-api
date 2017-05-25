@@ -1,4 +1,8 @@
-<div>
+
+
+<div style="background:#BBBBBB">
+
+    <div>
     <hr>Client Risk:</br></br>
     <form action="[% request.url_for('backoffice/client_risk_report.cgi') %]" method="post">
         <b>Loginid: </b>
@@ -11,56 +15,60 @@
         <input type="submit" name="action" value="only add comment">
         <input type="submit" name="action" value="generate report">
     </form>
-</div>
-
-<div style="color:white;border:solid;text-align:left">
-    <b>Loginid: </b> [% data.client_details.loginid %] <br/>
-    <b>Name: </b> [% data.client_details.name %] <br/>
-    <b>Residence: </b> [% data.client_details.residence %] <br/>
-    <b>Citizen: </b> [% data.client_details.citizen %] <br/>
-    <b>Date Joined: </b> [% data.client_details.date_joined %] <br/>
-</div>
-
-
-
-[% FOREACH rdate IN data.report.keys.sort %]
-    <div style="color:white;border:solid;text-align:left">
-        * <b>staff: </b> [% data.report.$rdate.clerk %] <br/>
-        * <b>date: </b> [% rdate %] <br/>
-        <br/>
-        [% FOREACH fa IN data.report.$rdate.financial_assessment.keys.sort %] 
-            * <b>[% fa %]: </b> [% data.report.$rdate.financial_assessment.$fa %] <br/>
-        [% END %]
-        <br/>
-        * <b>deposit: </b> [% data.report.$rdate.total_deposits_withdrawals.deposit %] <br/>
-        * <b>withdrawal: </b> [% data.report.$rdate.total_deposits_withdrawals.withdrawal %] <br/>
-        * <b>net: </b> [% data.report.$rdate.total_deposits_withdrawals.deposit - data.report.$rdate.total_deposits_withdrawals.withdrawal %] <br/>
-        * <b>balance: </b> [% data.report.$rdate.total_deposits_withdrawals.balance %] <br/>
     </div>
-[% END %]
+
+    <div style="color:white;font-size:17px;background:grey">Details</div>
+    <div style="text-align:left">
+        Loginid: <b> [% data.client_details.loginid %] </b> <br/>
+        Name: <b> [% data.client_details.name %] </b> <br/>
+        esidence: <b> [% data.client_details.residence %] </b> <br/>
+        Citizen: <b> [% data.client_details.citizen %] </b> <br/>
+        Date Joined: <b> [% data.client_details.date_joined %] </b> <br/>
+    </div>
 
 
-
-<div style="color:white;border:solid;text-align:left">
-    * <b>authenticated: </b> [% data.client_details.id_authentication %]  <br/>
-    <br/>
-    [% FOREACH key IN data.documents.keys.sort %]
-        * <b>[% key %]: </b> [% data.documents.$key %] <br/>
+    <div style="color:white;font-size:17px;background:grey">Generated Finance Reports</div>
+    [% FOREACH rdate IN data.report.keys.sort %]
+        <div style="text-align:left">
+            * staff: <b> [% data.report.$rdate.clerk %] </b> <br/>
+            * date: <b> [% rdate %]  </b> <br/>
+            <br/>
+            [% FOREACH fa IN data.report.$rdate.financial_assessment.keys.sort %]
+                * [% fa %]: <b> [% data.report.$rdate.financial_assessment.$fa %] </b> <br/>
+            [% END %]
+            <br/>
+            * deposit: <b> [% data.report.$rdate.total_deposits_withdrawals.deposit %] </b> <br/>
+            * withdrawal: <b> [% data.report.$rdate.total_deposits_withdrawals.withdrawal %] </b> <br/>
+            * net: <b> [% data.report.$rdate.total_deposits_withdrawals.deposit - data.report.$rdate.total_deposits_withdrawals.withdrawal %] </b> <br/>
+            * balance: <b> [% data.report.$rdate.total_deposits_withdrawals.balance %] </b> <br/>
+            <hr/>
+        </div>
     [% END %]
-</div>
 
 
-<div style="color:white;border:solid;text-align:left">
-<b>Country change: </b><br/>
-    [% FOREACH key IN data.country_change %]
-        * [% key.first_login_date %] ([% key.country %]) <br/>
+    <div style="color:white;font-size:17px;background:grey">Documents</div>
+    <div style="text-align:left">
+        * authenticated: <b> [% data.client_details.id_authentication %] </b>  <br/>
         <br/>
-    [% END %]
-</div>
+        [% FOREACH key IN data.documents.keys.sort %]
+            * [% key %]: <b> [% data.documents.$key %] </b> <br/>
+        [% END %]
+    </div>
 
+    <div style="color:white;font-size:17px;background:grey">Security</div>
+    <div style="text-align:left">
+        Country change:<br/>
+        [% FOREACH key IN data.country_change %]
+            * <b> [% key.first_login_date %] ([% key.country %]) </b> <br/>
+            <br/>
+        [% END %]
+    </div>
 
-<div style="color:white;border:solid;text-align:left">
-    [% FOREACH key IN data.comment.keys.sort %]
-        * <b> [% key %] : </b> [% data.comment.$key %] <br/>
-    [% END %]
+    <div style="color:white;font-size:17px;background:grey">Comments</div>
+    <div style="text-align:left">
+        [% FOREACH key IN data.comments.keys.sort %]
+            * [% key %] : <b> [% data.comments.$key.comment %] (by [% data.comments.$key.clerk %]) </b> <br/>
+        [% END %]
+    </div>
+
 </div>
