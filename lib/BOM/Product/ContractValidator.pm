@@ -266,7 +266,7 @@ sub _validate_price {
             },
             stake_outside_range => sub {
                 my ($details) = @_;
-                my $params = [to_monetary_number_format($details->[0]), to_monetary_number_format($details->[1])];
+                my $params = [$details->[0], $details->[1]];
                 return {
                     message           => 'stake is not within limits ' . "[stake: " . $details->[0] . "] " . "[min: " . $details->[1] . "] ",
                     message_to_client => [$ERROR_MAPPING->{StakePayoutLimits}, @$params],
@@ -274,7 +274,7 @@ sub _validate_price {
             },
             payout_outside_range => sub {
                 my ($details) = @_;
-                my $params = [to_monetary_number_format($details->[0]), to_monetary_number_format($details->[1])];
+                my $params = [$details->[0], $details->[1]];
                 return {
                     message => 'payout amount outside acceptable range ' . "[given: " . $details->[0] . "] " . "[max: " . $details->[1] . "]",
                     message_to_client => [$ERROR_MAPPING->{StakePayoutLimits}, @$params],

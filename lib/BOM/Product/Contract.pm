@@ -42,7 +42,6 @@ use List::Util qw(min max first);
 use Scalar::Util qw(looks_like_number);
 use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
-use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Time::Duration::Concise;
 
 use Quant::Framework;
@@ -474,7 +473,7 @@ sub longcode {
     my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
     my $description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
-    my @longcode = ($description, $self->currency, to_monetary_number_format($self->payout), $self->underlying->display_name);
+    my @longcode = ($description, $self->currency, $self->payout, $self->underlying->display_name);
 
     my ($when_end, $when_start, $generic_mapping) = ([], [], BOM::Product::Static::get_generic_mapping());
     if ($expiry_type eq 'intraday_fixed_expiry') {
@@ -857,7 +856,7 @@ sub _build_staking_limits {
         $message_to_client = [$ERROR_MAPPING->{MarketPricePayoutClose}];
     } else {
         $message_to_client =
-            [$ERROR_MAPPING->{StakePayoutLimits}, to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
+            [$ERROR_MAPPING->{StakePayoutLimits}, $stake_min, $payout_max];
     }
 
     return {
