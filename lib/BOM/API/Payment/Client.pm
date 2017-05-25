@@ -10,7 +10,6 @@ use Data::Dumper;
 
 sub client_GET {
     my $c      = shift;
-    my $env    = $c->env;
     my $client = $c->user;
 
     my $r = {
