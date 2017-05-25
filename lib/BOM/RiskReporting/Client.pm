@@ -22,6 +22,10 @@ has client => (
     is => 'rw',
 );
 
+has _update => (
+    is => 'rw',
+);
+
 sub _client_details {
     my $self = shift;
 
@@ -31,10 +35,9 @@ sub _client_details {
         residence         => $self->client->residence,
         loginid           => $self->client->loginid,
         citizen           => $self->client->citizen || '',
-        id_authentication => (
-                   $self->client->get_authentication('ID_NOTARIZED')
-                or $self->client->get_authentication('ID_DOCUMENT')
-        ) ? 'yes' : 'no',
+        id_authentication => ($self->client->get_authentication('ID_NOTARIZED')) ? 'notorized'
+        : ($self->client->get_authentication('ID_DOCUMENT')) ? 'scans'
+        :                                                      'no',
     };
 }
 
@@ -110,8 +113,60 @@ sub get {
         $self->_db->dbh->selectrow_hashref("SELECT report FROM betonmarkets.risk_report WHERE client_loginid= ?", {}, $self->client->loginid))
     {
         $data = JSON::XS::decode_json($rows->{report});
+        $self->_update(1);
     }
 
+    return $data;
+}
+
+sub _save {
+    my $self = shift;
+    my $data = shift;
+    my $sth;
+    if ($self->_update) {
+        $sth = $self->_db->dbh->prepare('update betonmarkets.risk_report set report = $1 where client_loginid = $2');
+    } else {
+        $sth = $self->_db->dbh->prepare('insert into betonmarkets.risk_report values ($2, $1)');
+    }
+    $sth->execute(JSON::XS::encode_json($data), $self->client->loginid);
+    return;
+}
+
+sub _comment {
+    my $self    = shift;
+    my $data    = shift;
+    my $clerk   = shift;
+    my $comment = shift;
+
+    my $time = Date::Utility->new->datetime_ddmmmyy_hhmmss;
+    $data->{comment}->{$time} = $comment if $comment;
+    return;
+}
+
+sub _report {
+    my $self  = shift;
+    my $data  = shift;
+    my $clerk = shift;
+
+    my $time = Date::Utility->new->datetime_ddmmmyy_hhmmss;
+    $data->{client_details}                                = $self->_client_details;
+    $data->{documents}                                     = $self->_documents_on_file;
+    $data->{country_change}                                = $self->_change_of_country;
+    $data->{report}->{$time}->{financial_assessment}       = $self->_financial_assessment;
+    $data->{report}->{$time}->{total_deposits_withdrawals} = $self->_total_deposits_withdrawals;
+    $data->{report}->{$time}->{clerk} = $clerk if $clerk;
+    return;
+}
+
+sub add_comment {
+    my $self    = shift;
+    my $clerk   = shift;
+    my $comment = shift;
+
+    my $data = $self->get;
+    $self->_comment($data, $clerk, $comment) if $comment;
+
+    $self->_save($data);
     return $data;
 }
 
@@ -121,26 +176,10 @@ sub generate {
     my $comment = shift;
 
     my $data = $self->get;
-    my $insert;
-    $insert = 1 if (!keys %$data);
+    $self->_report($data, $clerk);
+    $self->_comment($data, $clerk, $comment) if $comment;
 
-    my $time = Date::Utility->new->datetime_ddmmmyy_hhmmss;
-    $data->{client_details}                      = $self->_client_details;
-    $data->{documents}                           = $self->_documents_on_file;
-    $data->{country_change}                      = $self->_change_of_country;
-    $data->{report}->{$time}->{financial_assessment}       = $self->_financial_assessment;
-    $data->{report}->{$time}->{total_deposits_withdrawals} = $self->_total_deposits_withdrawals;
-    $data->{report}->{$time}->{clerk}   = $clerk   if $clerk;
-    $data->{comment}->{$time} = $comment if $comment;
-
-    if ($insert) {
-        my $sth = $self->_db->dbh->prepare("insert into betonmarkets.risk_report values ( ?, ?)");
-        my $rows = $sth->execute($self->client->loginid, JSON::XS::encode_json($data));
-    } else {
-        my $sth = $self->_db->dbh->prepare("update betonmarkets.risk_report set report = ? where client_loginid = ?");
-        my $rows = $sth->execute(JSON::XS::encode_json($data), $self->client->loginid);
-    }
-
+    $self->_save($data);
     return $data;
 }
 

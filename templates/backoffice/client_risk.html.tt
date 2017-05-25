@@ -8,8 +8,8 @@
         <input type="text" name="comment">
         <br/>
         <input type="submit" name="action" value="show">
-        <input type="submit" name="action" value="comment">
-        <input type="submit" name="action" value="generate">
+        <input type="submit" name="action" value="only add comment">
+        <input type="submit" name="action" value="generate report">
     </form>
 </div>
 
@@ -58,9 +58,9 @@
     [% END %]
 </div>
 
+
 <div style="color:white;border:solid;text-align:left">
     [% FOREACH key IN data.comment.keys.sort %]
         * <b> [% key %] : </b> [% data.comment.$key %] <br/>
-        <br/>
     [% END %]
 </div>

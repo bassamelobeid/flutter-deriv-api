@@ -25,11 +25,9 @@ my $client = Client::Account::get_instance({'loginid' => $loginid}) || code_exit
 
 my $data;
 
-if (request()->param('action') eq 'comment') {
+if (request()->param('action') eq 'only add comment') {
     $data = BOM::RiskReporting::Client->new({client => $client})->add_comment($clerk, request()->param('comment'));
-}
-
-if (request()->param('action') eq 'generate') {
+} elsif (request()->param('action') eq 'generate report') {
     $data = BOM::RiskReporting::Client->new({client => $client})->generate($clerk, request()->param('comment'));
 } else {
     $data = BOM::RiskReporting::Client->new({client => $client})->get;
