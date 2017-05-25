@@ -7,7 +7,7 @@ use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Context qw(localize request);
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Error::Base;
-use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
+use Format::Util::Numbers qw(roundnear);
 use LandingCompany::Registry;
 use List::Util qw(min max first);
 use Moo;
@@ -262,8 +262,8 @@ sub _write_to_rejected {
     $market_moved .= localize(
         'The contract [_4] has changed from [_1][_2] to [_1][_3].',
         $contract->currency,
-        to_monetary_number_format($p->{amount}),
-        to_monetary_number_format($p->{recomputed_amount}),
+        $p->{amount},
+        $p->{recomputed_amount},
         $what_changed
     );
 
@@ -424,9 +424,9 @@ sub _validate_stake_limit {
             -message_to_client => localize(
                 "This contract's price is [_1][_2]. Contracts purchased from [_3] must have a purchase price above [_1][_4]. Please accordingly increase the contract amount to meet this minimum stake.",
                 $currency,
-                to_monetary_number_format($contract->ask_price),
+                $contract->ask_price,
                 $landing_company->name,
-                to_monetary_number_format($stake_limit)
+                $stake_limit
             ),
         );
     }
@@ -465,7 +465,7 @@ sub _validate_payout_limit {
                 -mesg              => $client->loginid . ' payout [' . $payout . '] over custom limit[' . $custom_limit . ']',
                 -message_to_client => ($custom_limit == 0)
                 ? localize('This contract is unavailable on this account.')
-                : localize('This contract is limited to ' . to_monetary_number_format($custom_limit) . ' payout on this account.'),
+                : localize('This contract is limited to ' . $custom_limit . ' payout on this account.'),
             );
         }
     }
