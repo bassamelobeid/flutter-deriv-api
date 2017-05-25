@@ -7,7 +7,7 @@ use warnings;
 use Path::Tiny;
 use Try::Tiny;
 use Date::Utility;
-use Format::Util::Numbers qw(to_monetary_number_format roundnear);
+use Format::Util::Numbers qw(roundnear);
 use Brands;
 use HTML::Entities;
 
@@ -233,8 +233,8 @@ if (%summary_amount_by_currency and scalar @invalid_lines == 0) {
     ];
     foreach my $currency (sort keys %summary_amount_by_currency) {
         my $c  = encode_entities($currency);
-        my $cr = encode_entities(to_monetary_number_format(roundnear(0.1, $summary_amount_by_currency{$currency}{credit})));
-        my $db = encode_entities(to_monetary_number_format(roundnear(0.1, $summary_amount_by_currency{$currency}{debit})));
+        my $cr = encode_entities(roundnear(0.1, $summary_amount_by_currency{$currency}{credit}));
+        my $db = encode_entities(roundnear(0.1, $summary_amount_by_currency{$currency}{debit}));
         $summary_table .= "<tr><th>$c</th><td>$cr</td><td>$db</td></tr>";
     }
     $summary_table .= '</table>';

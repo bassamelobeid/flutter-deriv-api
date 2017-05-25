@@ -98,12 +98,11 @@ sub template {
 sub _configure_template_stash_for {
     my $request = shift;
     return Template::Stash->new({
-        runtime                   => BOM::Platform::Runtime->instance,
-        language                  => $request->language,
-        request                   => $request,
-        broker_name               => 'Binary.com',
-        l                         => \&localize,
-        to_monetary_number_format => \&Format::Util::Numbers::to_monetary_number_format,
+        runtime     => BOM::Platform::Runtime->instance,
+        language    => $request->language,
+        request     => $request,
+        broker_name => 'Binary.com',
+        l           => \&localize,
     });
 }
 

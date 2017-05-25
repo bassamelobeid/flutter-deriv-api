@@ -4,9 +4,9 @@
 
 [%- MACRO display_amount(amount) BLOCK -%]
         [% IF amount >= 0 %]
-                <span class="profit">[% to_monetary_number_format(amount) | none %]</span>
+                <span class="profit">[% amount | none %]</span>
         [% ELSE %]
-                <span class="loss">[% to_monetary_number_format(amount) | none%]</span>
+                <span class="loss">[% amount | none%]</span>
         [% END %]
 [%- END -%]
 
@@ -27,11 +27,11 @@
         <div class="grd-grid-1">[% contract.payout_price %]</div>
         <div class="grd-grid-3">[% contract.info.description %]</div>
         <div class="grd-grid-1 right-aligned">
-            [% to_monetary_number_format(contract.buy_price) | none %]
+            [% contract.buy_price | none %]
         </div>
         <div class="grd-grid-2">[% contract.sale_date.datetime %]</div>
         <div class="grd-grid-1 right-aligned">
-            [% to_monetary_number_format(sale_price(contract)) | none %]
+            [% sale_price(contract) | none %]
         </div>
         <div class="grd-grid-1 right-aligned">
             [% display_amount(sale_price(contract) - contract.buy_price) | none %]

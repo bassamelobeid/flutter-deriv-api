@@ -6,7 +6,6 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use Format::Util::Numbers qw( to_monetary_number_format );
 use BOM::RiskReporting::Dashboard;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
@@ -37,7 +36,6 @@ $report->{link_to_pnl} = sub {
             enddate   => Date::Utility->new->plus_time_interval('1d')->datetime,
         });
 };
-$report->{monify} = \&to_monetary_number_format;
 $report->{commas} = \&commas;
 $report->{titlfy} = sub {
     my $href  = shift;
