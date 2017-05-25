@@ -291,8 +291,7 @@ sub _dbh {
 }
 
 sub _dbh_dsn {
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
-    return "dbi:Pg:dbname=chronicle$db_postfix;port=6432;host=/var/run/postgresql;user=write";
+    return "dbi:Pg:service=chronicle";
 }
 
 =head2 _dbh_changed
