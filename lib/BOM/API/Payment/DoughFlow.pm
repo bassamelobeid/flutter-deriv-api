@@ -19,7 +19,6 @@ Routes requests to the appropriate DoughFlow transaction record method. Currentl
 sub record_GET {
     my $c = shift;
 
-    my $log    = $c->env->{log};
     my $client = $c->user;
 
     if (my $err = $c->validate('currency_code', 'reference_number')) {

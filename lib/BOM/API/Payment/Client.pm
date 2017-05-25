@@ -12,7 +12,6 @@ sub client_GET {
     my $c      = shift;
     my $env    = $c->env;
     my $client = $c->user;
-    my $log    = $env->{log};
 
     my $r = {
         loginid               => $client->loginid,
