@@ -159,7 +159,7 @@ has _warmup_seasonality_cache => (
     is      => 'ro',
     default => sub {
         {
-            map { $_ => 1 } cache_underlying_db->symbols_for_intraday_fx
+            map { $_ => 1 } create_underlying_db->symbols_for_intraday_fx
         }
     },
 );
