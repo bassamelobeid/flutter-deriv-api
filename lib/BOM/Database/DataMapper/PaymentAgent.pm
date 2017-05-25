@@ -53,7 +53,6 @@ get all authenticated payment agent countries
 
 sub get_all_authenticated_payment_agent_countries {
     my $self   = shift;
-    my $args   = shift;
 
     my $dbh = $self->db->dbh;
     my $authenticated_payment_agents_statement =
