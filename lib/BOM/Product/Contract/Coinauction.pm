@@ -27,6 +27,11 @@ has [qw(trading_period_start number_of_tokens token_type coin_address ask_price)
     is => 'rw',
 );
 
+has [qw(app_markup_dollar_amount payout)]=> {
+    is   => 'ro',
+    default => 0,
+};
+
 has underlying => (
     is       => 'ro',
     isa      => 'underlying_object',
