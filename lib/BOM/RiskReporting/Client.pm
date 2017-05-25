@@ -131,7 +131,7 @@ sub generate {
     $data->{report}->{$time}->{financial_assessment}       = $self->_financial_assessment;
     $data->{report}->{$time}->{total_deposits_withdrawals} = $self->_total_deposits_withdrawals;
     $data->{report}->{$time}->{clerk}   = $clerk   if $clerk;
-    $data->{report}->{$time}->{comment} = $comment if $comment;
+    $data->{comment}->{$time} = $comment if $comment;
 
     if ($insert) {
         my $sth = $self->_db->dbh->prepare("insert into betonmarkets.risk_report values ( ?, ?)");
