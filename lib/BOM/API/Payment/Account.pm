@@ -6,6 +6,7 @@ use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
 use Client::Account;
+use Price::Calculator qw/get_formatting_precision/;
 
 sub account_GET {
     my $c      = shift;
@@ -29,8 +30,8 @@ sub account_GET {
     return {
         client_loginid => $client->loginid,
         currency_code  => $currency_code,
-        balance        => sprintf("%0.2f", $account->balance),
-        limit          => sprintf("%0.2f", $client->get_limit_for_account_balance),
+        balance        => sprintf("%" . get_formatting_precision($currency_code) . "f", $account->balance),
+        limit          => sprintf("%" . get_formatting_precision($currency_code) . "f", $client->get_limit_for_account_balance),
     };
 }
 
