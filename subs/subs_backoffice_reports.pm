@@ -8,7 +8,7 @@ use JSON qw(from_json to_json);
 use List::Util qw( min max );
 
 use Cache::RedisDB;
-use Format::Util::Numbers qw(commas roundnear);
+use Format::Util::Numbers qw(roundnear);
 use BOM::Platform::Runtime;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use LandingCompany::Registry;

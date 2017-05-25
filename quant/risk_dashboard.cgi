@@ -36,7 +36,6 @@ $report->{link_to_pnl} = sub {
             enddate   => Date::Utility->new->plus_time_interval('1d')->datetime,
         });
 };
-$report->{commas} = \&commas;
 $report->{titlfy} = sub {
     my $href  = shift;
     my $title = $href->{name};
