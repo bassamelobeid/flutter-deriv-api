@@ -145,7 +145,8 @@ sub _build_surfaces_from_file {
             $surface = Bloomberg::VolSurfaces->new->parse_data_for($file);
         }
         foreach my $underlying (keys %{$surface}) {
-            if (scalar keys %{$surface->{$underlying}->{surface}} == 2) {
+            # 3 for term 1 , 7 plus the new rr_bf_flag.
+            if (scalar keys %{$surface->{$underlying}->{surface}} == 3) {
                 $surface->{$underlying}->{surface} = _append_to_existing_surface($surface->{$underlying}->{surface}, $underlying);
             }
         }
@@ -208,6 +209,9 @@ sub run {
             #skip this symbol if it is non atm and rr , bb are undef.
             next if exists $raw_volsurface->{rr_bf_undef} and $raw_volsurface->{rr_bf_undef};
         }
+
+        #Delete the flag since we do not need to save it into our system.
+        delete $raw_volsurface->{rr_bf_undef};
 
         next
             if $raw_volsurface->{recorded_date}->epoch >= $rollover_date->epoch
