@@ -158,9 +158,7 @@ sub _build_surfaces_from_file {
 has _warmup_seasonality_cache => (
     is      => 'ro',
     default => sub {
-        {
-            map { $_ => 1 } create_underlying_db->symbols_for_intraday_fx
-        }
+        return {map { $_ => 1 } create_underlying_db->symbols_for_intraday_fx};
     },
 );
 
