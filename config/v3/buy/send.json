@@ -54,13 +54,13 @@
           "description":"Duration quantity"
         },
         "duration_unit": {
-          "description":"Duration unit is s(seconds), m(minutes), h(hours), d(days), t(ticks)",
-          "enum": ["d", "m", "s", "h", "t"]
+          "description":"Duration unit is s(seconds), m(minutes), h(hours), d(days), t(ticks), c(coins)",
+          "enum": ["d", "m", "s", "h", "t", "c"]
         },
         "symbol": {
           "type": "string",
           "description":"Symbol code",
-          "pattern": "^\\w{2,30}$",
+          "pattern": "^\\w{2,200}$",
           "required": "1"
         },
         "barrier": {
