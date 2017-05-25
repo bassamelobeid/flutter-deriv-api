@@ -19,6 +19,16 @@ use Date::Utility;
 use JSON::XS;
 
 has client => (
+    is         => 'rw',
+    lazy_build => 1,
+);
+
+sub _build_client {
+    my $self = shift;
+    return Client::Account::get_instance({'loginid' => $self->loginid});
+}
+
+has loginid => (
     is => 'rw',
 );
 

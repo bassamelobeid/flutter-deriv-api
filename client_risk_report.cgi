@@ -15,22 +15,24 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my $loginid = request()->param('loginid');
-BrokerPresentation('Show Risk Report For: ' . $loginid);
-
 BOM::Backoffice::Auth0::can_access([]);
 my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
-my $client = Client::Account::get_instance({'loginid' => $loginid}) || code_exit_BO('Invalid loginid.');
+my $loginid = request()->param('loginid') || '';
+my $action  = request()->param('action')  || '';
+BrokerPresentation('Show Risk Report For: ' . $loginid);
+
+if ($action && not $loginid) {
+    print "Missing loginid";
+}
 
 my $data;
-
-if (request()->param('action') eq 'only add comment') {
-    $data = BOM::RiskReporting::Client->new({client => $client})->add_comment($clerk, request()->param('comment'));
-} elsif (request()->param('action') eq 'generate report') {
-    $data = BOM::RiskReporting::Client->new({client => $client})->generate($clerk, request()->param('comment'));
-} else {
-    $data = BOM::RiskReporting::Client->new({client => $client})->get;
+if ($action eq 'only add comment') {
+    $data = BOM::RiskReporting::Client->new({loginid => $loginid})->add_comment($clerk, request()->param('comment'));
+} elsif ($action eq 'generate report') {
+    $data = BOM::RiskReporting::Client->new({loginid => $loginid})->generate($clerk, request()->param('comment'));
+} elsif ($loginid) {
+    $data = BOM::RiskReporting::Client->new({loginid => $loginid})->get;
 }
 
 BOM::Backoffice::Request::template->process(
