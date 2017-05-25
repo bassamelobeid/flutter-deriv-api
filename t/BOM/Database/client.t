@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::ClientDB;
 
 my $details = {
