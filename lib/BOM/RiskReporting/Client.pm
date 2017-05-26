@@ -135,9 +135,9 @@ sub _save {
     my $data = shift;
     my $sth;
     if ($self->_update) {
-        $sth = $self->_db->dbh->prepare('update betonmarkets.risk_report set report = $1 where client_loginid = $2');
+        $sth = $self->_db_write->dbh->prepare('update betonmarkets.risk_report set report = $1 where client_loginid = $2');
     } else {
-        $sth = $self->_db->dbh->prepare('insert into betonmarkets.risk_report values ($2, $1)');
+        $sth = $self->_db_write->dbh->prepare('insert into betonmarkets.risk_report values ($2, $1)');
     }
     $sth->execute(JSON::XS::encode_json($data), $self->client->loginid);
     return;

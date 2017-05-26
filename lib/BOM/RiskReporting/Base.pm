@@ -48,7 +48,7 @@ sub _db_broker_code {
 
 sub _db_operation {
     my $self = shift;
-    return ($self->_db_broker_code eq 'FOG') ? 'collector' : 'replica';
+    return ($self->_db_broker_code eq 'FOG') ? 'collector' : 'backoffice_replica';
 }
 
 sub _build_end {
@@ -88,6 +88,14 @@ sub _build__connection_builder {
     });
     $cdb->db->dbh->do("SET statement_timeout TO 0");
     return $cdb;
+}
+
+sub _db_write {
+    my $self = shift;
+    return BOM::Database::ClientDB->new({
+            broker_code => $self->client->broker,
+            operation   => 'write',
+        })->db;
 }
 
 has live_open_bets => (
