@@ -92,11 +92,11 @@ my $contract_args = {
 #key is "contract type_pip diff" and value is expected barrier(s)
 my $expected = {
     'CALL_0'        => 52.48,
-    'CALL_1000'     => 58.02,
+    'CALL_1000'     => 58.14,
     'NOTOUCH_0'     => 3.5,
-    'NOTOUCH_1000'  => 29.44,
+    'NOTOUCH_1000'  => 29.2,
     'ONETOUCH_2000' => 100,
-    'PUT_1000'      => 64.74,
+    'PUT_1000'      => 64.63,
     'PUT_0'         => 52.52
 };
 
