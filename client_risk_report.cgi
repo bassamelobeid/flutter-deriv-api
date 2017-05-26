@@ -3,14 +3,10 @@ package main;
 use strict;
 use warnings;
 
-use Client::Account;
-
 use f_brokerincludeall;
 use BOM::RiskReporting::Client;
-use Client::Account;
-use BOM::Backoffice::Request qw(request localize);
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
-
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
