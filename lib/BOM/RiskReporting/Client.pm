@@ -145,6 +145,60 @@ sub _save {
     return;
 }
 
+sub _comment {
+    my $self    = shift;
+    my $data    = shift;
+    my $clerk   = shift;
+    my $comment = shift;
+
+    my $time = Date::Utility->new->datetime_ddmmmyy_hhmmss;
+    if ($comment) {
+        $data->{comments}->{$time}->{comment} = $comment;
+        $data->{comments}->{$time}->{clerk}   = $clerk;
+    }
+    return;
+}
+
+sub _report {
+    my $self  = shift;
+    my $data  = shift;
+    my $clerk = shift;
+
+    my $time = Date::Utility->new->datetime_ddmmmyy_hhmmss;
+    $data->{client_details}                                = $self->_client_details;
+    $data->{documents}                                     = $self->_documents_on_file;
+    $data->{country_change}                                = $self->_change_of_country;
+    $data->{report}->{$time}->{financial_assessment}       = $self->_financial_assessment;
+    $data->{report}->{$time}->{total_deposits_withdrawals} = $self->_total_deposits_withdrawals;
+    $data->{report}->{$time}->{clerk} = $clerk if $clerk;
+    return;
+}
+
+sub add_comment {
+    my $self    = shift;
+    my $clerk   = shift;
+    my $comment = shift;
+
+    my $data = $self->get;
+    $self->_comment($data, $clerk, $comment) if $comment;
+
+    $self->_save($data);
+    return $data;
+}
+
+sub generate {
+    my $self    = shift;
+    my $clerk   = shift;
+    my $comment = shift;
+
+    my $data = $self->get;
+    $self->_report($data, $clerk);
+    $self->_comment($data, $clerk, $comment) if $comment;
+
+    $self->_save($data);
+    return $data;
+}
+
 sub export {
     my $data = shift;
 
@@ -228,60 +282,6 @@ sub export {
 
     $workbook->close();
     return $file->filename;
-}
-
-sub _comment {
-    my $self    = shift;
-    my $data    = shift;
-    my $clerk   = shift;
-    my $comment = shift;
-
-    my $time = Date::Utility->new->datetime_ddmmmyy_hhmmss;
-    if ($comment) {
-        $data->{comments}->{$time}->{comment} = $comment;
-        $data->{comments}->{$time}->{clerk}   = $clerk;
-    }
-    return;
-}
-
-sub _report {
-    my $self  = shift;
-    my $data  = shift;
-    my $clerk = shift;
-
-    my $time = Date::Utility->new->datetime_ddmmmyy_hhmmss;
-    $data->{client_details}                                = $self->_client_details;
-    $data->{documents}                                     = $self->_documents_on_file;
-    $data->{country_change}                                = $self->_change_of_country;
-    $data->{report}->{$time}->{financial_assessment}       = $self->_financial_assessment;
-    $data->{report}->{$time}->{total_deposits_withdrawals} = $self->_total_deposits_withdrawals;
-    $data->{report}->{$time}->{clerk} = $clerk if $clerk;
-    return;
-}
-
-sub add_comment {
-    my $self    = shift;
-    my $clerk   = shift;
-    my $comment = shift;
-
-    my $data = $self->get;
-    $self->_comment($data, $clerk, $comment) if $comment;
-
-    $self->_save($data);
-    return $data;
-}
-
-sub generate {
-    my $self    = shift;
-    my $clerk   = shift;
-    my $comment = shift;
-
-    my $data = $self->get;
-    $self->_report($data, $clerk);
-    $self->_comment($data, $clerk, $comment) if $comment;
-
-    $self->_save($data);
-    return $data;
 }
 
 no Moose;
