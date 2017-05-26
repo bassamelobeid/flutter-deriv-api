@@ -190,7 +190,7 @@ sub _validate_token_type {
     my @err;
     my $supported_token = Finance::Contract::Category->new("coinauction")->{available_types};
     my $token_type      = uc($self->token_type);
-    if (not grep{$_ eq $token_type} @$supported_token) {
+    if (not grep { $_ eq $token_type } @$supported_token) {
         push @err,
             {
             message           => "Invalid token type. [symbol: " . $self->token_type . "]",
