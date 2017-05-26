@@ -261,9 +261,7 @@ sub _write_to_rejected {
     my $contract     = $self->transaction->contract;
     $market_moved .= localize(
         'The contract [_4] has changed from [_1][_2] to [_1][_3].',
-        $contract->currency,
-        $p->{amount},
-        $p->{recomputed_amount},
+        $contract->currency, $p->{amount}, $p->{recomputed_amount},
         $what_changed
     );
 
@@ -423,10 +421,7 @@ sub _validate_stake_limit {
             -mesg => $client->loginid . ' stake [' . $contract->ask_price . '] is lower than minimum allowable stake [' . $stake_limit . ']',
             -message_to_client => localize(
                 "This contract's price is [_1][_2]. Contracts purchased from [_3] must have a purchase price above [_1][_4]. Please accordingly increase the contract amount to meet this minimum stake.",
-                $currency,
-                $contract->ask_price,
-                $landing_company->name,
-                $stake_limit
+                $currency, $contract->ask_price, $landing_company->name, $stake_limit
             ),
         );
     }
