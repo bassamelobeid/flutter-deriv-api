@@ -15,7 +15,7 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-BOM::Backoffice::Auth0::can_access([]);
+BOM::Backoffice::Auth0::can_access(['Compliance']);
 my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my $loginid = request()->param('loginid') || '';
