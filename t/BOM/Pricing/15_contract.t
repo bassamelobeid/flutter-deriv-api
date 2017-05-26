@@ -450,7 +450,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 
     set_fixed_time($now->epoch);
 
-    create_ticks([964, $now->epoch +1, 'R_50']);
+    create_ticks([964, $now->epoch + 1, 'R_50']);
 
     $contract = _create_contract(
         date_expiry  => $now->epoch + 900,
