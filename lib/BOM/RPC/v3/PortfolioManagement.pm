@@ -6,6 +6,8 @@ use warnings;
 use Date::Utility;
 use Try::Tiny;
 
+use Price::Calculator qw/get_formatting_precision/;
+
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Pricing;
 use BOM::RPC::v3::Accounts;
@@ -123,7 +125,7 @@ sub proposal_open_contract {
         @fmbs = @{__get_open_contracts($client)};
     }
 
-    my $response = {};
+    my ($response, $currency, $lc_name) = ({}, $client->currency, $client->landing_company->short);
     foreach my $fmb (@fmbs) {
         my $id = $fmb->{id};
         my $sell_time;
@@ -133,13 +135,13 @@ sub proposal_open_contract {
             {
                 short_code            => $fmb->{short_code},
                 contract_id           => $id,
-                currency              => $client->currency,
+                currency              => $currency,
                 is_sold               => $fmb->{is_sold},
                 sell_time             => $sell_time,
                 sell_price            => $fmb->{sell_price},
                 buy_price             => $fmb->{buy_price},
                 app_markup_percentage => $params->{app_markup_percentage},
-                landing_company       => $client->landing_company->short,
+                landing_company       => $lc_name,
             });
         if (exists $bid->{error}) {
             $response->{$id} = $bid;
@@ -156,7 +158,7 @@ sub proposal_open_contract {
             $bid->{account_id}      = $fmb->{account_id};
             $bid->{is_sold}         = $fmb->{is_sold};
             $bid->{sell_time}       = $sell_time if $sell_time;
-            $bid->{sell_price}      = sprintf('%.2f', $fmb->{sell_price}) if defined $fmb->{sell_price};
+            $bid->{sell_price}      = sprintf('%' . get_formatting_precision($currency) . 'f', $fmb->{sell_price}) if defined $fmb->{sell_price};
 
             $response->{$id} = $bid;
         }

@@ -5,9 +5,11 @@ use warnings;
 
 use Date::Utility;
 
+use Client::Account;
+use Price::Calculator qw/get_formatting_precision/;
+
 use BOM::Platform::AuditLog;
 use BOM::RPC::v3::Utility;
-use Client::Account;
 use BOM::Platform::User;
 use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
@@ -83,7 +85,7 @@ sub authorize {
     return {
         fullname => $client->full_name,
         loginid  => $client->loginid,
-        balance  => $account ? BOM::RPC::v3::Utility::format_amount($account->currency_code, $account->balance) : '0.00',
+        balance  => $account ? sprintf('%' . get_formatting_precision($account->currency_code) . 'f', $account->balance) : '0.00',
         currency => ($account ? $account->currency_code : ''),
         email    => $client->email,
         country  => $client->residence,
