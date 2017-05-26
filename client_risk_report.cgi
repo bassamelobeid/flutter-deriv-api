@@ -22,7 +22,7 @@ my $loginid = request()->param('loginid') || '';
 my $action  = request()->param('action')  || '';
 BrokerPresentation('Show Risk Report For: ' . $loginid);
 
-if ($action && not $loginid) {
+if ($action && !$loginid) {
     print "Missing loginid";
 }
 
