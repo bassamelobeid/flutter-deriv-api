@@ -39,7 +39,6 @@ sub start_script_if_not_running {
     return $self->check_script() || $self->start_script();
 }
 
-
 sub start_script {
     my $self   = shift;
     my $script = $self->script;
