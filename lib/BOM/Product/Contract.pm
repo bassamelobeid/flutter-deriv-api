@@ -855,8 +855,7 @@ sub _build_staking_limits {
     if ($self->for_sale) {
         $message_to_client = [$ERROR_MAPPING->{MarketPricePayoutClose}];
     } else {
-        $message_to_client =
-            [$ERROR_MAPPING->{StakePayoutLimits}, $stake_min, $payout_max];
+        $message_to_client = [$ERROR_MAPPING->{StakePayoutLimits}, $stake_min, $payout_max];
     }
 
     return {
