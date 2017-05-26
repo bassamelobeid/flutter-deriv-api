@@ -209,7 +209,7 @@ sub cashier {
 
     ## if cashier provider == 'epg', we'll return epg url
     if ($provider eq 'epg') {
-        return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
+        return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
     ## if currency == BTC|ETH, use cryptocurrency cashier
@@ -362,7 +362,7 @@ sub _get_cryptocurrency_cashier_url {
 }
 
 sub _get_cashier_url {
-    my ($prefix, $loginid, $website_name, $currency, $action, $language) = @_;
+    my ($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name) = @_;
 
     $prefix = lc($currency) if $prefix eq 'cryptocurrency';
 
@@ -385,7 +385,8 @@ sub _get_cashier_url {
         }
     }
 
-    $url .= "/handshake?token=" . _get_handoff_token_key($loginid) . "&loginid=$loginid&currency=$currency&action=$action&l=$language";
+    $url .=
+        "/handshake?token=" . _get_handoff_token_key($loginid) . "&loginid=$loginid&currency=$currency&action=$action&l=$language&brand=$brand_name";
 
     return $url;
 }
