@@ -81,7 +81,25 @@ sub _build_master_surface {
 sub debug_link {
     my ($self) = @_;
 
-    my $bet           = $self->bet;
+    my $bet = $self->bet;
+
+    my $seasonality_prefix = 'bo_' . time . '_';
+
+    Volatility::Seasonality::set_prefix($seasonality_prefix);
+    my $EEC = Quant::Framework::EconomicEventCalendar->new({
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
+    my $events = $EEC->get_latest_events_for_period({
+        from => $bet->date_start,
+        to   => $bet->date_start->plus_time_interval('6d'),
+    });
+    Volatility::Seasonality::generate_economic_event_seasonality({
+        underlying_symbols => [$bet->underlying->symbol],
+        economic_events    => $events,
+        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
+
     my $number_format = $self->number_format;
 
     my $attr_content = $self->_get_overview();
@@ -118,7 +136,7 @@ sub debug_link {
             ? $self->_get_moneyness_surface()
             : $self->_get_volsurface();
     }
-    catch { 'Surface display error.' };
+    catch { 'Surface display error:' . $_ };
     push @{$tabs_content},
         {
         label   => 'Vol Surface',
@@ -132,19 +150,22 @@ sub debug_link {
             {
             label   => 'Rates',
             url     => 'rq',
-            content => $self->_get_rates()};
+            content => $self->_get_rates(),
+            };
     }
 
     my $debug_link;
     BOM::Backoffice::Request::template->process(
         'backoffice/container/debug_link.html.tt',
         {
-            bet_id => $bet->id,
-            tabs   => $tabs_content
+            bet_id             => $bet->id,
+            tabs               => $tabs_content,
+            seasonality_prefix => $seasonality_prefix,
         },
         \$debug_link
     ) || die BOM::Backoffice::Request::template->error;
 
+    Volatility::Seasonality::set_prefix('');
     return $debug_link;
 }
 
