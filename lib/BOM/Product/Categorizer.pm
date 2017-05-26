@@ -139,8 +139,7 @@ sub process {
 
 sub _initialize_contract_parameters {
     my $self = shift;
-
-    my $pp = {%{$self->parameters}};
+    my $pp   = {%{$self->parameters}};
 
     # always build shortcode
     delete $pp->{shortcode};
@@ -162,7 +161,7 @@ sub _initialize_contract_parameters {
         $pp->{date_pricing} = Date::Utility->new($pp->{date_pricing});
     }
 
-    unless ($pp->{underlying}->isa('Quant::Framework::Underlying')) {
+    if (!(blessed $pp->{underlying} and $pp->{underlying}->isa('Quant::Framework::Underlying'))) {
         $pp->{underlying} = create_underlying($pp->{underlying}, $pp->{date_pricing});
     }
 
