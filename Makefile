@@ -10,10 +10,13 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 test:
-	/etc/rmg/bin/prove --timer -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::FailWarnings=-allow_deps,1' t/
+	/etc/rmg/bin/prove --timer -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::FailWarnings=-allow_deps,1' t/BOM
+
+syntax:
+	/etc/rmg/bin/prove --timer -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::FailWarnings=-allow_deps,1' t/003_autosyntax.t
 
 i18n:
-	xgettext.pl -P haml=haml -P perl=pl,pm -P tt2=tt,tt2 \
+	xgettext.pl -P haml=haml -P perl=pl,pm -P tt2=tt,tt2 -P generic=html.ep\
 		--output=messages.pot --output-dir=/home/git/binary-com/translations-websockets-api/src/locales   --directory=/home/git/regentmarkets/bom-backoffice/   --directory=/home/git/regentmarkets/bom-platform/ --directory=/home/git/regentmarkets/bom/ --directory=/home/git/regentmarkets/binary-websocket-api/ --directory=/home/git/regentmarkets/bom-rpc/lib --directory=/home/git/regentmarkets/bom-oauth/ --directory=/home/git/regentmarkets/bom-epg/ --directory=/home/git/regentmarkets/bom-pricing/ --directory=/home/git/regentmarkets/bom-transaction/
 	perl -I /home/git/regentmarkets/bom-platform/lib /home/git/regentmarkets/bom-backoffice/bin/extra_translations.pl  /home/git/binary-com/translations-websockets-api/src/locales/messages.pot
 	for i in $(shell ls /home/git/binary-com/translations-websockets-api/src/locales/*.po); do \

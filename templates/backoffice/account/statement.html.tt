@@ -4,6 +4,8 @@
 <input type=submit value="View/edit [% loginid %] details">
 </form>
 
+[% INCLUDE 'backoffice/account/statement_summary.html.tt' %]
+
 <table width=100%><tr>
 <form  action="[% self_post %]" method=post>
 <td align=right> Quick jump to see another statement:
@@ -15,10 +17,11 @@
 <input type=submit value=view>
 <input type=checkbox value=yes name=depositswithdrawalsonly>Deposits and Withdrawals only
 </td>
-</form></tr>
+</tr>
 </table>
 <hr>
 
+</form>
 
 [% client.name %] Email: [% client.email %] Country: [% client.country %] Residence: [% client.residence %] Tel: [% client.tel %]
 <br>

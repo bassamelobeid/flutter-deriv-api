@@ -22,7 +22,7 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::PricingDetails;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Request qw(request localize);
+use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -31,7 +31,7 @@ use LandingCompany::Registry;
 
 PrintContentType();
 BrokerPresentation('Bet Price Over Time');
-BOM::Backoffice::Auth0::can_access(['Quants']);
+BOM::Backoffice::Auth0::can_access();
 
 Bar("Bet Parameters");
 
@@ -50,6 +50,7 @@ my $bet = do {
     my ($shortcode, $currency) = map { request()->param($_) } qw(shortcode currency);
 
     if ($landing_company and $shortcode and $currency) {
+
         my $contract_parameters = shortcode_to_parameters($shortcode, $currency);
         $contract_parameters->{landing_company} = $landing_company;
         $contract_object = produce_contract($contract_parameters);
@@ -65,7 +66,7 @@ if ($bet) {
         :                                                                            $bet->date_start;
     $end =
           (request()->param('end')) ? Date::Utility->new(request()->param('end'))
-        : ($bet->tick_expiry)       ? $bet->date_start->plus_time_interval($bet->max_tick_expiry_duration)
+        : ($bet->tick_expiry)       ? $bet->date_start->plus_time_interval($bet->_max_tick_expiry_duration)
         :                             $bet->date_expiry;
     $end = Date::Utility->new if ($end->epoch > time);
     my $duration = $end->epoch - $start->epoch;
@@ -87,9 +88,7 @@ if ($bet) {
 BOM::Backoffice::Request::template->process(
     'backoffice/bpot.html.tt',
     {
-        longcode   => localize($bet->longcode),
-        shortcode  => $bet->shortcode,
-        currency   => $bet->currency,
+        bet        => $bet,
         start      => $start ? $start->datetime : '',
         end        => $end ? $end->datetime : '',
         timestep   => $timestep ? $timestep->as_concise_string : '',

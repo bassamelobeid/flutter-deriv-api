@@ -11,6 +11,8 @@ use File::Copy;
 use Locale::Country 'code2country';
 use Data::Dumper;
 use HTML::Entities;
+use IO::Socket::SSL qw( SSL_VERIFY_NONE );
+use Try::Tiny;
 
 use Brands;
 use f_brokerincludeall;
@@ -28,7 +30,6 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
-use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
 BOM::Backoffice::Sysinit::init();
 
@@ -176,17 +177,24 @@ if ($input{whattodo} eq 'uploadID') {
             next;
         }
 
-        if ($doctype =~ /passport|proofid|driverslicense/ && $expiration_date !~ /\d{4}-\d{2}-\d{2}/) {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Missing or invalid date format entered - </p><br />";
+        if ($doctype =~ /passport|proofid|driverslicense/ && $expiration_date eq '') {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Missing date for $doctype</p><br />";
             next;
         }
 
         if ($expiration_date ne '') {
-            my ($current_date, $submitted_date);
-            $current_date   = Date::Utility->new();
-            $submitted_date = Date::Utility->new($expiration_date);
-
-            if ($submitted_date->is_before($current_date) || $submitted_date->is_same_as($current_date)) {
+            my ($current_date, $submitted_date, $error);
+            $current_date = Date::Utility->new();
+            try {
+                $submitted_date = Date::Utility->new($expiration_date);
+            }
+            catch {
+                $error = $_;
+            };
+            if ($error) {
+                $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Expiration date error: $error</p><br />";
+                next;
+            } elsif ($submitted_date->is_before($current_date) || $submitted_date->is_same_as($current_date)) {
                 $result .=
                     "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Expiration date should be greater than current date </p><br />";
                 next;

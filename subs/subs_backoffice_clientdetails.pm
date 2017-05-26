@@ -345,6 +345,49 @@ sub show_client_id_docs {
     return $links;
 }
 
+sub client_statement_summary {
+    my $args = shift;
+    my ($client, $before, $after) = @{$args}{'client', 'before', 'after'};
+    my $max_number_of_lines = 65535;    #why not?
+    my $currency;
+
+    $currency = $args->{currency} if exists $args->{currency};
+    $currency //= $client->currency;
+    my $db = BOM::Database::ClientDB->new({
+            client_loginid => $client->loginid,
+        })->db;
+
+    my $txn_dm = BOM::Database::DataMapper::Transaction->new({
+        client_loginid => $client->loginid,
+        currency_code  => $currency,
+        db             => $db,
+    });
+    my $transactions = $txn_dm->get_payments({
+        before => $before,
+        after  => $after,
+        limit  => $max_number_of_lines
+    });
+    my $summary = {};
+
+    foreach my $transaction (@{$transactions}) {
+        my $k = $transaction->{action_type} eq 'deposit' ? 'deposits' : 'withdrawals';
+        my $payment_system = '';
+        $payment_system = $1 if $transaction =~ /payment_processor=(\S+)/;
+        $summary->{$k}{$_} += $transaction->{amount};
+    }
+    foreach my $type (keys %$summary) {
+        my $ps_summary = [];
+        my $total      = 0;
+        foreach (sort keys %{$summary->{$type}}) {
+            push @$ps_summary, [$_, $summary->{$type}->{$_}];
+            $total += $summary->{$type}->{$_};
+        }
+        push @$ps_summary, ['total', $total];
+        $summary->{$type} = $ps_summary;
+    }
+    return $summary;
+}
+
 sub client_statement_for_backoffice {
     my $args = shift;
     my ($client, $before, $after, $max_number_of_lines) = @{$args}{'client', 'before', 'after', 'max_number_of_lines'};
