@@ -141,22 +141,11 @@ sub _build_pricing_vol {
     my $vol;
     my $volatility_error;
     if ($self->priced_with_intraday_model) {
-        my $volsurface       = $self->intradayfx_volsurface;
-        my $duration_seconds = $self->timeindays->amount * 86400;
-        # volatility doesn't matter for less than 10 minutes ATM contracts,
-        # where the intraday_delta_correction is the bounceback which is a function of trend, not volatility.
-        my $uses_flat_vol = ($self->is_atm_bet and $duration_seconds < 10 * 60) ? 1 : 0;
-        if ($uses_flat_vol) {
-            $vol = $volsurface->long_term_volatility({
-                from => $self->effective_start->epoch,
-            });
-        } else {
-            $vol = $volsurface->get_volatility({
-                from                          => $self->effective_start->epoch,
-                to                            => $self->date_expiry->epoch,
-                include_economic_event_impact => 0,
-            });
-        }
+        $vol = $self->intradayfx_volsurface->get_volatility({
+            from                          => $self->effective_start->epoch,
+            to                            => $self->date_expiry->epoch,
+            include_economic_event_impact => 0,
+        });
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
@@ -246,6 +235,7 @@ sub _build_intradayfx_volsurface {
         underlying       => $self->underlying,
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+        backprice        => ($self->underlying->for_date) ? 1 : 0,
     );
 }
 

@@ -186,6 +186,12 @@ has is_sold => (
     default => 0
 );
 
+has is_valid_exit_tick => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0
+);
+
 has risk_profile => (
     is         => 'ro',
     lazy_build => 1,
@@ -683,7 +689,11 @@ sub _build_opposite_contract_for_sale {
             }
         }
         # We should be looking to move forward in time to a bet starting now.
-        $opp_parameters{date_start}  = $self->date_pricing;
+        # We had issue during pricing when we try to price contract exactly at expiry time,
+        # get_volatility was throwing error, since from and to are equal. Setting
+        # date_start equal to date_start instead of date_pricing here for opposite contract
+        # will solve this issue.
+        $opp_parameters{date_start} = ($self->date_pricing->epoch == $self->date_expiry->epoch) ? $self->date_start : $self->date_pricing;
         $opp_parameters{pricing_new} = 1;
         # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
         # Currently, 'sell at market' button will appear when current spot == barrier when the duration
@@ -700,11 +710,6 @@ sub _build_opposite_contract_for_sale {
     }
 
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
-
-    if (my $role = $opp_parameters{role}) {
-        $role->require;
-        $role->meta->apply($opp_contract);
-    }
 
     return $opp_contract;
 }
@@ -732,11 +737,6 @@ sub _build_opposite_contract {
     $opp_parameters{pricing_new} = 1;
 
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
-
-    if (my $role = $opp_parameters{role}) {
-        $role->require;
-        $role->meta->apply($opp_contract);
-    }
 
     return $opp_contract;
 }
@@ -874,16 +874,25 @@ sub _build_exit_tick {
         if (@ticks_since_start == $tick_number) {
             $exit_tick = $ticks_since_start[-1];
             $self->date_expiry(Date::Utility->new($exit_tick->epoch));
+            $self->is_valid_exit_tick(1);
         }
-    } elsif ($self->is_after_expiry and not $self->is_after_settlement) {
-        # After expiry and yet pass the settlement, use current tick at the date_expiry
-        # to determine the pre-settlement value. It might diff with actual settlement value
-        $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1});
-    } elsif ($self->expiry_daily or $self->date_expiry->is_same_as($self->trading_calendar->closing_on($underlying->exchange, $self->date_expiry))) {
-        # Expiration based on daily OHLC
-        $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
-    } else {
-        $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
+    } elsif ($self->is_after_expiry) {
+        # For a daily contract or a contract expired at the close of trading, the valid exit tick should be the daily close else should be the tick at expiry date
+        my $valid_exit_tick_at_expiry = (
+                   $self->expiry_daily
+                or $self->date_expiry->is_same_as($self->trading_calendar->closing_on($underlying->exchange, $self->date_expiry))
+        ) ? $underlying->closing_tick_on($self->date_expiry->date) : $underlying->tick_at($self->date_expiry->epoch);
+
+        # There are few scenarios where we still do not have valid exit tick as follow. In those case, we will use last available tick at the expiry time to determine the pre-settlement value but will not be settle based on that tick
+        # 1) For long term contract, after expiry yet pass the settlement time, waiting for daily ohlc to be updated
+        # 2) For short term contract, waiting for next tick to arrive after expiry to determine the valid exit tick at expiry
+        if (not $valid_exit_tick_at_expiry) {
+            $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1});
+        } else {
+
+            $exit_tick = $valid_exit_tick_at_expiry;
+            $self->is_valid_exit_tick(1);
+        }
     }
 
     if ($self->entry_tick and $exit_tick) {
