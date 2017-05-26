@@ -14,6 +14,14 @@ sub is_atm_bet          { return 0 }
 sub is_intraday         { return 0 }
 sub is_forward_starting { return 0 }
 
+use constant {    # added for Transaction
+    expiry_daily        => 0,
+    fixed_expiry        => 0,
+    tick_expiry         => 0,
+    pricing_engine_name => '',
+};
+
+
 # This is to indicate whether this is a sale transaction.
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
