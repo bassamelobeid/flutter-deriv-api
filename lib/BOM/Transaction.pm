@@ -6,24 +6,21 @@ use Error::Base;
 use Path::Tiny;
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(tv_interval gettimeofday time);
-
 use JSON qw( from_json to_json );
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Try::Tiny;
-
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 
 use Brands;
 use Client::Account;
-
 use Finance::Asset::Market::Types;
-
-use BOM::Platform::Context qw(localize request);
+use Price::Calculator qw/get_rounding_precision/;
 
 use BOM::Platform::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use BOM::Platform::Context qw(localize request);
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -379,7 +376,7 @@ sub prepare_bet_data_for_buy {
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
 
-    $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
+    $self->price(Format::Util::Numbers::roundnear(get_rounding_precision($contract->currency), $self->price));
 
     my $bet_params = {
         quantity          => 1,
@@ -672,7 +669,7 @@ sub prepare_bet_data_for_sell {
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
 
-    $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
+    $self->price(Format::Util::Numbers::roundnear(get_rounding_precision($currency), $self->price));
 
     my $bet_params = {
         id         => scalar $self->contract_id,

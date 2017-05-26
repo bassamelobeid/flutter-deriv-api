@@ -3,16 +3,19 @@ package BOM::Transaction::Validation;
 use strict;
 use warnings;
 
+use Moo;
+use Error::Base;
+use LandingCompany::Registry;
+use List::Util qw(min max first);
+use Format::Util::Numbers qw(roundnear);
+use YAML::XS qw(LoadFile);
+
+use Price::Calculator qw/get_rounding_precision/;
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
+
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Context qw(localize request);
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use Error::Base;
-use Format::Util::Numbers qw(roundnear);
-use LandingCompany::Registry;
-use List::Util qw(min max first);
-use Moo;
-use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
-use YAML::XS qw(LoadFile);
 
 has clients => (
     is       => 'ro',
@@ -380,14 +383,15 @@ sub _validate_iom_withdrawal_limit {
         start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
         exclude    => ['currency_conversion_transfer'],
     });
-    $withdrawal_in_days = roundnear(0.01, amount_from_to_currency($withdrawal_in_days, $client->currency, 'EUR'));
+    $withdrawal_in_days = roundnear(get_rounding_precision('EUR'), amount_from_to_currency($withdrawal_in_days, $client->currency, 'EUR'));
 
     # withdrawal since inception
     my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']});
-    $withdrawal_since_inception = roundnear(0.01, amount_from_to_currency($withdrawal_since_inception, $client->currency, 'EUR'));
+    $withdrawal_since_inception =
+        roundnear(get_rounding_precision('EUR'), amount_from_to_currency($withdrawal_since_inception, $client->currency, 'EUR'));
 
     my $remaining_withdrawal_eur =
-        roundnear(0.01, min(($numdayslimit - $withdrawal_in_days), ($lifetimelimit - $withdrawal_since_inception)));
+        roundnear(get_rounding_precision('EUR'), min(($numdayslimit - $withdrawal_in_days), ($lifetimelimit - $withdrawal_since_inception)));
 
     if ($remaining_withdrawal_eur <= 0) {
         return Error::Base->cuss(
