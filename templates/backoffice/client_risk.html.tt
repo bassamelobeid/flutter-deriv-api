@@ -19,11 +19,11 @@
 
     <div style="color:white;font-size:17px;background:grey">Details</div>
     <div style="text-align:left">
-        Loginid: <b> [% data.client_details.loginid %] </b> <br/>
-        Name: <b> [% data.client_details.name %] </b> <br/>
-        esidence: <b> [% data.client_details.residence %] </b> <br/>
-        Citizen: <b> [% data.client_details.citizen %] </b> <br/>
-        Date Joined: <b> [% data.client_details.date_joined %] </b> <br/>
+        loginid: <b> [% data.client_details.loginid %] </b> <br/>
+        name: <b> [% data.client_details.name %] </b> <br/>
+        residence: <b> [% data.client_details.residence %] </b> <br/>
+        citizen: <b> [% data.client_details.citizen %] </b> <br/>
+        date Joined: <b> [% data.client_details.date_joined %] </b> <br/>
     </div>
 
 
@@ -57,7 +57,7 @@
 
     <div style="color:white;font-size:17px;background:grey">Security</div>
     <div style="text-align:left">
-        Country change:<br/>
+        country change:<br/>
         [% FOREACH key IN data.country_change %]
             * <b> [% key.first_login_date %] ([% key.country %]) </b> <br/>
             <br/>
