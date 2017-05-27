@@ -208,7 +208,7 @@ sub cashier {
 
     ## if cashier provider == 'epg', we'll return epg url
     if ($provider eq 'epg') {
-        return _get_epg_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
+        return _get_epg_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
     # hit DF's CreateCustomer API
@@ -348,7 +348,7 @@ sub _get_handoff_token_key {
 }
 
 sub _get_epg_url {
-    my ($loginid, $website_name, $currency, $action, $language) = @_;
+    my ($loginid, $website_name, $currency, $action, $language, $brand_name) = @_;
 
     BOM::Platform::AuditLog::log('redirecting to epg');
 
@@ -361,7 +361,8 @@ sub _get_epg_url {
         $url .= 'epg.binary.com/epg';
     }
 
-    $url .= "/handshake?token=" . _get_handoff_token_key($loginid) . "&loginid=$loginid&currency=$currency&action=$action&l=$language";
+    $url .=
+        "/handshake?token=" . _get_handoff_token_key($loginid) . "&loginid=$loginid&currency=$currency&action=$action&l=$language&brand=$brand_name";
 
     return $url;
 }
