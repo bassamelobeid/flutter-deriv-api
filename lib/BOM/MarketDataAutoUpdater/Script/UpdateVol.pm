@@ -38,9 +38,6 @@ sub script_run {
     if ($opt1 eq 'forex') {
         $class    = 'BOM::MarketDataAutoUpdater::Forex';
         $filename = 'auto_upload_Euronext.xls';
-    } elsif ($opt1 eq 'stocks') {
-        $class    = 'BOM::MarketDataAutoUpdater::Indices';
-        $filename = 'auto_upload_Euronext.xls';
     } elsif ($opt1 eq 'indices') {
         $class    = 'BOM::MarketDataAutoUpdater::Indices';
         $filename = 'auto_upload.xls';
