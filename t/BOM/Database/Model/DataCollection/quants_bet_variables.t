@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 use Test::More (tests => 15);
-use DBI;
 use DBD::SQLite;
 use Test::Exception;
 use BOM::Database::Model::Account;

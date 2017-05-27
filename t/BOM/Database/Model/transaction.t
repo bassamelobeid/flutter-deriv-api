@@ -1,9 +1,6 @@
 use strict;
 
 use Test::More tests => 11;
-
-use DBI;
-use DBD::SQLite;
 use Test::Exception;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::Transaction;
