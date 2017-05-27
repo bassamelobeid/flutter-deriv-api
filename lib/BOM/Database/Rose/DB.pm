@@ -7,7 +7,7 @@ use Carp;
 use DBIx::TransactionManager::Distributed qw(release_dbh dbh_is_registered register_dbh);
 
 use Mojo::Exception;
-
+use DBIx::Connector;
 use parent 'Rose::DB';
 
 # If you are seeing connections being attempted to this Rose::DB
@@ -58,9 +58,9 @@ sub _handle_errors {
     my $dbh           = eval { $sth->isa('DBI::st') } ? $sth->{Database} : $sth;
     my $state         = $dbh->state;
     my $severity      = _get_severity($state);
-    my $err           = $dbh->err   || "[none]";
-    $error_message    ||= '[None Passed]';
-    $state            ||= "[none]";
+    my $err           = $dbh->err || "[none]";
+    $error_message ||= '[None Passed]';
+    $state         ||= "[none]";
 
     # Exceptions are really ugly. They obfuscate the control flow
     # just like "goto" or even worse.
@@ -68,7 +68,7 @@ sub _handle_errors {
     die [$state, $dbh->errstr] if $state =~ /^BI...$/;
 
     warn "DB Error Severity: $severity, $error_message. SQLSTATE=$state. Error=$err";
-    
+
     die Mojo::Exception->new($dbh->errstr || $error_message);
 }
 
@@ -122,8 +122,16 @@ sub _get_severity {
     return 'warn';
 }
 
+sub dbic {
+    my $self = shift;
+    if (not exists $self->{dbic}) {
+        $self->init_dbh;
+    }
+    return $self->{dbic};
+}
+
 sub dbi_connect {
-    my ($class, @params) = @_;
+    my ($self, @params) = @_;
 
     # Add extra parameters to the DSN. I tried to do that the right way.
     # But it means to create at least our own implementations of
@@ -139,7 +147,10 @@ sub dbi_connect {
             keepalives_count=10 /,
     );
 
-    return DBI->connect(@params) || croak $DBI::errstr;
+    if (not exists $self->{dbic}) {
+        $self->{dbic} = DBIx::Connector->new(@params);
+    }
+    return $self->{dbic}->dbh;
 }
 
 =head2 disconnect
@@ -150,7 +161,7 @@ Overrides L<Rose::DB/disconnect> to remove previous registration.
 
 sub disconnect {
     my $self = shift;
-    if(my $category = $self->_category_from_domain) {
+    if (my $category = $self->_category_from_domain) {
         release_dbh($category => $self->{dbh}) if $self->_category_requires_registration($category) && $self->{dbh};
     }
     $self->SUPER::disconnect(@_);
@@ -166,7 +177,7 @@ Returns the database handle if we had one.
 
 sub init_dbh {
     my $self = shift;
-    my $dbh = $self->SUPER::init_dbh(@_);
+    my $dbh  = $self->SUPER::init_dbh(@_);
 
     # Return failure state if we didn't get a $dbh
     return $dbh unless $dbh;
