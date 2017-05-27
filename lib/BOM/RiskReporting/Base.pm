@@ -36,6 +36,21 @@ has send_alerts => (
     default => 1,
 );
 
+has client => (
+    is => 'rw',
+);
+
+sub _db_broker_code {
+    my $self = shift;
+    return 'FOG' if not $self->client;
+    return $self->client->broker;
+}
+
+sub _db_operation {
+    my $self = shift;
+    return ($self->_db_broker_code eq 'FOG') ? 'collector' : 'backoffice_replica';
+}
+
 sub _build_end {
     return Date::Utility->new;
 }
@@ -65,13 +80,22 @@ has _connection_builder => (
 );
 
 sub _build__connection_builder {
+    my $self = shift;
 
     my $cdb = BOM::Database::ClientDB->new({
-        broker_code => 'FOG',
-        operation   => 'collector',
+        broker_code => $self->_db_broker_code,
+        operation   => $self->_db_operation,
     });
     $cdb->db->dbh->do("SET statement_timeout TO 0");
     return $cdb;
+}
+
+sub _db_write {
+    my $self = shift;
+    return BOM::Database::ClientDB->new({
+            broker_code => $self->client->broker,
+            operation   => 'write',
+        })->db;
 }
 
 has live_open_bets => (
@@ -84,11 +108,6 @@ sub _build_live_open_bets {
     my $self = shift;
     return $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id');
 }
-
-before generate => sub {
-    exit 0
-        unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}}));
-};
 
 sub generate {
     return 1;
