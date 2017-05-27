@@ -17,6 +17,8 @@ extends 'BOM::RiskReporting::Base';
 use BOM::Platform::User;
 use Date::Utility;
 use JSON::XS;
+use Excel::Writer::XLSX;
+use File::Temp;
 
 has client => (
     is         => 'rw',
@@ -195,6 +197,91 @@ sub generate {
 
     $self->_save($data);
     return $data;
+}
+
+sub export {
+    my $data = shift;
+
+    my $file = File::Temp->new(
+        UNLINK => 0,
+    );
+    my $workbook  = Excel::Writer::XLSX->new($file->filename);
+    my $worksheet = $workbook->add_worksheet();
+
+    my $bold = $workbook->add_format();
+    $bold->set_bold();
+    my $header = $workbook->add_format();
+    $header->set_bold();
+    $header->set_size(16);
+
+    my $row = 0;
+    $worksheet->write($row++, 0, 'Details',                              $header);
+    $worksheet->write($row,   0, 'loginid');
+    $worksheet->write($row++, 1, $data->{client_details}->{loginid},     $bold);
+    $worksheet->write($row,   0, 'name');
+    $worksheet->write($row++, 1, $data->{client_details}->{name},        $bold);
+    $worksheet->write($row,   0, 'residence');
+    $worksheet->write($row++, 1, $data->{client_details}->{residence},   $bold);
+    $worksheet->write($row,   0, 'citizen');
+    $worksheet->write($row++, 1, $data->{client_details}->{citizen},     $bold);
+    $worksheet->write($row,   0, 'date_joined');
+    $worksheet->write($row++, 1, $data->{client_details}->{date_joined}, $bold);
+    $row += 2;
+
+    $worksheet->write($row++, 0, 'Generated Finance Reports', $header);
+    foreach my $rdate (sort keys %{$data->{report}}) {
+        $worksheet->write($row, 0, 'staff');
+        $worksheet->write($row++, 1, $data->{report}->{$rdate}->{clerk}, $bold);
+        $worksheet->write($row,   0, 'date');
+        $worksheet->write($row++, 1, $rdate,                             $bold);
+        $row++;
+        foreach my $fa (sort keys %{$data->{report}->{$rdate}->{financial_assessment}}) {
+            $worksheet->write($row, 0, $fa);
+            $worksheet->write($row++, 1, $data->{report}->{$rdate}->{financial_assessment}->{$fa}, $bold);
+        }
+        $row++;
+        $worksheet->write($row, 0, 'deposit');
+        $worksheet->write($row++, 1, $data->{report}->{$rdate}->{total_deposits_withdrawals}->{deposit},    $bold);
+        $worksheet->write($row,   0, 'withdrawal');
+        $worksheet->write($row++, 1, $data->{report}->{$rdate}->{total_deposits_withdrawals}->{withdrawal}, $bold);
+        $worksheet->write($row,   0, 'net');
+        $worksheet->write(
+            $row++,
+            1,
+            $data->{report}->{$rdate}->{total_deposits_withdrawals}->{deposit} -
+                $data->{report}->{$rdate}->{total_deposits_withdrawals}->{withdrawal},
+            $bold
+        );
+        $worksheet->write($row, 0, 'balance');
+        $worksheet->write($row++, 1, $data->{report}->{$rdate}->{total_deposits_withdrawals}->{balance}, $bold);
+        $row += 2;
+    }
+
+    $worksheet->write($row++, 0, 'Documents',                                  $header);
+    $worksheet->write($row,   0, 'authenticated');
+    $worksheet->write($row++, 1, $data->{client_details}->{id_authentication}, $bold);
+    foreach my $key (sort keys %{$data->{documents}}) {
+        $worksheet->write($row, 0, $key);
+        $worksheet->write($row++, 1, $data->{documents}->{$key}, $bold);
+    }
+    $row += 2;
+
+    $worksheet->write($row++, 0, 'Country Change', $header);
+    foreach my $key (@{$data->{country_change}}) {
+        $worksheet->write($row, 0, $key->{first_login_date});
+        $worksheet->write($row++, 1, $key->{country}, $bold);
+    }
+    $row += 2;
+
+    $worksheet->write($row++, 0, 'Comments', $header);
+    foreach my $key (sort keys %{$data->{comments}}) {
+        $worksheet->write($row, 0, $key);
+        $worksheet->write($row++, 1, $data->{comments}->{$key}->{comment} . ' by (' . $data->{comments}->{$key}->{clerk} . ')', $bold);
+    }
+    $row += 2;
+
+    $workbook->close();
+    return $file->filename;
 }
 
 no Moose;

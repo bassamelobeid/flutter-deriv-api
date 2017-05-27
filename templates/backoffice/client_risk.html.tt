@@ -1,7 +1,5 @@
-
-
 <div style="background:#BBBBBB">
-
+    [% error %] <br/>
     <div>
     <hr>Client Risk:</br></br>
     <form action="[% request.url_for('backoffice/client_risk_report.cgi') %]" method="post">
@@ -14,6 +12,7 @@
         <input type="submit" name="action" value="show">
         <input type="submit" name="action" value="only add comment">
         <input type="submit" name="action" value="generate report">
+        <input type="submit" name="action" value="export">
     </form>
     </div>
 
