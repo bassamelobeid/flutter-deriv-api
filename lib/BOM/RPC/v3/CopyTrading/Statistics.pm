@@ -3,7 +3,12 @@ package BOM::RPC::v3::CopyTrading::Statistics;
 use strict;
 use warnings;
 
+use Try::Tiny;
+use Performance::Probability qw(get_performance_probability);
+
 use Client::Account;
+use Price::Calculator qw/get_formatting_precision/;
+
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -11,10 +16,6 @@ use BOM::Database::DataMapper::Copier;
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::RedisReplicated;
-
-use Performance::Probability qw(get_performance_probability);
-
-use Try::Tiny;
 
 sub copytrading_statistics {
     my $params = shift->{args};
@@ -68,10 +69,10 @@ sub copytrading_statistics {
         })->db;
 
     # Calculate average performance for multiple accounts
-    my $now    = Date::Utility->new();
+    my ($currency, $now) = (Date::Utility->new(), $account->currency_code);
     my $txn_dm = BOM::Database::DataMapper::Transaction->new({
         client_loginid => $trader->loginid,
-        currency_code  => $account->currency_code,
+        currency_code  => $currency,
         db             => $db,
         operation      => 'replica',
     });
@@ -94,23 +95,23 @@ sub copytrading_statistics {
         my $W      = $result_hash->{monthly_profitable_trades}->{$date}->{withdrawal};
         my $E0     = $result_hash->{monthly_profitable_trades}->{$date}->{E0};
         my $E1     = $result_hash->{monthly_profitable_trades}->{$date}->{E1};
-        my $current_month_profit = sprintf("%.4f", ((($E1 + $W) - ($E0 + $D)) / ($E0 + $D)));
+        my $current_month_profit = sprintf('%' . get_formatting_precision($currency) . 'f', ((($E1 + $W) - ($E0 + $D)) / ($E0 + $D)));
         $result_hash->{monthly_profitable_trades}->{$date} = $current_month_profit;
         push @sorted_monthly_profits, $current_month_profit;
         push @{$result_hash->{yearly_profitable_trades}->{$year}}, $current_month_profit;
     }
     for my $year (keys %{$result_hash->{yearly_profitable_trades}}) {
-        $result_hash->{yearly_profitable_trades}->{$year} = _year_performance(@{$result_hash->{yearly_profitable_trades}->{$year}});
+        $result_hash->{yearly_profitable_trades}->{$year} = _year_performance($currency, @{$result_hash->{yearly_profitable_trades}->{$year}});
     }
 
     # last 12 months profitable
     my $last_month_idx = scalar(@sorted_monthly_profits) < 12 ? scalar(@sorted_monthly_profits) : 12;
-    $result_hash->{last_12months_profitable_trades} = _year_performance(@sorted_monthly_profits[-$last_month_idx .. -1]);
+    $result_hash->{last_12months_profitable_trades} = _year_performance($currency, @sorted_monthly_profits[-$last_month_idx .. -1]);
 
     # Performance Probability
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
         client_loginid => $trader->loginid,
-        currency_code  => $account->currency_code,
+        currency_code  => $currency,
         db             => $db,
         operation      => 'replica',
     });
@@ -142,7 +143,7 @@ sub copytrading_statistics {
     if (scalar(grep { $_->{bet_type} =~ /^(call|put)$/i } @{$sold_contracts}) > 50) {
         try {
             $result_hash->{performance_probability} = sprintf(
-                "%.4f",
+                '%' . get_formatting_precision($currency) . 'f',
                 1 - Performance::Probability::get_performance_probability({
                         pnl          => $cumulative_pnl,
                         payout       => $contract_parameters->{payout_price},
@@ -164,10 +165,16 @@ sub copytrading_statistics {
     # trades profitable && total trades count
     my $win_trades  = BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:win")  || 0;
     my $loss_trades = BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:loss") || 0;
-    $result_hash->{total_trades} = $win_trades + $loss_trades;
-    $result_hash->{trades_profitable} = sprintf("%.4f", $win_trades / ($result_hash->{total_trades} || 1));
-    $result_hash->{avg_profit} = sprintf("%.4f", BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0);
-    $result_hash->{avg_loss} = sprintf("%.4f", BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0);
+    $result_hash->{total_trades}      = $win_trades + $loss_trades;
+    $result_hash->{trades_profitable} = sprintf('%' . get_formatting_precision($currency) . 'f', $win_trades / ($result_hash->{total_trades} || 1));
+    $result_hash->{avg_profit}        = sprintf(
+        '%' . get_formatting_precision($currency) . 'f',
+        BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0
+    );
+    $result_hash->{avg_loss} = sprintf(
+        '%' . get_formatting_precision($currency) . 'f',
+        BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0
+    );
 
     # trades_breakdown
     my %symbols_breakdown = @{BOM::Platform::RedisReplicated::redis_read->hgetall("COPY_TRADING_SYMBOLS_BREAKDOWN:$trader_id")};
@@ -176,17 +183,18 @@ sub copytrading_statistics {
         $result_hash->{trades_breakdown}->{create_underlying($symbol)->market->name} += $trades;
     }
     for my $market (keys %{$result_hash->{trades_breakdown}}) {
-        $result_hash->{trades_breakdown}->{$market} = sprintf("%.4f", $result_hash->{trades_breakdown}->{$market} / $result_hash->{total_trades});
+        $result_hash->{trades_breakdown}->{$market} =
+            sprintf('%' . get_formatting_precision($currency) . 'f', $result_hash->{trades_breakdown}->{$market} / $result_hash->{total_trades});
     }
 
     return $result_hash;
 }
 
 sub _year_performance {
-    my (@months) = @_;
+    my ($currency, @months) = @_;
     my $profits_mult = 1;
     $profits_mult *= 1 + $_ for @months;
-    return sprintf("%.4f", $profits_mult - 1);
+    return sprintf('%' . get_formatting_precision($currency) . 'f', $profits_mult - 1);
 }
 
 1;

@@ -5,9 +5,9 @@ use utf8;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
-use Format::Util::Numbers qw(roundnear);
 use YAML::XS qw(LoadFile);
 
+use Price::Calculator qw/get_formatting_precision/;
 use BOM::RPC::v3::Cashier;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -75,7 +75,7 @@ subtest 'CR' => sub {
             'lifetime_limit'                      => $limits->{lifetime_limit},
             'withdrawal_for_x_days_monetary'      => '0',
             'withdrawal_since_inception_monetary' => '0',
-            'remainder'                           => roundnear(0.01, $limits->{lifetime_limit}),
+            'remainder'                           => sprintf(get_formatting_precision('USD'), $limits->{lifetime_limit}),
             payout_per_symbol_and_contract_type   => 10000,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
@@ -85,9 +85,9 @@ subtest 'CR' => sub {
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal);
 
-        $expected_result->{withdrawal_for_x_days_monetary}      = roundnear(0.01, $withdraw_amount);
-        $expected_result->{withdrawal_since_inception_monetary} = roundnear(0.01, $withdraw_amount);
-        $expected_result->{remainder}                           = roundnear(0.01, $limits->{lifetime_limit} - $withdraw_amount);
+        $expected_result->{withdrawal_for_x_days_monetary}      = sprintf(get_formatting_precision('USD'), $withdraw_amount);
+        $expected_result->{withdrawal_since_inception_monetary} = sprintf(get_formatting_precision('USD'), $withdraw_amount);
+        $expected_result->{remainder} = sprintf(get_formatting_precision('USD'), $limits->{lifetime_limit} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -152,7 +152,7 @@ subtest 'JP' => sub {
             'lifetime_limit'                      => $limits->{lifetime_limit},
             'withdrawal_for_x_days_monetary'      => '0',
             'withdrawal_since_inception_monetary' => '0',
-            'remainder'                           => roundnear(0.01, $limits->{lifetime_limit}),
+            'remainder'                           => sprintf(get_formatting_precision('JPY'), $limits->{lifetime_limit}),
             payout_per_symbol_and_contract_type   => 1000000,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
@@ -165,9 +165,9 @@ subtest 'JP' => sub {
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal, currency => 'JPY');
 
-        $expected_result->{'withdrawal_for_x_days_monetary'}      = roundnear(0.01, $withdraw_amount);
-        $expected_result->{'withdrawal_since_inception_monetary'} = roundnear(0.01, $withdraw_amount);
-        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->{lifetime_limit} - $withdraw_amount);
+        $expected_result->{'withdrawal_for_x_days_monetary'}      = sprintf(get_formatting_precision('JPY'), $withdraw_amount);
+        $expected_result->{'withdrawal_since_inception_monetary'} = sprintf(get_formatting_precision('JPY'), $withdraw_amount);
+        $expected_result->{'remainder'} = sprintf(get_formatting_precision('JPY'), $limits->{lifetime_limit} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -217,7 +217,7 @@ subtest 'MLT' => sub {
             'lifetime_limit'                      => $limits->{lifetime_limit},
             'withdrawal_for_x_days_monetary'      => '0',
             'withdrawal_since_inception_monetary' => '0',
-            'remainder'                           => roundnear(0.01, $limits->{lifetime_limit}),
+            'remainder'                           => sprintf(get_formatting_precision('JPY'), $limits->{lifetime_limit}),
             payout_per_symbol_and_contract_type   => 10000,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
@@ -230,9 +230,9 @@ subtest 'MLT' => sub {
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal, currency => 'EUR');
 
-        $expected_result->{'withdrawal_for_x_days_monetary'}      = roundnear(0.01, $withdraw_amount);
-        $expected_result->{'withdrawal_since_inception_monetary'} = roundnear(0.01, $withdraw_amount);
-        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->{lifetime_limit} - $withdraw_amount);
+        $expected_result->{'withdrawal_for_x_days_monetary'}      = sprintf(get_formatting_precision('JPY'), $withdraw_amount);
+        $expected_result->{'withdrawal_since_inception_monetary'} = sprintf(get_formatting_precision('JPY'), $withdraw_amount);
+        $expected_result->{'remainder'} = sprintf(get_formatting_precision('JPY'), $limits->{lifetime_limit} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -282,7 +282,7 @@ subtest 'MX' => sub {
             'lifetime_limit'                      => $limits->{lifetime_limit},
             'withdrawal_for_x_days_monetary'      => '0',
             'withdrawal_since_inception_monetary' => '0',
-            'remainder'                           => roundnear(0.01, $limits->{limit_for_days}),
+            'remainder'                           => sprintf(get_formatting_precision('EUR'), $limits->{limit_for_days}),
             payout_per_symbol_and_contract_type   => 10000,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
@@ -295,9 +295,9 @@ subtest 'MX' => sub {
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal, currency => 'EUR');
 
-        $expected_result->{'withdrawal_for_x_days_monetary'}      = roundnear(0.01, $withdraw_amount);
-        $expected_result->{'withdrawal_since_inception_monetary'} = roundnear(0.01, $withdraw_amount);
-        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->{limit_for_days} - $withdraw_amount);
+        $expected_result->{'withdrawal_for_x_days_monetary'}      = sprintf(get_formatting_precision('EUR'), $withdraw_amount);
+        $expected_result->{'withdrawal_since_inception_monetary'} = sprintf(get_formatting_precision('EUR'), $withdraw_amount);
+        $expected_result->{'remainder'} = sprintf(get_formatting_precision('EUR'), $limits->{limit_for_days} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
