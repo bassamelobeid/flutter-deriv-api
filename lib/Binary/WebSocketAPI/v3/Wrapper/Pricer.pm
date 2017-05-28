@@ -759,17 +759,11 @@ sub _price_stream_results_adjustment {
             stake_same_as_payout   => sub { 'This contract offers no return.' },
             stake_outside_range    => sub {
                 my ($details) = @_;
-                return (
-                    'Minimum stake of [_1] and maximum payout of [_2].',
-                    $details->[0],
-                    $details->[1]);
+                return ('Minimum stake of [_1] and maximum payout of [_2].', $details->[0], $details->[1]);
             },
             payout_outside_range => sub {
                 my ($details) = @_;
-                return (
-                    'Minimum stake of [_1] and maximum payout of [_2].',
-                    $details->[0],
-                    $details->[1]);
+                return ('Minimum stake of [_1] and maximum payout of [_2].', $details->[0], $details->[1]);
             },
         };
         return {
