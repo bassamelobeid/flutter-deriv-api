@@ -110,7 +110,7 @@ my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
 my $dbh = $clientdb->db->dbh;
 
 if (request()->param('ctc_sent')) {
-    my ($found) = $self->dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_sent(?, ?)', undef, request()->param('ctc_sent'), 'BTC');
+    my ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_sent(?, ?)', undef, request()->param('ctc_sent'), 'BTC');
     # TODO: print warning if not $found
 }
 
