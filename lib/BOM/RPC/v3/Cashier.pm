@@ -380,9 +380,9 @@ sub get_limits {
     }
 
     my $landing_company = LandingCompany::Registry::get_by_broker($client->broker)->short;
-    my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency)
+    my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency);
 
-        my $limit = +{
+    my $limit = +{
         account_balance                     => sprintf('%' . get_amount_precision($currency) . 'f', $client->get_limit_for_account_balance),
         payout                              => sprintf('%' . get_amount_precision($currency) . 'f', $client->get_limit_for_payout),
         payout_per_symbol_and_contract_type => sprintf(
@@ -390,7 +390,7 @@ sub get_limits {
             BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency}
         ),
         open_positions => $client->get_limit_for_open_positions,
-        };
+    };
 
     # TODO: we should move formatting to risk profile
     my $risk_definitions = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
