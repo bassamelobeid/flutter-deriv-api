@@ -1,11 +1,12 @@
 package BOM::Product::Role::Binary;
 
 use Moose::Role;
-use Time::Duration::Concise;
 
-sub is_atm_bet {
+sub _build_payout {
+    my ($self) = @_;
 
-    return 1;
+    $self->_set_price_calculator_params('payout');
+    return $self->price_calculator->payout;
 }
 
 1;
