@@ -1288,8 +1288,7 @@ sub transfer_between_accounts {
             $limit = $currency . ' ' . sprintf('%' . get_amount_precision($currency) . 'f', $client_from->default_account->balance);
         } elsif ($err =~ /includes frozen bonus \[(.+)\]/) {
             my $frozen_bonus = $1;
-            $limit =
-                $currency . ' ' . sprintf('%' . get_amount_precision($currency) . 'f', $client_from->default_account->balance - $frozen_bonus);
+            $limit = $currency . ' ' . sprintf('%' . get_amount_precision($currency) . 'f', $client_from->default_account->balance - $frozen_bonus);
         } elsif ($err =~ /exceeds withdrawal limit \[(.+)\]\s+\((.+)\)/) {
             my $bal_1 = $1;
             my $bal_2 = $2;

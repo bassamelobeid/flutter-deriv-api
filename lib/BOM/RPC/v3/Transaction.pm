@@ -354,7 +354,7 @@ sub sell {
 
     return {
         transaction_id => $trx->transaction_id,
-        reference_id   => $trx->reference_id,                                                                          ### buy transaction ID
+        reference_id   => $trx->reference_id,                                                                      ### buy transaction ID
         contract_id    => $id,
         balance_after  => sprintf('%' . get_amount_precision($client->currency) . 'f', $trx_rec->balance_after),
         sold_for       => abs($trx_rec->amount),

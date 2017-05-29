@@ -87,7 +87,7 @@ subtest 'CR' => sub {
 
         $expected_result->{withdrawal_for_x_days_monetary}      = sprintf('%0.02f', $withdraw_amount);
         $expected_result->{withdrawal_since_inception_monetary} = sprintf('%0.02f', $withdraw_amount);
-        $expected_result->{remainder} = sprintf('%0.02f', $limits->{lifetime_limit} - $withdraw_amount);
+        $expected_result->{remainder}                           = sprintf('%0.02f', $limits->{lifetime_limit} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -167,7 +167,7 @@ subtest 'JP' => sub {
 
         $expected_result->{'withdrawal_for_x_days_monetary'}      = sprintf('%0.02f', $withdraw_amount);
         $expected_result->{'withdrawal_since_inception_monetary'} = sprintf('%0.02f', $withdraw_amount);
-        $expected_result->{'remainder'} = sprintf('%0.02f', $limits->{lifetime_limit} - $withdraw_amount);
+        $expected_result->{'remainder'}                           = sprintf('%0.02f', $limits->{lifetime_limit} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -232,7 +232,7 @@ subtest 'MLT' => sub {
 
         $expected_result->{'withdrawal_for_x_days_monetary'}      = sprintf('%0.02f', $withdraw_amount);
         $expected_result->{'withdrawal_since_inception_monetary'} = sprintf('%0.02f', $withdraw_amount);
-        $expected_result->{'remainder'} = sprintf('%0.02f', $limits->{lifetime_limit} - $withdraw_amount);
+        $expected_result->{'remainder'}                           = sprintf('%0.02f', $limits->{lifetime_limit} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -297,7 +297,7 @@ subtest 'MX' => sub {
 
         $expected_result->{'withdrawal_for_x_days_monetary'}      = sprintf('%0.02f', $withdraw_amount);
         $expected_result->{'withdrawal_since_inception_monetary'} = sprintf('%0.02f', $withdraw_amount);
-        $expected_result->{'remainder'} = sprintf('%0.02f', $limits->{limit_for_days} - $withdraw_amount);
+        $expected_result->{'remainder'}                           = sprintf('%0.02f', $limits->{limit_for_days} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
