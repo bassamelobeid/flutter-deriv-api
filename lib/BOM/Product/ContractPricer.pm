@@ -487,12 +487,12 @@ sub _build_commission_from_stake {
     return $self->price_calculator->commission_from_stake;
 }
 
-sub _build_theo_probability {
-    my $self = shift;
+#sub _build_theo_probability {
+#    my $self = shift;
 
-    $self->_set_price_calculator_params('theo_probability');
-    return $self->price_calculator->theo_probability;
-}
+#    $self->_set_price_calculator_params('theo_probability');
+#    return $self->price_calculator->theo_probability;
+#}
 
 sub _build_theo_price {
     my $self = shift;
@@ -633,12 +633,12 @@ sub _build_price_calculator {
     });
 }
 
-sub _build_bid_probability {
-    my $self = shift;
+#sub _build_bid_probability {
+#    my $self = shift;
 
-    $self->_set_price_calculator_params('bid_probability');
-    return $self->price_calculator->bid_probability;
-}
+#    $self->_set_price_calculator_params('bid_probability');
+#    return $self->price_calculator->bid_probability;
+#}
 
 sub _build_bid_price {
     my $self = shift;
@@ -646,23 +646,23 @@ sub _build_bid_price {
     return $self->_price_from_prob('bid_probability');
 }
 
-sub _build_ask_probability {
-    my $self = shift;
+#sub _build_ask_probability {
+#    my $self = shift;
 
-    $self->_set_price_calculator_params('ask_probability');
-    return $self->price_calculator->ask_probability;
-}
+#    $self->_set_price_calculator_params('ask_probability');
+#    return $self->price_calculator->ask_probability;
+#}
 
-sub _price_from_prob {
-    my ($self, $prob) = @_;
-    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
-        $self->price_calculator->value($self->value);
-    } else {
+#sub _price_from_prob {
+#    my ($self, $prob) = @_;
+#    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
+#        $self->price_calculator->value($self->value);
+#    } else {
 
-        $self->_set_price_calculator_params($prob);
-    }
-    return $self->price_calculator->price_from_prob($prob);
-}
+#        $self->_set_price_calculator_params($prob);
+#    }
+#    return $self->price_calculator->price_from_prob($prob);
+#}
 
 sub _build_ask_price {
     my $self = shift;
@@ -763,12 +763,12 @@ sub _build_priced_with_intraday_model {
     return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
 }
 
-sub _build_discounted_probability {
-    my $self = shift;
+#sub _build_discounted_probability {
+#    my $self = shift;
 
-    $self->_set_price_calculator_params('discounted_probability');
-    return $self->price_calculator->discounted_probability;
-}
+#    $self->_set_price_calculator_params('discounted_probability');
+#    return $self->price_calculator->discounted_probability;
+#}
 
 sub _match_symbol {
     my ($lists, $symbol) = @_;

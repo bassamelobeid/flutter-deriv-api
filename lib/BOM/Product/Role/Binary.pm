@@ -54,4 +54,43 @@ sub _build_staking_limits {
     };
 }
 
+sub _build_theo_probability {
+    my $self = shift;
+
+    $self->_set_price_calculator_params('theo_probability');
+    return $self->price_calculator->theo_probability;
+}
+
+sub _build_bid_probability {
+    my $self = shift;
+
+    $self->_set_price_calculator_params('bid_probability');
+    return $self->price_calculator->bid_probability;
+}
+
+sub _build_ask_probability {
+    my $self = shift;
+
+    $self->_set_price_calculator_params('ask_probability');
+    return $self->price_calculator->ask_probability;
+}
+
+sub _price_from_prob {
+    my ($self, $prob) = @_;
+    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
+        $self->price_calculator->value($self->value);
+    } else {
+
+        $self->_set_price_calculator_params($prob);
+    }
+    return $self->price_calculator->price_from_prob($prob);
+}
+
+sub _build_discounted_probability {
+    my $self = shift;
+
+    $self->_set_price_calculator_params('discounted_probability');
+    return $self->price_calculator->discounted_probability;
+}
+
 1;
