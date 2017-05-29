@@ -16,6 +16,7 @@ use Quant::Framework::CorrelationMatrix;
 use Pricing::Engine::EuropeanDigitalSlope;
 use Pricing::Engine::TickExpiry;
 use Pricing::Engine::BlackScholes;
+use Pricing::Engine::Lookbacks;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
