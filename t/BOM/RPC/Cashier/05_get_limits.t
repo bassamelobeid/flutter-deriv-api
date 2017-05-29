@@ -76,7 +76,7 @@ subtest 'CR' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => sprintf('%' . get_amount_precision('USD') . 'f', $limits->{lifetime_limit}),
-            payout_per_symbol_and_contract_type   => 10000,
+            payout_per_symbol_and_contract_type   => '10000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -103,7 +103,7 @@ subtest 'CR' => sub {
             'num_of_days'                       => $limits->{for_days},
             'num_of_days_limit'                 => '99999999',
             'lifetime_limit'                    => '99999999',
-            payout_per_symbol_and_contract_type => 10000,
+            payout_per_symbol_and_contract_type => '10000.00',
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -153,7 +153,7 @@ subtest 'JP' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => sprintf('%' . get_amount_precision('JPY') . 'f', $limits->{lifetime_limit}),
-            payout_per_symbol_and_contract_type   => 1000000,
+            payout_per_symbol_and_contract_type   => '1000000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -183,7 +183,7 @@ subtest 'JP' => sub {
             'num_of_days'                       => $limits->{for_days},
             'num_of_days_limit'                 => '99999999',
             'lifetime_limit'                    => '99999999',
-            payout_per_symbol_and_contract_type => 1000000,
+            payout_per_symbol_and_contract_type => '1000000.00',
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -218,7 +218,7 @@ subtest 'MLT' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => sprintf('%' . get_amount_precision('EUR') . 'f', $limits->{lifetime_limit}),
-            payout_per_symbol_and_contract_type   => 10000,
+            payout_per_symbol_and_contract_type   => '10000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -248,7 +248,7 @@ subtest 'MLT' => sub {
             'num_of_days'                       => $limits->{for_days},
             'num_of_days_limit'                 => '99999999',
             'lifetime_limit'                    => '99999999',
-            payout_per_symbol_and_contract_type => 10000,
+            payout_per_symbol_and_contract_type => '10000.00',
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -283,7 +283,7 @@ subtest 'MX' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => sprintf('%' . get_amount_precision('EUR') . 'f', $limits->{limit_for_days}),
-            payout_per_symbol_and_contract_type   => 10000,
+            payout_per_symbol_and_contract_type   => '10000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -313,7 +313,7 @@ subtest 'MX' => sub {
             'num_of_days'                       => $limits->{for_days},
             'num_of_days_limit'                 => '99999999',
             'lifetime_limit'                    => '99999999',
-            payout_per_symbol_and_contract_type => 10000,
+            payout_per_symbol_and_contract_type => '10000.00',
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
