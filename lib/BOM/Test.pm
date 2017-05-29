@@ -5,6 +5,7 @@ use warnings;
 
 use Dir::Self;
 use Cwd qw/abs_path/;
+use POSIX qw/setsid/;
 
 =head1 NAME
 
