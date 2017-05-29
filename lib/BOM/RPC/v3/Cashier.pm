@@ -214,7 +214,7 @@ sub cashier {
 
     ## if currency == BTC|ETH, use cryptocurrency cashier
     if (grep { $currency eq $_ } ('BTC', 'ETH')) {
-        return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
+        return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
     # hit DF's CreateCustomer API
