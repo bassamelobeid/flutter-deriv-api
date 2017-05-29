@@ -7,6 +7,7 @@ use BOM::Product::Static;
 
 use List::Util qw(min max first);
 use Scalar::Util qw(looks_like_number);
+use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
