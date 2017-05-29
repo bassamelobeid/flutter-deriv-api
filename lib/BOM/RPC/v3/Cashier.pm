@@ -380,19 +380,29 @@ sub get_limits {
     }
 
     my $landing_company = LandingCompany::Registry::get_by_broker($client->broker)->short;
-    my $wl_config       = $payment_limits->{withdrawal_limits}->{$landing_company};
+    my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency)
 
-    my $limit = +{
-        account_balance                     => sprintf('%' . get_amount_precision($client->currency) . 'f', $client->get_limit_for_account_balance),
-        payout                              => sprintf('%' . get_amount_precision($client->currency) . 'f', $client->get_limit_for_payout),
+        my $limit = +{
+        account_balance                     => sprintf('%' . get_amount_precision($currency) . 'f', $client->get_limit_for_account_balance),
+        payout                              => sprintf('%' . get_amount_precision($currency) . 'f', $client->get_limit_for_payout),
         payout_per_symbol_and_contract_type => sprintf(
-            '%' . get_amount_precision($client->currency) . 'f',
-            BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$client->currency}
+            '%' . get_amount_precision($currency) . 'f',
+            BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency}
         ),
         open_positions => $client->get_limit_for_open_positions,
-    };
+        };
 
-    $limit->{market_specific} = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
+    # TODO: we should move formatting to risk profile
+    my $risk_definitions = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
+    foreach my $key (keys %$risk_definition) {
+        foreach my $def_item (@{$risk_definition->{$key}}) {
+            foreach my $item (keys %$def_item) {
+                next unless $item =~ /^(?:turnover_limit|payout_limit)$/;
+                $def_item->{$item} = sprintf('%' . get_amount_precision($currency) . 'f', $def_item->{$item});
+            }
+        }
+    }
+    $limit->{market_specific} = $risk_definition;
 
     my $numdays       = $wl_config->{for_days};
     my $numdayslimit  = $wl_config->{limit_for_days};
@@ -405,7 +415,7 @@ sub get_limits {
 
     my $withdrawal_limit_curr;
     if (first { $client->landing_company->short eq $_ } ('costarica', 'japan')) {
-        $withdrawal_limit_curr = $client->currency;
+        $withdrawal_limit_curr = $currency;
     } else {
         # limit in EUR for: MX, MLT, MF
         $withdrawal_limit_curr = 'EUR';
@@ -413,7 +423,7 @@ sub get_limits {
 
     $limit->{num_of_days}       = $numdays;
     $limit->{num_of_days_limit} = $numdayslimit;
-    $limit->{lifetime_limit}    = sprintf('%' . get_amount_precision($client->currency) . 'f', $lifetimelimit);
+    $limit->{lifetime_limit}    = sprintf('%' . get_amount_precision($currency) . 'f', $lifetimelimit);
 
     if (not $client->client_fully_authenticated) {
         # withdrawal since $numdays
@@ -422,20 +432,20 @@ sub get_limits {
             start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
             exclude    => ['currency_conversion_transfer'],
         });
-        $withdrawal_for_x_days = amount_from_to_currency($withdrawal_for_x_days, $client->currency, $withdrawal_limit_curr);
+        $withdrawal_for_x_days = amount_from_to_currency($withdrawal_for_x_days, $currency, $withdrawal_limit_curr);
 
         # withdrawal since inception
         my $withdrawal_since_inception = amount_from_to_currency($payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']}),
-            $client->currency, $withdrawal_limit_curr);
+            $currency, $withdrawal_limit_curr);
 
         my $remainder = min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception));
         if ($remainder < 0) {
             $remainder = 0;
         }
 
-        $limit->{withdrawal_since_inception_monetary} = sprintf('%' . get_amount_precision($client->currency) . 'f', $withdrawal_since_inception);
-        $limit->{withdrawal_for_x_days_monetary}      = sprintf('%' . get_amount_precision($client->currency) . 'f', $withdrawal_for_x_days);
-        $limit->{remainder}                           = sprintf('%' . get_amount_precision($client->currency) . 'f', $remainder);
+        $limit->{withdrawal_since_inception_monetary} = sprintf('%' . get_amount_precision($currency) . 'f', $withdrawal_since_inception);
+        $limit->{withdrawal_for_x_days_monetary}      = sprintf('%' . get_amount_precision($currency) . 'f', $withdrawal_for_x_days);
+        $limit->{remainder}                           = sprintf('%' . get_amount_precision($currency) . 'f', $remainder);
     }
 
     return $limit;
