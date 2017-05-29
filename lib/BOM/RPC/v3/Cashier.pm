@@ -392,17 +392,7 @@ sub get_limits {
         open_positions => $client->get_limit_for_open_positions,
     };
 
-    # TODO: we should move formatting to risk profile
-    my $risk_definition = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
-    foreach my $key (keys %$risk_definition) {
-        foreach my $def_item (@{$risk_definition->{$key}}) {
-            foreach my $item (keys %$def_item) {
-                next unless $item =~ /^(?:turnover_limit|payout_limit)$/;
-                $def_item->{$item} = sprintf('%' . get_amount_precision($currency) . 'f', $def_item->{$item});
-            }
-        }
-    }
-    $limit->{market_specific} = $risk_definition;
+    $limit->{market_specific} = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
 
     my $numdays       = $wl_config->{for_days};
     my $numdayslimit  = $wl_config->{limit_for_days};
