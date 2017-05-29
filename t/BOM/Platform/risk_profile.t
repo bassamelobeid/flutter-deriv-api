@@ -180,48 +180,48 @@ subtest 'empty limit condition' => sub {
 subtest 'get_current_profile_definitions' => sub {
     my $expected = {
         'commodities' => [{
-                'turnover_limit' => 50000,
-                'payout_limit'   => 5000,
+                'turnover_limit' => "50000.00",
+                'payout_limit'   => "5000.00",
                 'name'           => 'Commodities',
                 'profile_name'   => 'high_risk'
             }
         ],
         'volidx' => [{
-                'turnover_limit' => 500000,
-                'payout_limit'   => 50000,
+                'turnover_limit' => "500000.00",
+                'payout_limit'   => "50000.00",
                 'name'           => 'Volatility Indices',
                 'profile_name'   => 'low_risk'
             }
         ],
         'forex' => [{
-                'turnover_limit' => 50000,
-                'payout_limit'   => 5000,
+                'turnover_limit' => "50000.00",
+                'payout_limit'   => "5000.00",
                 'name'           => 'Smart FX',
                 'profile_name'   => 'high_risk',
             },
             {
-                'turnover_limit' => 50000,
-                'payout_limit'   => 5000,
+                'turnover_limit' => "50000.00",
+                'payout_limit'   => "5000.00",
                 'name'           => 'Minor Pairs',
                 'profile_name'   => 'high_risk',
             },
             {
-                'turnover_limit' => 100000,
-                'payout_limit'   => 20000,
+                'turnover_limit' => "100000.00",
+                'payout_limit'   => "20000.00",
                 'name'           => 'Major Pairs',
                 'profile_name'   => 'medium_risk',
             },
         ],
         'stocks' => [{
-                'turnover_limit' => 1000,
-                'payout_limit'   => 100,
+                'turnover_limit' => "1000.00",
+                'payout_limit'   => "100.00",
                 'name'           => 'OTC Stocks',
                 'profile_name'   => 'extreme_risk'
             }
         ],
         'indices' => [{
-                'turnover_limit' => 100000,
-                'payout_limit'   => 20000,
+                'turnover_limit' => "100000.00",
+                'payout_limit'   => "20000.00",
                 'name'           => 'Indices',
                 'profile_name'   => 'medium_risk'
             }]};
