@@ -63,7 +63,7 @@ UNITCHECK {
     use BOM::Product::Contract::Range;
     use BOM::Product::Contract::Upordown;
     use BOM::Product::Contract::NonBinary::Vanilla_call;
-    use BOM::Product::Contract::Vanilla_put;
+    use BOM::Product::Contract::NonBinary::Vanilla_put;
 }
 
 =head2 produce_contract

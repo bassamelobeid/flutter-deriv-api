@@ -1,8 +1,8 @@
-package BOM::Product::Contract::Vanilla_put;
+package BOM::Product::Contract::NonBinary::Vanilla_put;
 
 use Moose;
 extends 'BOM::Product::Contract';
-with 'BOM::Product::Role::SingleBarrier';
+with 'BOM::Product::Role::NonBinary', 'BOM::Product::Role::SingleBarrier';
 
 use BOM::Product::Pricing::Engine::BlackScholes;
 
