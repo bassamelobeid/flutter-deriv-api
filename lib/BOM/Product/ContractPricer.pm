@@ -724,13 +724,6 @@ sub _build_pricing_new {
     return 1;
 }
 
-sub _build_priced_with_intraday_model {
-    my $self = shift;
-
-    # Intraday::Index is just a flat price + commission, so it is not considered as a model.
-    return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
-}
-
 sub _match_symbol {
     my ($lists, $symbol) = @_;
     for (@$lists) {
