@@ -20,7 +20,7 @@ use Brands;
 use Client::Account;
 use LandingCompany::Registry;
 use Client::Account::PaymentAgent;
-use Price::Calculator qw/get_formatting_precision/;
+use Price::Calculator qw/get_amount_precision/;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 
 use BOM::Platform::User;
@@ -421,20 +421,20 @@ sub get_limits {
             exclude    => ['currency_conversion_transfer'],
         });
         $withdrawal_for_x_days = sprintf(
-            '%' . get_formatting_precision($withdrawal_limit_curr) . 'f',
+            '%' . get_amount_precision($withdrawal_limit_curr) . 'f',
             amount_from_to_currency($withdrawal_for_x_days, $client->currency, $withdrawal_limit_curr));
 
         # withdrawal since inception
         my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']});
         $withdrawal_since_inception = sprintf(
-            '%' . get_formatting_precision($withdrawal_limit_curr) . 'f',
+            '%' . get_amount_precision($withdrawal_limit_curr) . 'f',
             amount_from_to_currency($withdrawal_since_inception, $client->currency, $withdrawal_limit_curr));
 
         $limit->{withdrawal_since_inception_monetary} = $withdrawal_since_inception;
         $limit->{withdrawal_for_x_days_monetary}      = $withdrawal_for_x_days;
 
         my $remainder = sprintf(
-            '%' . get_formatting_precision($withdrawal_limit_curr) . 'f',
+            '%' . get_amount_precision($withdrawal_limit_curr) . 'f',
             min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception)));
         if ($remainder < 0) {
             $remainder = 0;
@@ -1074,9 +1074,9 @@ sub __client_withdrawal_notes {
     my $arg_ref  = shift;
     my $client   = $arg_ref->{'client'};
     my $currency = $client->currency;
-    my $amount   = sprintf('%' . get_formatting_precision($currency) . 'f', $arg_ref->{'amount'});
+    my $amount   = sprintf('%' . get_amount_precision($currency) . 'f', $arg_ref->{'amount'});
     my $error    = $arg_ref->{'error'};
-    my $balance  = $client->default_account ? sprintf('%' . get_formatting_precision($currency) . 'f', $client->default_account->balance) : 0;
+    my $balance  = $client->default_account ? sprintf('%' . get_amount_precision($currency) . 'f', $client->default_account->balance) : 0;
 
     if ($error =~ /exceeds client balance/) {
         return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
@@ -1158,7 +1158,7 @@ sub transfer_between_accounts {
                 {
                 loginid => $account->loginid,
                 balance => $account->default_account
-                ? sprintf('%' . get_formatting_precision($account->default_account->currency_code) . 'f', $account->default_account->balance)
+                ? sprintf('%' . get_amount_precision($account->default_account->currency_code) . 'f', $account->default_account->balance)
                 : "0.00",
                 currency => $account->default_account ? $account->default_account->currency_code : '',
                 };
@@ -1285,11 +1285,11 @@ sub transfer_between_accounts {
     if ($err) {
         my $limit;
         if ($err =~ /exceeds client balance/) {
-            $limit = $currency . ' ' . sprintf('%' . get_formatting_precision($currency) . 'f', $client_from->default_account->balance);
+            $limit = $currency . ' ' . sprintf('%' . get_amount_precision($currency) . 'f', $client_from->default_account->balance);
         } elsif ($err =~ /includes frozen bonus \[(.+)\]/) {
             my $frozen_bonus = $1;
             $limit =
-                $currency . ' ' . sprintf('%' . get_formatting_precision($currency) . 'f', $client_from->default_account->balance - $frozen_bonus);
+                $currency . ' ' . sprintf('%' . get_amount_precision($currency) . 'f', $client_from->default_account->balance - $frozen_bonus);
         } elsif ($err =~ /exceeds withdrawal limit \[(.+)\]\s+\((.+)\)/) {
             my $bal_1 = $1;
             my $bal_2 = $2;

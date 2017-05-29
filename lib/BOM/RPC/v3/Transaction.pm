@@ -7,7 +7,7 @@ use Try::Tiny;
 use JSON::XS qw/encode_json/;
 
 use Client::Account;
-use Price::Calculator qw/get_formatting_precision/;
+use Price::Calculator qw/get_amount_precision/;
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
@@ -85,7 +85,7 @@ sub buy {
     $response = {
         transaction_id => $trx->transaction_id,
         contract_id    => $trx->contract_id,
-        balance_after  => sprintf('%' . get_formatting_precision($client->currency) . 'f', $trx->balance_after),
+        balance_after  => sprintf('%' . get_amount_precision($client->currency) . 'f', $trx->balance_after),
         purchase_time  => $trx->purchase_date->epoch,
         buy_price      => $trx->price,
         start_time     => $trx->contract->date_start->epoch,
@@ -296,7 +296,7 @@ sub sell_contract_for_multiple_accounts {
             $new = +{
                 transaction_id => $row->{tnx}{id},
                 reference_id   => $row->{buy_tr_id},
-                balance_after  => sprintf('%' . get_formatting_precision($client->currency) . 'f', $row->{tnx}{balance_after}),
+                balance_after  => sprintf('%' . get_amount_precision($client->currency) . 'f', $row->{tnx}{balance_after}),
                 sell_price     => abs($row->{fmb}{sell_price}),
                 contract_id    => $row->{tnx}{financial_market_bet_id},
                 sell_time      => $row->{fmb}{sell_time},
@@ -356,7 +356,7 @@ sub sell {
         transaction_id => $trx->transaction_id,
         reference_id   => $trx->reference_id,                                                                          ### buy transaction ID
         contract_id    => $id,
-        balance_after  => sprintf('%' . get_formatting_precision($client->currency) . 'f', $trx_rec->balance_after),
+        balance_after  => sprintf('%' . get_amount_precision($client->currency) . 'f', $trx_rec->balance_after),
         sold_for       => abs($trx_rec->amount),
     };
 }

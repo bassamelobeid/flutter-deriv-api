@@ -14,7 +14,7 @@ use HTML::Entities qw(encode_entities);
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
-use Price::Calculator qw/get_formatting_precision/;
+use Price::Calculator qw/get_amount_precision/;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
@@ -140,7 +140,7 @@ sub statement {
             reference_id   => $txn->{buy_tr_id},
             amount         => $txn->{amount},
             action_type    => $txn->{action_type},
-            balance_after  => sprintf('%' . get_formatting_precision($account->currency_code) . 'f', $txn->{balance_after}),
+            balance_after  => sprintf('%' . get_amount_precision($account->currency_code) . 'f', $txn->{balance_after}),
             contract_id    => $txn->{financial_market_bet_id},
             payout         => $txn->{payout_price}};
 
@@ -280,7 +280,7 @@ sub balance {
     return {
         loginid  => $client_loginid,
         currency => $client->default_account->currency_code,
-        balance => sprintf('%' . get_formatting_precision($client->default_account->currency_code) . 'f', $client->default_account->balance)};
+        balance => sprintf('%' . get_amount_precision($client->default_account->currency_code) . 'f', $client->default_account->balance)};
 
 }
 
