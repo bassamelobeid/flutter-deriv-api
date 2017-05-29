@@ -51,11 +51,8 @@ has uses_binary_spot => (
 sub _build_file {
     my $self     = shift;
     my $filename = $self->filename;
-    my $url =
-        $filename eq 'auto_upload.xls'
-        ? 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?dl=0'
-        : 'https://www.dropbox.com/s/1y0l7dakl8yg5jd/auto_upload_stocks.xls?dl=0';
-    my $file = '/tmp/' . $filename;
+    my $url      = 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?dl=0';
+    my $file     = '/tmp/' . $filename;
     `wget -O $file $url > /dev/null 2>&1`;
     return $file;
 }
@@ -78,12 +75,6 @@ sub _build_symbols_to_update {
         # forcing it here since we don't have offerings for the index.
         push @symbols_to_update, qw(FTSE IXIC BIST100 DJI);
 
-    } else {
-        @symbols_to_update = create_underlying_db->get_symbols_for(
-            market            => 'stocks',
-            contract_category => 'ANY',
-            exclude_disabled  => 1,
-            submarket         => ['india_otc_stock', 'us_otc_stock', 'uk_otc_stock', 'ge_otc_stock',]);
     }
 
     return \@symbols_to_update;
