@@ -11,8 +11,6 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::Test::RPC::BomRpc;
-use BOM::Test::RPC::PricingRpc;
 
 my $sub_ids = {};
 my @symbols = qw(frxUSDJPY frxAUDJPY frxAUDUSD);
