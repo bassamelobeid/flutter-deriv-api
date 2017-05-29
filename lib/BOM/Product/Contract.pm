@@ -741,12 +741,12 @@ sub _build_opposite_contract {
     return $opp_contract;
 }
 
-sub _build_payout {
-    my ($self) = @_;
+#sub _build_payout {
+#    my ($self) = @_;
 
-    $self->_set_price_calculator_params('payout');
-    return $self->price_calculator->payout;
-}
+#    $self->_set_price_calculator_params('payout');
+#    return $self->price_calculator->payout;
+#}
 
 sub _build_entry_tick {
     my $self = shift;
