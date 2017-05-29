@@ -21,6 +21,7 @@ install:
     - sudo mkdir -p /etc/rmg
     - sudo touch /etc/rmg/feeddb.yml
     - sudo echo 'qa' > /etc/rmg/environment
+    - sudo chmod -R 777 /etc/rmg
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - make test
