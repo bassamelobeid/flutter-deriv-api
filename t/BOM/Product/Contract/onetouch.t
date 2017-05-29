@@ -67,8 +67,8 @@ subtest 'touch' => sub {
         is $c->code,         'ONETOUCH';
         is $c->pricing_code, 'ONETOUCH';
 
-        is $c->ask_price, 9.28;
-        is roundnear(0.001, $c->pricing_vol), 0.16;
+        is $c->ask_price, 9.31;
+        is roundnear(0.001, $c->pricing_vol), 0.184;
 
         is $c->sentiment, 'high_vol';
         ok $c->is_path_dependent;
