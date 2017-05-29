@@ -393,7 +393,7 @@ sub get_limits {
     };
 
     # TODO: we should move formatting to risk profile
-    my $risk_definitions = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
+    my $risk_definition = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
     foreach my $key (keys %$risk_definition) {
         foreach my $def_item (@{$risk_definition->{$key}}) {
             foreach my $item (keys %$def_item) {
