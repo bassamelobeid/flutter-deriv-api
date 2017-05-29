@@ -3,8 +3,12 @@ package BOM::Product::Role::Binary;
 use Moose::Role;
 
 use BOM::Platform::Config;
+use BOM::Product::Static;
+
 use List::Util qw(min max first);
 use Scalar::Util qw(looks_like_number);
+
+my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 sub _build_payout {
     my ($self) = @_;
