@@ -73,8 +73,8 @@ subtest 'CR' => sub {
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
             'lifetime_limit'                      => $limits->{lifetime_limit},
-            'withdrawal_for_x_days_monetary'      => '0',
-            'withdrawal_since_inception_monetary' => '0',
+            'withdrawal_for_x_days_monetary'      => '0.00',
+            'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => sprintf(get_formatting_precision('USD'), $limits->{lifetime_limit}),
             payout_per_symbol_and_contract_type   => 10000,
         };
@@ -150,8 +150,8 @@ subtest 'JP' => sub {
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
             'lifetime_limit'                      => $limits->{lifetime_limit},
-            'withdrawal_for_x_days_monetary'      => '0',
-            'withdrawal_since_inception_monetary' => '0',
+            'withdrawal_for_x_days_monetary'      => '0.00',
+            'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => sprintf(get_formatting_precision('JPY'), $limits->{lifetime_limit}),
             payout_per_symbol_and_contract_type   => 1000000,
         };
@@ -215,8 +215,8 @@ subtest 'MLT' => sub {
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
             'lifetime_limit'                      => $limits->{lifetime_limit},
-            'withdrawal_for_x_days_monetary'      => '0',
-            'withdrawal_since_inception_monetary' => '0',
+            'withdrawal_for_x_days_monetary'      => '0.00',
+            'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => sprintf(get_formatting_precision('JPY'), $limits->{lifetime_limit}),
             payout_per_symbol_and_contract_type   => 10000,
         };
