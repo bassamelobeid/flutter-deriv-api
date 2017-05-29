@@ -2,7 +2,7 @@ package BOM::Product::Contract::Digitodd;
 
 use Moose;
 extends 'BOM::Product::Contract';
-with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
+with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 use Pricing::Engine::Digits;
 
