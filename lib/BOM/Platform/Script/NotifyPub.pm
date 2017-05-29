@@ -61,11 +61,13 @@ sub run {
         }
     };
 
+    local $SIG{TERM} = $SIG{INT};
+
     for (1 .. $forks) {
         my $pid = wait();
         say "Parent saw $pid exiting";
     }
-    return;
+    return 0;
 }
 
 sub _publish {
@@ -101,8 +103,9 @@ sub _master_db_connections {
 
 sub _db {
     my $ip = shift;
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
     return DBI->connect(
-        "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432;application_name=notify_pub;sslmode=require",
+        "dbi:Pg:dbname=regentmarkets$db_postfix;host=$ip;port=5432;application_name=notify_pub;sslmode=require",
         'write',
         $conn->{$ip},
         {
@@ -113,7 +116,7 @@ sub _db {
 }
 
 sub _redis {
-    my $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
+    my $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml');
     return RedisDB->new(
         host     => $config->{write}->{host},
         port     => $config->{write}->{port},
