@@ -62,7 +62,7 @@ UNITCHECK {
     use BOM::Product::Contract::Put;
     use BOM::Product::Contract::Range;
     use BOM::Product::Contract::Upordown;
-    use BOM::Product::Contract::Vanilla_call;
+    use BOM::Product::Contract::NonBinary::Vanilla_call;
     use BOM::Product::Contract::Vanilla_put;
 }
 
