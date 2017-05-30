@@ -4,17 +4,7 @@ use Moose::Role;
 use Time::Duration::Concise;
 use List::Util qw(min max first);
 
-has ticks_for_lookbacks => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has spot_max => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has spot_min => (
+has [qw(ticks_for_lookbacks spot_min spot_max)] => (
     is         => 'ro',
     lazy_build => 1,
 );
