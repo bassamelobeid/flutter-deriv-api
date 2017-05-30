@@ -13,13 +13,16 @@ use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 sub buy_store_last_contract_id {
     my ($c, $api_response, $req_storage) = @_;
 
-    my $now = time;
     my $last_contracts = $c->stash('last_contracts') // {};
     # see cleanup at Binary::WebSocketAPI::Hooks::cleanup_strored_contract_ids
-    if ($api_response->{contract_id}) {
-        $last_contracts->{$api_response->{contract_id}} = $now;
-        $c->stash(last_contracts => $last_contracts);
+    my @contracts_ids = ($api_response->{contract_id});
+    if ( $api_response->{result} && ref $api_response->{result} eq 'ARRAY') {
+        push @contracts_ids, $api_response->{result}[$_]{contract_id} for @{$api_response->{result}};
     }
+
+    $last_contracts->{$_} = time for grep {defined} @contracts_ids;
+
+    $c->stash(last_contracts => $last_contracts);
     return;
 }
 

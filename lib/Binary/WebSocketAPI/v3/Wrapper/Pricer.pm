@@ -324,6 +324,13 @@ sub proposal_open_contract {
     my ($c, $response, $req_storage) = @_;
 
     my $args         = $req_storage->{args};
+
+    if ( $args->{subscribe} && !$args->{contract_id} ) {
+        Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $c->stash('account_id'), 'transaction', $args)
+              if $c->stash('account_id');
+        $c->stash(proposal_open_contracts_subscribed => $args);
+    }
+
     my $empty_answer = {
         msg_type               => 'proposal_open_contract',
         proposal_open_contract => {}};
@@ -582,6 +589,8 @@ sub process_bid_event {
             $response->{buy_price}       = $passed_fields->{buy_price};
             $response->{purchase_time}   = $passed_fields->{purchase_time};
             $response->{is_sold}         = $passed_fields->{is_sold};
+            Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid})
+                  if $response->{is_expired};
             $response->{longcode}        = $passed_fields->{longcode};
             $response->{contract_id}     = $stash_data->{args}->{contract_id} if exists $stash_data->{args}->{contract_id};
             $results                     = {
