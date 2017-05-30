@@ -21,6 +21,19 @@ sub BUILD {
     stats_inc('bom_websocket_api.v_3.pricing_subscriptions.instances');
     ### For pricer_queue daemon
     $self->redis_server->set($self->channel_name, 1);
+    my $channel_name = $self->channel_name;
+    $self->redis_server->subscribe(
+        [$self->channel_name],
+        sub {
+            my ($redis_self, $err) = @_;
+            if ($err) {
+                warn "Pricing subscription was not started. Channel -->> $channel_name  Error -->> $err";
+                stats_inc('bom_websocket_api.v_3.pricing_subscriptions.instances.error');
+            } else {
+                stats_inc('bom_websocket_api.v_3.pricing_subscriptions.instances.success');
+            }
+            return $redis_self;
+        });
     return $self;
 }
 
@@ -36,7 +49,6 @@ sub subscribe {
     stats_inc('bom_websocket_api.v_3.pricing_subscriptions.clients');
 
     Scalar::Util::weaken($self->redis_server->{shared_info}{$self->channel_name}{$c + 0});
-    $self->redis_server->subscribe([$self->channel_name], sub { });
 
     return $self;
 }
