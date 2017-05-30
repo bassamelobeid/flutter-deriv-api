@@ -52,7 +52,7 @@ sub shortcode_to_parameters {
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
     # Non binary parser
-    my $nonbinary_list = 'VANILLA_CALL|VANILLA_PUT|LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW';
+    my $nonbinary_list = 'LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW';
     if ($shortcode =~ /^($nonbinary_list)_(\w+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
 
         $bet_type          = $1;
