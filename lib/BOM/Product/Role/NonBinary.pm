@@ -22,7 +22,6 @@ sub _build_ticks_for_lookbacks {
             })};
 
     return \@ticks_since_start;
-
 }
 
 sub _build_spot_min {
