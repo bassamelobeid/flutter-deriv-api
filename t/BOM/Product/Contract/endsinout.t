@@ -51,7 +51,7 @@ subtest 'expiry miss' => sub {
         is $c->code,         'EXPIRYMISS';
         is $c->pricing_code, 'EXPIRYMISS';
         is $c->sentiment,    'high_vol';
-        is $c->ask_price,    '6.84';
+        is $c->ask_price,    '6.8';
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
@@ -111,7 +111,7 @@ subtest 'expiry range' => sub {
         isa_ok $c, 'BOM::Product::Contract::Expiryrange';
         is $c->code,         'EXPIRYRANGE';
         is $c->pricing_code, 'EXPIRYRANGE';
-        is $c->ask_price,    '4.18';
+        is $c->ask_price,    '4.13';
         ok $c->sentiment,    'low_vol';
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
