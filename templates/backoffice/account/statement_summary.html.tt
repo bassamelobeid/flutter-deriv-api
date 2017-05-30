@@ -1,7 +1,7 @@
 <table style="border: 1px solid black;">
 <tr>
 <td colspan="2">Last <select name="months">
-[% FOR i IN [1..6] %]
+[% FOR i IN [1..12] %]
 <option value="[% i %]"
 [% IF i == months %]
 selected
