@@ -2,7 +2,7 @@ use Test::More tests => 1;
 use strict;
 use warnings;
 
-if (my $r = `git grep "BOM::[A-Za-z]" | grep -v .proverc`) {
+if (my $r = `git grep "BOM::[A-Za-z]" | grep -v .proverc | grep -v README.md`) {
     print $r;
     ok 0, "Wrong structure dependency $r";
 } else {
