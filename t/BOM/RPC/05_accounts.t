@@ -1125,10 +1125,15 @@ subtest $method => sub {
     $params->{args}{residence} = 'zh';
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, an error occurred while processing your account.',
+        'Sorry, our service is not available for your country of residence.',
         'return error if cannot save'
     );
     $mocked_client->unmock('save');
+    # testing invalid residence, expecting save to fail
+    my $result = $c->tcall($method, $params);
+    is($result->{status}, undef, 'invalid residence should not be able to save');
+    # testing valid residence, expecting save to pass
+    $params->{args}{residence} = 'kr';
     my $result = $c->tcall($method, $params);
     is($result->{status}, 1, 'vr account update residence successfully');
     $test_client_vr->load;
