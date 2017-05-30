@@ -15,7 +15,7 @@ use JSON qw(from_json);
 
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use Price::Calculator qw/get_amount_precision/;
+use Price::Calculator qw/formatnumber/;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::Platform::Runtime;
@@ -247,8 +247,8 @@ sub get_current_profile_definitions {
         if (@submarket_list) {
             my @list = map { {
                     name           => $_->display_name,
-                    turnover_limit => sprintf('%' . get_amount_precision($currency) . 'f', $limit_ref->{$_->risk_profile}{turnover}{$currency}),
-                    payout_limit   => sprintf('%' . get_amount_precision($currency) . 'f', $limit_ref->{$_->risk_profile}{payout}{$currency}),
+                    turnover_limit => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{turnover}{$currency}),
+                    payout_limit   => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{payout}{$currency}),
                     profile_name   => $_->risk_profile
                 }
             } @submarket_list;
@@ -257,8 +257,8 @@ sub get_current_profile_definitions {
             push @{$limits{$market->name}},
                 +{
                 name           => $market->display_name,
-                turnover_limit => sprintf('%' . get_amount_precision($currency) . 'f', $limit_ref->{$market->risk_profile}{turnover}{$currency}),
-                payout_limit   => sprintf('%' . get_amount_precision($currency) . 'f', $limit_ref->{$market->risk_profile}{payout}{$currency}),
+                turnover_limit => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{turnover}{$currency}),
+                payout_limit   => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{payout}{$currency}),
                 profile_name   => $market->risk_profile,
                 };
         }
