@@ -2,17 +2,32 @@ use strict;
 use warnings;
 
 use Test::Most;
-use BOM::RPC::v3::Utility;
+use Price::Calculator qw/get_amount_precision get_price_precision/;
 
-is BOM::RPC::v3::Utility::format_amount('USD', 10),               '10.00',       'USD 10 -> 10.00';
-is BOM::RPC::v3::Utility::format_amount('USD', 10.000001),        '10.00',       'USD 10.000001 -> 10.00';
-is BOM::RPC::v3::Utility::format_amount('BTC', 10),               '10.00000000', 'BTC 10 -> 10.00000000';
-is BOM::RPC::v3::Utility::format_amount('BTC', 10.000001),        '10.00000100', 'BTC 10.000001 -> 10.00000100';
-is BOM::RPC::v3::Utility::format_amount('BTC', 10.0000000000001), '10.00000000', 'BTC 10.0000000000001 -> 10.00000000';
+subtest 'check amount precision' => sub {
+    is sprintf('%' . get_amount_precision('USD') . 'f', 10),               '10.00',       'USD 10 -> 10.00';
+    is sprintf('%' . get_amount_precision('USD') . 'f', 10.000001),        '10.00',       'USD 10.000001 -> 10.00';
+    is sprintf('%' . get_amount_precision('EUR') . 'f', 10.000001),        '10.00',       'EUR 10.000001 -> 10.00';
+    is sprintf('%' . get_amount_precision('JPY') . 'f', 10.000001),        '10.00',       'JPY 10.000001 -> 10.00';
+    is sprintf('%' . get_amount_precision('BTC') . 'f', 10),               '10.00000000', 'BTC 10 -> 10.00000000';
+    is sprintf('%' . get_amount_precision('BTC') . 'f', 10.000001),        '10.00000100', 'BTC 10.000001 -> 10.00000100';
+    is sprintf('%' . get_amount_precision('BTC') . 'f', 10.0000000000001), '10.00000000', 'BTC 10.0000000000001 -> 10.00000000';
+    is sprintf('%' . get_amount_precision('ETH') . 'f', 10),               '10.00000000', 'ETH 10 -> 10.00000000';
+    is sprintf('%' . get_amount_precision('ETH') . 'f', 10.000001),        '10.00000100', 'ETH 10.000001 -> 10.00000100';
+    is sprintf('%' . get_amount_precision('ETH') . 'f', 10.0000000000001), '10.00000000', 'ETH 10.0000000000001 -> 10.00000000';
+};
 
-throws_ok {
-    BOM::RPC::v3::Utility::format_amount('FOO', 1);
-}
-qr/wrong currency for rounding/, 'No format for unknow currency';
+subtest 'check price precision' => sub {
+    is sprintf('%' . get_price_precision('USD') . 'f', 10),               '10.00',       'USD 10 -> 10.00';
+    is sprintf('%' . get_price_precision('USD') . 'f', 10.000001),        '10.00',       'USD 10.000001 -> 10.00';
+    is sprintf('%' . get_price_precision('EUR') . 'f', 10.000001),        '10.00',       'EUR 10.000001 -> 10.00';
+    is sprintf('%' . get_price_precision('JPY') . 'f', 10.000001),        '10',          'JPY 10.000001 -> 10';
+    is sprintf('%' . get_price_precision('BTC') . 'f', 10),               '10.00000000', 'BTC 10 -> 10.00000000';
+    is sprintf('%' . get_price_precision('BTC') . 'f', 10.000001),        '10.00000100', 'BTC 10.000001 -> 10.00000100';
+    is sprintf('%' . get_price_precision('BTC') . 'f', 10.0000000000001), '10.00000000', 'BTC 10.0000000000001 -> 10.00000000';
+    is sprintf('%' . get_price_precision('ETH') . 'f', 10),               '10.00000000', 'ETH 10 -> 10.00000000';
+    is sprintf('%' . get_price_precision('ETH') . 'f', 10.000001),        '10.00000100', 'ETH 10.000001 -> 10.00000100';
+    is sprintf('%' . get_price_precision('ETH') . 'f', 10.0000000000001), '10.00000000', 'ETH 10.0000000000001 -> 10.00000000';
+};
 
 done_testing();
