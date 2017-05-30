@@ -3,7 +3,6 @@ forex:
   - traded_market_markup
   - economic_event_markup
   - end_of_day_markup
-  - butterfly_markup
 commodities:
   - traded_market_markup
   - economic_event_markup
