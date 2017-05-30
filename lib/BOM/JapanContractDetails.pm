@@ -78,15 +78,13 @@ sub verify_with_id {
         ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
 
     my $extra;
-    if ($details->{volatility_scaling_factor}) {
-        $extra = join '_',
-            (map { $details->{$_} } qw(pricing_spot high_barrier_vol news_adjusted_pricing_vol long_term_prediction volatility_scaling_factor));
+    if ($details->{news_adjusted_pricing_vol}) {
+        $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol news_adjusted_pricing_vol long_term_prediction));
     } elsif ($details->{low_barrier_vol}) {
         $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol low_barrier_vol));
     } else {
         $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol));
     }
-
     my $parameters = verify_with_shortcode({
         shortcode       => $details->{shortcode},
         currency        => $details->{currency_code},
