@@ -11,7 +11,7 @@ use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use Brands;
-use Price::Calculator qw/get_amount_precision/;
+use Price::Calculator qw/formatnumber/;
 
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Account::Virtual;
@@ -85,7 +85,7 @@ sub new_account_virtual {
         client_id   => $client->loginid,
         email       => $email,
         currency    => $account->currency_code,
-        balance     => sprintf('%' . get_amount_precision($account->currency_code) . 'f', $account->balance),
+        balance     => formatnumber('amount', $account->currency_code, $account->balance),
         oauth_token => _create_oauth_token($client->loginid),
     };
 }

@@ -7,7 +7,7 @@ use Test::Mojo;
 use Test::MockModule;
 use YAML::XS qw(LoadFile);
 
-use Price::Calculator qw/get_amount_precision/;
+use Price::Calculator qw/formatnumber/;
 use BOM::RPC::v3::Cashier;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -66,17 +66,17 @@ subtest 'CR' => sub {
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
-            'account_balance'                     => sprintf('%0.02f',                                $client->get_limit_for_account_balance),
+            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => sprintf('%0.02f',                                $client->get_limit_for_payout),
+            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f',                                $limits->{lifetime_limit}),
+            'lifetime_limit'                      => sprintf('%0.02f', $limits->{lifetime_limit}),
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
-            'remainder'                           => sprintf('%' . get_amount_precision('USD') . 'f', $limits->{lifetime_limit}),
-            payout_per_symbol_and_contract_type   => '10000.00',
+            'remainder'                         => formatnumber('amount', 'USD', $limits->{lifetime_limit}),
+            payout_per_symbol_and_contract_type => '10000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -143,17 +143,17 @@ subtest 'JP' => sub {
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
-            'account_balance'                     => sprintf('%0.02f',                                $client->get_limit_for_account_balance),
+            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => sprintf('%0.02f',                                $client->get_limit_for_payout),
+            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f',                                $limits->{lifetime_limit}),
+            'lifetime_limit'                      => sprintf('%0.02f', $limits->{lifetime_limit}),
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
-            'remainder'                           => sprintf('%' . get_amount_precision('JPY') . 'f', $limits->{lifetime_limit}),
-            payout_per_symbol_and_contract_type   => '1000000.00',
+            'remainder'                         => formatnumber('amount', 'JPY', $limits->{lifetime_limit}),
+            payout_per_symbol_and_contract_type => '1000000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -208,17 +208,17 @@ subtest 'MLT' => sub {
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
-            'account_balance'                     => sprintf('%0.02f',                                $client->get_limit_for_account_balance),
+            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => sprintf('%0.02f',                                $client->get_limit_for_payout),
+            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f',                                $limits->{lifetime_limit}),
+            'lifetime_limit'                      => sprintf('%0.02f', $limits->{lifetime_limit}),
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
-            'remainder'                           => sprintf('%' . get_amount_precision('EUR') . 'f', $limits->{lifetime_limit}),
-            payout_per_symbol_and_contract_type   => '10000.00',
+            'remainder'                         => formatnumber('amount', 'EUR', $limits->{lifetime_limit}),
+            payout_per_symbol_and_contract_type => '10000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -273,17 +273,17 @@ subtest 'MX' => sub {
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
-            'account_balance'                     => sprintf('%0.02f',                                $client->get_limit_for_account_balance),
+            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => sprintf('%0.02f',                                $client->get_limit_for_payout),
+            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f',                                $limits->{lifetime_limit}),
+            'lifetime_limit'                      => sprintf('%0.02f', $limits->{lifetime_limit}),
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
-            'remainder'                           => sprintf('%' . get_amount_precision('EUR') . 'f', $limits->{limit_for_days}),
-            payout_per_symbol_and_contract_type   => '10000.00',
+            'remainder'                         => formatnumber('amount', 'EUR', $limits->{limit_for_days}),
+            payout_per_symbol_and_contract_type => '10000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 

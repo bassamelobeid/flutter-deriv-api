@@ -2,32 +2,32 @@ use strict;
 use warnings;
 
 use Test::Most;
-use Price::Calculator qw/get_amount_precision get_price_precision/;
+use Price::Calculator qw/formatnumber/;
 
 subtest 'check amount precision' => sub {
-    is sprintf('%' . get_amount_precision('USD') . 'f', 10),               '10.00',       'USD 10 -> 10.00';
-    is sprintf('%' . get_amount_precision('USD') . 'f', 10.000001),        '10.00',       'USD 10.000001 -> 10.00';
-    is sprintf('%' . get_amount_precision('EUR') . 'f', 10.000001),        '10.00',       'EUR 10.000001 -> 10.00';
-    is sprintf('%' . get_amount_precision('JPY') . 'f', 10.000001),        '10.00',       'JPY 10.000001 -> 10.00';
-    is sprintf('%' . get_amount_precision('BTC') . 'f', 10),               '10.00000000', 'BTC 10 -> 10.00000000';
-    is sprintf('%' . get_amount_precision('BTC') . 'f', 10.000001),        '10.00000100', 'BTC 10.000001 -> 10.00000100';
-    is sprintf('%' . get_amount_precision('BTC') . 'f', 10.0000000000001), '10.00000000', 'BTC 10.0000000000001 -> 10.00000000';
-    is sprintf('%' . get_amount_precision('ETH') . 'f', 10),               '10.00000000', 'ETH 10 -> 10.00000000';
-    is sprintf('%' . get_amount_precision('ETH') . 'f', 10.000001),        '10.00000100', 'ETH 10.000001 -> 10.00000100';
-    is sprintf('%' . get_amount_precision('ETH') . 'f', 10.0000000000001), '10.00000000', 'ETH 10.0000000000001 -> 10.00000000';
+    is formatnumber('amount', 'USD', 10),               '10.00',       'USD 10 -> 10.00';
+    is formatnumber('amount', 'USD', 10.000001),        '10.00',       'USD 10.000001 -> 10.00';
+    is formatnumber('amount', 'EUR', 10.000001),        '10.00',       'EUR 10.000001 -> 10.00';
+    is formatnumber('amount', 'JPY', 10.000001),        '10.00',       'JPY 10.000001 -> 10.00';
+    is formatnumber('amount', 'BTC', 10),               '10.00000000', 'BTC 10 -> 10.00000000';
+    is formatnumber('amount', 'BTC', 10.000001),        '10.00000100', 'BTC 10.000001 -> 10.00000100';
+    is formatnumber('amount', 'BTC', 10.0000000000001), '10.00000000', 'BTC 10.0000000000001 -> 10.00000000';
+    is formatnumber('amount', 'ETH', 10),               '10.00000000', 'ETH 10 -> 10.00000000';
+    is formatnumber('amount', 'ETH', 10.000001),        '10.00000100', 'ETH 10.000001 -> 10.00000100';
+    is formatnumber('amount', 'ETH', 10.0000000000001), '10.00000000', 'ETH 10.0000000000001 -> 10.00000000';
 };
 
 subtest 'check price precision' => sub {
-    is sprintf('%' . get_price_precision('USD') . 'f', 10),               '10.00',       'USD 10 -> 10.00';
-    is sprintf('%' . get_price_precision('USD') . 'f', 10.000001),        '10.00',       'USD 10.000001 -> 10.00';
-    is sprintf('%' . get_price_precision('EUR') . 'f', 10.000001),        '10.00',       'EUR 10.000001 -> 10.00';
-    is sprintf('%' . get_price_precision('JPY') . 'f', 10.000001),        '10',          'JPY 10.000001 -> 10';
-    is sprintf('%' . get_price_precision('BTC') . 'f', 10),               '10.00000000', 'BTC 10 -> 10.00000000';
-    is sprintf('%' . get_price_precision('BTC') . 'f', 10.000001),        '10.00000100', 'BTC 10.000001 -> 10.00000100';
-    is sprintf('%' . get_price_precision('BTC') . 'f', 10.0000000000001), '10.00000000', 'BTC 10.0000000000001 -> 10.00000000';
-    is sprintf('%' . get_price_precision('ETH') . 'f', 10),               '10.00000000', 'ETH 10 -> 10.00000000';
-    is sprintf('%' . get_price_precision('ETH') . 'f', 10.000001),        '10.00000100', 'ETH 10.000001 -> 10.00000100';
-    is sprintf('%' . get_price_precision('ETH') . 'f', 10.0000000000001), '10.00000000', 'ETH 10.0000000000001 -> 10.00000000';
+    is formatnumber('price', 'USD', 10),               '10.00',       'USD 10 -> 10.00';
+    is formatnumber('price', 'USD', 10.000001),        '10.00',       'USD 10.000001 -> 10.00';
+    is formatnumber('price', 'EUR', 10.000001),        '10.00',       'EUR 10.000001 -> 10.00';
+    is formatnumber('price', 'JPY', 10.000001),        '10',          'JPY 10.000001 -> 10';
+    is formatnumber('price', 'BTC', 10),               '10.00000000', 'BTC 10 -> 10.00000000';
+    is formatnumber('price', 'BTC', 10.000001),        '10.00000100', 'BTC 10.000001 -> 10.00000100';
+    is formatnumber('price', 'BTC', 10.0000000000001), '10.00000000', 'BTC 10.0000000000001 -> 10.00000000';
+    is formatnumber('price', 'ETH', 10),               '10.00000000', 'ETH 10 -> 10.00000000';
+    is formatnumber('price', 'ETH', 10.000001),        '10.00000100', 'ETH 10.000001 -> 10.00000100';
+    is formatnumber('price', 'ETH', 10.0000000000001), '10.00000000', 'ETH 10.0000000000001 -> 10.00000000';
 };
 
 done_testing();

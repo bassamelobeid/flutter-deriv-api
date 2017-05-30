@@ -6,7 +6,7 @@ use warnings;
 use Date::Utility;
 use Try::Tiny;
 
-use Price::Calculator qw/get_price_precision/;
+use Price::Calculator qw/formatnumber/;
 
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Pricing;
@@ -158,7 +158,7 @@ sub proposal_open_contract {
             $bid->{account_id}      = $fmb->{account_id};
             $bid->{is_sold}         = $fmb->{is_sold};
             $bid->{sell_time}       = $sell_time if $sell_time;
-            $bid->{sell_price}      = sprintf('%' . get_price_precision($currency) . 'f', $fmb->{sell_price}) if defined $fmb->{sell_price};
+            $bid->{sell_price}      = formatnumber('price', $currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
 
             $response->{$id} = $bid;
         }

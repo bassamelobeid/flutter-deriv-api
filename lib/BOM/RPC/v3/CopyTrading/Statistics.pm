@@ -7,7 +7,7 @@ use Try::Tiny;
 use Performance::Probability qw(get_performance_probability);
 
 use Client::Account;
-use Price::Calculator qw/get_amount_precision get_price_precision/;
+use Price::Calculator qw/formatnumber/;
 
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
@@ -95,7 +95,7 @@ sub copytrading_statistics {
         my $W      = $result_hash->{monthly_profitable_trades}->{$date}->{withdrawal};
         my $E0     = $result_hash->{monthly_profitable_trades}->{$date}->{E0};
         my $E1     = $result_hash->{monthly_profitable_trades}->{$date}->{E1};
-        my $current_month_profit = sprintf('%' . get_amount_precision($currency) . 'f', ((($E1 + $W) - ($E0 + $D)) / ($E0 + $D)));
+        my $current_month_profit = formatnumber('amount', $currency, ((($E1 + $W) - ($E0 + $D)) / ($E0 + $D)));
         $result_hash->{monthly_profitable_trades}->{$date} = $current_month_profit;
         push @sorted_monthly_profits, $current_month_profit;
         push @{$result_hash->{yearly_profitable_trades}->{$year}}, $current_month_profit;
@@ -142,8 +142,9 @@ sub copytrading_statistics {
     # let Ren know if there are still errors
     if (scalar(grep { $_->{bet_type} =~ /^(call|put)$/i } @{$sold_contracts}) > 50) {
         try {
-            $result_hash->{performance_probability} = sprintf(
-                '%' . get_price_precision($currency) . 'f',
+            $result_hash->{performance_probability} = formatnumber(
+                'amount',
+                $currency,
                 1 - Performance::Probability::get_performance_probability({
                         pnl          => $cumulative_pnl,
                         payout       => $contract_parameters->{payout_price},
@@ -165,16 +166,12 @@ sub copytrading_statistics {
     # trades profitable && total trades count
     my $win_trades  = BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:win")  || 0;
     my $loss_trades = BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:loss") || 0;
-    $result_hash->{total_trades}      = $win_trades + $loss_trades;
-    $result_hash->{trades_profitable} = sprintf('%' . get_amount_precision($currency) . 'f', $win_trades / ($result_hash->{total_trades} || 1));
-    $result_hash->{avg_profit}        = sprintf(
-        '%' . get_amount_precision($currency) . 'f',
-        BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0
-    );
-    $result_hash->{avg_loss} = sprintf(
-        '%' . get_amount_precision($currency) . 'f',
-        BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0
-    );
+    $result_hash->{total_trades} = $win_trades + $loss_trades;
+    $result_hash->{trades_profitable} = formatnumber('amount', $currency, $win_trades / ($result_hash->{total_trades} || 1));
+    $result_hash->{avg_profit} =
+        formatnumber('amount', $currency, BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0);
+    $result_hash->{avg_loss} =
+        formatnumber('amount', $currency, BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0);
 
     # trades_breakdown
     my %symbols_breakdown = @{BOM::Platform::RedisReplicated::redis_read->hgetall("COPY_TRADING_SYMBOLS_BREAKDOWN:$trader_id")};
@@ -184,7 +181,7 @@ sub copytrading_statistics {
     }
     for my $market (keys %{$result_hash->{trades_breakdown}}) {
         $result_hash->{trades_breakdown}->{$market} =
-            sprintf('%' . get_amount_precision($currency) . 'f', $result_hash->{trades_breakdown}->{$market} / $result_hash->{total_trades});
+            formatnumber('amount', $currency, $result_hash->{trades_breakdown}->{$market} / $result_hash->{total_trades});
     }
 
     return $result_hash;
@@ -194,7 +191,7 @@ sub _year_performance {
     my ($currency, @months) = @_;
     my $profits_mult = 1;
     $profits_mult *= 1 + $_ for @months;
-    return sprintf('%' . get_amount_precision($currency) . 'f', $profits_mult - 1);
+    return formatnumber('amount', $currency, $profits_mult - 1);
 }
 
 1;
