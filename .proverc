@@ -3,4 +3,5 @@
 -MBOM::Test
 -MBOM::Test::RPC::PricingRpc
 -MBOM::Test::RPC::BomRpc
+-MBOM::Test::Script::NotifyPub
 
