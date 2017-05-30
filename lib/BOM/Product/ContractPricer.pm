@@ -292,6 +292,10 @@ sub _create_new_interface_engine {
             mu            => $self->mu,
             vol           => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
         );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Lookbacks') {
+        %pricing_parameters = (
+
+        );
     } else {
         die "Unknown pricing engine: " . $self->pricing_engine_name;
     }
