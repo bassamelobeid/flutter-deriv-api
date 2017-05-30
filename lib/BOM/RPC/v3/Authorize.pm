@@ -6,7 +6,7 @@ use warnings;
 use Date::Utility;
 
 use Client::Account;
-use Price::Calculator qw/get_amount_precision/;
+use Price::Calculator qw/formatnumber/;
 
 use BOM::Platform::AuditLog;
 use BOM::RPC::v3::Utility;
@@ -85,7 +85,7 @@ sub authorize {
     return {
         fullname => $client->full_name,
         loginid  => $client->loginid,
-        balance  => $account ? sprintf('%' . get_amount_precision($account->currency_code) . 'f', $account->balance) : '0.00',
+        balance  => $account ? formatnumber('amount', $account->currency_code, $account->balance) : '0.00',
         currency => ($account ? $account->currency_code : ''),
         email    => $client->email,
         country  => $client->residence,
