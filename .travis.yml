@@ -18,10 +18,6 @@ before_install:
 install:
     - source /tmp/travis-scripts/devbox_path.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
-    - sudo mkdir -p /etc/rmg
-    - sudo touch /etc/rmg/feeddb.yml
-    - sudo echo 'qa01' > /etc/rmg/environment
-    - sudo chmod -R 777 /etc/rmg
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - make test
