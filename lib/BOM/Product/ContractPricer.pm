@@ -502,6 +502,7 @@ sub _build_new_interface_engine {
         'Pricing::Engine::Digits'               => 1,
         'Pricing::Engine::TickExpiry'           => 1,
         'Pricing::Engine::EuropeanDigitalSlope' => 1,
+        'Pricing::Engine::Lookbacks'            => 1,
     );
 
     return $engines{$self->pricing_engine_name} // 0;
