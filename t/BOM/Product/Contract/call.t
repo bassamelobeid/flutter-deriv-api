@@ -107,8 +107,8 @@ subtest 'call variations' => sub {
         ok $c->is_intraday, 'is intraday';
         ok !$c->expiry_daily, 'not expiry daily';
 
-        is $c->ask_price, 5.28, 'correct ask price';
-        is roundnear(0.001, $c->pricing_vol), 0.06, 'correct pricing vol';
+        is $c->ask_price, 5.32, 'correct ask price';
+        is roundnear(0.001, $c->pricing_vol), 0.137, 'correct pricing vol';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         isa_ok $c->barrier,        'BOM::Product::Contract::Strike';
         cmp_ok $c->barrier->as_absolute, '==', 76.900, 'correct absolute barrier';
