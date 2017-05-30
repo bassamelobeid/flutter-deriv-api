@@ -7,9 +7,8 @@ use JSON qw(from_json);
 use Math::Util::CalculatedValue::Validatable;
 use List::Util qw(max);
 use List::MoreUtils qw(none all);
-use Format::Util::Numbers qw(roundnear);
 
-use Price::Calculator qw/get_rounding_precision/;
+use Price::Calculator qw/formatnumber/;
 use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::Currency;
 use Quant::Framework::CorrelationMatrix;
@@ -438,7 +437,7 @@ sub _build_app_markup {
 sub _build_app_markup_dollar_amount {
     my $self = shift;
 
-    return roundnear(get_rounding_precision($self->currency), $self->app_markup->amount * $self->payout);
+    return formatnumber('amount', $self->currency, $self->app_markup->amount * $self->payout);
 }
 
 #this is supposed to be called for legacy pricing engines (not new interface)

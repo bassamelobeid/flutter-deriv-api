@@ -48,8 +48,8 @@ use Quant::Framework;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 use Postgres::FeedDB::Spot::Tick;
-use Price::Calculator;
 use LandingCompany::Offerings qw(get_contract_specifics);
+use Price::Calculator qw/formatnumber/;
 
 use BOM::Platform::Chronicle;
 use BOM::MarketData::Types;
@@ -845,7 +845,8 @@ sub _build_staking_limits {
     if ($self->for_sale) {
         $message_to_client = [$ERROR_MAPPING->{MarketPricePayoutClose}];
     } else {
-        $message_to_client = [$ERROR_MAPPING->{StakePayoutLimits}, $stake_min, $payout_max];
+        $message_to_client =
+            [$ERROR_MAPPING->{StakePayoutLimits}, formatnumber('price', $curr, $stake_min), formatnumber('price', $curr, $payout_max)];
     }
 
     return {
