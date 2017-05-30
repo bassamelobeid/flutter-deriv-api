@@ -60,7 +60,6 @@ sub build_mojo_test {
 }
 
 sub launch_redis {
-    my $t            = shift;
     my $redis_port   = empty_port;
     my $redis_server = Mojo::Redis2::Server->new;
     $redis_server->start(port => $redis_port);

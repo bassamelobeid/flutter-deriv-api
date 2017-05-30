@@ -191,7 +191,7 @@ sub create_doc {
 }
 
 sub import {
-    my ($class, $init) = @_;
+    my (undef, $init) = @_;
     _init() if $init && $init eq ':init';
     return;
 }
