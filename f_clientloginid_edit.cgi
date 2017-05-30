@@ -30,6 +30,7 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
+use BOM::Database::Model::AccessToken;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -722,6 +723,16 @@ if (@siblings > 1 or @mt_logins > 0) {
     }
 
     print "</ul>";
+}
+
+Bar("$encoded_loginid Tokens");
+my @all_accounts = $user->clients;
+foreach my $l (@all_accounts) {
+    my $tokens = BOM::Database::Model::AccessToken->new->get_tokens_by_loginid($l->loginid);
+    foreach my $t (@$tokens) {
+        $t->{token} =~ /(.{4})$/;
+        print "Access Token [" . $l->loginid . "]: $1 <br\>";
+    }
 }
 
 my $log_args = {
