@@ -26,7 +26,7 @@ use Pricing::Engine::Markup::SpotSpread;
 use Pricing::Engine::Markup::VolSpread;
 use Pricing::Engine::Markup::SmileUncertainty;
 
-has [qw(butterfly_markup risk_markup forward_starting_markup)] => (
+has [qw(risk_markup forward_starting_markup)] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
@@ -56,89 +56,6 @@ sub vol_spread_markup {
             }
         ),
     )->markup;
-}
-
-sub _build_butterfly_markup {
-    my $self = shift;
-
-    # Increase spreads if the butterfly is greater than 1%
-    my $butterfly_cutoff          = 0.01;
-    my $butterfly_cutoff_breached = 0;
-
-    my $comm = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'butterfly_markup',
-        description => 'high butterfly adjustment',
-        set_by      => 'Role::RiskMarkup',
-        base_amount => 0,
-        minimum     => 0,
-        maximum     => 0.1,
-    });
-
-    my $bet     = $self->bet;
-    my $surface = $bet->volsurface;
-
-    if (
-            $bet->market->markups->apply_butterfly_markup
-        and $bet->timeindays->amount <= $surface->_ON_day                  # only apply butterfly markup to overnight contracts
-        and $surface->original_term_for_smile->[0] == $surface->_ON_day    # does the surface have an ON tenor?
-        and $surface->get_market_rr_bf($surface->original_term_for_smile->[0])->{BF_25} > $butterfly_cutoff
-        )
-    {
-        $butterfly_cutoff_breached = 1;
-    }
-
-    # Boolean indicator of butterfly greater than cutoff condition
-    my $butterfly_greater_than_cutoff = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'butterfly_greater_than_cutoff',
-        description => 'Boolean indicator of a butterfly greater than the cutoff',
-        set_by      => 'Role::RiskMarkup',
-        base_amount => $butterfly_cutoff_breached,
-    });
-    $comm->include_adjustment('reset', $butterfly_greater_than_cutoff);
-
-    if ($butterfly_cutoff_breached == 1) {
-
-        # theo probability, priced at the current value
-        my $actual_theoretical_value_amount = $bet->pricing_engine->base_probability->amount;
-        my $actual_theoretical_value        = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'actual_theoretical_value',
-            description => 'The theoretical value with the actual butterfly',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => $actual_theoretical_value_amount,
-        });
-
-        # theo probability, priced at the butterfly_cutoff
-        my $butterfly_cutoff_theoretical_value_amount = $self->butterfly_cutoff_theoretical_value_amount($butterfly_cutoff);
-        my $butterfly_cutoff_theoretical_value        = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'butterfly_cutoff_theoretical_value',
-            description => 'The theoretical value at the butterfly_cutoff',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => $butterfly_cutoff_theoretical_value_amount,
-        });
-
-        # difference between the two theo probabilities
-        my $difference_of_theoretical_values = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'difference_of_theoretical_values',
-            description => 'The difference of theoretical values',
-            set_by      => 'Role::RiskMarkup',
-        });
-
-        $difference_of_theoretical_values->include_adjustment('reset',    $actual_theoretical_value);
-        $difference_of_theoretical_values->include_adjustment('subtract', $butterfly_cutoff_theoretical_value);
-
-        # absolute difference between the two theo probabilities
-        my $absolute_difference_of_theoretical_values = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'absoute_difference_of_theoretical_values',
-            description => 'The absolute difference of theoretical values',
-            set_by      => 'Role::RiskMarkup',
-            base_amount => abs($actual_theoretical_value_amount - $butterfly_cutoff_theoretical_value_amount),
-        });
-
-        $absolute_difference_of_theoretical_values->include_adjustment('absolute', $difference_of_theoretical_values);
-        $comm->include_adjustment('multiply', $absolute_difference_of_theoretical_values);
-    }
-
-    return $comm;
 }
 
 =head2 butterfly_cutoff_theoretical_value_amount
@@ -220,10 +137,6 @@ sub _build_risk_markup {
         if (not $self->bet->is_atm_bet and grep { $self->bet->market->name eq $_ } qw(indices stocks) and $self->bet->timeindays->amount < 7) {
             $risk_markup->include_adjustment('add', $self->smile_uncertainty_markup);
         }
-    }
-
-    if ($self->bet->market->markups->apply_butterfly_markup) {
-        $risk_markup->include_adjustment('add', $self->butterfly_markup);
     }
 
     my $spread_to_markup = Math::Util::CalculatedValue::Validatable->new({
