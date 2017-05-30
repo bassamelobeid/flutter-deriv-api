@@ -12,7 +12,7 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
 use Time::Duration::Concise::Localize;
 
-use Price::Calculator qw/get_price_precision/;
+use Price::Calculator qw/formatnumber/;
 use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 
 use BOM::MarketData qw(create_underlying);
@@ -172,8 +172,8 @@ sub _get_ask {
                         message_to_client => $message_to_client,
                         code              => $code,
                         details           => {
-                            display_value => sprintf('%' . get_price_precision($contract->currency) . 'f', $display_value),
-                            payout        => sprintf('%' . get_price_precision($contract->currency) . 'f', $display_value),
+                            display_value => formatnumber('price', $contract->currency, $display_value),
+                            payout        => formatnumber('price', $contract->currency, $display_value),
                         },
                     });
 
@@ -182,8 +182,8 @@ sub _get_ask {
                         message_to_client => $message_to_client,
                         code              => $code,
                         details           => {
-                            display_value => sprintf('%' . get_price_precision($contract->currency) . 'f', $contract->ask_price),
-                            payout        => sprintf('%' . get_price_precision($contract->currency) . 'f', $contract->payout),
+                            display_value => formatnumber('price', $contract->currency, $contract->ask_price),
+                            payout        => formatnumber('price', $contract->currency, $contract->payout),
                         },
                     });
             }
