@@ -320,7 +320,7 @@ __PACKAGE__->meta->make_immutable;
 
 ## no critic (Variables::RequireLocalizedPunctuationVars)
 sub import {
-    my ($class, $init) = @_;
+    my (undef, $init) = @_;
 
     if ($init && $init eq ':init') {
 
