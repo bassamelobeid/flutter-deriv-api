@@ -9,6 +9,7 @@ use Sys::Hostname;
 use YAML::XS;
 use Guard;
 use Scalar::Util ();
+use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| ws_redis_master ws_redis_slave redis_pricer shared_redis |;
@@ -55,10 +56,11 @@ sub register {
             my @texts = ();
             if (ref $content eq 'ARRAY') {
                 return '' unless scalar @$content;
-                # first one is always text string
-                push @texts, shift @$content;
+                my $content_copy = [@$content];    # save original
+                                                   # first one is always text string
+                push @texts, shift @$content_copy;
                 # followed by parameters
-                foreach my $elm (@$content) {
+                foreach my $elm (@$content_copy) {
                     # some params also need localization (longcode)
                     if (ref $elm eq 'ARRAY' and scalar @$elm) {
                         push @texts, $handles{$language}->maketext(@$elm);
@@ -159,22 +161,33 @@ sub register {
                 sub {
                     # It's possible for the client to disconnect before we're finished.
                     # If that happens, make sure we clean up but don't attempt to process any further.
-                    my $c = $weak_c;
-                    unless ($c && $c->tx) {
+                    unless ($weak_c && $weak_c->tx) {
                         Mojo::IOLoop->remove($proposal_array_loop_id_keeper);
                         return;
                     }
 
-                    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') or do {
+                    my $proposal_array_subscriptions = $weak_c->stash('proposal_array_subscriptions') or do {
                         Mojo::IOLoop->remove($proposal_array_loop_id_keeper);
                         return;
                     };
 
-                    my %proposal_array;
-                    for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
+                    my @pa_keys = keys %{$proposal_array_subscriptions};
+                    PA_LOOP:
+                    for my $pa_uuid (@pa_keys) {
+                        my %proposal_array;
                         my $sub = $proposal_array_subscriptions->{$pa_uuid};
                         for my $i (0 .. $#{$sub->{seq}}) {
-                            my $uuid     = $sub->{seq}[$i];
+                            my $uuid = $sub->{seq}[$i];
+                            unless ($uuid) {
+                                # this case is hold in `proposal_array` - for some reasons `_pricing_channel_for_ask`
+                                # did not created uuid for one of the `proposal_array`'s `proposal` calls
+                                # subscription anyway is broken - so remove it
+                                # see sub proposal_array for details
+                                # error messge is already sent by `response` RPC hook.
+                                Binary::WebSocketAPI::v3::Wrapper::System::_forget_proposal_array($weak_c, $pa_uuid);
+                                delete $proposal_array_subscriptions->{$pa_uuid};
+                                next PA_LOOP;
+                            }
                             my $barriers = $sub->{args}{barriers}[$i];
                             # Bail out early if we have any streams without a response yet
                             my $proposal = $sub->{proposals}{$uuid} or return;
@@ -200,8 +213,11 @@ sub register {
                             echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
                             msg_type => 'proposal_array',
                         };
-                        $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
+                        $weak_c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
                     }
+                    $weak_c->stash('proposal_array_subscriptions' => $proposal_array_subscriptions)
+                        if scalar(@pa_keys) != scalar(keys %{$proposal_array_subscriptions});
+                    return;
                 });
         });
 
