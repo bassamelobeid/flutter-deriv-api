@@ -21,7 +21,6 @@ use constant {    # added for Transaction
     pricing_engine_name => '',
 };
 
-
 # This is to indicate whether this is a sale transaction.
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
@@ -127,7 +126,7 @@ sub _build_date_settlement {
 }
 
 has [qw(is_valid_to_buy is_valid_to_sell)] => (
-    is         => 'ro',
+    is         => 'rw',
     lazy_build => 1,
 );
 
