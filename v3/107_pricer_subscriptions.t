@@ -35,6 +35,8 @@ my $endless_loop_avoid = 0;
 my $channel;
 my $user_first = {};
 
+my $url = '/websockets/v3?l=EN&debug=1&app_id=1';
+
 subtest "Born and die" => sub {
 
     my $t = $test_server->websocket_ok($url => {});
