@@ -56,12 +56,13 @@ sub states_list {
 sub website_status {
     my $params = shift;
 
+    my $amt_precision = Price::Calculator::get_precision_config()->{amount};
     return {
         terms_conditions_version => BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version,
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,
         clients_country          => $params->{country_code},
         supported_languages      => BOM::Platform::Runtime->instance->app_config->cgi->supported_languages,
-        currencies_config        => [map { $_ => substr($_, -1) } Price::Calculator::get_precision_config()->{amount}],
+        currencies_config        => {map { $_ => {fractional_digits => substr($amt_precision->{$_}, -1)} } keys %$amt_precision},
     };
 }
 
