@@ -174,7 +174,6 @@ sub is_verification_token_valid {
 }
 
 sub _check_password {
-    my $message;
     my $args         = shift;
     my $new_password = $args->{new_password};
     if (keys %$args == 3) {

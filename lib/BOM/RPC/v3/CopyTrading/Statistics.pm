@@ -68,7 +68,6 @@ sub copytrading_statistics {
         })->db;
 
     # Calculate average performance for multiple accounts
-    my $now    = Date::Utility->new();
     my $txn_dm = BOM::Database::DataMapper::Transaction->new({
         client_loginid => $trader->loginid,
         currency_code  => $account->currency_code,
