@@ -439,7 +439,6 @@ sub cashier_password {
         }
 
         my $cashier_password = $client->cashier_setting_password;
-        my $salt = substr($cashier_password, 0, 2);
         if (!BOM::Platform::Password::checkpw($unlock_password, $cashier_password)) {
             BOM::Platform::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
