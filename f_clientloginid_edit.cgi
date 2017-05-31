@@ -758,9 +758,9 @@ if (not $client->is_virtual) {
 Bar("$encoded_loginid Tokens");
 my @all_accounts = $user->clients;
 foreach my $l (@all_accounts) {
-    my $tokens = BOM::Database::Model::AccessToken->new->get_tokens_by_loginid($l->loginid);
+    my $tokens = BOM::Database::Model::AccessToken->new->get_all_tokens_by_loginid($l->loginid);
     foreach my $t (@$tokens) {
-        $t->{token} =~ /(.{4})$/;
+        $t =~ /(.{4})$/;
         print "Access Token [" . $l->loginid . "]: $1 <br\>";
     }
 }
