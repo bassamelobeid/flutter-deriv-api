@@ -83,7 +83,7 @@ use feature "state";
 # used for loading chronicle config file which contains connection information
 use YAML::XS;
 use JSON;
-use DBI;
+use DBIx::Connector;
 use DateTime;
 use Date::Utility;
 use BOM::Platform::RedisReplicated;
@@ -259,8 +259,23 @@ SQL
 # And in case for any reason, Redis has problems, we will need to re-populate its information not from Pg
 # But by re-running population scripts
 my $dbh;
-
+my $dbic;
 my $pid = $$;
+
+sub _dbic {
+    # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
+    return undef if not defined _config()->{chronicle};
+    return $dbic if $dbic;
+    $dbic = DBI->connect(
+        '' . _dbh_dsn(),
+        # User and password are part of the DSN
+        '', '',
+        {
+            RaiseError        => 1,
+            pg_server_prepare => 0,
+        });
+    return $dbic;
+}
 
 sub _dbh {
     # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
