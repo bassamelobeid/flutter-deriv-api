@@ -46,4 +46,10 @@ sub _build_spot_max {
     return $max;
 }
 
+override _build_theo_price => sub {
+    my $self = shift;
+
+    return $self->pricing_engine->theo_probability;
+};
+
 1;
