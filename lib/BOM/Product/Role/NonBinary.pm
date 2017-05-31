@@ -27,7 +27,7 @@ sub _build_ticks_for_lookbacks {
 sub _build_spot_min {
     my $self = shift;
 
-    my @ticks_since_start = @{$self->ticks_for_lookback};
+    my @ticks_since_start = @{$self->ticks_for_lookbacks};
 
     my @quote = map { $_->{quote} } @ticks_since_start;
     my $min = min(@quote);
@@ -38,7 +38,7 @@ sub _build_spot_min {
 sub _build_spot_max {
     my $self = shift;
 
-    my @ticks_since_start = @{$self->ticks_for_lookback};
+    my @ticks_since_start = @{$self->ticks_for_lookbacks};
 
     my @quote = map { $_->{quote} } @ticks_since_start;
     my $max = max(@quote);
