@@ -112,6 +112,33 @@ sub remove_by_token {
     );
 }
 
+sub get_all_tokens_by_loginid {
+    my ($self, $loginid) = @_;
+
+    my @tokens;
+    my $sth = $self->dbh->prepare('
+        SELECT
+            access_token
+        FROM
+            oauth.access_token
+        WHERE
+            loginid = $1
+        UNION
+        SELECT
+            token
+        FROM
+            auth.access_token
+        WHERE
+            client_loginid = $1;
+    ');
+    $sth->execute($loginid);
+    while (my $r = $sth->fetchrow_arrayref) {
+        push @tokens, $r->[0];
+    }
+
+    return wantarray ? @tokens : \@tokens;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
