@@ -37,7 +37,7 @@ sub _create_oauth_token {
 sub new_account_virtual {
     my $params = shift;
     my $args   = $params->{args};
-    my ($err_code, $err_msg);
+    my $err_code;
 
     if ($err_code = BOM::RPC::v3::Utility::_check_password({new_password => $args->{client_password}})) {
         return $err_code;

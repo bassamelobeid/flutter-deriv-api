@@ -187,7 +187,6 @@ sub cashier {
 
     my $email = $client->email;
     if ($action eq 'withdraw') {
-        my $is_not_verified = 1;
         my $token = $args->{verification_code} // '';
 
         if (not $email or $email =~ /\s+/) {
@@ -370,9 +369,7 @@ sub _get_epg_url {
 sub get_limits {
     my $params = shift;
 
-    my $client         = $params->{client};
-    my $client_loginid = $client->loginid;
-
+    my $client = $params->{client};
     if ($client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'FeatureNotAvailable',
@@ -1387,7 +1384,7 @@ sub topup_virtual {
     }
 
     # CREDIT HIM WITH THE MONEY
-    my ($curr, $amount, $trx) = $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
+    my ($curr, $amount) = $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
 
     return {
         amount   => $amount,
