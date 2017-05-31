@@ -130,7 +130,7 @@ sub ticks {
                     symbol => $symbol,
                 },
                 success => sub {
-                    my ($c, $rpc_response, $req_storage) = @_;
+                    my ($c, undef, $req_storage) = @_;
                     $req_storage->{id} = _feed_channel_subscribe($c, $req_storage->{symbol}, 'tick', $req_storage->{args});
                 },
                 response => sub {
@@ -445,8 +445,9 @@ sub _feed_channel_unsubscribe {
 }
 
 sub _transaction_channel {
-    my ($c, $action, $account_id, $type, $args) = @_;
-    my $additional_params = shift // {};
+    my ($c, $action, $account_id, $type, $args, $additional_params) = @_;
+    $additional_params //= {};
+
     my $uuid;
 
     my $redis = shared_redis;
@@ -492,12 +493,12 @@ sub process_transaction_updates {
 
     return unless $payload && ref $payload eq 'HASH';
 
-    if ( not $c->stash('account_id') or
-             ( $payload->{error}
-                     and $payload->{error}->{code}
-                     and $payload->{error}->{code} eq 'TokenDeleted'
-                 )
-         ){
+    if (
+        not $c->stash('account_id')
+        or (    $payload->{error}
+            and $payload->{error}->{code}
+            and $payload->{error}->{code} eq 'TokenDeleted'))
+    {
 
         _transaction_channel($c, 'unsubscribe', $channel->{$_}->{account_id}, $_) for keys %{$channel};
         return;
@@ -518,7 +519,7 @@ sub process_transaction_updates {
             if $type eq 'transaction';
 
         ### proposal_open_contract stream
-        _close_proposal_open_contract_stream( $c, $args, $payload, $channel->{$type}->{contract_id}, $type )
+        _close_proposal_open_contract_stream($c, $args, $payload, $channel->{$type}->{contract_id}, $type)
             if $type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/;
     }
 
@@ -561,56 +562,52 @@ sub _generate_uuid_string {
 }
 
 sub _create_poc_stream {
-    my $c      = shift;
+    my $c       = shift;
     my $payload = shift;
 
     my $poc_args = $c->stash('proposal_open_contracts_subscribed');
 
-    if ( $poc_args && $payload->{financial_market_bet_id} ) {
+    if ($poc_args && $payload->{financial_market_bet_id}) {
 
         $c->call_rpc({
-            url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
-            args        => $poc_args,
-            msg_type    => '',
-            method      => 'longcode',
-            call_params => {
-                token           => $c->stash('token'),
-                short_codes     => [$payload->{short_code}],
-                currency        => $payload->{currency_code},
-                language        => $c->stash('language'),
-            },
-           response => sub {
-               my ($rpc_response, $api_response, $req_storage) = @_;
+                url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
+                args        => $poc_args,
+                msg_type    => '',
+                method      => 'longcode',
+                call_params => {
+                    token       => $c->stash('token'),
+                    short_codes => [$payload->{short_code}],
+                    currency    => $payload->{currency_code},
+                    language    => $c->stash('language'),
+                },
+                response => sub {
+                    my $rpc_response = shift;
 
-               $payload->{longcode} = $rpc_response->{longcodes}{$payload->{short_code}};
+                    $payload->{longcode} = $rpc_response->{longcodes}{$payload->{short_code}};
 
-               my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::_pricing_channel_for_bid(
-                   $c,
-                   $poc_args,
-                   {
-                       shortcode       => $payload->{short_code},
-                       currency        => $payload->{currency_code},
-                       is_sold         => $payload->{sell_time} ? 1 : 0,
-                       contract_id     => $payload->{financial_market_bet_id},
-                       buy_price       => $payload->{purchase_price},
-                       account_id      => $payload->{account_id},
-                       longcode        => $payload->{longcode} || $payload->{payment_remark},
-                       transaction_ids => {buy => $payload->{id}},
-                       purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
-                       sell_price      => undef,
-                       sell_time       => undef,
-                   }
-               );
+                    my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::_pricing_channel_for_bid(
+                        $c,
+                        $poc_args,
+                        {
+                            shortcode   => $payload->{short_code},
+                            currency    => $payload->{currency_code},
+                            is_sold     => $payload->{sell_time} ? 1 : 0,
+                            contract_id => $payload->{financial_market_bet_id},
+                            buy_price   => $payload->{purchase_price},
+                            account_id  => $payload->{account_id},
+                            longcode => $payload->{longcode} || $payload->{payment_remark},
+                            transaction_ids => {buy => $payload->{id}},
+                            purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
+                            sell_price      => undef,
+                            sell_time       => undef,
+                        });
 
-                # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel(
-                    $c, 'subscribe', $payload->{account_id},
-                    $uuid, $poc_args
-                ) if $uuid;
-                return;
-            },
-        });
-
+                    # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+                    Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $payload->{account_id}, $uuid, $poc_args)
+                        if $uuid;
+                    return;
+                },
+            });
 
         return 1;
     }
@@ -624,15 +621,14 @@ sub _update_balance {
     my $id      = shift;
 
     my $details = {
-            msg_type => 'balance',
-            $args ? (echo_req => $args) : (),
-            balance => {
-                ($id ? (id => $id) : ()),
-                loginid  => $c->stash('loginid'),
-                currency => $c->stash('currency'),
-                balance  => sprintf('%.2f', $payload->{balance_after}),
-            }
-        };
+        msg_type => 'balance',
+        $args ? (echo_req => $args) : (),
+        balance => {
+            ($id ? (id => $id) : ()),
+            loginid  => $c->stash('loginid'),
+            currency => $c->stash('currency'),
+            balance  => sprintf('%.2f', $payload->{balance_after}),
+        }};
 
     $c->send({json => $details}) if $c->tx;
 }
@@ -644,19 +640,19 @@ sub _update_transaction {
     my $id      = shift;
 
     my $details = {
-            msg_type => 'transaction',
-            $args ? (echo_req => $args) : (),
-            transaction => {
-                ($id ? (id => $id) : ()),
-                balance        => sprintf('%.2f', $payload->{balance_after}),
-                action         => $payload->{action_type},
-                amount         => $payload->{amount},
-                transaction_id => $payload->{id},
-                longcode       => $payload->{payment_remark},
-                contract_id    => $payload->{financial_market_bet_id},
-                ( $payload->{currency_code} ? (currency => $payload->{currency_code}) : ()),
-            },
-        };
+        msg_type => 'transaction',
+        $args ? (echo_req => $args) : (),
+        transaction => {
+            ($id ? (id => $id) : ()),
+            balance        => sprintf('%.2f', $payload->{balance_after}),
+            action         => $payload->{action_type},
+            amount         => $payload->{amount},
+            transaction_id => $payload->{id},
+            longcode       => $payload->{payment_remark},
+            contract_id    => $payload->{financial_market_bet_id},
+            ($payload->{currency_code} ? (currency => $payload->{currency_code}) : ()),
+        },
+    };
 
     unless (exists $payload->{referrer_type} and $payload->{referrer_type} eq 'financial_market_bet') {
         $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
@@ -667,53 +663,54 @@ sub _update_transaction {
     $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{sell_time} || $payload->{purchase_time})->epoch;
 
     $c->call_rpc({
-        url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
-        args        => $args,
-        msg_type    => 'transaction',
-        method      => 'get_contract_details',
-        call_params => {
-            token           => $c->stash('token'),
-            short_code      => $payload->{short_code},
-            currency        => $payload->{currency_code},
-            language        => $c->stash('language'),
-            landing_company => $c->landing_company_name,
-        },
-        rpc_response_cb => sub {
-            my ($c, $rpc_response, $req_storage) = @_;
+            url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
+            args        => $args,
+            msg_type    => 'transaction',
+            method      => 'get_contract_details',
+            call_params => {
+                token           => $c->stash('token'),
+                short_code      => $payload->{short_code},
+                currency        => $payload->{currency_code},
+                language        => $c->stash('language'),
+                landing_company => $c->landing_company_name,
+            },
+            rpc_response_cb => sub {
+                my ($c, $rpc_response) = @_;
 
-            if (exists $rpc_response->{error}) {
-                Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                return $c->new_error('transaction', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
-            } else {
-                $details->{transaction}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
-                    if ($payload->{action_type} eq 'sell');
-                $details->{transaction}->{longcode}     = $rpc_response->{longcode};
-                $details->{transaction}->{symbol}       = $rpc_response->{symbol};
-                $details->{transaction}->{display_name} = $rpc_response->{display_name};
-                $details->{transaction}->{date_expiry}  = $rpc_response->{date_expiry};
-                $details->{transaction}->{barrier}      = $rpc_response->{barrier} if exists $rpc_response->{barrier};
-                $details->{transaction}->{high_barrier} = $rpc_response->{high_barrier} if $rpc_response->{high_barrier};
-                $details->{transaction}->{low_barrier}  = $rpc_response->{low_barrier} if $rpc_response->{low_barrier};
+                if (exists $rpc_response->{error}) {
+                    Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                    return $c->new_error('transaction', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
+                } else {
+                    $details->{transaction}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
+                        if ($payload->{action_type} eq 'sell');
+                    $details->{transaction}->{longcode}     = $rpc_response->{longcode};
+                    $details->{transaction}->{symbol}       = $rpc_response->{symbol};
+                    $details->{transaction}->{display_name} = $rpc_response->{display_name};
+                    $details->{transaction}->{date_expiry}  = $rpc_response->{date_expiry};
+                    $details->{transaction}->{barrier}      = $rpc_response->{barrier} if exists $rpc_response->{barrier};
+                    $details->{transaction}->{high_barrier} = $rpc_response->{high_barrier} if $rpc_response->{high_barrier};
+                    $details->{transaction}->{low_barrier}  = $rpc_response->{low_barrier} if $rpc_response->{low_barrier};
 
-                return $details;
-            }
-        },
-    });
+                    return $details;
+                }
+            },
+        });
 
 }
 
 sub _close_proposal_open_contract_stream {
-    my ($c, $args, $payload, $contract_id, $uuid ) = @_;
+    my ($c, $args, $payload, $contract_id, $uuid) = @_;
 
-    return unless $payload->{action_type} eq 'sell' and exists $payload->{financial_market_bet_id} and $contract_id and $payload->{financial_market_bet_id} eq $contract_id;
+    return
+            unless $payload->{action_type} eq 'sell'
+        and exists $payload->{financial_market_bet_id}
+        and $contract_id
+        and $payload->{financial_market_bet_id} eq $contract_id;
 
     $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
     $payload->{uuid}      = $uuid;
 
-    Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time(
-        $c, $payload,
-        $contract_id,
-        $args);
+    Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $args);
 }
 
 1;

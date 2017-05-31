@@ -65,7 +65,7 @@ sub startup {
 
     Mojo::IOLoop->singleton->reactor->on(
         error => sub {
-            my ($reactor, $err) = @_;
+            my (undef, $err) = @_;
             $app->log->error("EventLoop error: $err");
         });
 
@@ -524,7 +524,7 @@ sub startup {
                 $key => encode_json($hits),
                 EX   => 3600,
                 sub {
-                    my ($redis, $err) = @_;
+                    my (undef, $err) = @_;
                     # In global destruction, the Redis connection may be dropped partway
                     # through the operation. Since the information we're storing isn't
                     # critical, we accept this, but see this card as well:
@@ -543,7 +543,7 @@ sub startup {
             my $hits_json = $c->ws_redis_slave->get(
                 $key,
                 sub {
-                    my ($redis, $err, $hits_json) = @_;
+                    my (undef, $err, $hits_json) = @_;
                     # As with save: on global destruct, a partial load may be cancelled.
                     # https://trello.com/c/199pqtnM/4609-clean-up-redis-disconnect-handling-in-websockets-code
                     return if ${^GLOBAL_PHASE} eq 'DESTRUCT';

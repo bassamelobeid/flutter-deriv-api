@@ -13,7 +13,7 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Data::Dumper;
 
 sub start_timing {
-    my ($c, $req_storage) = @_;
+    my (undef, $req_storage) = @_;
     if ($req_storage) {
         $req_storage->{tv} = [Time::HiRes::gettimeofday];
     }
@@ -42,7 +42,7 @@ sub log_call_timing {
 }
 
 sub log_call_timing_connection {
-    my ($c, $req_storage, $rpc_response) = @_;
+    my (undef, $req_storage, $rpc_response) = @_;
     if (ref($rpc_response->result) eq "HASH"
         && (my $rpc_time = delete $rpc_response->result->{rpc_time}))
     {
@@ -55,7 +55,7 @@ sub log_call_timing_connection {
 }
 
 sub add_req_data {
-    my ($c, $req_storage, $api_response) = @_;
+    my (undef, $req_storage, $api_response) = @_;
     if ($req_storage) {
         my $args = $req_storage->{origin_args} || $req_storage->{args};
         $api_response->{echo_req}    = $args;
@@ -77,7 +77,7 @@ sub add_call_debug {
 }
 
 sub log_call_timing_sent {
-    my ($c, $req_storage) = @_;
+    my (undef, $req_storage) = @_;
     if ($req_storage && $req_storage->{tv} && $req_storage->{method}) {
         DataDog::DogStatsd::Helper::stats_timing(
             'bom_websocket_api.v_3.rpc.call.timing.sent',
@@ -345,7 +345,7 @@ sub introspection_before_forward {
 }
 
 sub introspection_before_send_response {
-    my ($c, $req_storage, $api_response) = @_;
+    my ($c, undef, $api_response) = @_;
     my %copy = %{$api_response};
     $c->stash->{introspection}{last_message_sent} = \%copy;
     $c->stash->{introspection}{msg_type}{sent}{$api_response->{msg_type}}++;

@@ -346,12 +346,12 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
 sub proposal_open_contract {
     my ($c, $response, $req_storage) = @_;
 
-    my $args         = $req_storage->{args};
+    my $args = $req_storage->{args};
 
-    if ( $args->{subscribe} && !$args->{contract_id} ) {
+    if ($args->{subscribe} && !$args->{contract_id}) {
         ### we can catch buy only if subscribed on transaction stream
         Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $c->stash('account_id'), 'poc', $args)
-              if $c->stash('account_id');
+            if $c->stash('account_id');
         ### we need stream only in subscribed workers
         $c->stash(proposal_open_contracts_subscribed => $args);
     }
@@ -459,8 +459,7 @@ sub _process_proposal_open_contract_response {
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
                     Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel(
                         $c, 'subscribe', delete $contract->{account_id},    # should not go to client
-                        $uuid, $args, {contract_id => $contract->{contract_id}}
-                    );
+                        $uuid, $args, {contract_id => $contract->{contract_id}});
                 }
             }
             my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
@@ -614,11 +613,11 @@ sub process_bid_event {
             $response->{purchase_time}   = $passed_fields->{purchase_time};
             $response->{is_sold}         = $passed_fields->{is_sold};
             Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid})
-                  if $response->{is_expired};
-            $response->{longcode}        = $passed_fields->{longcode};
+                if $response->{is_expired} || $response->{is_sold};
+            $response->{longcode} = $passed_fields->{longcode};
 
-            $response->{contract_id}     = $stash_data->{args}->{contract_id} if exists $stash_data->{args}->{contract_id};
-            $results                     = {
+            $response->{contract_id} = $stash_data->{args}->{contract_id} if exists $stash_data->{args}->{contract_id};
+            $results = {
                 msg_type => $type,
                 $type    => $response
             };

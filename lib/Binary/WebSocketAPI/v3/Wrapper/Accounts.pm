@@ -36,13 +36,13 @@ sub subscribe_transaction_channel {
 }
 
 sub balance_error_handler {
-    my ($c, $rpc_response, $req_storage) = @_;
+    my ($c, undef, $req_storage) = @_;
     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $req_storage->{transaction_channel_id}) if $req_storage->{transaction_channel_id};
     return;
 }
 
 sub balance_success_handler {
-    my ($c, $rpc_response, $req_storage) = @_;
+    my (undef, $rpc_response, $req_storage) = @_;
     $rpc_response->{id} = $req_storage->{transaction_channel_id} if $req_storage->{transaction_channel_id};
     return;
 }
@@ -54,7 +54,7 @@ sub login_history_response_handler {
 }
 
 sub set_account_currency_params_handler {
-    my ($c, $req_storage) = @_;
+    my (undef, $req_storage) = @_;
     $req_storage->{call_params}->{currency} = $req_storage->{args}->{set_account_currency};
     return;
 }

@@ -37,7 +37,7 @@ sub start_server {
     my $id = Mojo::IOLoop->server({
             port => $conf->{port},
         } => sub {
-            my ($loop, $stream) = @_;
+            my (undef, $stream) = @_;
 
             # Client has connected, wait for commands and send responses back
             my $buffer = '';

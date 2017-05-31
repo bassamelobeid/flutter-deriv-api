@@ -174,7 +174,7 @@ sub _forget_all_pricing_subscriptions {
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
         Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $c->stash('account_id'), 'poc')
-              if $c->stash('account_id');
+            if $c->stash('account_id');
         $c->stash('proposal_open_contracts_subscribed' => 0) if $type eq 'proposal_open_contract';
 
         @$removed_ids = keys %{$pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}};
