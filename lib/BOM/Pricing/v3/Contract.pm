@@ -117,9 +117,10 @@ sub contract_metadata {
 }
 
 sub _get_ask {
-    my $p2                    = {%{+shift}};
-    my $app_markup_percentage = shift;
-    my $streaming_params      = delete $p2->{streaming_params};
+    my $p2                     = {%{+shift}};
+    my $app_markup_percentage  = shift;
+    my $is_proposal_array_call = $p2->{proposal_array};
+    my $streaming_params       = delete $p2->{streaming_params};
     my ($contract, $response);
 
     my $tv = [Time::HiRes::gettimeofday];
@@ -134,7 +135,7 @@ sub _get_ask {
     };
     return $response if $response;
     try {
-        $contract = exists $p2->{bet_types} ? produce_batch_contract($p2) : produce_contract($p2);
+        $contract = exists($p2->{bet_types}) || $is_proposal_array_call ? produce_batch_contract($p2) : produce_contract($p2);
     }
     catch {
         warn __PACKAGE__ . " _get_ask produce_contract failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($p2);
