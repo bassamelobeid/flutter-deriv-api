@@ -1134,7 +1134,7 @@ subtest $method => sub {
     is($result->{status}, undef, 'invalid residence should not be able to save');
     # testing valid residence, expecting save to pass
     $params->{args}{residence} = 'kr';
-    my $result = $c->tcall($method, $params);
+    $result = $c->tcall($method, $params);
     is($result->{status}, 1, 'vr account update residence successfully');
     $test_client_vr->load;
     isnt($test_client->address_1, 'Address 1', 'But vr account only update residence');
