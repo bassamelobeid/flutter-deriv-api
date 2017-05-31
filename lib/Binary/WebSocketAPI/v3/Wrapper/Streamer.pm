@@ -631,6 +631,7 @@ sub _update_balance {
         }};
 
     $c->send({json => $details}) if $c->tx;
+    return;
 }
 
 sub _update_transaction {
@@ -695,7 +696,7 @@ sub _update_transaction {
                 }
             },
         });
-
+    return;
 }
 
 sub _close_proposal_open_contract_stream {
@@ -711,6 +712,7 @@ sub _close_proposal_open_contract_stream {
     $payload->{uuid}      = $uuid;
 
     Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $args);
+    return;
 }
 
 1;
