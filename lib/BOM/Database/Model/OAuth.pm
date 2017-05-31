@@ -49,7 +49,7 @@ sub confirm_scope {
 
     my $dbh = $self->dbh;
 
-    my ($is_exists, $exists_scopes) = $dbh->selectrow_array("
+    my ($is_exists) = $dbh->selectrow_array("
         SELECT true FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?
     ", undef, $app_id, $loginid);
     unless ($is_exists) {
@@ -303,7 +303,6 @@ sub revoke_tokens_by_loginid_app {
 sub has_other_login_sessions {
     my ($self, $loginid) = @_;
 
-    my $dbh = $self->dbh;
     # "Binary.com backoffice" app has id = 4, we use it to create token for BO impersonate. So should be excluded here.
     my $login_cnt =
         $self->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ? AND expires > now() AND app_id <> 4", undef, $loginid);
@@ -313,7 +312,6 @@ sub has_other_login_sessions {
 sub get_app_id_by_token {
     my ($self, $token) = @_;
 
-    my $dbh = $self->dbh;
     my @result = $self->dbh->selectrow_array("SELECT app_id FROM oauth.access_token WHERE access_token = ?", undef, $token);
     return $result[0];
 }

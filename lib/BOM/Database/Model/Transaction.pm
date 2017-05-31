@@ -31,7 +31,6 @@ sub _extract_related_attributes_for_transaction_class_hashref {
 
 sub save {
     my $self = shift;
-    my $args = shift;
 
     return $self->_save_orm_object({'record' => $self->transaction_record});
 }

@@ -27,13 +27,6 @@ sub _build_financial_market_bet_record {
         $self->_extract_related_attributes_for_financial_market_bet_class_hashref());
 }
 
-sub BUILD {
-    my $self = shift;
-    my $args = shift;
-
-    return;
-}
-
 sub _build_legacy_parameters {
     my $self = shift;
 
@@ -76,7 +69,6 @@ sub _extract_related_attributes_for_financial_market_bet_class_hashref {
 
 sub save {
     my $self = shift;
-    my $args = shift;
 
     $self->_save_orm_object({'record' => $self->financial_market_bet_record});
 
