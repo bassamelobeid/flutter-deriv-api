@@ -23,7 +23,6 @@ has 'data_object_params' => (
 
 sub BUILD {
     my $self = shift;
-    my $args = shift;
 
     $self->_initialize_data_access_object('Rose::DB::Object',
         $self->_extract_related_attributes_for_class_based_on_table_definition_hashref('Rose::DB::Object'));
@@ -77,7 +76,6 @@ sub _save_orm_object {
 
 sub save {
     my $self = shift;
-    my $args = shift;
 
     return $self->_save_orm_object({'record' => $self->record});
 }
@@ -97,7 +95,6 @@ sub _delete_orm_object {
 sub delete    ## no critic (ProhibitBuiltinHomonyms)
 {
     my $self = shift;
-    my $args = shift;
 
     return $self->_delete_orm_object({'record' => $self->record});
 }

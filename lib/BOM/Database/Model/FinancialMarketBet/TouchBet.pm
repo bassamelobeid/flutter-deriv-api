@@ -47,13 +47,6 @@ around BUILDARGS => sub {
     }
 };
 
-sub BUILD {
-    my $self = shift;
-    my $args = shift;
-
-    return;
-}
-
 sub _extract_related_attributes_for_touch_bet_class_hashref {
     my $self = shift;
 
