@@ -11,7 +11,7 @@ use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub buy_store_last_contract_id {
-    my ($c, $api_response, $req_storage) = @_;
+    my ($c, $api_response) = @_;
 
     my $last_contracts = $c->stash('last_contracts') // {};
     # see cleanup at Binary::WebSocketAPI::Hooks::cleanup_strored_contract_ids

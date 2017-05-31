@@ -9,7 +9,7 @@ use Scalar::Util qw(weaken);
 use Binary::WebSocketAPI::v3::Wrapper::System;
 
 sub logout_success {
-    my ($c, $rpc_response) = @_;
+    my $c = shift;
     my %stash;
     $c->rate_limitations_save;
 

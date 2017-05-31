@@ -7,7 +7,7 @@ use JSON;
 use Cache::RedisDB;
 
 sub asset_index_cached {
-    my ($c, $req_storage) = @_;
+    my $c = shift;
 
     my $language = $c->stash('language');
     if (my $r = Cache::RedisDB->get("WS_ASSETINDEX", $language)) {
@@ -40,8 +40,8 @@ sub asset_index {
                 landing_company => $c->landing_company_name,
             },
             response => sub {
-                my ($rpc_response, $api_response, $req_storage) = @_;
-                return $api_response;
+                # @_ is ($rpc_response, $api_response, $req_storage)
+                return $_[1];
             },
         });
     return;
@@ -61,8 +61,8 @@ sub trading_times {
                 landing_company => $c->landing_company_name,
             },
             response => sub {
-                my ($rpc_response, $api_response, $req_storage) = @_;
-                return $api_response;
+                # @_ is ($rpc_response, $api_response, $req_storage)
+                return $_[1];
             },
         });
     return;
@@ -82,8 +82,8 @@ sub contracts_for {
                 landing_company => $c->landing_company_name,
             },
             response => sub {
-                my ($rpc_response, $api_response, $req_storage) = @_;
-                return $api_response;
+                # @_ is ($rpc_response, $api_response, $req_storage)
+                return $_[1];
             },
         });
     return;
