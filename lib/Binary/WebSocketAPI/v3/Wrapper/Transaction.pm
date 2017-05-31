@@ -16,8 +16,11 @@ sub buy_store_last_contract_id {
     my $last_contracts = $c->stash('last_contracts') // {};
     # see cleanup at Binary::WebSocketAPI::Hooks::cleanup_strored_contract_ids
     my @contracts_ids = ($api_response->{contract_id});
+
     if ( $api_response->{result} && ref $api_response->{result} eq 'ARRAY') {
-        push @contracts_ids, $api_response->{result}[$_]{contract_id} for @{$api_response->{result}};
+        for my $n ( 0..(scalar @{$api_response->{result}})){
+             push @contracts_ids, $api_response->{result}[$n]{contract_id};
+        }
     }
 
     $last_contracts->{$_} = time for grep {defined} @contracts_ids;

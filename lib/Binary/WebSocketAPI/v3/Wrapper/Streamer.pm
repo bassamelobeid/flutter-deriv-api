@@ -446,6 +446,7 @@ sub _feed_channel_unsubscribe {
 
 sub _transaction_channel {
     my ($c, $action, $account_id, $type, $args) = @_;
+    my $additional_params = shift // {};
     my $uuid;
 
     my $redis = shared_redis;
@@ -464,7 +465,7 @@ sub _transaction_channel {
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
             $channel->{$type}->{account_id}  = $account_id;
-            $channel->{$type}->{contract_id} = $args->{contract_id};
+            $channel->{$type}->{contract_id} = $additional_params->{contract_id} || $args->{contract_id};
             $c->stash('transaction_channel', $channel);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
             delete $channel->{$type};
@@ -501,6 +502,10 @@ sub process_transaction_updates {
         _transaction_channel($c, 'unsubscribe', $channel->{$_}->{account_id}, $_) for keys %{$channel};
         return;
     }
+    ### new proposal_open_contract stream after buy
+    ### we have to do it here. we have not longcode in payout.
+    ### we'll start new bid stream if we have proposal_open_contract subscription and have bought a new contract
+    _create_poc_stream($c, $payload) if $payload->{action_type} eq 'buy';
 
     my $args = {};
     foreach my $type (keys %{$channel}) {
@@ -563,29 +568,49 @@ sub _create_poc_stream {
 
     if ( $poc_args && $payload->{financial_market_bet_id} ) {
 
-        my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::_pricing_channel_for_bid(
-            $c,
-            $poc_args,
-            {
-                shortcode       => $payload->{short_code},
+        $c->call_rpc({
+            url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
+            args        => $poc_args,
+            msg_type    => '',
+            method      => 'longcode',
+            call_params => {
+                token           => $c->stash('token'),
+                short_codes     => [$payload->{short_code}],
                 currency        => $payload->{currency_code},
-                is_sold         => $payload->{sell_time} ? 1 : 0,
-                contract_id     => $payload->{financial_market_bet_id},
-                buy_price       => $payload->{purchase_price},
-                account_id      => $payload->{account_id},
-                longcode        => $payload->{longcode} || $payload->{payment_remark},
-                transaction_ids => {buy => $payload->{id}},
-                purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
-                sell_price      => undef,
-                sell_time       => undef,
-            }
-        );
+                language        => $c->stash('language'),
+            },
+           response => sub {
+               my ($rpc_response, $api_response, $req_storage) = @_;
 
-        # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-        Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel(
-            $c, 'subscribe', $payload->{account_id},
-            $uuid, $poc_args
-        ) if $uuid;
+               $payload->{longcode} = $rpc_response->{longcodes}{$payload->{short_code}};
+
+               my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::_pricing_channel_for_bid(
+                   $c,
+                   $poc_args,
+                   {
+                       shortcode       => $payload->{short_code},
+                       currency        => $payload->{currency_code},
+                       is_sold         => $payload->{sell_time} ? 1 : 0,
+                       contract_id     => $payload->{financial_market_bet_id},
+                       buy_price       => $payload->{purchase_price},
+                       account_id      => $payload->{account_id},
+                       longcode        => $payload->{longcode} || $payload->{payment_remark},
+                       transaction_ids => {buy => $payload->{id}},
+                       purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
+                       sell_price      => undef,
+                       sell_time       => undef,
+                   }
+               );
+
+                # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+                Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel(
+                    $c, 'subscribe', $payload->{account_id},
+                    $uuid, $poc_args
+                ) if $uuid;
+                return;
+            },
+        });
+
 
         return 1;
     }
@@ -669,11 +694,6 @@ sub _update_transaction {
                 $details->{transaction}->{barrier}      = $rpc_response->{barrier} if exists $rpc_response->{barrier};
                 $details->{transaction}->{high_barrier} = $rpc_response->{high_barrier} if $rpc_response->{high_barrier};
                 $details->{transaction}->{low_barrier}  = $rpc_response->{low_barrier} if $rpc_response->{low_barrier};
-
-                ### new proposal_open_contract stream after buy
-                ### we have to do it here. we have not longcode in payout.
-                ### we'll start new bid stream if we have proposal_open_contract subscription and have bought a new contract
-                _create_poc_stream($c, {%$payload, longcode => $rpc_response->{longcode}}) if $payload->{action_type} eq 'buy';
 
                 return $details;
             }

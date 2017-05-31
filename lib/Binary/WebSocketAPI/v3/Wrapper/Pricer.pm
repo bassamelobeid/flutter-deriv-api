@@ -349,8 +349,10 @@ sub proposal_open_contract {
     my $args         = $req_storage->{args};
 
     if ( $args->{subscribe} && !$args->{contract_id} ) {
-        Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $c->stash('account_id'), 'transaction', $args)
+        ### we can catch buy only if subscribed on transaction stream
+        Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $c->stash('account_id'), 'poc', $args)
               if $c->stash('account_id');
+        ### we need stream only in subscribed workers
         $c->stash(proposal_open_contracts_subscribed => $args);
     }
 
@@ -455,11 +457,9 @@ sub _process_proposal_open_contract_response {
                     next;
                 } else {
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                    my $copy_args = {%$args};
-                    $copy_args->{contract_id} = $contract->{contract_id};
                     Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel(
                         $c, 'subscribe', delete $contract->{account_id},    # should not go to client
-                        $uuid, $copy_args
+                        $uuid, $args, {contract_id => $contract->{contract_id}}
                     );
                 }
             }
@@ -607,6 +607,7 @@ sub process_bid_event {
         my $results;
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data)) {
             my $passed_fields = $stash_data->{cache};
+
             $response->{id}              = $stash_data->{uuid};
             $response->{transaction_ids} = $passed_fields->{transaction_ids};
             $response->{buy_price}       = $passed_fields->{buy_price};
@@ -615,6 +616,7 @@ sub process_bid_event {
             Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid})
                   if $response->{is_expired};
             $response->{longcode}        = $passed_fields->{longcode};
+
             $response->{contract_id}     = $stash_data->{args}->{contract_id} if exists $stash_data->{args}->{contract_id};
             $results                     = {
                 msg_type => $type,
