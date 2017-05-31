@@ -15,7 +15,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 use Brands;
 use Client::Account;
 use Finance::Asset::Market::Types;
-use Price::Calculator qw/get_rounding_precision/;
+use Price::Calculator qw/formatnumber/;
 
 use BOM::Platform::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
@@ -376,7 +376,7 @@ sub prepare_bet_data_for_buy {
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
 
-    $self->price(Format::Util::Numbers::roundnear(get_rounding_precision($contract->currency), $self->price));
+    $self->price(formatnumber('price', $contract->currency, $self->price));
 
     my $bet_params = {
         quantity          => 1,
@@ -669,7 +669,7 @@ sub prepare_bet_data_for_sell {
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
 
-    $self->price(Format::Util::Numbers::roundnear(get_rounding_precision($currency), $self->price));
+    $self->price(formatnumber('price', $currency, $self->price));
 
     my $bet_params = {
         id         => scalar $self->contract_id,
