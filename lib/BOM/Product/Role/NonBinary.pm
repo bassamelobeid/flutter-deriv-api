@@ -46,6 +46,10 @@ sub _build_spot_max {
     return $max;
 }
 
+sub _build_priced_with_intraday_model {
+    return 0;
+}
+
 override _build_theo_price => sub {
     my $self = shift;
 
