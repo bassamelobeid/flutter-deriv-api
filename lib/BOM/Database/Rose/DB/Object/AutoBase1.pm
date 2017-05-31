@@ -95,7 +95,6 @@ sub delete {
 
 sub save {
     my ($self, @args) = (shift, @_);
-    my $db = $self->db;
     $self->_set_staff;
     return $self->SUPER::save(@args);
 }

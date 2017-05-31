@@ -34,7 +34,6 @@ sub _extract_related_attributes_for_account_class_hashref {
 
 sub save {
     my $self = shift;
-    my $args = shift;
 
     return $self->_save_orm_object({'record' => $self->account_record});
 }

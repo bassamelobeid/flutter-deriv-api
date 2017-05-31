@@ -47,15 +47,6 @@ around BUILDARGS => sub {
     }
 };
 
-sub BUILD {
-    my $self = shift;
-    my $args = shift;
-
-    my $data_object_params = $self->data_object_params;
-
-    return;
-}
-
 sub _extract_related_attributes_for_spread_bet_class_hashref {
     my $self = shift;
 

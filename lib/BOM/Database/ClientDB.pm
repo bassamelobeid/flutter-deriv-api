@@ -33,7 +33,7 @@ has db => (
 );
 
 sub BUILDARGS {
-    my $class = shift;
+    shift;
     my $orig  = shift;
 
     if (exists $orig->{operation} && $orig->{operation} !~ /^(write|collector|replica|backoffice_replica)$/) {
