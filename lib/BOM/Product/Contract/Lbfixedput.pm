@@ -1,14 +1,14 @@
-package BOM::Product::Contract::NonBinary::Highlow;
+package BOM::Product::Contract::Lbfixedput;
 
 use Moose;
+extends 'BOM::Product::Contract';
+with 'BOM::Product::Role::NonBinary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-with 'BOM::Product::Role::NonBinary', 'BOM::Product::Role::ExpireAtEnd';
-
-sub code { return 'LBHIGHLOW'; }
+sub code { return 'LBFIXEDPUT'; }
 
 sub localizable_description {
     return +{
-        intraday => 'Receive the difference of [_3]\'s maximum and minimum value during the life of the option at [_5] after [_4].',
+        intraday => 'Receive the difference of [_6] and [_3]\'s minimum value during the life of the option at [_5] after [_4].',
     };
 }
 
@@ -34,7 +34,7 @@ sub check_expiry_conditions {
             })}{'high', 'low', 'close'};
 
     if ($self->exit_tick) {
-        my $value = $high - $low;
+        my $value = $self->barrier - $low;
         $self->value($value);
     }
 

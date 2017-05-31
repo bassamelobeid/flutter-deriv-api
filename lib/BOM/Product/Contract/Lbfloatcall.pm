@@ -1,14 +1,14 @@
-package BOM::Product::Contract::NonBinary::Floatput;
+package BOM::Product::Contract::Lbfloatcall;
 
 use Moose;
-
+extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::NonBinary', 'BOM::Product::Role::ExpireAtEnd';
 
-sub code { return 'LBFLOATPUT'; }
+sub code { return 'LBFLOATCALL'; }
 
 sub localizable_description {
     return +{
-        intraday => 'Receive the difference of [_3]\'s maximum value during the life of the option and its final value at [_5] after [_4].',
+        intraday => 'Receive the difference of [_3]\'s final value and its minimum value during the life of the option at [_5] after [_4].',
     };
 }
 
@@ -34,7 +34,7 @@ sub check_expiry_conditions {
             })}{'high', 'low', 'close'};
 
     if ($self->exit_tick) {
-        my $value = $high - $close;
+        my $value = $close - $low;
         $self->value($value);
     }
 
@@ -48,4 +48,3 @@ sub _build_pricing_engine_name {
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
-

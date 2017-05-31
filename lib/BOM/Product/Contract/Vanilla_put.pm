@@ -1,4 +1,4 @@
-package BOM::Product::Contract::NonBinary::Vanilla_put;
+package BOM::Product::Contract::Vanilla_put;
 
 use Moose;
 extends 'BOM::Product::Contract';

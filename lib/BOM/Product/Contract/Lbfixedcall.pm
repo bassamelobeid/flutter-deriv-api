@@ -1,14 +1,14 @@
-package BOM::Product::Contract::NonBinary::Floatcall;
+package BOM::Product::Contract::Lbfixedcall;
 
 use Moose;
+extends 'BOM::Product::Contract';
+with 'BOM::Product::Role::NonBinary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-with 'BOM::Product::Role::NonBinary', 'BOM::Product::Role::ExpireAtEnd';
-
-sub code { return 'LBFLOATCALL'; }
+sub code { return 'LBFIXEDCALL'; }
 
 sub localizable_description {
     return +{
-        intraday => 'Receive the difference of [_3]\'s final value and its minimum value during the life of the option at [_5] after [_4].',
+        intraday => 'Receive the difference of [_3]\'s maximum value during the life of the option and [_6] at [_5] after [_4].',
     };
 }
 
@@ -34,7 +34,7 @@ sub check_expiry_conditions {
             })}{'high', 'low', 'close'};
 
     if ($self->exit_tick) {
-        my $value = $close - $low;
+        my $value = $high - $self->barrier;
         $self->value($value);
     }
 
