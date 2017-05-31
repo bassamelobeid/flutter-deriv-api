@@ -30,6 +30,7 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
+use BOM::Database::Model::AccessToken;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -576,12 +577,21 @@ if ($next_client) {
 my $history_url     = request()->url_for('backoffice/f_manager_history.cgi');
 my $statmnt_url     = request()->url_for('backoffice/f_manager_statement.cgi');
 my $impersonate_url = request()->url_for('backoffice/client_impersonate.cgi');
+my $risk_report_url = request()->url_for('backoffice/client_risk_report.cgi');
 print qq{<br/>
     <div class="flat">
     <form action="$self_post" method="POST">
         <input type="text" size="15" maxlength="15" name="loginID" value="$encoded_loginid">
     </form>
     </div>
+
+    <div class="flat">
+    <form action="$risk_report_url" method="POST">
+    <input type="hidden" name="loginid" value="$encoded_loginid">
+    <input type="submit" name="action" value="show risk repot">
+    </form>
+    </div>
+
     <div class="flat">
     <form action="$statmnt_url" method="POST">
         <input type="hidden" name="loginID" value="$encoded_loginid">
@@ -743,6 +753,16 @@ if (not $client->is_virtual) {
             <input type="submit" value="Sync now !!">
         </form>
     };
+}
+
+Bar("$encoded_loginid Tokens");
+my @all_accounts = $user->clients;
+foreach my $l (@all_accounts) {
+    my $tokens = BOM::Database::Model::AccessToken->new->get_tokens_by_loginid($l->loginid);
+    foreach my $t (@$tokens) {
+        $t->{token} =~ /(.{4})$/;
+        print "Access Token [" . $l->loginid . "]: $1 <br\>";
+    }
 }
 
 Bar("Email Consent");

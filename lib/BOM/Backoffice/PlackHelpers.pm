@@ -98,13 +98,14 @@ sub _header_set_cookie {
 }
 
 sub PrintContentType_XSendfile {
-    my $filename     = shift;
-    my $content_type = shift;
+    my $filename      = shift;
+    my $content_type  = shift;
+    my $download_name = shift;
     local $\ = '';
 
     my $http_handler = request()->http_handler;
     $http_handler->print_content_type($content_type);
-    my $basename = $filename;
+    my $basename = $download_name || $filename;
     $basename =~ s!.*/!!;
     $http_handler->print_header('Content-Disposition' => 'inline; filename=' . $basename);
     $http_handler->print_header('Cache-control'       => "private, no-cache, must-revalidate");
