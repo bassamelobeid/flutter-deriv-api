@@ -198,7 +198,7 @@ sub _get_ask {
             }
         } else {
             # We think this contract is valid to buy
-            my $ask_price = sprintf('%' . get_price_precision($contract->currency) . 'f', $contract->ask_price);
+            my $ask_price = formatnumber('price', $contract->currency, $contract->ask_price);
             my $trading_window_start = $p2->{trading_period_start} // '';
 
             $response = {
@@ -337,7 +337,7 @@ sub get_bid {
                 ? ()
                 : (validation_error => localize($contract->primary_validation_error->message_to_client))
             ),
-            bid_price           => sprintf('%' . get_price_precision($contract->currency) . 'f', $contract->bid_price),
+            bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
             underlying          => $contract->underlying->symbol,
