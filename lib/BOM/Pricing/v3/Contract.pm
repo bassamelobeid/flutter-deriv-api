@@ -273,7 +273,11 @@ sub handle_batch_contract {
     }
     for my $contract_type (keys %$ask_prices) {
         for my $barrier (@{$p2->{barriers}}) {
-            my $key = ref($barrier) ? ($barrier->{barrier}) . '-' . ($barrier->{barrier2}) : $barrier;
+            my $key =
+                ref($barrier)
+                ? $batch_contract->underlying->pipsized_value($barrier->{barrier}) . '-'
+                . $batch_contract->underlying->pipsized_value($barrier->{barrier2})
+                : $batch_contract->underlying->pipsized_value($barrier);
             warn "Could not find barrier for key $key, available barriers: " . join ',', sort keys %{$ask_prices->{$contract_type}}
                 unless exists $ask_prices->{$contract_type}{$key};
             my $price = $ask_prices->{$contract_type}{$key} // {};
