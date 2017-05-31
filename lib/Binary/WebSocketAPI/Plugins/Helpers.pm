@@ -103,7 +103,7 @@ sub register {
 
     $app->helper(
         new_error => sub {
-            my $c = shift;
+            shift;
             my ($msg_type, $code, $message, $details) = @_;
 
             my $error = {
