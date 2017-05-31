@@ -31,7 +31,6 @@ sub _extract_related_attributes_for_quants_bet_variables_class_hashref {
 
 sub save {
     my $self = shift;
-    my $args = shift;
 
     $self->_save_orm_object({'record' => $self->quants_bet_variables_record});
 

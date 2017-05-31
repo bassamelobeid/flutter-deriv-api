@@ -30,7 +30,6 @@ sub _extract_related_attributes_for_exchange_rate_class_hashref {
 
 sub save {
     my $self = shift;
-    my $args = shift;
 
     $self->_save_orm_object({'record' => $self->exchange_rate_record});
 

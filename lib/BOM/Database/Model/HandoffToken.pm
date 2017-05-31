@@ -12,7 +12,6 @@ has 'handoff_token_record' => (
 
 sub BUILD {
     my $self = shift;
-    my $args = shift;
 
     $self->handoff_token_record(
         $self->_initialize_data_access_object(
@@ -36,7 +35,6 @@ sub _extract_related_attributes_for_class_hashref {
 
 sub save {
     my $self = shift;
-    my $args = shift;
 
     $self->_save_orm_object({'record' => $self->handoff_token_record});
 
@@ -53,7 +51,6 @@ sub save {
 sub delete    ## no critic (ProhibitBuiltinHomonyms)
 {
     my $self = shift;
-    my $args = shift;
 
     $self->_delete_orm_object({'record' => $self->handoff_token_record});
 
@@ -92,7 +89,6 @@ Might replace this by adding a HandoffToken::Manager class...
 sub exists    ## no critic (ProhibitBuiltinHomonyms)
 {
     my $self = shift;
-    my $args = shift;
     if ($self->load({load_params => {speculative => 1}})) {
         return 1;
     }
