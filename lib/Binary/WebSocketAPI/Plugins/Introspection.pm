@@ -220,43 +220,47 @@ We also want to add this information, but it's not yet available:
 command connections => sub {
     my ($self, $app) = @_;
 
-    Future->done({
-            connections => [
-                map {
-                    my $pc = 0;
-                    my $ch = 0;
-                    for my $k (keys %{$_->pricing_subscriptions}) {
-                        ++$pc if defined $_->pricing_subscriptions->{$k};
-                    }
-                    for my $k (keys($_->stash->{pricing_channel} || [])) {
-                        next if $k eq 'uuid';
-                        next if $k eq 'price_daemon_cmd';
-                        $ch += scalar keys $_->stash->{pricing_channel}{$k};
-                    }
-                    +{
-                        app_id                         => $_->stash->{source},
-                        landing_company                => $_->landing_company_name,
-                        ip                             => $_->stash->{client_ip},
-                        country                        => $_->country_code,
-                        client                         => $_->stash->{loginid},
-                        pricing_channel_count          => $ch,
-                        last_call_received_from_client => $_->stash->{introspection}{last_call_received},
-                        last_message_sent_to_client    => $_->stash->{introspection}{last_message_sent},
-                        received_bytes_from_client     => $_->stash->{introspection}{received_bytes},
-                        sent_bytes_to_client           => $_->stash->{introspection}{sent_bytes},
-                        messages_received_from_client  => $_->stash->{introspection}{msg_type}{received},
-                        messages_sent_to_client        => $_->stash->{introspection}{msg_type}{sent},
-                        last_rpc_error                 => $_->stash->{introspection}{last_rpc_error},
-                        pricer_subscription_count      => $pc,
-                        }
-                    }
-                    grep {
-                    defined
-                    }
-                    sort values %{$app->active_connections}
-            ],
-            # Report any invalid (disconnected but not cleaned up) entries
-            invalid => 0 + (grep { !defined } values %{$app->active_connections})});
+    my @active_connections = values %{$app->active_connections};
+    my @connections        = map {
+        my $pc = 0;
+        my $ch = 0;
+        for my $k (keys %{$_->pricing_subscriptions}) {
+            ++$pc if defined $_->pricing_subscriptions->{$k};
+        }
+        for my $k (keys($_->stash->{pricing_channel} || [])) {
+            next if $k eq 'uuid';
+            next if $k eq 'price_daemon_cmd';
+            $ch += scalar keys $_->stash->{pricing_channel}{$k};
+        }
+        my $connection_info = {
+            app_id                         => $_->stash->{source},
+            landing_company                => $_->landing_company_name,
+            ip                             => $_->stash->{client_ip},
+            country                        => $_->country_code,
+            client                         => $_->stash->{loginid},
+            pricing_channel_count          => $ch,
+            last_call_received_from_client => $_->stash->{introspection}{last_call_received},
+            last_message_sent_to_client    => $_->stash->{introspection}{last_message_sent},
+            received_bytes_from_client     => $_->stash->{introspection}{received_bytes},
+            sent_bytes_to_client           => $_->stash->{introspection}{sent_bytes},
+            messages_received_from_client  => $_->stash->{introspection}{msg_type}{received},
+            messages_sent_to_client        => $_->stash->{introspection}{msg_type}{sent},
+            last_rpc_error                 => $_->stash->{introspection}{last_rpc_error},
+            pricer_subscription_count      => $pc,
+        };
+        $connection_info;
+        }
+        grep {
+        defined
+        }
+        sort @active_connections;
+
+    my $result = {
+        connections => \@connections,
+        # Report any invalid (disconnected but not cleaned up) entries
+        invalid => 0 + (grep { !defined } @active_connections),
+    };
+    return Future->done($result);
 };
 
 =head2 subscriptions
