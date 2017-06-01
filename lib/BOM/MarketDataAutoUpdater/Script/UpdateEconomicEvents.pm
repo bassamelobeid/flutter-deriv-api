@@ -22,7 +22,6 @@ sub documentation { return 'This script runs economic events update from forex f
 sub script_run {
     my $self = shift;
 
-    my @messages;
     my $parser = ForexFactory->new();
 
     #read economic events for one week (7-days) starting from 4 days back, so in case of a Monday which
