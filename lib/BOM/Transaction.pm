@@ -916,7 +916,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = $client->get_limit_for_daily_turnover;
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_daily_turnover);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your daily turnover limit of [_1][_2].',
@@ -936,7 +936,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $self   = shift;
         my $client = shift;
 
-        my $limit = $client->get_limit_for_open_positions;
+        my $limit = formatnumber('amount', $client->currency, $client->get_limit_for_open_positions);
         return Error::Base->cuss(
             -type              => 'OpenPositionLimit',
             -mesg              => "Client has reached the limit of $limit open positions.",
@@ -960,9 +960,10 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -type              => 'InsufficientBalance',
             -message           => 'Client\'s account balance was insufficient to buy bet.',
             -message_to_client => BOM::Platform::Context::localize(
-                'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).', $currency,
-                $account->get_balance(),                                                            $self->price
-            ));
+                'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).',
+                $currency,
+                formatnumber('amount', $currency, $account->get_balance()),
+                formatnumber('price',  $currency, $self->price)));
     },
     BI007 => sub {
         my $self   = shift;
@@ -981,13 +982,13 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = $client->get_limit_for_account_balance;
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_account_balance);
 
         my $account = BOM::Database::DataMapper::Account->new({
             client_loginid => $client->loginid,
             currency_code  => $currency,
         });
-        my $balance = $account->get_balance();
+        my $balance = formatnumber('amount', $currency, $account->get_balance());
 
         return Error::Base->cuss(
             -type              => 'AccountBalanceExceedsLimit',
@@ -1003,7 +1004,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = $client->get_limit_for_payout;
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_payout);
 
         return Error::Base->cuss(
             -type              => 'OpenPositionPayoutLimit',
@@ -1039,7 +1040,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = $client->get_limit_for_daily_losses;
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_daily_losses);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your daily limit on losses of [_1][_2].', $currency, $limit);
 
@@ -1054,7 +1055,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = $client->get_limit_for_7day_turnover;
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_7day_turnover);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your 7-day turnover limit of [_1][_2].',
@@ -1071,7 +1072,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = $client->get_limit_for_7day_losses;
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_7day_losses);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 7-day limit on losses of [_1][_2].', $currency, $limit);
 
@@ -1087,7 +1088,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = $client->get_limit_for_30day_turnover;
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_30day_turnover);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your 30-day turnover limit of [_1][_2].',
@@ -1104,7 +1105,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = $client->get_limit_for_30day_losses;
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_30day_losses);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 30-day limit on losses of [_1][_2].', $currency, $limit);
 
