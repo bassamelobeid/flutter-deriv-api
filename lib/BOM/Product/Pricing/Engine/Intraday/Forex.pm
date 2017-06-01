@@ -364,7 +364,6 @@ sub economic_events_spot_risk_markup {
     )->markup;
 }
 
-
 has vol_spread => (
     is      => 'ro',
     lazy    => 1,
