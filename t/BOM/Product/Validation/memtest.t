@@ -197,7 +197,7 @@ subtest 'memory cycle test' => sub {
         $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
         foreach my $type (@contract_types) {
-            next if $type =~ /^(LBFIXEDCALL|LBFIXEDPUT)/;
+            next if $type =~ /^(LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW)/;
 
             foreach my $start_type (
                 get_offerings_with_filter(
