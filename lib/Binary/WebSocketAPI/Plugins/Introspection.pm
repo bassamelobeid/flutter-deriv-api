@@ -63,7 +63,7 @@ sub start_server {
                                     $_,
                                     introspection => $command,
                                     @args
-                                    )
+                                );
                             };
                             # Allow deferred results
                             $rslt = Future->done($rslt) unless blessed($rslt) && $rslt->isa('Future');

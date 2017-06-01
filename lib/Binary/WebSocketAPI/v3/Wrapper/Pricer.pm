@@ -131,15 +131,17 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
         return;
     };
 
-    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-    $proposal_array_subscriptions->{$uuid} = {
-        args      => $req_storage->{args},
-        proposals => {},
-        seq       => []};
-    $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
-    my $position = 0;
-    for my $barrier (@$barrier_chunks) {
-        $barriers_order->{_make_barrier_key($barrier->[0])} = $position++;
+    if ($req_storage->{args}{subscribe}) {    # store data in stash if it is a subscription
+        my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+        $proposal_array_subscriptions->{$uuid} = {
+            args      => $req_storage->{args},
+            proposals => {},
+            seq       => []};
+        $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
+        my $position = 0;
+        for my $barrier (@$barrier_chunks) {
+            $barriers_order->{_make_barrier_key($barrier->[0])} = $position++;
+        }
     }
 
     my $create_price_channel = sub {
@@ -171,12 +173,22 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
         if ($req_storage->{args}{subscribe}) {    # we are in subscr mode, so remember the sequence of streams
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
             if ($proposal_array_subscriptions->{$uuid}) {
-                my $barriers = $req_storage->{args}{barriers}[0];
-                my $idx      = _make_barrier_key($barriers);
-                warn "unknown idx " . $idx . ", available: " . join ',', sort keys %$barriers_order unless exists $barriers_order->{$idx};
-                ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
-                # creating this key to be used by forget_all, undef - not to allow proposal_array message to be sent before real data received
-                $proposal_array_subscriptions->{$uuid}{proposals}{$req_storage->{uuid}} = undef;
+                if ($req_storage->{uuid}) {
+                    my $barriers = $req_storage->{args}{barriers}[0];
+                    my $idx      = _make_barrier_key($barriers);
+                    warn "unknown idx " . $idx . ", available: " . join ',', sort keys %$barriers_order unless exists $barriers_order->{$idx};
+                    ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
+                    # creating this key to be used by forget_all, undef - not to allow proposal_array message to be sent before real data received
+                    $proposal_array_subscriptions->{$uuid}{proposals}{$req_storage->{uuid}} = undef;
+                } else {
+                    # `_pricing_channel_for_ask` does not generated uuid.
+                    # it could be rare case when 2 proposal_array calls are performed in one connection
+                    # and they have similar but not the same barriers, so some chunks became the same
+                    # in this case `proposal_array` RPC hook `response` will send error message to client and will stop processing this call
+                    # so subscription should be removed.
+                    Binary::WebSocketAPI::v3::Wrapper::System::_forget_proposal_array($c, $uuid);
+                    delete $proposal_array_subscriptions->{$uuid};
+                }
                 $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
             }
         }
@@ -276,7 +288,18 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                         if (exists $res->{proposals}) {
                             for my $contract_type (keys %{$res->{proposals}}) {
                                 my @prices = @{$res->{proposals}{$contract_type}};
-                                $_->{error}{message} = $c->l(delete $_->{error}{message_to_client}) for grep { ; exists $_->{error} } @prices;
+                                for my $price (@prices) {
+                                    if (exists $price->{error}) {
+                                        $price->{error}{message} = $c->l(delete $price->{error}{message_to_client});
+                                        $price->{error}{details}{longcode} = $c->l(delete $price->{longcode});
+                                        $price->{error}{details}{display_value} += 0;
+                                        $price->{error}{details}{payout}        += 0;
+                                    } else {
+                                        $price->{longcode} = $c->l($price->{longcode});
+                                        $price->{payout}   = $req_storage->{args}{amount};
+                                        delete $price->{theo_probability};
+                                    }
+                                }
                                 warn "Barrier mismatch - expected " . @expected_barriers . " but had " . @prices unless @prices == @expected_barriers;
                                 push @{$proposal_array{$contract_type}}, @prices;
                             }
@@ -612,8 +635,6 @@ sub process_proposal_array_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type = 'proposal';
 
-    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-
     unless ($c->stash('proposal_array_collector_running')) {
         $c->stash('proposal_array_collector_running' => 1);
         # start 1 sec proposal_array sender if not started yet
@@ -724,11 +745,7 @@ sub process_ask_event {
 }
 
 sub _price_stream_results_adjustment {
-    my $c                     = shift;
-    my $orig_args             = shift;
-    my $cache                 = shift;
-    my $results               = shift;
-    my $resp_theo_probability = shift;
+    my ($c, undef, $cache, $results, $resp_theo_probability) = @_;
 
     my $contract_parameters = $cache->{contract_parameters};
 
@@ -819,8 +836,6 @@ sub _create_error_message {
     my ($err_code, $err_message, $err_details);
 
     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{cache}{proposal_array_subscription} || $stash_data->{uuid});
-
-    my $error = $response->{error} || {};
 
     if ($response->{error}) {
         $err_code    = $response->{error}->{code};
