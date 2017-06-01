@@ -1,24 +1,29 @@
 use strict;
 use warnings;
-use Test::More;
-use Test::MockTime qw/:all/;
-use JSON;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/reconnect test_schema build_wsapi_test/;
-use BOM::Platform::RedisReplicated;
-use File::Temp;
+
+use Test::More;
+use Test::MockTime qw/:all/;
+use Test::MockModule;
+
 use Date::Utility;
 use Data::Dumper;
-use Socket qw(PF_INET SOCK_STREAM pack_sockaddr_in inet_aton);
-use Variable::Disposition qw(retain_future);
+use File::Temp;
 use Future;
 use Future::Mojo;
+use JSON;
+use Socket qw(PF_INET SOCK_STREAM pack_sockaddr_in inet_aton);
 use Try::Tiny;
+use Variable::Disposition qw(retain_future);
+
 use BOM::Database::Model::OAuth;
 use BOM::MarketData qw(create_underlying);
-
+use BOM::Test::Helper qw/reconnect test_schema build_wsapi_test/;
+use BOM::Platform::RedisReplicated;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
 initialize_realtime_ticks_db();
 
 my $t = build_wsapi_test();
@@ -145,21 +150,11 @@ my %contract = (
 
 $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
 
-require Test::FailWarnings;
-
-{
-    local $SIG{__WARN__} = sub{};
-
-
-    $t->{_bom}{redis_server}->stop;
-
-    $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
-
-    $intro_stats = send_introspection_cmd('stats');
-    cmp_ok $intro_stats->{cumulative_redis_errors}, '>', 1, 'Got redis error';
-
-    $t->{_bom}{redis_server}->start;
-}
+subtest "redis errors" => sub {
+    $t->app->stat->{redis_errors}++;
+    my $intro_stats = send_introspection_cmd('stats');
+    cmp_ok $intro_stats->{cumulative_redis_errors}, '>', 0, 'Got redis error'
+};
 
 
 ## connections
@@ -173,6 +168,7 @@ $t = $t->send_ok({ json => { "ping" => 1}})->message_ok;
 $intro_conn = send_introspection_cmd('connections');
 cmp_ok $intro_conn->{connections}[0]{last_message_sent_to_client}{ping}, 'eq', 'pong', 'last msg was pong';
 
+
 # count of each type
 cmp_ok $intro_conn->{connections}[0]{messages_received_from_client}{time}, '==', 1, '1 time call';
 cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time}, '==', 1, '1 time reply';
@@ -182,21 +178,24 @@ cmp_ok $intro_conn->{connections}[0]{messages_received_from_client}{time}, '==',
 cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time}, '==', 2, '2 time reply';
 
 # number of pricer subs
+subtest "pricesrs subscriptions" => sub {
+    $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+    my $intro_conn = send_introspection_cmd('connections');
 
-cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
-$contract{amount} = 200;
-$t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
-$intro_conn = send_introspection_cmd('connections');
-cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
-$contract{duration} = 14;
-$t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
-$intro_conn = send_introspection_cmd('connections');
-cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 2, 'now 2 price subscription';
+    cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
+    $contract{amount} = 200;
+    $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+    $intro_conn = send_introspection_cmd('connections');
+    cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
+    $contract{duration} = 14;
+    $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+    $intro_conn = send_introspection_cmd('connections');
+    cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 2, 'now 2 price subscription';
 
-$t = $t->send_ok({ json => { "forget_all" => 'proposal'}})->message_ok;
-$intro_conn = send_introspection_cmd('connections');
-cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 0, 'no more price subscription';
-
+    $t = $t->send_ok({ json => { "forget_all" => 'proposal'}})->message_ok;
+    $intro_conn = send_introspection_cmd('connections');
+    cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 0, 'no more price subscription';
+};
 
 done_testing;
 
