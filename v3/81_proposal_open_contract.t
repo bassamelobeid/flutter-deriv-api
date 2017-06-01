@@ -294,10 +294,15 @@ subtest 'check two contracts subscription' => sub {
         json => {
             buy   => $proposal->{proposal}->{id},
             price => $proposal->{proposal}->{ask_price}}})->message_ok;
-
-    $t = $t->message_ok;
     $res = decode_json($t->message->[1]);
-    $ids->{$res->{proposal_open_contract}->{id}} = 1;
+
+    while (1) {
+        $t = $t->message_ok;
+        $res = decode_json($t->message->[1]);
+        next unless $res->{msg_type} eq 'proposal_open_contract';
+        $ids->{$res->{proposal_open_contract}->{id}} = 1;
+        last if scalar keys %$ids == 2;
+    }
 
 
     doing_something_useful(
@@ -306,12 +311,12 @@ subtest 'check two contracts subscription' => sub {
             $t->send_ok({json => {forget_all => 'proposal_open_contract'}})->message_ok;
         },
         sub {
-            my @forget_ids = sort @{shift->{forget_all}};
-            my @ids = sort keys %$ids;
-            is scalar @forget_ids, 2, 'Correct number of subscription forget';
-            is scalar @ids,        2, 'Correct number of contracts';
+            my $res = shift;
+            note explain $ids;
+            is scalar keys %$ids, 2, 'Correct number of contracts';
+            ok( delete $ids->{shift @{$res->{forget_all}}}, "check id") for 0..1;
 
-            cmp_bag(\@ids, \@forget_ids, 'Subscription and forget ids match correctly');
+            is scalar @{$res->{forget_all}}, 0, 'Correct number of subscription forget';
         }
     );
 };
