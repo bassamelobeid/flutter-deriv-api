@@ -210,7 +210,7 @@ has transaction_parameters => (
 );
 
 sub BUILDARGS {
-    my ($class, $args) = @_;
+    my (undef, $args) = @_;
 
     if (exists $args->{price}) {
         $args->{transaction_parameters}->{price} = $args->{price};
@@ -362,7 +362,6 @@ sub calculate_limits {
 sub prepare_bet_data_for_buy {
     my $self = shift;
 
-    my $client   = $self->client;
     my $contract = $self->contract;
 
     if ($self->purchase_date->is_after($contract->date_start)) {
@@ -663,13 +662,7 @@ sub prepare_bet_data_for_sell {
     my $self = shift;
     my $contract = shift || $self->contract;
 
-    my $client   = $self->client;
-    my $loginid  = $client->loginid;
-    my $currency = $contract->currency;
-
-    my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
-
-    $self->price(formatnumber('price', $currency, $self->price));
+    $self->price(formatnumber('price', $contract->currency, $self->price));
 
     my $bet_params = {
         id         => scalar $self->contract_id,
@@ -1237,8 +1230,6 @@ sub sell_expired_contracts {
     my $client       = $args->{client};
     my $source       = $args->{source};
     my $contract_ids = $args->{contract_ids};
-
-    my $time_start = Time::HiRes::time;
 
     my $currency = $client->currency;
     my $loginid  = $client->loginid;
