@@ -402,7 +402,7 @@ subtest 'new commission structure' => sub {
                 base_commission  => $base_commission,
                 theo_probability => $fake_theo,
             });
-            cmp_ok $c->payout, '==', roundnear(0.01, $data->{payout}), 'correct payout amount';
+            is $c->payout, roundnear(0.01, $data->{payout}), 'correct payout amount';
         }
     }
 };
