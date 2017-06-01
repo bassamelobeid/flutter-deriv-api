@@ -18,7 +18,7 @@ use BOM::Platform::RedisReplicated;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Runtime;
 
-use IO::Async::Loop::Mojo;
+use IO::Async::Loop;
 
 build_test_R_50_data();
 my $t = build_wsapi_test();
@@ -65,7 +65,7 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
 #######################################################################################################################################
 
-my $loop = IO::Async::Loop::Mojo->new;
+my $loop = IO::Async::Loop->new;
 my ($wait_for, $check_callback, $f);
 my $message_callback = sub {
     my ($tx, $msg) = @_;
