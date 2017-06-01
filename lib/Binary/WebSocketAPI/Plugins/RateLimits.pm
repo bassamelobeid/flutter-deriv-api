@@ -10,7 +10,7 @@ use Variable::Disposition qw/retain_future/;
 use YAML::XS qw(LoadFile);
 
 sub register {
-    my ($self, $app, $conf) = @_;
+    my ($self, $app) = @_;
 
     ### rate-limitation plugin
     my %rates_files = (
@@ -98,9 +98,9 @@ sub _check_single_limit {
     my $name = $limit_descriptor->{name};
     my $local_storage = $c->stash->{rate_limits} //= {};
     # update value speculatively (i.e. before getting real values from redis)
-    my $value           = ++($local_storage->{$name}{value}   //= 0);
-    my $pending_updates = ++($local_storage->{$name}{pending} //= 0);
-    my $result          = $value <= $limit_descriptor->{limit};
+    ++$local_storage->{$name}{pending};
+    my $value = ++$local_storage->{$name}{value};
+    my $result = $value <= $limit_descriptor->{limit};
     # print "[debug] $name check => $result (value: $value)\n";
 
     my $f =
@@ -113,11 +113,9 @@ sub _check_single_limit {
 sub _check_limits {
     my ($c, $service) = @_;
     my $rates_config      = $c->app->{_binary}{rates_config};
-    my $client_id         = $c->rate_limitations_key;
     my $limits_domain     = $rates_config->{$c->landing_company_name // ''} // $rates_config->{binary};
     my $limit_descriptors = $limits_domain->{$service};
 
-    my $redis = $c->app->ws_redis_master;
     my @future_checks;
     my $speculative_result = 1;
     for my $descr (@$limit_descriptors) {
