@@ -178,7 +178,6 @@ sub _initialize_contract_parameters {
     if (defined $pp->{date_expiry}) {
         # to support legacy shortcode where expiry date is date string in dd-mmm-yy format
         if (Date::Utility::is_ddmmmyy($pp->{date_expiry})) {
-            my $for_date    = $pp->{underlying}->for_date;
             my $exchange    = $pp->{underlying}->exchange;
             my $date_expiry = Date::Utility->new($pp->{date_expiry});
             if (my $closing = $trading_calendar->closing_on($exchange, $date_expiry)) {

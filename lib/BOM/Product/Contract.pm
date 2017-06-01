@@ -579,7 +579,6 @@ sub _add_error {
 sub _build__pricing_args {
     my $self = shift;
 
-    my $start_date           = $self->date_pricing;
     my $barriers_for_pricing = $self->barriers_for_pricing;
     my $payouttime_code      = ($self->payouttime eq 'hit') ? 0 : 1;
     my $args                 = {
@@ -826,8 +825,7 @@ sub _build_apply_market_inefficient_limit {
 sub _build_staking_limits {
     my $self = shift;
 
-    my $underlying = $self->underlying;
-    my $curr       = $self->currency;
+    my $curr = $self->currency;
 
     my $static     = BOM::Platform::Config::quants;
     my $bet_limits = $static->{bet_limits};
