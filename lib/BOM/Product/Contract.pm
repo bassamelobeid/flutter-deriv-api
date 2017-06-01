@@ -577,7 +577,6 @@ sub _add_error {
 sub _build__pricing_args {
     my $self = shift;
 
-    my $start_date           = $self->date_pricing;
     my $barriers_for_pricing = $self->barriers_for_pricing;
     my $payouttime_code      = ($self->payouttime eq 'hit') ? 0 : 1;
     my $args                 = {
