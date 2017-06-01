@@ -9,6 +9,12 @@ has [qw(ticks_for_lookbacks spot_min spot_max)] => (
     lazy_build => 1,
 );
 
+has unit => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
 sub _build_ticks_for_lookbacks {
 
     my $self      = shift;
