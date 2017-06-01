@@ -99,7 +99,7 @@ sub _check_single_limit {
     my $local_storage = $c->stash->{rate_limits} //= {};
     # update value speculatively (i.e. before getting real values from redis)
     ++$local_storage->{$name}{pending};
-    my $value = ++$local_storage->{$name}{value};
+    my $value  = ++$local_storage->{$name}{value};
     my $result = $value <= $limit_descriptor->{limit};
     # print "[debug] $name check => $result (value: $value)\n";
 
