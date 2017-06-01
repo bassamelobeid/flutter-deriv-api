@@ -7,7 +7,6 @@ use Moo;
 use Error::Base;
 use LandingCompany::Registry;
 use List::Util qw(min max first);
-use Format::Util::Numbers qw(roundnear);
 use YAML::XS qw(LoadFile);
 
 use Price::Calculator qw/formatnumber/;
