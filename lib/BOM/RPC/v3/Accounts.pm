@@ -629,11 +629,17 @@ sub set_settings {
         # - residence, if residence not set. But not for Japan
         # - email_consent (common to real account as well)
         if (not $client->residence and $residence and $residence ne 'jp') {
-            $client->residence($residence);
-            if (not $client->save()) {
+            if (Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)) {
                 $err = BOM::RPC::v3::Utility::create_error({
-                        code              => 'InternalServerError',
-                        message_to_client => localize('Sorry, an error occurred while processing your account.')});
+                        code              => 'invalid residence',
+                        message_to_client => localize('Sorry, our service is not available for your country of residence.')});
+            } else {
+                $client->residence($residence);
+                if (not $client->save()) {
+                    $err = BOM::RPC::v3::Utility::create_error({
+                            code              => 'InternalServerError',
+                            message_to_client => localize('Sorry, an error occurred while processing your account.')});
+                }
             }
         } elsif (
             grep {
