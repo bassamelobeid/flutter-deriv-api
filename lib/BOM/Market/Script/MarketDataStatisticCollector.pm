@@ -235,7 +235,6 @@ sub _on_vol_day_stat {
 
     foreach my $underlying (@underlyings) {
         my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-        my $surface    = $volsurface->surface_data;
         my $day_for_on = $volsurface->get_day_for_tenor('ON');
         stats_gauge('On_vol_day_alert', $day_for_on, {tags => ['tag:' . $underlying->{symbol}]});
     }
