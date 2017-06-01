@@ -10,7 +10,7 @@ use Try::Tiny;
 use Date::Utility;
 use Data::Dumper;
 
-use Price::Calculator qw/get_formatting_precision/;
+use Price::Calculator qw/formatnumber/;
 
 use BOM::Platform::Runtime;
 use BOM::Database::ClientDB;
@@ -222,7 +222,7 @@ sub write_transaction_line {
             return $c->status_bad_request(
                 "Requested withdrawal amount $currency_code $amount$plusfee exceeds client balance $currency_code $balance");
         }
-        $trx = $client->payment_doughflow(%payment_args, amount => sprintf("%" . get_formatting_precision($currency_code) . "f", -$amount));
+        $trx = $client->payment_doughflow(%payment_args, amount => formatnumber('amount', $currency_code, -$amount));
     } elsif ($c->type eq 'withdrawal_reversal') {
         if ($bonus or $fee) {
             return $c->status_bad_request('Bonuses and fees are not allowed for withdrawal reversals');
@@ -280,18 +280,15 @@ sub check_predicates {
                   'A withdrawal reversal was requested for DoughFlow trace ID '
                 . $trace_id
                 . ', but multiple corresponding original withdrawals were found with that trace ID ';
-        } elsif (
-            sprintf(
-                "%" . get_formatting_precision($currency_code) . "f",
-                $doughflow_datamapper->get_doughflow_withdrawal_amount_by_trace_id($trace_id)
-            ) != sprintf("%" . get_formatting_precision($currency_code) . "f", $amount))
+        } elsif (formatnumber('amount', $currency_code, $doughflow_datamapper->get_doughflow_withdrawal_amount_by_trace_id($trace_id)) !=
+            formatnumber('amount', $currency_code, $amount))
         {
             $rejection =
                   'A withdrawal reversal request for DoughFlow trace ID '
                 . $trace_id
                 . ' was made in the amount of '
                 . $currency_code . ' '
-                . sprintf("%" . get_formatting_precision($currency_code) . "f", $amount)
+                . formatnumber('amount', $currency_code, $amount)
                 . ', but this does not match the original DoughFlow withdrawal request amount';
         }
 
