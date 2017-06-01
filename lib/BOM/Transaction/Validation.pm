@@ -25,10 +25,21 @@ has transaction => (is => 'ro');
 sub validate_trx_sell {
     my $self = shift;
     ### Client-depended checks
-    for my $c (@{$self->clients}) {
+    my $clients;
+    $clients = $self->transaction->multiple if $self->transaction;
+    $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
+
+    CLI: for my $c (@$clients) {
+        next CLI if !$c->{client} || $c->{code};
         for (qw/ check_trade_status _validate_iom_withdrawal_limit _validate_available_currency _validate_currency /) {
-            my $res = $self->$_($c);
-            return $res if $res;
+            my $res = $self->$_($c->{client});
+            next unless $res;
+            if ($self->transaction && $self->transaction->multiple) {
+                $c->{code}  = $res->get_type;
+                $c->{error} = $res->{-message_to_client};
+                next CLI;
+            }
+            return $res;
         }
     }
     for (qw/ _is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing /) {
@@ -44,7 +55,13 @@ sub validate_trx_buy {
     # database related validations MUST be implemented in the database
     # ask your friendly DBA team if in doubt
     my $res;
-    for my $c (@{$self->clients}) {
+    ### TODO: It's temporary trick for copy trading. Needs to refactor in BOM::Transaction ( remove multiple, change client to clients )
+    my $clients;
+    $clients = $self->transaction->multiple if $self->transaction;
+    $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
+
+    CLI: for my $c (@$clients) {
+        next CLI if !$c->{client} || $c->{code};
         for (
             qw/
             check_trade_status
@@ -59,8 +76,15 @@ sub validate_trx_buy {
             /
             )
         {
-            $res = $self->$_($c);
-            return $res if $res;
+            $res = $self->$_($c->{client});
+            next unless $res;
+
+            if ($self->transaction && $self->transaction->multiple) {
+                $c->{code}  = $res->get_type;
+                $c->{error} = $res->{-message_to_client};
+                next CLI;
+            }
+            return $res;
         }
     }
     ### Order is very important
@@ -69,17 +93,22 @@ sub validate_trx_buy {
     $res = $self->_validate_trade_pricing_adjustment();
     return $res if $res;
 
-    for my $c (@{$self->clients}) {
+    CLI: for my $c (@$clients) {
+        next CLI if !$c->{client} || $c->{code};
         for (qw/ _validate_payout_limit _validate_stake_limit /) {
-            $res = $self->$_($c);
-            return $res if $res;
+            $res = $self->$_($c->{client});
+            next unless $res;
+            if ($self->transaction && $self->transaction->multiple) {
+                $c->{code}  = $res->get_type;
+                $c->{error} = $res->{-message_to_client};
+                next CLI;
+            }
+            return $res;
         }
     }
-    ### we should check pricing time just before DB query
-    $res = $self->_validate_date_pricing();
-    return $res if $res;
 
-    return;
+    ### we should check pricing time just before DB query
+    return $self->_validate_date_pricing();
 }
 
 sub _validate_available_currency {
