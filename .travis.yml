@@ -77,8 +77,8 @@ install:
     - perl /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
     - export RPC_CONFIG=/home/git/regentmarkets/bom-pricing/pricing_rpc.conf.travis
     - perl /home/git/regentmarkets/bom-pricing/bin/binary_pricing_rpc.pl  daemon -m production -l http://*:5006/jsonrpc  &
-    - perl /home/git/regentmarkets/bom-pricing/bin/price_queue.pl  daemon &
-    - perl /home/git/regentmarkets/bom-pricing/bin/price_daemon.pl  daemon &
+    - perl /home/git/regentmarkets/bom-pricing/bin/price_queue.pl   daemon > /dev/null 2>&1 &
+    - perl /home/git/regentmarkets/bom-pricing/bin/price_daemon.pl  daemon > /dev/null 2>&1 &
 
 before_script:
     - /tmp/travis-scripts/wait_for_rpc.sh
