@@ -336,10 +336,10 @@ sub economic_events_volatility_risk_markup {
     if ((my $tentative_events_markup = $self->_tentative_events_markup)->amount) {
         return $tentative_events_markup;
     }
-
+    #dummy value maintain for japan documentation purposes. Set to zero.
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_volatility_risk_markup',
-        description => 'dummy value maintain for japan documentation purposes. Set to zero.',
+        description => 'markup to account for volatility risk of economic events',
         set_by      => __PACKAGE__,
         base_amount => 0,
     });
