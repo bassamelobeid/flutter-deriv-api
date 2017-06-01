@@ -8,10 +8,11 @@ no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix the
 use POSIX;
 use Date::Utility;
 use Path::Tiny;
-use Format::Util::Numbers qw(roundnear);
 use Brands;
 use Client::Account;
 use HTML::Entities;
+
+use Price::Calculator qw/formatnumber/;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Database::DataMapper::Account;
@@ -309,7 +310,7 @@ sub get_client_by_status {
                     my $acbal      = $3;
                     my $openpl     = $4;
                     my $equity     = $5;
-                    $SUMMARYFILE{"$loginid-TOTALEQUITY"} += roundnear(0.01, in_USD($equity, $curr));
+                    $SUMMARYFILE{"$loginid-TOTALEQUITY"} += formatnumber('amount', 'USD', in_USD($equity, $curr));
                 }
             }
             close $sf;

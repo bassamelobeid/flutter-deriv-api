@@ -6,12 +6,13 @@ use open qw[ :encoding(UTF-8) ];
 use Date::Manip;
 use JSON qw(from_json to_json);
 use List::Util qw( min max );
-
 use Cache::RedisDB;
-use Format::Util::Numbers qw(roundnear);
-use BOM::Platform::Runtime;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+
 use LandingCompany::Registry;
+use Price::Calculator qw/formatnumber/;
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+
+use BOM::Platform::Runtime;
 
 sub DailyTurnOverReport {
     my ($args, $options) = @_;
@@ -107,12 +108,12 @@ sub DailyTurnOverReport {
             $tday{sells}->{$curr} = int $sells;
         }
 
-        $USDbuys  = roundnear(0.01, $USDbuys);
-        $USDsells = roundnear(0.01, $USDsells);
+        $USDbuys  = formatnumber('amount', 'USD', $USDbuys);
+        $USDsells = formatnumber('amount', 'USD', $USDsells);
         $tday{USD_buys}  = int $USDbuys;
         $tday{USD_sells} = int $USDsells;
 
-        my $pl = roundnear(0.01, $USDbuys - $USDsells);
+        my $pl = formatnumber('amount', 'USD', $USDbuys - $USDsells);
         $tday{pl} = int $pl;
 
         # aggregate outstanding bets
@@ -148,8 +149,8 @@ sub DailyTurnOverReport {
     }
 
     foreach my $curr (@all_currencies) {
-        $allbuys{$curr}  = int roundnear(0.01, $allbuys{$curr});
-        $allsells{$curr} = int roundnear(0.01, $allsells{$curr});
+        $allbuys{$curr}  = int formatnumber('amount', $curr, $allbuys{$curr});
+        $allsells{$curr} = int formatnumber('amount', $curr, $allsells{$curr});
     }
 
     $template{mtm_calc_time} = $latest_time->db_timestamp;
@@ -170,8 +171,8 @@ sub DailyTurnOverReport {
     $template{summarize_turnover} = 1;
     my $estimated_pl = int($allpl + $aggbetsdiff);
     $template{estimated_pl}        = $estimated_pl;
-    $template{pct_month_completed} = roundnear(0.01, 100 * $month_completed);
-    $template{pct_hold}            = roundnear(0.01, 100 * ($estimated_pl / ($allUSDbuys || 1)));
+    $template{pct_month_completed} = formatnumber('amount', 'USD', 100 * $month_completed);
+    $template{pct_hold}            = formatnumber('amount', 'USD', 100 * ($estimated_pl / ($allUSDbuys || 1)));
     $template{projected_pl}        = int($estimated_pl * $projection_ratio);
     $template{projected_turnover}  = int($allUSDbuys * $projection_ratio);
 

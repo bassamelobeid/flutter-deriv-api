@@ -5,12 +5,14 @@ use Moose;
 use Date::Utility;
 use Path::Tiny;
 use IO::File;
-use Format::Util::Numbers qw(roundnear);
-
 use Try::Tiny;
+
+use Price::Calculator qw/formatnumber/;
+
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Database::DataMapper::Transaction;
+
 has save_file => (
     is      => 'ro',
     default => 1,
@@ -127,13 +129,14 @@ sub generate_report {
                 }
 
                 # open positions value minus buy prices
-                $total_open_bets_profit = roundnear(0.01, $total_open_bets_profit);
+                $total_open_bets_profit = formatnumber('amount', $currency, $total_open_bets_profit);
                 $agg_total_open_bets_profit += $total_open_bets_profit;
 
                 # Withdrawals are stored as negative numbers, so we just add here.
-                my $agg_deposit_withdrawal = roundnear(0.01, $client_ref->{$login_id}->{'deposits'} + $client_ref->{$login_id}->{'withdrawals'});
-                my $total_equity           = roundnear(0.01, $total_open_bets_value + $acbalance);
-                $acbalance = roundnear(0.01, $acbalance);
+                my $agg_deposit_withdrawal =
+                    formatnumber('amount', $currency, $client_ref->{$login_id}->{'deposits'} + $client_ref->{$login_id}->{'withdrawals'});
+                my $total_equity = formatnumber('amount', $currency, $total_open_bets_value + $acbalance);
+                $acbalance = formatnumber('amount', $currency, $acbalance);
 
                 my $summary_line =
                     join(',', ($login_id, $acbalance, $total_open_bets_value, $total_open_bets_profit, $total_equity, $agg_deposit_withdrawal));

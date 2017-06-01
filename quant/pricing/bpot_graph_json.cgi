@@ -95,7 +95,7 @@ while ($graph_more) {
             } else {
                 $amount = ($expired and $attr =~ /probability$/) ? $value : (ref $bet->$attr) ? $bet->$attr->amount : $bet->$attr;
             }
-            push @{$prices{$attr}}, roundnear(0.01, (abs $amount > 3) ? $amount : $amount * 100);
+            push @{$prices{$attr}}, formatnumber('amount', $bet->currency, (abs $amount > 3) ? $amount : $amount * 100);
         }
 
         my $current_vs = $bet->volsurface->recorded_date->datetime_iso8601;
