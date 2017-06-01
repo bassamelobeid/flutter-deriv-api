@@ -488,7 +488,6 @@ subtest 'market_risk blackouts' => sub {
         duration                  => '59m59s',
         current_tick              => $xauusd_tick,
         pricing_vol               => 0.1,
-        news_adjusted_pricing_vol => 0.1,
     };
     my $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
