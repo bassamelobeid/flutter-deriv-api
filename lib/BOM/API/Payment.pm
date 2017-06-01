@@ -158,7 +158,6 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
 
         sub {
             my $env = shift;
-            my $log = $env->{log};
             my $req = Plack::Request->new($env);
 
             # make it both supports the url ends with / or not

@@ -9,7 +9,6 @@ use Client::Account;
 
 sub account_GET {
     my $c      = shift;
-    my $env    = $c->env;
     my $client = $c->user;
 
     if (my $err = $c->validate('currency_code')) {
