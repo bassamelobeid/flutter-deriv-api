@@ -106,7 +106,7 @@ sub get_chronicle_writer {
     $writer_instance //= Data::Chronicle::Writer->new(
         publish_on_set => 1,
         cache_writer   => $redis,
-        db_handle      => _dbh(),
+        db_handle      => _dbix(),
     );
 
     return $writer_instance;
@@ -120,7 +120,7 @@ sub get_chronicle_reader {
     if ($for_date) {
         $historical_instance //= Data::Chronicle::Reader->new(
             cache_reader => $redis,
-            db_handle    => _dbh(),
+            db_handle    => _dbix(),
         );
 
         return $historical_instance;
@@ -155,7 +155,7 @@ sub set {
 
     my $key = $category . '::' . $name;
     BOM::Platform::RedisReplicated::redis_write()->set($key, $value);
-    _archive($category, $name, $value, $rec_date) if _dbh();
+    _archive($category, $name, $value, $rec_date) if _dbix();
 
     return 1;
 }
@@ -192,8 +192,8 @@ sub get_for {
 
     my $db_timestamp = Date::Utility->new($date_for)->db_timestamp;
 
-    my $db_data = _dbh()->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
-        'id', {}, $category, $name, $db_timestamp);
+    my $db_data = _dbix()->run(fixup => sub {$_selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
+                                                                'id', {}, $category, $name, $db_timestamp)});
 
     return if not %$db_data;
 
@@ -213,8 +213,8 @@ sub get_for_period {
     my $end_timestamp   = Date::Utility->new($end)->db_timestamp;
 
     my $db_data =
-        _dbh()->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? AND timestamp >=? order by timestamp desc},
-        'id', {}, $category, $name, $end_timestamp, $start_timestamp);
+        _dbic()->run(fixup => sub{$_->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? AND timestamp >=? order by timestamp desc},
+                                                        'id', {}, $category, $name, $end_timestamp, $start_timestamp)});
 
     return if not %$db_data;
 
@@ -238,7 +238,7 @@ sub _archive {
     # In unit tests, we will use Test::MockTime to force Chronicle to store hostorical data
     my $db_timestamp = $rec_date->db_timestamp;
 
-    return _dbh()->prepare(<<'SQL')->execute($category, $name, $value, $db_timestamp);
+    return _dbic()->run(fixup => sub {$_->prepare(<<'SQL')->execute($category, $name, $value, $db_timestamp)});
 WITH ups AS (
     UPDATE chronicle
        SET value=$3
@@ -265,8 +265,8 @@ my $pid = $$;
 sub _dbic {
     # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
     return undef if not defined _config()->{chronicle};
-    return $dbic if $dbic;
-    $dbic = DBI->connect(
+    state $dbh_addr;
+    $dbic //= DBI->connect(
         '' . _dbh_dsn(),
         # User and password are part of the DSN
         '', '',
@@ -274,6 +274,7 @@ sub _dbic {
             RaiseError        => 1,
             pg_server_prepare => 0,
         });
+    if $dbh_addr ne 
     return $dbic;
 }
 
