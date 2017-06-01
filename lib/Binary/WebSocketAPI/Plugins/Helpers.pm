@@ -5,10 +5,10 @@ use base 'Mojolicious::Plugin';
 use strict;
 use warnings;
 use feature "state";
+
 use Sys::Hostname;
-use YAML::XS;
-use Guard;
 use Scalar::Util ();
+
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
