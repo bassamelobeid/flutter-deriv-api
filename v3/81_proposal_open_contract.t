@@ -3,7 +3,6 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use JSON;
-use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -92,7 +91,6 @@ sub doing_something_useful {
                                                $f->fail("timeout");
                                                return;
                                            }
-                                           note "TRY AGAIN";
                                            $f->cancel('try again');
                                            doing_something_useful($action_loop, $wait_for, sub{ $t->message_ok},$check_callback);
                                        },
@@ -153,8 +151,6 @@ doing_something_useful(
     sub {
         ok($contract_id = shift->{buy}->{contract_id}, "got contract_id");
     });
-
-note $contract_id;
 
 doing_something_useful(
     $loop,
@@ -281,29 +277,26 @@ subtest 'check two contracts subscription' => sub {
 
     my $ids = {};
 
+    doing_something_useful(
+        $loop, 'proposal_open_contract',
+        sub {
+            $t->send_ok({
+                json => {
+                    proposal_open_contract => 1,
+                    subscribe              => 1
+                }})->message_ok;
+            $t->send_ok({
+                json => {
+                    buy   => $proposal->{proposal}->{id},
+                    price => $proposal->{proposal}->{ask_price}}})->message_ok;
 
-    $t = $t->send_ok({
-        json => {
-            proposal_open_contract => 1,
-            subscribe              => 1
-        }})->message_ok;
-    $res = decode_json($t->message->[1]);
-    $ids->{$res->{proposal_open_contract}->{id}} = 1;
+        },
+        sub {
+            $ids->{shift->{proposal_open_contract}->{id}} = 1;
+        });
 
-    $t = $t->send_ok({
-        json => {
-            buy   => $proposal->{proposal}->{id},
-            price => $proposal->{proposal}->{ask_price}}})->message_ok;
-    $res = decode_json($t->message->[1]);
-
-    while (1) {
-        $t = $t->message_ok;
-        $res = decode_json($t->message->[1]);
-        next unless $res->{msg_type} eq 'proposal_open_contract';
-        $ids->{$res->{proposal_open_contract}->{id}} = 1;
-        last if scalar keys %$ids == 2;
-    }
-
+    my $i = 0;
+    $t->message_ok while ( scalar keys %$ids < 2 ) && ( ++$i < 5 );
 
     doing_something_useful(
         $loop, 'forget_all',
@@ -312,7 +305,7 @@ subtest 'check two contracts subscription' => sub {
         },
         sub {
             my $res = shift;
-            note explain $ids;
+
             is scalar keys %$ids, 2, 'Correct number of contracts';
             ok( delete $ids->{shift @{$res->{forget_all}}}, "check id") for 0..1;
 
