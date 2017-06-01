@@ -29,7 +29,7 @@ sub startup {
 
     $app->helper(
         l => sub {
-            my $c = shift;
+            shift;
             return BOM::Platform::Context::localize(@_);
         });
 
