@@ -137,7 +137,6 @@ subtest 'payout' => sub {
         payout          => 1000,
         landing_company => 'japan'
     });
-    print "<<< " . $c->ask_price . "\n";
     is $c->ask_price, 0.035 * 1000, 'Forex daily non atm contract for japan is floored to 3.5%';
 
     $c = produce_contract({
@@ -149,7 +148,6 @@ subtest 'payout' => sub {
         payout     => $payout,
     });
 
-    print "<<< " . $c->ask_price . "\n";
     cmp_ok $c->ask_price, '>', 0.2 * $payout, 'VolIdx intraday non atm contract price is not floor 20%.';
 
     $c = produce_contract({
