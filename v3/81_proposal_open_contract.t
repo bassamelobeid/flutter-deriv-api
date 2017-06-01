@@ -18,7 +18,7 @@ use BOM::Platform::RedisReplicated;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Runtime;
 
-use IO::Async::Loop;
+use IO::Async::Loop::Mojo;
 
 build_test_R_50_data();
 my $t = build_wsapi_test();
@@ -65,7 +65,7 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
 #######################################################################################################################################
 
-my $loop = IO::Async::Loop->new;
+my $loop = IO::Async::Loop::Mojo->new;
 my ($wait_for, $check_callback, $f);
 my $message_callback = sub {
     my ($tx, $msg) = @_;
@@ -281,26 +281,23 @@ subtest 'check two contracts subscription' => sub {
 
     my $ids = {};
 
-    doing_something_useful(
-        $loop, 'proposal_open_contract',
-        sub {
-            $t->send_ok({
-                json => {
-                    proposal_open_contract => 1,
-                    subscribe              => 1
-                }})->message_ok;
-            $t->send_ok({
-                json => {
-                    buy   => $proposal->{proposal}->{id},
-                    price => $proposal->{proposal}->{ask_price}}})->message_ok;
 
-        },
-        sub {
-            $ids->{shift->{proposal_open_contract}->{id}} = 1;
-        });
+    $t = $t->send_ok({
+        json => {
+            proposal_open_contract => 1,
+            subscribe              => 1
+        }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    $ids->{$res->{proposal_open_contract}->{id}} = 1;
 
+    $t = $t->send_ok({
+        json => {
+            buy   => $proposal->{proposal}->{id},
+            price => $proposal->{proposal}->{ask_price}}})->message_ok;
 
-    $t->message_ok unless scalar keys %$ids == 2;
+    $t = $t->message_ok;
+    $res = decode_json($t->message->[1]);
+    $ids->{$res->{proposal_open_contract}->{id}} = 1;
 
 
     doing_something_useful(
