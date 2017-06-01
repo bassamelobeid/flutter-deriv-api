@@ -16,6 +16,58 @@ sub get_copiers_cnt {
     return scalar(@{$self->db->dbh->selectcol_arrayref($sql, undef, @binds) || []});
 }
 
+
+sub get_trade_copiers {
+    my ($self, $args) = @_;
+    ### This SQL query can be written in more obvious way but this long query is faster.
+    ### Please, check with DBA if you want to change it
+    return $self->db->dbh->selectcol_arrayref(<<'SQL', undef, @{$args}{qw/trader_id trade_type asset price/}) || [];
+SELECT DISTINCT copier_id from (
+    SELECT copier_id
+      FROM betonmarkets.copiers AS copiers
+     WHERE trader_id = $1
+       AND trade_type = $2
+       AND asset = $3
+       AND ($4 IS NULL OR
+            (min_trade_stake is NULL OR $4 >= min_trade_stake) AND
+            (max_trade_stake is NULL OR $4 <= max_trade_stake))
+
+    UNION ALL
+
+    SELECT copier_id
+      FROM betonmarkets.copiers AS copiers
+     WHERE trader_id = $1
+       AND trade_type = '*'
+       AND asset = $3
+       AND ($4 IS NULL OR
+            (min_trade_stake is NULL OR $4 >= min_trade_stake) AND
+            (max_trade_stake is NULL OR $4 <= max_trade_stake))
+
+    UNION ALL
+
+    SELECT copier_id
+      FROM betonmarkets.copiers AS copiers
+     WHERE trader_id = $1
+       AND trade_type = $2
+       AND asset = '*'
+       AND ($4 IS NULL OR
+            (min_trade_stake is NULL OR $4 >= min_trade_stake) AND
+            (max_trade_stake is NULL OR $4 <= max_trade_stake))
+
+    UNION ALL
+
+    SELECT copier_id
+      FROM betonmarkets.copiers AS copiers
+     WHERE trader_id = $1
+       AND trade_type = '*'
+       AND asset = '*'
+       AND ($4 IS NULL OR
+            (min_trade_stake is NULL OR $4 >= min_trade_stake) AND
+            (max_trade_stake is NULL OR $4 <= max_trade_stake))
+) t
+SQL
+}
+
 sub get_traders {
     my ($self, $args) = @_;
 
