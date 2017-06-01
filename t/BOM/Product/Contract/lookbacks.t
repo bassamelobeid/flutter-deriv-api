@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 5;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -111,6 +111,138 @@ subtest 'lbfixedput' => sub {
         is $c->payouttime,   'end';
         is $c->code,         'LBFIXEDPUT';
         is $c->pricing_code, 'LBFIXEDPUT';
+        
+        ok !$c->is_path_dependent;
+        is_deeply $c->supported_expiries, ['intraday', 'daily'];
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        
+    }
+    'generic';
+
+    lives_ok {
+        $args->{duration} = '1d';
+        $args->{barrier}  = 100.030;
+        my $c = produce_contract($args);
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        
+        is $c->expiry_type, 'daily';
+        ok !$c->is_expired, 'not expired';
+        
+        $args->{date_pricing} = $args->{date_start}->epoch + 31;
+        $c = produce_contract($args);
+        ok !$c->is_expired, 'expired';
+        
+        
+        $args->{barrier}      = 100.050;
+        $args->{date_pricing} = $now->truncate_to_day->plus_time_interval('2d');
+        $args->{exit_tick}    = $close_tick;                                       # INJECT OHLC since cannot find it in the test DB.
+        $args->{is_valid_exit_tick}    = 1;
+        $c                    = produce_contract($args);
+        cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
+        ok $c->is_expired, 'expired';
+        
+        
+    }
+    'expiry checks';
+};
+
+subtest 'lbfloatcall' => sub {
+    lives_ok {
+        $args->{bet_type}     = 'LBFLOATCALL';
+        $args->{date_pricing} = $now;
+        my $c = produce_contract($args);
+        isa_ok $c, 'BOM::Product::Contract::Lbfloatcall';
+        is $c->payouttime,   'end';
+        is $c->code,         'LBFLOATCALL';
+        is $c->pricing_code, 'LBFLOATCALL';
+        
+        ok !$c->is_path_dependent;
+        is_deeply $c->supported_expiries, ['intraday', 'daily'];
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        
+    }
+    'generic';
+
+    lives_ok {
+        $args->{duration} = '1d';
+        $args->{barrier}  = 100.030;
+        my $c = produce_contract($args);
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        
+        is $c->expiry_type, 'daily';
+        ok !$c->is_expired, 'not expired';
+        
+        $args->{date_pricing} = $args->{date_start}->epoch + 31;
+        $c = produce_contract($args);
+        ok !$c->is_expired, 'expired';
+        
+        
+        $args->{barrier}      = 100.050;
+        $args->{date_pricing} = $now->truncate_to_day->plus_time_interval('2d');
+        $args->{exit_tick}    = $close_tick;                                       # INJECT OHLC since cannot find it in the test DB.
+        $args->{is_valid_exit_tick}    = 1;
+        $c                    = produce_contract($args);
+        cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
+        ok $c->is_expired, 'expired';
+        
+        
+    }
+    'expiry checks';
+};
+
+subtest 'lbfloatput' => sub {
+    lives_ok {
+        $args->{bet_type}     = 'LBFLOATPUT';
+        $args->{date_pricing} = $now;
+        my $c = produce_contract($args);
+        isa_ok $c, 'BOM::Product::Contract::Lbfloatput';
+        is $c->payouttime,   'end';
+        is $c->code,         'LBFLOATPUT';
+        is $c->pricing_code, 'LBFLOATPUT';
+        
+        ok !$c->is_path_dependent;
+        is_deeply $c->supported_expiries, ['intraday', 'daily'];
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        
+    }
+    'generic';
+
+    lives_ok {
+        $args->{duration} = '1d';
+        $args->{barrier}  = 100.030;
+        my $c = produce_contract($args);
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        
+        is $c->expiry_type, 'daily';
+        ok !$c->is_expired, 'not expired';
+        
+        $args->{date_pricing} = $args->{date_start}->epoch + 31;
+        $c = produce_contract($args);
+        ok !$c->is_expired, 'expired';
+        
+        
+        $args->{barrier}      = 100.050;
+        $args->{date_pricing} = $now->truncate_to_day->plus_time_interval('2d');
+        $args->{exit_tick}    = $close_tick;                                       # INJECT OHLC since cannot find it in the test DB.
+        $args->{is_valid_exit_tick}    = 1;
+        $c                    = produce_contract($args);
+        cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
+        ok $c->is_expired, 'expired';
+        
+        
+    }
+    'expiry checks';
+};
+
+subtest 'lbhighlow' => sub {
+    lives_ok {
+        $args->{bet_type}     = 'LBHIGHLOW';
+        $args->{date_pricing} = $now;
+        my $c = produce_contract($args);
+        isa_ok $c, 'BOM::Product::Contract::Lbhighlow';
+        is $c->payouttime,   'end';
+        is $c->code,         'LBHIGHLOW';
+        is $c->pricing_code, 'LBHIGHLOW';
         
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
