@@ -78,8 +78,8 @@ sub verify_with_id {
         ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
 
     my $extra;
-    if ($details->{news_adjusted_pricing_vol}) {
-        $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol news_adjusted_pricing_vol long_term_prediction));
+    if ($details->{long_term_prediction}) {
+        $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol long_term_prediction));
     } elsif ($details->{low_barrier_vol}) {
         $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol low_barrier_vol));
     } else {
@@ -142,7 +142,6 @@ sub verify_with_shortcode {
         $pricing_args->{pricing_spot} = $extra_args[0];
         if ($priced_at_start->priced_with_intraday_model) {
             $pricing_args->{pricing_vol}               = $extra_args[1];
-            $pricing_args->{news_adjusted_pricing_vol} = $extra_args[2];
             $pricing_args->{long_term_prediction}      = $extra_args[3];
             $pricing_args->{volatility_scaling_factor} = $extra_args[4];
         } elsif ($priced_at_start->pricing_vol_for_two_barriers) {    # two barrier for slope
