@@ -144,7 +144,6 @@ sub verify_with_shortcode {
             $pricing_args->{pricing_vol}               = $extra_args[1];
             $pricing_args->{news_adjusted_pricing_vol} = $extra_args[2];
             $pricing_args->{long_term_prediction}      = $extra_args[3];
-            $pricing_args->{volatility_scaling_factor} = $extra_args[4];
         } elsif ($priced_at_start->pricing_vol_for_two_barriers) {    # two barrier for slope
             $pricing_args->{pricing_vol_for_two_barriers} = {
                 high_barrier_vol => $extra_args[1],
