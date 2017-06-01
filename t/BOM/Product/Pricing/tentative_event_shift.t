@@ -113,7 +113,7 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
     $contract_args->{landing_company}     = 'japan';
 
     my $c = produce_contract($contract_args);
-    is $c->ask_price, $expected->{$key}, "correct ask price for $key";
+    cmp_ok $c->ask_price, '==', $expected->{$key}, "correct ask price for $key";
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', "correct engine for $key";
 }
 

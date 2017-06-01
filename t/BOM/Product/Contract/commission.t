@@ -113,7 +113,7 @@ subtest 'payout' => sub {
             currency   => 'USD',
             payout     => $payout,
         });
-        is $c->ask_price, 0.2 * $payout, $underlying . ' daily non atm contract price is floor to 20%';
+        cmp_ok $c->ask_price, '==', 0.2 * $payout, $underlying . ' daily non atm contract price is floor to 20%';
     }
 
     $c = produce_contract({
@@ -126,7 +126,7 @@ subtest 'payout' => sub {
         landing_company => 'japan'
     });
 
-    is $c->ask_price, 0.035 * 1000, 'Forex intraday non atm contract for japan is floored to 3.5%';
+    cmp_ok $c->ask_price, '==', 0.035 * 1000, 'Forex intraday non atm contract for japan is floored to 3.5%';
 
     $c = produce_contract({
         bet_type        => 'CALL',
@@ -137,6 +137,7 @@ subtest 'payout' => sub {
         payout          => 1000,
         landing_company => 'japan'
     });
+    print "<<< " . $c->ask_price . "\n";
     is $c->ask_price, 0.035 * 1000, 'Forex daily non atm contract for japan is floored to 3.5%';
 
     $c = produce_contract({
@@ -148,6 +149,7 @@ subtest 'payout' => sub {
         payout     => $payout,
     });
 
+    print "<<< " . $c->ask_price . "\n";
     cmp_ok $c->ask_price, '>', 0.2 * $payout, 'VolIdx intraday non atm contract price is not floor 20%.';
 
     $c = produce_contract({
@@ -204,7 +206,7 @@ subtest 'stake' => sub {
         base_commission  => $base_commission,
     });
 
-    is $c->payout, 20, "Random's payout is re-adjusted to 20 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
+    cmp_ok $c->payout, '==', 20, "Random's payout is re-adjusted to 20 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
         bet_type         => 'CALL',
@@ -218,7 +220,7 @@ subtest 'stake' => sub {
         base_commission  => $base_commission,
     });
 
-    is $c->payout, 10, "Forex's payout is re-adjusted to 10 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
+    cmp_ok $c->payout, '==', 10, "Forex's payout is re-adjusted to 10 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
         bet_type         => 'CALL',
@@ -232,7 +234,7 @@ subtest 'stake' => sub {
         base_commission  => $base_commission,
     });
 
-    is $c->payout, 5, "Commodities' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
+    cmp_ok $c->payout, '==', 5, "Commodities' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
         bet_type         => 'CALL',
@@ -246,7 +248,7 @@ subtest 'stake' => sub {
         base_commission  => $base_commission,
     });
 
-    is $c->payout, 5, "Indices' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
+    cmp_ok $c->payout, '==', 5, "Indices' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
         bet_type         => 'CALL',
@@ -260,7 +262,7 @@ subtest 'stake' => sub {
         base_commission  => $base_commission,
     });
 
-    is $c->payout, 5, "Stocks' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
+    cmp_ok $c->payout, '==', 5, "Stocks' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
         bet_type    => 'CALL',
@@ -319,7 +321,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / 0.20), 'Forex daily (< 7 days) non atm contract payout is floor to 20%';
+    cmp_ok $c->payout, '==', roundnear(0.01, $stake / 0.20), 'Forex daily (< 7 days) non atm contract payout is floor to 20%';
 
     $c = produce_contract({
         bet_type    => 'CALL',
@@ -400,7 +402,7 @@ subtest 'new commission structure' => sub {
                 base_commission  => $base_commission,
                 theo_probability => $fake_theo,
             });
-            is $c->payout, roundnear(0.01, $data->{payout}), 'correct payout amount';
+            cmp_ok $c->payout, '==', roundnear(0.01, $data->{payout}), 'correct payout amount';
         }
     }
 };
@@ -450,7 +452,7 @@ sub test_flexible_commission {
     BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market($scaling);
     $c = produce_contract($args);
     if ($scaling == 10000) {
-        is $c->ask_price, 1000, "max ask price when commissoin scaling is max for $symbol";
+        cmp_ok $c->ask_price, '==', 1000, "max ask price when commissoin scaling is max for $symbol";
     } else {
         is $c->commission_markup->amount, $original_commission * ($scaling / 100), "correct commission markup with $scaling scaling for $symbol";
     }
