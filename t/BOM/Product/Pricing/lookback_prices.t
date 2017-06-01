@@ -46,8 +46,10 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         quote      => $spot,
         epoch      => $now->epoch,
     });
-    foreach my $contract_category (grep { not $skip_category{$_} }
-        get_offerings_with_filter($offerings_cfg, 'contract_category', {underlying_symbol => $ul->symbol}))
+
+    my $offer_with_filter = get_offerings_with_filter($offerings_cfg, 'contract_category', {underlying_symbol => $ul->symbol});
+
+    foreach my $contract_category (qw(lookback))
     {
         my $category_obj = Finance::Contract::Category->new($contract_category);
         next if $category_obj->is_path_dependent;
