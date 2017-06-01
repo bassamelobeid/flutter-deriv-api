@@ -54,22 +54,7 @@ sub shortcode_to_parameters {
     # Non binary parser
     my $nonbinary_list = 'LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW';
     if ($shortcode =~ /^($nonbinary_list)_(\w+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
-
-        $bet_type          = $1;
-        $underlying_symbol = $2;
-        $unit              = $3;
-        $date_start        = $4;
-        $forward_start     = 1 if $+{start_cond} eq 'F';
-        $barrier           = $6;
-        $barrier2          = $7;
-        $fixed_expiry      = 1 if $+{expiry_cond} eq 'F';
-        if ($+{expiry_cond} eq 'T') {
-            $tick_expiry    = 1;
-            $how_many_ticks = $5;
-        } else {
-            $date_expiry = $5;
-        }
-
+        $unit = $3;
     }
 
     # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
@@ -124,6 +109,7 @@ sub shortcode_to_parameters {
         underlying   => $underlying,
         amount_type  => 'payout',
         amount       => $payout,
+        unit         => $unit,
         date_start   => $date_start,
         date_expiry  => $date_expiry,
         prediction   => $prediction,
