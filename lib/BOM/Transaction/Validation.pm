@@ -495,7 +495,9 @@ sub _validate_payout_limit {
                 -mesg              => $client->loginid . ' payout [' . $payout . '] over custom limit[' . $custom_limit . ']',
                 -message_to_client => ($custom_limit == 0)
                 ? localize('This contract is unavailable on this account.')
-                : localize('This contract is limited to ' . formatnumber('amount', $currency, $custom_limit) . ' payout on this account.'),
+                : localize(
+                    'This contract is limited to ' . formatnumber('amount', $contract->currency, $custom_limit) . ' payout on this account.'
+                ),
             );
         }
     }
