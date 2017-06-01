@@ -59,7 +59,7 @@ sub _build_priced_with_intraday_model {
 override _build_theo_price => sub {
     my $self = shift;
 
-    return $self->pricing_engine->theo_price;
+    return $self->pricing_engine->theo_price * $self->unit;
 };
 
 1;

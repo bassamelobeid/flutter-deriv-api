@@ -55,7 +55,7 @@ my $args = {
     date_pricing => $now,
     duration     => '1h',
     currency     => 'USD',
-    payout       => 10,
+    unit         => 1,
     barrier      => 'S20P',
 };
 
