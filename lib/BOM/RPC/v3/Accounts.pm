@@ -308,6 +308,25 @@ sub get_account_status {
     push @status, 'has_password' if $user->password;
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->not_allow_trade($client);
 
+    # check whether the user need to perform financial assessment
+    if ($risk_classification eq "high") {
+        my $financial_assessment = $client->financial_assessment();
+        unless ($financial_assessment) {
+            push @status, 'financial_assessment_needed';
+        } else {
+            $financial_assessment = from_json $financial_assessment->data;
+            # loop and find questions where the answer is empty
+            while (my ($key, $value) = each %$financial_assessment) {
+                if (ref $value eq "HASH") {
+                    if ($value->{answer} eq "") {
+                        push @status, "financial_assessment_needed";
+                        last;
+                    }
+                }
+            }
+        }
+    }
+
     return {
         status              => \@status,
         risk_classification => $risk_classification
