@@ -21,8 +21,7 @@ sub _build_payout {
 sub _build_staking_limits {
     my $self = shift;
 
-    my $underlying = $self->underlying;
-    my $curr       = $self->currency;
+    my $curr = $self->currency;
 
     my $static     = BOM::Platform::Config::quants;
     my $bet_limits = $static->{bet_limits};
