@@ -134,6 +134,15 @@ sub run {
         my $end_time = Time::HiRes::time;
         stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => $self->tags});
         $stat_count->{$params->{price_daemon_cmd}}++;
+        my @stat_redis = (
+            pid              => $args{pid},
+            ip               => $args{ip},
+            process_time     => 1000 * Time::HiRes::tv_interval($tv, $tv_now),
+            process_end_time => 1000 * ($end_time - int($end_time)),
+            time             => time,
+            fork_index       => $args{fork_index});
+        $redis->set("PRICER_STATUS::$args{ip}-$args{fork_index}", encode_json(\@stat_redis));
+
         if ($current_pricing_epoch != time) {
 
             for my $key (keys %$stat_count) {
