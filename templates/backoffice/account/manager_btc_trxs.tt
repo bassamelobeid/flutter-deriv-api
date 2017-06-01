@@ -16,11 +16,11 @@
     [% FOREACH trx IN trxs %]
     <tr>
         <td>[% trx.address %]</td>
-        <td>[% trx.loginid %]</td>
+        <td>[% trx.client_loginid %]</td>
         <td>[% trx.amount %]</td>
         <td>[% trx.creation_date %]</td>
         [% IF view_type == 'recent_sent' %]
-        <td>[% trx.withdrawal_sent_date %]</td>
+        <td>[% trx.sent_date %]</td>
         [% END %]
         <td>[% trx.currency_code %]</td>
         <td>
