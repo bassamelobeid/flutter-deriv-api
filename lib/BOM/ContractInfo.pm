@@ -15,10 +15,8 @@ use BOM::Platform::Pricing;
 #    indicative_price - indicative sell price for the contract if the contract was still open.
 
 sub get_info {
-    my $fmb            = shift;
-    my $currency       = shift;
-    my $bo_client      = shift;
-    my $is_transaction = shift;
+    my $fmb      = shift;
+    my $currency = shift;
 
     my $info = {};
     $info->{contract} = $fmb;

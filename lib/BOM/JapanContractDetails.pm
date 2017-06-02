@@ -78,8 +78,8 @@ sub verify_with_id {
         ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
 
     my $extra;
-    if ($details->{news_adjusted_pricing_vol}) {
-        $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol news_adjusted_pricing_vol long_term_prediction));
+    if ($details->{long_term_prediction}) {
+        $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol long_term_prediction));
     } elsif ($details->{low_barrier_vol}) {
         $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol low_barrier_vol));
     } else {
@@ -142,9 +142,8 @@ sub verify_with_shortcode {
         $pricing_args->{pricing_spot} = $extra_args[0];
         if ($priced_at_start->priced_with_intraday_model) {
             $pricing_args->{pricing_vol}               = $extra_args[1];
-            $pricing_args->{news_adjusted_pricing_vol} = $extra_args[2];
-            $pricing_args->{long_term_prediction}      = $extra_args[3];
-            $pricing_args->{volatility_scaling_factor} = $extra_args[4];
+            $pricing_args->{long_term_prediction}      = $extra_args[2];
+            $pricing_args->{volatility_scaling_factor} = $extra_args[3];
         } elsif ($priced_at_start->pricing_vol_for_two_barriers) {    # two barrier for slope
             $pricing_args->{pricing_vol_for_two_barriers} = {
                 high_barrier_vol => $extra_args[1],
@@ -176,7 +175,6 @@ sub verify_with_shortcode {
         action_type => $action_type,
         discounted_probability => $discounted_probability
     });
-    my $new_naming;
     foreach my $key (keys %{$opposite_parameters}) {
         foreach my $sub_key (keys %{$opposite_parameters->{$key}}) {
             my $new_sub_key = 'opposite_contract_' . $sub_key;
@@ -358,14 +356,14 @@ sub _get_pricing_parameter_from_slope_pricer {
     my ($contract, $action_type, $discounted_probability) = @_;
 
     #force createion of debug_information
-    my $ask_probability   = $contract->ask_probability;
+    $contract->ask_probability;    # invoked for the side-effect
     my $debug_information = $contract->debug_information;
     my $pricing_parameters;
     my $contract_type     = $contract->pricing_code;
     my $risk_markup       = $contract->risk_markup->amount;
     my $commission_markup = $contract->commission_markup->amount;
     my $base_probability  = $debug_information->{$contract_type}{base_probability}{amount};
-    my $ask_price         = $contract->ask_price;
+    $contract->ask_price;          # invoked for the side-effect
 
     if ($action_type eq 'sell') {
         $pricing_parameters->{bid_probability} = {
