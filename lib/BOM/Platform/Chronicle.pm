@@ -106,7 +106,7 @@ sub get_chronicle_writer {
     $writer_instance //= Data::Chronicle::Writer->new(
         publish_on_set => 1,
         cache_writer   => $redis,
-        db_handle      => _dbic(),
+        dbic           => _dbic(),
     );
 
     return $writer_instance;
@@ -120,7 +120,7 @@ sub get_chronicle_reader {
     if ($for_date) {
         $historical_instance //= Data::Chronicle::Reader->new(
             cache_reader => $redis,
-            db_handle    => _dbic(),
+            dbic         => _dbic(),
         );
 
         return $historical_instance;
