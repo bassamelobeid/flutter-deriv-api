@@ -929,7 +929,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $self   = shift;
         my $client = shift;
 
-        my $limit = formatnumber('amount', $client->currency, $client->get_limit_for_open_positions);
+        my $limit = $client->get_limit_for_open_positions;
         return Error::Base->cuss(
             -type              => 'OpenPositionLimit',
             -mesg              => "Client has reached the limit of $limit open positions.",
