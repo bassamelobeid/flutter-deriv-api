@@ -197,7 +197,10 @@ sub run {
     }
 
     # zero rates BTC as of now, till we use providers
-    foreach my $sym (qw/BTC-USD BTC-EUR BTC-AUD BTC-JPY BTC-NZD BTC-CAD BTC-CHF BTC-GBP BTC-PLN BTC-NOK BTC-MXN BTC-SEK/) {
+    foreach my $sym (
+        qw/BTC-USD BTC-EUR BTC-AUD BTC-JPY BTC-NZD BTC-CAD BTC-CHF BTC-GBP BTC-PLN BTC-NOK BTC-MXN BTC-SEK ETH-USD ETH-EUR ETH-AUD ETH-JPY ETH-NZD ETH-CAD ETH-CHF ETH-GBP ETH-PLN ETH-NOK ETH-MXN ETH-SEK/
+        )
+    {
         Quant::Framework::ImpliedRate->new(
             symbol => $sym,
             rates  => {
