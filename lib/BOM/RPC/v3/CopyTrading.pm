@@ -3,12 +3,11 @@ package BOM::RPC::v3::CopyTrading;
 use strict;
 use warnings;
 
-use Try::Tiny;
-
-use Client::Account;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Copier;
+use Client::Account;
+use Try::Tiny;
 
 use Finance::Contract::Category;
 
@@ -37,7 +36,7 @@ sub copy_start {
                 code              => 'InvalidToken',
                 message_to_client => localize('Invalid token')});
     }
-    unless (grep { /^read$/ } @{$token_details->{scopes}}) {
+    unless (grep { $_ eq 'read' } @{$token_details->{scopes}}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'PermissionDenied',
                 message_to_client => localize('Permission denied, requires read scope.')});
@@ -50,15 +49,20 @@ sub copy_start {
 
     my $client = $params->{client};
 
-    if ($client->broker_code ne 'CR') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidAccount',
-                message_to_client => localize('Copy trading is only available with real money accounts.')});
-    }
     if ($client->allow_copiers) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'CopyTradingNotAllowed',
                 message_to_client => localize('Traders are not allowed to copy trades.')});
+    }
+
+    unless ($client->default_account
+        && $trader->default_account
+        && ($client->default_account->currency_code eq $trader->default_account->currency_code))
+    {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'CopyTradingWrongCurrency',
+            message_to_client => localize('Your account currency and trader currency must be same.'),
+        });
     }
 
     my @trade_types = ref($args->{trade_types}) eq 'ARRAY' ? @{$args->{trade_types}} : $args->{trade_types};

@@ -13,6 +13,40 @@ use BOM::Platform::Context qw (localize request);
 use Client::Account;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
+use BOM::Database::DataMapper::Copier;
+
+sub trade_copiers {
+    my $params = shift;
+
+    my $copiers = BOM::Database::DataMapper::Copier->new(
+        broker_code => $params->{client}->broker_code,
+        operation   => 'replica',
+        )->get_trade_copiers({
+            trader_id  => $params->{client}->loginid,
+            trade_type => $params->{contract}{bet_type},
+            asset      => $params->{contract}->underlying->symbol,
+            price      => ($params->{price} || undef),
+        });
+
+    return unless $copiers && ref $copiers eq 'ARRAY' && scalar @$copiers;
+
+    ### Note: this array of hashes will be modified by BOM::Transaction with the results per each client
+    my @multiple = map { +{loginid => $_} } @$copiers;
+    my $trx = BOM::Transaction->new({
+        client   => $params->{client},
+        multiple => \@multiple,
+        contract => $params->{contract},
+        price    => ($params->{price} || 0),
+        source   => $params->{source},
+        (defined $params->{payout})      ? (payout      => $params->{payout})      : (),
+        (defined $params->{amount_type}) ? (amount_type => $params->{amount_type}) : (),
+        purchase_date => $params->{purchase_date},
+    });
+
+    $params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode;
+
+    return 1;
+}
 
 sub buy {
     my $params = shift;
@@ -78,6 +112,22 @@ sub buy {
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
     return $response if $response;
+
+    try {
+        trade_copiers({
+                action        => 'buy',
+                client        => $client,
+                contract      => $trx->contract,
+                price         => $price,
+                payout        => $payout,
+                amount_type   => $amount_type,
+                purchase_date => $purchase_date,
+                source        => $source
+            }) if $client->allow_copiers;
+    }
+    catch {
+        warn "Copiers trade error: " . $_;
+    };
 
     $response = {
         transaction_id => $trx->transaction_id,
@@ -328,9 +378,9 @@ sub sell {
         currency  => $client->currency
     };
     $contract_parameters->{landing_company} = $client->landing_company->short;
-
-    my $trx = BOM::Transaction->new({
-        purchase_date       => Date::Utility->new(),
+    my $purchase_date = time;
+    my $trx           = BOM::Transaction->new({
+        purchase_date       => $purchase_date,
         client              => $client,
         contract_parameters => $contract_parameters,
         contract_id         => $id,
@@ -345,6 +395,20 @@ sub sell {
             message           => "Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}"
         });
     }
+
+    try {
+        trade_copiers({
+                action        => 'sell',
+                client        => $client,
+                contract      => $trx->contract,
+                price         => $args->{price},
+                source        => $source,
+                purchase_date => $purchase_date,
+            }) if $client->allow_copiers;
+    }
+    catch {
+        warn "Copiers trade error: " . $_;
+    };
 
     my $trx_rec = $trx->transaction_record;
 
