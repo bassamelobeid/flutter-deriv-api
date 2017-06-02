@@ -341,4 +341,124 @@ my $new_client = create_client;
 top_up $new_client, 'USD', 5000;
 my $new_acc_usd = $new_client->find_account(query => [currency_code => 'USD'])->[0];
 
+subtest 'buy a bet', sub {
+    plan tests => 11;
+    lives_ok {
+        my $contract = produce_contract({
+                underlying => $underlying,
+                bet_type   => 'LBFIXEDCALL',
+                currency   => 'USD',
+                unit       => 1000,
+                #duration   => '3d',
+        date_start   => $now->epoch,
+        date_expiry  => $now->epoch + 300,
+                current_tick => $tick,
+                barrier      => 'S20P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 514.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            source        => 19,
+            purchase_date => Date::Utility->new(),
+        });
+
+$DB::single=1;
+
+        my $error = $txn->buy;
+        is $error, undef, 'no error';
+
+        subtest 'transaction report', sub {
+            plan tests => 11;
+            note $txn->report;
+            my $report = $txn->report;
+            like $report, qr/\ATransaction Report:$/m,                                                    'header';
+            like $report, qr/^\s*Client: \Q${\$cl}\E$/m,                                                  'client';
+            like $report, qr/^\s*Contract: \Q${\$contract->code}\E$/m,                                    'contract';
+            like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
+            like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
+            like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
+            like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                  'comment';
+            like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
+            like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
+            like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
+            like $report, qr/^\s*Purchase Date: \Q${\$txn->purchase_date->datetime_yyyymmdd_hhmmss}\E$/m, 'purchase date';
+        };
+
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+
+        # note explain $trx;
+
+        subtest 'transaction row', sub {
+            plan tests => 13;
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id}, $acc_usd->id, 'account_id';
+            is $trx->{action_type}, 'buy', 'action_type';
+            is $trx->{amount} + 0, -514, 'amount';
+            is $trx->{balance_after} + 0, 5000 - 514, 'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            is $trx->{payment_id},    undef,                  'payment_id';
+            is $trx->{quantity},      1,                      'quantity';
+            is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
+            is $trx->{remark},        undef,                  'remark';
+            is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
+            is $trx->{source}, 19, 'source';
+            cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
+        };
+
+        # note explain $fmb;
+
+        subtest 'fmb row', sub {
+            plan tests => 20;
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id}, $acc_usd->id, 'account_id';
+            is $fmb->{bet_class}, 'higher_lower_bet', 'bet_class';
+            is $fmb->{bet_type},  'CALL',             'bet_type';
+            is $fmb->{buy_price} + 0, 514, 'buy_price';
+            is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
+            cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
+            is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
+            is !$fmb->{is_expired}, !0, 'is_expired';
+            is !$fmb->{is_sold},    !0, 'is_sold';
+            is $fmb->{payout_price} + 0, 1000, 'payout_price';
+            cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
+            like $fmb->{remark},   qr/\btrade\[514\.00000\]/, 'remark';
+            is $fmb->{sell_price}, undef,                     'sell_price';
+            is $fmb->{sell_time},  undef,                     'sell_time';
+            cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
+            like $fmb->{short_code}, qr/CALL/, 'short_code';
+            cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
+            is $fmb->{tick_count},        undef,  'tick_count';
+            is $fmb->{underlying_symbol}, 'R_50', 'underlying_symbol';
+        };
+
+        # note explain $chld;
+
+        subtest 'chld row', sub {
+            plan tests => 4;
+            is $chld->{absolute_barrier}, undef, 'absolute_barrier';
+            is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            is $chld->{prediction},       undef, 'prediction';
+            is $chld->{relative_barrier}, 'S0P', 'relative_barrier';
+        };
+
+        # note explain $qv1;
+
+        subtest 'qv row', sub {
+            plan tests => 3;
+            is $qv1->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            is $qv1->{transaction_id},          $trx->{id}, 'transaction_id';
+            is $qv1->{trade} + 0, 514, 'trade';
+        };
+
+        is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
+        is $txn->transaction_id, $trx->{id},            'txn->transaction_id';
+        is $txn->balance_after,  $trx->{balance_after}, 'txn->balance_after';
+        is $txn->execute_at_better_price, 0, 'txn->execute_at_better_price';
+    }
+    'survived';
+};
 
