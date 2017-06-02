@@ -279,6 +279,7 @@ sub _dbic {
             RaiseError        => 1,
             pg_server_prepare => 0,
         });
+    my $dbh = $dbic->dbh;
     DBIx::TransactionManager::Distributed::register_dbh(chronicle => $dbh)
         unless DBIx::TransactionManager::Distributed::dbh_isregistered(chronicle => $dbh);
     return $dbic;
