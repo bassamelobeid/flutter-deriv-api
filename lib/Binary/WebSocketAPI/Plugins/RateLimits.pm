@@ -72,7 +72,11 @@ sub _update_redis {
             $local_storage->{$name}{value}              = $count;
             $local_storage->{$name}{update_in_progress} = 0;
             # print "[debug] update from redis $name => $count\n";
-            if ($count == 1) {
+
+            # Count should always go up, or expire. If we had no key or expired,
+            # then our returned value should match the increment value... so we'd
+            # want to set expiry in that case.
+            if ($count == $diff) {
                 $redis->expire(
                     $redis_key,
                     $ttl,
