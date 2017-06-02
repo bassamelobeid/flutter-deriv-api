@@ -106,7 +106,7 @@ sub get_chronicle_writer {
     $writer_instance //= Data::Chronicle::Writer->new(
         publish_on_set => 1,
         cache_writer   => $redis,
-        db_handle      => _dbix(),
+        db_handle      => _dbic(),
     );
 
     return $writer_instance;
@@ -120,7 +120,7 @@ sub get_chronicle_reader {
     if ($for_date) {
         $historical_instance //= Data::Chronicle::Reader->new(
             cache_reader => $redis,
-            db_handle    => _dbix(),
+            db_handle    => _dbic(),
         );
 
         return $historical_instance;
@@ -155,7 +155,7 @@ sub set {
 
     my $key = $category . '::' . $name;
     BOM::Platform::RedisReplicated::redis_write()->set($key, $value);
-    _archive($category, $name, $value, $rec_date) if _dbix();
+    _archive($category, $name, $value, $rec_date) if _dbic();
 
     return 1;
 }
@@ -192,7 +192,7 @@ sub get_for {
 
     my $db_timestamp = Date::Utility->new($date_for)->db_timestamp;
 
-    my $db_data = _dbix()->run(
+    my $db_data = _dbic()->run(
         fixup => sub {
             $_->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
                 'id', {}, $category, $name, $db_timestamp);
