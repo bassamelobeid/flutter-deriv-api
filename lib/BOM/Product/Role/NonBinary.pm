@@ -62,4 +62,7 @@ override _build_theo_price => sub {
     return $self->pricing_engine->theo_price * $self->unit;
 };
 
+override _validate_price => sub {
+    return;
+};
 1;
