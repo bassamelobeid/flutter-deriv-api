@@ -199,7 +199,6 @@ sub _get_ask {
         } else {
             # We think this contract is valid to buy
             my $ask_price = sprintf('%.2f', $contract->ask_price);
-            my $trading_window_start = $p2->{trading_period_start} // '';
 
             $response = {
                 longcode            => localize($contract->longcode),
@@ -235,7 +234,7 @@ sub _get_ask {
 }
 
 sub handle_batch_contract {
-    my ($batch_contract, $p2, $tv) = @_;
+    my ($batch_contract, $p2) = @_;
 
     # We should now have a usable ::Contract instance. This may be a single
     # or multiple (batch) contract.
