@@ -3,7 +3,6 @@
 use strict;
 use warnings;
 
-use Format::Util::Numbers qw(roundnear);
 use Test::MockModule;
 use BOM::Product::ContractFactory qw(produce_contract);
 use Test::More tests => 5;
@@ -271,7 +270,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    is $c->payout, sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex intraday atm contract payout is not floor';
 
     $c = produce_contract({
@@ -284,7 +283,7 @@ subtest 'stake' => sub {
         amount      => $stake,
     });
 
-    isnt $c->payout, roundnear(0.01, $stake / 0.2), 'Forex intraday non atm contract payout is not floored to 20% ';
+    isnt $c->payout, sprintf('%0.02f', $stake / 0.2), 'Forex intraday non atm contract payout is not floored to 20% ';
 
     $c = produce_contract({
         bet_type    => 'CALL',
@@ -295,7 +294,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    is $c->payout, sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex daily (> 7 days) non atm contract payout is not floor';
 
     $c = produce_contract({
@@ -307,7 +306,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    is $c->payout, sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex daily (< 7 days) atm contract payout is not floor';
 
     $c = produce_contract({
@@ -319,7 +318,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    cmp_ok $c->payout, '==', roundnear(0.01, $stake / 0.20), 'Forex daily (< 7 days) non atm contract payout is floor to 20%';
+    is $c->payout, sprintf('%0.02f', $stake / 0.20), 'Forex daily (< 7 days) non atm contract payout is floor to 20%';
 
     $c = produce_contract({
         bet_type    => 'CALL',
@@ -330,7 +329,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    is $c->payout, sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'VolIdx intraday non atm contract payout is not floor';
 
 };
@@ -400,7 +399,7 @@ subtest 'new commission structure' => sub {
                 base_commission  => $base_commission,
                 theo_probability => $fake_theo,
             });
-            cmp_ok $c->payout, '==', roundnear(0.01, $data->{payout}), 'correct payout amount';
+            is $c->payout, sprintf('%0.02f', $data->{payout}), 'correct payout amount';
         }
     }
 };
