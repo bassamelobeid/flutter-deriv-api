@@ -34,7 +34,7 @@ has [qw(trading_period_start number_of_tokens token_type coin_address ask_price)
     is => 'rw',
 );
 
-has [qw(app_markup_dollar)] => (
+has app_markup_dollar_amount => (
     is      => 'ro',
     isa     => 'Num',
     default => 0,
@@ -103,6 +103,26 @@ has [qw(date_expiry date_settlement)] => (
     isa        => 'date_object',
     lazy_build => 1,
 );
+
+has date_start => (
+    is         => 'rw',
+    isa        => 'date_object',
+    coerce     => 1,
+    lazy_build => 1,
+);
+
+
+sub _build_date_start {
+    return Date::Utility->new;
+
+}
+
+has date_pricing => (
+    is      => 'rw',
+    isa     => 'date_object',
+    default => sub { Date::Utility->new },
+);
+
 
 # TODO :We need to decide the duration of the auction
 sub _build_date_expiry {
