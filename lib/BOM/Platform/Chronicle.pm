@@ -281,7 +281,7 @@ sub _dbic {
         });
     my $dbh = $dbic->dbh;
     DBIx::TransactionManager::Distributed::register_dbh(chronicle => $dbh)
-        unless DBIx::TransactionManager::Distributed::dbh_isregistered(chronicle => $dbh);
+        unless DBIx::TransactionManager::Distributed::dbh_is_registered(chronicle => $dbh);
     return $dbic;
 }
 
