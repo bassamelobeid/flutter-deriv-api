@@ -16,7 +16,6 @@ use Finance::Exchange;
 
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
-use Pricing::Engine::Markup::EconomicEventsVolRisk;
 use Pricing::Engine::Markup::TentativeEvents;
 
 =head2 tick_source
@@ -337,19 +336,13 @@ sub economic_events_volatility_risk_markup {
     if ((my $tentative_events_markup = $self->_tentative_events_markup)->amount) {
         return $tentative_events_markup;
     }
-
-    my $bet          = $self->bet;
-    my $pricing_args = $self->bet->_pricing_args;
-    return Pricing::Engine::Markup::EconomicEventsVolRisk->new(
-        iv                   => $pricing_args->{iv},
-        iv_with_news         => $pricing_args->{iv_with_news},
-        ticks                => $self->ticks_for_trend,
-        strikes              => [$pricing_args->{barrier1}],
-        contract_type        => $bet->pricing_code,
-        underlying_symbol    => $bet->underlying->symbol,
-        long_term_prediction => $self->long_term_prediction->amount,
-        map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)
-    )->markup;
+    #dummy value maintain for japan documentation purposes. Set to zero.
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'economic_events_volatility_risk_markup',
+        description => 'markup to account for volatility risk of economic events',
+        set_by      => __PACKAGE__,
+        base_amount => 0,
+    });
 }
 
 sub economic_events_spot_risk_markup {
