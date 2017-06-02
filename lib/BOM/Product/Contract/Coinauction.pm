@@ -34,7 +34,7 @@ has [qw(trading_period_start number_of_tokens token_type coin_address ask_price)
     is => 'rw',
 );
 
-has [qw(app_markup_dollar_amount payout)] => (
+has [qw(app_markup_dollar)] => (
     is      => 'ro',
     isa     => 'Num',
     default => 0,
@@ -46,6 +46,17 @@ has underlying => (
     coerce   => 1,
     required => 1,
 );
+
+has payout => (
+    is         => 'rw',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+sub _build_payout {
+    my $self = shift;
+    return $self->ask_price;
+}
 
 has build_parameters => (
     is       => 'ro',
@@ -61,7 +72,7 @@ sub BUILD {
     };
     $self->token_type($self->build_parameters->{bet_type});
     $self->coin_address($self->underlying->symbol);
-    $self->trading_period_start($self->build_parameters->{trading_period_start});
+    $self->trading_period_start(Date::Utility->new($self->build_parameters->{trading_period_start}));
 
     if ($self->number_of_tokens < $limits->{min} or $self->number_of_tokens > $limits->{max}) {
 
@@ -87,28 +98,6 @@ has currency => (
     required => 1,
 );
 
-has date_start => (
-    is         => 'ro',
-    isa        => 'date_object',
-    coerce     => 1,
-    lazy_build => 1,
-);
-
-# TODO: This should be a hardcoded auction period start
-sub _build_date_start {
-    my $self = shift;
-
-    return $self->trading_period_start;
-
-}
-
-has date_pricing => (
-    is      => 'ro',
-    isa     => 'date_object',
-    coerce  => 1,
-    default => sub { Date::Utility->new },
-);
-
 has [qw(date_expiry date_settlement)] => (
     is         => 'ro',
     isa        => 'date_object',
@@ -118,7 +107,7 @@ has [qw(date_expiry date_settlement)] => (
 # TODO :We need to decide the duration of the auction
 sub _build_date_expiry {
     my $self = shift;
-    return $self->date_start->plus_time_interval('30d');
+    return $self->trading_period_start->plus_time_interval('30d');
 }
 
 sub _build_date_settlement {
