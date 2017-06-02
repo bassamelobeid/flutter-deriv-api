@@ -44,8 +44,6 @@ use BOM::Transaction;
 sub generate {
     my $self = shift;
 
-    my $start = time;
-
     my $pricing_date = $self->end;
 
     my $open_bets_ref = $self->live_open_bets;
@@ -54,7 +52,6 @@ sub generate {
     my $open_bets_expired_ref;
 
     my $howmany = scalar @keys;
-    my $expired = 0;
     my %totals  = (
         value => 0,
         delta => 0,
@@ -80,9 +77,6 @@ sub generate {
         # This seems to be the recommended way to do transactions
         $dbh->{AutoCommit} = 0;
         $dbh->{RaiseError} = 1;
-
-        my $book    = [];
-        my $expired = [];
 
         $dbh->do(qq{DELETE FROM accounting.expired_unsold});
         $dbh->do(qq{DELETE FROM accounting.realtime_book});
@@ -128,22 +122,6 @@ sub generate {
                 $mail_content .= "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $_ ]\n";
             };
         }
-
-        my $howlong = Time::Duration::Concise::Localize->new(
-            interval => time - $start,
-            locale   => BOM::Backoffice::Request::request()->language
-        );
-
-        my $status =
-              'Total time ['
-            . $howlong->as_string
-            . '] for ['
-            . $howmany
-            . '] positions (['
-            . $total_expired
-            . '] expired, ['
-            . $error_count
-            . '] errors).';
 
         $dbh->do(
             qq{
@@ -194,7 +172,6 @@ sub sell_expired_contracts {
     my %map_to_bb = reverse Bloomberg::UnderlyingConfig::bloomberg_to_binary();
     my $csv       = Text::CSV->new;
 
-    my $rmgenv = BOM::Platform::Config::env;
     for my $client_id (@client_loginids) {
         my $fmb_infos = $open_bets_ref->{$client_id};
         my $client = Client::Account::get_instance({'loginid' => $client_id});

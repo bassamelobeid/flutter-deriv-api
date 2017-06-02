@@ -183,7 +183,7 @@ sub _save_early_closes_calendar {
         }
     }
 
-    my $updated = Quant::Framework::PartialTrading->new(
+    Quant::Framework::PartialTrading->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         recorded_date    => Date::Utility->new,
