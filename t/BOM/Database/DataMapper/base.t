@@ -15,7 +15,7 @@ lives_ok {
 
 }
 'expecting to create the instantiate Base by client_loginid';
-cmp_ok($base->db->dbic->dbh->selectrow_hashref('SELECT session_user')->{'session_user'}, 'eq', 'write', 'Check if base will use the right role for read');
+cmp_ok($base->db->dbh->selectrow_hashref('SELECT session_user')->{'session_user'}, 'eq', 'write', 'Check if base will use the right role for read');
 
 lives_ok {
     $base = BOM::Database::DataMapper::Base->new({
@@ -24,7 +24,7 @@ lives_ok {
 
 }
 'expecting to create the instantiate Base by client_loginid';
-cmp_ok($base->db->dbic->dbh->selectrow_hashref('SELECT session_user')->{'session_user'}, 'eq', 'write', 'Check if base will use the right role for write');
+cmp_ok($base->db->dbh->selectrow_hashref('SELECT session_user')->{'session_user'}, 'eq', 'write', 'Check if base will use the right role for write');
 
 lives_ok {
     $base = BOM::Database::DataMapper::Base->new({
@@ -34,7 +34,7 @@ lives_ok {
 
 }
 'expecting to create the instantiate Base by client_loginid';
-cmp_ok($base->db->dbic->dbh->selectrow_hashref('SELECT session_user')->{'session_user'},
+cmp_ok($base->db->dbh->selectrow_hashref('SELECT session_user')->{'session_user'},
     'eq', 'write', 'Check if base will use the right role for collector');
 
 lives_ok {
@@ -45,7 +45,7 @@ lives_ok {
 
 }
 'expecting to create the instantiate Base by client_loginid';
-cmp_ok($base->db->dbic->dbh->selectrow_hashref('SELECT session_user')->{'session_user'},
+cmp_ok($base->db->dbh->selectrow_hashref('SELECT session_user')->{'session_user'},
     'eq', 'write', 'Check if base will use the right role for collector');
 
 lives_ok {
@@ -55,7 +55,7 @@ lives_ok {
 
 }
 'expecting to create the instantiate Base by broker_code';
-cmp_ok($base->db->dbic->dbh->selectrow_hashref('SELECT session_user')->{'session_user'}, 'eq', 'write', 'Check if base will use the right role for read');
+cmp_ok($base->db->dbh->selectrow_hashref('SELECT session_user')->{'session_user'}, 'eq', 'write', 'Check if base will use the right role for read');
 
 lives_ok {
     my $connection_builder = BOM::Database::ClientDB->new({
