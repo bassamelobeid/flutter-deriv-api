@@ -314,10 +314,18 @@ sub get_account_status {
         unless ($financial_assessment) {
             push @status, 'financial_assessment_needed';
         } else {
+            # get questions
+            my $financial_input_mapping = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+            $financial_input_mapping = keys $financial_input_mapping; # only need keys here
             $financial_assessment = from_json $financial_assessment->data;
-            # loop and find questions where the answer is empty
-            while (my ($key, $value) = each %$financial_assessment) {
-                if (ref $value eq "HASH") {
+            $financial_assessment = delete $financial_assessment{total_score}; #remove total_score
+
+            # if the keys are not equal
+            if (!($financial_input_mapping ~~ (keys $financial_assessment))) {
+                push @status, 'financial_assessment_needed';
+            } else {
+                # loop and find questions where the answer is empty
+                while (my ($key, $value) = each %$financial_assessment) {
                     if ($value->{answer} eq "") {
                         push @status, "financial_assessment_needed";
                         last;
