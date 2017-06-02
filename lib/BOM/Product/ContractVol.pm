@@ -20,7 +20,7 @@ has economic_events_for_volatility_calculation => (
     lazy_build => 1,
 );
 
-has [qw(pricing_vol vol_at_strike news_adjusted_pricing_vol)] => (
+has [qw(pricing_vol vol_at_strike)] => (
     is         => 'ro',
     isa        => 'Maybe[Num]',
     lazy_build => 1,
@@ -124,17 +124,6 @@ sub _build_vol_at_strike {
     return $self->volsurface->get_volatility($vol_args);
 }
 
-sub _build_news_adjusted_pricing_vol {
-    my $self            = shift;
-    my $effective_start = $self->effective_start;
-
-    return $self->intradayfx_volsurface->get_volatility({
-        from                          => $effective_start->epoch,
-        to                            => $self->date_expiry->epoch,
-        include_economic_event_impact => 1,
-    });
-}
-
 sub _build_pricing_vol {
     my $self = shift;
 
@@ -144,7 +133,7 @@ sub _build_pricing_vol {
         $vol = $self->intradayfx_volsurface->get_volatility({
             from                          => $self->effective_start->epoch,
             to                            => $self->date_expiry->epoch,
-            include_economic_event_impact => 0,
+            include_economic_event_impact => 1,
         });
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
