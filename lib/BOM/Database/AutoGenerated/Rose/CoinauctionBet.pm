@@ -13,7 +13,7 @@ __PACKAGE__->meta->setup(
         coin_address            => { type => 'text' },
         token_type              => { type => 'text' },
         number_of_tokens        => { type => 'numeric' },
-        auction_start_date      => { type => 'datetime' },
+        auction_start_date      => { type => 'timestamp' },
     ],
 
     primary_key_columns => [ 'financial_market_bet_id' ],
