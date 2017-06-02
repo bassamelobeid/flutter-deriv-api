@@ -137,7 +137,7 @@ sub buy {
         contract_id    => $trx->contract_id,
         balance_after  => formatnumber('amount', $client->currency, $trx->balance_after),
         purchase_time  => $trx->purchase_date->epoch,
-        buy_price      => $trx->price,
+        buy_price      => formatnumber('amount', $client->currency, $trx->price),
         start_time     => $trx->contract->date_start->epoch,
         longcode       => localize($trx->contract->longcode),
         shortcode      => $trx->contract->shortcode,
