@@ -17,6 +17,7 @@ bet_limits:
     GBP: 200
     JPY: 20000
     BTC: 0.1
+    ETH: 1
   maximum_payout:
     USD: 50000
     EUR: 50000
@@ -24,6 +25,7 @@ bet_limits:
     GBP: 50000
     JPY: 5000000
     BTC: 10
+    ETH: 100
   min_payout:
     default:
       USD: 1
@@ -32,6 +34,7 @@ bet_limits:
       GBP: 1
       JPY: 70
       BTC: 0.0005
+      ETH: 0.005
     volidx:
       USD: 0.7
       EUR: 0.7
@@ -39,6 +42,7 @@ bet_limits:
       GBP: 0.7
       JPY: 70
       BTC: 0.00035
+      ETH: 0.0035
   min_stake:
     maltainvest:
       USD: 5
@@ -46,6 +50,7 @@ bet_limits:
       AUD: 5
       GBP: 5
       BTC: 0.0025
+      ETH: 0.025
   open_positions_payout_per_symbol_and_bet_type_limit:
     USD: 10000
     EUR: 10000
@@ -53,6 +58,7 @@ bet_limits:
     GBP: 10000
     JPY: 1000000
     BTC: 10000
+    ETH: 10000
 
 risk_profile:
   no_business:
@@ -63,6 +69,7 @@ risk_profile:
           GBP: 0
           JPY: 0
           BTC: 0
+          ETH: 0
       payout:
           USD: 0
           EUR: 0
@@ -70,6 +77,7 @@ risk_profile:
           GBP: 0
           JPY: 0
           BTC: 0
+          ETH: 0
   extreme_risk:
       turnover:
           USD: 1000
@@ -78,6 +86,7 @@ risk_profile:
           GBP: 1000
           JPY: 100000
           BTC: 0.5
+          ETH: 5
       payout:
           USD: 100
           EUR: 100
@@ -85,6 +94,7 @@ risk_profile:
           GBP: 100
           JPY: 10000
           BTC: 0.05
+          ETH: 0.5
   high_risk:
       turnover:
           USD: 50000
@@ -93,6 +103,7 @@ risk_profile:
           GBP: 50000
           JPY: 5000000
           BTC: 25
+          ETH: 50
       payout:
           USD: 5000
           EUR: 5000
@@ -100,6 +111,7 @@ risk_profile:
           GBP: 5000
           JPY: 500000
           BTC: 2.5
+          ETH: 25
   medium_risk:
       turnover:
           USD: 100000
@@ -108,6 +120,7 @@ risk_profile:
           GBP: 100000
           JPY: 10000000
           BTC: 50
+          ETH: 500
       payout:
           USD: 20000
           EUR: 20000
@@ -115,6 +128,7 @@ risk_profile:
           GBP: 20000
           JPY: 2000000
           BTC: 10
+          ETH: 100
   low_risk:
       turnover:
           USD: 500000
@@ -123,6 +137,7 @@ risk_profile:
           GBP: 500000
           JPY: 50000000
           BTC: 50
+          ETH: 500
       payout:
           USD: 50000
           EUR: 50000
@@ -130,3 +145,4 @@ risk_profile:
           GBP: 50000
           JPY: 5000000
           BTC: 10
+          ETH: 100
