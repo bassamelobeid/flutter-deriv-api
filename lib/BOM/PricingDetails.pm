@@ -100,8 +100,6 @@ sub debug_link {
         chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
     });
 
-    my $number_format = $self->number_format;
-
     my $attr_content = $self->_get_overview();
 
     my $ask_price_content = $self->_get_price({

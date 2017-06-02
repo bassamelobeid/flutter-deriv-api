@@ -15,12 +15,10 @@ use BOM::Platform::Locale;
 use Client::Account;
 
 sub get_self_exclusion_form {
-    my $arg_ref   = shift;
-    my $client    = $arg_ref->{client};
-    my $csrftoken = $arg_ref->{csrftoken};
+    my $arg_ref = shift;
+    my $client  = $arg_ref->{client};
 
     my $loginID = $client->loginid;
-    my $broker  = $client->broker;
 
     my (
         $limit_max_ac_bal,     $limit_daily_turn_over, $limit_open_position,    $limit_daily_losses,
@@ -433,17 +431,9 @@ sub get_self_exclusion_form {
     $fieldset->add_field($input_submit_button);
 
     my $server_side_validation_sub = sub {
-        my $max_cash_balance    = $form_self_exclusion->get_field_value('MAXCASHBAL')         // '';
-        my $max_daily_turn_over = $form_self_exclusion->get_field_value('DAILYTURNOVERLIMIT') // '';
-        my $max_daily_losses    = $form_self_exclusion->get_field_value('DAILYLOSSLIMIT')     // '';
-        my $max_7day_turnover   = $form_self_exclusion->get_field_value('7DAYTURNOVERLIMIT')  // '';
-        my $max_7day_losses     = $form_self_exclusion->get_field_value('7DAYLOSSLIMIT')      // '';
-        my $max_30day_turnover  = $form_self_exclusion->get_field_value('30DAYTURNOVERLIMIT') // '';
-        my $max_30day_losses    = $form_self_exclusion->get_field_value('30DAYLOSSLIMIT')     // '';
-        my $max_open_position   = $form_self_exclusion->get_field_value('MAXOPENPOS')         // '';
-        my $session_duration    = $form_self_exclusion->get_field_value('SESSIONDURATION')    // '';
-        my $exclude_until       = $form_self_exclusion->get_field_value('EXCLUDEUNTIL')       // '';
-        my $timeout_until       = $form_self_exclusion->get_field_value('TIMEOUTUNTIL')       // '';
+        my $session_duration = $form_self_exclusion->get_field_value('SESSIONDURATION') // '';
+        my $exclude_until    = $form_self_exclusion->get_field_value('EXCLUDEUNTIL')    // '';
+        my $timeout_until    = $form_self_exclusion->get_field_value('TIMEOUTUNTIL')    // '';
 
         # This check is done both for BO and UI
         if (not $form_self_exclusion->is_error_found_in('SESSIONDURATION') and $session_duration and $session_duration > 1440 * 42) {

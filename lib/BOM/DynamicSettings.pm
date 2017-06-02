@@ -106,7 +106,6 @@ sub generate_settings_branch {
 
     my $data_set         = BOM::Platform::Runtime->instance->app_config->data_set;
     my $setting_revision = $data_set->{version};
-    my $row              = 0;
     my $categories       = {};
 
     SETTINGS:
@@ -234,7 +233,6 @@ sub parse_and_refine_setting {
     $input_value =~ s/\s+$//g if (defined($input_value));
 
     my $display_value = $input_value;
-    my $is_valid      = 0;
 
     if ($type eq 'Bool') {
         if (not defined $input_value or ($input_value =~ /^(no|n|0|false)$/i)) {
