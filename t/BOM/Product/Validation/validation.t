@@ -359,7 +359,6 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     # We are not checking volatility and trend calculation here.
     my $mocked_contract = Test::MockModule->new('BOM::Product::Contract::Call');
     $mocked_contract->mock('pricing_vol',               sub { 0.1 });
-    $mocked_contract->mock('news_adjusted_pricing_vol', sub { 0.1 });
     my $mocked_engine = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
     $mocked_engine->mock('ticks_for_trend', sub { [] });
     $bet = produce_contract($bet_params);
