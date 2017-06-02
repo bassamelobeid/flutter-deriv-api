@@ -155,8 +155,8 @@ sub ask_prices {
                 };
             } else {
                 $contract_info->{error}{details} = {
-                    display_value => formatnumber('price', $contract->currency, $contract)->ask_price,
-                    payout        => formatnumber('price', $contract->currency, $contract)->payout,
+                    display_value => formatnumber('price', $contract->currency, $contract->ask_price),
+                    payout        => formatnumber('price', $contract->currency, $contract->payout),
                 };
             }
             if ($contract->two_barriers) {

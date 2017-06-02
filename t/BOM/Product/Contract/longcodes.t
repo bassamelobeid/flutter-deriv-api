@@ -5,6 +5,7 @@ use warnings;
 
 use Test::Most;
 use Test::Warnings qw/warning/;
+use Test::Exception;
 use Test::FailWarnings;
 use Test::MockModule;
 use File::Spec;
@@ -38,7 +39,11 @@ subtest 'Proper form' => sub {
         foreach my $shortcode (@shortcodes) {
             my $c = produce_contract($shortcode, $currency);
             my $expected_longcode = $shortcode =~ /FLASH*|INTRA*|DOUBLE*/ ? $exepcted_legacy_from : $expected_standard_form;
-            like($c->longcode->[0], $expected_longcode, $shortcode . ' => long code form appears ok');
+            if ($currency eq 'RUR') {
+                throws_ok { $c->longcode->[0] } qr/Invalid currency./, 'Correct error';
+            } else {
+                like($c->longcode->[0], $expected_longcode, $shortcode . ' => long code form appears ok');
+            }
         }
     }
 
@@ -60,11 +65,7 @@ subtest 'Proper form' => sub {
             ['entry spot plus [plural,_1,%d pip, %d pips]', 300]]);
 
     $c = produce_contract($shortcodes[-1], 'RUR');
-    is_deeply(
-        $c->longcode,
-        [
-            'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
-            'RUR', '100.00', 'EUR/NOK', ['contract start time'], ['12 minutes'], ['entry spot']]);
+    throws_ok { $c->longcode } qr/Invalid currency./, 'Correct error';
 };
 
 subtest 'longcode from params for forward starting' => sub {

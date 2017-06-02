@@ -473,7 +473,7 @@ sub longcode {
     my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
     my $description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
-    my @longcode = ($description, $self->currency, $self->payout, $self->underlying->display_name);
+    my @longcode = ($description, $self->currency, formatnumber('price', $self->currency, $self->payout), $self->underlying->display_name);
 
     my ($when_end, $when_start, $generic_mapping) = ([], [], BOM::Product::Static::get_generic_mapping());
     if ($expiry_type eq 'intraday_fixed_expiry') {
