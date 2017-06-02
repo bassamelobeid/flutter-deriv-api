@@ -318,7 +318,7 @@ sub get_account_status {
             my $financial_input_mapping = BOM::Platform::Account::Real::default::get_financial_input_mapping();
             $financial_input_mapping = keys $financial_input_mapping; # only need keys here
             $financial_assessment = from_json $financial_assessment->data;
-            $financial_assessment = delete $financial_assessment{total_score}; #remove total_score
+            delete $financial_assessment->{total_score}; #remove total_score
 
             # if the keys are not equal
             if (!($financial_input_mapping ~~ (keys $financial_assessment))) {

@@ -6,6 +6,7 @@ use Test::MockModule;
 use utf8;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
+use JSON;
 use Encode qw(encode);
 use Email::Folder::Search;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -617,6 +618,121 @@ subtest $method => sub {
         'tnc_approval is excluded, still status only has has_password'
     );
 
+    # test 'financial_assessment_needed'
+    $test_client->aml_risk_classification('high');
+    $test_client->save();
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status               => ['has_password', 'financial_assessment_needed'],
+            risk_classification => 'high'
+        },
+        'financial_assessment_needed when client has not filled it'
+    );
+
+    # test when some questions are not answered
+    my $data = {
+        "forex_trading_experience"             => "",
+        "forex_trading_frequency"              => "",
+    };
+    encode_json $data;
+    $test_client->financial_assessment({
+        data            => encode_json $data,
+        is_professional => 0
+    });
+    $test_client->save();
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status               => ['has_password', 'financial_assessment_needed'],
+            risk_classification => 'high'
+        },
+        'financial_assessment_needed when some questions are not answered'
+    );
+
+    # client has answered all the questions
+    $data = {
+        "account_opening_reason"               => "",
+        "account_turnover"                     => '',
+        "commodities_trading_experience"       => "1-2 years",
+        "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
+        "education_level"                      => "Secondary",
+        "estimated_worth"                      => '$100,000 - $250,000',
+        "employment_industry"                  => "Finance",
+        "forex_trading_experience"             => "Over 3 years",
+        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
+        "income_source"                        => "Self-Employed",
+        "indices_trading_experience"           => "Over 3 years",
+        "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
+        "net_income"                           => '$25,000 - $50,000',
+        "occupation"                           => 'Managers',
+        "other_derivatives_trading_experience" => "Over 3 years",
+        "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
+        "other_instruments_trading_experience" => "Over 3 years",
+        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
+        "stocks_trading_experience"            => "1-2 years",
+        "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
+    };
+
+    $test_client->financial_assessment({
+        data            => encode_json $data,
+        is_professional => 0
+    });
+    $test_client->save();
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status               => ['has_password', 'financial_assessment_needed'],
+            risk_classification => 'high'
+        },
+        'financial_assessment_needed when some answers are not empty'
+    );
+
+   $data = {
+        "account_opening_reason"               => "Speculative",
+        "account_turnover"                     => 'Less than $25,000',
+        "commodities_trading_experience"       => "1-2 years",
+        "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
+        "education_level"                      => "Secondary",
+        "estimated_worth"                      => '$100,000 - $250,000',
+        "employment_industry"                  => "Finance",
+        "forex_trading_experience"             => "Over 3 years",
+        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
+        "income_source"                        => "Self-Employed",
+        "indices_trading_experience"           => "Over 3 years",
+        "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
+        "net_income"                           => '$25,000 - $50,000',
+        "occupation"                           => 'Managers',
+        "other_derivatives_trading_experience" => "Over 3 years",
+        "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
+        "other_instruments_trading_experience" => "Over 3 years",
+        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
+        "stocks_trading_experience"            => "1-2 years",
+        "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
+    };
+    # financial assessment is not needed when all questions is answered
+    $test_client->financial_assessment({
+        data            => encode_json $data,
+        is_professional => 0
+    });
+    $test_client->save();
+    print ">> checking for $method";
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status               => ['has_password'],
+            risk_classification => 'high'
+        },
+        'financial_assessment_needed should not present when questions are answered properly'
+    );
+
+    # reset the risk classification for the following test
+    $test_client->aml_risk_classification('low');
+    $test_client->financial_assessment({
+        data            => undef,
+        is_professional => 0
+    });
+
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;
     is_deeply(
@@ -627,6 +743,7 @@ subtest $method => sub {
         },
         'ok, authenticated'
     );
+
 };
 
 $method = 'change_password';
