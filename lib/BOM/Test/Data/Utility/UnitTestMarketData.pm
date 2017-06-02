@@ -62,7 +62,7 @@ sub _initialize_symbol_dividend {
 sub _init {
     #delete chronicle data too (Redis and Pg)
     BOM::Platform::RedisReplicated::redis_write()->flushall;
-    BOM::Platform::Chronicle::_dbh()->do('delete from chronicle;') if BOM::Platform::Chronicle::_dbh();
+    BOM::Platform::Chronicle::_dbic()->run(fixup => sub { $_->do('delete from chronicle;') }) if BOM::Platform::Chronicle::_dbic();
     BOM::Platform::Chronicle::set(
         'app_settings',
         'binary',
