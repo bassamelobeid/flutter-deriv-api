@@ -191,7 +191,6 @@ sub write_transaction_line {
     my $bonus = $c->request_parameters->{bonus} || 0;
     my $fee   = $c->request_parameters->{fee}   || 0;
 
-    my $staff             = $c->request_parameters->{staff};
     my $payment_processor = $c->request_parameters->{payment_processor};
     my $created_by        = $c->request_parameters->{created_by};
     my $ip_address        = $c->request_parameters->{ip_address};
@@ -267,7 +266,6 @@ sub check_predicates {
         # file entry that describes the withdrawal being reversed. That entry must be
         # be a 'DoughFlow withdrawal' and must have the same trace_id as the one sent
         # with the withdrawal reversal request.
-        my $trace_regex = 'trace_id=' . $trace_id;
 
         my $match_count = $doughflow_datamapper->get_doughflow_withdrawal_count_by_trace_id($trace_id);
         if (!$match_count) {

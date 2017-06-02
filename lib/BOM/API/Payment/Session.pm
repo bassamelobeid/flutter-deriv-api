@@ -84,7 +84,6 @@ sub session_validate_GET {
         return $c->status_bad_request('Invalid or missing token in request');
     }
     # we have a token, so lets make a db
-    my $landing_company    = LandingCompany::Registry::get_by_broker($c->user->loginid);
     my $connection_builder = BOM::Database::ClientDB->new({
         client_loginid => $c->user->loginid,
     });
