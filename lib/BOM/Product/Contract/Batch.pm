@@ -50,10 +50,9 @@ sub _build_underlying {
 sub _build__contracts {
     my $self = shift;
 
-    my $method_ref  = delete $self->parameters->{_produce_contract_ref};
-    my $categorizer = BOM::Product::Categorizer->new(parameters => $self->parameters);
-    my $params      = $categorizer->process();
-    $params = [$params] unless ref $params eq 'ARRAY';    # this happens when proposal_array contains only one contract_type
+    my $method_ref = delete $self->parameters->{_produce_contract_ref};
+    # Categorizer's process always returns ARRAYREF
+    my $params = BOM::Product::Categorizer->new(parameters => $self->parameters)->process();
 
     my $first_param = shift @$params;
     $first_param->{processed} = 1;
