@@ -10,8 +10,8 @@ my $test_user_id  = 999;
 my $provider_data = sample_oneall_data();
 $provider_data = $provider_data->{response}->{result}->{data};
 
-$c->dbh->do("DELETE FROM users.binary_user_connects");
-$c->dbh->do("INSERT INTO users.binary_user (id, email, password) VALUES ($test_user_id, 'dummy\@dummy.com', 'blabla')");    # for foreign key
+$c->dbic->dbh->do("DELETE FROM users.binary_user_connects");
+$c->dbic->dbh->do("INSERT INTO users.binary_user (id, email, password) VALUES ($test_user_id, 'dummy\@dummy.com', 'blabla')");    # for foreign key
 
 my $res = $c->insert_connect($test_user_id, $provider_data);
 ok $res->{success}, 'insert connect ok';
