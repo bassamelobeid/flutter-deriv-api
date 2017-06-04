@@ -193,7 +193,7 @@ sub get_for {
     my $db_timestamp = Date::Utility->new($date_for)->db_timestamp;
 
     my $db_data = _dbic()->run(
-        fixup => sub {
+        sub {
             $_->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
                 'id', {}, $category, $name, $db_timestamp);
         });
@@ -216,7 +216,7 @@ sub get_for_period {
     my $end_timestamp   = Date::Utility->new($end)->db_timestamp;
 
     my $db_data = _dbic()->run(
-        fixup => sub {
+        sub {
             $_->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? AND timestamp >=? order by timestamp desc},
                 'id', {}, $category, $name, $end_timestamp, $start_timestamp);
         });
@@ -244,7 +244,7 @@ sub _archive {
     my $db_timestamp = $rec_date->db_timestamp;
 
     return _dbic()->run(
-        fixup => sub {
+        sub {
             $_->prepare(<<'SQL')->execute($category, $name, $value, $db_timestamp) });
 WITH ups AS (
     UPDATE chronicle
@@ -279,6 +279,7 @@ sub _dbic {
             RaiseError        => 1,
             pg_server_prepare => 0,
         });
+    $dbic->mode('fixup');
     my $dbh = $dbic->dbh;
     DBIx::TransactionManager::Distributed::register_dbh(chronicle => $dbh)
         unless DBIx::TransactionManager::Distributed::dbh_is_registered(chronicle => $dbh);
