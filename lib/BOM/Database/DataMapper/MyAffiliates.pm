@@ -26,7 +26,7 @@ sub get_clients_activity {
     };
 
     return $dbic->run(
-        ping => sub {
+        sub {
             my $sth = $_->prepare($sql);
             $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ);
 
