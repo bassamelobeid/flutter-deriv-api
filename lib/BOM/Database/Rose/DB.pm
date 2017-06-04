@@ -149,6 +149,7 @@ sub dbi_connect {
 
     if (not exists $self->{dbic}) {
         $self->{dbic} = DBIx::Connector->new(@params);
+        $self->{dbic}->mode('fixup');
     }
     return $self->{dbic}->dbh;
 }
