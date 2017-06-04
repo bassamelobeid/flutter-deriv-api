@@ -56,7 +56,13 @@ sub payout_currencies {
     # currencies enabled.
     $lc ||= LandingCompany::Registry::get('costarica');
 
-    return $lc->legal_allowed_currencies;
+    # as temporary fix we will only allow crypto currencies
+    # for omnibus and sub accounts
+    if ($client->allow_omnibus or $client->sub_account_of) {
+        return $lc->legal_allowed_currencies;
+    }
+
+    return [grep { $_ !~ /^(?:BTC|LTC|ETH)$/ } @{$lc->legal_allowed_currencies}];
 }
 
 sub landing_company {
@@ -110,7 +116,7 @@ sub __build_landing_company {
         address                           => $lc->address,
         country                           => $lc->country,
         legal_default_currency            => $lc->legal_default_currency,
-        legal_allowed_currencies          => $lc->legal_allowed_currencies,
+        legal_allowed_currencies          => [grep { $_ !~ /^(?:BTC|LTC|ETH)$/ } @{$lc->legal_allowed_currencies}],
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0
