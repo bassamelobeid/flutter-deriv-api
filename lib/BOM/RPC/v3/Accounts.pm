@@ -58,7 +58,7 @@ sub payout_currencies {
 
     # as temporary fix we will only allow crypto currencies
     # for omnibus and sub accounts
-    if ($client->allow_omnibus or $client->sub_account_of) {
+    if ($client and ($client->allow_omnibus or $client->sub_account_of)) {
         return $lc->legal_allowed_currencies;
     }
 
