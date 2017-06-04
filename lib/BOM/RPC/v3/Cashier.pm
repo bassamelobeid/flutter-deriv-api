@@ -16,6 +16,8 @@ use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use YAML::XS qw(LoadFile);
 
+use DataDog::DogStatsd::Helper qw(stats_inc);
+
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
@@ -284,6 +286,7 @@ sub cashier {
         }
 
         warn "Unknown Doughflow error: $errortext\n";
+        DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.doughflow_failure.count', {tags => ["action:$action"]});
 
         return $error_sub->(
             localize('Sorry, an error has occurred, Please try accessing our Cashier again.'),
