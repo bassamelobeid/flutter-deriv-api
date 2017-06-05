@@ -7,7 +7,6 @@ use Try::Tiny;
 use Performance::Probability qw(get_performance_probability);
 
 use Client::Account;
-use Price::Calculator qw/formatnumber/;
 
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
@@ -168,9 +167,9 @@ sub copytrading_statistics {
     $result_hash->{total_trades} = $win_trades + $loss_trades;
     $result_hash->{trades_profitable} = sprintf("%.4f", $win_trades / ($result_hash->{total_trades} || 1));
     $result_hash->{avg_profit} =
-        formatnumber('amount', $currency, BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0);
+        sprintf("%.4f", BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0);
     $result_hash->{avg_loss} =
-        formatnumber('amount', $currency, BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0);
+        sprintf("%.4f", BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0);
 
     # trades_breakdown
     my %symbols_breakdown = @{BOM::Platform::RedisReplicated::redis_read->hgetall("COPY_TRADING_SYMBOLS_BREAKDOWN:$trader_id")};
