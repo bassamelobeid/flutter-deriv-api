@@ -10,9 +10,11 @@ use JSON::XS;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
-use Format::Util::Numbers qw(roundnear);
+use Time::Duration::Concise::Localize;
 
+use Price::Calculator qw/formatnumber/;
 use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
+
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Config;
@@ -24,7 +26,6 @@ use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Product::Contract::Finder::Japan;
 use BOM::Product::Contract::Finder;
 use BOM::Product::Contract::Offerings;
-use Time::Duration::Concise::Localize;
 use BOM::Pricing::v3::Utility;
 
 use feature "state";
@@ -171,8 +172,8 @@ sub _get_ask {
                         message_to_client => $message_to_client,
                         code              => $code,
                         details           => {
-                            display_value => sprintf('%.2f', $display_value),
-                            payout        => sprintf('%.2f', $display_value),
+                            display_value => formatnumber('price', $contract->currency, $display_value),
+                            payout        => formatnumber('price', $contract->currency, $display_value),
                         },
                     });
 
@@ -181,8 +182,8 @@ sub _get_ask {
                         message_to_client => $message_to_client,
                         code              => $code,
                         details           => {
-                            display_value => sprintf('%.2f', $contract->ask_price),
-                            payout        => sprintf('%.2f', $contract->payout),
+                            display_value => formatnumber('price', $contract->currency, $contract->ask_price),
+                            payout        => formatnumber('price', $contract->currency, $contract->payout),
                         },
                     });
             }
@@ -197,7 +198,7 @@ sub _get_ask {
             }
         } else {
             # We think this contract is valid to buy
-            my $ask_price = sprintf('%.2f', $contract->ask_price);
+            my $ask_price = formatnumber('price', $contract->currency, $contract->ask_price);
 
             $response = {
                 longcode            => localize($contract->longcode),
@@ -339,7 +340,7 @@ sub get_bid {
                 ? ()
                 : (validation_error => localize($contract->primary_validation_error->message_to_client))
             ),
-            bid_price           => sprintf('%.2f', $contract->bid_price),
+            bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
             underlying          => $contract->underlying->symbol,
