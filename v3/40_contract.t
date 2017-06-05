@@ -205,6 +205,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => '963'
 });
 
+
 $t = $t->send_ok({
         json => {
             buy        => 1,
@@ -224,7 +225,7 @@ while (1) {
     is $res->{msg_type}, 'buy';
     ok $res->{buy};
     ok($contract_id = $res->{buy}->{contract_id});
-    ok($buy_txn_id  = $res->{buy}->{transaction_id});
+    ok($buy_txn_id = $res->{buy}->{transaction_id});
     ok $res->{buy}->{purchase_time};
 
     test_schema('buy', $res);
@@ -240,10 +241,11 @@ while (1) {
 is $call_params->{token}, $token;
 sleep 1;
 $t = $t->send_ok({
-        json => {
-            sell  => $contract_id,
-            price => 0
-        }});
+    json => {
+        sell => $contract_id,
+        price => 0
+    }
+});
 
 while (1) {
     $t = $t->message_ok;
