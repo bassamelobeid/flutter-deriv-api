@@ -565,6 +565,37 @@ subtest $method => sub {
     );
 };
 
+# placing this test here as need to test the calling of financial_assessment
+# before a financial assessment record has been created
+$method = 'get_financial_assessment';
+subtest $method => sub {
+    my $args = {"get_financial_assessment" => 1};
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token_vr,
+            args  => $args
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token_japan
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for japan account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token1
+        });
+    is_deeply($res, {}, 'empty assessment details');
+};
+
+
 $method = 'get_account_status';
 subtest $method => sub {
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
@@ -1096,34 +1127,6 @@ subtest $method => sub {
         },
         'vr client return less messages'
     );
-};
-
-$method = 'get_financial_assessment';
-subtest $method => sub {
-    my $args = {"get_financial_assessment" => 1};
-    my $res = $c->tcall(
-        $method,
-        {
-            token => $token_vr,
-            args  => $args
-        });
-    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
-
-    $res = $c->tcall(
-        $method,
-        {
-            args  => $args,
-            token => $token_japan
-        });
-    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for japan account");
-
-    $res = $c->tcall(
-        $method,
-        {
-            args  => $args,
-            token => $token1
-        });
-    is_deeply($res, {}, 'empty assessment details');
 };
 
 $method = 'set_financial_assessment';
