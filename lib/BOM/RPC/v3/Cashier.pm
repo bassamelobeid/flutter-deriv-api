@@ -11,7 +11,6 @@ use Path::Tiny;
 use DateTime;
 use Date::Utility;
 use Try::Tiny;
-use Format::Util::Numbers qw(roundnear);
 use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
@@ -23,7 +22,7 @@ use Brands;
 use Client::Account;
 use LandingCompany::Registry;
 use Client::Account::PaymentAgent;
-
+use Price::Calculator qw/formatnumber/;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 
 use BOM::Platform::User;
@@ -404,13 +403,14 @@ sub get_limits {
     }
 
     my $landing_company = LandingCompany::Registry::get_by_broker($client->broker)->short;
-    my $wl_config       = $payment_limits->{withdrawal_limits}->{$landing_company};
+    my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency);
 
     my $limit = +{
-        account_balance => $client->get_limit_for_account_balance,
-        payout          => $client->get_limit_for_payout,
-        payout_per_symbol_and_contract_type =>
-            BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$client->currency},
+        account_balance                     => formatnumber('amount', $currency, $client->get_limit_for_account_balance),
+        payout                              => formatnumber('amount', $currency, $client->get_limit_for_payout),
+        payout_per_symbol_and_contract_type => formatnumber(
+            'amount', $currency, BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency}
+        ),
         open_positions => $client->get_limit_for_open_positions,
     };
 
@@ -427,7 +427,7 @@ sub get_limits {
 
     my $withdrawal_limit_curr;
     if (first { $client->landing_company->short eq $_ } ('costarica', 'japan')) {
-        $withdrawal_limit_curr = $client->currency;
+        $withdrawal_limit_curr = $currency;
     } else {
         # limit in EUR for: MX, MLT, MF
         $withdrawal_limit_curr = 'EUR';
@@ -435,7 +435,7 @@ sub get_limits {
 
     $limit->{num_of_days}       = $numdays;
     $limit->{num_of_days_limit} = $numdayslimit;
-    $limit->{lifetime_limit}    = $lifetimelimit;
+    $limit->{lifetime_limit}    = formatnumber('amount', $currency, $lifetimelimit);
 
     if (not $client->client_fully_authenticated) {
         # withdrawal since $numdays
@@ -444,22 +444,20 @@ sub get_limits {
             start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
             exclude    => ['currency_conversion_transfer'],
         });
-        $withdrawal_for_x_days = roundnear(0.01, amount_from_to_currency($withdrawal_for_x_days, $client->currency, $withdrawal_limit_curr));
+        $withdrawal_for_x_days = amount_from_to_currency($withdrawal_for_x_days, $currency, $withdrawal_limit_curr);
 
         # withdrawal since inception
-        my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']});
-        $withdrawal_since_inception =
-            roundnear(0.01, amount_from_to_currency($withdrawal_since_inception, $client->currency, $withdrawal_limit_curr));
+        my $withdrawal_since_inception = amount_from_to_currency($payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']}),
+            $currency, $withdrawal_limit_curr);
 
-        $limit->{withdrawal_since_inception_monetary} = $withdrawal_since_inception;
-        $limit->{withdrawal_for_x_days_monetary}      = $withdrawal_for_x_days;
-
-        my $remainder = roundnear(0.01, min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception)));
+        my $remainder = min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception));
         if ($remainder < 0) {
             $remainder = 0;
         }
 
-        $limit->{remainder} = $remainder;
+        $limit->{withdrawal_since_inception_monetary} = formatnumber('amount', $currency, $withdrawal_since_inception);
+        $limit->{withdrawal_for_x_days_monetary}      = formatnumber('amount', $currency, $withdrawal_for_x_days);
+        $limit->{remainder}                           = formatnumber('amount', $currency, $remainder);
     }
 
     return $limit;
@@ -1092,10 +1090,10 @@ sub __output_payments_error_message {
 sub __client_withdrawal_notes {
     my $arg_ref  = shift;
     my $client   = $arg_ref->{'client'};
-    my $amount   = roundnear(0.01, $arg_ref->{'amount'});
-    my $error    = $arg_ref->{'error'};
     my $currency = $client->currency;
-    my $balance  = $client->default_account ? roundnear(0.01, $client->default_account->balance) : 0;
+    my $amount   = formatnumber('amount', $currency, $arg_ref->{'amount'});
+    my $error    = $arg_ref->{'error'};
+    my $balance  = $client->default_account ? formatnumber('amount', $currency, $client->default_account->balance) : 0;
 
     if ($error =~ /exceeds client balance/) {
         return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
@@ -1176,7 +1174,9 @@ sub transfer_between_accounts {
             push @accounts,
                 {
                 loginid => $account->loginid,
-                balance => $account->default_account ? sprintf('%.2f', $account->default_account->balance) : "0.00",
+                balance => $account->default_account
+                ? formatnumber('amount', $account->default_account->currency_code, $account->default_account->balance)
+                : "0.00",
                 currency => $account->default_account ? $account->default_account->currency_code : '',
                 };
         } else {
@@ -1302,10 +1302,10 @@ sub transfer_between_accounts {
     if ($err) {
         my $limit;
         if ($err =~ /exceeds client balance/) {
-            $limit = $currency . ' ' . roundnear(0.01, $client_from->default_account->balance);
+            $limit = $currency . ' ' . formatnumber('amount', $currency, $client_from->default_account->balance);
         } elsif ($err =~ /includes frozen bonus \[(.+)\]/) {
             my $frozen_bonus = $1;
-            $limit = $currency . ' ' . roundnear(0.01, $client_from->default_account->balance - $frozen_bonus);
+            $limit = $currency . ' ' . formatnumber('amount', $currency, $client_from->default_account->balance - $frozen_bonus);
         } elsif ($err =~ /exceeds withdrawal limit \[(.+)\]\s+\((.+)\)/) {
             my $bal_1 = $1;
             my $bal_2 = $2;

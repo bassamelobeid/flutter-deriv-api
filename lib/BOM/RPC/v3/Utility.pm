@@ -63,18 +63,6 @@ sub create_error {
             $args->{details} ? (details => $args->{details}) : ()}};
 }
 
-sub currencies_config {
-    return {
-        'AUD' => {fractional_digits => 2},
-        'EUR' => {fractional_digits => 2},
-        'GBP' => {fractional_digits => 2},
-        'USD' => {fractional_digits => 2},
-        'JPY' => {fractional_digits => 2},
-        'BTC' => {fractional_digits => 8},
-        'LTC' => {fractional_digits => 8},
-        'ETH' => {fractional_digits => 8}};
-}
-
 sub invalid_token_error {
     return create_error({
             code              => 'InvalidToken',
@@ -271,19 +259,6 @@ sub get_real_acc_opening_type {
         return $financial_company if ($financial_company eq 'maltainvest');
     }
     return;
-}
-
-sub format_amount {
-    my $currency = shift;
-    my $amount = shift || 0;
-
-    my $digits = currencies_config()->{$currency}->{fractional_digits};
-
-    if (defined $digits) {
-        return sprintf('%.' . $digits . 'f', $amount);
-    } else {
-        die "wrong currency for rounding [$currency]";
-    }
 }
 
 sub paymentagent_default_min_max {

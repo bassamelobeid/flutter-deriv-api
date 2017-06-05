@@ -10,9 +10,11 @@ use WWW::OneAll;
 use Date::Utility;
 use Data::Password::Meter;
 use HTML::Entities qw(encode_entities);
+
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
+use Price::Calculator qw/formatnumber/;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
@@ -144,7 +146,7 @@ sub statement {
             reference_id   => $txn->{buy_tr_id},
             amount         => $txn->{amount},
             action_type    => $txn->{action_type},
-            balance_after  => sprintf('%.2f', $txn->{balance_after}),
+            balance_after  => formatnumber('amount', $account->currency_code, $txn->{balance_after}),
             contract_id    => $txn->{financial_market_bet_id},
             payout         => $txn->{payout_price}};
 
@@ -284,7 +286,7 @@ sub balance {
     return {
         loginid  => $client_loginid,
         currency => $client->default_account->currency_code,
-        balance => BOM::RPC::v3::Utility::format_amount($client->default_account->currency_code, $client->default_account->balance)};
+        balance => formatnumber('amount', $client->default_account->currency_code, $client->default_account->balance)};
 
 }
 
