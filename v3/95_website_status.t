@@ -69,9 +69,16 @@ my $t = build_wsapi_test(
         test_schema("website_status", $mess);
     });
 
-$t = $t->send_ok({json => {website_status => 1, subscribe => 1}})->message_ok;
+$t = $t->send_ok({
+        json => {
+            website_status => 1,
+            subscribe      => 1
+        }})->message_ok;
 
-$shared_info->{echo_req} = {website_status => 1, subscribe => 1};
+$shared_info->{echo_req} = {
+    website_status => 1,
+    subscribe      => 1
+};
 $shared_info->{c} = $t;
 my $pid = fork;
 
@@ -79,7 +86,7 @@ die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
 unless ($pid) {
     sleep 1;
     for (1 .. 2) {
-        $redis->publish($channel_name => '{"site_status": "up", "message": "Unit test '.$_.'"}');
+        $redis->publish($channel_name => '{"site_status": "up", "message": "Unit test ' . $_ . '"}');
         sleep 1;
     }
     exit;

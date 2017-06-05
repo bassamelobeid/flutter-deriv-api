@@ -10,10 +10,12 @@ use Mojo::Redis2;
 my $redis2_module = Test::MockModule->new('Mojo::Redis2');
 my @commands_queue;
 for my $command (qw/incrby expire/) {
-    $redis2_module->mock($command, sub {
-        note "mocking '$command'";
-        push @commands_queue, [$command, @_];
-    });
+    $redis2_module->mock(
+        $command,
+        sub {
+            note "mocking '$command'";
+            push @commands_queue, [$command, @_];
+        });
 }
 my %redis_storage;
 
@@ -25,10 +27,10 @@ my %redis_callbacks = (
     incrby => sub {
         # discard the command itself
         shift;
-        my $mock = shift;
-        my $key = shift;
+        my $mock     = shift;
+        my $key      = shift;
         my $callback = pop;
-        my $value = shift // 1;
+        my $value    = shift // 1;
         ($redis_storage{$key} //= 0) += $value;
         $callback->($mock, undef, $redis_storage{$key});
     },
@@ -45,8 +47,8 @@ my $process_queue = sub {
     while (@commands_queue) {
         return if $i++ == $count;
         my $command_data = shift @commands_queue;
-        my $command = $command_data->[0];
-        my $processor = $redis_callbacks{$command};
+        my $command      = $command_data->[0];
+        my $processor    = $redis_callbacks{$command};
         die("No redis processor for '$command'")
             unless $processor;
         note "executing processor for '$command'";
@@ -69,7 +71,7 @@ my $t = build_wsapi_test();
 my $c = $t->app->build_controller;
 
 # stubs
-$t->app->helper(app_id => sub { 1 });
+$t->app->helper(app_id               => sub { 1 });
 $t->app->helper(rate_limitations_key => sub { "rate_limits::non-authorised::1/md5-hash-of-127.0.0.1" });
 
 subtest "no limit for 'ping' or 'time'" => sub {
@@ -98,7 +100,7 @@ subtest "high real account buy sell pricing limit" => sub {
 subtest "hit limits 'proposal' / 'proposal_open_contract' for virtual account" => sub {
     my @futures;
     for (1 .. 60) {
-        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal',               0);
+        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 0);
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal_open_contract', 0);
     }
 
@@ -172,7 +174,6 @@ subtest "post-expiration of limits under heavy load" => sub {
     # there might be more then one pending service hits, meanwhile
     # the limits value already expires in redis, when pending hits
     # are send to redis.
-
 
     my $expiration_sets = 0;
     local $on_expiry = sub {
