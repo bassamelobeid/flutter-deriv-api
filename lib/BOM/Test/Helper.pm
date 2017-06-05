@@ -33,15 +33,57 @@ use Path::Tiny;
 use Test::MockModule;
 use Test::MockObject;
 use MojoX::JSON::RPC::Client;
-
+use IO::Async::Loop;
 use RedisDB;
 use YAML::XS qw/LoadFile DumpFile/;
 
 use Exporter qw/import/;
-our @EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect launch_redis/;
+our @EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect launch_redis wsapi_wait_for/;
 
 my $version = 'v3';
 die 'unknown version' unless $version;
+
+{
+    my $ioloop = IO::Async::Loop->new;
+    my $ticks_without_accidens = 0;
+    my ($f, $wait_for, $check_callback );
+    my $message_callback = sub {
+        my ($tx, $msg) = @_;
+        return $tx unless $wait_for;
+        note "Got " . $msg;
+        my $data = decode_json($msg);
+
+        return $tx unless ($wait_for && $data->{msg_type} eq $wait_for);
+        $check_callback->($data);
+        $wait_for = '';
+        $f->done($msg) if !$f->is_ready;
+    };
+    my $first_time = 0;
+    sub wsapi_wait_for {
+        (my $t, $wait_for, my $action_sub, $check_callback) = @_;
+
+        $f = $ioloop->new_future;
+
+        $t->tx->on(message => $message_callback) unless $first_time++;
+
+        my $id = $ioloop->watch_time( after => 1,
+                                      code => sub {
+                                          if ( $ticks_without_accidens++ > 10 ) {
+                                              ok(0, "Loop timeout");
+                                              $f->fail("timeout");
+                                              return;
+                                          }
+                                          $f->cancel('try again');
+                                          wsapi_wait_for($ioloop, $wait_for, sub{ $t->message_ok},$check_callback);
+                                      },
+                                  );
+        $f->on_ready( sub {shift->loop->unwatch_time( $id ) } );
+        $f->on_done( sub { $ticks_without_accidens = 0;});
+        $action_sub->();
+        $ioloop->await($f);
+    }
+}
+
 
 sub build_mojo_test {
     my $app_class = shift;
