@@ -187,7 +187,7 @@ sub get_turnover_of_account {
     my $dbic                = $self->db->dbic;
     my $transaction_hashref = $dbic->run(
         sub {
-            my $sth = $dbh->prepare($sql);
+            my $sth = $_->prepare($sql);
             $sth->execute($self->client_loginid, $self->currency_code);
             return $sth->$sth->fetchrow_hashref;
         });
@@ -246,7 +246,7 @@ SQL
 
     return $dbic->run(
         sub {
-            my $sth = $dbh->prepare($sql);
+            my $sth = $_->prepare($sql);
             $sth->execute($self->client_loginid, $start_time->db_timestamp);
 
             return $sth->fetchall_arrayref({});
@@ -624,7 +624,7 @@ sub get_profit_for_days {
     my $dbic = $self->db->dbic;
     return $dbic->run(
         sub {
-            my $sth = $dbh->prepare($sql);
+            my $sth = $_->prepare($sql);
 
             $sth->bind_param(1, $self->account->id);
             $sth->bind_param(2, $before);
