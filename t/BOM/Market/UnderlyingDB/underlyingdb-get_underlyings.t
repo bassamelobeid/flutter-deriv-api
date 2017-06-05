@@ -7,6 +7,7 @@ use Test::MockTime qw(set_relative_time);
 use YAML::XS qw(DumpFile LoadFile);
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
+use Finance::Contract::Category;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Runtime;
 
@@ -18,7 +19,7 @@ lives_ok {
 }
 'Initialized';
 
-eq_or_diff [sort $udb->available_contract_categories], [sort qw(callput endsinout touchnotouch staysinout asian digits)],
+eq_or_diff [sort Finance::Contract::Category->get_all_contract_categories], [sort qw(callput endsinout touchnotouch staysinout asian digits)],
     "Correct list of available contract categories";
 
 eq_or_diff [sort $udb->available_expiry_types], [sort qw(intraday daily tick)], 'Correct list of available expiry types.';
