@@ -40,13 +40,11 @@ die "Introspection server port not found!" unless $intro_port;
 note "Introspection port: $intro_port\n";
 
 socket(my $socket, PF_INET, SOCK_STREAM, 0)
-      or die "socket: $!";
+    or die "socket: $!";
 connect($socket, pack_sockaddr_in($intro_port, inet_aton("localhost")))
-     or die "connect: $!";
+    or die "connect: $!";
 
 my ($res, $ticks, $intro_stats, $intro_conn);
-
-
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -126,12 +124,12 @@ my $underlying = create_underlying('frxUSDJPY');
 
 # cumulative_client_connections
 
-$t->send_ok({json=>{ping=>1}})->message_ok;
+$t->send_ok({json => {ping => 1}})->message_ok;
 $intro_stats = send_introspection_cmd('stats');
 cmp_ok $intro_stats->{cumulative_client_connections}, '==', 1, "1 cumulative_client_connections";
-reconnect($t, {app_id=>2});
+reconnect($t, {app_id => 2});
 note "RECONNECTED\n";
-$t->send_ok({json=>{ping=>1}})->message_ok;
+$t->send_ok({json => {ping => 1}})->message_ok;
 $intro_stats = send_introspection_cmd('stats');
 cmp_ok $intro_stats->{cumulative_client_connections}, '==', 2, "2 cumulative_client_connections";
 
@@ -148,51 +146,65 @@ my %contract = (
     "subscribe"     => 1,
 );
 
-$t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+$t = $t->send_ok({
+        json => {
+            "proposal" => 1,
+            %contract
+        }})->message_ok;
 
 subtest "redis errors" => sub {
     $t->app->stat->{redis_errors}++;
     my $intro_stats = send_introspection_cmd('stats');
-    cmp_ok $intro_stats->{cumulative_redis_errors}, '>', 0, 'Got redis error'
+    cmp_ok $intro_stats->{cumulative_redis_errors}, '>', 0, 'Got redis error';
 };
-
 
 ## connections
 
 # last sent and recieved message
 
-$t = $t->send_ok({ json => { "time" => 1}})->message_ok;
+$t = $t->send_ok({json => {"time" => 1}})->message_ok;
 $intro_conn = send_introspection_cmd('connections');
 ok $intro_conn->{connections}[0]{last_call_received_from_client}{time}, 'last msg was time';
-$t = $t->send_ok({ json => { "ping" => 1}})->message_ok;
+$t = $t->send_ok({json => {"ping" => 1}})->message_ok;
 $intro_conn = send_introspection_cmd('connections');
 cmp_ok $intro_conn->{connections}[0]{last_message_sent_to_client}{ping}, 'eq', 'pong', 'last msg was pong';
 
-
 # count of each type
 cmp_ok $intro_conn->{connections}[0]{messages_received_from_client}{time}, '==', 1, '1 time call';
-cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time}, '==', 1, '1 time reply';
-$t = $t->send_ok({ json => { "time" => 1}})->message_ok;
+cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time},       '==', 1, '1 time reply';
+$t = $t->send_ok({json => {"time" => 1}})->message_ok;
 $intro_conn = send_introspection_cmd('connections');
 cmp_ok $intro_conn->{connections}[0]{messages_received_from_client}{time}, '==', 2, '2 time call';
-cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time}, '==', 2, '2 time reply';
+cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time},       '==', 2, '2 time reply';
 
 # number of pricer subs
 subtest "pricesrs subscriptions" => sub {
-    $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+    $t->send_ok({
+            json => {
+                "proposal" => 1,
+                %contract
+            }})->message_ok;
     my $intro_conn = send_introspection_cmd('connections');
 
     cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
     $contract{amount} = 200;
-    $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+    $t = $t->send_ok({
+            json => {
+                "proposal" => 1,
+                %contract
+            }})->message_ok;
     $intro_conn = send_introspection_cmd('connections');
     cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
     $contract{duration} = 14;
-    $t = $t->send_ok({ json => { "proposal" => 1, %contract }})->message_ok;
+    $t = $t->send_ok({
+            json => {
+                "proposal" => 1,
+                %contract
+            }})->message_ok;
     $intro_conn = send_introspection_cmd('connections');
     cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 2, 'now 2 price subscription';
 
-    $t = $t->send_ok({ json => { "forget_all" => 'proposal'}})->message_ok;
+    $t = $t->send_ok({json => {"forget_all" => 'proposal'}})->message_ok;
     $intro_conn = send_introspection_cmd('connections');
     cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 0, 'no more price subscription';
 };
@@ -204,19 +216,21 @@ sub send_introspection_cmd {
     my $ret;
     my $VAR1;
     retain_future(
-        Future->done( try {
-            my $stream = Mojo::IOLoop::Stream->new($socket);
-            $stream->start;
-            $stream->on(read=>sub{
-                ($stream, $ret) = @_;
-                $stream->close;
-                Mojo::IOLoop->stop;
-                Future->done;
-            });
-            $stream->write("$cmd\n");
-            Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
-        }));
-    $ret = substr($ret, 5); # remove 'OK - '
+        Future->done(
+            try {
+                my $stream = Mojo::IOLoop::Stream->new($socket);
+                $stream->start;
+                $stream->on(
+                    read => sub {
+                        ($stream, $ret) = @_;
+                        $stream->close;
+                        Mojo::IOLoop->stop;
+                        Future->done;
+                    });
+                $stream->write("$cmd\n");
+                Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+            }));
+    $ret = substr($ret, 5);         # remove 'OK - '
     $ret = JSON::from_json($ret);
     return $ret;
 }

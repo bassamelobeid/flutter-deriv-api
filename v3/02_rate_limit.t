@@ -10,33 +10,48 @@ use Mojo::Redis2;
 my $redis2_module = Test::MockModule->new('Mojo::Redis2');
 my @commands_queue;
 for my $command (qw/incrby expire/) {
-    $redis2_module->mock($command, sub {
-        push @commands_queue, [$command, @_];
-    });
+    $redis2_module->mock(
+        $command,
+        sub {
+            note "mocking '$command'";
+            push @commands_queue, [$command, @_];
+        });
 }
 my %redis_storage;
 
+our $on_expiry = sub {
+    # no-op;
+};
+
 my %redis_callbacks = (
     incrby => sub {
-        my $mock = shift;
-        my $key = shift;
+        # discard the command itself
+        shift;
+        my $mock     = shift;
+        my $key      = shift;
         my $callback = pop;
-        my $value = shift // 1;
+        my $value    = shift // 1;
         ($redis_storage{$key} //= 0) += $value;
         $callback->($mock, undef, $redis_storage{$key});
     },
     expire => sub {
-        # no-op
+        $on_expiry->(@_);
     },
 );
+
 my $process_queue = sub {
+    my $count = shift;
     note "processing redis queue";
+    $count //= @commands_queue;
+    my $i = 0;
     while (@commands_queue) {
+        return if $i++ == $count;
         my $command_data = shift @commands_queue;
-        my $command = shift @$command_data;
-        my $processor = $redis_callbacks{$command};
+        my $command      = $command_data->[0];
+        my $processor    = $redis_callbacks{$command};
         die("No redis processor for '$command'")
             unless $processor;
+        note "executing processor for '$command'";
         $processor->(@$command_data);
     }
 };
@@ -56,7 +71,7 @@ my $t = build_wsapi_test();
 my $c = $t->app->build_controller;
 
 # stubs
-$t->app->helper(app_id => sub { 1 });
+$t->app->helper(app_id               => sub { 1 });
 $t->app->helper(rate_limitations_key => sub { "rate_limits::non-authorised::1/md5-hash-of-127.0.0.1" });
 
 subtest "no limit for 'ping' or 'time'" => sub {
@@ -77,19 +92,19 @@ subtest "high real account buy sell pricing limit" => sub {
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal',               1);
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal_open_contract', 1);
     }
-    lives_ok { Future->needs_all(@futures)->get }, "no limits hit";
+    lives_ok { Future->needs_all(@futures)->get } "no limits hit";
 
-    dies_ok { Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 1)->get }, "limit hit";
+    dies_ok { Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 1)->get } "limit hit";
 };
 
 subtest "hit limits 'proposal' / 'proposal_open_contract' for virtual account" => sub {
     my @futures;
     for (1 .. 60) {
-        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal',               0);
+        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 0);
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal_open_contract', 0);
     }
 
-    dies_ok { Future->needs_all(@futures)->get }, "limit hit";
+    dies_ok { Future->needs_all(@futures)->get } "limit hit";
 };
 
 subtest "hit limits 'portfolio' / 'profit_table' for virtual account" => sub {
@@ -98,9 +113,9 @@ subtest "hit limits 'portfolio' / 'profit_table' for virtual account" => sub {
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio',    0);
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'profit_table', 0);
     }
-    lives_ok { Future->needs_all(@futures)->get }, "no limits hit";
+    lives_ok { Future->needs_all(@futures)->get } "no limits hit";
 
-    dies_ok { Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio', 0)->get }, "limit hit";
+    dies_ok { Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio', 0)->get } "limit hit";
 };
 
 subtest "limits are persisted across connnections for the same client" => sub {
@@ -108,12 +123,12 @@ subtest "limits are persisted across connnections for the same client" => sub {
 
     my $c2 = $t->app->build_controller;
     my $f = Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'portfolio', 0);
-    lives_ok { $f->get }, "1st attempt is still allowed";
+    lives_ok { $f->get } "1st attempt is still allowed";
 
     $process_queue->();
 
     $f = Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'portfolio', 0);
-    dies_ok { $f->get }, "but not any longer";
+    dies_ok { $f->get } "but not any longer";
 };
 
 subtest "get error code (verify_email)" => sub {
@@ -142,6 +157,57 @@ subtest "expiration of limits" => sub {
     my $f2 = Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio', 0);
     Mojo::IOLoop->one_tick while !$f2->is_ready;
     ok $f2->is_done, "no limit hit";
+};
+
+subtest "post-expiration of limits under heavy load" => sub {
+    # lets flush redis
+    $process_queue->();
+    %redis_storage = ();
+
+    # testing scenario:
+    # 1. hit service
+    # 2. put 2 pending service hits into queue
+    # 3. wait 1st hit to be expired
+    # 4. check that pending hits will set expiration too
+    #
+    # This reflects real-world scenarion, when under heavy load
+    # there might be more then one pending service hits, meanwhile
+    # the limits value already expires in redis, when pending hits
+    # are send to redis.
+
+    my $expiration_sets = 0;
+    local $on_expiry = sub {
+        ++$expiration_sets;
+    };
+
+    my $c2 = $t->app->build_controller;
+
+    my @futures = (
+        Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'portfolio', 0),
+        Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'portfolio', 0),
+        Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'portfolio', 0),
+    );
+    lives_ok { $futures[0]->get } "no limits hit";
+    # process 2 incr-by (hourly and minutely)
+    $process_queue->(2);
+
+    my @cmds = @commands_queue;
+    @commands_queue = grep { $_->[0] eq 'expire' } @cmds;
+
+    # process 2 expirations (hourly and minutely)
+    $process_queue->(2);
+    is $expiration_sets, 2;
+
+    note "keys :" . join(", ", keys %redis_storage);
+    $redis_storage{$_} = 0 for (keys %redis_storage);
+
+    @commands_queue = grep { $_->[0] ne 'expire' } @cmds;
+    # process incrs
+    $process_queue->();
+    # and (expected) expirations
+    $process_queue->();
+    is $expiration_sets, 4;
+
 };
 
 $t->finish_ok;
