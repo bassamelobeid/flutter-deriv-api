@@ -270,7 +270,6 @@ my $dbic;
 sub _dbic {
     # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
     return undef if not defined _config()->{chronicle};
-    state $dbh_addr;
     $dbic //= DBIx::Connector->new(
         '' . _dbh_dsn(),
         # User and password are part of the DSN
