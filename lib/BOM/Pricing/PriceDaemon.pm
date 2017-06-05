@@ -130,9 +130,12 @@ sub run {
         $tv_now = [Time::HiRes::gettimeofday];
 
         stats_count('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
-        stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv, $tv_now), {tags => $self->tags});
+        stats_timing(
+            'pricer_daemon.process.time',
+            1000 * Time::HiRes::tv_interval($tv, $tv_now),
+            {tags => $self->tags('fork_index:' . $args{fork_index})});
         my $end_time = Time::HiRes::time;
-        stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => $self->tags});
+        stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)), {tags => $self->tags('fork_index:' . $args{fork_index})});
         $stat_count->{$params->{price_daemon_cmd}}++;
         my @stat_redis = (
             pid              => $args{pid},
