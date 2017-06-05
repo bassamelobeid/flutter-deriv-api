@@ -64,7 +64,7 @@ sub start_stream {
 }
 
 sub _store_stream_data {
-    my ($streams, $tx, $result) = @_;
+    my ($streams, undef, $result) = @_;
     my $call_name;
     for my $stream_id (keys %$streams) {
         my $stream = $streams->{$stream_id};

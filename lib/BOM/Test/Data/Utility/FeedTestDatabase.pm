@@ -218,7 +218,7 @@ __PACKAGE__->meta->make_immutable;
 
 ## no critic (Variables::RequireLocalizedPunctuationVars)
 sub import {
-    my ($class, $init) = @_;
+    my (undef, $init) = @_;
     __PACKAGE__->instance->prepare_unit_test_database
         if $init && $init eq ':init';
     return;
