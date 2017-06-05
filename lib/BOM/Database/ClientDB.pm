@@ -158,7 +158,7 @@ sub get_duplicate_client {
             $dupe_sth->execute();
             return $dupe_sth->fetchrow_array();
         });
-    return @dumpe_record;
+    return @dupe_record;
 }
 
 sub lock_client_loginid {
