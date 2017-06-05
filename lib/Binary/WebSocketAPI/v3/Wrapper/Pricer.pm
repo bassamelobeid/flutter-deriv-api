@@ -226,6 +226,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             language              => $c->stash('language'),
                             app_markup_percentage => $c->stash('app_markup_percentage'),
                             landing_company       => $c->landing_company_name,
+                            proposal_array        => 1,
                         },
                         error    => $create_price_channel,
                         success  => $create_price_channel,
