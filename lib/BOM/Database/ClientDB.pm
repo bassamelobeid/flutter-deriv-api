@@ -147,8 +147,8 @@ sub get_duplicate_client {
         date_of_birth=? AND
         broker_code=?
 ";
-    my $dbic = $self->db->dbic;
-    return $dbic->run(
+    my $dbic        = $self->db->dbic;
+    my @dupe_record = $dbic->run(
         sub {
             my $dupe_sth = $_->prepare($dupe_sql);
             $dupe_sth->bind_param(1, uc $args->{first_name});
@@ -158,6 +158,7 @@ sub get_duplicate_client {
             $dupe_sth->execute();
             return $dupe_sth->fetchrow_array();
         });
+    return @dumpe_record;
 }
 
 sub lock_client_loginid {
