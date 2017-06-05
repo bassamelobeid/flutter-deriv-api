@@ -120,7 +120,7 @@ subtest 'FOREX settlement check on Wednesday' => sub {
     ok !$bet->is_settleable, 'not settleable';
     is($bet->exit_tick->quote, '108',        'exit tick is 108');
     is($bet->exit_tick->epoch, '1202936400', 'the exit tick is the one at 21:00');
-    is($bet->bid_price,        0,            'Indicative outcome is 0 as the exit tick is 108');
+    cmp_ok($bet->bid_price, '==', 0, 'Indicative outcome is 0 as the exit tick is 108');
 
     my $bet_params_2 = {
         bet_type     => 'ONETOUCH',
@@ -141,7 +141,7 @@ subtest 'FOREX settlement check on Wednesday' => sub {
     ok !$bet_2->is_settleable, 'not settleable';
     is($bet_2->exit_tick->quote, '108',        'exit tick is 108');
     is($bet_2->exit_tick->epoch, '1202936400', 'the exit tick is the one at 21:00');
-    is($bet_2->bid_price,        0,            'Indicative outcome is 0 as the high is 108');
+    cmp_ok($bet_2->bid_price, '==', 0, 'Indicative outcome is 0 as the high is 108');
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
@@ -163,7 +163,7 @@ subtest 'FOREX settlement check on Wednesday' => sub {
     ok $bet->is_settleable,       'is settebale';
     is($bet->exit_tick->quote, '109.5',    'exit tick is 109.5');
     is($bet->exit_tick->epoch, 1202947199, 'the exit tick is the one at 23:59:59');
-    is($bet->bid_price,        1,          'Correct expiration with full payout as the exit tick is 109.5');
+    cmp_ok($bet->bid_price, '==', 1, 'Correct expiration with full payout as the exit tick is 109.5');
 
     $bet_params_2->{date_pricing} = Date::Utility->new('13-Feb-08 23:59:59');
     $bet_2 = produce_contract($bet_params_2);
@@ -174,7 +174,7 @@ subtest 'FOREX settlement check on Wednesday' => sub {
     ok $bet_2->is_settleable,       'is_settebaled';
     is($bet_2->exit_tick->quote, '109.5',      'exit tick is 109.5');
     is($bet_2->exit_tick->epoch, '1202947199', 'the exit tick is the one at 23:59:59');
-    is($bet_2->bid_price,        1,            'Indicative outcome is 1 as the high is 109.5');
+    cmp_ok($bet_2->bid_price, '==', 1, 'Indicative outcome is 1 as the high is 109.5');
 
 };
 subtest 'FOREX settlement check on Friday' => sub {
@@ -221,7 +221,7 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok !$bet->is_settleable, 'not settebale';
     is($bet->exit_tick->quote, '108',        'exit tick is 108');
     is($bet->exit_tick->epoch, '1203109200', 'the exit tick is the one at 21:00');
-    is($bet->bid_price,        0,            'Indicative outcome with zero price as the exit tick is 108');
+    cmp_ok($bet->bid_price, '==', 0, 'Indicative outcome with zero price as the exit tick is 108');
 
     my $bet_params_2 = {
         bet_type     => 'NOTOUCH',
@@ -238,11 +238,11 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok !$bet_2->is_after_settlement, 'is not pass settlement time';
     ok !$bet_2->is_valid_to_sell,    'is not valid to sell';
     is($bet_2->primary_validation_error->message, 'waiting for settlement', 'Not valid to sell as it is waiting for settlement');
-    ok $bet_2->is_expired,    'is expired';
+    ok $bet_2->is_expired, 'is expired';
     ok !$bet_2->is_settleable, 'is not settebable';
     is($bet_2->exit_tick->quote, '108',        'exit tick is 108');
     is($bet_2->exit_tick->epoch, '1203109200', 'the exit tick is the one at 21:00');
-    is($bet_2->bid_price,        1,            'Indicative outcome with full payout as the high is 110');
+    cmp_ok($bet_2->bid_price, '==', 1, 'Indicative outcome with full payout as the high is 110');
 
     $bet_params->{date_pricing} = Date::Utility->new('2008-02-16 00:00:00');    # sat morning
     $bet = produce_contract($bet_params);
@@ -250,7 +250,7 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok $bet->is_after_settlement, 'is pass settlement time';
     ok !$bet->is_valid_to_sell, 'is not valid to sell';
     is($bet->primary_validation_error->message, 'exit tick is undefined', 'Not valid to sell as it is waiting for exit tick');
-    ok $bet->is_expired,    'is expired';
+    ok $bet->is_expired, 'is expired';
     ok !$bet->is_settleable, 'is not settleable';
     is($bet->exit_tick->quote, '108', 'exit tick is 108');
 
@@ -260,7 +260,7 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok $bet_2->is_after_settlement, 'is pass settlement time';
     ok !$bet_2->is_valid_to_sell, 'is not valid to sell';
     is($bet_2->primary_validation_error->message, 'exit tick is undefined', 'Not valid to sell as it is waiting for exit tick');
-    ok $bet_2->is_expired,    'is not expired';
+    ok $bet_2->is_expired, 'is not expired';
     ok !$bet_2->is_settleable, 'is not settleable';
     is($bet_2->exit_tick->quote, '108', 'exit tick is 108');
 
@@ -279,7 +279,7 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok $bet->is_settleable,       'is settleable';
     is($bet->exit_tick->quote, '108',        'exit tick is 108');
     is($bet->exit_tick->epoch, '1203109200', 'the exit tick is the one at 21:00');
-    is($bet->bid_price,        0,            'Correct expiration with zero price as the exit tick is 108');
+    cmp_ok($bet->bid_price, '==', 0, 'Correct expiration with zero price as the exit tick is 108');
 
     $bet_params_2->{date_pricing} = Date::Utility->new('2008-02-18 00:00:00');    #No touch contract on Monday morning
     $bet_2 = produce_contract($bet_params_2);
@@ -290,7 +290,7 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok $bet_2->is_settleable,       'is settledable';
     is($bet_2->exit_tick->quote, '108',        'exit tick is 108');
     is($bet_2->exit_tick->epoch, '1203109200', 'the exit tick is the one at 21:00');
-    is($bet_2->bid_price,        1,            'Correct expiration with full payout as the high is 110');
+    cmp_ok($bet_2->bid_price, '==', 1, 'Correct expiration with full payout as the high is 110');
 };
 
 subtest 'Index settlement check on ' => sub {
@@ -343,7 +343,7 @@ subtest 'Index settlement check on ' => sub {
     ok !$bet->is_settleable, 'is not settebale';
     is($bet->exit_tick->quote, '1008',       'exit tick is 1008');
     is($bet->exit_tick->epoch, '1203438600', 'the exit tick is the one at 16:30');
-    is($bet->bid_price,        1,            'Indicative outcome with full payout as the exit tick is 1008');
+    cmp_ok($bet->bid_price, '==', 1, 'Indicative outcome with full payout as the exit tick is 1008');
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
             underlying => 'GDAXI',
@@ -364,7 +364,7 @@ subtest 'Index settlement check on ' => sub {
     ok $bet->is_settleable,       'is_settleable';
     is($bet->exit_tick->quote, '1003',     'exit tick is 1003');
     is($bet->exit_tick->epoch, 1203438600, 'the exit tick is the one at 16:30:00');
-    is($bet->bid_price,        0,          'Correct expiration with full payout as the exit tick is 1003');
+    cmp_ok($bet->bid_price, '==', 0, 'Correct expiration with full payout as the exit tick is 1003');
 
 };
 subtest 'Path dependent contracts settlement check' => sub {
@@ -402,7 +402,7 @@ subtest 'Path dependent contracts settlement check' => sub {
     ok !$bet->is_after_settlement, 'no after settlement time';
     ok $bet->is_valid_to_sell, 'is valid to sell';
     ok $bet->is_settleable,    'is settleable';
-    is($bet->bid_price, 1, 'Bid price is full payout as the barrier touched');
+    cmp_ok($bet->bid_price, '==', 1, 'Bid price is full payout as the barrier touched');
 
     my $bet_params_2 = {
         bet_type     => 'NOTOUCH',
@@ -420,7 +420,7 @@ subtest 'Path dependent contracts settlement check' => sub {
     ok $bet_2->is_valid_to_sell, 'is valid to sell';
     ok $bet_2->is_expired,       'is expired';
     ok $bet_2->is_settleable,    'is_settleable';
-    is($bet_2->bid_price, 0, 'Bid price is zero as the barrier touched');
+    cmp_ok($bet_2->bid_price, '==', 0, 'Bid price is zero as the barrier touched');
 
     my $bet_params_3 = {
         bet_type     => 'NOTOUCH',
@@ -469,7 +469,7 @@ subtest 'Path dependent contracts settlement check' => sub {
     ok !$bet_3->is_after_settlement, 'is not pass settlement time';
     ok !$bet_3->is_valid_to_sell,    'is not valid to sell';
     is($bet_3->primary_validation_error->message, 'waiting for settlement');
-    ok $bet_3->is_expired,    'is  expired';
+    ok $bet_3->is_expired, 'is  expired';
     ok !$bet_3->is_settleable, 'is not settleable';
     is($bet_3->exit_tick->quote, '110', 'exit tick is last available tick');
 
@@ -479,7 +479,7 @@ subtest 'Path dependent contracts settlement check' => sub {
     ok $bet_3->is_after_settlement, 'is pass settlement time';
     ok !$bet_3->is_valid_to_sell, 'is not valid to sell';
     is($bet_3->primary_validation_error->message, 'exit tick is undefined', 'Not valid to sell as it is waiting for exit tick');
-    ok $bet_3->is_expired,    'is expired';
+    ok $bet_3->is_expired, 'is expired';
     ok !$bet_3->is_settleable, 'is not setteable';
     is($bet_3->exit_tick->quote, '110', 'exit tick is last availble tick');
 
@@ -498,7 +498,7 @@ subtest 'Path dependent contracts settlement check' => sub {
     ok $bet_3->is_settleable,       'is settleable';
     is($bet_3->exit_tick->quote, '110',        'exit tick is 110');
     is($bet_3->exit_tick->epoch, '1204318800', 'the exit tick is the one at 21:00');
-    is($bet_3->bid_price,        1,            'Correct expiration with full payout as barrier not touch');
+    cmp_ok($bet_3->bid_price, '==', 1, 'Correct expiration with full payout as barrier not touch');
 
 };
 

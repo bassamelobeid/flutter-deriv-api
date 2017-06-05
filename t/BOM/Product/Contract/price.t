@@ -41,7 +41,7 @@ create_ticks(
     [102, $start_time->epoch + 5,              'R_100'],
     [102, $start_time->epoch + $duration * 60, 'R_100']);
 
-is $c->bid_price, 0, 'bid price for loss expired contract';
+cmp_ok $c->bid_price, '==', 0, 'bid price for loss expired contract';
 
 $c = produce_contract({
     %contract_params,
@@ -55,7 +55,7 @@ create_ticks(
     [102, $start_time->epoch + 5,              'R_100'],
     [99,  $start_time->epoch + $duration * 60, 'R_100']);
 
-is $c->bid_price, 10, 'bid price for win expired contract';
+cmp_ok $c->bid_price, '==', 10, 'bid price for win expired contract';
 
 $c = produce_contract({
     %contract_params,
