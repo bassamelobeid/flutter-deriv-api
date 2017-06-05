@@ -18,7 +18,7 @@
           "patternProperties": {
             "^[0-9]{4}\\-[0-9]{2}$": {
               "type": "number",
-              "pattern": "^-?\\d\\.\\d{2}$",
+              "pattern": "^-?\\d\\.\\d{2}([1-9]0|0[1-9]|[1-9]{2})$",
               "required": 1
             }
           }
@@ -28,14 +28,14 @@
           "patternProperties": {
             "^[0-9]{4}$": {
               "type": "number",
-              "pattern": "^-?\\d\\.\\d{2}$",
+              "pattern": "^-?\\d\\.\\d{2}([1-9]0|0[1-9]|[1-9]{2})$",
               "required": 1
             }
           }
         },
         "last_12months_profitable_trades": {
           "type": "number",
-          "pattern": "^-?\\d\\.\\d{2}$",
+          "pattern": "^-?\\d\\.\\d{2}([1-9]0|0[1-9]|[1-9]{2})$",
           "requred": 1
         },
         "total_trades": {
@@ -45,7 +45,7 @@
         },
         "trades_profitable": {
           "type": "number",
-          "pattern": "^0\\.00$",
+          "pattern": "^0\\.0000$",
           "requred": 1
         },
         "avg_duration": {
@@ -55,12 +55,12 @@
         },
         "avg_profit": {
           "type": "number",
-          "pattern": "^0\\.00$",
+          "pattern": "^0\\.0000$",
           "requred": 1
         },
         "avg_loss": {
           "type": "number",
-          "pattern": "^0\\.00$",
+          "pattern": "^0\\.0000$",
           "requred": 1
         },
         "trades_breakdown": {
