@@ -83,7 +83,8 @@ sub produce_contract {
     my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
 
     unless ($params_ref->{processed}) {
-        $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process();
+        # Categorizer's process always returns ARRAYREF, and here we will have and need only one element in this array
+        $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process()->[0];
     }
 
     my $landing_company = $params_ref->{landing_company};
