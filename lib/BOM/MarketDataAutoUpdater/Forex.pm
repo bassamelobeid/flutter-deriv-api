@@ -220,8 +220,8 @@ sub run {
         });
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
+            $volsurface->warmup_cache('volsurface_updated') if $self->_warmup_seasonality_cache->{$underlying->symbol};
             $volsurface->save;
-            $volsurface->warmup_cache if $self->_warmup_seasonality_cache->{$underlying->symbol};
             $self->report->{$symbol}->{success} = 1;
         } else {
             if ($quanto_only eq 'NO') {
