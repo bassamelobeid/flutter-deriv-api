@@ -95,7 +95,7 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
-my $underlying = create_underlying('frxUSDJPY');
+my $underlying       = create_underlying('frxUSDJPY');
 
 SKIP: {
     skip 'Forex test does not work on the weekends.', 1 if not $trading_calendar->is_open_at($underlying->exchange, Date::Utility->new);
@@ -286,7 +286,7 @@ SKIP: {
 
         $t->message_ok;
         my $res = decode_json($t->message->[1]);
-        is $res->{buy}->{buy_price}, 100, 'Buy with proposal id: Buy price is matching 100';
+        is $res->{buy}->{buy_price}, '100.00', 'Buy with proposal id: Buy price is matching 100';
         ok $res->{buy}->{payout} > 100, 'Buy with proposal id: Payout is greater than 100';
         $t = $t->send_ok({
                 json => {
@@ -305,7 +305,7 @@ SKIP: {
 
         $t->message_ok;
         $res = decode_json($t->message->[1]);
-        is $res->{buy}->{buy_price}, 100, 'Buy with proposal id: Buy price is 100';
+        is $res->{buy}->{buy_price}, '100.00', 'Buy with proposal id: Buy price is 100';
         ok $res->{buy}->{payout} > 100, 'Buy with proposal id: Payout is greater than 100';
         $t = $t->send_ok({
                 json => {
@@ -340,7 +340,7 @@ SKIP: {
             });
         $t->message_ok;
         $res = decode_json($t->message->[1]);
-        is $res->{buy}->{buy_price}, 100, 'Buy with defined contract parameters: Buy price is 100';
+        is $res->{buy}->{buy_price}, '100.00', 'Buy with defined contract parameters: Buy price is 100';
         ok $res->{buy}->{payout} > 100, 'Buy with defined contract parameters: Payout is greater than 100';
         $t = $t->send_ok({
                 json => {
@@ -351,7 +351,7 @@ SKIP: {
             });
         $t->message_ok;
         $res = decode_json($t->message->[1]);
-        is $res->{buy}->{buy_price}, 100, 'Buy with defined contract parameters: Buy price is 100';
+        is $res->{buy}->{buy_price}, '100.00', 'Buy with defined contract parameters: Buy price is 100';
         ok $res->{buy}->{payout} > 100, 'Buy with defined contract parameters: Payout is greater than 100';
 
         $t = $t->send_ok({
