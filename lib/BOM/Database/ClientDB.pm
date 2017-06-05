@@ -118,7 +118,7 @@ sub getall_arrayref {
 
     my $result = $self->db->dbic->run(
         sub {
-            $_->prepare($query);
+            my $sth = $_->prepare($query);
             $sth->execute(@{$params});
             return $sth->fetchall_arrayref([0]);
         });
