@@ -1,4 +1,4 @@
-package BOM::Product::Role::NonBinary;
+package BOM::Product::Role::Lookbacks;
 
 use Moose::Role;
 use Time::Duration::Concise;
