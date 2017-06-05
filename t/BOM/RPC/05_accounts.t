@@ -1,14 +1,17 @@
 use strict;
 use warnings;
+
+use utf8;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
-use utf8;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use JSON;
 use Encode qw(encode);
 use Email::Folder::Search;
+
+use Price::Calculator qw/formatnumber/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -481,7 +484,7 @@ subtest $method => sub {
         'sell_time'      => Date::Utility->new($data->[1]{sell_time})->epoch,
         'buy_price'      => '100.00',
         'purchase_time'  => Date::Utility->new($data->[1]{purchase_time})->epoch,
-        'payout'         => sprintf("%.2f", $txn->contract->payout),
+        'payout'         => formatnumber('price', $test_client2->currency, $txn->contract->payout),
         'app_id'         => undef
     };
     is_deeply($result->{transactions}[1], $expect0, 'result is correct');
