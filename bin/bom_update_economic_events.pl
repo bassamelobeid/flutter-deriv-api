@@ -3,4 +3,4 @@ use strict;
 use warnings;
 use BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents
 
-exit BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents->new->run();
+    exit BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents->new->run();

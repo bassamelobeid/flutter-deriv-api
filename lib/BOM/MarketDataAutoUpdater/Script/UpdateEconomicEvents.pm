@@ -14,7 +14,9 @@ use JSON;
 use Path::Tiny;
 use BOM::Platform::Chronicle;
 use Try::Tiny;
-use List::Util qw(first uniq);
+use List::Util qw(first uniq max);
+use Sys::Info;
+use Parallel::ForkManager;
 use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::VolSurface::Delta;
 
@@ -63,16 +65,21 @@ sub script_run {
 
         print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.";
 
-        # and now we calculated weighted seasonalities sum for VS calculations
-        Quant::Framework::VolSurface::Delta->new({
-                underlying                 => create_underlying($_),
-                chronicle_reader           => BOM::Platform::Chronicle::get_chronicle_reader(),
-                chronicle_writer           => BOM::Platform::Chronicle::get_chronicle_writer(),
-                write_to_centralized_redis => 1
-            }
-            )->refresh_cache()
-            foreach @underlying_symbols;
+        # and now we calculate weighted seasonalities sum for VS calculations, we do it in parallel
+        my $cores = max(2, Sys::Info->new->device("CPU")->count);
+        my $pm = new Parallel::ForkManager($cores);
 
+        foreach (@underlying_symbols) {
+            $pm->start and next;
+            Quant::Framework::VolSurface::Delta->new({
+                    underlying                 => create_underlying($_),
+                    chronicle_reader           => BOM::Platform::Chronicle::get_chronicle_reader(),
+                    chronicle_writer           => BOM::Platform::Chronicle::get_chronicle_writer(),
+                    write_to_centralized_redis => 0
+                })->refresh_cache();
+            $pm->finish();
+        }
+        $pm->wait_all_children();
     }
     catch {
         print 'Error occured while saving events: ' . $_;
