@@ -349,9 +349,9 @@ subtest 'buy a bet', sub {
                 bet_type   => 'LBFIXEDCALL',
                 currency   => 'USD',
                 unit       => 1000,
-                #duration   => '3d',
-        date_start   => $now->epoch,
-        date_expiry  => $now->epoch + 300,
+                duration   => '30m',
+        #date_start   => $now->epoch,
+        #date_expiry  => $now->epoch + 300,
                 current_tick => $tick,
                 barrier      => 'S20P',
         });
