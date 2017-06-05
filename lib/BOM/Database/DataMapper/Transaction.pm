@@ -189,7 +189,7 @@ sub get_turnover_of_account {
         sub {
             my $sth = $_->prepare($sql);
             $sth->execute($self->client_loginid, $self->currency_code);
-            return $sth->$sth->fetchrow_hashref;
+            return $sth->fetchrow_hashref;
         });
 
     if ($transaction_hashref) {
