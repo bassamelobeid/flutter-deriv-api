@@ -74,9 +74,9 @@ subtest 'range' => sub {
     lives_ok {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Range';
-        is $c->code,         'RANGE';
-        is $c->pricing_code, 'RANGE';
-        is $c->ask_price,    2;
+        is $c->code,          'RANGE';
+        is $c->pricing_code,  'RANGE';
+        cmp_ok $c->ask_price, '==', 2;
         is roundnear(0.001, $c->pricing_vol), 0.184;
         is $c->sentiment, 'low_vol';
         ok $c->is_path_dependent;
@@ -105,12 +105,12 @@ subtest 'range' => sub {
         ok $c->hit_tick;
         cmp_ok $c->hit_tick->quote, '==', 98.010;
         cmp_ok $c->value, '==', 0.00, 'zero payout';
-        $args->{high_barrier} = 200;
-        $args->{low_barrier}  = 90;
-        $args->{date_pricing} = $now->plus_time_interval('2d');
-        $args->{exit_tick}    = $close_tick;                      # INJECT OHLC since cannot find it in the test DB
+        $args->{high_barrier}       = 200;
+        $args->{low_barrier}        = 90;
+        $args->{date_pricing}       = $now->plus_time_interval('2d');
+        $args->{exit_tick}          = $close_tick;                      # INJECT OHLC since cannot find it in the test DB
         $args->{is_valid_exit_tick} = 1;
-        $c                    = produce_contract($args);
+        $c                          = produce_contract($args);
         ok $c->is_expired, 'expired';
         ok !$c->hit_tick, 'no hit tick';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
