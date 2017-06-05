@@ -4,15 +4,17 @@ use strict;
 use warnings;
 
 use JSON;
-use Scalar::Util qw (looks_like_number refaddr weaken);
-use List::MoreUtils qw(last_index);
 use Date::Utility;
+use Mojo::Redis::Processor;
+use Time::HiRes qw(gettimeofday);
+use List::MoreUtils qw(last_index);
+use JSON::XS qw(encode_json decode_json);
+use Scalar::Util qw (looks_like_number refaddr weaken);
+
+use Price::Calculator qw/formatnumber/;
 
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::System;
-use Mojo::Redis::Processor;
-use JSON::XS qw(encode_json decode_json);
-use Time::HiRes qw(gettimeofday);
 use Binary::WebSocketAPI::v3::Instance::Redis qw( ws_redis_slave ws_redis_master shared_redis );
 
 use utf8;
@@ -521,6 +523,7 @@ sub process_transaction_updates {
         ### proposal_open_contract stream
         _close_proposal_open_contract_stream($c, $args, $payload, $channel->{$type}->{contract_id}, $type)
             if $type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/;
+
     }
 
     return;
@@ -627,7 +630,7 @@ sub _update_balance {
             ($id ? (id => $id) : ()),
             loginid  => $c->stash('loginid'),
             currency => $c->stash('currency'),
-            balance  => sprintf('%.2f', $payload->{balance_after}),
+            balance  => formatnumber('amount', $c->stash('currency'), $payload->{balance_after}),
         }};
 
     $c->send({json => $details}) if $c->tx;
@@ -645,7 +648,7 @@ sub _update_transaction {
         $args ? (echo_req => $args) : (),
         transaction => {
             ($id ? (id => $id) : ()),
-            balance        => sprintf('%.2f', $payload->{balance_after}),
+            balance        => formatnumber('amount', $payload->{currency_code}, $payload->{balance_after}),
             action         => $payload->{action_type},
             amount         => $payload->{amount},
             transaction_id => $payload->{id},

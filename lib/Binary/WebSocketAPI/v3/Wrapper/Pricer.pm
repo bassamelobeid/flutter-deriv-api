@@ -6,13 +6,11 @@ use warnings;
 no indirect;
 use Try::Tiny;
 use Data::Dumper;
-use Format::Util::Numbers qw(roundnear);
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday tv_interval);
 use Math::Util::CalculatedValue::Validatable;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
-use Format::Util::Numbers qw(to_monetary_number_format);
 use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
@@ -788,17 +786,11 @@ sub _price_stream_results_adjustment {
             stake_same_as_payout   => sub { 'This contract offers no return.' },
             stake_outside_range    => sub {
                 my ($details) = @_;
-                return (
-                    'Minimum stake of [_1] and maximum payout of [_2].',
-                    to_monetary_number_format($details->[0]),
-                    to_monetary_number_format($details->[1]));
+                return ('Minimum stake of [_1] and maximum payout of [_2].', $details->[0], $details->[1]);
             },
             payout_outside_range => sub {
                 my ($details) = @_;
-                return (
-                    'Minimum stake of [_1] and maximum payout of [_2].',
-                    to_monetary_number_format($details->[0]),
-                    to_monetary_number_format($details->[1]));
+                return ('Minimum stake of [_1] and maximum payout of [_2].', $details->[0], $details->[1]);
             },
         };
         return {
