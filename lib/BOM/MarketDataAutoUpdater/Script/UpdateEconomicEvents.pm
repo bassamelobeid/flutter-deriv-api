@@ -5,8 +5,7 @@ with 'App::Base::Script';
 
 use ForexFactory;
 use Volatility::Seasonality;
-use Quant::Framework::EconomicEventCalendar;
-use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying create_underlying_db);
 use Volatility::Seasonality;
 use BOM::Platform::Runtime;
 use Date::Utility;
@@ -16,6 +15,8 @@ use Path::Tiny;
 use BOM::Platform::Chronicle;
 use Try::Tiny;
 use List::Util qw(first uniq);
+use Quant::Framework::EconomicEventCalendar;
+use Quant::Framework::VolSurface::Delta;
 
 sub documentation { return 'This script runs economic events update from forex factory at 00:00 GMT'; }
 
@@ -61,6 +62,16 @@ sub script_run {
         });
 
         print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.";
+
+        # and now we calculated weighted seasonalities sum for VS calculations
+        Quant::Framework::VolSurface::Delta->new({
+                underlying                 => create_underlying($_),
+                chronicle_reader           => BOM::Platform::Chronicle::get_chronicle_reader(),
+                chronicle_writer           => BOM::Platform::Chronicle::get_chronicle_writer(),
+                write_to_centralized_redis => 1
+            }
+            )->refresh_cache()
+            foreach @underlying_symbols;
 
     }
     catch {
