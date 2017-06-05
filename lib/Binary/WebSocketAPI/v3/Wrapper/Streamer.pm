@@ -495,13 +495,8 @@ sub process_transaction_updates {
 
     return unless $payload && ref $payload eq 'HASH';
 
-    if (
-        not $c->stash('account_id')
-        or (    $payload->{error}
-            and $payload->{error}->{code}
-            and $payload->{error}->{code} eq 'TokenDeleted'))
-    {
-
+    my $err = $payload->{error} ? $payload->{error}->{code} : undef;
+    if (!$c->stash('account_id') || ($err && $err eq 'TokenDeleted')) {
         _transaction_channel($c, 'unsubscribe', $channel->{$_}->{account_id}, $_) for keys %{$channel};
         return;
     }
