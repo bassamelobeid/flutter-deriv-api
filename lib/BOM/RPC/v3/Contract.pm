@@ -8,8 +8,12 @@ use Try::Tiny;
 use List::MoreUtils qw(none);
 use JSON::XS;
 use Date::Utility;
+use Time::HiRes;
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 use Quant::Framework;
+use LandingCompany::Offerings qw(get_offerings_with_filter);
+
 use BOM::Platform::Chronicle;
 use BOM::Platform::Config;
 use BOM::RPC::v3::Utility;
@@ -18,10 +22,6 @@ use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
-use Format::Util::Numbers qw(roundnear);
-use Time::HiRes;
-use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 use feature "state";
 

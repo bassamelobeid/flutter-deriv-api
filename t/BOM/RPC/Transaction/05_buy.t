@@ -8,6 +8,8 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 
+use Price::Calculator qw/formatnumber/;
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -102,7 +104,7 @@ subtest 'buy' => sub {
             stash
     ));
     is_deeply([sort keys %$result], [sort @expected_keys], 'result keys is ok');
-    my $new_balance = sprintf('%.2f', $client->default_account->load->balance);
+    my $new_balance = formatnumber('amount', 'USD', $client->default_account->load->balance);
     is($new_balance, $result->{balance_after}, 'balance is changed');
     ok($old_balance - $new_balance - $result->{buy_price} < 0.0001, 'balance reduced');
     like($result->{shortcode}, qr/CALL_R_50_100_\d{10}_\d{10}_S0P_0/, 'shortcode is correct');
@@ -252,7 +254,7 @@ subtest 'app_markup_transaction' => sub {
         amount_type         => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
-    is $txn->contract->app_markup_dollar_amount, sprintf('%.2f', $txn->payout * $app_markup_percentage / 100),
+    is $txn->contract->app_markup_dollar_amount, formatnumber('amount', 'USD', $txn->payout * $app_markup_percentage / 100),
         "in case of stake contract, app_markup is app_markup_percentage of final payout i.e transaction payout";
     cmp_ok $txn->payout, "<", $payout, "payout after app_markup_percentage is less than actual payout";
 };
