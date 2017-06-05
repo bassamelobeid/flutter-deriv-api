@@ -200,8 +200,21 @@ $c->call_ok(
         token => $access_token,
         args  => {
             oauth_apps => 1,
-            revoke_app => $test_appid
-        }})->has_no_system_error;
+        },
+    })->has_no_system_error;
+
+$oauth = BOM::Database::Model::OAuth->new;                                # re-connect db
+$is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
+is $is_confirmed, 1, 'still confirmed';
+
+$c->call_ok(
+    'revoke_oauth_app',
+    {
+        token => $access_token,
+        args  => {
+            revoke_oauth_app => $test_appid,
+        },
+    })->has_no_system_error;
 
 $oauth = BOM::Database::Model::OAuth->new;                                # re-connect db
 $is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);

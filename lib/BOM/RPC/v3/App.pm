@@ -184,23 +184,22 @@ sub oauth_apps {
     my $client = $params->{client};
 
     my $oauth = BOM::Database::Model::OAuth->new;
-    if ($params->{args} and my $app_id = $params->{args}->{revoke_app}) {
-        # Sanity check before putting user data into log messages and datadog
-        if ($app_id !~ /^(?!0)[0-9]{1,19}$/) {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidAppID',
-                message_to_client => localize('Your app_id is invalid.'),
-            });
-        }
-
-        DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.app.revoke.count', {tags => ["app_id:$app_id"]});
-        my $user = BOM::Platform::User->new({email => $client->email});
-        foreach my $client ($user->clients) {
-            $oauth->revoke_app($app_id, $client->loginid);
-        }
-    }
 
     return $oauth->get_used_apps_by_loginid($client->loginid);
+}
+
+sub revoke_oauth_app {
+    my $params = shift;
+
+    my $client = $params->{client};
+    my $oauth  = BOM::Database::Model::OAuth->new;
+    my $user   = BOM::Platform::User->new({email => $client->email});
+    my $status = 1;
+    foreach my $c1 ($user->clients) {
+        $status &&= $oauth->revoke_app($params->{args}{revoke_oauth_app}, $c1->loginid);
+    }
+
+    return $status;
 }
 
 sub verify_app {
