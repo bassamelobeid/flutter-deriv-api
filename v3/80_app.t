@@ -54,6 +54,17 @@ is $authorize->{authorize}->{loginid}, $cr_1;
 
 ## app register/list/get
 $t = $t->send_ok({
+                  json => {
+                           app_register => 1,
+                           name         => 'App with no admin',
+                           scopes       => ['read', 'trade'],
+                           redirect_uri => 'https://www.example.com/',
+                           homepage     => 'https://www.homepage.com/',
+                          }})->message_ok;
+my $res = decode_json($t->message->[1]);
+my $app_no_admin = $res->{app_register};
+
+$t = $t->send_ok({
         json => {
             app_register => 1,
             name         => 'App 1',
@@ -61,11 +72,10 @@ $t = $t->send_ok({
             redirect_uri => 'https://www.example.com/',
             homepage     => 'https://www.homepage.com/',
         }})->message_ok;
-my $res = decode_json($t->message->[1]);
+$res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'app_register';
 test_schema('app_register', $res);
 my $app1 = $res->{app_register};
-
 my $app_id = $app1->{app_id};
 is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
 is $app1->{redirect_uri}, 'https://www.example.com/',  'redirect_uri is right';
@@ -147,7 +157,7 @@ is $res->{msg_type}, 'app_list';
 test_schema('app_list', $res);
 my $get_apps = [grep { $_->{app_id} ne '1' } @{$res->{app_list}}];
 
-is_deeply($get_apps, [$app1, $app2], 'app_list ok');
+is_deeply($get_apps, [$app1, $app2, $app_no_admin], 'app_list ok');
 
 $t = $t->send_ok({
         json => {
@@ -164,7 +174,7 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 test_schema('app_list', $res);
 $get_apps = [grep { $_->{app_id} ne '1' } @{$res->{app_list}}];
-is_deeply($get_apps, [$app1], 'app_delete ok');
+is_deeply($get_apps, [$app1, $app_no_admin], 'app_delete ok');
 
 ## for used and revoke
 my $test_appid = $app1->{app_id};
@@ -194,8 +204,7 @@ my $is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($test_ap
 is $is_confirmed, 1, 'was confirmed';
 $t = $t->send_ok({
         json => {
-            oauth_apps => 1,
-            revoke_app => $test_appid,
+            revoke_oauth_app => $test_appid,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 $is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($test_appid, $cr_1);
@@ -205,7 +214,6 @@ is $is_confirmed, 0, 'not confirmed after revoke';
 $t = $t->send_ok({
         json => {
             oauth_apps => 1,
-            revoke_app => $test_appid,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'oauth_apps';
@@ -225,6 +233,39 @@ test_schema('app_get', $res);
 is_deeply($res->{app_get}, $app1, 'app_get ok');
 
 $t->finish_ok;
+
+## cannot revoke without admin scope
+$t = build_wsapi_test();
+my $app_no_admin_id = $app_no_admin->{app_id};
+$oauth = BOM::Database::Model::OAuth->new;
+ok $oauth->confirm_scope($app_no_admin_id, $cr_1), 'confirm scope';
+($access_token) = $oauth->store_access_token_only($app_no_admin_id, $cr_1);
+
+$t->finish_ok;
+
+$t = build_wsapi_test();
+$t = $t->send_ok({json => {authorize => $access_token}})->message_ok;
+$t = $t->send_ok({
+                  json => {
+                           oauth_apps => 1,
+                          }})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'oauth_apps';
+test_schema('oauth_apps', $res);
+$used_apps = $res->{oauth_apps};
+is scalar(@{$used_apps}), 1;
+is $used_apps->[0]->{app_id}, $app_no_admin_id, 'app_id app_no_admin_id';
+is_deeply([sort @{$used_apps->[0]->{scopes}}], ['read', 'trade'], 'scopes are right');
+
+$is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($app_no_admin_id, $cr_1);
+is $is_confirmed, 1, 'was confirmed';
+$t = $t->send_ok({
+                  json => {
+                           revoke_oauth_app => $test_appid,
+                          }})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{error}{code}, 'PermissionDenied', 'revoke_oauth_app failed';
+
 
 $t = build_wsapi_test({app_id => 333});
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
