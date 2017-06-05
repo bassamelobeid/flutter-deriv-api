@@ -118,15 +118,14 @@ sub contract_metadata {
 }
 
 sub _get_ask {
-    my $p2                    = {%{+shift}};
-    my $app_markup_percentage = shift;
-    my $streaming_params      = delete $p2->{streaming_params};
+    my ($args_copy, $app_markup_percentage) = @_;
+    my $streaming_params = delete $args_copy->{streaming_params};
     my ($contract, $response);
 
     my $tv = [Time::HiRes::gettimeofday];
-    $p2->{app_markup_percentage} = $app_markup_percentage // 0;
+    $args_copy->{app_markup_percentage} = $app_markup_percentage // 0;
     try {
-        die unless _pre_validate_start_expire_dates($p2);
+        die unless _pre_validate_start_expire_dates($args_copy);
     }
     catch {
         $response = BOM::Pricing::v3::Utility::create_error({
@@ -135,22 +134,22 @@ sub _get_ask {
     };
     return $response if $response;
     try {
-        $contract = exists $p2->{bet_types} ? produce_batch_contract($p2) : produce_contract($p2);
+        $contract = $args_copy->{proposal_array} ? produce_batch_contract($args_copy) : produce_contract($args_copy);
     }
     catch {
-        warn __PACKAGE__ . " _get_ask produce_contract failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($p2);
+        warn __PACKAGE__ . " _get_ask produce_contract failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($args_copy);
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => localize('Cannot create contract')});
     };
     return $response if $response;
 
-    return handle_batch_contract($contract, $p2) if $contract->isa('BOM::Product::Contract::Batch');
+    return handle_batch_contract($contract, $args_copy) if $contract->isa('BOM::Product::Contract::Batch');
 
-    my $contract_parameters = {%$p2, %{contract_metadata($contract)}};
+    my $contract_parameters = {%$args_copy, %{contract_metadata($contract)}};
 
     try {
-        if (!($contract->is_valid_to_buy({landing_company => $p2->{landing_company}}))) {
+        if (!($contract->is_valid_to_buy({landing_company => $args_copy->{landing_company}}))) {
             my ($message_to_client, $code);
 
             if (my $pve = $contract->primary_validation_error) {
