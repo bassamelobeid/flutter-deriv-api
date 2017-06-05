@@ -40,6 +40,7 @@ sub get_doughflow_withdrawal_count_by_trace_id {
 Get the amount of withdrawals by trace_id. It will assume there is only one payment
 
 =back
+
 =cut
 
 sub get_doughflow_withdrawal_amount_by_trace_id {
@@ -66,8 +67,11 @@ sub delete_expired_tokens {
     my $self = shift;
 
     my $sql = q{ DELETE FROM betonmarkets.handoff_token WHERE client_loginid = ? and expires < NOW() };
-    my $sth = $self->db->dbh->prepare($sql);
-    return $sth->execute($self->client_loginid);
+    return $self->db->dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            return $sth->execute($self->client_loginid);
+        });
 }
 
 =item is_duplicate_payment
