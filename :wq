@@ -308,23 +308,34 @@ sub get_account_status {
     push @status, 'has_password' if $user->password;
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->not_allow_trade($client);
 
+    warn ">>>> check if risk classification is high";
     # check whether the user need to perform financial assessment
     if ($risk_classification eq "high") {
         my $financial_assessment = $client->financial_assessment();
+        warn ">> Inside high";
         unless ($financial_assessment) {
             push @status, 'financial_assessment_needed';
         } else {
             # get questions
+            warn ">> getting financial input mapping";
             my $financial_input_mapping = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+            delete $financial_input_mapping->{account_opening_reason}; #remove as it is curently not included as questions in questionaire
             $financial_assessment = from_json $financial_assessment->data;
             delete $financial_assessment->{total_score}; #remove total_score
+            delete $financial_assessment->{account_opening_reason}; #remove as it is curently not included as questions in questionaire
+
+            warn ">> before comparing";
             # if the keys are not equal
             if (!((keys $financial_input_mapping) ~~ (keys $financial_assessment))) {
+                warn ">>> pushing to status assessment";
+
                 push @status, 'financial_assessment_needed';
             } else {
+                warn ">>> looping through all";
                 # loop and find questions where the answer is empty
-                while (my ($key, $value) = each $financial_assessment) {
-                    if ($value eq "") {
+                while (my ($key, $value) = each %$financial_assessment) {
+                    if ($value->{answer} eq "") {
+                        warn $key;
                         push @status, "financial_assessment_needed";
                         last;
                     }
@@ -333,6 +344,7 @@ sub get_account_status {
         }
     }
 
+    warn ">> just before return;r";
     return {
         status              => \@status,
         risk_classification => $risk_classification

@@ -650,12 +650,10 @@ subtest $method => sub {
         'financial_assessment_needed when some questions are not answered'
     );
 
-    # client has answered all the questions
+    # client has let some answers empty
     $data = {
-        "account_opening_reason"               => "",
-        "account_turnover"                     => '',
         "commodities_trading_experience"       => "1-2 years",
-        "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
+        "commodities_trading_frequency"        => "",
         "education_level"                      => "Secondary",
         "estimated_worth"                      => '$100,000 - $250,000',
         "employment_industry"                  => "Finance",
@@ -685,12 +683,10 @@ subtest $method => sub {
             status               => ['has_password', 'financial_assessment_needed'],
             risk_classification => 'high'
         },
-        'financial_assessment_needed when some answers are not empty'
+        'financial_assessment_needed when some answers are empty'
     );
 
    $data = {
-        "account_opening_reason"               => "Speculative",
-        "account_turnover"                     => 'Less than $25,000',
         "commodities_trading_experience"       => "1-2 years",
         "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
         "education_level"                      => "Secondary",
@@ -709,6 +705,8 @@ subtest $method => sub {
         "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
         "stocks_trading_experience"            => "1-2 years",
         "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
+        "account_turnover"                     => 'Less than $25,000',
+        "account_open_reason"                  => "Experience"
     };
     # financial assessment is not needed when all questions is answered
     $test_client->financial_assessment({
@@ -716,7 +714,6 @@ subtest $method => sub {
         is_professional => 0
     });
     $test_client->save();
-    print ">> checking for $method";
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
