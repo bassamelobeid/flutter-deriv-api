@@ -123,7 +123,7 @@ initialize_realtime_ticks_db();
 
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
-    underlying => 'frxUSDJPY',
+    underlying => 'R_50',
 });
 
 my $underlying        = create_underlying('frxUSDJPY');
@@ -345,7 +345,7 @@ subtest 'buy a bet', sub {
     plan tests => 11;
     lives_ok {
         my $contract = produce_contract({
-                underlying => $underlying,
+                underlying => $underlying_R50,
                 bet_type   => 'LBFIXEDCALL',
                 currency   => 'USD',
                 unit       => 1000,
@@ -388,7 +388,7 @@ $DB::single=1;
             like $report, qr/^\s*Purchase Date: \Q${\$txn->purchase_date->datetime_yyyymmdd_hhmmss}\E$/m, 'purchase date';
         };
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_bet => $txn->transaction_id;
 
         # note explain $trx;
 
