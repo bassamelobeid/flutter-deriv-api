@@ -63,8 +63,9 @@ sub script_run {
             chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
         });
 
-        print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.";
+        print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.\n";
 
+        print "generating seasality weights for VS calculations...\n";
         # and now we calculate weighted seasonalities sum for VS calculations, we do it in parallel
         my $cores = max(2, Sys::Info->new->device("CPU")->count);
         my $pm = new Parallel::ForkManager($cores);
@@ -75,7 +76,7 @@ sub script_run {
                     underlying                 => create_underlying($_),
                     chronicle_reader           => BOM::Platform::Chronicle::get_chronicle_reader(),
                     chronicle_writer           => BOM::Platform::Chronicle::get_chronicle_writer(),
-                    write_to_centralized_redis => 0
+                    write_to_centralized_redis => 1
                 })->refresh_cache();
             $pm->finish();
         }
