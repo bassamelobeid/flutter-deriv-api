@@ -182,8 +182,8 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => '963'
 });
 
-my $tokens_for_sell = [];
-my $trx_ids = {};
+my $tokens_for_sell    = [];
+my $trx_ids            = {};
 my $shortcode_for_sell = undef;
 subtest "3rd try: the real thing => success", sub {
     # Here we trust that the function in bom-rpc works correctly. We
@@ -207,8 +207,8 @@ subtest "3rd try: the real thing => success", sub {
     # note explain $res;
     test_schema('buy_contract_for_multiple_accounts', $res);
 
-    $tokens_for_sell = [map {$_->{token}} grep {$_->{shortcode}} @{$res->{buy_contract_for_multiple_accounts}{result}}];
-    $shortcode_for_sell = [map {$_->{shortcode}} grep {$_->{shortcode}} @{$res->{buy_contract_for_multiple_accounts}{result}}]->[0];
+    $tokens_for_sell    = [map { $_->{token} } grep     { $_->{shortcode} } @{$res->{buy_contract_for_multiple_accounts}{result}}];
+    $shortcode_for_sell = [map { $_->{shortcode} } grep { $_->{shortcode} } @{$res->{buy_contract_for_multiple_accounts}{result}}]->[0];
 
     $t = $t->send_ok({json => {forget => $proposal_id}})->message_ok;
     my $forget = decode_json($t->message->[1]);
@@ -224,7 +224,7 @@ subtest "3rd try: the real thing => success", sub {
     my $stmt = filter_proposal;
     # note explain $stmt;
 
-    $trx_ids = +{map {$_->{transaction_id}=>1} @{$stmt->{statement}->{transactions}}};
+    $trx_ids = +{map { $_->{transaction_id} => 1 } @{$stmt->{statement}->{transactions}}};
 
     is_deeply([
             sort { $a->[0] <=> $b->[0] }
@@ -249,11 +249,11 @@ subtest "try to sell: dummy tokens => success", sub {
                 price                               => 2.42,
                 tokens                              => ['DUMMY0', 'DUMMY1'],
             }});
-    $t   = $t->message_ok;
+    $t = $t->message_ok;
     my $res = decode_json($t->message->[1]);
     note explain $res;
-    isa_ok $res->{sell_contract_for_multiple_accounts},              'HASH';
-    isa_ok $res->{sell_contract_for_multiple_accounts}{result},      'ARRAY';
+    isa_ok $res->{sell_contract_for_multiple_accounts}, 'HASH';
+    isa_ok $res->{sell_contract_for_multiple_accounts}{result}, 'ARRAY';
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}->[0], 'HASH';
 
     is_deeply $res->{sell_contract_for_multiple_accounts}{result},
@@ -262,35 +262,35 @@ subtest "try to sell: dummy tokens => success", sub {
             'message_to_client' => 'Invalid token',
             'token'             => 'DUMMY0'
         },
-         {
-             'code'              => 'InvalidToken',
-             'message_to_client' => 'Invalid token',
-             'token'             => 'DUMMY1'
-         }
-     ],
-     'got expected result';
+        {
+            'code'              => 'InvalidToken',
+            'message_to_client' => 'Invalid token',
+            'token'             => 'DUMMY1'
+        }
+        ],
+        'got expected result';
 
     test_schema('sell_contract_for_multiple_accounts', $res);
 };
 
 subtest "sell_contract_for_multiple_accounts => successful", sub {
     $t = $t->send_ok({
-        json => {
-            sell_contract_for_multiple_accounts => 1,
-            shortcode                           => $shortcode_for_sell,
-            price                               => 2.42,
-            tokens                              => $tokens_for_sell,
-        }});
+            json => {
+                sell_contract_for_multiple_accounts => 1,
+                shortcode                           => $shortcode_for_sell,
+                price                               => 2.42,
+                tokens                              => $tokens_for_sell,
+            }});
     $t   = $t->message_ok;
     $res = decode_json($t->message->[1]);
 
-    isa_ok $res->{sell_contract_for_multiple_accounts}{result},      'ARRAY';
+    isa_ok $res->{sell_contract_for_multiple_accounts}{result}, 'ARRAY';
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}->[0], 'HASH';
     ok scalar @{$res->{sell_contract_for_multiple_accounts}{result}} == 3, 'check res count';
-    ok( defined $res->{sell_contract_for_multiple_accounts}{result}->[0]->{transaction_id}, "check trx exist" );
-    ok( defined $res->{sell_contract_for_multiple_accounts}{result}->[0]->{reference_id}, "check ref exist" );
+    ok(defined $res->{sell_contract_for_multiple_accounts}{result}->[0]->{transaction_id}, "check trx exist");
+    ok(defined $res->{sell_contract_for_multiple_accounts}{result}->[0]->{reference_id},   "check ref exist");
     for my $r (@{$res->{sell_contract_for_multiple_accounts}{result}}) {
-        ok( defined $r->{reference_id} && defined $trx_ids->{$r->{reference_id}}, "Check transaction ID" );
+        ok(defined $r->{reference_id} && defined $trx_ids->{$r->{reference_id}}, "Check transaction ID");
     }
     test_schema('sell_contract_for_multiple_accounts', $res);
 };

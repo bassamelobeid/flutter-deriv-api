@@ -33,7 +33,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now,
     }) for qw(USD JPY AUD JPY-USD AUD-USD AUD-JPY);
 
-for my $s (@symbols) {    
+for my $s (@symbols) {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
@@ -74,7 +74,7 @@ my $t = build_wsapi_test();
 # prepare client
 my $email  = 'test-binary@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
+    broker_code => 'CR',
 });
 $client->email($email);
 $client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
@@ -82,8 +82,8 @@ $client->save;
 my $loginid = $client->loginid;
 my $user    = BOM::Platform::User->create(
     email    => $email,
-        password => '1234',
-        );
+    password => '1234',
+);
 $user->add_loginid({loginid => $loginid});
 $user->save;
 
@@ -113,10 +113,9 @@ $req = {
     "duration_unit" => "m",
 };
 
-
 $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
 create_propsals();
-cmp_ok pricer_sub_count(), '==', 3,"3 pricer sub Ok";
+cmp_ok pricer_sub_count(), '==', 3, "3 pricer sub Ok";
 
 $t->send_ok({json => {forget => [values(%$sub_ids)]->[0]}})->message_ok;
 $res = decode_json($t->message->[1]);
@@ -127,7 +126,6 @@ $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
 $res = decode_json($t->message->[1]);
 is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
 cmp_ok pricer_sub_count(), '==', 3, "3 pricer sub Ok";
-
 
 done_testing();
 
@@ -142,6 +140,6 @@ sub create_propsals {
 }
 
 sub pricer_sub_count {
-    return scalar @{ $t->app->redis_pricer->keys( 'PRICER_KEYS::*') };
+    return scalar @{$t->app->redis_pricer->keys('PRICER_KEYS::*')};
 }
 
