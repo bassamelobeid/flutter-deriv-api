@@ -28,7 +28,7 @@ for (@keys) {
 }
 
 #Getting all pricers ips that are currently registered as valid working pricers.
-my $ip_list = get_ips 'green';
+my $ip_list = get_ips('green');
 
 #find out which pricers that has been terminated and delete their keys from redis. (this will work as garbage collector)
 my @ips_not_in_list = grep { not exists $ip_list->{$_} } keys %pricers_on_ip;
