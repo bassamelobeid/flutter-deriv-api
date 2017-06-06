@@ -5,12 +5,15 @@ use warnings;
 
 use Try::Tiny;
 use JSON::XS qw/encode_json/;
+
+use Client::Account;
+use Price::Calculator qw/formatnumber/;
+
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::Transaction;
 use BOM::Platform::Context qw (localize request);
-use Client::Account;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
@@ -132,9 +135,9 @@ sub buy {
     $response = {
         transaction_id => $trx->transaction_id,
         contract_id    => $trx->contract_id,
-        balance_after  => sprintf('%.2f', $trx->balance_after),
+        balance_after  => formatnumber('amount', $client->currency, $trx->balance_after),
         purchase_time  => $trx->purchase_date->epoch,
-        buy_price      => $trx->price,
+        buy_price      => formatnumber('amount', $client->currency, $trx->price),
         start_time     => $trx->contract->date_start->epoch,
         longcode       => localize($trx->contract->longcode),
         shortcode      => $trx->contract->shortcode,
@@ -342,7 +345,7 @@ sub sell_contract_for_multiple_accounts {
             $new = +{
                 transaction_id => $row->{tnx}{id},
                 reference_id   => $row->{buy_tr_id},
-                balance_after  => sprintf('%.2f', $row->{tnx}{balance_after}),
+                balance_after  => formatnumber('amount', $client->currency, $row->{tnx}{balance_after}),
                 sell_price     => abs($row->{fmb}{sell_price}),
                 contract_id    => $row->{tnx}{financial_market_bet_id},
                 sell_time      => $row->{fmb}{sell_time},
@@ -414,9 +417,9 @@ sub sell {
 
     return {
         transaction_id => $trx->transaction_id,
-        reference_id   => $trx->reference_id,                         ### buy transaction ID
+        reference_id   => $trx->reference_id,                                                   ### buy transaction ID
         contract_id    => $id,
-        balance_after  => sprintf('%.2f', $trx_rec->balance_after),
+        balance_after  => formatnumber('amount', $client->currency, $trx_rec->balance_after),
         sold_for       => abs($trx_rec->amount),
     };
 }
