@@ -1211,31 +1211,22 @@ sub login_history {
 sub set_account_currency {
     my $params = shift;
 
-    my $client = $params->{client};
-
-    my $currency                 = $params->{currency};
+    my ($client, $currency) = @{$params}{qw/client currency/};
     my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
 
-    if (grep { $_ eq $currency } @{$legal_allowed_currencies}) {
-        # only allow crypto currencies when its omnibus account or sub account
-        # TODO: remove once we make crypto currencies live
-        if ($currency =~ /^(?:BTC|LTC|ETH)$/ and not($client->allow_omnibus or $client->sub_account_of)) {
-            return {status => 0};
-        }
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidCurrency',
+            message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)}
+    ) if (grep { $_ ne $currency } @{$legal_allowed_currencies});
 
-        # no change in default account currency if default account is already set
-        if (not $client->default_account and $client->set_default_account($currency)) {
-            return {status => 1};
-        } else {
-            return {status => 0};
-        }
-    } else {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidCurrency',
-                message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)});
-    }
+    # only allow crypto currencies when its omnibus account or sub account
+    # TODO: remove once we make crypto currencies live
+    return {status => 0} if ($currency =~ /^(?:BTC|LTC|ETH)$/ and not($client->allow_omnibus or $client->sub_account_of));
 
-    return;
+    # no change in default account currency if default account is already set
+    return {status => 1} if (not $client->default_account and $client->set_default_account($currency));
+
+    return {status => 0};
 }
 
 sub set_financial_assessment {
