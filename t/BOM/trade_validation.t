@@ -1041,7 +1041,8 @@ subtest 'Purchase Sell Contract' => sub {
         bet_type     => $bet_type,
         currency     => $currency,
         payout       => 100,
-        date_start   => $now,
+        date_start   => Date::Utility->new( $now->epoch ),
+        date_pricing => $now->epoch,
         date_expiry  => $expiry,
         entry_tick   => $random_tick,
         current_tick => $random_tick,
@@ -1053,7 +1054,7 @@ subtest 'Purchase Sell Contract' => sub {
         contract      => $contract,
         price         => $contract->ask_price,
         amount_type   => 'payout',
-        purchase_date => Date::Utility->new($now->epoch - 1),
+        purchase_date => $contract->date_start,
     });
 
     my $error = $bpt->buy;
@@ -1067,7 +1068,7 @@ subtest 'Purchase Sell Contract' => sub {
         contract      => $contract,
         price         => $contract->ask_price,
         amount_type   => 'payout',
-        purchase_date => Date::Utility->new($now->epoch - 1),
+        purchase_date => $contract->date_start,
     });
 
     $error = $bpt->buy;
