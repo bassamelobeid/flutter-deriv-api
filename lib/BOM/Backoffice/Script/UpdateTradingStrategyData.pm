@@ -10,7 +10,7 @@ use List::Util qw(sum shuffle);
 use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::DatabaseAPI;
 use BOM::Product::ContractFactory qw(produce_contract);
-use DBIx::TransactionManager::Distributed qw(txn regtister_dbh);
+use DBIx::TransactionManager::Distributed qw(txn register_dbh);
 use BOM::Platform::Chronicle;
 
 use YAML qw(LoadFile);
