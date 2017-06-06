@@ -67,7 +67,7 @@ sub script_run {
         print "generating seasality weights for VS calculations...\n";
         # and now we calculate weighted seasonalities sum for VS calculations, we do it in parallel
         my $cores = max(2, Sys::Info->new->device("CPU")->count);
-        my $pm = new Parallel::ForkManager($cores);
+        my $pm = Parallel::ForkManager->new($cores);
 
         foreach (@underlying_symbols) {
             $pm->start and next;
