@@ -42,7 +42,7 @@ foreach my $pair (@ticks_to_add) {
     # We just want the last one to INJECT below
     # OHLC test DB does not work as expected.
     $close_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
+        underlying => 'R_100',
         epoch      => $pair->[0],
         quote      => $pair->[1],
     });
@@ -50,7 +50,7 @@ foreach my $pair (@ticks_to_add) {
 
 my $args = {
     bet_type     => 'LBFIXEDCALL',
-    underlying   => 'frxUSDJPY',
+    underlying   => 'R_100',
     date_start   => $now,
     date_pricing => $now,
     duration     => '1h',
