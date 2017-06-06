@@ -4,9 +4,7 @@ use Moose;
 with 'App::Base::Script';
 
 use ForexFactory;
-use Volatility::Seasonality;
 use BOM::MarketData qw(create_underlying create_underlying_db);
-use Volatility::Seasonality;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
@@ -19,6 +17,7 @@ use Sys::Info;
 use Parallel::ForkManager;
 use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::VolSurface::Delta;
+use Volatility::Seasonality;
 
 sub documentation { return 'This script runs economic events update from forex factory at 00:00 GMT'; }
 
