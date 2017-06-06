@@ -67,8 +67,8 @@ subtest 'lbfixedcall' => sub {
         is $c->code,         'LBFIXEDCALL';
         is $c->pricing_code, 'LBFIXEDCALL';
 
-        is roundnear(0.00001, $c->theo_price), 0.13530;
-        is roundnear(0.001, $c->pricing_vol), 0.181;
+        is roundnear(0.00001, $c->theo_price), 0.67032;
+        is roundnear(0.001, $c->pricing_vol), 1.0;
 
         is $c->sentiment, undef;
         ok !$c->is_path_dependent;
@@ -84,7 +84,7 @@ subtest 'lbfixedcall' => sub {
         ok $c->entry_tick;
         cmp_ok $c->entry_tick->quote, '==', 100.000, 'correct entry tick';
         ok $c->barrier;
-        cmp_ok $c->barrier->as_absolute, '==', 100.020, 'correct barrier';
+        cmp_ok $c->barrier->as_absolute, '==', 100.2, 'correct barrier';
         ok !$c->is_expired, 'not expired';
         
         $args->{date_pricing} = $now->plus_time_interval('2s');
