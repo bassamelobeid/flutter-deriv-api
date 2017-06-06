@@ -209,7 +209,12 @@ sub cashier {
 
     ## if cashier provider == 'epg', we'll return epg url
     if ($provider eq 'epg') {
-        return _get_epg_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
+        return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
+    }
+
+    ## if currency == BTC|ETH|LTC, use cryptocurrency cashier
+    if (grep { $currency eq $_ } ('BTC', 'ETH', 'LTC')) {
+        return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
     # hit DF's CreateCustomer API
@@ -349,18 +354,36 @@ sub _get_handoff_token_key {
     return $handoff_token->key;
 }
 
-sub _get_epg_url {
-    my ($loginid, $website_name, $currency, $action, $language, $brand_name) = @_;
+sub _get_epg_cashier_url {
+    return _get_cashier_url('epg', @_);
+}
 
-    BOM::Platform::AuditLog::log('redirecting to epg');
+sub _get_cryptocurrency_cashier_url {
+    return _get_cashier_url('cryptocurrency', @_);
+}
+
+sub _get_cashier_url {
+    my ($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name) = @_;
+
+    $prefix = lc($currency) if $prefix eq 'cryptocurrency';
+
+    BOM::Platform::AuditLog::log("redirecting to $prefix");
 
     $language = uc($language // 'EN');
 
     my $url = 'https://';
     if (($website_name // '') =~ /qa/) {
-        $url .= 'www.' . lc($website_name) . '/epg';
+        if ($prefix eq 'epg') {
+            $url .= 'www.' . lc($website_name) . "/$prefix";
+        } else {
+            $url .= 'www.' . lc($website_name) . "/cryptocurrency/$prefix";
+        }
     } else {
-        $url .= 'epg.binary.com/epg';
+        if ($prefix eq 'epg') {
+            $url .= "$prefix.binary.com/$prefix";
+        } else {
+            $url .= "cryptocurrency.binary.com/cryptocurrency/$prefix";
+        }
     }
 
     $url .=

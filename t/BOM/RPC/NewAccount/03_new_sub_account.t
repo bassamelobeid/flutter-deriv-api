@@ -53,7 +53,7 @@ subtest 'Initialization' => sub {
 
 my $method = 'new_sub_account';
 subtest $method => sub {
-    my ($user, $client, $vclient, $sub_client, $token);
+    my ($user, $client, $vclient, $real_client, $sub_client, $token);
 
     subtest 'Initialization' => sub {
         lives_ok {
@@ -108,7 +108,7 @@ subtest $method => sub {
         $rpc_ct->call_ok('new_sub_account', $params)
             ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Allow omnibus flag needs to be set to create sub account');
 
-        my $real_client = Client::Account->new({loginid => $new_loginid});
+        $real_client = Client::Account->new({loginid => $new_loginid});
         $real_client->allow_omnibus(1);
         $real_client->save();
         $rpc_ct->call_ok('new_sub_account', $params)->has_no_system_error->has_error->error_code_is('duplicate name DOB',
@@ -167,6 +167,22 @@ subtest $method => sub {
         is $result->{allow_omnibus}, 1, 'Allow omnibus not set';
         is $result->{sub_accounts}->[0]->{loginid}, $sub_client->loginid, 'Correct sub account for omnibus';
         is_deeply([sort keys %{$result->{sub_accounts}->[0]}], ['currency', 'loginid'], 'correct structure');
+    };
+
+    subtest 'Payout currencies' => sub {
+        $params = {
+            language => 'EN',
+        };
+        $result = $rpc_ct->call_ok('payout_currencies', $params)->has_no_system_error->result;
+        is scalar @$result, 4, 'Correct number of currencies when token is not passed';
+
+        $params->{token} = $token;
+        $result = $rpc_ct->call_ok('payout_currencies', $params)->has_no_system_error->result;
+        is scalar @$result, 7, 'Correct number of currencies when omnibus token is passed';
+
+        $params->{token} = $sub_token;
+        $result = $rpc_ct->call_ok('payout_currencies', $params)->has_no_system_error->result;
+        is scalar @$result, 7, 'Correct number of currencies when sub account token is passed';
     };
 
 };

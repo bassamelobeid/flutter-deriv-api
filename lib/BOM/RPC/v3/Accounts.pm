@@ -58,7 +58,13 @@ sub payout_currencies {
     # currencies enabled.
     $lc ||= LandingCompany::Registry::get('costarica');
 
-    return $lc->legal_allowed_currencies;
+    # as temporary fix we will only allow crypto currencies
+    # for omnibus and sub accounts
+    if ($client and ($client->allow_omnibus or $client->sub_account_of)) {
+        return $lc->legal_allowed_currencies;
+    }
+
+    return [grep { $_ !~ /^(?:BTC|LTC|ETH)$/ } @{$lc->legal_allowed_currencies}];
 }
 
 sub landing_company {
@@ -112,7 +118,7 @@ sub __build_landing_company {
         address                           => $lc->address,
         country                           => $lc->country,
         legal_default_currency            => $lc->legal_default_currency,
-        legal_allowed_currencies          => $lc->legal_allowed_currencies,
+        legal_allowed_currencies          => [grep { $_ !~ /^(?:BTC|LTC|ETH)$/ } @{$lc->legal_allowed_currencies}],
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0
@@ -1205,26 +1211,22 @@ sub login_history {
 sub set_account_currency {
     my $params = shift;
 
-    my $client = $params->{client};
-
-    my $currency                 = $params->{currency};
+    my ($client, $currency) = @{$params}{qw/client currency/};
     my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
 
-    my $response = {status => 0};
-    if (grep { $_ eq $currency } @{$legal_allowed_currencies}) {
-        # no change in default account currency if default account is already set
-        if (not $client->default_account and $client->set_default_account($currency)) {
-            $response->{status} = 1;
-        } else {
-            $response->{status} = 0;
-        }
-    } else {
-        $response = BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidCurrency',
-                message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)});
-    }
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidCurrency',
+            message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)}
+    ) unless (grep { $_ eq $currency } @{$legal_allowed_currencies});
 
-    return $response;
+    # only allow crypto currencies when its omnibus account or sub account
+    # TODO: remove once we make crypto currencies live
+    return {status => 0} if ($currency =~ /^(?:BTC|LTC|ETH)$/ and not($client->allow_omnibus or $client->sub_account_of));
+
+    # no change in default account currency if default account is already set
+    return {status => 1} if (not $client->default_account and $client->set_default_account($currency));
+
+    return {status => 0};
 }
 
 sub set_financial_assessment {
