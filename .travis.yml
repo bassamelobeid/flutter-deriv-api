@@ -20,6 +20,6 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - make test
+    - prove t/001_autosyntax.t
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
