@@ -1217,7 +1217,7 @@ sub set_account_currency {
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidCurrency',
             message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)}
-    ) if (grep { $_ ne $currency } @{$legal_allowed_currencies});
+    ) unless (grep { $_ eq $currency } @{$legal_allowed_currencies});
 
     # only allow crypto currencies when its omnibus account or sub account
     # TODO: remove once we make crypto currencies live
