@@ -10,7 +10,8 @@ use List::Util qw(sum shuffle);
 use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::DatabaseAPI;
 use BOM::Product::ContractFactory qw(produce_contract);
-use DBIx::TransactionManager::Distributed qw(txn);
+use DBIx::TransactionManager::Distributed qw(txn regtister_dbh);
+use BOM::Platform::Chronicle;
 
 use YAML qw(LoadFile);
 use Path::Tiny;
@@ -86,6 +87,10 @@ sub run {
                             limit      => ($end - $start),
                         })})
             {
+
+                my $chronicle_dbic = BOM::Platform::Chronicle::dbic();
+                # register dbh for later use in txn
+                DBIx::TransactionManager::Distributed::register_dbh(chronicle => $chronicle_dbic->dbh);
 
                 $duration_options{step} //= '1t';
                 my ($step_amount, $step_unit) = $duration_options{step} =~ /(\d+)([tmhs])/ or die "unknown step type " . $duration_options{step};
