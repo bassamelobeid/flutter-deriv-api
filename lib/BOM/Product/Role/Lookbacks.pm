@@ -65,4 +65,9 @@ override _build_theo_price => sub {
 override _validate_price => sub {
     return;
 };
+
+override is_binary => {
+    return 0;
+};
+
 1;
