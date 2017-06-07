@@ -351,7 +351,7 @@ subtest 'buy a bet', sub {
             payout        => $contract->payout,
             amount_type   => 'payout',
             source        => 19,
-            purchase_date => Date::Utility->new(),
+            purchase_date => $contract->date_start,
         });
         my $error = $txn->buy;
         is $error, undef, 'no error';
@@ -692,7 +692,7 @@ subtest 'exactly sufficient balance: buy bet for 100 with balance of 100', sub {
             price         => 100.00,
             payout        => $contract->payout,
             amount_type   => 'stake',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $contract->date_start,
         });
         my $error = $txn->buy;
         is $error, undef, 'no error';
@@ -789,7 +789,7 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
             price         => 100.00,
             payout        => $contract->payout,
             amount_type   => 'stake',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $contract->date_start,
         });
 
         my $error = do {
@@ -841,7 +841,7 @@ subtest 'max_open_bets validation', sub {
             price         => 1.00,
             payout        => $contract->payout,
             amount_type   => 'stake',
-            purchase_date => Date::Utility->new,
+            purchase_date => $contract->date_start,
         });
 
         my $error = do {
@@ -854,7 +854,7 @@ subtest 'max_open_bets validation', sub {
                     price         => 1.00,
                     payout        => $contract->payout,
                     amount_type   => 'stake',
-                    purchase_date => Date::Utility->new,
+                    purchase_date => $contract->date_start,
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Transaction->new({
@@ -863,7 +863,7 @@ subtest 'max_open_bets validation', sub {
                     price         => 1.00,
                     payout        => $contract->payout,
                     amount_type   => 'stake',
-                    purchase_date => Date::Utility->new,
+                    purchase_date => $contract->date_start,
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
@@ -912,7 +912,7 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
             price         => 1.00,
             payout        => $contract->payout,
             amount_type   => 'stake',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $contract->date_start,
         });
 
         my $txn_id_buy_expired_contract;
@@ -926,7 +926,7 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
                     price         => 1.00,
                     payout        => $contract->payout,
                     amount_type   => 'stake',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $contract->date_start,
                 })->buy, undef, '1st bet bought';
 
             my $contract_expired = produce_contract({
@@ -1002,7 +1002,7 @@ subtest 'max_payout_open_bets validation', sub {
             price         => 5.20,
             payout        => $contract->payout,
             amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $contract->date_start,
         });
 
         my $error = do {
@@ -1015,7 +1015,7 @@ subtest 'max_payout_open_bets validation', sub {
                     price         => 5.20,
                     payout        => $contract->payout,
                     amount_type   => 'payout',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $contract->date_start,
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Transaction->new({
@@ -1024,7 +1024,7 @@ subtest 'max_payout_open_bets validation', sub {
                     price         => 5.20,
                     payout        => $contract->payout,
                     amount_type   => 'payout',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $contract->date_start,
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
@@ -1643,7 +1643,7 @@ subtest 'max_losses validation', sub {
             price         => 5.20,
             payout        => $contract_up->payout,
             amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $contract_up->date_start,
         });
 
         my $error = do {
@@ -1666,7 +1666,7 @@ subtest 'max_losses validation', sub {
                 price         => 5.20,
                 payout        => $contract_up->payout,
                 amount_type   => 'payout',
-                purchase_date => Date::Utility->new(),
+                purchase_date => $contract_up->date_start,
             });
             is $t->buy, undef, 'CALL bet bought';
             $t = BOM::Transaction->new({
@@ -1684,7 +1684,7 @@ subtest 'max_losses validation', sub {
                 price         => 5.20,
                 payout        => $contract_down->payout,
                 amount_type   => 'payout',
-                purchase_date => Date::Utility->new(),
+                purchase_date => $contract_down->date_start,
             });
             is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
@@ -1775,7 +1775,7 @@ subtest 'max_7day_losses validation', sub {
             price         => 5.20,
             payout        => $contract_up->payout,
             amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $contract_up->date_start,
         });
 
         my $error = do {
@@ -1798,7 +1798,7 @@ subtest 'max_7day_losses validation', sub {
                 price         => 5.20,
                 payout        => $contract_up->payout,
                 amount_type   => 'payout',
-                purchase_date => Date::Utility->new(),
+                purchase_date => $contract_up->date_start,
             });
             is $t->buy, undef, 'CALL bet bought';
             $t = BOM::Transaction->new({
@@ -1816,7 +1816,7 @@ subtest 'max_7day_losses validation', sub {
                 price         => 5.20,
                 payout        => $contract_down->payout,
                 amount_type   => 'payout',
-                purchase_date => Date::Utility->new(),
+                purchase_date => $contract_down->date_start,
             });
             is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
@@ -1908,7 +1908,7 @@ subtest 'max_30day_losses validation', sub {
             price         => 5.20,
             payout        => $contract_up->payout,
             amount_type   => 'payout',
-            purchase_date => $now,
+            purchase_date => $contract_up->date_start,
         });
 
         my $error = do {
@@ -1931,7 +1931,7 @@ subtest 'max_30day_losses validation', sub {
                 price         => 5.20,
                 payout        => $contract_up->payout,
                 amount_type   => 'payout',
-                purchase_date => $now,
+                purchase_date => $contract_up->date_start,
             });
             is $t->buy, undef, 'CALL bet bought';
             $t = BOM::Transaction->new({
@@ -1949,7 +1949,7 @@ subtest 'max_30day_losses validation', sub {
                 price         => 5.20,
                 payout        => $contract_down->payout,
                 amount_type   => 'payout',
-                purchase_date => $now,
+                purchase_date => $contract_down->date_start,
             });
             is $t->buy, undef, 'PUT bet bought';
             $t = BOM::Transaction->new({
