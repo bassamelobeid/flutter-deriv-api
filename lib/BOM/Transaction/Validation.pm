@@ -90,12 +90,13 @@ sub validate_trx_buy {
     ### Order is very important
     ### _validate_trade_pricing_adjustment may contain some expensive calculations
     #### And last per-client checks must be after this calculations.
-    $res = $self->_validate_trade_pricing_adjustment();
+    $res = $self->_validate_trade_pricing_adjustment() if $self->transaction->contract->is_binary;
     return $res if $res;
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
         for (qw/ _validate_payout_limit _validate_stake_limit /) {
+            next if $_ eq '_validate_stake_limit' and not $self->transaction->contract->is_binary;
             $res = $self->$_($c->{client});
             next unless $res;
             if ($self->transaction && $self->transaction->multiple) {
