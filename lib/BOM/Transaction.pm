@@ -394,8 +394,10 @@ sub prepare_bet_data_for_buy {
         expiry_time       => scalar $contract->date_expiry->db_timestamp,
         settlement_time   => scalar $contract->date_settlement->db_timestamp,
         payout_price      => scalar $self->payout,
-        unit              => scalar $contract->unit,
+        #unit              => scalar $contract->unit,
     };
+
+    $bet_params->{unit} = scalar $contract->unit if not $contract->is_binary;
 
     $bet_params->{expiry_daily} = 1 if $contract->expiry_daily;
     $bet_params->{fixed_expiry} = 1 if $contract->fixed_expiry;
