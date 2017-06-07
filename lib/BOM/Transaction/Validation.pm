@@ -43,6 +43,7 @@ sub validate_trx_sell {
         }
     }
     for (qw/ _is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing /) {
+        next if $_ eq '_validate_sell_pricing_adjustment' and not $self->transaction->contract->is_binary;
         my $res = $self->$_();
         return $res if $res;
     }
