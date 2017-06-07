@@ -52,7 +52,7 @@ sub confirm_scope {
 
     my ($is_exists) = $self->dbic->run(
         sub {
-            $_->->selectrow_array("
+            $_->selectrow_array("
         SELECT true FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?
     ", undef, $app_id, $loginid);
         });
@@ -98,7 +98,8 @@ sub get_token_details {
 
     my $expires_in = '60 days';
 
-    my $details = $self->dbic->run(sub {
+    my $details = $self->dbic->run(
+        sub {
             $_->selectrow_hashref(<<'SQL', undef, $token, $expires_in) });
 SELECT loginid, creation_time, ua_fingerprint, scopes
   FROM oauth.get_token_details($1, $2::INTERVAL)
