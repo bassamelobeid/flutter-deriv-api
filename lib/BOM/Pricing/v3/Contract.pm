@@ -111,9 +111,9 @@ sub contract_metadata {
     my ($contract) = @_;
     return +{
         app_markup_percentage => $contract->app_markup_percentage,
-        staking_limits        => $contract->staking_limits,
-        deep_otm_threshold    => $contract->otm_threshold,
-        base_commission       => $contract->base_commission,
+        ($contract->is_binary) ? (staking_limits => $contract->staking_limits) : (),
+        deep_otm_threshold => $contract->otm_threshold,
+        base_commission    => $contract->base_commission,
     };
 }
 

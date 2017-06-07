@@ -99,7 +99,7 @@ subtest 'prepare_ask' => sub {
     my $expected = {
         'barrier'     => 'S0P',
         'subscribe'   => 1,
-        'duration'    => '2m',
+        'duration'    => '15m',
         'amount_type' => 'unit',
         'bet_type'    => 'LBFIXEDCALL',
         'underlying'  => 'R_50',
@@ -117,7 +117,6 @@ subtest 'prepare_ask' => sub {
     $expected = {
         %$expected,
         fixed_expiry  => 1,
-        high_barrier  => 'S20P',
         date_expiry   => '2015-01-01',
         duration_unit => 'm',
         duration      => '15',
