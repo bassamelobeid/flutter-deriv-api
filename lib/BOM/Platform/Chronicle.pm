@@ -83,7 +83,7 @@ use feature "state";
 # used for loading chronicle config file which contains connection information
 use YAML::XS;
 use JSON;
-use DBIx::Connector;
+use DBIx::Connector::Pg;
 use DateTime;
 use Date::Utility;
 use BOM::Platform::RedisReplicated;
@@ -269,7 +269,7 @@ my $dbic;
 sub dbic {
     # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
     return undef if not defined _config()->{chronicle};
-    $dbic //= DBIx::Connector->new(
+    $dbic //= DBIx::Connector::Pg->new(
         _dbh_dsn(),
         # User and password are part of the DSN
         '', '',
