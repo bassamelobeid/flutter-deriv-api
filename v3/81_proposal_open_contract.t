@@ -67,11 +67,11 @@ subtest 'empty POC response' => sub {
         sub { note explain $_[0]; ok($_[0]->{proposal_open_contract} && !keys %{$_[0]->{proposal_open_contract}}, "got proposal"); }
     );
 };
-my ( $contract_id, $proposal );
+my ( $contract_id);
 
 
 subtest 'buy n check' => sub {
-    wsapi_wait_for(
+    my $proposal = wsapi_wait_for(
         $t, 'proposal',
         sub {
             $t->send_ok({
@@ -90,7 +90,6 @@ subtest 'buy n check' => sub {
             BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
             $t->message_ok;
         },
-        sub { $proposal = shift; },
     );
 
     wsapi_wait_for(
@@ -209,7 +208,7 @@ subtest 'forget' => sub {
 };
 
 subtest 'check two contracts subscription' => sub {
-    wsapi_wait_for(
+    my $proposal = wsapi_wait_for(
         $t, 'proposal',
         sub {
             $t = $t->send_ok({
@@ -226,9 +225,6 @@ subtest 'check two contracts subscription' => sub {
                 }});
             BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
             $t->message_ok;
-        },
-        sub {
-            $proposal = shift;
         });
 
     my $ids = {};
