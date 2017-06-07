@@ -10,7 +10,6 @@ use List::Util qw(sum shuffle);
 use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::DatabaseAPI;
 use BOM::Product::ContractFactory qw(produce_contract);
-use DBIx::TransactionManager::Distributed qw(txn register_dbh);
 use BOM::Platform::Chronicle;
 
 use YAML qw(LoadFile);
@@ -88,10 +87,6 @@ sub run {
                         })})
             {
 
-                my $chronicle_dbic = BOM::Platform::Chronicle::dbic();
-                # register dbh for later use in txn
-                DBIx::TransactionManager::Distributed::register_dbh(chronicle => $chronicle_dbic->dbh);
-
                 $duration_options{step} //= '1t';
                 my ($step_amount, $step_unit) = $duration_options{step} =~ /(\d+)([tmhs])/ or die "unknown step type " . $duration_options{step};
                 if ($step_unit eq 'm') {
@@ -121,19 +116,16 @@ sub run {
                         barrier      => 'S0P',
                     };
                     try {
-                        txn {
-                            my $contract         = produce_contract($args);
-                            my $contract_expired = produce_contract({
-                                %$args,    ## no critic (ProhibitCommaSeparatedStatements)
-                                date_pricing => $now,
-                            });
-                            if ($contract_expired->is_expired) {
-                                my $ask_price = $contract->ask_price;
-                                my $value     = $contract_expired->value;
-                                $fh->print(join(",", (map { $tick->{$_} } qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
-                            }
+                        my $contract         = produce_contract($args);
+                        my $contract_expired = produce_contract({
+                            %$args,    ## no critic (ProhibitCommaSeparatedStatements)
+                            date_pricing => $now,
+                        });
+                        if ($contract_expired->is_expired) {
+                            my $ask_price = $contract->ask_price;
+                            my $value     = $contract_expired->value;
+                            $fh->print(join(",", (map { $tick->{$_} } qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
                         }
-                        qw(feed chronicle);
                     }
                     catch {
                         warn "Failed to price with parameters " . Dumper($args) . " - $_\n";
