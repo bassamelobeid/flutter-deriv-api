@@ -108,10 +108,10 @@ subtest 'surface has not change' => sub {
 };
 
 my $mocked = Test::MockModule->new('Quant::Framework::VolSurface');
-$mocked->mock('_validate_age', sub {return});
-$mocked->mock('is_valid', sub {return 1;});
+$mocked->mock('_validate_age', sub { return });
+$mocked->mock('is_valid',      sub { return 1; });
 subtest 'First Term is 7' => sub {
-    my $test_file = dirname(__FILE__) . '/auto_upload.xls';
+    my $test_file        = dirname(__FILE__) . '/auto_upload.xls';
     my $existing_surface = Quant::Framework::Utils::Test::create_doc(
         'volsurface_moneyness',
         {
@@ -120,7 +120,7 @@ subtest 'First Term is 7' => sub {
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
             recorded_date    => Date::Utility->new,
         });
-    my $au        = BOM::MarketDataAutoUpdater::Indices->new(
+    my $au = BOM::MarketDataAutoUpdater::Indices->new(
         file              => $test_file,
         symbols_to_update => [qw(AS51)]);    # wrong symbol
     $au->run;
@@ -135,7 +135,7 @@ subtest 'First Term is not 7' => sub {
         symbols_to_update => [qw(AS51)]);    # wrong symbol
     $au->run;
     ok !$au->report->{AS51}->{success}, 'update failed';
-print "### " . $au->report->{AS51}->{reason} . "\n";
+    print "### " . $au->report->{AS51}->{reason} . "\n";
     like $au->report->{AS51}->{reason}, qr/Term 7 is missing from datasource for/, 'correct error message';
 };
 $mocked->unmock_all();

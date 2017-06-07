@@ -197,7 +197,10 @@ sub run {
     }
 
     # zero rates BTC as of now, till we use providers
-    foreach my $sym (qw/BTC-USD BTC-EUR BTC-AUD BTC-JPY BTC-NZD BTC-CAD BTC-CHF BTC-GBP BTC-PLN BTC-NOK BTC-MXN BTC-SEK/) {
+    foreach my $sym (
+        qw/BTC-USD BTC-EUR BTC-AUD BTC-JPY BTC-NZD BTC-CAD BTC-CHF BTC-GBP BTC-PLN BTC-NOK BTC-MXN BTC-SEK ETH-USD ETH-EUR ETH-AUD ETH-JPY ETH-NZD ETH-CAD ETH-CHF ETH-GBP ETH-PLN ETH-NOK ETH-MXN ETH-SEK LTC-USD LTC-EUR LTC-AUD LTC-JPY LTC-NZD LTC-CAD LTC-CHF LTC-GBP LTC-PLN LTC-NOK LTC-MXN LTC-SEK/
+        )
+    {
         Quant::Framework::ImpliedRate->new(
             symbol => $sym,
             rates  => {
@@ -239,7 +242,6 @@ sub _tenor_mapper {
 
 sub _get_forward_and_term_from_BB_ticker {
     my ($self, $ticker) = @_;
-    my ($underlying, $term);
 
     my %tickerlist = Bloomberg::UnderlyingConfig::get_forward_tickers_list();
     foreach my $underlying (keys %tickerlist) {
