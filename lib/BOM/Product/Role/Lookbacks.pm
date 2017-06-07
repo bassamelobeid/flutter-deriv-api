@@ -66,7 +66,7 @@ override _validate_price => sub {
     return;
 };
 
-override is_binary => {
+override is_binary => sub {
     return 0;
 };
 
