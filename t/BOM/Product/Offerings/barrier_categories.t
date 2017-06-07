@@ -8,6 +8,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Runtime;
+use Finance::Contract;
 use LandingCompany::Offerings qw( get_offerings_with_filter reinitialise_offerings);
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
@@ -15,7 +16,7 @@ my $udb = create_underlying_db();
 
 subtest 'Sets match' => sub {
 
-    my %expected = %{$LandingCompany::Offerings::BARRIER_CATEGORIES};
+    my %expected = %{$Finance::Contract::BARRIER_CATEGORIES};
     my $config   = BOM::Platform::Runtime->instance->get_offerings_config;
 
     eq_or_diff(

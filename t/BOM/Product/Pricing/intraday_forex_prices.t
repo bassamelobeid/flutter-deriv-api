@@ -135,7 +135,7 @@ subtest 'prices without economic events' => sub {
                     %$barrier,
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->ask_price, $expected->{$c->shortcode}, 'correct ask price [' . $c->shortcode . ']';
+                cmp_ok $c->ask_price, '==', $expected->{$c->shortcode}, 'correct ask price [' . $c->shortcode . ']';
             }
             'survived';
         }
@@ -157,7 +157,7 @@ subtest 'atm prices without economic events' => sub {
                     barrier      => 'S0P',
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->ask_price, $expected->{$c->shortcode}, 'correct ask price [' . $c->shortcode . ']';
+                cmp_ok $c->ask_price, '==', $expected->{$c->shortcode}, 'correct ask price [' . $c->shortcode . ']';
             }
             'survived';
         }
@@ -194,7 +194,7 @@ subtest 'prices with economic events' => sub {
                     %$barrier,
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->ask_price, $expected->{'event_' . $c->shortcode}, 'correct ask price [event_' . $c->shortcode . ']';
+                cmp_ok $c->ask_price, '==', $expected->{'event_' . $c->shortcode}, 'correct ask price [event_' . $c->shortcode . ']';
             }
             'survived';
         }
@@ -216,7 +216,7 @@ subtest 'atm prices with economic events' => sub {
                     barrier      => 'S0P',
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->ask_price, $expected->{'event_' . $c->shortcode}, 'correct ask price [event_' . $c->shortcode . ']';
+                cmp_ok $c->ask_price, '==', $expected->{'event_' . $c->shortcode}, 'correct ask price [event_' . $c->shortcode . ']';
             }
             'survived';
         }
