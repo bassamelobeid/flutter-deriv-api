@@ -146,7 +146,6 @@ subtest 'get_ask' => sub {
 #        "streaming_params" => {add_theo_probability => 1},
     };
 
-$DB::single=1;
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
 
     diag explain $result->{error} if exists $result->{error};
