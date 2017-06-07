@@ -978,7 +978,8 @@ sub pricing_details {
         }
     }
 
-    my $news_factor = $self->ask_probability->peek('news_factor') if $self->is_binary;
+    my $news_factor;
+    $news_factor = $self->ask_probability->peek('news_factor') if $self->is_binary();
     if ($news_factor) {
         push @comment_fields, news_fct => $news_factor->amount;
         my $news_impact = $news_factor->peek('news_impact');
