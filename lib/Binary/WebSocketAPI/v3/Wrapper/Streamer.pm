@@ -4,15 +4,17 @@ use strict;
 use warnings;
 
 use JSON;
-use Scalar::Util qw (looks_like_number refaddr weaken);
-use List::MoreUtils qw(last_index);
 use Date::Utility;
+use Mojo::Redis::Processor;
+use Time::HiRes qw(gettimeofday);
+use List::MoreUtils qw(last_index);
+use JSON::XS qw(encode_json decode_json);
+use Scalar::Util qw (looks_like_number refaddr weaken);
+
+use Price::Calculator qw/formatnumber/;
 
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::System;
-use Mojo::Redis::Processor;
-use JSON::XS qw(encode_json decode_json);
-use Time::HiRes qw(gettimeofday);
 use Binary::WebSocketAPI::v3::Instance::Redis qw( ws_redis_slave ws_redis_master shared_redis );
 
 use utf8;
@@ -514,14 +516,14 @@ sub process_transaction_updates {
             if ($type eq 'balance') {
                 $details->{$type}->{loginid}  = $c->stash('loginid');
                 $details->{$type}->{currency} = $c->stash('currency');
-                $details->{$type}->{balance}  = sprintf('%.2f', $payload->{balance_after});
+                $details->{$type}->{balance}  = formatnumber('amount', $c->stash('currency'), $payload->{balance_after});
                 $c->send({json => $details}) if $c->tx;
             } elsif ($type eq 'transaction') {
-                $details->{$type}->{balance}        = sprintf('%.2f', $payload->{balance_after});
                 $details->{$type}->{action}         = $payload->{action_type};
                 $details->{$type}->{amount}         = $payload->{amount};
                 $details->{$type}->{transaction_id} = $payload->{id};
                 $payload->{currency_code} ? ($details->{$type}->{currency} = $payload->{currency_code}) : ();
+                $details->{$type}->{balance} = formatnumber('amount', $payload->{currency_code}, $payload->{balance_after});
 
                 if (exists $payload->{referrer_type} and $payload->{referrer_type} eq 'financial_market_bet') {
                     $details->{$type}->{transaction_time} =
