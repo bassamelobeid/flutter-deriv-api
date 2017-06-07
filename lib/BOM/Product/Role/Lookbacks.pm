@@ -62,6 +62,18 @@ override _build_theo_price => sub {
     return $self->pricing_engine->theo_price * $self->unit;
 };
 
+override _build_ask_price => sub {
+    my $self = shift;
+
+    return sprintf('%0.0' . '2f', $self->theo_price);
+};
+
+override _build_bid_price => sub {
+    my $self = shift;
+
+    return sprintf('%0.0' . '2f', $self->theo_price);
+};
+
 override _validate_price => sub {
     return;
 };
