@@ -134,7 +134,7 @@ sub process {
         }
     }
 
-    return scalar(@params) > 1 ? \@params : $params[0];
+    return \@params;
 }
 
 sub _initialize_contract_parameters {
