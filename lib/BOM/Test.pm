@@ -5,7 +5,6 @@ use warnings;
 
 use Dir::Self;
 use Cwd qw/abs_path/;
-use POSIX qw/setsid/;
 
 =head1 NAME
 
@@ -66,27 +65,23 @@ BEGIN {
 
     if (on_qa()) {
         # Redis rand and replicated servers config
-        $ENV{BOM_TEST_REDIS_REPLICATED} = $config_dir . '/redis-replicated.yml';
-        $ENV{BOM_TEST_REDIS_RAND}       = $config_dir . '/redis.yml';
+#        $ENV{BOM_TEST_REDIS_REPLICATED} = $config_dir . '/redis-replicated.yml';
+#        $ENV{BOM_TEST_REDIS_RAND}       = $config_dir . '/redis.yml';
 
         # Cache redis server
-        $ENV{REDIS_CACHE_SERVER} = $ENV{BOM_CACHE_SERVER} = '127.0.1.3:6385';
-
-        $ENV{DB_POSTFIX}      = '_test';
-        $ENV{RPC_URL}         = 'http://127.0.0.1:15005/';
-        $ENV{PRICING_RPC_URL} = 'http://127.0.0.1:15006/';
+#        $ENV{REDIS_CACHE_SERVER} = $ENV{BOM_CACHE_SERVER} = '127.0.1.3:6385';
+#
+#        $ENV{DB_POSTFIX}      = '_test';
+#        $ENV{RPC_URL}         = 'http://127.0.0.1:15005/';
+#        $ENV{PRICING_RPC_URL} = 'http://127.0.0.1:15006/';
     }
-    $ENV{TEST_DATABASE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
+#    $ENV{TEST_DATABASE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
 }
 
 1;
 
 =head1 TEST
 
-    # test this repo
     make test
-    # test all repo under regentmarkets and binary-com
-    make test_all
 
 =cut
-
