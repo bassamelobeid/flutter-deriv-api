@@ -116,7 +116,7 @@ subtest 'verify_with_shortcode_IH' => sub {
         },
         'opposite_contract' => {
             'opposite_contract_intraday_eod_markup'                    => 0,
-            'opposite_contract_vol_spread_markup'                      => '0.000133358249061696',
+            'opposite_contract_vol_spread_markup'                      => '0.000133358249061675',
             'opposite_contract_long_term_prediction'                   => '0.0334403179544468',
             'opposite_contract_t'                                      => '2.85388127853881e-05',
             'opposite_contract_intraday_historical_iv_risk'            => 0,
@@ -136,7 +136,7 @@ subtest 'verify_with_shortcode_IH' => sub {
             'opposite_contract_economic_events_spot_risk_markup'       => 0,
             'opposite_contract_S'                                      => '79.817',
             'opposite_contract_bs_probability'                         => '0.567132224980643',
-            'opposite_contract_risk_markup'                            => '0.000133358249061696',
+            'opposite_contract_risk_markup'                            => '0.000133358249061675',
             'opposite_contract_long_term_delta_correction'             => '-0.0100002671076586',
             'opposite_contract_historical_vol_mean_reversion'          => '0.10',
             'opposite_contract_base_commission'                        => '0.005',
@@ -145,7 +145,7 @@ subtest 'verify_with_shortcode_IH' => sub {
         },
         'ask_probability' => {
             'intraday_vega_correction'  => '0.0053332023018287',
-            'risk_markup'               => '0.000133358249061696',
+            'risk_markup'               => '0.000133358249061675',
             'bs_probability'            => '0.432867775019357',
             'intraday_delta_correction' => '0.0115717445121842',
             'commission_markup'         => '0.005'
@@ -162,7 +162,7 @@ subtest 'verify_with_shortcode_IH' => sub {
         'risk_markup' => {
             'quiet_period_markup'                    => 0,
             'short_term_kurtosis_risk_markup'        => 0,
-            'vol_spread_markup'                      => 0.000133358249061696,
+            'vol_spread_markup'                      => 0.000133358249061675,
             'intraday_eod_markup'                    => 0,
             'economic_events_markup'                 => 0,
             'economic_events_spot_risk_markup'       => 0,
@@ -232,44 +232,44 @@ subtest 'verify_with_shortcode_IH' => sub {
 subtest 'verify_with_shortcode_Slope' => sub {
     my $expected_parameters = {
         'risk_markup' => {
-            'spot_spread_markup' => '0.00308207828274131',
-            'vol_spread_markup'  => '0.020835893413195'
+            'spot_spread_markup' => '0.00308207768049775',
+            'vol_spread_markup'  => '0.0208358893418245'
         },
         'bs_probability' => {
             'call_payout'        => '1000',
-            'call_vol'           => '0.0726586166126899',
+            'call_vol'           => '0.0726586124131125',
             'call_S'             => '79.817',
-            'call_discount_rate' => '0.026681002490942',
+            'call_discount_rate' => '0.0266870816706373',
             'call_t'             => '0.0321427891933029',
             'call_mu'            => 0,
             'call_K'             => '78.300'
         },
         'opposite_contract' => {
             'opposite_contract_put_K'                   => '78.300',
-            'opposite_contract_vol_spread_markup'       => '0.020835893413195',
-            'opposite_contract_spot_spread_markup'      => '0.00308207828274131',
+            'opposite_contract_vol_spread_markup'       => '0.0208358893418245',
+            'opposite_contract_spot_spread_markup'      => '0.00308207768049775',
             'opposite_contract_put_mu'                  => 0,
-            'opposite_contract_put_vol'                 => '0.0726586166126899',
+            'opposite_contract_put_vol'                 => '0.0726586124131125',
             'opposite_contract_put_payout'              => '1000',
             'opposite_contract_commission_multiplier'   => '1',
-            'opposite_contract_put_vanilla_vega'        => '1.90900714802341',
-            'opposite_contract_put_slope'               => '-0.00260796695446264',
+            'opposite_contract_put_vanilla_vega'        => '1.90900653558009',
+            'opposite_contract_put_slope'               => '-0.00260796496140414',
             'opposite_contract_put_S'                   => '79.817',
-            'opposite_contract_put_discount_rate'       => '0.026681002490942',
-            'opposite_contract_risk_markup'             => '0.0119589858479682',
+            'opposite_contract_put_discount_rate'       => '0.0266870816706373',
+            'opposite_contract_risk_markup'             => '0.0119589835111611',
             'opposite_contract_put_weight'              => 1,
             'opposite_contract_base_commission'         => '0.005',
             'opposite_contract_commission_markup'       => '0.005',
             'opposite_contract_put_t'                   => '0.0321427891933029',
-            'opposite_contract_theoretical_probability' => '0.0662095355848979'
+            'opposite_contract_theoretical_probability' => '0.06620951544713'
         },
         'commission_markup' => {
             'base_commission'       => '0.005',
             'commission_multiplier' => '1'
         },
         'ask_probability' => {
-            'theoretical_probability' => '0.932933230211924',
-            'risk_markup'             => '0.0119589858479682',
+            'theoretical_probability' => '0.932933055115425',
+            'risk_markup'             => '0.0119589835111611',
             'commission_markup'       => '0.005'
         },
         'contract_details' => {
@@ -292,8 +292,8 @@ subtest 'verify_with_shortcode_Slope' => sub {
         },
         'slope_adjustment' => {
             'call_weight'       => -1,
-            'call_slope'        => '-0.00260796695446264',
-            'call_vanilla_vega' => '1.90900714802341',
+            'call_slope'        => '-0.00260796496140414',
+            'call_vanilla_vega' => '1.90900653558009',
         }};
     my $args;
     $args->{landing_company} = 'japan';
@@ -366,10 +366,10 @@ subtest 'verify_with_shortcode_VV' => sub {
             'opposite_contract_theoretical_probability'       => '0.257661463103968'
         },
         'market_supplement' => {
-            'volga_survival_weight' => '0.338609565227374',
-            'Bet_vanna'             => '9.92290408928871',
-            'vega_market_price'     => '4.08641101380902e-17',
-            'Bet_volga'             => '-95.8758208135244',
+            'volga_survival_weight' => '0.338609549367812',
+            'Bet_vanna'             => '9.9229037409789',
+            'vega_market_price'     => '4.08641196158852e-17',
+            'Bet_volga'             => '-95.8758228387405',
             'vega_survival_weight'  => '0.338609565227374',
             'Bet_vega'              => '3.50527902626613',
             'volga_market_price'    => '0.000412152893321488',
@@ -380,8 +380,8 @@ subtest 'verify_with_shortcode_VV' => sub {
             'volga_correction'      => '-0.0133803252412607'
         },
         'ask_probability' => {
-            'theoretical_probability' => '0.741966313880216',
-            'risk_markup'             => '0.0183609878229658',
+            'theoretical_probability' => '0.741966274538437',
+            'risk_markup'             => '0.0183609887820614',
             'commission_markup'       => '0.005'
         },
         'theoretical_probability' => {
@@ -393,7 +393,7 @@ subtest 'verify_with_shortcode_VV' => sub {
             'vol'           => '0.0693633014326143',
             'K'             => '79.500',
             'mu'            => 0,
-            'discount_rate' => '0.026681002490942',
+            'discount_rate' => '0.0266870816706373',
             't'             => '0.0321427891933029',
             'payout'        => '1000'
         },
