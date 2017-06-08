@@ -55,6 +55,7 @@ subtest 'sell' => sub {
     $client->clr_status('disabled');
     $client->save;
 
+
     #sold  contract should be hold 2 minutes and interval should more than 15
     my $now           = time;
     my $contract_data = Test::BOM::RPC::Contract::prepare_contract(
@@ -65,6 +66,7 @@ subtest 'sell' => sub {
         client              => $client,
         contract_parameters => $contract_data,
         purchase_date       => $now - 60 * 2,
+        amount_type         => 'payout',
     });
     $txn->price($txn->contract->ask_price);
 
