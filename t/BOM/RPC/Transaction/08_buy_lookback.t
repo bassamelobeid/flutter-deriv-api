@@ -89,7 +89,7 @@ subtest 'buy' => sub {
     my $new_balance = formatnumber('amount', 'USD', $client->default_account->load->balance);
     is($new_balance, $result->{balance_after}, 'balance is changed');
     ok($old_balance - $new_balance - $result->{buy_price} < 0.0001, 'balance reduced');
-    like($result->{shortcode}, qr/LBFIXEDCALL_R_50_100_\d{10}_\d{10}_S0P_0/, 'shortcode is correct');
+    like($result->{shortcode}, qr/LBFIXEDCALL_R_50_100_\d{10}_\d{10}_S220P_0/, 'shortcode is correct');
     is(
         $result->{longcode},
         'Receive the difference of Volatility 50 Index\'s maximum value during the life of the option and entry spot plus 0.0020 at 2 minutes after contract start time.',
