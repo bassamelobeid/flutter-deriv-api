@@ -1,9 +1,9 @@
-package BOM::Product::Contract::Erc20ico;
+package BOM::Product::Contract::BinaryICO;
 
 use Moose;
 extends 'BOM::Product::Contract::Coinauction';
 
-sub code { return 'ERC20ICO' }
+sub code { return 'BinaryICO' }
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
