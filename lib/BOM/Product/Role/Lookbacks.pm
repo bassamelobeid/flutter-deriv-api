@@ -82,4 +82,29 @@ override is_binary => sub {
     return 0;
 };
 
+override shortcode => sub {
+    my $self = shift;
+
+    my $shortcode_date_start = (
+               $self->is_forward_starting
+            or $self->starts_as_forward_starting
+    ) ? $self->date_start->epoch . 'F' : $self->date_start->epoch;
+    my $shortcode_date_expiry =
+          ($self->tick_expiry)  ? $self->tick_count . 'T'
+        : ($self->fixed_expiry) ? $self->date_expiry->epoch . 'F'
+        :                         $self->date_expiry->epoch;
+
+    # TODO We expect to have a valid bet_type, but there may be codepaths which don't set this correctly yet.
+    my $contract_type = $self->bet_type // $self->code;
+    my @shortcode_elements = ($contract_type, $self->underlying->symbol, $self->unit, $shortcode_date_start, $shortcode_date_expiry);
+
+    if ($self->two_barriers) {
+        push @shortcode_elements, map { $self->_barrier_for_shortcode_string($_) } ($self->supplied_high_barrier, $self->supplied_low_barrier);
+    } elsif (defined $self->supplied_barrier and $self->barrier_at_start) {
+        push @shortcode_elements, ($self->_barrier_for_shortcode_string($self->supplied_barrier), 0);
+    }
+
+    return uc join '_', @shortcode_elements;
+};
+
 1;
