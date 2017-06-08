@@ -27,6 +27,7 @@ use BOM::MarketData::Types;
 use Finance::Contract::Category;
 use LandingCompany::Registry;
 use List::MoreUtils qw(uniq);
+use Date::Utility;
 
 =head2 shortcode_to_parameters
 
@@ -38,8 +39,8 @@ sub shortcode_to_parameters {
     my ($shortcode, $currency, $is_sold) = @_;
 
     my (
-        $bet_type, $underlying_symbol, $payout,       $date_start,  $date_expiry,    $barrier,
-        $barrier2, $prediction,        $fixed_expiry, $tick_expiry, $how_many_ticks, $forward_start,
+        $bet_type,   $underlying_symbol, $payout,      $date_start,     $date_expiry,   $barrier,      $barrier2,
+        $prediction, $fixed_expiry,      $tick_expiry, $how_many_ticks, $forward_start, $coin_address, $number_of_tokens
     );
     my ($initial_bet_type) = split /_/, $shortcode;
 
@@ -51,8 +52,17 @@ sub shortcode_to_parameters {
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
-    # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
-    if ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
+    if ($shortcode =~ /^BINARYICO_([A-Z0-9]+)_(\w+)_(\d*\.?\d*)_(\d+)_(\d+)$/) {
+        $bet_type          = 'BINARYICO';
+        $underlying_symbol = $1;
+        $coin_address      = $2;
+        $payout            = $3;
+        $number_of_tokens  = $4;
+        $date_start        = $5;
+        $date_expiry       = Date::Utility->new($date_start)->plus_time_interval('30d')->epoch;
+
+    } elsif ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
+        # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
         $bet_type          = $1;
         $underlying_symbol = $2;
         $payout            = $3;
@@ -111,7 +121,9 @@ sub shortcode_to_parameters {
         tick_expiry  => $tick_expiry,
         tick_count   => $how_many_ticks,
         is_sold      => $is_sold,
-        ($forward_start) ? (starts_as_forward_starting => $forward_start) : (),
+        ($forward_start)    ? (starts_as_forward_starting => $forward_start)    : (),
+        ($number_of_tokens) ? (number_of_tokens           => $number_of_tokens) : (),
+        ($coin_address)     ? (coin_address               => $coin_address)     : (),
         %barriers,
     };
 

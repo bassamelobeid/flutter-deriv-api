@@ -87,6 +87,7 @@ sub BUILD {
     $self->token_type($self->build_parameters->{underlying});
     $self->coin_address($self->build_parameters->{coin_address});
     $self->trading_period_start(Date::Utility->new($self->build_parameters->{trading_period_start}));
+    $self->number_of_tokens($self->build_parameters->{number_of_tokens});
 
     if ($self->number_of_tokens < $limits->{min} or $self->number_of_tokens > $limits->{max}) {
 
