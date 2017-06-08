@@ -7,8 +7,8 @@ use Test::More tests => 252;
 use Test::Exception;
 use Date::Utility;
 use YAML::XS qw(LoadFile DumpFile);
+use Format::Util::Numbers qw/roundnear/;
 
-use Price::Calculator qw/roundnear/;
 use LandingCompany::Offerings qw/get_offerings_with_filter reinitialise_offerings/;
 use Test::BOM::UnitTestPrice;
 

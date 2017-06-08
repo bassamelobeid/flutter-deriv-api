@@ -10,9 +10,9 @@ use Date::Utility;
 use Path::Tiny;
 use YAML::XS qw(LoadFile);
 use Test::MockModule;
+use Format::Util::Numbers qw/roundnear/;
 
 use Postgres::FeedDB::Spot::Tick;
-use Price::Calculator qw/roundnear/;
 
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

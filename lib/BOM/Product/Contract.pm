@@ -43,13 +43,13 @@ use Scalar::Util qw(looks_like_number);
 use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
 use Time::Duration::Concise;
+use Format::Util::Numbers qw/formatnumber/;
 
 use Quant::Framework;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 use Postgres::FeedDB::Spot::Tick;
 use LandingCompany::Offerings qw(get_contract_specifics);
-use Price::Calculator qw/formatnumber/;
 
 use BOM::Platform::Chronicle;
 use BOM::MarketData::Types;

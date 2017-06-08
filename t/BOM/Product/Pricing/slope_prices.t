@@ -8,9 +8,9 @@ use Test::Exception;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
 use Test::MockModule;
+use Format::Util::Numbers qw/roundnear/;
 
 use Test::BOM::UnitTestPrice;
-use Price::Calculator qw/roundnear/;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::Product::ContractFactory qw(produce_contract);

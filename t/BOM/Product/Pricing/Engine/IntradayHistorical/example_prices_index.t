@@ -6,8 +6,7 @@ use warnings;
 use Test::More (tests => 4);
 use Date::Utility;
 use Text::CSV::Slurp;
-
-use Price::Calculator qw/roundnear/;
+use Format::Util::Numbers qw/roundnear/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::MarketData qw(create_underlying_db);

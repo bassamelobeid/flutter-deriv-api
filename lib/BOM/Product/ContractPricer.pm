@@ -7,8 +7,9 @@ use JSON qw(from_json);
 use Math::Util::CalculatedValue::Validatable;
 use List::Util qw(max);
 use List::MoreUtils qw(none all);
+use Format::Util::Numbers qw/formatnumber/;
 
-use Price::Calculator qw/formatnumber/;
+use Price::Calculator;
 use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::Currency;
 use Quant::Framework::CorrelationMatrix;

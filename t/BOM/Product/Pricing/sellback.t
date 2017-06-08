@@ -7,8 +7,8 @@ use Test::More;
 use Test::Exception;
 use Date::Utility;
 use YAML::XS qw(LoadFile DumpFile);
+use Format::Util::Numbers qw/roundnear/;
 
-use Price::Calculator qw/roundnear/;
 use Test::BOM::UnitTestPrice qw(:init);
 
 use BOM::Product::ContractFactory qw(produce_contract);

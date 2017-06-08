@@ -6,8 +6,7 @@ use warnings;
 use Test::More tests => 6;
 use Test::Exception;
 use Date::Utility;
-
-use Price::Calculator qw/roundnear/;
+use Format::Util::Numbers qw/roundnear/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

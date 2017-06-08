@@ -7,8 +7,7 @@ use Test::More tests => 2;
 use Test::Exception;
 use Date::Utility;
 use JSON qw(to_json);
-
-use Price::Calculator qw/roundnear/;
+use Format::Util::Numbers qw/roundnear/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

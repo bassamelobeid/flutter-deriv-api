@@ -1,8 +1,7 @@
 package BOM::Product::Contract::Batch;
 
 use Moose;
-
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::Product::Categorizer;
 use BOM::Product::Static;

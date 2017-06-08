@@ -7,8 +7,8 @@ use Test::More tests => 5;
 use Test::Exception;
 use Date::Utility;
 use Cache::RedisDB;
+use Format::Util::Numbers qw/roundnear/;
 
-use Price::Calculator qw/roundnear/;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);

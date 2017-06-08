@@ -8,8 +8,8 @@ use Test::Exception;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
 use Storable qw(dclone);
+use Format::Util::Numbers qw/roundnear/;
 
-use Price::Calculator qw/roundnear/;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
