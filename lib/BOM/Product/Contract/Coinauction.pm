@@ -30,7 +30,7 @@ has _for_sale => (
     isa     => 'Bool',
     default => 0,
 );
-has [qw(trading_period_start number_of_tokens token_type coin_address ask_price)] => (
+has [qw(trading_period_start number_of_tokens token_type coin_address ask_price contract_type)] => (
     is => 'rw',
 );
 
@@ -58,6 +58,19 @@ sub _build_payout {
     return $self->ask_price;
 }
 
+has supported_tokens => (
+    is         => 'rw',
+    isa        => 'ArrayRef',
+    lazy_build => 1,
+);
+
+sub _build_supported_tokens {
+
+    my @supported_token = qw(BTCICO ERC20ICO);
+
+    return \@supported_token;
+}
+
 has build_parameters => (
     is       => 'ro',
     isa      => 'HashRef',
@@ -70,8 +83,9 @@ sub BUILD {
         min => 1,
         max => 1000000,
     };
-    $self->token_type($self->build_parameters->{bet_type});
-    $self->coin_address($self->underlying->symbol);
+    $self->contract_type($self->build_parameters->{bet_type});
+    $self->token_type($self->build_parameters->{underlying});
+    $self->coin_address($self->build_parameters->{coin_address});
     $self->trading_period_start(Date::Utility->new($self->build_parameters->{trading_period_start}));
 
     if ($self->number_of_tokens < $limits->{min} or $self->number_of_tokens > $limits->{max}) {
@@ -111,7 +125,6 @@ has date_start => (
     lazy_build => 1,
 );
 
-
 sub _build_date_start {
     return Date::Utility->new;
 
@@ -122,7 +135,6 @@ has date_pricing => (
     isa     => 'date_object',
     default => sub { Date::Utility->new },
 );
-
 
 # TODO :We need to decide the duration of the auction
 sub _build_date_expiry {
@@ -174,7 +186,7 @@ has [qw(shortcode)] => (
 
 sub _build_shortcode {
     my $self = shift;
-    my @element = map { uc $_ } ($self->token_type, $self->coin_address, $self->ask_price, $self->number_of_tokens);
+    my @element = map { uc $_ } ($self->contract_type, $self->token_type, $self->coin_address, $self->ask_price, $self->number_of_tokens);
     return join '_', @element;
 }
 
@@ -204,9 +216,8 @@ sub _validate_token_type {
     my $self = shift;
 
     my @err;
-    my $supported_token = Finance::Contract::Category->new("coinauction")->{available_types};
-    my $token_type      = uc($self->token_type);
-    if (not grep { $_ eq $token_type } @$supported_token) {
+    my $token_type = uc($self->token_type);
+    if (not grep { $_ eq $token_type } @$self->supported_tokens) {
         push @err,
             {
             message           => "Invalid token type. [symbol: " . $self->token_type . "]",
