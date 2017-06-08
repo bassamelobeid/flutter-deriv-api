@@ -140,84 +140,6 @@ subtest 'prepare_ask' => sub {
 
 };
 
-subtest 'get_ask' => sub {
-    my $params = {
-        "proposal"         => 1,
-        "unit"             => "100",
-        "contract_type"    => "LBFIXEDCALL",
-        "currency"         => "USD",
-        "duration"         => "15",
-        "duration_unit"    => "m",
-        "symbol"           => "R_50",
-#        "streaming_params" => {add_theo_probability => 1},
-    };
-
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => time,
-        underlying => 'R_50',
-    });
-
-    my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-
-    diag explain $result->{error} if exists $result->{error};
-    ok(delete $result->{spot_time},  'result have spot time');
-    ok(delete $result->{date_start}, 'result have date_start');
-    my $expected = {
-        'display_value'       => '53.02',
-        'ask_price'           => '53.02',
-        'longcode'            => 'Receive the difference of Volatility 50 Index\'s maximum value during the life of the option and entry spot at 1 minute after contract start time.',
-        'spot'                => '963.3054',
-        'payout'              => '0',
-#        'theo_probability'    => 0.499862404631018,
-        'contract_parameters' => {
-            'deep_otm_threshold'    => '0.025',
-            'barrier'               => 'S0P',
-            'duration'              => '60s',
-            'bet_type'              => 'LBFIXEDCALL',
-#            'amount_type'           => 'payout',
-            'underlying'            => 'R_50',
-            'currency'              => 'USD',
-            base_commission         => '0.015',
-            'unit'                  => '100',
-            'app_markup_percentage' => 0,
-            'proposal'              => 1,
-            'date_start'            => ignore(),
-#            'staking_limits'        => {
-#                'min'               => '0.35',
-#                'max'               => 50000,
-#                'message_to_client' => ['Minimum stake of [_1] and maximum payout of [_2].', '0.35', '50,000.00']
-#            }
-        }
-    };
-
-    cmp_deeply($result, $expected, 'the left values are all right');
-};
-
-subtest 'send_ask' => sub {
-    my $params = {
-        client_ip => '127.0.0.1',
-        args      => {
-            "proposal"         => 1,
-            "unit"             => "100",
-            "contract_type"    => "LBFIXEDCALL",
-            "currency"         => "USD",
-            "duration"         => "15",
-            "duration_unit"    => "m",
-            "symbol"           => "R_50",
-#            "streaming_params" => {add_theo_probability => 1},
-        }};
-
-    my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
-    my $expected_keys =
-        [sort { $a cmp $b } (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout contract_parameters))];
-    cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
-    is(
-        $result->{longcode},
-        'Receive the difference of Volatility 50 Index\'s maximum value during the life of the option and entry spot at 15 minutes after contract start time.',
-        'long code  is correct'
-    );
-};
-
 subtest 'get_bid' => sub {
 
     # just one tick for missing market data
@@ -329,6 +251,84 @@ subtest $method => sub {
         'result is ok'
     );
 
+};
+
+subtest 'get_ask' => sub {
+    my $params = {
+        "proposal"         => 1,
+        "unit"             => "100",
+        "contract_type"    => "LBFIXEDCALL",
+        "currency"         => "USD",
+        "duration"         => "15",
+        "duration_unit"    => "m",
+        "symbol"           => "R_50",
+#        "streaming_params" => {add_theo_probability => 1},
+    };
+
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => time,
+        underlying => 'R_50',
+    });
+
+    my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+
+    diag explain $result->{error} if exists $result->{error};
+    ok(delete $result->{spot_time},  'result have spot time');
+    ok(delete $result->{date_start}, 'result have date_start');
+    my $expected = {
+        'display_value'       => '205.47',
+        'ask_price'           => '205.47',
+        'longcode'            => 'Receive the difference of Volatility 50 Index\'s maximum value during the life of the option and entry spot at 15 minutes after contract start time.',
+        'spot'                => '963.3054',
+        'payout'              => '0',
+#        'theo_probability'    => 0.499862404631018,
+        'contract_parameters' => {
+            'deep_otm_threshold'    => '0.025',
+            'barrier'               => 'S0P',
+            'duration'              => '15m',
+            'bet_type'              => 'LBFIXEDCALL',
+#            'amount_type'           => 'payout',
+            'underlying'            => 'R_50',
+            'currency'              => 'USD',
+            base_commission         => '0.015',
+            'unit'                  => '100',
+            'app_markup_percentage' => 0,
+            'proposal'              => 1,
+            'date_start'            => ignore(),
+#            'staking_limits'        => {
+#                'min'               => '0.35',
+#                'max'               => 50000,
+#                'message_to_client' => ['Minimum stake of [_1] and maximum payout of [_2].', '0.35', '50,000.00']
+#            }
+        }
+    };
+
+    cmp_deeply($result, $expected, 'the left values are all right');
+};
+
+subtest 'send_ask' => sub {
+    my $params = {
+        client_ip => '127.0.0.1',
+        args      => {
+            "proposal"         => 1,
+            "unit"             => "100",
+            "contract_type"    => "LBFIXEDCALL",
+            "currency"         => "USD",
+            "duration"         => "15",
+            "duration_unit"    => "m",
+            "symbol"           => "R_50",
+#            "streaming_params" => {add_theo_probability => 1},
+        }};
+
+    my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
+    my $expected_keys =
+        [sort { $a cmp $b } (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout contract_parameters))];
+    cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
+    is(
+        $result->{longcode},
+        'Receive the difference of Volatility 50 Index\'s maximum value during the life of the option and entry spot at 15 minutes after contract start time.',
+        'long code  is correct'
+    );
 };
 
 #ToDo: Later add app_markup test
