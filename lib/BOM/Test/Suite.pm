@@ -4,7 +4,7 @@ use warnings;
 use Test::Most;
 use JSON;
 use Data::Dumper;
-use BOM::Test::Time qw(set_date);                     # should be on top
+use BOM::Test::Time qw(set_date);    # should be on top
 
 use BOM::Test::Helper qw/build_test_R_50_data/;
 use Test::MockModule;
