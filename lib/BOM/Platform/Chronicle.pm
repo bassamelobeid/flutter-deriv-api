@@ -83,11 +83,10 @@ use feature "state";
 # used for loading chronicle config file which contains connection information
 use YAML::XS;
 use JSON;
-use DBI;
+use DBIx::Connector::Pg;
 use DateTime;
 use Date::Utility;
 use BOM::Platform::RedisReplicated;
-use DBIx::TransactionManager::Distributed;
 
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
@@ -106,7 +105,7 @@ sub get_chronicle_writer {
     $writer_instance //= Data::Chronicle::Writer->new(
         publish_on_set => 1,
         cache_writer   => $redis,
-        db_handle      => _dbh(),
+        dbic           => dbic(),
     );
 
     return $writer_instance;
@@ -120,7 +119,7 @@ sub get_chronicle_reader {
     if ($for_date) {
         $historical_instance //= Data::Chronicle::Reader->new(
             cache_reader => $redis,
-            db_handle    => _dbh(),
+            dbic         => dbic(),
         );
 
         return $historical_instance;
@@ -155,7 +154,7 @@ sub set {
 
     my $key = $category . '::' . $name;
     BOM::Platform::RedisReplicated::redis_write()->set($key, $value);
-    _archive($category, $name, $value, $rec_date) if _dbh();
+    _archive($category, $name, $value, $rec_date) if dbic();
 
     return 1;
 }
@@ -192,8 +191,11 @@ sub get_for {
 
     my $db_timestamp = Date::Utility->new($date_for)->db_timestamp;
 
-    my $db_data = _dbh()->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
-        'id', {}, $category, $name, $db_timestamp);
+    my $db_data = dbic()->run(
+        sub {
+            $_->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
+                'id', {}, $category, $name, $db_timestamp);
+        });
 
     return if not %$db_data;
 
@@ -212,9 +214,11 @@ sub get_for_period {
     my $start_timestamp = Date::Utility->new($start)->db_timestamp;
     my $end_timestamp   = Date::Utility->new($end)->db_timestamp;
 
-    my $db_data =
-        _dbh()->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? AND timestamp >=? order by timestamp desc},
-        'id', {}, $category, $name, $end_timestamp, $start_timestamp);
+    my $db_data = dbic()->run(
+        sub {
+            $_->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? AND timestamp >=? order by timestamp desc},
+                'id', {}, $category, $name, $end_timestamp, $start_timestamp);
+        });
 
     return if not %$db_data;
 
@@ -238,7 +242,9 @@ sub _archive {
     # In unit tests, we will use Test::MockTime to force Chronicle to store hostorical data
     my $db_timestamp = $rec_date->db_timestamp;
 
-    return _dbh()->prepare(<<'SQL')->execute($category, $name, $value, $db_timestamp);
+    return dbic()->run(
+        sub {
+            $_->prepare(<<'SQL')->execute($category, $name, $value, $db_timestamp) });
 WITH ups AS (
     UPDATE chronicle
        SET value=$3
@@ -258,58 +264,26 @@ SQL
 # We also have Pg for an archive of data used later for non-live services (e.g back-testing, auditing, ...)
 # And in case for any reason, Redis has problems, we will need to re-populate its information not from Pg
 # But by re-running population scripts
-my $dbh;
+my $dbic;
 
-my $pid = $$;
-
-sub _dbh {
+sub dbic {
     # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
     return undef if not defined _config()->{chronicle};
-
-    # Our reconnection logic here is quite simple: assume that a PID change means we need to
-    # reconnect to the database. This also assumes that DBI will reconnect as necessary when
-    # the remote server is restarted or the network drops for any other reason.
-    # There is a more advanced Perl module for handling this - https://metacpan.org/pod/DBIx::Connector
-    # - but the code there is more complicated, including features such as threads support and
-    # Apache::DBI, and so far there hasn't been a compelling reason to consider switching.
-    # Note that switching DBIx::Connector's ->ping behaviour would not be much help for Data::Chronicle::*
-    # handles, we'd need to update Data::Chronicle itself to use DBIx::Connector to get that benefit.
-    return $dbh if $dbh and $$ == $pid;
-    DBIx::TransactionManager::Distributed::release_dbh(chronicle => $dbh) if $dbh;
-    $pid = $$;
-    $dbh = DBI->connect(
-        '' . _dbh_dsn(),
+    $dbic //= DBIx::Connector::Pg->new(
+        _dbh_dsn(),
         # User and password are part of the DSN
         '', '',
         {
             RaiseError        => 1,
             pg_server_prepare => 0,
         });
-    DBIx::TransactionManager::Distributed::register_dbh(chronicle => $dbh);
-    _dbh_changed();
-    return $dbh;
+    $dbic->mode('fixup');
+    return $dbic;
 }
 
 sub _dbh_dsn {
     my $db_postfix = $ENV{DB_POSTFIX} // '';
     return "dbi:Pg:dbname=chronicle$db_postfix;port=6432;host=/var/run/postgresql;user=write";
-}
-
-=head2 _dbh_changed
-
-Used to ensure we will refresh anything that uses a chronicle database handle
-the next time an instance is requested.
-
-Note that any new Chronicle instances we add to this code must also be listed here
-if you want reconnection to work as expected.
-
-=cut
-
-sub _dbh_changed {
-    undef $writer_instance;
-    undef $historical_instance;
-    undef $live_instance;
-    return;
 }
 
 my $config;
