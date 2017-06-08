@@ -254,19 +254,19 @@ my %modifiers = (
         display => '-',
         code    => sub {
             $_[0] - $_[1];
-            }
+        }
     },
     'multiply' => {
         display => '*',
         code    => sub {
             $_[0] * $_[1];
-            }
+        }
     },
     'divide' => {
         display => '/',
         code    => sub {
             $_[0] / $_[1];
-            }
+        }
     },
 );
 
