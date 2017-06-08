@@ -39,60 +39,10 @@ use YAML::XS qw/LoadFile DumpFile/;
 
 use Exporter qw/import/;
 our @EXPORT_OK =
-    qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect launch_redis wsapi_wait_for/;
+    qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect launch_redis/;
 
 my $version = 'v3';
 die 'unknown version' unless $version;
-
-=head2 <wsapi_wait_for>
-
-my $data =  wsapi_wait_for( $t, 'proposal', sub{ send_request.... }, sub{ check_result.... (optional) }, {timeout => 4, wait_max => 100}});
-
-Perform action and wait for the response ( you need to set message type for it ).
-It's a blocking operation.
-Working with Test::Mojo based tests
-
-=cut
-
-sub wsapi_wait_for {
-    my ($t, $wait_for, $action_sub, $check_callback, $params, $messages_without_accidens) = @_;
-    $check_callback //= sub { };
-    $params //= {};
-    $messages_without_accidens //= 0;
-    my $ioloop = IO::Async::Loop->new;
-
-    my $f = $ioloop->new_future;
-
-    $t->tx->once(
-        message => sub {
-            my ($tx, $msg) = @_;
-            return $tx unless $wait_for;
-            note "Got " . $msg;
-            my $data = decode_json($msg);
-
-            return $tx unless ($wait_for && $data->{msg_type} eq $wait_for);
-            $check_callback->($data);
-            $wait_for = '';
-            $f->done($data) if !$f->is_ready;
-        });
-
-    my $id = $ioloop->watch_time(
-        after => ($params->{timeout} || 1),
-        code => sub {
-            if ($messages_without_accidens == ($params->{wait_max} || 10)) {
-                return $f->fail("timeout");
-            }
-            $f->cancel('try again');
-            wsapi_wait_for($t, $wait_for, sub { $t->message_ok }, $check_callback, $params, ++$messages_without_accidens);
-        },
-    );
-    $f->on_ready(sub { shift->loop->unwatch_time($id) });
-
-    $action_sub->();
-
-    my $data = $ioloop->await($f)->get;
-    return $data;
-}
 
 sub build_mojo_test {
     my $app_class = shift;
