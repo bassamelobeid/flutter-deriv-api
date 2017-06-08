@@ -142,13 +142,6 @@ subtest 'prepare_ask' => sub {
 
 subtest 'get_bid' => sub {
 
-    # just one tick for missing market data
-#    create_ticks([100, $now->epoch - 899, 'R_50']);
-#    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-#        epoch      => $now->epoch,
-#        underlying => 'R_50',
-#    });
-
     my $contract = _create_contract(
         current_tick  => $tick,
         date_start    => $now->epoch - 900,
@@ -262,7 +255,6 @@ subtest 'get_ask' => sub {
         "duration"         => "15",
         "duration_unit"    => "m",
         "symbol"           => "R_50",
-#        "streaming_params" => {add_theo_probability => 1},
     };
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -281,13 +273,11 @@ subtest 'get_ask' => sub {
         'longcode'            => 'Receive the difference of Volatility 50 Index\'s maximum value during the life of the option and entry spot at 15 minutes after contract start time.',
         'spot'                => '963.3054',
         'payout'              => '0',
-#        'theo_probability'    => 0.499862404631018,
         'contract_parameters' => {
             'deep_otm_threshold'    => '0.025',
             'barrier'               => 'S0P',
             'duration'              => '15m',
             'bet_type'              => 'LBFIXEDCALL',
-#            'amount_type'           => 'payout',
             'underlying'            => 'R_50',
             'currency'              => 'USD',
             base_commission         => '0.015',
@@ -295,11 +285,6 @@ subtest 'get_ask' => sub {
             'app_markup_percentage' => 0,
             'proposal'              => 1,
             'date_start'            => ignore(),
-#            'staking_limits'        => {
-#                'min'               => '0.35',
-#                'max'               => 50000,
-#                'message_to_client' => ['Minimum stake of [_1] and maximum payout of [_2].', '0.35', '50,000.00']
-#            }
         }
     };
 
@@ -317,7 +302,6 @@ subtest 'send_ask' => sub {
             "duration"         => "15",
             "duration_unit"    => "m",
             "symbol"           => "R_50",
-#            "streaming_params" => {add_theo_probability => 1},
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
