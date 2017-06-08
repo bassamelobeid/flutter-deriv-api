@@ -71,7 +71,7 @@ sub is_scope_confirmed {
 sub store_access_token_only {
     my ($self, $app_id, $loginid, $ua_fingerprint) = @_;
 
-    return $self->dbh->selectrow_array("SELECT oauth.create_token(29, ?, ?, '60d'::INTERVAL, ?)", undef, $app_id, $loginid, $ua_fingerprint);
+    return $self->dbh->selectrow_array("SELECT * FROM oauth.create_token(29, ?, ?, '60d'::INTERVAL, ?)", undef, $app_id, $loginid, $ua_fingerprint);
 }
 
 sub get_token_details {
