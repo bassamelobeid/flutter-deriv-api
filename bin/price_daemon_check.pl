@@ -7,19 +7,27 @@ use JSON::XS qw/decode_json/;
 use Date::Utility;
 use Time::HiRes ();
 use Mojo::UserAgent;
+use Try::Tiny;
 
 my $redis = BOM::Platform::RedisReplicated::redis_pricer;
 
-my @keys = sort @{
+#Getting all PRICER_STATUS keys from redis along with their pricing timing.
+my %pricers_on_ip;
+my %entry;
+for (
     $redis->scan_all(
         MATCH => 'PRICER_STATUS::*',
         COUNT => 20000
-    )};
-
-#Getting all PRICER_STATUS keys from redis along with their pricing timing.
-my %pricers_on_ip;
-for (@keys) {
-    my %entry = @{decode_json($redis->get($_))};
+    ))
+{
+    my $e = 0;
+    try {
+        %entry = @{decode_json($redis->get($_))};
+    }
+    catch {
+        $e = 1;
+    };
+    next if $e;
     $pricers_on_ip{$entry{ip}} = [] unless exists $pricers_on_ip{$entry{ip}};
     $entry{'diff'}             = time - $entry{time};
     $entry{'key'}              = $_;
