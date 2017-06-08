@@ -232,7 +232,7 @@ sub batch_buy_bet {
     my $dbic_code = sub {
         # NOTE, the parens around v_fmb and v_trans in the SQL statement
         #       are necessary.
-        my $stmt = $self->db->dbh->prepare('
+        my $stmt = $_->prepare('
 WITH
 acc(seq, loginid, limits) AS (VALUES
     '
@@ -315,7 +315,7 @@ sub sell_bet {
     my $dbic_code = sub {
         # NOTE, the parens around v_fmb and v_trans in the SQL statement
         #       are necessary.
-        my $stmt = $self->db->dbh->prepare('
+        my $stmt = $_->prepare('
 SELECT (s.v_fmb).*, (s.v_trans).*, t.id
   FROM bet_v1.sell_bet( $1::VARCHAR(12), $2::VARCHAR(3), $3::BIGINT, $4::NUMERIC, $5::TIMESTAMP,
                         $6::JSON, $7::TIMESTAMP, $8::VARCHAR(24), $9::VARCHAR(800), $10::BIGINT,
@@ -366,7 +366,7 @@ sub sell_by_shortcode {
     my $transdata = $self->transaction_data || {};
 
     my $dbic_code = sub {
-        my $stmt = $self->db->dbh->prepare('
+        my $stmt = $_->prepare('
 WITH
 acc( seq, loginid) AS (VALUES ' . $tmp_table_values . ')
 SELECT acc.loginid, b.r_ecode, b.r_edescription, t.id, (b.v_fmb).*, (b.v_trans).*
@@ -405,7 +405,9 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
             $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,    # -- 11
             map { $_->{client_loginid} } @{$self->account_data}                                                       # -- 12...
         );
-        return $stmt->fetchall_arrayref;
+        my $all_rows = $stmt->fetchall_arrayref;
+        $stmt->finish;
+        return $all_rows;
     };
     my $all_rows = $self->db->dbic_run($dbic_code);
     my $result;
@@ -444,8 +446,6 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
             };
         }
     }
-
-    $stmt->finish;
 
     return $result;
 }
@@ -544,7 +544,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
     }
 
     my $dbic_code = sub {
-        my $stmt = $self->db->dbh->prepare($sql);
+        my $stmt = $_->prepare($sql);
         $stmt->execute(@param);
         return $stmt->fetchall_arrayref;
     };
