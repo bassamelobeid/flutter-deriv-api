@@ -66,12 +66,11 @@ sub start_rpc {
     my $config_file = $self->config_file;
     my $script      = $self->script;
     path($config_file)->spew($self->config);
-    return;
     my $pid = fork;
     if (not defined $pid) {
         die 'Could not fork process to start pricing service: ' . $!;
     } elsif ($pid == 0) {
-        exec "/usr/bin/env RPC_CONFIG=$config_file perl -MBOM::Test /home/git/regentmarkets/cpan/local/bin/hypnotoad $script";
+        exec "/usr/bin/env RPC_CONFIG=$config_file perl -MBOM::Test -MBOM::Test::Time /home/git/regentmarkets/cpan/local/bin/hypnotoad $script";
         die "Oops... Couldn't start pricing service: $!, please see log file " . $self->log_file;
     }
     waitpid($pid, 0);
