@@ -7,7 +7,7 @@ use JSON qw(from_json);
 use Math::Util::CalculatedValue::Validatable;
 use List::Util qw(max);
 use List::MoreUtils qw(none all);
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/financialrounding/;
 
 use Price::Calculator;
 use Quant::Framework::EconomicEventCalendar;
@@ -438,7 +438,7 @@ sub _build_app_markup {
 sub _build_app_markup_dollar_amount {
     my $self = shift;
 
-    return formatnumber('amount', $self->currency, $self->app_markup->amount * $self->payout);
+    return financialrounding('amount', $self->currency, $self->app_markup->amount * $self->payout);
 }
 
 #this is supposed to be called for legacy pricing engines (not new interface)
