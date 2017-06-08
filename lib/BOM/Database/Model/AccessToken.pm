@@ -41,8 +41,9 @@ sub create_token {
 sub get_token_details {
     my ($self, $token) = @_;
 
-    my $details = $self->dbic->run(sub {
-            ->selectrow_hashref(<<'SQL', undef, $token) });
+    my $details = $self->dbic->run(
+        sub {
+            $_->selectrow_hashref(<<'SQL', undef, $token) });
 SELECT loginid, creation_time, scopes, display_name, last_used, valid_for_ip
   FROM auth.get_token_details($1)
 SQL
