@@ -1,4 +1,4 @@
-package BOM::Product::Contract::BinaryICO;
+package BOM::Product::Contract::Binaryico;
 
 use Moose;
 extends 'BOM::Product::Contract::Coinauction';

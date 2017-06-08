@@ -25,6 +25,14 @@ use constant {    # added for Transaction
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
+my $ICO_config = {
+    'BINARYICO' => {
+        supported_tokens   => ['BTCICO', 'ERC20ICO'],
+        auction_date_start => 1496275200
+        }
+
+};
+
 has _for_sale => (
     is      => 'rw',
     isa     => 'Bool',
@@ -58,19 +66,6 @@ sub _build_payout {
     return $self->ask_price;
 }
 
-has supported_tokens => (
-    is         => 'rw',
-    isa        => 'ArrayRef',
-    lazy_build => 1,
-);
-
-sub _build_supported_tokens {
-
-    my @supported_token = qw(BTCICO ERC20ICO);
-
-    return \@supported_token;
-}
-
 has build_parameters => (
     is       => 'ro',
     isa      => 'HashRef',
@@ -84,9 +79,8 @@ sub BUILD {
         max => 1000000,
     };
     $self->contract_type($self->build_parameters->{bet_type});
-    $self->token_type($self->build_parameters->{underlying});
+    $self->token_type($self->build_parameters->{underlying}->symbol);
     $self->coin_address($self->build_parameters->{coin_address});
-    $self->trading_period_start(Date::Utility->new($self->build_parameters->{trading_period_start}));
     $self->number_of_tokens($self->build_parameters->{number_of_tokens});
 
     if ($self->number_of_tokens < $limits->{min} or $self->number_of_tokens > $limits->{max}) {
@@ -127,7 +121,10 @@ has date_start => (
 );
 
 sub _build_date_start {
-    return Date::Utility->new;
+    my $self = shift;
+    my $now  = Date::Utility->new;
+
+    return $now->is_after($self->date_expiry) ? $self->date_expiry : $now;
 
 }
 
@@ -137,10 +134,11 @@ has date_pricing => (
     default => sub { Date::Utility->new },
 );
 
-# TODO :We need to decide the duration of the auction
 sub _build_date_expiry {
     my $self = shift;
-    return $self->trading_period_start->plus_time_interval('30d');
+
+    my $auction_start_date = Date::Utility->new($ICO_config->{$self->contract_type}->{auction_date_start});
+    return $auction_start_date->plus_time_interval('30d');
 }
 
 sub _build_date_settlement {
@@ -217,8 +215,9 @@ sub _validate_token_type {
     my $self = shift;
 
     my @err;
-    my $token_type = uc($self->token_type);
-    if (not grep { $_ eq $token_type } @$self->supported_tokens) {
+    my @supported_tokens = @{$ICO_config->{$self->contract_type}->{supported_tokens}};
+    my $token_type       = uc($self->token_type);
+    if (not grep { $_ eq $token_type } @supported_tokens) {
         push @err,
             {
             message           => "Invalid token type. [symbol: " . $self->token_type . "]",

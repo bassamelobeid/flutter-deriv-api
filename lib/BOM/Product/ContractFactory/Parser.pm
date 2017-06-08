@@ -52,14 +52,12 @@ sub shortcode_to_parameters {
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
-    if ($shortcode =~ /^BINARYICO_([A-Z0-9]+)_(\w+)_(\d*\.?\d*)_(\d+)_(\d+)$/) {
+    if ($shortcode =~ /^BINARYICO_([A-Z0-9]+)_(\w+)_(\d*\.?\d*)_(\d+)$/) {
         $bet_type          = 'BINARYICO';
         $underlying_symbol = $1;
         $coin_address      = $2;
         $payout            = $3;
         $number_of_tokens  = $4;
-        $date_start        = $5;
-        $date_expiry       = Date::Utility->new($date_start)->plus_time_interval('30d')->epoch;
 
     } elsif ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
         # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
