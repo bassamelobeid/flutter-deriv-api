@@ -4,6 +4,7 @@ use warnings;
 use Test::Most;
 use JSON;
 use Data::Dumper;
+use BOM::Test::Time qw(set_date);                     # should be on top
 
 use BOM::Test::Helper qw/build_test_R_50_data/;
 use Test::MockModule;
@@ -25,7 +26,6 @@ use BOM::Test::Data::Utility::AuthTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::App;
 use Time::HiRes qw(tv_interval gettimeofday);
-use BOM::Test::Time qw(set_date);
 
 # Needs to be at top-level scope since _set_allow_omnibus and _get_stashed need access,
 # populated in the main run() loop
