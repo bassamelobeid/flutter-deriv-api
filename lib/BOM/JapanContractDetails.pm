@@ -142,7 +142,7 @@ sub verify_with_shortcode {
         $pricing_args->{pricing_spot} = $extra_args[0];
         if ($priced_at_start->priced_with_intraday_model) {
             $pricing_args->{pricing_vol}          = $extra_args[1];
-            $pricing_args->{long_term_prediction} = $extra_args[3];
+            $pricing_args->{long_term_prediction} = $extra_args[2];
         } elsif ($priced_at_start->pricing_vol_for_two_barriers) {    # two barrier for slope
             $pricing_args->{pricing_vol_for_two_barriers} = {
                 high_barrier_vol => $extra_args[1],
