@@ -239,7 +239,7 @@ lives_ok {
 'expect to instansiate the model without params';
 
 throws_ok {
-    my $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({});
+    my $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({bet_data => {}});
     $financial_market_bet_helper->sell_bet() // die "Bet not sold";
 }
 qr/undefined value/, 'Check if sell will die if there is no DB at all';
