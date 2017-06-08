@@ -2,7 +2,6 @@ package BOM::Database::Model::OAuth;
 
 use Moose;
 use Date::Utility;
-use String::Random ();
 use Try::Tiny;
 use List::MoreUtils qw(uniq);
 use BOM::Database::AuthDB;
