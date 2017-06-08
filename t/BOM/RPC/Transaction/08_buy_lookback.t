@@ -92,7 +92,7 @@ subtest 'buy' => sub {
     like($result->{shortcode}, qr/LBFIXEDCALL_R_50_100_\d{10}_\d{10}_S0P_0/, 'shortcode is correct');
     is(
         $result->{longcode},
-        'Win payout if Volatility 50 Index is strictly higher than entry spot at 2 minutes after contract start time.',
+        'Receive the difference of Volatility 50 Index\'s maximum value during the life of the option and entry spot plus 0.0020 at 2 minutes after contract start time.',
         'longcode is correct'
     );
 
