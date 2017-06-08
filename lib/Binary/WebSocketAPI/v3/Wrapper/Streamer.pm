@@ -447,8 +447,7 @@ sub _feed_channel_unsubscribe {
 }
 
 sub transaction_channel {
-    my ($c, $action, $account_id, $type, $args, $additional_params) = @_;
-    $additional_params //= {};
+    my ($c, $action, $account_id, $type, $args) = @_;
 
     my $uuid;
 
@@ -468,7 +467,7 @@ sub transaction_channel {
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
             $channel->{$type}->{account_id}  = $account_id;
-            $channel->{$type}->{contract_id} = $additional_params->{contract_id} || $args->{contract_id};
+            $channel->{$type}->{contract_id} = $args->{contract_id} if $args->{contract_id};
             $c->stash('transaction_channel', $channel);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
             delete $channel->{$type};
@@ -559,6 +558,7 @@ sub _generate_uuid_string {
     return join "-", unpack "H8H4H4H4H12", (scalar <$RAND> or die "Could not read from /dev/urandom : $!");
 }
 
+# POC means proposal_open_contract
 sub _create_poc_stream {
     my $c       = shift;
     my $payload = shift;
