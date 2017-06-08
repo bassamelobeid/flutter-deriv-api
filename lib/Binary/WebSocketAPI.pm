@@ -83,10 +83,11 @@ sub startup {
     apply_usergroup $app->config->{hypnotoad}, sub {
         $log->info(@_);
     };
-    $app->plugin(
-        'Binary::WebSocketAPI::Plugins::Introspection' => {
-            port => 0,
-        });
+
+    # binary.com plugins
+    push @{$app->plugins->namespaces}, 'Binary::WebSocketAPI::Plugins';
+    $app->plugin('Introspection' => {port => 0});
+    $app->plugin('RateLimits');
 
     $app->hook(
         before_dispatch => sub {
@@ -324,12 +325,13 @@ sub startup {
             }
         ],
 
-        ['app_register', {require_auth => 'admin'}],
-        ['app_list',     {require_auth => 'admin'}],
-        ['app_get',      {require_auth => 'admin'}],
-        ['app_update',   {require_auth => 'admin'}],
-        ['app_delete',   {require_auth => 'admin'}],
-        ['oauth_apps',   {require_auth => 'read'}],
+        ['app_register',     {require_auth => 'admin'}],
+        ['app_list',         {require_auth => 'admin'}],
+        ['app_get',          {require_auth => 'admin'}],
+        ['app_update',       {require_auth => 'admin'}],
+        ['app_delete',       {require_auth => 'admin'}],
+        ['oauth_apps',       {require_auth => 'read'}],
+        ['revoke_oauth_app', {require_auth => 'admin'}],
 
         ['topup_virtual',     {require_auth => 'trade'}],
         ['get_limits',        {require_auth => 'read'}],
@@ -444,45 +446,6 @@ sub startup {
         push @{$action_options->{stash_params}}, 'token' if $action_options->{require_auth};
     }
 
-    # configuration-compatibility with RateLimitations
-    my %rates_files = (
-        binary => LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml'),
-        japan  => LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/japan_perl_rate_limitations.yml'));
-
-    my %rates_config;
-    # convert configuration to RateLimitations::Pluggable format
-    # (i.e. unify human-readable time intervals like '1m' to seconds (60))
-    for my $company (keys %rates_files) {
-        my $rates_file_content = $rates_files{$company};
-        for my $service (keys %$rates_file_content) {
-            for my $interval (keys %{$rates_file_content->{$service}}) {
-                my $seconds = Time::Duration::Concise->new(interval => $interval)->seconds;
-                my $count = $rates_file_content->{$service}->{$interval};
-                $rates_config{$company}{$service}->{$seconds} = $count;
-            }
-        }
-    }
-
-    $app->helper(
-        'rate_limitations' => sub {
-            my $c     = shift;
-            my $stash = $c->stash;
-            return $stash->{rate_limitations} // do {
-                # do not hold reference to stash in stash
-                weaken $stash;
-                my $rl = RateLimitations::Pluggable->new(
-                    limits => ($rates_config{$c->landing_company_name // ''} // $rates_config{binary}),
-                    getter => sub {
-                        my ($service) = @_;
-                        return $stash->{rate_limitations_hits}{$service} //= [];
-                    },
-                    # we do not need setter, as getter always returns
-                    # service hits array from stash.
-                );
-                $stash->{rate_limitations} = $rl;
-            };
-        });
-
     $app->helper(
         'app_id' => sub {
             my $c               = shift;
@@ -512,59 +475,6 @@ sub startup {
             return $authorised_key // $non_authorised_key;
         });
 
-    $app->helper(
-        'rate_limitations_save' => sub {
-            my $c    = shift;
-            my $key  = $c->rate_limitations_key;
-            my $hits = $c->stash->{rate_limitations_hits};
-            # silence errors  when $hits is undef
-            return unless $hits;
-            $c->ws_redis_master->set(
-                $key => encode_json($hits),
-                EX   => 3600,
-                sub {
-                    my ($redis, $err) = @_;
-                    # In global destruction, the Redis connection may be dropped partway
-                    # through the operation. Since the information we're storing isn't
-                    # critical, we accept this, but see this card as well:
-                    # https://trello.com/c/199pqtnM/4609-clean-up-redis-disconnect-handling-in-websockets-code
-                    return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
-                    warn "rate_limitations_save error: $err" if $err;
-                },
-            );
-        });
-
-    $app->helper(
-        'rate_limitations_load' => sub {
-            my $c   = shift;
-            my $key = $c->rate_limitations_key;
-            Scalar::Util::weaken(my $weak_c = $c);
-            my $hits_json = $c->ws_redis_slave->get(
-                $key,
-                sub {
-                    my ($redis, $err, $hits_json) = @_;
-                    # As with save: on global destruct, a partial load may be cancelled.
-                    # https://trello.com/c/199pqtnM/4609-clean-up-redis-disconnect-handling-in-websockets-code
-                    return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
-                    if ($err) {
-                        warn "rate_limitations_load error: $err";
-                        return;
-                    }
-                    unless ($weak_c && $weak_c->tx) {
-                        # No longer have context in rate limits load, probable client disconnect, bailing out
-                        return;
-                    }
-                    try {
-                        my $hits = $hits_json ? decode_json($hits_json) : {};
-                        $weak_c->stash(rate_limitations_hits => $hits);
-                    }
-                    catch {
-                        warn "Failed to decode and stash rate limit data: $_";
-                    };
-                    return;
-                });
-        });
-
     $app->plugin(
         'web_socket_proxy' => {
             actions => $actions,
@@ -572,7 +482,7 @@ sub startup {
             # action hooks
             before_forward => [
                 \&Binary::WebSocketAPI::Hooks::check_app_id, \&Binary::WebSocketAPI::Hooks::before_forward,
-                \&Binary::WebSocketAPI::Hooks::get_rpc_url
+                \&Binary::WebSocketAPI::Hooks::get_rpc_url,  \&Binary::WebSocketAPI::Hooks::introspection_before_forward
             ],
             before_call => [
                 \&Binary::WebSocketAPI::Hooks::add_app_id,   \&Binary::WebSocketAPI::Hooks::add_brand,
@@ -582,7 +492,8 @@ sub startup {
             after_got_rpc_response   => [\&Binary::WebSocketAPI::Hooks::log_call_timing_connection, \&Binary::WebSocketAPI::Hooks::error_check],
             before_send_api_response => [
                 \&Binary::WebSocketAPI::Hooks::add_req_data,      \&Binary::WebSocketAPI::Hooks::start_timing,
-                \&Binary::WebSocketAPI::Hooks::output_validation, \&Binary::WebSocketAPI::Hooks::add_call_debug
+                \&Binary::WebSocketAPI::Hooks::output_validation, \&Binary::WebSocketAPI::Hooks::add_call_debug,
+                \&Binary::WebSocketAPI::Hooks::introspection_before_send_response
             ],
             after_sent_api_response => [\&Binary::WebSocketAPI::Hooks::log_call_timing_sent, \&Binary::WebSocketAPI::Hooks::close_bad_connection],
 

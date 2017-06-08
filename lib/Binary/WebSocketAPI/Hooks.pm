@@ -3,13 +3,14 @@ package Binary::WebSocketAPI::Hooks;
 use strict;
 use warnings;
 
-use JSON;
-use Try::Tiny;
-use Path::Tiny;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
-use Fcntl qw/ :flock /;
-use Mojo::IOLoop;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
+use Future;
+use JSON;
+use Mojo::IOLoop;
+use Path::Tiny;
+use Try::Tiny;
+use Data::Dumper;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -20,9 +21,9 @@ sub start_timing {
 }
 
 sub cleanup_strored_contract_ids {
-    my ($c, $req_storage) = @_;
+    my $c              = shift;
     my $last_contracts = $c->stash('last_contracts') // {};
-    my $now = time;
+    my $now            = time;
     # see Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_store_last_contract_id
     # keep contract bought in last 60 sec, update stash only if contract list changed
     $c->stash(last_contracts => $last_contracts) if delete @{$last_contracts}{grep { ($now - $last_contracts->{$_}) > 60 } keys %$last_contracts};
@@ -120,14 +121,15 @@ sub reached_limit_check {
             ? 'real'
             : 'virtual'
             )} // 'websocket_call';
-    if ($limiting_service
-        and not $c->rate_limitations->within_rate_limits($limiting_service, 'does-not-matter'))
-    {
-        stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["app_id:" . $c->app_id]});
-        $c->rate_limitations_save;
-        return 1;
+    if ($limiting_service) {
+        my $f = $c->check_limits($limiting_service);
+        $f->on_fail(
+            sub {
+                stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["app_id:" . $c->app_id]});
+            });
+        return $f;
     }
-    return;
+    return Future->done;
 }
 
 # Set JSON Schema default values for fields which are missing and have default.
@@ -153,56 +155,60 @@ sub before_forward {
     # None are much helpful in a well prepared DDoS.
     my $is_real = $c->stash('loginid') && !$c->stash('is_virtual');
     my $category = $req_storage->{name};
-    if (reached_limit_check($c, $category, $is_real)) {
-        return $c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $category));
-    }
 
-    my $input_validation_result = $req_storage->{in_validator}->validate($args);
-    if (not $input_validation_result) {
-        my ($details, @general);
-        foreach my $err ($input_validation_result->errors) {
-            if ($err->property =~ /\$\.(.+)$/) {
-                $details->{$1} = $err->message;
-            } else {
-                push @general, $err->message;
+    return reached_limit_check($c, $category, $is_real)->then(
+        sub {
+
+            my $input_validation_result = $req_storage->{in_validator}->validate($args);
+            if (not $input_validation_result) {
+                my ($details, @general);
+                foreach my $err ($input_validation_result->errors) {
+                    if ($err->property =~ /\$\.(.+)$/) {
+                        $details->{$1} = $err->message;
+                    } else {
+                        push @general, $err->message;
+                    }
+                }
+                my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
+                if ($details->{req_id}) {
+                    delete $args->{req_id};
+                }
+                return Future->fail($c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $details));
             }
-        }
-        my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
-        if ($details->{req_id}) {
-            delete $args->{req_id};
-        }
-        return $c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $details);
-    }
 
-    _set_defaults($req_storage, $args);
+            _set_defaults($req_storage, $args);
 
-    my $tag = 'origin:';
-    if (my $origin = $c->req->headers->header("Origin")) {
-        if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
-            $tag = "origin:$1";
-        }
-    }
+            my $tag = 'origin:';
+            if (my $origin = $c->req->headers->header("Origin")) {
+                if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
+                    $tag = "origin:$1";
+                }
+            }
 
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $req_storage->{name}, {tags => [$tag]});
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req_storage->{name}"]});
+            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $req_storage->{name}, {tags => [$tag]});
+            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req_storage->{name}"]});
 
-    my $loginid = $c->stash('loginid');
-    if ($req_storage->{require_auth} and not $loginid) {
-        return $c->new_error($req_storage->{name}, 'AuthorizationRequired', $c->l('Please log in.'));
-    }
+            my $loginid = $c->stash('loginid');
+            if ($req_storage->{require_auth} and not $loginid) {
+                return Future->fail($c->new_error($req_storage->{name}, 'AuthorizationRequired', $c->l('Please log in.')));
+            }
 
-    if ($req_storage->{require_auth} and not(grep { $_ eq $req_storage->{require_auth} } @{$c->stash('scopes') || []})) {
-        return $c->new_error($req_storage->{name}, 'PermissionDenied',
-            $c->l('Permission denied, requires [_1] scope.', $req_storage->{require_auth}));
-    }
+            if ($req_storage->{require_auth} and not(grep { $_ eq $req_storage->{require_auth} } @{$c->stash('scopes') || []})) {
+                return Future->fail(
+                    $c->new_error(
+                        $req_storage->{name}, 'PermissionDenied', $c->l('Permission denied, requires [_1] scope.', $req_storage->{require_auth})));
+            }
 
-    if ($loginid) {
-        my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
-        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
-            {tags => [$tag, $req_storage->{name}, "account_type:$account_type"]});
-    }
-
-    return;
+            if ($loginid) {
+                my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
+                DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
+                    {tags => [$tag, $req_storage->{name}, "account_type:$account_type"]});
+            }
+            return Future->done;
+        },
+        sub {
+            Future->fail($c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $category)));
+        });
 }
 
 sub get_rpc_url {
@@ -243,18 +249,20 @@ sub output_validation {
     return;
 }
 
-sub init_redis_connections {
-    my $c = shift;
-    $c->redis;
-    $c->redis_pricer;
-    return;
-}
-
 sub forget_all {
     my $c = shift;
-    # stop all recurring
-    delete $c->stash->{redis};
-    delete $c->stash->{redis_pricer};
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'balance');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'transaction');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'proposal_open_contract');
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal_open_contract');
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'ticks');
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'candles');
+
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_proposal_array($c);
 
     return;
 }
@@ -262,8 +270,9 @@ sub forget_all {
 sub error_check {
     my ($c, $req_storage, $rpc_response) = @_;
     my $result = $rpc_response->result;
-    if (ref($result) eq 'HASH' && $result->{error} && $result->{error}->{code} eq 'InvalidAppID') {
-        $req_storage->{close_connection} = 1;
+    if (ref($result) eq 'HASH' && $result->{error}) {
+        $c->stash->{introspection}{last_rpc_error} = $result->{error};
+        $req_storage->{close_connection} = 1 if $result->{error}->{code} eq 'InvalidAppID';
     }
     return;
 }
@@ -309,8 +318,8 @@ sub on_client_connect {
     # We use a weakref in case the disconnect is never called
     warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
-    init_redis_connections($c);
-    $c->rate_limitations_load;
+
+    $c->app->stat->{cumulative_client_connections}++;
     return;
 }
 
@@ -318,12 +327,30 @@ sub on_client_disconnect {
     my ($c) = @_;
     warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
     forget_all($c);
+
     delete $c->app->active_connections->{$c};
-    $c->rate_limitations_save;
 
-    my $timer_id = $c->stash->{rate_limitations_timer};
-    Mojo::IOLoop->remove($timer_id) if $timer_id;
+    return;
+}
 
+sub introspection_before_forward {
+    my ($c, $req_storage) = @_;
+    my %args_copy = %{$req_storage->{origin_args}};
+    $c->stash->{introspection}{last_call_received} = \%args_copy;
+
+    $c->stash->{introspection}{msg_type}{received}{$req_storage->{method}}++;
+    use bytes;
+    $c->stash->{introspection}{received_bytes} += bytes::length(Dumper($req_storage->{origin_args}));
+    return;
+}
+
+sub introspection_before_send_response {
+    my ($c, $req_storage, $api_response) = @_;
+    my %copy = %{$api_response};
+    $c->stash->{introspection}{last_message_sent} = \%copy;
+    $c->stash->{introspection}{msg_type}{sent}{$api_response->{msg_type}}++;
+    use bytes;
+    $c->stash->{introspection}{sent_bytes} += bytes::length(Dumper($api_response));
     return;
 }
 

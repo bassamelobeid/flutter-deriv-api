@@ -5,16 +5,12 @@ use warnings;
 
 no indirect;
 use Try::Tiny;
-use Format::Util::Numbers qw(roundnear);
-use Binary::WebSocketAPI::v3::Wrapper::System;
-use Binary::WebSocketAPI::v3::PricingSubscription;
+use Data::Dumper;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday tv_interval);
-use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
-use Format::Util::Numbers qw(to_monetary_number_format);
 use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
@@ -23,6 +19,10 @@ use List::Util qw(min);
 use Future::Mojo          ();
 use Future::Utils         ();
 use Variable::Disposition ();
+
+use Binary::WebSocketAPI::v3::Wrapper::System;
+use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::PricingSubscription;
 
 # Number of RPC requests a single active websocket call
 # can issue in parallel. Used for proposal_array.
@@ -129,15 +129,17 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
         return;
     };
 
-    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-    $proposal_array_subscriptions->{$uuid} = {
-        args      => $req_storage->{args},
-        proposals => {},
-        seq       => []};
-    $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
-    my $position = 0;
-    for my $barrier (@$barrier_chunks) {
-        $barriers_order->{_make_barrier_key($barrier->[0])} = $position++;
+    if ($req_storage->{args}{subscribe}) {    # store data in stash if it is a subscription
+        my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
+        $proposal_array_subscriptions->{$uuid} = {
+            args      => $req_storage->{args},
+            proposals => {},
+            seq       => []};
+        $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
+        my $position = 0;
+        for my $barrier (@$barrier_chunks) {
+            $barriers_order->{_make_barrier_key($barrier->[0])} = $position++;
+        }
     }
 
     my $create_price_channel = sub {
@@ -169,12 +171,22 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
         if ($req_storage->{args}{subscribe}) {    # we are in subscr mode, so remember the sequence of streams
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
             if ($proposal_array_subscriptions->{$uuid}) {
-                my $barriers = $req_storage->{args}{barriers}[0];
-                my $idx      = _make_barrier_key($barriers);
-                warn "unknown idx " . $idx . ", available: " . join ',', sort keys %$barriers_order unless exists $barriers_order->{$idx};
-                ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
-                # creating this key to be used by forget_all, undef - not to allow proposal_array message to be sent before real data received
-                $proposal_array_subscriptions->{$uuid}{proposals}{$req_storage->{uuid}} = undef;
+                if ($req_storage->{uuid}) {
+                    my $barriers = $req_storage->{args}{barriers}[0];
+                    my $idx      = _make_barrier_key($barriers);
+                    warn "unknown idx " . $idx . ", available: " . join ',', sort keys %$barriers_order unless exists $barriers_order->{$idx};
+                    ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
+                    # creating this key to be used by forget_all, undef - not to allow proposal_array message to be sent before real data received
+                    $proposal_array_subscriptions->{$uuid}{proposals}{$req_storage->{uuid}} = undef;
+                } else {
+                    # `_pricing_channel_for_ask` does not generated uuid.
+                    # it could be rare case when 2 proposal_array calls are performed in one connection
+                    # and they have similar but not the same barriers, so some chunks became the same
+                    # in this case `proposal_array` RPC hook `response` will send error message to client and will stop processing this call
+                    # so subscription should be removed.
+                    Binary::WebSocketAPI::v3::Wrapper::System::_forget_proposal_array($c, $uuid);
+                    delete $proposal_array_subscriptions->{$uuid};
+                }
                 $c->stash(proposal_array_subscriptions => $proposal_array_subscriptions);
             }
         }
@@ -214,6 +226,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             language              => $c->stash('language'),
                             app_markup_percentage => $c->stash('app_markup_percentage'),
                             landing_company       => $c->landing_company_name,
+                            proposal_array        => 1,
                         },
                         error    => $create_price_channel,
                         success  => $create_price_channel,
@@ -274,7 +287,18 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                         if (exists $res->{proposals}) {
                             for my $contract_type (keys %{$res->{proposals}}) {
                                 my @prices = @{$res->{proposals}{$contract_type}};
-                                $_->{error}{message} = delete $_->{error}{message_to_client} for grep { ; exists $_->{error} } @prices;
+                                for my $price (@prices) {
+                                    if (exists $price->{error}) {
+                                        $price->{error}{message} = $c->l(delete $price->{error}{message_to_client});
+                                        $price->{error}{details}{longcode} = $c->l(delete $price->{longcode});
+                                        $price->{error}{details}{display_value} += 0;
+                                        $price->{error}{details}{payout}        += 0;
+                                    } else {
+                                        $price->{longcode} = $c->l($price->{longcode});
+                                        $price->{payout}   = $req_storage->{args}{amount};
+                                        delete $price->{theo_probability};
+                                    }
+                                }
                                 warn "Barrier mismatch - expected " . @expected_barriers . " but had " . @prices unless @prices == @expected_barriers;
                                 push @{$proposal_array{$contract_type}}, @prices;
                             }
@@ -282,9 +306,10 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             # We've already done the check for top-level { error => { ... } } by this point,
                             # so if we don't have the proposals key then something very unexpected happened.
                             warn "Invalid entry in proposal_array response - " . encode_json($res);
-                            $c->send(
-                                {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')})
-                                if $c and $c->tx;
+                            $c->send({
+                                    json => $c->wsp_error(
+                                        $msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))}
+                            ) if $c and $c->tx;
                             return;
                         }
                     }
@@ -306,7 +331,8 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                 }
                 catch {
                     warn "proposal_array exception - $_";
-                    $c->send({json => $c->wsp_error($msg_type, 'ProposalArrayFailure', 'Sorry, an error occurred while processing your request.')})
+                    $c->send(
+                        {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))})
                         if $c and $c->tx;
                 };
             }));
@@ -547,6 +573,7 @@ sub _create_pricer_channel {
 sub process_pricing_events {
     my ($c, $message, $channel_name) = @_;
 
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal') unless $c->tx;
     return if not $message or not $c->tx;
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$channel_name};
@@ -607,8 +634,6 @@ sub process_proposal_array_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type = 'proposal';
 
-    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
-
     unless ($c->stash('proposal_array_collector_running')) {
         $c->stash('proposal_array_collector_running' => 1);
         # start 1 sec proposal_array sender if not started yet
@@ -639,7 +664,9 @@ sub process_proposal_array_event {
 
                         # Make sure that we don't override any of the values for next time (e.g. ask_price)
                         my $copy = {contract_parameters => {%{$stashed_contract_parameters->{contract_parameters}}}};
-                        return _price_stream_results_adjustment($c, $stash_data->{args}, $copy, $price, $theo_probability);
+                        my $res = _price_stream_results_adjustment($c, $stash_data->{args}, $copy, $price, $theo_probability);
+                        $res->{longcode} = $c->l($res->{longcode}) if $res->{longcode};
+                        return $res;
                     }
                 }
                 catch {
@@ -699,7 +726,7 @@ sub process_ask_event {
                     $type    => {
                         %$adjusted_results,
                         id       => $stash_data->{uuid},
-                        longcode => $stash_data->{cache}->{longcode},
+                        longcode => $c->l($stash_data->{cache}->{longcode}),
                     },
                 };
             }
@@ -717,11 +744,7 @@ sub process_ask_event {
 }
 
 sub _price_stream_results_adjustment {
-    my $c                     = shift;
-    my $orig_args             = shift;
-    my $cache                 = shift;
-    my $results               = shift;
-    my $resp_theo_probability = shift;
+    my ($c, undef, $cache, $results, $resp_theo_probability) = @_;
 
     my $contract_parameters = $cache->{contract_parameters};
 
@@ -754,17 +777,11 @@ sub _price_stream_results_adjustment {
             stake_same_as_payout   => sub { 'This contract offers no return.' },
             stake_outside_range    => sub {
                 my ($details) = @_;
-                return (
-                    'Minimum stake of [_1] and maximum payout of [_2].',
-                    to_monetary_number_format($details->[0]),
-                    to_monetary_number_format($details->[1]));
+                return ('Minimum stake of [_1] and maximum payout of [_2].', $details->[0], $details->[1]);
             },
             payout_outside_range => sub {
                 my ($details) = @_;
-                return (
-                    'Minimum stake of [_1] and maximum payout of [_2].',
-                    to_monetary_number_format($details->[0]),
-                    to_monetary_number_format($details->[1]));
+                return ('Minimum stake of [_1] and maximum payout of [_2].', $details->[0], $details->[1]);
             },
         };
         return {
@@ -772,7 +789,7 @@ sub _price_stream_results_adjustment {
                 message_to_client => $c->l($error_map->{$error->{error_code}}->($error->{error_details} || [])),
                 code              => 'ContractBuyValidationError',
                 details           => {
-                    longcode      => $contract_parameters->{longcode},
+                    longcode      => $c->l($contract_parameters->{longcode}),
                     display_value => $price_calculator->ask_price,
                     payout        => $price_calculator->payout,
                 },
@@ -812,8 +829,6 @@ sub _create_error_message {
     my ($err_code, $err_message, $err_details);
 
     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{cache}{proposal_array_subscription} || $stash_data->{uuid});
-
-    my $error = $response->{error} || {};
 
     if ($response->{error}) {
         $err_code    = $response->{error}->{code};

@@ -5,12 +5,14 @@ use base 'Mojolicious::Plugin';
 use strict;
 use warnings;
 use feature "state";
+
 use Sys::Hostname;
-use YAML::XS;
 use Scalar::Util ();
+
+use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| pricer_write |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| ws_redis_master ws_redis_slave redis_pricer shared_redis |;
 
 use Locale::Maketext::ManyPluralForms {
     'EN'      => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/en.po'],
@@ -27,12 +29,23 @@ sub register {
     # Weakrefs to active $c instances
     $app->helper(
         active_connections => sub {
-            state $connections = {};
+            my $app = shift->app;
+            return $app->{_binary_connections} //= {};
+        });
+
+    # for storing various statistic data
+    $app->helper(
+        stat => sub {
+            my $app = shift->app;
+            return $app->{_binary_introspection_stats} //= {};
         });
 
     $app->helper(
         l => sub {
             my $c = shift;
+            my ($content, @params) = @_;
+
+            return '' unless $content;
 
             state %handles;
             my $language = $c->stash->{language} || 'EN';
@@ -40,8 +53,26 @@ sub register {
             $handles{$language} //= Locale::Maketext::ManyPluralForms->get_handle(lc $language);
 
             die("could not build locale for language $language") unless $handles{$language};
+            my @texts = ();
+            if (ref $content eq 'ARRAY') {
+                return '' unless scalar @$content;
+                my $content_copy = [@$content];    # save original
+                                                   # first one is always text string
+                push @texts, shift @$content_copy;
+                # followed by parameters
+                foreach my $elm (@$content_copy) {
+                    # some params also need localization (longcode)
+                    if (ref $elm eq 'ARRAY' and scalar @$elm) {
+                        push @texts, $handles{$language}->maketext(@$elm);
+                    } else {
+                        push @texts, $elm;
+                    }
+                }
+            } else {
+                @texts = ($content, @params);
+            }
 
-            return $handles{$language}->maketext(@_);
+            return $handles{$language}->maketext(@texts);
         });
 
     $app->helper(
@@ -72,7 +103,7 @@ sub register {
 
     $app->helper(
         new_error => sub {
-            my $c = shift;
+            shift;
             my ($msg_type, $code, $message, $details) = @_;
 
             my $error = {
@@ -87,82 +118,23 @@ sub register {
             };
         });
 
-    # read it once, and share between workers
-    my $chronicle_cfg = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml');
-    my $ws_redis_cfg  = YAML::XS::LoadFile($ENV{BOM_TEST_WS_REDIS}         // '/etc/rmg/ws-redis.yml');
-    my $redis_url     = sub {
-        my $cfg = shift;
-        my ($host, $port, $password) = @{$cfg}{qw/host port password/};
-        "redis://" . ($password ? "x:$password\@" : "") . "$host:$port";
-    };
-    my $chronicle_redis_url = $redis_url->($chronicle_cfg->{read});
-
-    # for 'website_status' with 'subscribe' option, see also bin/clients_notify.pl
-    my $ws_redis_master_on_message = sub {
-        my ($self, $msg, $channel) = @_;
-        if ($channel eq "NOTIFY::broadcast::channel") {
-            my $shared_info = $app->redis_connections($channel);
-            Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($shared_info, $msg, $channel);
-        }
-    };
-
-    my @redises = ([
-            ws_redis_master => $redis_url->($ws_redis_cfg->{write}),
-            on_message      => $ws_redis_master_on_message
-        ],
-        [ws_redis_slave => $redis_url->($ws_redis_cfg->{read})],
-    );
-
-    for my $redis_info (@redises) {
-        my ($helper_name, $redis_url, $on_message, $on_msg_sub) = @$redis_info;
+    for my $redis_name (qw| ws_redis_master ws_redis_slave redis_pricer shared_redis |) {
         $app->helper(
-            $helper_name => sub {
-                state $redis = do {
-                    my $redis = Mojo::Redis2->new(url => $redis_url);
-                    $redis->on(
-                        error => sub {
-                            my ($self, $err) = @_;
-                            $app->log->warn("redis error: $err");
-                        });
-                    $redis->on(message => $on_msg_sub) if $on_message;
-                    $redis;
-                };
-                return $redis;
-            });
-    }
+            $redis_name => sub {
+                my $c = shift;
+                return $c->stash($redis_name) if $c->stash($redis_name);
 
-    # one redis connection (Mojo::Redis2 instance) per worker, i.e. shared among multiple clients, connected to
-    # the same worker
-    $app->helper(
-        shared_redis => sub {
-            state $redis = do {
-                my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
+                my $redis = Binary::WebSocketAPI::v3::Instance::Redis->$redis_name();
                 $redis->on(
                     error => sub {
                         my ($self, $err) = @_;
-                        $app->log->warn("redis error: $err");
+                        warn("Redis $redis_name error: $err");
+                        $app->stat->{redis_errors}++;
                     });
-                $redis->on(
-                    message => sub {
-                        my ($self, $msg, $channel) = @_;
-
-                        return warn "Misuse shared_redis: the message on channel '$channel' is not expected"
-                            if $channel !~ /^FEED::/;
-
-                        my $shared_info = $app->redis_connections($channel);
-                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($shared_info, $msg, $channel);
-                    });
-                $redis;
-            };
-            return $redis;
-        });
-
-    my $redis_connections = {};
-    $app->helper(
-        redis_connections => sub {
-            my ($c, $key) = @_;
-            return $redis_connections->{$key} //= {};
-        });
+                $c->stash($redis_name => $redis);
+                return $c->stash($redis_name) if $c->stash($redis_name);
+            });
+    }
 
     my $pricing_subscriptions = {};
     $app->helper(
@@ -179,37 +151,6 @@ sub register {
         });
 
     $app->helper(
-        redis => sub {
-            my $c = shift;
-
-            if (not $c->stash->{redis}) {
-                my $redis = Mojo::Redis2->new(url => $chronicle_redis_url);
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        warn("error: $err");
-                    });
-                $redis->on(
-                    message => sub {
-                        my ($self, $msg, $channel) = @_;
-
-                        Binary::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
-                            if $channel =~ /^TXNUPDATE::transaction_/;
-                    });
-                $c->stash->{redis} = $redis;
-            }
-            return $c->stash->{redis};
-        });
-
-    $app->helper(
-        redis_pricer => sub {
-            my $c = shift;
-            ### Instance::Redis
-            $c->stash->{redis_pricer} = pricer_write();
-            return $c->stash->{redis_pricer};
-        });
-
-    $app->helper(
         proposal_array_collector => sub {
             my $c = shift;
             Scalar::Util::weaken(my $weak_c = $c);
@@ -220,22 +161,33 @@ sub register {
                 sub {
                     # It's possible for the client to disconnect before we're finished.
                     # If that happens, make sure we clean up but don't attempt to process any further.
-                    my $c = $weak_c;
-                    unless ($c && $c->tx) {
+                    unless ($weak_c && $weak_c->tx) {
                         Mojo::IOLoop->remove($proposal_array_loop_id_keeper);
                         return;
                     }
 
-                    my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') or do {
+                    my $proposal_array_subscriptions = $weak_c->stash('proposal_array_subscriptions') or do {
                         Mojo::IOLoop->remove($proposal_array_loop_id_keeper);
                         return;
                     };
 
-                    my %proposal_array;
-                    for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
+                    my @pa_keys = keys %{$proposal_array_subscriptions};
+                    PA_LOOP:
+                    for my $pa_uuid (@pa_keys) {
+                        my %proposal_array;
                         my $sub = $proposal_array_subscriptions->{$pa_uuid};
                         for my $i (0 .. $#{$sub->{seq}}) {
-                            my $uuid     = $sub->{seq}[$i];
+                            my $uuid = $sub->{seq}[$i];
+                            unless ($uuid) {
+                                # this case is hold in `proposal_array` - for some reasons `_pricing_channel_for_ask`
+                                # did not created uuid for one of the `proposal_array`'s `proposal` calls
+                                # subscription anyway is broken - so remove it
+                                # see sub proposal_array for details
+                                # error messge is already sent by `response` RPC hook.
+                                Binary::WebSocketAPI::v3::Wrapper::System::_forget_proposal_array($weak_c, $pa_uuid);
+                                delete $proposal_array_subscriptions->{$pa_uuid};
+                                next PA_LOOP;
+                            }
                             my $barriers = $sub->{args}{barriers}[$i];
                             # Bail out early if we have any streams without a response yet
                             my $proposal = $sub->{proposals}{$uuid} or return;
@@ -261,8 +213,11 @@ sub register {
                             echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
                             msg_type => 'proposal_array',
                         };
-                        $c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
+                        $weak_c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
                     }
+                    $weak_c->stash('proposal_array_subscriptions' => $proposal_array_subscriptions)
+                        if scalar(@pa_keys) != scalar(keys %{$proposal_array_subscriptions});
+                    return;
                 });
         });
 
