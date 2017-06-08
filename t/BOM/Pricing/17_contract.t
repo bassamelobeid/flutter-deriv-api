@@ -66,6 +66,12 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::Pricing::RPC')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {}));
 
+create_ticks([100, $now->epoch - 899, 'R_50']);
+my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch,
+    underlying => 'R_50',
+});
+
 subtest 'validate_symbol' => sub {
     is(BOM::Pricing::v3::Contract::_validate_symbol('R_50'), undef, "return undef if symbol is valid");
     cmp_deeply(
@@ -140,11 +146,16 @@ subtest 'get_ask' => sub {
         "unit"             => "100",
         "contract_type"    => "LBFIXEDCALL",
         "currency"         => "USD",
-        "duration"         => "60",
-        "duration_unit"    => "s",
+        "duration"         => "15",
+        "duration_unit"    => "m",
         "symbol"           => "R_50",
 #        "streaming_params" => {add_theo_probability => 1},
     };
+
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => time,
+        underlying => 'R_50',
+    });
 
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
 
@@ -210,11 +221,11 @@ subtest 'send_ask' => sub {
 subtest 'get_bid' => sub {
 
     # just one tick for missing market data
-    create_ticks([100, $now->epoch - 899, 'R_50']);
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch,
-        underlying => 'R_50',
-    });
+#    create_ticks([100, $now->epoch - 899, 'R_50']);
+#    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+#        epoch      => $now->epoch,
+#        underlying => 'R_50',
+#    });
 
     my $contract = _create_contract(
         current_tick  => $tick,
