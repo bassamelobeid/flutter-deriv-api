@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 
 use Mojo::Exception;
-use DBIx::Connector;
+use DBIx::Connector::Pg;
 use parent 'Rose::DB';
 
 # If you are seeing connections being attempted to this Rose::DB
@@ -146,7 +146,7 @@ sub dbi_connect {
     );
 
     if (not exists $self->{dbic}) {
-        $self->{dbic} = DBIx::Connector->new(@params);
+        $self->{dbic} = DBIx::Connector::Pg->new(@params);
         $self->{dbic}->mode('fixup');
     }
     return $self->{dbic}->dbh;

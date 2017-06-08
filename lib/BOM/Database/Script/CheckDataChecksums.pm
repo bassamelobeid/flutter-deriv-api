@@ -2,7 +2,7 @@ package BOM::Database::Script::CheckDataChecksums;
 
 use strict;
 use warnings;
-use DBIx::Connector;
+use DBIx::Connector::Pg;
 
 sub run {
 # use environment variables to connect to the database
@@ -21,7 +21,7 @@ sub run {
     my $chunk = 100;    # how many blocks at once 1block=8kbyte
     my $sleep = 100;    # in millisec
 
-    my $dbic = DBIx::Connector->new(
+    my $dbic = DBIx::Connector::Pg->new(
         'dbi:Pg:',
         undef, undef,
         {
