@@ -55,8 +55,8 @@ Working with Test::Mojo based tests
 =cut
 
 sub wsapi_wait_for {
-    my ( $t, $wait_for, $action_sub, $check_callback, $params, $messages_without_accidens) = @_;
-    $check_callback //= sub {};
+    my ($t, $wait_for, $action_sub, $check_callback, $params, $messages_without_accidens) = @_;
+    $check_callback //= sub { };
     $params //= {};
     $messages_without_accidens //= 0;
     my $ioloop = IO::Async::Loop->new;
@@ -77,9 +77,9 @@ sub wsapi_wait_for {
         });
 
     my $id = $ioloop->watch_time(
-        after => ( $params->{timeout} || 1 ),
-        code  => sub {
-            if ($messages_without_accidens == ( $params->{wait_max} || 10 )) {
+        after => ($params->{timeout} || 1),
+        code => sub {
+            if ($messages_without_accidens == ($params->{wait_max} || 10)) {
                 return $f->fail("timeout");
             }
             $f->cancel('try again');
