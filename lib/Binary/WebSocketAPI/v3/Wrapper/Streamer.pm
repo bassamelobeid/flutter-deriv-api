@@ -435,7 +435,7 @@ sub _feed_channel_unsubscribe {
     delete $feed_channel_cache->{$key};
 
     # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
-    _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
+    transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
 
     delete $shared_info->{$c + 0};
     if (!keys %{$shared_info // {}}) {
@@ -446,7 +446,7 @@ sub _feed_channel_unsubscribe {
     return $uuid;
 }
 
-sub _transaction_channel {
+sub transaction_channel {
     my ($c, $action, $account_id, $type, $args, $additional_params) = @_;
     $additional_params //= {};
 
@@ -497,7 +497,7 @@ sub process_transaction_updates {
 
     my $err = $payload->{error} ? $payload->{error}->{code} : undef;
     if (!$c->stash('account_id') || ($err && $err eq 'TokenDeleted')) {
-        _transaction_channel($c, 'unsubscribe', $channel->{$_}->{account_id}, $_) for keys %{$channel};
+        transaction_channel($c, 'unsubscribe', $channel->{$_}->{account_id}, $_) for keys %{$channel};
         return;
     }
     ### new proposal_open_contract stream after buy
@@ -601,7 +601,7 @@ sub _create_poc_stream {
                         });
 
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                    Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $payload->{account_id}, $uuid, $poc_args)
+                    Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $payload->{account_id}, $uuid, $poc_args)
                         if $uuid;
                     return;
                 },
@@ -653,7 +653,7 @@ sub _update_transaction {
         },
     };
 
-    unless (exists $payload->{referrer_type} and $payload->{referrer_type} eq 'financial_market_bet') {
+    if (not exists $payload->{referrer_type} or $payload->{referrer_type} ne 'financial_market_bet') {
         $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
         $c->send({json => $details});
         return;
@@ -700,16 +700,17 @@ sub _update_transaction {
 sub _close_proposal_open_contract_stream {
     my ($c, $args, $payload, $contract_id, $uuid) = @_;
 
-    return
-            unless $payload->{action_type} eq 'sell'
+    if (    $payload->{action_type} eq 'sell'
         and exists $payload->{financial_market_bet_id}
         and $contract_id
-        and $payload->{financial_market_bet_id} eq $contract_id;
+        and $payload->{financial_market_bet_id} eq $contract_id)
+    {
 
-    $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
-    $payload->{uuid}      = $uuid;
+        $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
+        $payload->{uuid}      = $uuid;
 
-    Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $args);
+        Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $args);
+    }
     return;
 }
 

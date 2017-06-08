@@ -107,7 +107,7 @@ sub _forget_transaction_subscription {
         foreach my $type (keys %{$channel}) {
             if ($typeoruuid eq $type or $typeoruuid eq $channel->{$type}->{uuid}) {
                 push @$removed_ids, $channel->{$type}->{uuid};
-                Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
+                Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
             }
         }
     }
@@ -173,7 +173,7 @@ sub _forget_all_pricing_subscriptions {
     my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
-        Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $c->stash('account_id'), 'poc')
+        Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'unsubscribe', $c->stash('account_id'), 'poc')
             if $c->stash('account_id');
         $c->stash('proposal_open_contracts_subscribed' => 0) if $type eq 'proposal_open_contract';
 

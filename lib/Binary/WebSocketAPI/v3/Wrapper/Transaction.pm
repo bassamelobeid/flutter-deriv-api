@@ -16,14 +16,11 @@ sub buy_store_last_contract_id {
     my $last_contracts = $c->stash('last_contracts') // {};
     # see cleanup at Binary::WebSocketAPI::Hooks::cleanup_strored_contract_ids
     my @contracts_ids = ($api_response->{contract_id});
+    @contracts_ids = grep { $_ + 0 } map { $_->{contract_id} } @{$api_response->{result}}
+        if $api_response->{result} && ref $api_response->{result} eq 'ARRAY';
 
-    if ($api_response->{result} && ref $api_response->{result} eq 'ARRAY') {
-        for my $n (1 .. (scalar @{$api_response->{result}})) {
-            push @contracts_ids, $api_response->{result}[$n - 1]{contract_id};
-        }
-    }
-
-    $last_contracts->{$_} = time for grep { defined } @contracts_ids;
+    my $now = time;
+    $last_contracts->{$_} = $now for @contracts_ids;
 
     $c->stash(last_contracts => $last_contracts);
     return;
@@ -61,7 +58,7 @@ sub transaction {
     if ($account_id) {
         if (    exists $args->{subscribe}
             and $args->{subscribe} eq '1'
-            and (not $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, 'transaction', $args)))
+            and (not $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $account_id, 'transaction', $args)))
         {
             return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to transaction updates.'));
         }

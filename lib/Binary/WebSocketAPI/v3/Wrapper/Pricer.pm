@@ -349,7 +349,7 @@ sub proposal_open_contract {
 
     if ($args->{subscribe} && !$args->{contract_id}) {
         ### we can catch buy only if subscribed on transaction stream
-        Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $c->stash('account_id'), 'poc', $args)
+        Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $c->stash('account_id'), 'poc', $args)
             if $c->stash('account_id');
         ### we need stream only in subscribed workers
         $c->stash(proposal_open_contracts_subscribed => $args);
@@ -456,7 +456,7 @@ sub _process_proposal_open_contract_response {
                     next;
                 } else {
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                    Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel(
+                    Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel(
                         $c, 'subscribe', delete $contract->{account_id},    # should not go to client
                         $uuid, $args, {contract_id => $contract->{contract_id}});
                 }

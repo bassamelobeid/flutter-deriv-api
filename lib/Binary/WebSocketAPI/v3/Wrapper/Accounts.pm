@@ -26,7 +26,7 @@ sub subscribe_transaction_channel {
     if (    $account_id
         and exists $args->{subscribe}
         and $args->{subscribe} eq '1'
-        and (not $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, 'balance', $args)))
+        and (not $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $account_id, 'balance', $args)))
     {
         return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
     }
