@@ -6,14 +6,14 @@ use warnings;
 use Test::More tests => 2;
 use Test::FailWarnings;
 
-use Format::Util::Numbers qw(roundnear);
+use Price::Calculator qw/roundnear/;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();

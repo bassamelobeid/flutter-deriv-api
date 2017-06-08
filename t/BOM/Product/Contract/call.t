@@ -5,15 +5,16 @@ use warnings;
 
 use Test::More tests => 5;
 use Test::Exception;
+use Date::Utility;
+use Cache::RedisDB;
+
+use Price::Calculator qw/roundnear/;
+use LandingCompany::Offerings qw(reinitialise_offerings);
+
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use Format::Util::Numbers qw(roundnear);
-use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
-use LandingCompany::Offerings qw(reinitialise_offerings);
-
-use Cache::RedisDB;
 use BOM::Platform::RedisReplicated;
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
@@ -172,10 +173,10 @@ subtest 'expiry conditions' => sub {
         quote      => 101,
     });
     $c = produce_contract($args);
-    ok $c->exit_tick,  'There is exit tick';
+    ok $c->exit_tick, 'There is exit tick';
     ok !$c->is_valid_exit_tick, 'There is no valid exit tick';
     ok $c->is_expired, 'Can expired';
-    ok !$c->is_settleable, 'It is not settleable due to invalid exit tick';
+    ok !$c->is_settleable,    'It is not settleable due to invalid exit tick';
     ok !$c->is_valid_to_sell, 'It is not valid to sell due to invalid exit tick';
     like($c->primary_validation_error->message, qr/exit tick is undefined/, 'throws error');
     cmp_ok $c->value, '==', 10;
@@ -185,11 +186,11 @@ subtest 'expiry conditions' => sub {
         quote      => 101,
     });
     $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok $c->exit_tick,  'has exit tick';
+    ok $c->is_expired,         'expired';
+    ok $c->exit_tick,          'has exit tick';
     ok $c->is_valid_exit_tick, 'has a valid exit tick';
-    ok $c->is_valid_to_sell, 'is valid to sell';
-    ok $c->is_settleable, 'is settleable';
+    ok $c->is_valid_to_sell,   'is valid to sell';
+    ok $c->is_settleable,      'is settleable';
     ok $c->exit_tick->quote > $c->barrier->as_absolute;
     cmp_ok $c->value, '==', $c->payout, 'full payout';
 };

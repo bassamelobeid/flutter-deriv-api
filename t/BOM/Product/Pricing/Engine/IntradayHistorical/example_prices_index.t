@@ -4,15 +4,16 @@ use strict;
 use warnings;
 
 use Test::More (tests => 4);
+use Date::Utility;
+use Text::CSV::Slurp;
+
+use Price::Calculator qw/roundnear/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
-use Format::Util::Numbers qw(roundnear);
-use Date::Utility;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use Text::CSV::Slurp;
 
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

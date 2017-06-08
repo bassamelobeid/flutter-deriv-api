@@ -7,7 +7,8 @@ use Readonly;
 use Date::Utility;
 use POSIX qw( floor );
 use Scalar::Util qw(looks_like_number);
-use Format::Util::Numbers qw(roundnear);
+
+use Price::Calculator qw/roundnear/;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -253,19 +254,19 @@ my %modifiers = (
         display => '-',
         code    => sub {
             $_[0] - $_[1];
-        }
+            }
     },
     'multiply' => {
         display => '*',
         code    => sub {
             $_[0] * $_[1];
-        }
+            }
     },
     'divide' => {
         display => '/',
         code    => sub {
             $_[0] / $_[1];
-        }
+            }
     },
 );
 

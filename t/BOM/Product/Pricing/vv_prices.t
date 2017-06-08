@@ -5,19 +5,18 @@ use warnings;
 
 use Test::More tests => 252;
 use Test::Exception;
-
-use Format::Util::Numbers qw(roundnear);
-use BOM::Product::ContractFactory qw(produce_contract);
-use LandingCompany::Offerings qw(get_offerings_with_filter);
-use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types;
-use BOM::MarketData::Fetcher::VolSurface;
 use Date::Utility;
 use YAML::XS qw(LoadFile DumpFile);
 
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use Price::Calculator qw/roundnear/;
+use LandingCompany::Offerings qw/get_offerings_with_filter reinitialise_offerings/;
 use Test::BOM::UnitTestPrice;
-use LandingCompany::Offerings qw(reinitialise_offerings);
+
+use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+use BOM::MarketData::Fetcher::VolSurface;
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 my $now = Date::Utility->new('2016-02-01');
 note('Pricing on ' . $now->datetime);
