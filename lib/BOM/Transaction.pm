@@ -15,7 +15,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 use Brands;
 use Client::Account;
 use Finance::Asset::Market::Types;
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber financialrounding/;
 
 use BOM::Platform::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
@@ -375,7 +375,7 @@ sub prepare_bet_data_for_buy {
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
 
-    $self->price(formatnumber('price', $contract->currency, $self->price));
+    $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
         quantity          => 1,
@@ -662,7 +662,7 @@ sub prepare_bet_data_for_sell {
     my $self = shift;
     my $contract = shift || $self->contract;
 
-    $self->price(formatnumber('price', $contract->currency, $self->price));
+    $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
         id         => scalar $self->contract_id,
