@@ -6,7 +6,7 @@ use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
 use Client::Account;
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/financialrounding/;
 
 sub account_GET {
     my $c      = shift;
@@ -29,8 +29,8 @@ sub account_GET {
     return {
         client_loginid => $client->loginid,
         currency_code  => $currency_code,
-        balance        => formatnumber('amount', $currency_code, $account->balance),
-        limit          => formatnumber('amount', $currency_code, $client->get_limit_for_account_balance),
+        balance        => financialrounding('amount', $currency_code, $account->balance),
+        limit          => financialrounding('amount', $currency_code, $client->get_limit_for_account_balance),
     };
 }
 
