@@ -257,7 +257,7 @@ sub _initialize_contract_parameters {
 
     $pp->{date_start} //= 1;    # Error conditions if it's not legacy or run, I guess.
 
-    if ($pp->{bet_type} eq 'BINARYICO') {
+    if (defined $pp->{bet_type} and $pp->{bet_type} eq 'BINARYICO') {
         delete $pp->{date_start};
         delete $pp->{date_expiry};
 
