@@ -139,6 +139,18 @@ sub _build_payout {
     return $self->contract->payout;
 }
 
+has unit => (
+    is         => 'rw',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+sub _build_unit {
+    my $self = shift;
+    return $self->contract->unit if not $self->contract->is_binary;
+    return 0;
+}
+
 has amount_type => (
     is         => 'rw',
     isa        => 'Str',
@@ -394,7 +406,6 @@ sub prepare_bet_data_for_buy {
         expiry_time       => scalar $contract->date_expiry->db_timestamp,
         settlement_time   => scalar $contract->date_settlement->db_timestamp,
         payout_price      => scalar $self->payout,
-        #unit              => scalar $contract->unit,
     };
 
     $bet_params->{unit} = scalar $contract->unit if not $contract->is_binary;
@@ -1447,6 +1458,7 @@ sub report {
         . sprintf("%30s: %s\n", 'Contract',               $self->contract->code)
         . sprintf("%30s: %s\n", 'Price',                  $self->price)
         . sprintf("%30s: %s\n", 'Payout',                 $self->payout)
+        . sprintf("%30s: %s\n", 'Unit',                   $self->unit)
         . sprintf("%30s: %s\n", 'Amount Type',            $self->amount_type)
         . sprintf("%30s: %s\n", 'Comment',                $self->comment->[0] || '')
         . sprintf("%30s: %s\n", 'Staff',                  $self->staff)
