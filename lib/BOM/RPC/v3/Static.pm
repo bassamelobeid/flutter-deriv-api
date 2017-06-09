@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Brands;
-use Price::Calculator;
+use Format::Util::Numbers;
 use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
 use BOM::Platform::Context qw (request);
@@ -56,7 +56,7 @@ sub states_list {
 sub website_status {
     my $params = shift;
 
-    my $amt_precision = Price::Calculator::get_precision_config()->{amount};
+    my $amt_precision = Format::Util::Numbers::get_precision_config()->{amount};
     return {
         terms_conditions_version => BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version,
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,

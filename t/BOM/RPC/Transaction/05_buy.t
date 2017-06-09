@@ -8,7 +8,7 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
