@@ -7,9 +7,9 @@ use Date::Manip;
 use JSON qw(from_json to_json);
 use List::Util qw( min max );
 use Cache::RedisDB;
+use Format::Util::Numbers qw/formatnumber/;
 
 use LandingCompany::Registry;
-use Price::Calculator qw/formatnumber/;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 use BOM::Platform::Runtime;

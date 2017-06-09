@@ -11,8 +11,7 @@ use Path::Tiny;
 use Brands;
 use Client::Account;
 use HTML::Entities;
-
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Database::DataMapper::Account;

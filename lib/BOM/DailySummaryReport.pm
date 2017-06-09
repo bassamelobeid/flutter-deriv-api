@@ -6,8 +6,7 @@ use Date::Utility;
 use Path::Tiny;
 use IO::File;
 use Try::Tiny;
-
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw(produce_contract);

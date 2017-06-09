@@ -9,8 +9,7 @@ use Try::Tiny;
 use Date::Utility;
 use Brands;
 use HTML::Entities;
-
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
