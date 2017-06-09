@@ -228,12 +228,7 @@ sub _get_ask {
             code              => "ContractCreationFailure"
         });
     };
-    eval {
-    use Data::Dumper;
-    open T,">/tmp/".$contract->shortcode;
-    print T Dumper($contract);
-    close T;
-};
+
     return $response;
 }
 
