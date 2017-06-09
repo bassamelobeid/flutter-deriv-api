@@ -12,10 +12,10 @@ use Moose;
 
 use List::Util qw(first);
 use JSON qw(from_json);
+use Format::Util::Numbers qw/formatnumber/;
 
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use Price::Calculator qw/formatnumber/;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::Platform::Runtime;
