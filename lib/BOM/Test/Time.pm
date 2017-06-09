@@ -33,6 +33,7 @@ sub set_date {
 # and here we set mocked time, as requested by another process
 sub set_date_from_file {
     my $ts = (stat($mocked_time_file))[9];
+    return unless $ts;
     set_absolute_time($ts);
     return;
 }
