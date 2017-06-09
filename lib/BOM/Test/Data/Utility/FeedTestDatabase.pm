@@ -164,7 +164,7 @@ INSERT INTO feed.ohlc_daily(underlying, ts, open, high, low, close, official)
 EOD
     $dbic->run(
         sub {
-            my $sth = $d->prepare($tick_sql);
+            my $sth = $_->prepare($tick_sql);
             $sth->bind_param(1, $defaults{underlying});
             $sth->bind_param(2, $ts);
             $sth->bind_param(3, $defaults{open});
@@ -187,7 +187,7 @@ sub _create_table_for_date {
 
     my $table_present = $dbic->run(
         sub {
-            my $stmt = $dbh->prepare(' select count(*) from pg_tables where schemaname=\'feed\' and tablename = \'' . $table_name . '\'');
+            my $stmt = $_->prepare(' select count(*) from pg_tables where schemaname=\'feed\' and tablename = \'' . $table_name . '\'');
             $stmt->execute;
             return $stmt->fetchrow_arrayref;
         });
