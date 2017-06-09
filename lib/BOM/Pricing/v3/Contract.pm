@@ -12,7 +12,7 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
 use Time::Duration::Concise::Localize;
 
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 
 use BOM::MarketData qw(create_underlying);
