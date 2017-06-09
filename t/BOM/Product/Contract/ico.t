@@ -27,7 +27,7 @@ subtest 'Ico variations' => sub {
     is $c->code,      'Binaryico',                                                       'is a Binaryico';
     is $c->ask_price, 0.0001,                                                            'correct ask price';
     is $c->payout,    0.0001,                                                            'correct payout';
-    is $c->shortcode, 'BINARYICO_BTCICO_1HB5XMLMZFVJ8ALJ6MFBSBIFROD4MIY36V_0.0001_1400', 'correct shortcode';
+    is $c->shortcode, 'BINARYICO_BTCICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400', 'correct shortcode';
     is_deeply($c->longcode, ['Binary [_1] to be sent to [2]', 'ICO coloured coin', '1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v']);
     ok $c->is_valid_to_buy, 'is valid to buy';
 
@@ -36,7 +36,7 @@ subtest 'Ico variations' => sub {
     is $c->code,      'Binaryico',                                                         'is a Binaryico';
     is $c->ask_price, 0.0001,                                                              'correct ask price';
     is $c->payout,    0.0001,                                                              'correct payout';
-    is $c->shortcode, 'BINARYICO_ERC20ICO_1HB5XMLMZFVJ8ALJ6MFBSBIFROD4MIY36V_0.0001_1400', 'correct shortcode';
+    is $c->shortcode, 'BINARYICO_ERC20ICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400', 'correct shortcode';
     is_deeply($c->longcode, ['Binary [_1] to be sent to [2]', 'ERC20 Ethereum token', '1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v']);
     ok $c->is_valid_to_buy, 'is valid to buy';
 
@@ -65,29 +65,43 @@ subtest 'Ico variations' => sub {
 
 subtest 'shortcode_to_parameters' => sub {
 
-    my $parameters = shortcode_to_parameters('BINARYICO_BTCICO_1HB5XMLMZFVJ8ALJ6MFBSBIFROD4MIY36V_0.0001_1400', 'USD');
+    my $parameters = shortcode_to_parameters('BINARYICO_BTCICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400', 'USD');
     my $BTCICO = create_underlying('BTCICO');
 
     my $expected = {
         underlying       => $BTCICO,
-        shortcode        => 'BINARYICO_BTCICO_1HB5XMLMZFVJ8ALJ6MFBSBIFROD4MIY36V_0.0001_1400',
+        shortcode        => 'BINARYICO_BTCICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400',
         bet_type         => 'BINARYICO',
         currency         => 'USD',
         prediction       => undef,
-        amount_type      => 'payout',
-        coin_address     => '1HB5XMLMZFVJ8ALJ6MFBSBIFROD4MIY36V',
+        amount_type      => 'stake',
+        coin_address     => '1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v',
         amount           => '0.0001',
+        date_start       => undef,
+        date_expiry      => undef,
         fixed_expiry     => undef,
         tick_count       => undef,
         tick_expiry      => undef,
         is_sold          => undef,
         number_of_tokens => 1400
     };
+    
+
+    my $c = produce_contract($parameters);
+    isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
+    is $c->code,      'Binaryico',                                                       'is a Binaryico';
+    is $c->ask_price, 0.0001,                                                            'correct ask price';
+    is $c->payout,    0.0001,                                                            'correct payout';
+    is $c->shortcode, 'BINARYICO_BTCICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400', 'correct shortcode';
+    is_deeply($c->longcode, ['Binary [_1] to be sent to [2]', 'ICO coloured coin', '1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v']);
+    ok $c->is_valid_to_buy, 'is valid to buy';
+
+
     cmp_deeply($parameters, $expected, 'BINARYICO shortcode.');
-    my $legacy = shortcode_to_parameters('CALL_BTCICO_1HB5XMLMZFVJ8ALJ6MFBSBIFROD4MIY36V_0.0001_1400', 'USD');
+    my $legacy = shortcode_to_parameters('CALL_BTCICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400', 'USD');
     is($legacy->{bet_type}, 'Invalid', 'Legacy shortcode.');
 
-    $legacy = shortcode_to_parameters('BINARYICO_BTCICO_1HB5XMLMZFVJ8ALJ6MFBSBIFROD4MIY36V_0.0001_1400_1493596800', 'USD');
+    $legacy = shortcode_to_parameters('BINARYICO_BTCICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400_1493596800', 'USD');
     is($legacy->{bet_type}, 'Invalid', 'Legacy shortcode.');
     }
 

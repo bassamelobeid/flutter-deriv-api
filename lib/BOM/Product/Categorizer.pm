@@ -225,7 +225,6 @@ sub _initialize_contract_parameters {
     if (defined $pp->{duration}) {
         if (my ($number_of_tokens) = $pp->{duration} =~ /(\d+)c$/) {
             $pp->{number_of_tokens} = $number_of_tokens;
-
         } elsif (my ($number_of_ticks) = $pp->{duration} =~ /(\d+)t$/) {
             $pp->{tick_expiry} = 1;
             $pp->{tick_count}  = $number_of_ticks;
@@ -257,6 +256,12 @@ sub _initialize_contract_parameters {
     }
 
     $pp->{date_start} //= 1;    # Error conditions if it's not legacy or run, I guess.
+
+    if ($pp->{bet_type} eq 'BINARYICO') {
+        delete $pp->{date_start};
+        delete $pp->{date_expiry};
+
+    }
 
     return $pp;
 }

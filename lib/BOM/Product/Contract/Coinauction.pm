@@ -184,8 +184,10 @@ has [qw(shortcode)] => (
 );
 
 sub _build_shortcode {
-    my $self = shift;
-    my @element = map { uc $_ } ($self->contract_type, $self->token_type, $self->coin_address, $self->ask_price, $self->number_of_tokens);
+    my $self          = shift;
+    my $contract_type = uc($self->contract_type);
+    my $token_type    = uc($self->token_type);
+    my @element       = map { $_ } ($contract_type, $token_type, $self->coin_address, $self->ask_price, $self->number_of_tokens);
     return join '_', @element;
 }
 
