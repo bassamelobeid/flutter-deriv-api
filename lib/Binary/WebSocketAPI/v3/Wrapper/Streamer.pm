@@ -447,8 +447,7 @@ sub _feed_channel_unsubscribe {
 }
 
 sub transaction_channel {
-    my ($c, $action, $account_id, $type, $args) = @_;
-
+    my ($c, $action, $account_id, $type, $args, $contract_id) = @_;
     my $uuid;
 
     my $redis = shared_redis;
@@ -467,7 +466,8 @@ sub transaction_channel {
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
             $channel->{$type}->{account_id}  = $account_id;
-            $channel->{$type}->{contract_id} = $args->{contract_id} if $args->{contract_id};
+            $channel->{$type}->{contract_id} = $args->{contract_id} || $contract_id
+                if $args->{contract_id} || $contract_id;
             $c->stash('transaction_channel', $channel);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
             delete $channel->{$type};
@@ -602,7 +602,7 @@ sub _create_poc_stream {
                         });
 
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                    Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $payload->{account_id}, $uuid, $poc_args)
+                    transaction_channel($c, 'subscribe', $payload->{account_id}, $uuid, $poc_args, $payload->{financial_market_bet_id})
                         if $uuid;
                     return;
                 },
@@ -706,7 +706,6 @@ sub _close_proposal_open_contract_stream {
         and $contract_id
         and $payload->{financial_market_bet_id} eq $contract_id)
     {
-
         $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
         $payload->{uuid}      = $uuid;
 
