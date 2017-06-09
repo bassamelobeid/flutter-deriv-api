@@ -460,7 +460,8 @@ sub _process_proposal_open_contract_response {
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
                     Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel(
                         $c, 'subscribe', delete $contract->{account_id},    # should not go to client
-                        $uuid, $copy_args);
+                        $uuid, $copy_args
+                    );
                 }
             }
             my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
@@ -614,7 +615,7 @@ sub process_bid_event {
             $response->{purchase_time}   = $passed_fields->{purchase_time};
             $response->{is_sold}         = $passed_fields->{is_sold};
             Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid})
-                if $response->{is_expired} || $response->{is_sold};
+                if $response->{is_sold};
             $response->{longcode} = $passed_fields->{longcode};
 
             $response->{contract_id} = $stash_data->{args}->{contract_id} if exists $stash_data->{args}->{contract_id};
