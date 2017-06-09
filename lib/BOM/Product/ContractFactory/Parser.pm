@@ -106,13 +106,13 @@ sub shortcode_to_parameters {
         :                      ();
 
     my $bet_parameters = {
-        shortcode    => $shortcode,
-        bet_type     => $bet_type,
-        underlying   => $underlying,
-        amount_type  => 'payout',
-        amount       => $payout,
-        ($date_start) ? (date_start   => $date_start) : (),
-        ($date_expiry) ? (date_expiry  => $date_expiry) : (),
+        shortcode   => $shortcode,
+        bet_type    => $bet_type,
+        underlying  => $underlying,
+        amount_type => 'payout',
+        amount      => $payout,
+        ($date_start)  ? (date_start  => $date_start)  : (),
+        ($date_expiry) ? (date_expiry => $date_expiry) : (),
         prediction   => $prediction,
         currency     => $currency,
         fixed_expiry => $fixed_expiry,
