@@ -15,7 +15,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 use Brands;
 use Client::Account;
 use Finance::Asset::Market::Types;
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::Platform::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );

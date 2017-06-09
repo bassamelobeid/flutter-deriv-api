@@ -9,7 +9,7 @@ use LandingCompany::Registry;
 use List::Util qw(min max first);
 use YAML::XS qw(LoadFile);
 
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 
 use BOM::Database::Helper::RejectedTrade;
