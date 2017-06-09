@@ -10,7 +10,7 @@ use List::Util qw(sum shuffle);
 use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::DatabaseAPI;
 use BOM::Product::ContractFactory qw(produce_contract);
-use DBIx::TransactionManager::Distributed qw(txn);
+use BOM::Platform::Chronicle;
 
 use YAML qw(LoadFile);
 use Path::Tiny;
@@ -116,19 +116,16 @@ sub run {
                         barrier      => 'S0P',
                     };
                     try {
-                        txn {
-                            my $contract         = produce_contract($args);
-                            my $contract_expired = produce_contract({
-                                %$args,    ## no critic (ProhibitCommaSeparatedStatements)
-                                date_pricing => $now,
-                            });
-                            if ($contract_expired->is_expired) {
-                                my $ask_price = $contract->ask_price;
-                                my $value     = $contract_expired->value;
-                                $fh->print(join(",", (map { $tick->{$_} } qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
-                            }
+                        my $contract         = produce_contract($args);
+                        my $contract_expired = produce_contract({
+                            %$args,    ## no critic (ProhibitCommaSeparatedStatements)
+                            date_pricing => $now,
+                        });
+                        if ($contract_expired->is_expired) {
+                            my $ask_price = $contract->ask_price;
+                            my $value     = $contract_expired->value;
+                            $fh->print(join(",", (map { $tick->{$_} } qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
                         }
-                        qw(feed chronicle);
                     }
                     catch {
                         warn "Failed to price with parameters " . Dumper($args) . " - $_\n";
