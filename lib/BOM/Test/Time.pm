@@ -25,16 +25,21 @@ RPC.pm code can be called in two ways:
 During handling RPC calls in bom-rpc and bom-pricing code we check if BOM::Test::Time is loaded though checking %INC
 and if yes, then set time to the requested one via set_date_from_file().
 
+
+For IPC, when running test need to set time in another process, we update modified timestamp of $mocked_time_file in 
+set_date(). This timestamp will be used during call to set_date_from_file() from child process.
+
 =cut
-
-
 
 our $mocked_time_file = '/tmp/mocked_time';
 
-# Change system date/time. Accepts anything that Date::Utility
-# can handle - epoch time, 'YYYY-mm-dd HH:MM:SS', etc.
-#
-# here we set mocked time for current process
+=head2 set_date
+
+Change mocked date/time for current process.
+Accepts anything that Date::Utility can handle - epoch time, 'YYYY-mm-dd HH:MM:SS', etc.
+
+=cut
+
 sub set_date {
     my ($target_date) = @_;
     my $date = Date::Utility->new($target_date);
@@ -46,7 +51,13 @@ sub set_date {
     return;
 }
 
-# and here we set mocked time, as requested by another process
+=head2 set_date_from_file
+
+Set mocked time, as requested by another process.
+If file is not present - do nothing.
+
+=cut
+
 sub set_date_from_file {
     my $ts = (stat($mocked_time_file))[9];
     return unless $ts;
