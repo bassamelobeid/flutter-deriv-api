@@ -39,7 +39,7 @@ ok $m->confirm_scope($test_appid, $test_loginid), 'confirm scope';
 $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 1, 'confirmed after confirm_scope';
 
-my ($access_token) = $m->store_access_token_only($test_appid, $test_loginid);
+my ($access_token, $exp) = $m->store_access_token_only($test_appid, $test_loginid);
 ok $access_token;
 my ($result_loginid, $t, $ua_fp) = @{$m->get_token_details($access_token)}{qw/loginid creation_time ua_fingerprint/};
 is $result_loginid, $test_loginid, 'got correct loginid from token';
