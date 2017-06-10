@@ -14,7 +14,7 @@ use HTML::Entities qw(encode_entities);
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
