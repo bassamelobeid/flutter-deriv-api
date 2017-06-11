@@ -10,7 +10,7 @@ use Data::Dumper;
 use Encode qw(encode);
 use Email::Folder::Search;
 
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);

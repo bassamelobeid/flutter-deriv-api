@@ -7,7 +7,7 @@ use Try::Tiny;
 use JSON::XS qw/encode_json/;
 
 use Client::Account;
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
