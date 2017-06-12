@@ -10,8 +10,7 @@ use Time::HiRes qw(gettimeofday);
 use List::MoreUtils qw(last_index);
 use JSON::XS qw(encode_json decode_json);
 use Scalar::Util qw (looks_like_number refaddr weaken);
-
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::System;
