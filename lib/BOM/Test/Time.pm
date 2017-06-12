@@ -27,11 +27,15 @@ and if yes, then set time to the requested one via set_date_from_file().
 
 
 For IPC, when running test need to set time in another process, we update modified timestamp of $mocked_time_file in 
-set_date(). This timestamp will be used during call to set_date_from_file() from child process.
+set_date(). This timestamp will be used during call to set_date_from_file() from child process. This file is deleted on start
 
 =cut
 
 our $mocked_time_file = '/tmp/mocked_time';
+
+BEGIN {
+    unlink $mocked_time_file;
+}
 
 =head2 set_date
 
