@@ -43,10 +43,9 @@ Accepts anything that Date::Utility can handle - epoch time, 'YYYY-mm-dd HH:MM:S
 sub set_date {
     my ($target_date) = @_;
     my $epoch = Date::Utility->new($target_date)->epoch;
-    et_absolute_time($epoch);
+    set_absolute_time($epoch);
     unless (-e $mocked_time_file) {
-        my $fh;
-        open $fh, '>>', $mocked_time_file;
+        open my $fh, '>>', $mocked_time_file;
         close $fh;
     }
     utime($epoch, $epoch, $mocked_time_file);
