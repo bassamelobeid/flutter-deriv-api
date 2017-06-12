@@ -139,6 +139,7 @@ sub startup {
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_inc('bom_pricing_rpc.v_3.call.count', {tags => ["rpc:$call"]});
+            BOM::Test::Time::set_date_from_file() if defined $INC{'BOM/Test/Time.pm'};    # check BOM::Test::Time for details
         });
 
     $app->hook(
