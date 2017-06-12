@@ -91,7 +91,6 @@ subtest 'payout' => sub {
             currency   => 'USD',
             payout     => $payout,
         });
-
         ok $c->ask_price < 0.5 * $payout, $underlying . ' intraday non atm contract is not floored to 20%';
 
         $c = produce_contract({
@@ -136,7 +135,7 @@ subtest 'payout' => sub {
         payout          => 1000,
         landing_company => 'japan'
     });
-    is $c->ask_price, 0.035 * 1000, 'Forex daily non atm contract for japan is floored to 3.5%';
+    cmp_ok $c->ask_price, '==', 0.035 * 1000, 'Forex daily non atm contract for japan is floored to 3.5%';
 
     $c = produce_contract({
         bet_type   => 'CALL',
@@ -146,7 +145,6 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-
     cmp_ok $c->ask_price, '>', 0.2 * $payout, 'VolIdx intraday non atm contract price is not floor 20%.';
 
     $c = produce_contract({
@@ -157,9 +155,7 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
-
     cmp_ok $c->ask_price, '>', 0.2 * $payout, 'VolIdx daily non atm contract price is not floor 20%.';
-
 };
 
 subtest 'stake' => sub {
@@ -202,7 +198,6 @@ subtest 'stake' => sub {
         theo_probability => $theo_probability,
         base_commission  => $base_commission,
     });
-
     cmp_ok $c->payout, '==', 20, "Random's payout is re-adjusted to 20 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
@@ -216,7 +211,6 @@ subtest 'stake' => sub {
         theo_probability => $theo_probability,
         base_commission  => $base_commission,
     });
-
     cmp_ok $c->payout, '==', 10, "Forex's payout is re-adjusted to 10 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
@@ -230,7 +224,6 @@ subtest 'stake' => sub {
         theo_probability => $theo_probability,
         base_commission  => $base_commission,
     });
-
     cmp_ok $c->payout, '==', 5, "Commodities' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
@@ -244,7 +237,6 @@ subtest 'stake' => sub {
         theo_probability => $theo_probability,
         base_commission  => $base_commission,
     });
-
     cmp_ok $c->payout, '==', 5, "Indices' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
@@ -258,7 +250,6 @@ subtest 'stake' => sub {
         theo_probability => $theo_probability,
         base_commission  => $base_commission,
     });
-
     cmp_ok $c->payout, '==', 5, "Stocks' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
@@ -270,7 +261,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    cpm_ok $c->payout, '==', sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex intraday atm contract payout is not floor';
 
     $c = produce_contract({
@@ -282,8 +273,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-
-    isnt $c->payout, sprintf('%0.02f', $stake / 0.2), 'Forex intraday non atm contract payout is not floored to 20% ';
+    cmp_ok $c->payout, '!=', sprintf('%0.02f', $stake / 0.2), 'Forex intraday non atm contract payout is not floored to 20% ';
 
     $c = produce_contract({
         bet_type    => 'CALL',
@@ -294,7 +284,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    cmp_ok $c->payout, '==', sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex daily (> 7 days) non atm contract payout is not floor';
 
     $c = produce_contract({
@@ -306,7 +296,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    cmp_ok $c->payout, '==', sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex daily (< 7 days) atm contract payout is not floor';
 
     $c = produce_contract({
@@ -329,9 +319,8 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    cmp_ok $c->payout, '==', sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'VolIdx intraday non atm contract payout is not floor';
-
 };
 
 subtest 'new commission structure' => sub {
