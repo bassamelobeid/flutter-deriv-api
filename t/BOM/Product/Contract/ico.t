@@ -85,7 +85,6 @@ subtest 'shortcode_to_parameters' => sub {
         is_sold          => undef,
         number_of_tokens => 1400
     };
-    
 
     my $c = produce_contract($parameters);
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
@@ -95,7 +94,6 @@ subtest 'shortcode_to_parameters' => sub {
     is $c->shortcode, 'BINARYICO_BTCICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400', 'correct shortcode';
     is_deeply($c->longcode, ['Binary [_1] to be sent to [2]', 'ICO coloured coin', '1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v']);
     ok $c->is_valid_to_buy, 'is valid to buy';
-
 
     cmp_deeply($parameters, $expected, 'BINARYICO shortcode.');
     my $legacy = shortcode_to_parameters('CALL_BTCICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400', 'USD');

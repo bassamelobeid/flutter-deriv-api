@@ -261,7 +261,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    cpm_ok $c->payout, '==', sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    cmp_ok $c->payout, '==', sprintf('%0.02f', $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex intraday atm contract payout is not floor';
 
     $c = produce_contract({
