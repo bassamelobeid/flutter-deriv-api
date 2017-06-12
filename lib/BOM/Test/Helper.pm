@@ -33,7 +33,7 @@ use Path::Tiny;
 use Test::MockModule;
 use Test::MockObject;
 use MojoX::JSON::RPC::Client;
-use IO::Async::Loop;
+
 use RedisDB;
 use YAML::XS qw/LoadFile DumpFile/;
 
