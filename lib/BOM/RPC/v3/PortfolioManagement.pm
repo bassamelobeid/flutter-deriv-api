@@ -5,8 +5,7 @@ use warnings;
 
 use Date::Utility;
 use Try::Tiny;
-
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Pricing;
