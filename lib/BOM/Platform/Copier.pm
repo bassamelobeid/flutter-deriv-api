@@ -39,16 +39,21 @@ sub update_or_create {
         ],
     );
 
-    for my $asset (@{$args->{assets} || [qw/all/]}) {
-        for my $trade_type (@{$args->{trade_types} || [qw/all/]}) {
+    for my $p (qw/assets trade_types/) {
+        $args->{$p} = [$args->{$p}] if ref $args->{$p} ne 'ARRAY';
+        $args->{$p} = ['*'] unless grep { defined } @{$args->{$p}};
+    }
+
+    for my $asset (@{$args->{assets}}) {
+        for my $trade_type (@{$args->{trade_types}}) {
             my $self = $class->rnew(
                 broker          => $args->{broker},
                 trader_id       => $args->{trader_id},
                 copier_id       => $args->{copier_id},
                 min_trade_stake => $args->{min_trade_stake},
                 max_trade_stake => $args->{max_trade_stake},
-                trade_type      => $trade_type ne 'all' ? $trade_type : '',
-                asset           => $asset ne 'all' ? $asset : '',
+                trade_type      => $trade_type,
+                asset           => $asset,
             )->save;
         }
     }
