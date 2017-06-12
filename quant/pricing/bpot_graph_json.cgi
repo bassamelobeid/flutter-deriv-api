@@ -20,6 +20,7 @@ use f_brokerincludeall;
 
 use List::Util qw( min max );
 use JSON qw(to_json);
+use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
@@ -95,7 +96,7 @@ while ($graph_more) {
             } else {
                 $amount = ($expired and $attr =~ /probability$/) ? $value : (ref $bet->$attr) ? $bet->$attr->amount : $bet->$attr;
             }
-            push @{$prices{$attr}}, formatnumber('amount', $bet->currency, (abs $amount > 3) ? $amount : $amount * 100);
+            push @{$prices{$attr}}, financialrounding('amount', $bet->currency, (abs $amount > 3) ? $amount : $amount * 100);
         }
 
         my $current_vs = $bet->volsurface->recorded_date->datetime_iso8601;
