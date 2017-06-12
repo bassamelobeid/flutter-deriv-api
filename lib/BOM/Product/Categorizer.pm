@@ -139,8 +139,7 @@ sub process {
 
 sub _initialize_contract_parameters {
     my $self = shift;
-
-    my $pp = {%{$self->parameters}};
+    my $pp   = {%{$self->parameters}};
 
     # always build shortcode
     delete $pp->{shortcode};
@@ -162,7 +161,7 @@ sub _initialize_contract_parameters {
         $pp->{date_pricing} = Date::Utility->new($pp->{date_pricing});
     }
 
-    unless ($pp->{underlying}->isa('Quant::Framework::Underlying')) {
+    if (!(blessed $pp->{underlying} and $pp->{underlying}->isa('Quant::Framework::Underlying'))) {
         $pp->{underlying} = create_underlying($pp->{underlying}, $pp->{date_pricing});
     }
 
@@ -224,7 +223,9 @@ sub _initialize_contract_parameters {
     }
 
     if (defined $pp->{duration}) {
-        if (my ($number_of_ticks) = $pp->{duration} =~ /(\d+)t$/) {
+        if (my ($number_of_tokens) = $pp->{duration} =~ /(\d+)c$/) {
+            $pp->{number_of_tokens} = $number_of_tokens;
+        } elsif (my ($number_of_ticks) = $pp->{duration} =~ /(\d+)t$/) {
             $pp->{tick_expiry} = 1;
             $pp->{tick_count}  = $number_of_ticks;
             $pp->{date_expiry} = $pp->{date_start}->plus_time_interval(2 * $pp->{tick_count});
@@ -255,6 +256,12 @@ sub _initialize_contract_parameters {
     }
 
     $pp->{date_start} //= 1;    # Error conditions if it's not legacy or run, I guess.
+
+    if (defined $pp->{bet_type} and $pp->{bet_type} eq 'BINARYICO') {
+        delete $pp->{date_start};
+        delete $pp->{date_expiry};
+
+    }
 
     return $pp;
 }
