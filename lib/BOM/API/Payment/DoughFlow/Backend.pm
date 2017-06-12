@@ -268,29 +268,30 @@ sub check_predicates {
         # with the withdrawal reversal request.
 
         my $match_count = $doughflow_datamapper->get_doughflow_withdrawal_count_by_trace_id($trace_id);
-        if (!$match_count) {
-            $rejection =
-                  'A withdrawal reversal was requested for DoughFlow trace ID '
-                . $trace_id
-                . ', but no corresponding original withdrawal could be found with that trace ID';
-        } elsif ($match_count > 1) {
-            $rejection =
-                  'A withdrawal reversal was requested for DoughFlow trace ID '
-                . $trace_id
-                . ', but multiple corresponding original withdrawals were found with that trace ID ';
-        } elsif (financialrounding('amount', $currency_code, $doughflow_datamapper->get_doughflow_withdrawal_amount_by_trace_id($trace_id)) !=
-            financialrounding('amount', $currency_code, $amount))
-        {
-            $rejection =
-                  'A withdrawal reversal request for DoughFlow trace ID '
-                . $trace_id
-                . ' was made in the amount of '
-                . $currency_code . ' '
-                . formatnumber('amount', $currency_code, $amount)
-                . ', but this does not match the original DoughFlow withdrawal request amount';
-        }
 
-        return $rejection if $rejection;
+        return
+              'A withdrawal reversal was requested for DoughFlow trace ID '
+            . $trace_id
+            . ', but no corresponding original withdrawal could be found with that trace ID'
+            unless $match_count;
+
+        return
+              'A withdrawal reversal was requested for DoughFlow trace ID '
+            . $trace_id
+            . ', but multiple corresponding original withdrawals were found with that trace ID '
+            if ($match_count > 1);
+
+        my ($amt, $trace_amt) = (
+            financialrounding('amount', $currency_code, $amount),
+            financialrounding('amount', $currency_code, $doughflow_datamapper->get_doughflow_withdrawal_amount_by_trace_id($trace_id)));
+        return
+              'A withdrawal reversal request for DoughFlow trace ID '
+            . $trace_id
+            . ' was made in the amount of '
+            . $currency_code . ' '
+            . $amt
+            . ', but this does not match the original DoughFlow withdrawal request amount'
+            if ($amt != $trace_amt);
     }
 
     if (
