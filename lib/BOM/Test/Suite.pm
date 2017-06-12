@@ -4,6 +4,7 @@ use warnings;
 use Test::Most;
 use JSON;
 use Data::Dumper;
+use BOM::Test::Time qw(set_date);    # should be on top
 
 use BOM::Test::Helper qw/build_test_R_50_data/;
 use Test::MockModule;
@@ -48,27 +49,6 @@ sub read_file {
 }
 
 my $ticks_inserted;
-
-# Change system date/time. Accepts anything that Date::Utility
-# can handle - epoch time, 'YYYY-mm-dd HH:MM:SS', etc.
-sub set_date {
-    my ($target_date) = @_;
-    my $date = Date::Utility->new($target_date);
-    # We have had various problems in Travis with this date step failing,
-    # so we want to capture any output we can that might indicate what's
-    # happening
-    my @cmd = (qw(sudo date -s), $date->datetime_yyyymmdd_hhmmss, '+%F %T');
-    diag "Running date command (time=" . time . "): @cmd";
-    my ($stdout, $stderr, $exitcode) = capture {
-        system @cmd;
-    };
-    $stdout //= '';
-    $stderr //= '';
-    diag "Completed date command (time=" . time . "): @cmd";
-    die "Failed to set date using this command:\n@cmd\nDo we have sudo access? (return code = $exitcode, stdout = $stdout, stderr = $stderr)"
-        unless $stdout eq $date->datetime_yyyymmdd_hhmmss . "\n";
-    return;
-}
 
 sub run {
     my ($class, $args) = @_;
