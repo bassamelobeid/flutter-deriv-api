@@ -49,10 +49,10 @@ subtest 'expiry miss' => sub {
     lives_ok {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Expirymiss';
-        is $c->code,         'EXPIRYMISS';
-        is $c->pricing_code, 'EXPIRYMISS';
-        is $c->sentiment,    'high_vol';
-        is $c->ask_price,    '6.80';
+        is $c->code,          'EXPIRYMISS';
+        is $c->pricing_code,  'EXPIRYMISS';
+        is $c->sentiment,     'high_vol';
+        cmp_ok $c->ask_price, '==', 6.8;
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';

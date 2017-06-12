@@ -318,7 +318,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, sprintf('%0.02f', $stake / 0.20), 'Forex daily (< 7 days) non atm contract payout is floor to 20%';
+    cmp_ok $c->payout, '==', sprintf('%0.02f', $stake / 0.20), 'Forex daily (< 7 days) non atm contract payout is floor to 20%';
 
     $c = produce_contract({
         bet_type    => 'CALL',
@@ -399,7 +399,7 @@ subtest 'new commission structure' => sub {
                 base_commission  => $base_commission,
                 theo_probability => $fake_theo,
             });
-            is $c->payout, sprintf('%0.02f', $data->{payout}), 'correct payout amount';
+            cmp_ok $c->payout, '==', sprintf('%0.02f', $data->{payout}), 'correct payout amount';
         }
     }
 };
