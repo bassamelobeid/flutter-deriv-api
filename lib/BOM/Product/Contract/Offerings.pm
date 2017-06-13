@@ -126,7 +126,7 @@ my %known_decorations = (
             push @{$times->{open}}, $open->$display_method;
             my @closes;
             push @closes, $trading_calendar->closing_on($exchange, $self->date);
-            $times->{settlement} = $trading_calendar->settlement_on($exchange, $self->date)->$display_method;
+            $times->{settlement} = $trading_calendar->get_exchange_open_times($exchange, $self->date, 'daily_settlement')->$display_method;
             if (my $breaks = $trading_calendar->trading_breaks($exchange, $self->date)) {
                 for my $break (@$breaks) {
                     push @{$times->{open}}, $break->[-1]->$display_method;
