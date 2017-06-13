@@ -265,7 +265,7 @@ sub handle_batch_contract {
                 warn $contracts->[1]->japan_pricing_info($trading_window_start, $contracts->[0]);
             } else {
                 warn "Had unexpected number of contracts for ->japan_pricing_info calls - types are " . join ',',
-                    map { $_->contract_type } @$contracts;
+                    map { $_->bet_type } @$contracts;
             }
         }
     }
