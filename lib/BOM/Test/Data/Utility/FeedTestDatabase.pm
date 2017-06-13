@@ -183,8 +183,8 @@ sub _create_table_for_date {
 
     my $table_present = $dbic->run(
         sub {
-            my $stmt = $_->prepare(qq{select count(*) from pg_tables where schemaname='feed' and tablename = '$table_name'});
-            $stmt->execute;
+            my $stmt = $_->prepare(qq{select count(*) from pg_tables where schemaname='feed' and tablename = ?});
+            $stmt->execute($table_name);
             return $stmt->fetchrow_arrayref;
         });
 
@@ -204,10 +204,10 @@ sub _create_table_for_date {
         $dbh->do(
             qq{CREATE TABLE feed.$table_name (
             PRIMARY KEY (underlying, ts),
-            CHECK(ts>= '$date_str' and ts<'$date_str'::DATE + interval '1 month'),
+            CHECK(ts>= ? and ts<?::DATE + interval '1 month'),
             CHECK(DATE_TRUNC('second', ts) = ts)
         )
-        INHERITS (feed.tick)}
+        INHERITS (feed.tick)}, undef, $date_str, $date_str
         );
         $dbh->do("GRANT SELECT ON feed.$table_name  TO read");
 
