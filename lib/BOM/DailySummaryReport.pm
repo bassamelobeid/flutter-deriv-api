@@ -168,7 +168,7 @@ sub generate_report {
                 close $sm_fh;
                 rename($tempsummary, $summary);
             }
-            $total_pl->{$broker}->{$currency} = formatnumber($amount, $currency, $agg_total_open_bets_profit);
+            $total_pl->{$broker}->{$currency} = formatnumber('amount', $currency, $agg_total_open_bets_profit);
         }
     }
 
