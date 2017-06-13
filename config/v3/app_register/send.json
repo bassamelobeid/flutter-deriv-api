@@ -26,22 +26,22 @@
     },
     "homepage":{
       "type": ["string", "null"],
-      "pattern": "((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\\+\\$,\\w]+)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\\+\\$,\\w]+)[A-Za-z0-9.-]+)((?:\/[\\+~%\/.\\w-_]*)?\\??(?:[-\\+=&;%@.\\w_]*)#?(?:[\\w]*))?)",
+      "pattern": "^.{0,255}$",
       "description": "Application's homepage"
     },
     "github":{
       "type": ["string", "null"],
-      "pattern": "((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\\+\\$,\\w]+)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\\+\\$,\\w]+)[A-Za-z0-9.-]+)((?:\/[\\+~%\/.\\w-_]*)?\\??(?:[-\\+=&;%@.\\w_]*)#?(?:[\\w]*))?)",
+      "pattern": "^.{0,255}$",
       "description": "Application's GitHub page (for open-source projects)"
     },
     "appstore":{
       "type": ["string", "null"],
-      "pattern": "((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\\+\\$,\\w]+)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\\+\\$,\\w]+)[A-Za-z0-9.-]+)((?:\/[\\+~%\/.\\w-_]*)?\\??(?:[-\\+=&;%@.\\w_]*)#?(?:[\\w]*))?)",
+      "pattern": "^.{0,255}$",
       "description": "Application's App Store URL (if applicable)"
     },
     "googleplay":{
       "type": ["string", "null"],
-      "pattern": "((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\\+\\$,\\w]+)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\\+\\$,\\w]+)[A-Za-z0-9.-]+)((?:\/[\\+~%\/.\\w-_]*)?\\??(?:[-\\+=&;%@.\\w_]*)#?(?:[\\w]*))?)$",
+      "pattern": "^.{0,255}$",
       "description": "Application's Google Play URL (if applicable)"
     },
     "redirect_uri": {
