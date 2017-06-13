@@ -6,12 +6,13 @@ use open qw[ :encoding(UTF-8) ];
 use Date::Manip;
 use JSON qw(from_json to_json);
 use List::Util qw( min max );
-
 use Cache::RedisDB;
-use Format::Util::Numbers qw(commas roundnear);
-use BOM::Platform::Runtime;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use Format::Util::Numbers qw/roundnear financialrounding/;
+
 use LandingCompany::Registry;
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+
+use BOM::Platform::Runtime;
 
 sub DailyTurnOverReport {
     my ($args, $options) = @_;
@@ -148,8 +149,8 @@ sub DailyTurnOverReport {
     }
 
     foreach my $curr (@all_currencies) {
-        $allbuys{$curr}  = int roundnear(0.01, $allbuys{$curr});
-        $allsells{$curr} = int roundnear(0.01, $allsells{$curr});
+        $allbuys{$curr}  = int financialrounding('amount', $curr, $allbuys{$curr});
+        $allsells{$curr} = int financialrounding('amount', $curr, $allsells{$curr});
     }
 
     $template{mtm_calc_time} = $latest_time->db_timestamp;

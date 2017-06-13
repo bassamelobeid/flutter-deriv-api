@@ -4,7 +4,7 @@
 <table>
     <tbody>
     [% FOREACH affiliate IN affiliates %]
-    <tr class="AFF[% affiliate.id %]"><td>[<span title="[% aff_titlfy(affiliate) %]">[% affiliate.id %]</span> USD]</td><td>[% monify(affiliate.$key) %]</td></tr>
+    <tr class="AFF[% affiliate.id %]"><td>[<span title="[% aff_titlfy(affiliate) %]">[% affiliate.id %]</span> USD]</td><td>[% affiliate.$key %]</td></tr>
     [% END %]
     </tbody>
 </table>

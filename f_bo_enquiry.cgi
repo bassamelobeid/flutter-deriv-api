@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use f_brokerincludeall;
-use Format::Util::Numbers qw(roundnear);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();

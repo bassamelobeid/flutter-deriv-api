@@ -15,7 +15,6 @@ use HTML::Entities;
 use Client::Account;
 
 use Date::Utility;
-use Format::Util::Numbers qw(roundnear);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Helper::FinancialMarketBet;
