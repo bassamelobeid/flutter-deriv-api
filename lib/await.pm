@@ -28,7 +28,6 @@ sub wsapi_wait_for {
         message => sub {
             my ($tx, $msg) = @_;
             return $tx unless $wait_for;
-            print ">>> Got $msg <<<<\n";
             my $data = decode_json($msg);
 
             return $tx unless ($wait_for && $data->{msg_type} eq $wait_for);
