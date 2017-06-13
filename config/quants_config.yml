@@ -129,7 +129,7 @@ risk_profile:
           EUR: 100000
           AUD: 100000
           GBP: 100000
-          JPY: 10000000
+          JPY: 500000
           BTC: 50
           ETH: 500
           LTC: 5000
@@ -138,7 +138,7 @@ risk_profile:
           EUR: 20000
           AUD: 20000
           GBP: 20000
-          JPY: 2000000
+          JPY: 100000
           BTC: 10
           ETH: 100
           LTC: 1000
