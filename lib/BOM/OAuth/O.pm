@@ -75,20 +75,6 @@ sub authorize {
         $c->session('_loginid',    $client->loginid);
     }
 
-    # set session on first page visit (GET)
-    # for binary.com, app id = 1
-    if ($app_id eq '1' and $c->req->method eq 'GET') {
-        my $r           = $c->stash('request');
-        my $referer     = $c->req->headers->header('Referer') // '';
-        my $domain_name = $r->domain_name;
-        $domain_name =~ s/^oauth//;
-        if (index($referer, $domain_name) > -1) {
-            $c->session('_is_app_approved' => 1);
-        } else {
-            $c->session('_is_app_approved' => 0);
-        }
-    }
-
     my $brand_name = $c->stash('brand')->name;
     ## check user is logined
     unless ($client) {
@@ -136,14 +122,13 @@ sub authorize {
                 $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
             }
         } else {
-            delete $c->session->{_is_app_approved};
             my $uri = $redirect_handle->($response_type, 'scope_denied', $state);
             return $c->redirect_to($uri);
         }
     }
 
-    ## if app_id=1 and referer is binary.com, we do not show the scope confirm screen
-    if ($app_id eq '1' and $c->session('_is_app_approved')) {
+    ## if app_id=1 we do not show the scope confirm screen
+    if ($app_id eq '1') {
         $is_all_approved = 1;
     }
 
@@ -192,7 +177,6 @@ sub authorize {
     ## clear session
     delete $c->session->{_is_logined};
     delete $c->session->{_loginid};
-    delete $c->session->{_is_app_approved};
     delete $c->session->{_oneall_user_id};
 
     $c->redirect_to($uri);
