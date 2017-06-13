@@ -13,7 +13,6 @@ use HTML::Entities;
 use f_brokerincludeall;
 use Date::Utility;
 use BOM::Platform::Config;
-use Format::Util::Numbers qw( commas );
 use Quant::Framework::InterestRate;
 use BOM::Backoffice::Request qw(request);
 use Quant::Framework::ImpliedRate;
@@ -293,7 +292,7 @@ if (length $shorttext != length $text) {
 }
 print "</pre>";
 
-print "<p>New file size is " . encode_entities(commas(-s "$overridefilename")) . " bytes</p><hr/>";
+print "<p>New file size is " . encode_entities(-s "$overridefilename") . " bytes</p><hr/>";
 
 # DISPLAY diff
 print

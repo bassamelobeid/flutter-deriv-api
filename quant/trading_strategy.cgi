@@ -8,7 +8,6 @@ no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix the
 no indirect;
 
 use f_brokerincludeall;
-use Format::Util::Numbers qw( to_monetary_number_format );
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -200,17 +199,13 @@ my $statistics_table = sub {
     my $start_epoch = Date::Utility->new($stats->{start})->epoch;
     my $end_epoch   = Date::Utility->new($stats->{end})->epoch;
     return [
-        ['# of bets',     $stats->{count} . '<br>' . $stats->{file_size}],
-        ['Step size',     $stats->{step_size}],
-        ['Starting date', Date::Utility->new($stats->{start})->datetime],
-        ['Ending date',   Date::Utility->new($stats->{end})->datetime],
-        ['Period',        Time::Duration::duration($end_epoch - $start_epoch)],
-        [
-            'Average buy price',
-            to_monetary_number_format($stats->{buy_price}{mean}) . '<br>'
-                . ('(' . to_monetary_number_format($stats->{buy_price}{min}) . '/' . to_monetary_number_format($stats->{buy_price}{max}) . ')')
-        ],
-        ['Average payout',         to_monetary_number_format($stats->{payout}{mean})],
+        ['# of bets',              $stats->{count} . '<br>' . $stats->{file_size}],
+        ['Step size',              $stats->{step_size}],
+        ['Starting date',          Date::Utility->new($stats->{start})->datetime],
+        ['Ending date',            Date::Utility->new($stats->{end})->datetime],
+        ['Period',                 Time::Duration::duration($end_epoch - $start_epoch)],
+        ['Average buy price',      $stats->{buy_price}{mean} . '<br>' . ('(' . $stats->{buy_price}{min} . '/' . $stats->{buy_price}{max} . ')')],
+        ['Average payout',         $stats->{payout}{mean}],
         ['Number of winning bets', $stats->{winners}],
         ['Number of losing bets',  $stats->{losers}],
         ['Bets bought',            $stats->{trades}],

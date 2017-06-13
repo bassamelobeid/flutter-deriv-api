@@ -8,10 +8,10 @@ no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix the
 use POSIX;
 use Date::Utility;
 use Path::Tiny;
-use Format::Util::Numbers qw(roundnear);
 use Brands;
 use Client::Account;
 use HTML::Entities;
+use Format::Util::Numbers qw/roundnear/;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Database::DataMapper::Account;

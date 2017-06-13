@@ -5,12 +5,13 @@ use Moose;
 use Date::Utility;
 use Path::Tiny;
 use IO::File;
-use Format::Util::Numbers qw(roundnear);
-
 use Try::Tiny;
+use Format::Util::Numbers qw/formatnumber/;
+
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Database::DataMapper::Transaction;
+
 has save_file => (
     is      => 'ro',
     default => 1,
@@ -127,16 +128,17 @@ sub generate_report {
                 }
 
                 # open positions value minus buy prices
-                $total_open_bets_profit = roundnear(0.01, $total_open_bets_profit);
                 $agg_total_open_bets_profit += $total_open_bets_profit;
 
-                # Withdrawals are stored as negative numbers, so we just add here.
-                my $agg_deposit_withdrawal = roundnear(0.01, $client_ref->{$login_id}->{'deposits'} + $client_ref->{$login_id}->{'withdrawals'});
-                my $total_equity           = roundnear(0.01, $total_open_bets_value + $acbalance);
-                $acbalance = roundnear(0.01, $acbalance);
-
-                my $summary_line =
-                    join(',', ($login_id, $acbalance, $total_open_bets_value, $total_open_bets_profit, $total_equity, $agg_deposit_withdrawal));
+                my $summary_line = join(
+                    ',',
+                    (
+                        $login_id,
+                        formatnumber('amount', $currency, $acbalance),
+                        $total_open_bets_value,
+                        formatnumber('amount', $currency, $total_open_bets_profit),
+                        formatnumber('amount', $currency, $total_open_bets_value + $acbalance),
+                        formatnumber('amount', $currency, $client_ref->{$login_id}->{'deposits'} + $client_ref->{$login_id}->{'withdrawals'})));
                 $summary_line .= ',' . join('+', @portfolios) if scalar @portfolios;
                 push @sum_lines, $summary_line . "\n";
             }
@@ -166,7 +168,7 @@ sub generate_report {
                 close $sm_fh;
                 rename($tempsummary, $summary);
             }
-            $total_pl->{$broker}->{$currency} = $agg_total_open_bets_profit;
+            $total_pl->{$broker}->{$currency} = formatnumber('amount', $currency, $agg_total_open_bets_profit);
         }
     }
 

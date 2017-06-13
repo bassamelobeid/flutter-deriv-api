@@ -5,7 +5,6 @@ use warnings;
 no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
 use open qw[ :encoding(UTF-8) ];
-use Format::Util::Numbers qw(commas);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use HTML::Entities;
 
@@ -62,7 +61,7 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
                     if (abs($f) > 0) { $sums[$i] += $f; }
 
                     if ($i == 5) {
-                        $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities(commas($fields[4] - $fields[5])) . "</TD>";
+                        $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($fields[4] - $fields[5]) . "</TD>";
                     }    #marked-to-market profit/loss
                 }
 
@@ -97,7 +96,7 @@ print @s_to_out;
 print "<TR>";
 my $i = 0;
 foreach my $f (@fields) {
-    if   (abs($sums[$i]) > 0) { print "<TD><B><font size=2 face=verdana> " . encode_entities(commas($sums[$i])) . "</TD>"; }
+    if   (abs($sums[$i]) > 0) { print "<TD><B><font size=2 face=verdana> " . encode_entities($sums[$i]) . "</TD>"; }
     else                      { print "<TD></TD>"; }
     $i++;
 }
