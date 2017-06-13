@@ -3,16 +3,18 @@ package BOM::Transaction::Validation;
 use strict;
 use warnings;
 
+use Moo;
+use Error::Base;
+use LandingCompany::Registry;
+use List::Util qw(min max first);
+use YAML::XS qw(LoadFile);
+
+use Format::Util::Numbers qw/formatnumber/;
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
+
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Context qw(localize request);
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use Error::Base;
-use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
-use LandingCompany::Registry;
-use List::Util qw(min max first);
-use Moo;
-use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
-use YAML::XS qw(LoadFile);
 
 has clients => (
     is       => 'ro',
@@ -284,13 +286,14 @@ sub _write_to_rejected {
 
     my $what_changed = $p->{action} eq 'sell' ? 'sell price' : undef;
     $what_changed //= $self->transaction->amount_type eq 'payout' ? 'price' : 'payout';
-    my $market_moved = localize('The underlying market has moved too much since you priced the contract. ');
-    my $contract     = $self->transaction->contract;
+    my ($market_moved, $contract) =
+        (localize('The underlying market has moved too much since you priced the contract. '), $self->transaction->contract);
+    my $currency = $contract->currency;
     $market_moved .= localize(
         'The contract [_4] has changed from [_1][_2] to [_1][_3].',
-        $contract->currency,
-        to_monetary_number_format($p->{amount}),
-        to_monetary_number_format($p->{recomputed_amount}),
+        $currency,
+        formatnumber('amount', $currency, $p->{amount}),
+        formatnumber('amount', $currency, $p->{recomputed_amount}),
         $what_changed
     );
 
@@ -323,7 +326,7 @@ sub _write_to_rejected {
     return Error::Base->cuss(
         -type => 'PriceMoved',
         -mesg => "Difference between submitted and newly calculated bet price: currency "
-            . $contract->currency
+            . $currency
             . ", amount: "
             . $p->{amount}
             . ", recomputed amount: "
@@ -409,14 +412,14 @@ sub _validate_iom_withdrawal_limit {
         start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
         exclude    => ['currency_conversion_transfer'],
     });
-    $withdrawal_in_days = roundnear(0.01, amount_from_to_currency($withdrawal_in_days, $client->currency, 'EUR'));
+    $withdrawal_in_days = formatnumber('amount', 'EUR', amount_from_to_currency($withdrawal_in_days, $client->currency, 'EUR'));
 
     # withdrawal since inception
     my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']});
-    $withdrawal_since_inception = roundnear(0.01, amount_from_to_currency($withdrawal_since_inception, $client->currency, 'EUR'));
+    $withdrawal_since_inception = formatnumber('amount', 'EUR', amount_from_to_currency($withdrawal_since_inception, $client->currency, 'EUR'));
 
     my $remaining_withdrawal_eur =
-        roundnear(0.01, min(($numdayslimit - $withdrawal_in_days), ($lifetimelimit - $withdrawal_since_inception)));
+        formatnumber('amount', 'EUR', min(($numdayslimit - $withdrawal_in_days), ($lifetimelimit - $withdrawal_since_inception)));
 
     if ($remaining_withdrawal_eur <= 0) {
         return Error::Base->cuss(
@@ -451,9 +454,9 @@ sub _validate_stake_limit {
             -message_to_client => localize(
                 "This contract's price is [_1][_2]. Contracts purchased from [_3] must have a purchase price above [_1][_4]. Please accordingly increase the contract amount to meet this minimum stake.",
                 $currency,
-                to_monetary_number_format($contract->ask_price),
+                formatnumber('price', $currency, $contract->ask_price),
                 $landing_company->name,
-                to_monetary_number_format($stake_limit)
+                formatnumber('amount', $currency, $stake_limit)
             ),
         );
     }
@@ -492,7 +495,9 @@ sub _validate_payout_limit {
                 -mesg              => $client->loginid . ' payout [' . $payout . '] over custom limit[' . $custom_limit . ']',
                 -message_to_client => ($custom_limit == 0)
                 ? localize('This contract is unavailable on this account.')
-                : localize('This contract is limited to ' . to_monetary_number_format($custom_limit) . ' payout on this account.'),
+                : localize(
+                    'This contract is limited to ' . formatnumber('amount', $contract->currency, $custom_limit) . ' payout on this account.'
+                ),
             );
         }
     }
