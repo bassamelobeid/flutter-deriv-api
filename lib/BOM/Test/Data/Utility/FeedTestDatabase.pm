@@ -118,10 +118,6 @@ EOD
     my $dbic = Postgres::FeedDB::write_dbic;
     $dbic->run(
         sub {
-            $_->{PrintWarn}  = 0;
-            $_->{PrintError} = 0;
-            $_->{RaiseError} = 1;
-
             my $sth = $_->prepare($tick_sql);
             $sth->bind_param(1, $defaults{underlying});
             $sth->bind_param(2, $ts);
