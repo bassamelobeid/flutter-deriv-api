@@ -4,18 +4,19 @@ use strict;
 use warnings;
 
 use JSON qw(from_json);
-use Price::Calculator;
 use Math::Util::CalculatedValue::Validatable;
 use List::Util qw(max);
 use List::MoreUtils qw(none all);
-use LandingCompany::Commission qw(get_underlying_base_commission);
+use Format::Util::Numbers qw/financialrounding/;
 
+use Price::Calculator;
 use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::Currency;
 use Quant::Framework::CorrelationMatrix;
 use Pricing::Engine::EuropeanDigitalSlope;
 use Pricing::Engine::TickExpiry;
 use Pricing::Engine::BlackScholes;
+use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -437,7 +438,7 @@ sub _build_app_markup {
 sub _build_app_markup_dollar_amount {
     my $self = shift;
 
-    return roundnear(0.01, $self->app_markup->amount * $self->payout);
+    return financialrounding('amount', $self->currency, $self->app_markup->amount * $self->payout);
 }
 
 #this is supposed to be called for legacy pricing engines (not new interface)

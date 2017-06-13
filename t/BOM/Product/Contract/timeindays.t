@@ -248,9 +248,9 @@ subtest Equity => sub {
     plan tests => 1;
 
     # normal one day bet
-    my $underlying = create_underlying('FTSE');
+    my $underlying       = create_underlying('FTSE');
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
-    my $bet        = _sample_bet(
+    my $bet              = _sample_bet(
         underlying  => $underlying,
         date_start  => Date::Utility->new('2012-01-11 10:30:00'),
         date_expiry => $trading_calendar->closing_on($underlying->exchange, Date::Utility->new('18-Jan-12')),

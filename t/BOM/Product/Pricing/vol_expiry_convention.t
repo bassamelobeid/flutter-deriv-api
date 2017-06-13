@@ -5,19 +5,20 @@ use warnings;
 
 use Test::More tests => 1;
 use Test::Exception;
+use Date::Utility;
+use YAML::XS qw(LoadFile);
+use Storable qw(dclone);
+use Format::Util::Numbers qw/roundnear/;
 
-use Format::Util::Numbers qw(roundnear);
+use LandingCompany::Offerings qw(reinitialise_offerings);
+
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
-use YAML::XS qw(LoadFile);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use Storable qw(dclone);
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
 Cache::RedisDB->flushall;
 

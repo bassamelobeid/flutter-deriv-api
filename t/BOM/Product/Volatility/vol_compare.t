@@ -85,7 +85,8 @@ sub price_contract {
     });
 
     my $pricing_vol = $c->pricing_vol;
-    ok abs($pricing_vol - $expected_pricing_vol) < 1e-15, "correct pricing_vol for " . $date_start->datetime . " to " . $date_expiry->datetime or note "had $pricing_vol expected $expected_pricing_vol";
+    ok abs($pricing_vol - $expected_pricing_vol) < 1e-15, "correct pricing_vol for " . $date_start->datetime . " to " . $date_expiry->datetime
+        or note "had $pricing_vol expected $expected_pricing_vol";
     $counter++;
 }
 

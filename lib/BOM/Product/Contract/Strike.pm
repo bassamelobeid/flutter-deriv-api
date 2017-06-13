@@ -7,7 +7,7 @@ use Readonly;
 use Date::Utility;
 use POSIX qw( floor );
 use Scalar::Util qw(looks_like_number);
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers qw/roundnear/;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;

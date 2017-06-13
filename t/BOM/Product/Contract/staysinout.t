@@ -5,13 +5,14 @@ use warnings;
 
 use Test::More tests => 2;
 use Test::Exception;
+use Date::Utility;
+use JSON qw(to_json);
+use Format::Util::Numbers qw/roundnear/;
+
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use Format::Util::Numbers qw(roundnear);
-use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
-use JSON qw(to_json);
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');

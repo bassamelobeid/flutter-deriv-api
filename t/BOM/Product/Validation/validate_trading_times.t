@@ -218,9 +218,9 @@ subtest 'intraday must be same day' => sub {
 };
 
 subtest 'too many holiday for multiday indices contracts' => sub {
-    my $hsi         = create_underlying('HSI');
+    my $hsi              = create_underlying('HSI');
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
-    my $monday_open = $hsi->calendar->opening_on($hsi->exchange, Date::Utility->new('2016-04-04'))->plus_time_interval('15m');
+    my $monday_open      = $hsi->calendar->opening_on($hsi->exchange, Date::Utility->new('2016-04-04'))->plus_time_interval('15m');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {

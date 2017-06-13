@@ -30,7 +30,7 @@ reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
-my $mocked = Test::MockModule->new('BOM::Product::Contract');
+my $mocked           = Test::MockModule->new('BOM::Product::Contract');
 $mocked->mock('market_is_inefficient', sub { 0 });
 my $oft_used_date   = Date::Utility->new('2013-03-29 15:00:34');
 my $an_hour_earlier = Date::Utility->new($oft_used_date->epoch - 3600);
@@ -188,15 +188,15 @@ subtest 'valid bet passing and stuff' => sub {
     });
 
     $bet_params = {
-        underlying   => $underlying,
-        bet_type     => 'CALL',
-        currency     => 'USD',
-        payout       => 100,
-        date_start   => $starting,
-        date_pricing => $starting - 600,
-        duration     => '30m',
-        barrier      => 'S0P',
-        current_tick => $tick,
+        underlying                 => $underlying,
+        bet_type                   => 'CALL',
+        currency                   => 'USD',
+        payout                     => 100,
+        date_start                 => $starting,
+        date_pricing               => $starting - 600,
+        duration                   => '30m',
+        barrier                    => 'S0P',
+        current_tick               => $tick,
         starts_as_forward_starting => 1
     };
 
@@ -358,7 +358,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     # Between setting up aggregated ticks and mocking objects, I chose the latter.
     # We are not checking volatility and trend calculation here.
     my $mocked_contract = Test::MockModule->new('BOM::Product::Contract::Call');
-    $mocked_contract->mock('pricing_vol',               sub { 0.1 });
+    $mocked_contract->mock('pricing_vol', sub { 0.1 });
     my $mocked_engine = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
     $mocked_engine->mock('ticks_for_trend', sub { [] });
     $bet = produce_contract($bet_params);
@@ -517,7 +517,7 @@ subtest 'volsurfaces become old and invalid' => sub {
             recorded_date  => Date::Utility->new('2013-03-27 06:00:34'),
             spot_reference => $tick->quote,
         });
-    my $gdaxi                = create_underlying('GDAXI');
+    my $gdaxi = create_underlying('GDAXI');
     my $surface_too_old_date = $trading_calendar->opening_on($gdaxi->exchange, Date::Utility->new('2013-03-28'));
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
@@ -732,11 +732,11 @@ subtest 'invalid expiry times' => sub {
     ok($bet->is_valid_to_buy, '..but when we are open at the end, validates just fine.');
 
     # Need a quotdian here.
-    $underlying                 = create_underlying('RDBULL');
-    $bet_params->{underlying}   = $underlying;
-    $bet_params->{bet_type}     = 'CALL';
-    $bet_params->{duration}     = '10h';
-    $bet_params->{date_start}   = $trading_calendar->closing_on($underlying->exchange, Date::Utility->new('2013-03-28'))->minus_time_interval('9h');
+    $underlying               = create_underlying('RDBULL');
+    $bet_params->{underlying} = $underlying;
+    $bet_params->{bet_type}   = 'CALL';
+    $bet_params->{duration}   = '10h';
+    $bet_params->{date_start} = $trading_calendar->closing_on($underlying->exchange, Date::Utility->new('2013-03-28'))->minus_time_interval('9h');
     $bet_params->{date_pricing} = $bet_params->{date_start}->epoch - 1776;
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
@@ -827,9 +827,9 @@ subtest 'invalid lifetimes.. how rude' => sub {
     ok($bet->is_valid_to_buy, '..but when we pick a shorter duration, validates just fine.');
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_start})});
-    $underlying                 = create_underlying('GDAXI');
-    $bet_params->{underlying}   = $underlying;
-    $bet_params->{date_start}   = $trading_calendar->opening_on($underlying->exchange, Date::Utility->new('6-Dec-12'))->plus_time_interval('15m');
+    $underlying = create_underlying('GDAXI');
+    $bet_params->{underlying} = $underlying;
+    $bet_params->{date_start} = $trading_calendar->opening_on($underlying->exchange, Date::Utility->new('6-Dec-12'))->plus_time_interval('15m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
@@ -1374,16 +1374,16 @@ subtest 'entry tick validation' => sub {
     my $starting   = Date::Utility->new('2014-10-08 13:00:00');
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_delta',
-    {
-        symbol        => 'frxAUDUSD',
-        recorded_date => $starting,
-    });
-    my $tick = Postgres::FeedDB::Spot::Tick->new({
-            underlying => 'frxAUDUSD',
-            epoch      => $starting->epoch,
-            quote      => 100,
+        'volsurface_delta',
+        {
+            symbol        => 'frxAUDUSD',
+            recorded_date => $starting,
         });
+    my $tick = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'frxAUDUSD',
+        epoch      => $starting->epoch,
+        quote      => 100,
+    });
     my $bet_params = {
         underlying   => $underlying,
         bet_type     => 'CALL',
@@ -1404,7 +1404,7 @@ subtest 'entry tick validation' => sub {
     $bet = produce_contract($bet_params);
     ok $bet->is_valid_to_sell, 'valid to sell for forward starting even no entry tick';
 
-    delete   $bet_params->{starts_as_forward_starting};
+    delete $bet_params->{starts_as_forward_starting};
     $bet_params->{entry_tick} = $tick;
     $bet = produce_contract($bet_params);
     ok $bet->is_valid_to_sell, 'valid to sell with  entry tick';

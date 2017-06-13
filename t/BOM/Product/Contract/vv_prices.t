@@ -5,12 +5,10 @@ use warnings;
 
 use Test::More tests => 12;
 use Test::FailWarnings;
+use Date::Utility;
+use Format::Util::Numbers qw/roundnear/;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-
-use Date::Utility;
-use Format::Util::Numbers qw(roundnear);
-
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
