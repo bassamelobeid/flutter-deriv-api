@@ -22,7 +22,7 @@ sub buy_store_last_contract_id {
         if $api_response->{result} && ref $api_response->{result} eq 'ARRAY';
 
     my $now = time;
-    $last_contracts->{$_} = $now for @contracts_ids;
+    @{$last_contracts}{@contracts_ids} = ($now) x @contracts_ids;
 
     $c->stash(last_contracts => $last_contracts);
     return;

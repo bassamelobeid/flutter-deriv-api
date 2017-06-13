@@ -513,7 +513,7 @@ sub process_transaction_updates {
         _update_transaction($c, $args, $payload, $channel->{$type}->{uuid})
             if $type eq 'transaction';
 
-        ### proposal_open_contract stream
+        ### proposal_open_contract stream. Type is UUID
         _close_proposal_open_contract_stream($c, $args, $payload, $channel->{$type}->{contract_id}, $type)
             if $type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/;
 
