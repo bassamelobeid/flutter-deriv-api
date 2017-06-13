@@ -9,7 +9,7 @@ use Mojo::Redis2;
 
 my $redis2_module = Test::MockModule->new('Mojo::Redis2');
 my @commands_queue;
-for my $command (qw/incrby expire/) {
+for my $command (qw/incrby expire ttl/) {
     $redis2_module->mock(
         $command,
         sub {
