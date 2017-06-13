@@ -222,7 +222,7 @@ sub write_transaction_line {
                 "Requested withdrawal amount $currency_code $amount$plusfee exceeds client balance $currency_code $balance");
         }
         $payment_args{amount} = -$amount;
-        $trx = $client->payment_doughflow(%payment_args, amount => -$amount);
+        $trx = $client->payment_doughflow(%payment_args);
     } elsif ($c->type eq 'withdrawal_reversal') {
         if ($bonus or $fee) {
             return $c->status_bad_request('Bonuses and fees are not allowed for withdrawal reversals');
