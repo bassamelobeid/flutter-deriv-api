@@ -34,7 +34,7 @@ sub prepare_contract {
     for my $epoch (@epoches) {
         my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
             underlying => $underlying_symbol,
-            db_handle  => $dbic,
+            dbic_handle  => $dbic,
         );
         my $tick = $api->tick_at({end_time => $epoch});
 
