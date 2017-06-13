@@ -6,6 +6,7 @@ use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
 use Client::Account;
+use Format::Util::Numbers qw/formatnumber/;
 
 sub account_GET {
     my $c      = shift;
@@ -28,8 +29,8 @@ sub account_GET {
     return {
         client_loginid => $client->loginid,
         currency_code  => $currency_code,
-        balance        => sprintf("%0.2f", $account->balance),
-        limit          => sprintf("%0.2f", $client->get_limit_for_account_balance),
+        balance        => formatnumber('amount', $currency_code, $account->balance),
+        limit          => formatnumber('amount', $currency_code, $client->get_limit_for_account_balance),
     };
 }
 
