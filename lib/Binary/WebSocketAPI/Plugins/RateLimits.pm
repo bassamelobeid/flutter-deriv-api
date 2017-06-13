@@ -77,16 +77,10 @@ sub _update_redis {
             # then our returned value should match the increment value... so we'd
             # want to set expiry in that case.
             if ($count == $diff) {
-                $redis->expire(
-                    $redis_key,
-                    $ttl,
-                    sub {
-                        my ($redis, $error, $confirmation) = @_;
-                        $c->app->log->warn("Expiration on $redis_key was not confirmed")
-                            unless $confirmation;
-                        $f->done;
-                    });
+                _set_key_expiry($c, $redis_key, $ttl, $f);
             } else {
+                my $current_ttl = $redis->ttl($redis_key) // -2;
+                _set_key_expiry($c, $redis_key, $ttl) if $current_ttl  == -1;
                 $f->done;
             }
             # retrigger scheduled updates
@@ -95,6 +89,20 @@ sub _update_redis {
             }
         });
     return $f;
+}
+
+sub _set_key_expiry {
+    my ($c, $redis_key, $ttl, $f) = @_;
+    my $redis = $c->app->ws_redis_master;
+    $redis->expire(
+        $redis_key,
+        $ttl,
+        sub {
+            my ($redis, $error, $confirmation) = @_;
+            $c->app->log->warn("Expiration on $redis_key was not confirmed")
+                unless $confirmation;
+            $f->done if $f;
+        });
 }
 
 sub _check_single_limit {
