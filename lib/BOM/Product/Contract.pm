@@ -435,7 +435,7 @@ sub date_settlement {
 
     my $date_settlement = $end_date;    # Usually we settle when we expire.
     if ($self->expiry_daily and $self->trading_calendar->trades_on($exchange, $end_date)) {
-        $date_settlement = $self->trading_calendar->settlement_on($exchange, $end_date);
+        $date_settlement = $self->trading_calendar->get_exchange_open_times($exchange, $end_date, 'daily_settlement');
     }
 
     return $date_settlement;
