@@ -10,7 +10,7 @@ use Try::Tiny;
 use Date::Utility;
 use Data::Dumper;
 
-use Format::Util::Numbers qw/financialrounding formatnumber/;
+use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::Platform::Runtime;
 use BOM::Database::ClientDB;
@@ -221,7 +221,8 @@ sub write_transaction_line {
             return $c->status_bad_request(
                 "Requested withdrawal amount $currency_code $amount$plusfee exceeds client balance $currency_code $balance");
         }
-        $trx = $client->payment_doughflow(%payment_args, amount => financialrounding('amount', $currency_code, -$amount));
+        $payment_args{amount} = -$amount;
+        $trx = $client->payment_doughflow(%payment_args, amount => -$amount);
     } elsif ($c->type eq 'withdrawal_reversal') {
         if ($bonus or $fee) {
             return $c->status_bad_request('Bonuses and fees are not allowed for withdrawal reversals');
