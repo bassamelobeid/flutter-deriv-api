@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More tests => 12;
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
@@ -52,7 +52,7 @@ my $c = produce_contract({
     bet_type     => 'CALL'
 });
 is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'correct pricing engine';
-is roundnear(0.0001, $c->theo_probability->amount), 0.4999, 'bs probability is 0.4999';
+is roundcommon(0.0001, $c->theo_probability->amount), 0.4999, 'bs probability is 0.4999';
 is $c->commission_markup->amount, 0.015, 'total markup is 0.015';
 
 $c = produce_contract({
@@ -62,7 +62,7 @@ $c = produce_contract({
     bet_type     => 'PUT',
 });
 is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'correct pricing engine';
-is roundnear(0.0001, $c->theo_probability->amount), 0.5001, 'bs probability is 0.5001';
+is roundcommon(0.0001, $c->theo_probability->amount), 0.5001, 'bs probability is 0.5001';
 is $c->commission_markup->amount, 0.015, 'total markup is 0.015';
 
 delete $params->{barrier};
@@ -74,7 +74,7 @@ $c = produce_contract({
     bet_type     => 'ASIANU',
 });
 is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'correct pricing engine';
-is roundnear(0.0001, $c->theo_probability->amount), 0.4999, 'correct bs probability';
+is roundcommon(0.0001, $c->theo_probability->amount), 0.4999, 'correct bs probability';
 is $c->commission_markup->amount, 0.015, 'correct total markup';
 
 $c = produce_contract({
@@ -84,5 +84,5 @@ $c = produce_contract({
     bet_type     => 'ASIAND',
 });
 is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'correct pricing engine';
-is roundnear(0.0001, $c->theo_probability->amount), 0.5001, 'correct bs probability';
+is roundcommon(0.0001, $c->theo_probability->amount), 0.5001, 'correct bs probability';
 is $c->commission_markup->amount, 0.015, 'correct total markup';

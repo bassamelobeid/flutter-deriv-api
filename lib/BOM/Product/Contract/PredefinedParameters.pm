@@ -11,7 +11,7 @@ use Time::HiRes;
 use Date::Utility;
 use List::Util qw(first min max);
 use Math::CDF qw(qnorm);
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use Quant::Framework;
 use Finance::Contract::Category;
@@ -392,7 +392,7 @@ sub _calculate_barriers {
     # Included entry spot as well
     my $distance_between_boundaries = abs($initial_barriers[0] - $initial_barriers[1]);
     my @steps                       = (12, 25, 35, 45);
-    my $minimum_step                = roundnear($underlying->pip_size, $distance_between_boundaries / ($steps[-1] * 2));
+    my $minimum_step                = roundcommon($underlying->pip_size, $distance_between_boundaries / ($steps[-1] * 2));
     my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
     $barriers{50} = $spot_at_start;
 

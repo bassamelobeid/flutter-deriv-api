@@ -7,7 +7,7 @@ use Test::More tests => 252;
 use Test::Exception;
 use Date::Utility;
 use YAML::XS qw(LoadFile DumpFile);
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use LandingCompany::Offerings qw/get_offerings_with_filter reinitialise_offerings/;
 use Test::BOM::UnitTestPrice;
@@ -89,7 +89,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         my $code = join '_', @codes;
 
                         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-                        is roundnear(0.00001, $c->theo_probability->amount), roundnear(0.00001, $expectation->{$code}),
+                        is roundcommon(0.00001, $c->theo_probability->amount), roundcommon(0.00001, $expectation->{$code}),
                             'theo probability matches [' . $code . ']';
                     }
                     'survived';
