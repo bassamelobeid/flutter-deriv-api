@@ -280,8 +280,8 @@ sub create_fmb_with_ticks {
 
     for my $epoch ($start->epoch, $start->epoch + 1, $expire->epoch) {
         my $api = Postgres::FeedDB::Spot::DatabaseAPI->new({
-            underlying  => 'R_100',
-            dbic_handle => $dbic
+            underlying => 'R_100',
+            dbic       => $dbic
         });
 
         my $tick = $api->tick_at({end_time => $epoch});
