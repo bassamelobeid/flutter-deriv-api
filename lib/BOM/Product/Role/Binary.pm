@@ -43,7 +43,7 @@ sub _build_staking_limits {
         $message_to_client = [$ERROR_MAPPING->{MarketPricePayoutClose}];
     } else {
         $message_to_client =
-            [$ERROR_MAPPING->{StakePayoutLimits}, to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
+            [$ERROR_MAPPING->{StakePayoutLimits}, formatnumber('price', $curr, $stake_min), formatnumber('price', $curr, $payout_max)];
     }
 
     return {
