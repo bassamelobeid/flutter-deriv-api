@@ -74,8 +74,8 @@ sub run {
             my ($duration, %duration_options) = split ' ', $duration_step;
 
             my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
-                dbic_handle => Postgres::FeedDB::read_dbic(),
-                underlying  => $symbol
+                dbic       => Postgres::FeedDB::read_dbic(),
+                underlying => $symbol
             );
 
             if (
