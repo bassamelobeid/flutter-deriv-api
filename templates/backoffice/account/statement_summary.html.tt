@@ -15,7 +15,7 @@ selected
     <tr><td colspan="2" style="border-bottom: 1px solid #888888;">[% t %], [% currency %]</td></tr>
     [% FOR ps IN summary.$t %]
         <tr>
-        <td width="80"  style="border-right: 1px solid #888888;">[% IF ps.0 == 'total' %]<b>TOTAL</b>[% ELSE; ps.0; END %]</td>
+        <td width="180"  style="border-right: 1px solid #888888;">[% IF ps.0 == 'total' %]<b>TOTAL</b>[% ELSE; ps.0; END %]</td>
         <td width="30">[% ps.1 %]</td>
         </tr>
     [% END %]

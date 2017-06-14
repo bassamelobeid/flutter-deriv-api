@@ -371,7 +371,18 @@ sub client_statement_summary {
 
     foreach my $transaction (@{$transactions}) {
         my $k = $transaction->{action_type} eq 'deposit' ? 'deposits' : 'withdrawals';
-        my $payment_system = $transaction->{payment_remark} =~ /payment_processor=(\S+)/ ? $1 : '(unknown)';
+        my $payment_system = '(unknown)';
+
+        # EPG
+        $payment_system = $1 if $transaction->{payment_remark} =~ /payment_solution=(\S+)/;
+
+        # DoughFlow
+        $payment_system = $1 if $transaction->{payment_remark} =~ /payment_processor=(\S+)/;
+
+        # bank wire
+        $payment_system = $1 if $transaction->{payment_remark} =~ /Wire\s+payment\s+from\s+([\S]+\s[\d\-]+) on/;
+        $payment_system = $1 if $transaction->{payment_remark} =~ /Wire\s+deposit\s+.+\s+Recieved\s+by\s+([\S]+\s[\d\-]+)/;
+
         $summary->{$k}{$payment_system} += $transaction->{amount};
     }
     foreach my $type (keys %$summary) {
