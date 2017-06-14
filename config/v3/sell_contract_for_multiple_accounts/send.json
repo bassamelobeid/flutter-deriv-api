@@ -19,7 +19,7 @@
       "description": "Authorisation tokens which select the accounts to sell use for the affected accounts",
       "items": {
         "type":"string",
-        "pattern": "^([a-zA-Z0-9//-]+)$"
+        "pattern": "^([a-zA-Z0-9\\-]+)$"
        },
        "required": "1"
     },
