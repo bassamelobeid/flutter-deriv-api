@@ -75,7 +75,7 @@ my $args = {
     underlying      => $ul,
     date_start      => $when,
     date_expiry     => $ul->calendar->closing_on($ul->exchange, Date::Utility->new('2015-11-09')),
-    date_settlement => $ul->calendar->settlement_on($ul->exchange, Date::Utility->new('2015-11-09')),
+    date_settlement => $ul->calendar->get_exchange_open_times($ul->exchange, Date::Utility->new('2015-11-09'), 'daily_settlement'),
     entry_tick      => $entry_tick,
     currency        => 'USD',
     payout          => 10,
@@ -93,7 +93,7 @@ subtest 'get_high_low_for_contract_period' => sub {
 
     $args->{barrier}         = '14500';
     $args->{date_expiry}     = $ul->calendar->closing_on($ul->exchange, Date::Utility->new('2015-11-10'));
-    $args->{date_settlement} = $ul->calendar->settlement_on($ul->exchange, Date::Utility->new('2015-11-10'));
+    $args->{date_settlement} = $ul->calendar->get_exchange_open_times($ul->exchange, Date::Utility->new('2015-11-10'), 'daily_settlement');
 
     my $c = produce_contract($args);
     my ($high, $low) = $c->get_high_low_for_contract_period;

@@ -6,20 +6,19 @@ use Test::Most 0.22 (tests => 130);
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
-
 use Date::Utility;
-use Format::Util::Numbers qw( roundnear );
-use BOM::Product::ContractFactory qw( produce_contract );
-
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis;
-
-use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types;
 use Path::Tiny;
 use YAML::XS qw(LoadFile);
-use Postgres::FeedDB::Spot::Tick;
 use Test::MockModule;
+use Format::Util::Numbers qw/roundnear/;
+
+use Postgres::FeedDB::Spot::Tick;
+
+use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
 
 my $data_file       = path(__FILE__)->parent->child('config.yml');
 my $config_data     = LoadFile($data_file);

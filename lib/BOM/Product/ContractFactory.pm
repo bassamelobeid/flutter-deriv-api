@@ -69,6 +69,7 @@ UNITCHECK {
     use BOM::Product::Contract::Lbfloatcall;
     use BOM::Product::Contract::Lbfloatput;
     use BOM::Product::Contract::Lbhighlow;
+    use BOM::Product::Contract::Binaryico;
 }
 
 =head2 produce_contract

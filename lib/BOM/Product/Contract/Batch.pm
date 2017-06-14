@@ -1,6 +1,8 @@
 package BOM::Product::Contract::Batch;
 
 use Moose;
+use Format::Util::Numbers qw/formatnumber/;
+
 use BOM::Product::Categorizer;
 use BOM::Product::Static;
 
@@ -147,13 +149,13 @@ sub ask_prices {
                     ? $contract->payout
                     : $contract->ask_price;
                 $contract_info->{error}{details} = {
-                    display_value => sprintf('%.2f', $display_value),
-                    payout        => sprintf('%.2f', $display_value),
+                    display_value => formatnumber('price', $contract->currency, $display_value),
+                    payout        => formatnumber('price', $contract->currency, $display_value),
                 };
             } else {
                 $contract_info->{error}{details} = {
-                    display_value => sprintf('%.2f', $contract->ask_price),
-                    payout        => sprintf('%.2f', $contract->payout),
+                    display_value => formatnumber('price', $contract->currency, $contract->ask_price),
+                    payout        => formatnumber('price', $contract->currency, $contract->payout),
                 };
             }
             if ($contract->two_barriers) {

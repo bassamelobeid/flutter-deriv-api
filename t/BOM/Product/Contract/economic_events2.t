@@ -70,7 +70,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     },
 );
 
-test_economic_events_markup(0.01,  0.01,  'frxUSDJPY');
+test_economic_events_markup(0.01, 0.01, 'frxUSDJPY');
 test_economic_events_markup(0.01, 0.01, 'frxGBPUSD');
 test_economic_events_markup(0.01, 0.01, 'frxGBPJPY');
 

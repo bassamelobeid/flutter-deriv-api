@@ -5,11 +5,12 @@ use warnings;
 
 use Test::More tests => 2;
 use Test::Exception;
+use Date::Utility;
+use Format::Util::Numbers qw/roundnear/;
+
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use Format::Util::Numbers qw(roundnear);
-use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
 initialize_realtime_ticks_db();
@@ -136,11 +137,11 @@ subtest 'notouch' => sub {
         ok $c->hit_tick,   'hit tick present';
         cmp_ok $c->hit_tick->quote, '==', 100.030, 'correct hit tick';
         cmp_ok $c->value, '==', 0.00, 'zero payout, cause it touched';
-        $args->{barrier}      = 100.050;
-        $args->{date_pricing} = $now->truncate_to_day->plus_time_interval('2d');
-        $args->{exit_tick}    = $close_tick;                                       # INJECT OHLC since cannot find it in the test DB.
-        $args->{is_valid_exit_tick}    = 1;
-        $c                    = produce_contract($args);
+        $args->{barrier}            = 100.050;
+        $args->{date_pricing}       = $now->truncate_to_day->plus_time_interval('2d');
+        $args->{exit_tick}          = $close_tick;                                       # INJECT OHLC since cannot find it in the test DB.
+        $args->{is_valid_exit_tick} = 1;
+        $c                          = produce_contract($args);
         cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
         ok $c->is_expired, 'expired';
         ok !$c->hit_tick, 'no hit tick';

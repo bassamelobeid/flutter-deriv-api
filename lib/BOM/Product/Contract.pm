@@ -42,14 +42,13 @@ use List::Util qw(min max first);
 use Scalar::Util qw(looks_like_number);
 use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
-use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Time::Duration::Concise;
+use Format::Util::Numbers qw/formatnumber/;
 
 use Quant::Framework;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 use Postgres::FeedDB::Spot::Tick;
-use Price::Calculator;
 use LandingCompany::Offerings qw(get_contract_specifics);
 
 use BOM::Platform::Chronicle;
@@ -90,6 +89,8 @@ has underlying => (
     coerce  => 1,
     handles => [qw(market pip_size)],
 );
+
+sub is_coinauction { return 0; }
 
 #overriding Financial::Contract fields
 sub absolute_barrier_multiplier {
@@ -433,7 +434,7 @@ sub date_settlement {
 
     my $date_settlement = $end_date;    # Usually we settle when we expire.
     if ($self->expiry_daily and $self->trading_calendar->trades_on($exchange, $end_date)) {
-        $date_settlement = $self->trading_calendar->settlement_on($exchange, $end_date);
+        $date_settlement = $self->trading_calendar->get_exchange_open_times($exchange, $end_date, 'daily_settlement');
     }
 
     return $date_settlement;
@@ -474,7 +475,7 @@ sub longcode {
     my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
     my $description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
-    my @longcode = ($description, $self->currency, to_monetary_number_format($self->payout), $self->underlying->display_name);
+    my @longcode = ($description, $self->currency, formatnumber('price', $self->currency, $self->payout), $self->underlying->display_name);
 
     my ($when_end, $when_start, $generic_mapping) = ([], [], BOM::Product::Static::get_generic_mapping());
     if ($expiry_type eq 'intraday_fixed_expiry') {

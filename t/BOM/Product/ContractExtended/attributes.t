@@ -87,7 +87,6 @@ use BOM::Product::ContractFactory qw( produce_contract );
 my $res;
 subtest 'Numbers and stuff.' => sub {
 
-
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
         epoch      => 1200614400,
@@ -95,9 +94,9 @@ subtest 'Numbers and stuff.' => sub {
     });
     my $bet_params = {
         bet_type     => 'CALL',
-        date_expiry  => '13-Feb-08',    # 13-Feb-08 107.36 108.38 106.99 108.27
+        date_expiry  => '13-Feb-08',             # 13-Feb-08 107.36 108.38 106.99 108.27
         date_pricing => '2008-02-13 23:59:59',
-        date_start   => 1200614400,     # 18-Jan-08 106.42 107.59 106.38 106.88
+        date_start   => 1200614400,              # 18-Jan-08 106.42 107.59 106.38 106.88
         underlying   => 'frxUSDJPY',
         payout       => 1,
         currency     => 'USD',
