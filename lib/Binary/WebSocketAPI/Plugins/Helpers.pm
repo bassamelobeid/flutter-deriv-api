@@ -139,7 +139,7 @@ sub register {
     my $pricing_subscriptions = {};
     $app->helper(
         pricing_subscriptions => sub {
-            my ($c, $key) = @_;
+            my (undef, $key) = @_;
             return $pricing_subscriptions unless $key;
 
             return $pricing_subscriptions->{$key} if $pricing_subscriptions->{$key};
