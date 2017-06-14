@@ -76,6 +76,7 @@ my %real_client_details = (
     myaffiliates_token_registered => 0,
     checked_affiliate_exposures   => 0,
     latest_environment            => '',
+    account_opening_reason        => 'Hedging',
 );
 
 my %financial_data = (
