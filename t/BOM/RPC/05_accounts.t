@@ -11,7 +11,7 @@ use JSON;
 use Encode qw(encode);
 use Email::Folder::Search;
 
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -1515,11 +1515,11 @@ subtest 'get and set self_exclusion' => sub {
     };
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     my @msgs = $mailbox->search(
-        email   => 'compliance@binary.com,support@binary.com',
+        email   => 'compliance@binary.com,support@binary.com,marketing@binary.com',
         subject => qr/Client set self-exclusion limits/
     );
-    ok(@msgs, "msg sent to support email");
-    like($msgs[0]{body}, qr/Maximum number of open positions: 100.*Exclude from website until/s, 'email content is ok');
+    ok(@msgs, "msg sent to support, marketing and compliance email");
+    like($msgs[0]{body}, qr/.*Exclude from website until/s, 'email content is ok');
 
     delete $params->{args};
     like(
