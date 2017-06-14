@@ -116,6 +116,9 @@ subtest 'create account' => sub {
         }
         "create $broker acc OK, after verify email";
         is($real_client->broker, $broker, 'Successfully create ' . $real_client->loginid);
+        # test account_opening_reason
+        is($real_client->account_opening_reason, $real_client_details{account_opening_reason},
+            "Account Opening Reason should be the same");
 
         # duplicate acc
         lives_ok { $real_acc = create_real_acc($vr_client, $user, $broker); } "Try create duplicate $broker acc";
