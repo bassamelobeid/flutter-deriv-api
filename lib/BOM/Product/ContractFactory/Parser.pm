@@ -39,8 +39,9 @@ sub shortcode_to_parameters {
     my ($shortcode, $currency, $is_sold) = @_;
 
     my (
-        $bet_type,   $underlying_symbol, $payout,      $date_start,     $date_expiry,   $barrier,      $barrier2,
-        $prediction, $fixed_expiry,      $tick_expiry, $how_many_ticks, $forward_start, $unit, $coin_address, $number_of_tokens
+        $bet_type,       $underlying_symbol, $payout,     $date_start,   $date_expiry,
+        $barrier,        $barrier2,          $prediction, $fixed_expiry, $tick_expiry,
+        $how_many_ticks, $forward_start,     $unit,       $coin_address, $number_of_tokens
     );
     my ($initial_bet_type) = split /_/, $shortcode;
 
@@ -52,13 +53,11 @@ sub shortcode_to_parameters {
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
-
     # Non binary parser
     my $nonbinary_list = 'LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW';
     if ($shortcode =~ /^($nonbinary_list)_(\w+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
         $unit = $3;
-    }
-    elsif ($shortcode =~ /^BINARYICO_([A-Z0-9]+)_(\w+)_(\d*\.?\d*)_(\d+)$/) {
+    } elsif ($shortcode =~ /^BINARYICO_([A-Z0-9]+)_(\w+)_(\d*\.?\d*)_(\d+)$/) {
         $bet_type          = 'BINARYICO';
         $underlying_symbol = $1;
         $coin_address      = $2;
@@ -114,11 +113,11 @@ sub shortcode_to_parameters {
 
     my $bet_parameters = {
 
-        shortcode    => $shortcode,
-        bet_type     => $bet_type,
-        underlying   => $underlying,
-        amount_type  => $bet_type eq 'BINARYICO' ? 'stake' : 'payout',
-        amount       => $payout,
+        shortcode   => $shortcode,
+        bet_type    => $bet_type,
+        underlying  => $underlying,
+        amount_type => $bet_type eq 'BINARYICO' ? 'stake' : 'payout',
+        amount      => $payout,
         (defined $unit) ? (unit => $unit) : (),
 
         date_start   => $date_start,
