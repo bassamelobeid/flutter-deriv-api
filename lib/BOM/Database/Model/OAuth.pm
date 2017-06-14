@@ -2,7 +2,6 @@ package BOM::Database::Model::OAuth;
 
 use Moose;
 use Date::Utility;
-use String::Random ();
 use Try::Tiny;
 use List::MoreUtils qw(uniq);
 use BOM::Database::AuthDB;
@@ -72,15 +71,7 @@ sub is_scope_confirmed {
 sub store_access_token_only {
     my ($self, $app_id, $loginid, $ua_fingerprint) = @_;
 
-    my $dbh          = $self->dbh;
-    my $expires_in   = 5184000;                                                   # 60 * 86400
-    my $access_token = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
-
-    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
-    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires, ua_fingerprint) VALUES (?, ?, ?, ?, ?)",
-        undef, $access_token, $app_id, $loginid, $expires_time, $ua_fingerprint);
-
-    return ($access_token, $expires_in);
+    return $self->dbh->selectrow_array("SELECT * FROM oauth.create_token(29, ?, ?, '60d'::INTERVAL, ?)", undef, $app_id, $loginid, $ua_fingerprint);
 }
 
 sub get_token_details {
