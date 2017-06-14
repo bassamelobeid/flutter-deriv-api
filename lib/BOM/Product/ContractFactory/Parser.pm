@@ -57,7 +57,9 @@ sub shortcode_to_parameters {
     my $nonbinary_list = 'LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW';
     if ($shortcode =~ /^($nonbinary_list)_(\w+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
         $unit = $3;
-    } elsif ($shortcode =~ /^BINARYICO_([A-Z0-9]+)_(\w+)_(\d*\.?\d*)_(\d+)$/) {
+    }
+
+    if ($shortcode =~ /^BINARYICO_([A-Z0-9]+)_(\w+)_(\d*\.?\d*)_(\d+)$/) {
         $bet_type          = 'BINARYICO';
         $underlying_symbol = $1;
         $coin_address      = $2;
