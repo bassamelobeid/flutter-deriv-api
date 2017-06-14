@@ -183,8 +183,8 @@ sub _create_table_for_date {
 
     my $table_present = $dbic->run(
         sub {
-            my $stmt = $_->prepare(qq{select count(*) from pg_tables where schemaname='feed' and tablename = ?});
-            $stmt->execute($table_name);
+            my $stmt = $_->prepare(' select count(*) from pg_tables where schemaname=\'feed\' and tablename = \'' . $table_name . '\'');
+            $stmt->execute;
             return $stmt->fetchrow_arrayref;
         });
 
@@ -200,18 +200,18 @@ sub _create_table_for_date {
         $dbh->{RaiseError} = 1;
 
         my $partition_date = Date::Utility->new($date->epoch - (($date->day_of_month - 1) * 86400));
-        my $date_str = $partition_date->date_yyyymmdd;
         $dbh->do(
-            qq{CREATE TABLE feed.$table_name (
+            ' CREATE TABLE feed.' . $table_name . '(
             PRIMARY KEY (underlying, ts),
-            CHECK(ts>= ? and ts<?::DATE + interval '1 month'),
-            CHECK(DATE_TRUNC('second', ts) = ts)
+            CHECK(ts>= \''
+                . $partition_date->date_yyyymmdd . '\' and ts<\'' . $partition_date->date_yyyymmdd . '\'::DATE + interval \'1 month\'),
+            CHECK(DATE_TRUNC(\'second\', ts) = ts)
         )
-        INHERITS (feed.tick)}, undef, $date_str, $date_str
+        INHERITS (feed.tick)'
         );
-        $dbh->do("GRANT SELECT ON feed.$table_name  TO read");
+        $dbh->do('GRANT SELECT ON feed.' . $table_name . ' TO read');
 
-        $dbh->do("GRANT SELECT, INSERT, UPDATE, DELETE, TRIGGER ON feed.$table_name TO write");
+        $dbh->do('GRANT SELECT, INSERT, UPDATE, DELETE, TRIGGER ON feed.' . $table_name . ' TO write');
     }
 
     return;
