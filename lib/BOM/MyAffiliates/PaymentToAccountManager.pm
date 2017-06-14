@@ -19,7 +19,7 @@ use Data::Dumper qw( Dumper );
 use Text::CSV;
 use Text::Trim;
 use Date::Utility;
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundcommon);
 use List::MoreUtils qw(any);
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Platform::Runtime;
@@ -172,7 +172,7 @@ sub _get_csv_line_from_txn {
     }
     $USD_amount = abs $USD_amount;
     my $preferred_currency = $client->currency;
-    my $preferred_currency_amount = roundnear(0.01, amount_from_to_currency($USD_amount, 'USD', $preferred_currency));
+    my $preferred_currency_amount = roundcommon(0.01, amount_from_to_currency($USD_amount, 'USD', $preferred_currency));
 
     my $month_str = _get_month_from_transaction($transaction);
     if (not $month_str) {
