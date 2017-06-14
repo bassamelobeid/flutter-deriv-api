@@ -4,10 +4,9 @@
 <input type=submit value="View/edit [% loginid %] details">
 </form>
 
-[% INCLUDE 'backoffice/account/statement_summary.html.tt' %]
-
-<table width=100%><tr>
 <form  action="[% self_post %]" method=post>
+[% INCLUDE 'backoffice/account/statement_summary.html.tt' %]
+<table width=100%><tr>
 <td align=right> Quick jump to see another statement:
 <input name=loginID type=text size=15 value="[% loginid %]">
 <input name=startdate type=text size=15 value="[% startdate %]" placeholder="2016-12-20">
