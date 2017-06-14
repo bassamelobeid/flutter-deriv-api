@@ -65,7 +65,7 @@ sub startup {
 
     Mojo::IOLoop->singleton->reactor->on(
         error => sub {
-            my ($reactor, $err) = @_;
+            my (undef, $err) = @_;
             $app->log->error("EventLoop error: $err");
         });
 
@@ -290,6 +290,7 @@ sub startup {
             {
                 require_auth   => 'trade',
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
+                success        => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_store_last_contract_id,
             }
         ],
         [
