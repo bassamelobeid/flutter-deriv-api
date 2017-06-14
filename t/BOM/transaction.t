@@ -408,7 +408,7 @@ subtest 'buy a bet', sub {
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
             is !$fmb->{is_expired}, !0, 'is_expired';
             is !$fmb->{is_sold},    !0, 'is_sold';
-            is $fmb->{payout_price} + 0, 1000, 'payout_price';
+            cmp_ok $fmb->{payout_price} + 0, '==', 1000, 'payout_price';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             like $fmb->{remark},   qr/\btrade\[514\.00000\]/, 'remark';
             is $fmb->{sell_price}, undef,                     'sell_price';
@@ -519,7 +519,7 @@ subtest 'sell a bet', sub {
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
             is !$fmb->{is_expired}, !1, 'is_expired';
             is !$fmb->{is_sold},    !1, 'is_sold';
-            is $fmb->{payout_price} + 0, 1000, 'payout_price';
+            cmp_ok $fmb->{payout_price} + 0, '==', 1000, 'payout_price';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             like $fmb->{remark}, qr/\btrade\[514\.00000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price, 'sell_price';
@@ -2220,7 +2220,7 @@ subtest 'transaction slippage' => sub {
         is $fmb->{buy_price}, $price, 'buy at requested price';
         is $qv1->{price_slippage}, -0.25, 'slippage stored';
         is $qv1->{requested_price}, $price, 'correct requested price stored';
-        is $qv1->{recomputed_price}, $contract->ask_price, 'correct recomputed price stored';
+        cmp_ok $qv1->{recomputed_price}, '==', $contract->ask_price, 'correct recomputed price stored';
         $fmb_id = $fmb->{id};
     };
 
@@ -2277,7 +2277,7 @@ subtest 'transaction slippage' => sub {
 
         ok !$transaction->sell, 'no error when sell';
         my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $transaction->transaction_id;
-        is $fmb->{sell_price}, sprintf('%.2f', $price), 'sell at requested price';
+        cmp_ok $fmb->{sell_price}, '==', sprintf('%.2f', $price), 'sell at requested price';
         is $qv1->{price_slippage}, -0.4, 'slippage stored';
         is $qv1->{requested_price}, $price, 'correct requested price stored';
         is $qv1->{recomputed_price}, $contract->bid_price, 'correct recomputed price stored';

@@ -6,25 +6,21 @@ use Error::Base;
 use Path::Tiny;
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(tv_interval gettimeofday time);
-
 use JSON qw( from_json to_json );
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
-use Format::Util::Numbers qw(commas roundnear to_monetary_number_format);
 use Try::Tiny;
-
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 
 use Brands;
 use Client::Account;
-
 use Finance::Asset::Market::Types;
-
-use BOM::Platform::Context qw(localize request);
+use Format::Util::Numbers qw/formatnumber financialrounding/;
 
 use BOM::Platform::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use BOM::Platform::Context qw(localize request);
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -391,7 +387,7 @@ sub prepare_bet_data_for_buy {
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
 
-    $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
+    $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
         quantity          => 1,
@@ -682,7 +678,7 @@ sub prepare_bet_data_for_sell {
     my $self = shift;
     my $contract = shift || $self->contract;
 
-    $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
+    $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
         id         => scalar $self->contract_id,
@@ -929,7 +925,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = to_monetary_number_format($client->get_limit_for_daily_turnover, 1);
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_daily_turnover);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your daily turnover limit of [_1][_2].',
@@ -968,16 +964,15 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             client_loginid => $client->loginid,
             currency_code  => $currency,
         });
-        my $balance = $currency eq 'JPY' ? commas($account->get_balance(), 0) : to_monetary_number_format($account->get_balance());
-        my $price   = $currency eq 'JPY' ? commas($self->price,            0) : to_monetary_number_format($self->price);
 
         return Error::Base->cuss(
             -type              => 'InsufficientBalance',
             -message           => 'Client\'s account balance was insufficient to buy bet.',
             -message_to_client => BOM::Platform::Context::localize(
                 'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).',
-                $currency, $balance, $price
-            ));
+                $currency,
+                formatnumber('amount', $currency, $account->get_balance()),
+                formatnumber('price',  $currency, $self->price)));
     },
     BI007 => sub {
         my $self   = shift;
@@ -996,13 +991,13 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = to_monetary_number_format($client->get_limit_for_account_balance, 1);
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_account_balance);
 
         my $account = BOM::Database::DataMapper::Account->new({
             client_loginid => $client->loginid,
             currency_code  => $currency,
         });
-        my $balance = $account->get_balance();
+        my $balance = formatnumber('amount', $currency, $account->get_balance());
 
         return Error::Base->cuss(
             -type              => 'AccountBalanceExceedsLimit',
@@ -1018,7 +1013,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = to_monetary_number_format($client->get_limit_for_payout, 1);
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_payout);
 
         return Error::Base->cuss(
             -type              => 'OpenPositionPayoutLimit',
@@ -1054,7 +1049,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = to_monetary_number_format($client->get_limit_for_daily_losses, 1);
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_daily_losses);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your daily limit on losses of [_1][_2].', $currency, $limit);
 
@@ -1069,7 +1064,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = to_monetary_number_format($client->get_limit_for_7day_turnover, 1);
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_7day_turnover);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your 7-day turnover limit of [_1][_2].',
@@ -1086,7 +1081,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = to_monetary_number_format($client->get_limit_for_7day_losses, 1);
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_7day_losses);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 7-day limit on losses of [_1][_2].', $currency, $limit);
 
@@ -1102,7 +1097,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = to_monetary_number_format($client->get_limit_for_30day_turnover, 1);
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_30day_turnover);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your 30-day turnover limit of [_1][_2].',
@@ -1119,7 +1114,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = to_monetary_number_format($client->get_limit_for_30day_losses, 1);
+        my $limit = formatnumber('amount', $currency, $client->get_limit_for_30day_losses);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 30-day limit on losses of [_1][_2].', $currency, $limit);
 
