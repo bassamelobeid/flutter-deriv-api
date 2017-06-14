@@ -38,7 +38,7 @@ has _for_sale => (
     isa     => 'Bool',
     default => 0,
 );
-has [qw(trading_period_start number_of_tokens token_type coin_address ask_price contract_type)] => (
+has [qw(number_of_tokens token_type coin_address ask_price contract_type)] => (
     is => 'rw',
 );
 
@@ -107,16 +107,9 @@ has currency => (
     required => 1,
 );
 
-has [qw(date_expiry date_settlement)] => (
-    is         => 'ro',
-    isa        => 'date_object',
-    lazy_build => 1,
-);
-
-has date_start => (
+has [qw(date_expiry date_settlement date_start auction_date_start)] => (
     is         => 'rw',
     isa        => 'date_object',
-    coerce     => 1,
     lazy_build => 1,
 );
 
@@ -125,6 +118,24 @@ sub _build_date_start {
     my $now  = Date::Utility->new;
 
     return $now->is_after($self->date_expiry) ? $self->date_expiry : $now;
+
+}
+
+sub _build_auction_date_start {
+    my $self = shift;
+
+    if (not $ICO_config->{$self->contract_type}) {
+        $self->add_errors({
+            message => "Invalid contract type. [symbol: " . $self->contract_type . "]",
+            ,
+            severity          => 99,
+            message_to_client => [$ERROR_MAPPING->{InvalidIcoContract}, $self->contract_type],
+        });
+        return Date::Utility->new;
+
+    }
+
+    return Date::Utility->new($ICO_config->{$self->contract_type}->{auction_date_start});
 
 }
 
@@ -137,8 +148,7 @@ has date_pricing => (
 sub _build_date_expiry {
     my $self = shift;
 
-    my $auction_start_date = Date::Utility->new($ICO_config->{$self->contract_type}->{auction_date_start});
-    return $auction_start_date->plus_time_interval('30d');
+    return $self->auction_start_date->plus_time_interval('30d');
 }
 
 sub _build_date_settlement {

@@ -49,6 +49,7 @@ my $config = {
         InavlidIcoBidPrice            => 'The auction bid price can not be less than zero.',
         IcoClosed                     => 'The ICO auction is already closed.',
         InvalidIcoToken               => 'We are not support auction with this token [_1]',
+        InvalidIcoContract            => 'We are not support auction of  [_1]',
         MarketIsClosed                => 'This market is presently closed.',
         MarketIsClosedTryVolatility   => 'This market is presently closed. Try out the Volatility Indices which are always open.',
         MarketNotOpen                 => 'The market must be open at the start time.',
