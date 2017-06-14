@@ -7,11 +7,11 @@ use DateTime;
 use Try::Tiny;
 use List::MoreUtils qw(any);
 use Data::Password::Meter;
+use Format::Util::Numbers qw/formatnumber/;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use Brands;
-use Price::Calculator qw/formatnumber/;
 
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Account::Virtual;

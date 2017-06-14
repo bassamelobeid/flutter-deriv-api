@@ -14,7 +14,7 @@ use HTML::Entities qw(encode_entities);
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
@@ -916,6 +916,19 @@ sub set_self_exclusion {
     };
 
     my %args = %{$params->{args}};
+
+    # at least one setting should present in request
+    my $args_count = 0;
+    foreach my $field (
+        qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/
+        )
+    {
+        $args_count++ if $args{$field};
+    }
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'SetSelfExclusionError',
+            message_to_client => localize('Please provide at least one self-exclusion setting.')}) unless $args_count;
+
     foreach my $field (
         qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/
         )
@@ -924,7 +937,9 @@ sub set_self_exclusion {
         my $is_valid = 0;
         if ($val and $val =~ /^\d+$/ and $val > 0) {
             $is_valid = 1;
-            if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
+            if (    $self_exclusion->{$field}
+                and $val > $self_exclusion->{$field})
+            {
                 $is_valid = 0;
             }
         }
@@ -946,7 +961,8 @@ sub set_self_exclusion {
     my $exclude_until = $args{exclude_until};
     if (defined $exclude_until && $exclude_until =~ /^\d{4}\-\d{2}\-\d{2}$/) {
         my $now = Date::Utility->new;
-        my $six_month = Date::Utility->new(DateTime->now()->add(months => 6)->ymd);
+        my $six_month =
+            Date::Utility->new(DateTime->now()->add(months => 6)->ymd);
         my ($exclusion_end, $exclusion_end_error);
         try {
             $exclusion_end = Date::Utility->new($exclude_until);
@@ -992,79 +1008,61 @@ sub set_self_exclusion {
         delete $args{timeout_until};
     }
 
-    my $message = '';
     if ($args{max_open_bets}) {
-        my $ret = $client->set_exclusion->max_open_bets($args{max_open_bets});
-        $message .= "- Maximum number of open positions: $ret\n";
+        $client->set_exclusion->max_open_bets($args{max_open_bets});
     }
     if ($args{max_turnover}) {
-        my $ret = $client->set_exclusion->max_turnover($args{max_turnover});
-        $message .= "- Daily turnover: $ret\n";
+        $client->set_exclusion->max_turnover($args{max_turnover});
     }
     if ($args{max_losses}) {
-        my $ret = $client->set_exclusion->max_losses($args{max_losses});
-        $message .= "- Daily losses: $ret\n";
+        $client->set_exclusion->max_losses($args{max_losses});
     }
     if ($args{max_7day_turnover}) {
-        my $ret = $client->set_exclusion->max_7day_turnover($args{max_7day_turnover});
-        $message .= "- 7-Day turnover: $ret\n";
+        $client->set_exclusion->max_7day_turnover($args{max_7day_turnover});
     }
     if ($args{max_7day_losses}) {
-        my $ret = $client->set_exclusion->max_7day_losses($args{max_7day_losses});
-        $message .= "- 7-Day losses: $ret\n";
+        $client->set_exclusion->max_7day_losses($args{max_7day_losses});
     }
     if ($args{max_30day_turnover}) {
-        my $ret = $client->set_exclusion->max_30day_turnover($args{max_30day_turnover});
-        $message .= "- 30-Day turnover: $ret\n";
+        $client->set_exclusion->max_30day_turnover($args{max_30day_turnover});
         if ($client->residence eq 'gb') {    # RTS 12 - Financial Limits - UK Clients
             $client->clr_status('ukrts_max_turnover_limit_not_set');
             $client->save;
         }
     }
     if ($args{max_30day_losses}) {
-        my $ret = $client->set_exclusion->max_30day_losses($args{max_30day_losses});
-        $message .= "- 30-Day losses: $ret\n";
+        $client->set_exclusion->max_30day_losses($args{max_30day_losses});
     }
     if ($args{max_balance}) {
-        my $ret = $client->set_exclusion->max_balance($args{max_balance});
-        $message .= "- Maximum account balance: $ret\n";
+        $client->set_exclusion->max_balance($args{max_balance});
     }
     if ($args{session_duration_limit}) {
-        my $ret = $client->set_exclusion->session_duration_limit($args{session_duration_limit});
-        $message .= "- Maximum session duration: $ret\n";
-    }
-    if ($args{exclude_until}) {
-        my $ret = $client->set_exclusion->exclude_until($args{exclude_until});
-        $message .= "- Exclude from website until: $ret\n";
+        $client->set_exclusion->session_duration_limit($args{session_duration_limit});
     }
     if ($args{timeout_until}) {
-        my $ret = $client->set_exclusion->timeout_until($args{timeout_until});
-        ## convert epoch to datetime string for email
-        $ret = Date::Utility->new($ret)->datetime_yyyymmdd_hhmmss_TZ if $ret;
-        $message .= "- Timeout from website until: $ret\n";
+        $client->set_exclusion->timeout_until($args{timeout_until});
     }
-
-    if ($message) {
-        my $statuses = join '/', map { uc $_->status_code } $client->client_status;
-        my $name = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
-
+    # send to support only when client has self excluded
+    if ($args{exclude_until}) {
+        my $ret          = $client->set_exclusion->exclude_until($args{exclude_until});
+        my $statuses     = join '/', map { uc $_->status_code } $client->client_status;
+        my $name         = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
         my $client_title = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " , current status: [$statuses]" : '');
 
-        $message = "Client $client_title set the following self-exclusion limits:\n\n$message";
-        my $brand = Brands->new(name => request()->brand);
-        my $to_email = $brand->emails('compliance');
-        # send to support only when client has self excluded
-        $to_email .= ',' . $brand->emails('support') if $args{exclude_until};
+        my $brand            = Brands->new(name => request()->brand);
+        my $marketing_email  = $brand->emails('marketing');
+        my $compliance_email = $brand->emails('compliance');
+        my $support_email    = $brand->emails('support');
+
+        my $message = "Client $client_title set the following self-exclusion limits:\n\n- Exclude from website until: $ret\n";
+
+        my $to_email = $compliance_email . ',' . $support_email . ',' . $marketing_email;
         send_email({
-            from    => $brand->emails('compliance'),
+            from    => $compliance_email,
             to      => $to_email,
             subject => "Client set self-exclusion limits",
             message => [$message],
         });
-    } else {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'SetSelfExclusionError',
-                message_to_client => localize('Please provide at least one self-exclusion setting.')});
     }
 
     $client->save();

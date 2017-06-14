@@ -6,7 +6,7 @@ use warnings;
 use Date::Utility;
 
 use Client::Account;
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::Platform::AuditLog;
 use BOM::RPC::v3::Utility;

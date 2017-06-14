@@ -5,8 +5,7 @@ use warnings;
 
 use Date::Utility;
 use Try::Tiny;
-
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Pricing;
@@ -115,8 +114,8 @@ sub proposal_open_contract {
     my $client = $params->{client};
 
     my @fmbs = ();
-
-    if (my $contract_id = $params->{args}->{contract_id}) {
+    my $contract_id = $params->{contract_id} || $params->{args}->{contract_id};
+    if ($contract_id) {
         @fmbs = @{__get_contract_details_by_id($client, $contract_id)};
         if (not $client->default_account or scalar @fmbs and $fmbs[0]->{account_id} ne $client->default_account->id) {
             @fmbs = ();

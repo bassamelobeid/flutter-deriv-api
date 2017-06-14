@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Test::Most;
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 
 subtest 'check amount precision' => sub {
     is formatnumber('amount', 'USD', 10),               '10.00',       'USD 10 -> 10.00';

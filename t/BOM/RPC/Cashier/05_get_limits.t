@@ -7,7 +7,7 @@ use Test::Mojo;
 use Test::MockModule;
 use YAML::XS qw(LoadFile);
 
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 use BOM::RPC::v3::Cashier;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
