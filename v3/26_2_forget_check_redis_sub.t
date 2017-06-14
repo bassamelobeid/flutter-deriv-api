@@ -12,6 +12,25 @@ use BOM::Test::Helper qw/build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 
+use Test::MockModule;
+use Mojo::Redis2;
+
+my $redis2_module = Test::MockModule->new('Mojo::Redis2');
+my $keys_hash = {};
+$redis2_module->mock('subscribe', sub {
+                         my $redis = shift;
+                         my $keys = shift;
+
+                         $keys_hash->{$_} = 1 for @$keys;
+                     });
+
+$redis2_module->mock('unsubscribe', sub {
+                         my $redis = shift;
+                         my $keys = shift;
+
+                         delete( $keys_hash->{$_} ) for @$keys;
+                     });
+
 my $sub_ids = {};
 my @symbols = qw(frxUSDJPY frxAUDJPY frxAUDUSD);
 
@@ -120,12 +139,12 @@ cmp_ok pricer_sub_count(), '==', 3, "3 pricer sub Ok";
 $t->send_ok({json => {forget => [values(%$sub_ids)]->[0]}})->message_ok;
 $res = decode_json($t->message->[1]);
 cmp_ok $res->{forget}, '==', 1, 'Correct number of subscription forget';
-cmp_ok pricer_sub_count(), '==', 3, "3 pricer sub Ok";
+cmp_ok pricer_sub_count(), '==', 2, "price count checking";
 
 $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
 $res = decode_json($t->message->[1]);
 is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
-cmp_ok pricer_sub_count(), '==', 3, "3 pricer sub Ok";
+is pricer_sub_count(), 0, "price count checking";
 
 done_testing();
 
@@ -140,6 +159,5 @@ sub create_propsals {
 }
 
 sub pricer_sub_count {
-    return scalar @{$t->app->redis_pricer->keys('PRICER_KEYS::*')};
+    return scalar keys %$keys_hash;
 }
-
