@@ -29,7 +29,7 @@ Readonly our $BET_CLASS_COINAUCTION_BET  => 'coinauction_bet';
 Readonly our $BET_CLASS_TO_TYPE_MAP => {
     'spread_bet'       => ['SPREADU', 'SPREADD'],
     'higher_lower_bet' => ['CALL',    'PUT', 'CALLE', 'PUTE', 'ASIANU', 'ASIAND'],
-    'coinauction_bet'  => ['ERC20ICO', 'BTCICO'],
+    'coinauction_bet'  => ['BINARYICO'],
 
     'legacy_bet' => [
         'CLUB',              'SPREADUP',          'SPREADDOWN',     'DOUBLEDBL',       'BEARSTOP',      'DOUBLECONTRA',
