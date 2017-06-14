@@ -18,7 +18,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use DateTime;
 use Cache::RedisDB;
 use Date::Utility;
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundcommon);
 use BOM::Platform::Chronicle;
 use Finance::Asset::SubMarket;
 use BOM::MarketData qw(create_underlying_db);
@@ -145,7 +145,7 @@ subtest 'display_decimals' => sub {
             epoch => time,
             quote => 8
         });
-        is roundnear(0.0001, $stock->dividend_rate_for(0.5)), 0, 'correct dividend rate for stocks';
+        is roundcommon(0.0001, $stock->dividend_rate_for(0.5)), 0, 'correct dividend rate for stocks';
         is $stock->dividend_rate_for(1.0), 0, 'correct dividend rate for stocks';
         Cache::RedisDB->del('QUOTE', $stock->symbol);
     };
@@ -363,13 +363,12 @@ subtest vol_expiry_date => sub {
         ['2009-12-24', 4, 'Crosses weekend and special day Dec 25, which happens to be on a Friday.'],
         ['2013-01-10', 1, 'Normal day, but covers Jan 11 for regression purposes.'],
     );
- 
-        my $expiry_conventions = Quant::Framework::ExpiryConventions->new(
-            underlying       => $underlying,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date),
-            calendar         => $underlying->calendar,
-        );
 
+    my $expiry_conventions = Quant::Framework::ExpiryConventions->new(
+        underlying       => $underlying,
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date),
+        calendar         => $underlying->calendar,
+    );
 
     foreach my $test (@tests) {
         my ($date, $expected_days, $comment) = @{$test};
@@ -551,7 +550,7 @@ subtest combined_realtime => sub {
     set_absolute_time($eleventh->epoch);    # before opening time
 
     my $SPC = create_underlying('SPC');
-    ok($SPC->calendar->trades_on($SPC->exchange,$eleventh), 'SPC trades on our chosen date.');
+    ok($SPC->calendar->trades_on($SPC->exchange, $eleventh), 'SPC trades on our chosen date.');
 
     Cache::RedisDB->del('QUOTE', $SPC->symbol);
 
@@ -612,8 +611,8 @@ subtest 'last_licensed_display_epoch' => sub {
     ok $GDAXI->last_licensed_display_epoch > $time - 20 * 60, "Can display ticks older than 20 minutes for GDAXI";
     # daily license
     my $today = Date::Utility->today;
-    my $N225 = create_underlying('N225');
-    my $close = $N225->calendar->closing_on($N225->exchange,$today);
+    my $N225  = create_underlying('N225');
+    my $close = $N225->calendar->closing_on($N225->exchange, $today);
     if (not $close or time < $close->epoch) {
         ok $N225->last_licensed_display_epoch < $today->epoch, "Do not display any ticks for today before opening";
     } else {
