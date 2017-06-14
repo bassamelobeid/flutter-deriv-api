@@ -1,6 +1,6 @@
 <table style="border: 1px solid black;">
 <tr>
-<td colspan="2">Last <select name="months">
+<td colspan="2">Last <select name="months" onchange="this.form.submit()">
 [% FOR i IN [1..12] %]
 <option value="[% i %]"
 [% IF i == months %]
