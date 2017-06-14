@@ -12,7 +12,7 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
 use Time::Duration::Concise::Localize;
 
-use Price::Calculator qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
 use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 
 use BOM::MarketData qw(create_underlying);
@@ -264,8 +264,7 @@ sub handle_batch_contract {
                 warn $contracts->[0]->japan_pricing_info($trading_window_start, $contracts->[1]);
                 warn $contracts->[1]->japan_pricing_info($trading_window_start, $contracts->[0]);
             } else {
-                warn "Had unexpected number of contracts for ->japan_pricing_info calls - types are " . join ',',
-                    map { $_->contract_type } @$contracts;
+                warn "Had unexpected number of contracts for ->japan_pricing_info calls - types are " . join ',', map { $_->bet_type } @$contracts;
             }
         }
     }
