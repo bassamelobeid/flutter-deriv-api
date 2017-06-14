@@ -28,12 +28,13 @@ subtest "Try MX, GBP" => sub {
 
         # XXX Client MX0012 has got affiliate reward of 5.04
 
-        is(
+        cmp_ok(
             BOM::Database::DataMapper::Account->new({
                     'client_loginid' => $account->client_loginid,
                     'currency_code'  => 'GBP'
                 }
                 )->get_balance,
+            '==',
             (4191.05 + 5.04),
             'Check balance for account on MX, GBP'
         );
