@@ -66,7 +66,7 @@ sub _update_redis {
             my ($redis, $error, $count) = @_;
             if ($error) {
                 $c->app->log->warn("Redis error: $error");
-                return $f->fail($error) if $error;
+                return $f->fail($error);
             }
             # overwrite by force speculatively calculated value
             $local_storage->{$name}{value}              = $count;
@@ -79,8 +79,17 @@ sub _update_redis {
             if ($count == $diff) {
                 _set_key_expiry($c, $redis_key, $ttl, $f);
             } else {
-                my $current_ttl = $redis->ttl($redis_key) // -2;
-                _set_key_expiry($c, $redis_key, $ttl) if $current_ttl  == -1;
+                $redis->ttl(
+                    $redis_key,
+                    sub {
+                        my ($redis, $error, $redis_ttl) = @_;
+                        if ($error) {
+                            $c->app->log->warn("Redis error: $error");
+                            return $f->fail($error);
+                        }
+                        $c->app->log->warn("Trying to set TTL for a redis $redis_key that does not exist") if $redis_ttl == -2;
+                        _set_key_expiry($c, $redis_key, $ttl) if $redis_ttl == -1;
+                    });
                 $f->done;
             }
             # retrigger scheduled updates
