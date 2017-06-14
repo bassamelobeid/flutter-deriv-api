@@ -20,7 +20,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundcommon);
 use YAML::XS qw(LoadFile);
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
@@ -219,7 +219,7 @@ subtest 'verify_with_shortcode_IH' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundnear(1, $ask_prob * 1000), 471, 'Ask price is matching');
+    is(roundcommon(1, $ask_prob * 1000), 471, 'Ask price is matching');
     foreach my $key (keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
             is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
@@ -317,7 +317,7 @@ subtest 'verify_with_shortcode_Slope' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundnear(1, $ask_prob * 1000), 950, 'Ask price is matching');
+    is(roundcommon(1, $ask_prob * 1000), 950, 'Ask price is matching');
     foreach my $key (sort keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
             is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
@@ -453,7 +453,7 @@ subtest 'verify_with_shortcode_VV' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundnear(1, $ask_prob * 1000), 765, 'Ask price is matching');
+    is(roundcommon(1, $ask_prob * 1000), 765, 'Ask price is matching');
     foreach my $key (sort keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
             is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
