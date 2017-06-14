@@ -84,7 +84,7 @@ mini:
                 avg: 0.0174
                 max: 0.1036
             CALL:
-                avg: 0.0088
+                avg: 0.0089
                 max: 0.0354
             PUT:
                 avg: 0.0113
