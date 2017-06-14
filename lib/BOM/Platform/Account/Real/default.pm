@@ -425,7 +425,8 @@ sub validate_account_details {
 
 sub get_account_fields {
     return qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
-        address_city address_state address_postcode phone secret_question secret_answer place_of_birth tax_residence tax_identification_number);
+        address_city address_state address_postcode phone secret_question secret_answer place_of_birth
+        tax_residence tax_identification_number account_opening_reason);
 }
 
 1;
