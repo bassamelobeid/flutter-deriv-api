@@ -89,10 +89,10 @@ sub _setup_spot {
         epoch => $date->epoch,
     };
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => $underlying_symbol,
-        epoch      => $date->epoch,
+    BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick({
         quote      => $spot,
+        epoch      => $date->epoch,
+        underlying => $underlying_symbol
     });
 
     $underlying->set_combined_realtime($values);
