@@ -31,16 +31,17 @@ set_date(). This timestamp will be used during call to set_date_from_file() from
 
 =cut
 
-our $mocked_time_file = '/tmp/mocked_time';
+our $mocked_time_file;
 
 BEGIN {
-    unlink $mocked_time_file;
+    unlink $mocked_time_file = '/tmp/mocked_time';
 }
 
 =head2 set_date
 
 Change mocked date/time for current process.
 Accepts anything that Date::Utility can handle - epoch time, 'YYYY-mm-dd HH:MM:SS', etc.
+If file metadata we store system time and mocked time in access time and modification time;
 
 =cut
 
@@ -52,7 +53,7 @@ sub set_date {
         open my $fh, '>>', $mocked_time_file;
         close $fh;
     }
-    utime($epoch, $epoch, $mocked_time_file);
+    utime(CORE::time, $epoch, $mocked_time_file);
 
     return;
 }
@@ -60,14 +61,16 @@ sub set_date {
 =head2 set_date_from_file
 
 Set mocked time, as requested by another process.
+We're getting both access and modification time, and set_relative_time by their difference.
+This will save us in case there were few seconds between set_date() and set-date_from_file() calls.
 If file is not present - do nothing.
 
 =cut
 
 sub set_date_from_file {
-    my $ts = (stat($mocked_time_file))[9];
-    return unless $ts;
-    set_absolute_time($ts);
+    my ($atime, $mtime) = ((stat($mocked_time_file)))[8, 9];
+    return unless $atime;
+    set_relative_time($mtime - $atime);
     return;
 }
 
