@@ -41,7 +41,7 @@ BEGIN {
 
 Change mocked date/time for current process.
 Accepts anything that Date::Utility can handle - epoch time, 'YYYY-mm-dd HH:MM:SS', etc.
-If file metadata we store system time and mocked time in access time and modification time;
+We also store system time and mocked time in access time and modification time of $mocked_time_file metadata.
 
 =cut
 
@@ -61,7 +61,7 @@ sub set_date {
 =head2 set_date_from_file
 
 Set mocked time, as requested by another process.
-We're getting both access and modification time, and set_relative_time by their difference.
+We get both access and modification time and set_relative_time by their difference.
 This will save us in case there were few seconds between set_date() and set-date_from_file() calls.
 If file is not present - do nothing.
 
