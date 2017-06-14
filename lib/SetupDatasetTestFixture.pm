@@ -5,10 +5,11 @@ use namespace::autoclean;
 use Carp;
 
 use Date::Utility;
-use Cache::RedisDB;
 use BOM::MarketData qw(create_underlying);
 use Quant::Framework;
 use BOM::Platform::Chronicle;
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+
 
 =head1 original_spot
 
@@ -88,7 +89,12 @@ sub _setup_spot {
         epoch => $date->epoch,
     };
 
-    Cache::RedisDB->set('FULLFEED_MARKET_VALUE', $underlying_symbol . '_' . $date->epoch, $spot, 7200);
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => $underlying_symbol,
+        epoch      => $date->epoch,
+        quote      => $spot,
+    });
+
     $underlying->set_combined_realtime($values);
 
     return;

@@ -87,7 +87,7 @@ mini:
                 avg: 0.0088
                 max: 0.0354
             PUT:
-                avg: 0.0111
+                avg: 0.0113
                 max: 0.0574
     sdeq:
         DJI:
