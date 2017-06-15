@@ -219,7 +219,7 @@ sub get_contract_details_with_transaction_ids {
             fmb.id = ?
     };
 
-    my @fmbs = $self->dbh->dbic->run(
+    my @fmbs = $self->db->dbic->run(
         sub {
             my $sth = $_->prepare($sql);
             $sth->execute($contract_id);
