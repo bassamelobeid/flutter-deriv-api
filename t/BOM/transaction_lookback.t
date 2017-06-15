@@ -358,7 +358,6 @@ subtest 'buy a bet', sub {
             client        => $cl,
             contract      => $contract,
             price         => $contract->ask_price,
-            #payout        => $contract->payout,
             unit          => $contract->unit,
             amount_type   => 'unit',
             source        => 19,
