@@ -409,7 +409,7 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
         $stmt->finish;
         return $all_rows;
     };
-    my $all_rows = $self->db->dbic_run($dbic_code);
+    my $all_rows = $self->db->dbic->run($dbic_code);
     my $result;
     for my $r (@$all_rows) {
         my @row = @$r;
