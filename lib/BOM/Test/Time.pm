@@ -31,43 +31,42 @@ set_date(). This timestamp will be used during call to set_date_from_file() from
 
 =cut
 
-our $mocked_time_file = '/tmp/mocked_time';
+our $mocked_time_file;
 
 BEGIN {
-    unlink $mocked_time_file;
+    unlink $mocked_time_file = '/tmp/mocked_time';
 }
 
 =head2 set_date
 
 Change mocked date/time for current process.
 Accepts anything that Date::Utility can handle - epoch time, 'YYYY-mm-dd HH:MM:SS', etc.
+We store difference betweek mocked time and system time in $mocked_time_file.
 
 =cut
 
 sub set_date {
     my ($target_date) = @_;
-    my $epoch = Date::Utility->new($target_date)->epoch;
-    set_absolute_time($epoch);
-    unless (-e $mocked_time_file) {
-        open my $fh, '>>', $mocked_time_file;
-        close $fh;
-    }
-    utime($epoch, $epoch, $mocked_time_file);
-
+    my $diff = Date::Utility->new($target_date)->epoch - CORE::time;
+    set_relative_time($diff);
+    open my $fh, '>', $mocked_time_file;
+    print $fh $diff;
+    close $fh;
     return;
 }
 
 =head2 set_date_from_file
 
 Set mocked time, as requested by another process.
+We get difference of mocked and real time and set_relative_time.
 If file is not present - do nothing.
 
 =cut
 
 sub set_date_from_file {
-    my $ts = (stat($mocked_time_file))[9];
-    return unless $ts;
-    set_absolute_time($ts);
+    open my $fh, '<', $mocked_time_file or return;
+    set_relative_time(<$fh>);
+    close $fh;
     return;
 }
 
