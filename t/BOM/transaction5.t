@@ -45,7 +45,7 @@ my $underlying = create_underlying('AS51');
 
 subtest 'validate client error message' => sub {
 
-    my $mock_cal = Test::MockModule->new('Quant::Framework::TradingCalendar');
+    my $mock_cal = Test::MockModule->new('Finance::Calendar');
     $mock_cal->mock('is_open_at', sub { 0 });
 
     my $now      = Date::Utility->new;
