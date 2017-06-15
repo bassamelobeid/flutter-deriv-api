@@ -59,6 +59,7 @@ __PACKAGE__->meta->setup(
         place_of_birth                           => { type => 'varchar', length => 100 },
         tax_residence                            => { type => 'varchar', length => 100 },
         tax_identification_number                => { type => 'varchar', length => 255 },
+        account_opening_reason                   => { type => 'varchar', length => 100 },
     ],
 
     primary_key_columns => [ 'custom_max_payout' ],
