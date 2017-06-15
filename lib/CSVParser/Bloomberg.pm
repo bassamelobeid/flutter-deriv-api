@@ -776,8 +776,7 @@ sub price_list {
         }
         my $fixture = SetupDatasetTestFixture->new;
         $fixture->setup_test_fixture({
-                underlying => create_underlying($underlying_symbol),
-                spot       => $contract_args->{current_spot}});
+                underlying => create_underlying($underlying_symbol)});
         $contract_args->{volsurface} = $self->get_volsurface($underlying_symbol);
         try {
             $contract = CSVParser::Bloomberg->new($contract_args);
