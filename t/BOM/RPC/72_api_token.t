@@ -16,7 +16,7 @@ use BOM::RPC::v3::Accounts;
 use BOM::Database::Model::AccessToken;
 
 # cleanup
-BOM::Database::Model::AccessToken->new->dbh->do("
+BOM::Database::Model::AccessToken->new->dbic->dbh->do("
     DELETE FROM $_
 ") foreach ('auth.access_token');
 
