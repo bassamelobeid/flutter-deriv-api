@@ -103,6 +103,13 @@ has 'underlying_symbol' => (
     isa => 'Str',
 );
 
+has 'current_spot' => (
+    is => 'rw',
+    isa => 'Num', 
+
+);
+
+
 has 'underlying' => (
     is         => 'rw',
     isa        => 'Quant::Framework::Underlying',
@@ -157,7 +164,8 @@ has 'spot' => (
 
 sub _build_spot {
     my $self = shift;
-    return $self->underlying->spot;
+
+    return $self->current_spot;
 }
 
 has 'barrier_type' => (
