@@ -237,7 +237,7 @@ sub get_clients_result_by_field {
     my $dbic = $self->db->dbic;
     return $dbic->run(
         sub {
-            my $sth = $dbh->prepare($sql);
+            my $sth = $_->prepare($sql);
             $sth->execute(@binds);
 
             my $result = $sth->fetchall_arrayref({});
@@ -254,7 +254,7 @@ sub get_unregistered_client_token_pairs_before_datetime {
     my $dbic = $self->db->dbic;
     return $dbic->run(
         sub {
-            my $sth = $dbh->prepare($sql);
+            my $sth = $_->prepare($sql);
             $sth->execute($to_date);
 
             my $result = $sth->fetchall_arrayref({});
