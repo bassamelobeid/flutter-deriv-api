@@ -1,6 +1,14 @@
 package BOM::Test::Time;
 use strict;
 use warnings;
+our $mocked_time_file;
+our $time_hires;
+# we need real time_hires
+BEGIN {
+    unlink $mocked_time_file = '/tmp/mocked_time';
+    $time_hires = \&Time::HiRes::time;
+}
+
 use Time::HiRes;
 use Test::MockTime qw( :all );
 use Test::MockTime::HiRes;
@@ -31,12 +39,6 @@ set_date(). This timestamp will be used during call to set_date_from_file() from
 
 =cut
 
-our $mocked_time_file;
-
-BEGIN {
-    unlink $mocked_time_file = '/tmp/mocked_time';
-}
-
 =head2 set_date
 
 Change mocked date/time for current process.
@@ -45,13 +47,31 @@ We store difference betweek mocked time and system time in $mocked_time_file.
 
 =cut
 
+# this block is needed unless upstream Test::MockTime::HiRes is fixed
+# also update func header
+BEGIN {
+    no warnings 'redefine';
+    *Test::MockTime::time = sub () {
+        return int(BOM::Test::Time::time($time_hires));
+    };
+
+    sub time ($;@) {
+        my $original = shift;
+        defined $Test::MockTime::fixed ? $Test::MockTime::fixed : $original->(@_) + $Test::MockTime::offset;
+    }
+}
+
 sub set_date {
     my ($target_date) = @_;
-    my $diff = Date::Utility->new($target_date)->epoch - CORE::time;
+#    my $diff = Date::Utility->new($target_date)->epoch - CORE::time;
+    my $diff = Date::Utility->new($target_date)->epoch - $time_hires->();
     set_relative_time($diff);
     open my $fh, '>', $mocked_time_file;
     print $fh $diff;
     close $fh;
+    open Q, ">>", "/tmp/timelog";
+    print Q "set_date: $diff/", $time_hires->(), "\n";
+    close Q;
     return;
 }
 
@@ -65,8 +85,13 @@ If file is not present - do nothing.
 
 sub set_date_from_file {
     open my $fh, '<', $mocked_time_file or return;
-    set_relative_time(<$fh>);
+    my $diff = <$fh>;    #+CORE::time-$time_hires->();
+#    my $h = <$fh>;
+    set_relative_time($diff);
     close $fh;
+    open Q, ">>", "/tmp/timelog";
+    print Q "set_date_from_f: $diff/", $time_hires->(), "\n";
+    close Q;
     return;
 }
 
