@@ -12,7 +12,7 @@ __PACKAGE__->meta->setup(
         financial_market_bet_id => { type => 'bigint', not_null => 1 },
         relative_barrier        => { type => 'varchar', length => 20 },
         absolute_barrier        => { type => 'numeric' },
-        prediction              => { type => 'varchar', length => 20 },
+        unit                    => { type => 'numeric' },
     ],
 
     primary_key_columns => [ 'financial_market_bet_id' ],
