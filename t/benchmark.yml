@@ -56,7 +56,7 @@ mini:
                 max: 0.0962
             CALL:
                 avg: 0.0071
-                max: 0.0234
+                max: 0.0248
             PUT:
                 avg: 0.0084
                 max: 0.0587
@@ -84,10 +84,10 @@ mini:
                 avg: 0.0174
                 max: 0.1036
             CALL:
-                avg: 0.0088
+                avg: 0.0089
                 max: 0.0354
             PUT:
-                avg: 0.0111
+                avg: 0.0113
                 max: 0.0574
     sdeq:
         DJI:

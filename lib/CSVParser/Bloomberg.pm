@@ -103,6 +103,13 @@ has 'underlying_symbol' => (
     isa => 'Str',
 );
 
+has 'current_spot' => (
+    is => 'rw',
+    isa => 'Num', 
+
+);
+
+
 has 'underlying' => (
     is         => 'rw',
     isa        => 'Quant::Framework::Underlying',
@@ -157,7 +164,8 @@ has 'spot' => (
 
 sub _build_spot {
     my $self = shift;
-    return $self->underlying->spot;
+
+    return $self->current_spot;
 }
 
 has 'barrier_type' => (
@@ -776,8 +784,7 @@ sub price_list {
         }
         my $fixture = SetupDatasetTestFixture->new;
         $fixture->setup_test_fixture({
-                underlying => create_underlying($underlying_symbol),
-                spot       => $contract_args->{current_spot}});
+                underlying => create_underlying($underlying_symbol)});
         $contract_args->{volsurface} = $self->get_volsurface($underlying_symbol);
         try {
             $contract = CSVParser::Bloomberg->new($contract_args);
