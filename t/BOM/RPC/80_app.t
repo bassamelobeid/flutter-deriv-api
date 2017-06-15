@@ -21,7 +21,7 @@ my $test_loginid = $test_client->loginid;
 
 # cleanup
 my $oauth = BOM::Database::Model::OAuth->new;
-my $dbh   = $oauth->dbh;
+my $dbh   = $oauth->dbic->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 1");
