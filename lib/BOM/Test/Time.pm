@@ -1,6 +1,7 @@
 package BOM::Test::Time;
 use strict;
 use warnings;
+use Time::HiRes;
 our $mocked_time_file;
 our $time_hires;
 # we need real time_hires
@@ -9,7 +10,6 @@ BEGIN {
     $time_hires = \&Time::HiRes::time;
 }
 
-use Time::HiRes;
 use Test::MockTime qw( :all );
 use Test::MockTime::HiRes;
 use Date::Utility;
