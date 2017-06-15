@@ -77,7 +77,11 @@
           "type": "integer",
           "pattern": "^\\d{1,10}$",
           "description":"[For japan only] An epoch value of a predefined trading period start time"
-        }
+        },
+        "coin_address": {
+          "type": "string",
+          "description":"For ICO only. A crytocurrency address."
+        },
       }
     },
     "passthrough": {
