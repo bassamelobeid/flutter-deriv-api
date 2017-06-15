@@ -17,23 +17,21 @@ sub run {
         )->db->dbic
         or die "[$0] cannot create connection";
 
-    $dbic->dbh->{RaiseError} = 1;
-
     my $txn = sub {
 
-        my $u_db = $dbh->selectall_hashref(
+        my $u_db = $_->selectall_hashref(
             qq{
         SELECT * FROM data_collection.underlying_symbol_currency_mapper
     }, 'symbol'
         );
 
-        my $insert_sth = $dbh->prepare(
+        my $insert_sth = $_->prepare(
             q{
         INSERT INTO data_collection.underlying_symbol_currency_mapper (symbol, market, submarket, quoted_currency) VALUES (?,?,?,?)
     }
         );
 
-        my $update_sth = $dbh->prepare(
+        my $update_sth = $_->prepare(
             q{
         UPDATE data_collection.underlying_symbol_currency_mapper SET
             market = ?,
@@ -43,10 +41,11 @@ sub run {
     }
         );
 
-        print "starting update underlying\n";
-
         my $ins = 0;
         my $upd = 0;
+
+        print "starting update underlying\n";
+
         foreach my $symbol (keys %{$u_file}) {
             my $symbol_file = $u_file->{$symbol};
             next if ref($symbol_file) ne 'HASH';
@@ -67,10 +66,10 @@ sub run {
                 $ins++;
             }
         }
-
+        return ($ins, $upd);
     };
 
-    $dbic->txn(ping => $txn);
+    my ($ins, $upd) = $dbic->txn($txn);
     print "inserted $ins underlyings\n";
     if ($upd) {
         print "updated $upd underlyings -- you probably want to fully reload the cube.\n";
