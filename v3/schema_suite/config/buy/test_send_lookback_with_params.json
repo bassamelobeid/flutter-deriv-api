@@ -8,6 +8,6 @@
     "symbol": "R_50",
     "duration": 15,
     "duration_unit": "m",
-    "barrier" : "S20P"
+    "barrier" : "+0.1"
   }
 }
