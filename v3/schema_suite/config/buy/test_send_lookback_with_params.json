@@ -1,0 +1,12 @@
+{
+  "buy": 1,
+  "price": 10000,
+  "parameters": {
+    "unit": 10,
+    "contract_type": "LBFIXEDCALL",
+    "currency": "USD",
+    "symbol": "R_50",
+    "duration": 10,
+    "duration_unit": "m"
+  }
+}
