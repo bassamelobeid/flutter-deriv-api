@@ -11,7 +11,7 @@ use Bloomberg::FileDownloader;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use Date::Utility;
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundcommon);
 use Bloomberg::CurrencyConfig;
 use Quant::Framework::InterestRate;
 
@@ -46,7 +46,7 @@ sub run {
         }
 
         if (my $data = $self->_get_currency_and_term_from_BB_ticker($item)) {
-            $rates->{$data->{currency}}->{rates}->{$self->_tenor_mapper->{$data->{term}}} = roundnear(0.001, $item_rates);
+            $rates->{$data->{currency}}->{rates}->{$self->_tenor_mapper->{$data->{term}}} = roundcommon(0.001, $item_rates);
         } else {
             push @{$report->{error}}, "Unrecognized Bloomberg ticker[$item]";
             next;
