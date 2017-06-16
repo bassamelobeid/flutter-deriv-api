@@ -5,7 +5,7 @@ use Moose;
 use Date::Utility;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request template);
-use Format::Util::Numbers qw( roundnear );
+use Format::Util::Numbers qw( roundcommon );
 use VolSurface::Utils qw( get_1vol_butterfly );
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData qw(create_underlying);
@@ -328,7 +328,7 @@ sub rmg_text_format {
         my $row = $self->_construct_smile_line($day, $smile);
 
         foreach my $spread_point (@surface_spread_point) {
-            $row .= $self->_field_separator . roundnear(0.0001, $spread->{$spread_point});
+            $row .= $self->_field_separator . roundcommon(0.0001, $spread->{$spread_point});
         }
 
         push @surface, $row;
@@ -413,7 +413,7 @@ sub html_volsurface_in_table {
             my $hacked_vol_point = $vol_point;
             $hacked_vol_point =~ s/\./point/g;
 
-            my $vol = roundnear(0.0001, $smile->{smile}->{$vol_point});
+            my $vol = roundcommon(0.0001, $smile->{smile}->{$vol_point});
 
             $output .= "<td data-jsonify-name=\"$day.smile.$hacked_vol_point\" data-jsonify-getter=\"anything\">$vol</td>";
         }
@@ -421,7 +421,7 @@ sub html_volsurface_in_table {
         foreach my $spread_point (@spreads_points) {
             my $hacked_spread_point = $spread_point;
             $hacked_spread_point =~ s/\./point/g;
-            my $display_spread = roundnear(0.0001, $spread->{$spread_point});
+            my $display_spread = roundcommon(0.0001, $spread->{$spread_point});
             $output .= "<td data-jsonify-name=\"$day.vol_spread.$hacked_spread_point\" data-jsonify-getter=\"anything\">$display_spread</td>";
         }
 
@@ -489,8 +489,8 @@ sub print_comparison_between_volsurface {
         push @output, "<TH>$days[$i]</TH>";
         foreach my $col_point (sort { $a <=> $b } @surface_vol_point) {
 
-            my $vol = roundnear(0.0001, $surface->get_surface_volatility($days[$i], $col_point));
-            my $ref_vol = roundnear(0.0001, $ref_surface->get_surface_volatility($days[$i], $col_point));
+            my $vol = roundcommon(0.0001, $surface->get_surface_volatility($days[$i], $col_point));
+            my $ref_vol = roundcommon(0.0001, $ref_surface->get_surface_volatility($days[$i], $col_point));
 
             if (defined $vol and defined $ref_vol) {
                 my $vol_picture =
@@ -529,8 +529,8 @@ sub print_comparison_between_volsurface {
 
         foreach my $spread_point (sort { $a <=> $b } @surface_spread_point) {
 
-            my $ref_spread = roundnear(0.0001, $ref_surface->{'surface'}->{$days[$i]}->{'vol_spread'}->{$spread_point});
-            my $spread     = roundnear(0.0001, $surface->{'surface'}->{$days[$i]}->{'vol_spread'}->{$spread_point});
+            my $ref_spread = roundcommon(0.0001, $ref_surface->{'surface'}->{$days[$i]}->{'vol_spread'}->{$spread_point});
+            my $spread     = roundcommon(0.0001, $surface->{'surface'}->{$days[$i]}->{'vol_spread'}->{$spread_point});
 
             if (defined $ref_spread and defined $spread) {
                 my $spread_picture =
@@ -578,7 +578,7 @@ sub calculate_moneyness_vol_for_display {
         next if $term > 366;
 
         #my @headers = qw(days date forward_vol RR 2vBF 1vBF skew kurtosis);
-        push @row, 100 * roundnear(0.0001, $fv->{$term});
+        push @row, 100 * roundcommon(0.0001, $fv->{$term});
 
         my %delta_smile = map {
             $_ => $volsurface->get_volatility({
@@ -587,9 +587,9 @@ sub calculate_moneyness_vol_for_display {
                     to    => $volsurface->recorded_date->plus_time_interval($term . 'd')})
         } qw(25 50 75);
         my $rr_bf = $volsurface->get_rr_bf_for_smile(\%delta_smile);
-        push @row, roundnear(0.0001, $rr_bf->{RR_25});
-        push @row, roundnear(0.0001, $rr_bf->{BF_25});
-        my $vol1_bf = roundnear(
+        push @row, roundcommon(0.0001, $rr_bf->{RR_25});
+        push @row, roundcommon(0.0001, $rr_bf->{BF_25});
+        my $vol1_bf = roundcommon(
             0.0001,
             get_1vol_butterfly({
                     spot             => $underlying->spot,
@@ -606,12 +606,12 @@ sub calculate_moneyness_vol_for_display {
                 }));
         push @row, $vol1_bf;
         my $sk = $self->get_skew_kurtosis($rr_bf);
-        push @row, roundnear(0.0001, $sk->{skew});
-        push @row, roundnear(0.0001, $sk->{kurtosis});
+        push @row, roundcommon(0.0001, $sk->{skew});
+        push @row, roundcommon(0.0001, $sk->{kurtosis});
         my $moneynesses = $volsurface->smile_points;
         my $smile       = $volsurface->surface->{$term}->{smile};
         my @rounded_vol =
-            map { 100 * roundnear(0.0001, $smile->{$_}) } @$moneynesses;
+            map { 100 * roundcommon(0.0001, $smile->{$_}) } @$moneynesses;
         push @row, @rounded_vol;
         push @surface, [@row];
     }
