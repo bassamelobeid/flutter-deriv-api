@@ -1,6 +1,9 @@
 use strict;
 use warnings;
 
+# The cache causes our prices to vary slightly, so we disable for all QF modules.
+BEGIN { $ENV{QUANT_FRAMEWORK_CACHE} = 0 }
+
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use Test::Most 0.22 (tests => 130);
 use Test::MockModule;
