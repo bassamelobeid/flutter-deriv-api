@@ -107,21 +107,23 @@ Bar("BTC withdrawal list");
 
 use BOM::Database::ClientDB;
 my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-my $dbh = $clientdb->db->dbh;
+my $dbic = $clientdb->db->dbic;
 
 if (request()->param('ctc_sent')) {
-    my ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_sent(?, ?)', undef, request()->param('ctc_sent'), 'BTC');
+    my ($found) = $dbic->run(sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_sent(?, ?)', undef, request()->param('ctc_sent'), 'BTC') });
     # TODO: print warning if not $found
 }
 
 my $btc_trxs;
 my $ctc_view_type;
 if (request()->param('ctc_recent_sent')) {
-    $btc_trxs = $dbh->selectall_arrayref(q{SELECT * FROM payment.ctc_bo_get_withdrawal('BTC', 'SENT'::payment.CTC_STATUS, 50, NULL)}, {Slice => {}});
+    $btc_trxs = $dbic->run(
+        sub { $_->selectall_arrayref(q{SELECT * FROM payment.ctc_bo_get_withdrawal('BTC', 'SENT'::payment.CTC_STATUS, 50, NULL)}, {Slice => {}}) });
     $ctc_view_type = 'recent_sent';
 } else {
-    $btc_trxs =
-        $dbh->selectall_arrayref(q{SELECT * FROM payment.ctc_bo_get_withdrawal('BTC', 'LOCKED'::payment.CTC_STATUS, NULL, NULL)}, {Slice => {}});
+    $btc_trxs = $dbic->run(
+        sub { $_->selectall_arrayref(q{SELECT * FROM payment.ctc_bo_get_withdrawal('BTC', 'LOCKED'::payment.CTC_STATUS, NULL, NULL)}, {Slice => {}}) }
+    );
     $ctc_view_type = 'locked';
 }
 $tt->process(
