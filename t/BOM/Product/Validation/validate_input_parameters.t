@@ -132,7 +132,7 @@ subtest 'absolute barrier for a non-intraday contract' => sub {
                 100 => 0,
                 365 => 0
             },
-        }) for qw(USD JPY USD-JPY);
+        }) for qw(USD JPY JPY-USD);
 
     my $forex = create_underlying('frxUSDJPY');
 
