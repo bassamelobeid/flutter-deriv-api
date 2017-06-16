@@ -31,7 +31,7 @@ my @params = (
 
 {
     # cleanup
-    BOM::Database::Model::AccessToken->new->dbh->do('DELETE FROM auth.access_token');
+    BOM::Database::Model::AccessToken->new->dbic->dbh->do('DELETE FROM auth.access_token');
 }
 
 my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
