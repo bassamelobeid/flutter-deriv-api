@@ -73,7 +73,7 @@ sub buy {
     catch {
         warn __PACKAGE__ . " buy pre_validate_start_expire_dates failed, parameters: " . encode_json($contract_parameters);
         $response = BOM::RPC::v3::Utility::create_error({
-                code              => '1.ContractCreationFailure',
+                code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
     return $response if $response;
@@ -111,7 +111,7 @@ sub buy {
     catch {
         warn __PACKAGE__ . " buy buy failed, parameters: " . encode_json($contract_parameters);
         $response = BOM::RPC::v3::Utility::create_error({
-                code              => '2.ContractCreationFailure'.$amount_type,
+                code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
     return $response if $response;
