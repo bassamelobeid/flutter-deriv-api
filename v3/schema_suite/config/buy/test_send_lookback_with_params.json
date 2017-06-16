@@ -3,6 +3,7 @@
   "price": 10000,
   "parameters": {
     "unit": 10,
+    "basis": "payout"
     "contract_type": "LBFIXEDCALL",
     "currency": "USD",
     "symbol": "R_50",
