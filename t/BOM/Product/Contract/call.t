@@ -7,7 +7,7 @@ use Test::More tests => 5;
 use Test::Exception;
 use Date::Utility;
 use Cache::RedisDB;
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
@@ -109,7 +109,7 @@ subtest 'call variations' => sub {
         ok !$c->expiry_daily, 'not expiry daily';
 
         is $c->ask_price, 5.33, 'correct ask price';
-        is roundnear(0.001, $c->pricing_vol), 0.193, 'correct pricing vol';
+        is roundcommon(0.001, $c->pricing_vol), 0.193, 'correct pricing vol';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         isa_ok $c->barrier,        'BOM::Product::Contract::Strike';
         cmp_ok $c->barrier->as_absolute, '==', 76.900, 'correct absolute barrier';

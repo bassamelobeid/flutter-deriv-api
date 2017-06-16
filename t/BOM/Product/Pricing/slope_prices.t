@@ -3,12 +3,15 @@
 use strict;
 use warnings;
 
+# The cache causes our prices to vary slightly, so we disable for all QF modules.
+BEGIN { $ENV{QUANT_FRAMEWORK_CACHE} = 0 }
+
 use Test::More;
 use Test::Exception;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
 use Test::MockModule;
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use Test::BOM::UnitTestPrice;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
@@ -102,7 +105,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
 
-                        is roundnear(0.00001, $c->theo_probability->amount), roundnear(0.00001, $expectation->{$code}),
+                        is roundcommon(0.00001, $c->theo_probability->amount), roundcommon(0.00001, $expectation->{$code}),
                             'theo probability matches [' . $code . " - " . $c->shortcode . ']';
                     }
                     'survived';

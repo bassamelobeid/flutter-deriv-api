@@ -6,7 +6,7 @@ use warnings;
 use Test::More (tests => 4);
 use Date::Utility;
 use Text::CSV::Slurp;
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::MarketData qw(create_underlying_db);
@@ -929,6 +929,6 @@ foreach my $d (@$data) {
         });
 
     my $c = produce_contract($params);
-    is roundnear(0.01, $c->theo_probability->amount),  0.52, 'theo prob checked';
-    is roundnear(0.01, $c->commission_markup->amount), 0.03, 'commission markup checked';
+    is roundcommon(0.01, $c->theo_probability->amount),  0.52, 'theo prob checked';
+    is roundcommon(0.01, $c->commission_markup->amount), 0.03, 'commission markup checked';
 }
