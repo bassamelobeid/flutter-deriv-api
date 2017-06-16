@@ -26,7 +26,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(USD JPY);
+    }) for qw(USD JPY JPY-USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
