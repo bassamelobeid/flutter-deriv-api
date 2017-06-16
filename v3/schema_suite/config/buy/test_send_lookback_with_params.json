@@ -7,6 +7,7 @@
     "currency": "USD",
     "symbol": "R_50",
     "duration": 15,
-    "duration_unit": "m"
+    "duration_unit": "m",
+    "barrier" : "S20P"
   }
 }
