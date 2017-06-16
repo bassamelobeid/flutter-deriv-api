@@ -148,7 +148,7 @@ has date_pricing => (
 sub _build_date_expiry {
     my $self = shift;
 
-    return $self->auction_start_date->plus_time_interval('30d');
+    return $self->auction_date_start->plus_time_interval('30d');
 }
 
 sub _build_date_settlement {
