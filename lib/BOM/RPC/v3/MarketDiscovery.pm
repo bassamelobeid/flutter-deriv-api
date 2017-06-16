@@ -87,7 +87,7 @@ sub _description {
         submarket_display_name => localize($ul->submarket->display_name),
         exchange_is_open       => $exchange_is_open || 0,
         is_trading_suspended   => 0,
-        pip                    => $ul->pip_size
+        pip                    => $ul->pip_size . "",
     };
 
     if ($by eq 'full') {
