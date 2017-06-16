@@ -631,32 +631,10 @@ subtest $method => sub {
         'This account is unavailable.',
         'check authorization'
     );
-    is_deeply(
-        $c->tcall($method, {token => $token1}),
-        {
-            status              => ['has_password', 'financial_assessment_not_complete'],
-            risk_classification => 'low'
-        },
-        'status only has_password'
-    );
-    $test_client->set_status('tnc_approval', 'test staff', 1);
-    $test_client->save();
-    is_deeply(
-        $c->tcall($method, {token => $token1}),
-        {
-            status              => ['has_password', 'financial_assessment_not_complete'],
-            risk_classification => 'low'
-        },
-        'tnc_approval is excluded, still status only has has_password'
-    );
-
     # test 'financial_assessment_not_complete'
-    is_deeply(
-        $c->tcall($method, {token => $token1}),
-        {
-            status              => ['has_password', 'financial_assessment_not_complete'],
-            risk_classification => 'low'
-        },
+    ok(
+        grep { $_ eq 'financial_assessment_not_complete' }
+        @{$c->tcall($method, {token => $token1})->{status}},
         'financial_assessment_not_complete when client has not filled questionnaire'
     );
     # test when some questions are not answered
@@ -744,7 +722,7 @@ subtest $method => sub {
         "stocks_trading_experience"            => {"answer" => "1-2 years"},
         "stocks_trading_frequency"             => {"answer" => "0-5 transactions in the past 12 months"},
         "account_turnover"                     => {"answer" => 'Less than $25,000'},
-        "account_opening_reason"               => {"answer" => "Experience"}};
+        "account_opening_reason"               => {"answer" => "Hedging"}};
     $test_client->financial_assessment({
         data            => encode_json $data,
         is_professional => 0
@@ -758,6 +736,7 @@ subtest $method => sub {
         },
         'financial_assessment_not_complete should not present when questions are answered properly'
     );
+    # $test_client->set_status('tnc_approval', 'test staff', 1);
 
     # reset the risk classification for the following test
     $test_client->aml_risk_classification('low');
@@ -773,7 +752,6 @@ subtest $method => sub {
         },
         'ok, authenticated'
     );
-
 };
 
 $method = 'change_password';
