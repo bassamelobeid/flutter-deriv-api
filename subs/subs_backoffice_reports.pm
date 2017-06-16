@@ -94,7 +94,7 @@ sub DailyTurnOverReport {
         my ($USDbuys, $USDsells);
 
         foreach my $curr (@all_currencies) {
-            my $rate = $rates{$curr};
+            my $rate = $rates{$curr} // 0;
 
             my $buys = $aggregate_transactions->{$when->date_yyyymmdd}->{$action_bb}->{$curr}->{'amount'} // 0;
             $USDbuys += $buys * $rate;
