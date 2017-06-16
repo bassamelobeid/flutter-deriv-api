@@ -10,7 +10,7 @@ use YAML::XS qw(LoadFile);
 
 use Date::Utility;
 use Test::MockObject::Extends;
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundcommon);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -793,7 +793,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         });
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
-        $mock_contract->mock('payout',          sub { roundnear(0.001, 10 / $ask_cv->amount) });
+        $mock_contract->mock('payout',          sub { roundcommon(0.001, 10 / $ask_cv->amount) });
 
         $transaction = BOM::Transaction->new({
             client        => $client,
