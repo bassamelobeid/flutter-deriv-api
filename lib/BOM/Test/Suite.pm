@@ -38,6 +38,9 @@ my $global_test_iteration = 0;
 $ENV{BOM_TEST_RATE_LIMITATIONS} =    ## no critic (Variables::RequireLocalizedPunctuationVars)
     '/home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/rate_limitations.yml';
 
+# all tests start from this date
+my $start_date = Date::Utility->new('2016-08-09 11:59:00')->epoch;
+
 # Return entire contents of file as string
 sub read_file {
     my $path = shift;
@@ -68,7 +71,7 @@ sub run {
         BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
         BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
         BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
-        set_date('2016-08-09 11:59:00');
+        set_date($start_date);
 
         initialize_realtime_ticks_db();
         build_test_R_50_data();
@@ -118,17 +121,10 @@ sub run {
     my $cumulative_elapsed = 0;
 
     # 30s ahead of test start, minus 10 seconds for the initial ticks
-    my $reset_time = time + 20;
+    # we cannot rely on time here, previous jobs can take different number of seconds
+    my $reset_time = $start_date + 20;
     my $counter    = 0;
     foreach my $line (@lines) {
-        # we are setting the time two seconds ahead for every step to ensure time
-        # sensitive tests (pricing tests) always start at a consistent time.
-        # Note that we have seen problems when resetting the time backwards:
-        # symptoms include account balance going negative when buying
-        # a contract.
-        set_date($reset_time);
-        $reset_time += 2;
-
         ++$counter;    # slightly more informative name, for use in log messages at the end of the loop
         chomp $line;
         next if ($line =~ /^(#.*|)$/);
@@ -172,6 +168,13 @@ sub run {
         if ($test_app->is_websocket && $line =~ s/^\{test_last_stream_message:(.+?)\}//) {
             $test_stream_id = $1;
         }
+        # we are setting the time two seconds ahead for every step to ensure time
+        # sensitive tests (pricing tests) always start at a consistent time.
+        # Note that we have seen problems when resetting the time backwards:
+        # symptoms include account balance going negative when buying
+        # a contract.
+        set_date($reset_time);
+        $reset_time += 2;
 
         my $t0 = [gettimeofday];
         my ($send_file, $receive_file, @template_func);
