@@ -3,6 +3,9 @@
 use strict;
 use warnings;
 
+# The cache causes our prices to vary slightly, so we disable for all QF modules.
+BEGIN { $ENV{QUANT_FRAMEWORK_CACHE} = 0 }
+
 use Test::More;
 use Test::Exception;
 use Date::Utility;
