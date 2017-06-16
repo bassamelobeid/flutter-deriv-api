@@ -6,7 +6,7 @@ use warnings;
 use Test::More tests => 2;
 use Test::Exception;
 use Date::Utility;
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -69,7 +69,7 @@ subtest 'touch' => sub {
         is $c->pricing_code, 'ONETOUCH';
 
         is $c->ask_price, 9.28;
-        is roundnear(0.001, $c->pricing_vol), 0.184;
+        is roundcommon(0.001, $c->pricing_vol), 0.184;
 
         is $c->sentiment, 'high_vol';
         ok $c->is_path_dependent;

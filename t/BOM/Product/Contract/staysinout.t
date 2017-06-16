@@ -7,7 +7,7 @@ use Test::More tests => 2;
 use Test::Exception;
 use Date::Utility;
 use JSON qw(to_json);
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -78,7 +78,7 @@ subtest 'range' => sub {
         is $c->code,          'RANGE';
         is $c->pricing_code,  'RANGE';
         cmp_ok $c->ask_price, '==', 2;
-        is roundnear(0.001, $c->pricing_vol), 0.184;
+        is roundcommon(0.001, $c->pricing_vol), 0.184;
         is $c->sentiment, 'low_vol';
         ok $c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
