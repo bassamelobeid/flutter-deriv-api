@@ -13,9 +13,9 @@ use BOM::Database::Model::OAuth;
 ## init
 my $app_id = do {
     my $oauth = BOM::Database::Model::OAuth->new;
-    $oauth->dbh->do("DELETE FROM oauth.user_scope_confirm");
-    $oauth->dbh->do("DELETE FROM oauth.access_token");
-    $oauth->dbh->do("DELETE FROM oauth.apps WHERE name='Test App'");
+    $oauth->dbic->dbh->do("DELETE FROM oauth.user_scope_confirm");
+    $oauth->dbic->dbh->do("DELETE FROM oauth.access_token");
+    $oauth->dbic->dbh->do("DELETE FROM oauth.apps WHERE name='Test App'");
     my $app = $oauth->create_app({
         name         => 'Test App',
         user_id      => 1,
