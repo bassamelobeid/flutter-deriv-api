@@ -1,6 +1,6 @@
 {
   "buy": 1,
-  "price": 10000,
+  "price": 5000,
   "parameters": {
     "unit": 10,
     "basis": "payout",
