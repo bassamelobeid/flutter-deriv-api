@@ -6,7 +6,7 @@ use warnings;
 use Test::More tests => 2;
 use Test::Exception;
 use Date::Utility;
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -60,10 +60,10 @@ subtest 'expiry miss' => sub {
         $c->ask_probability;
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
-        is roundnear(0.001, $call->{amount}), 0.585, 'correct tv for CALL';
-        is roundnear(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.184, 'correct vol for call';
-        is roundnear(0.001, $put->{amount}), 0.057, 'correct tv for PUT';
-        is roundnear(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.25, 'correct vol for put';
+        is roundcommon(0.001, $call->{amount}), 0.585, 'correct tv for CALL';
+        is roundcommon(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.184, 'correct vol for call';
+        is roundcommon(0.001, $put->{amount}), 0.057, 'correct tv for PUT';
+        is roundcommon(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.25, 'correct vol for put';
     }
     'generic';
 
@@ -120,10 +120,10 @@ subtest 'expiry range' => sub {
         $c->ask_probability;
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
-        is roundnear(0.001, $call->{amount}), 0.567, 'correct tv for CALL';
-        is roundnear(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.183, 'correct vol for call';
-        is roundnear(0.001, $put->{amount}), 0.057, 'correct tv for PUT';
-        is roundnear(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.25, 'correct vol for put';
+        is roundcommon(0.001, $call->{amount}), 0.567, 'correct tv for CALL';
+        is roundcommon(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.183, 'correct vol for call';
+        is roundcommon(0.001, $put->{amount}), 0.057, 'correct tv for PUT';
+        is roundcommon(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.25, 'correct vol for put';
 
     }
     'generic';

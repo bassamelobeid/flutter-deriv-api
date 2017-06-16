@@ -10,7 +10,7 @@ use Date::Utility;
 use Path::Tiny;
 use YAML::XS qw(LoadFile);
 use Test::MockModule;
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use Postgres::FeedDB::Spot::Tick;
 
@@ -227,14 +227,14 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
         }
         my $theo = $bet->theo_probability;
         is(
-            roundnear(1e-4, $theo->amount),
-            roundnear(1e-4, $expectations->{theo_prob}),
+            roundcommon(1e-4, $theo->amount),
+            roundcommon(1e-4, $expectations->{theo_prob}),
             'Theo probability is correct for ' . $bet->pricing_engine_name
         );
-        is(roundnear(1e-4, $bet->commission_markup->amount), $expectations->{commission_markup}, 'Commission markup is correct.');
+        is(roundcommon(1e-4, $bet->commission_markup->amount), $expectations->{commission_markup}, 'Commission markup is correct.');
         is(
-            roundnear(1e-4, $bet->risk_markup->amount),
-            roundnear(1e-4, $expectations->{risk_markup}),
+            roundcommon(1e-4, $bet->risk_markup->amount),
+            roundcommon(1e-4, $expectations->{risk_markup}),
             'Risk markup is correctfor ' . $bet->pricing_engine_name
         );
         $date_pricing++;
@@ -307,13 +307,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol => 'DFMGI',
     });
 my $middle_east_intraday = produce_contract('CALL_DFMGI_10_1447921800F_1447929000_S0P_0', 'USD');
-is(roundnear(1e-4, $middle_east_intraday->commission_markup->amount), 0.025, 'Commission markup for middle east is 5%');
+is(roundcommon(1e-4, $middle_east_intraday->commission_markup->amount), 0.025, 'Commission markup for middle east is 5%');
 
 my $middle_east_daily = produce_contract('CALL_DFMGI_10_1447921800_1448022600F_S0P_0', 'USD');
-is(roundnear(1e-4, $middle_east_daily->commission_markup->amount), 0.025, 'Commission markup for middle east is 5%');
+is(roundcommon(1e-4, $middle_east_daily->commission_markup->amount), 0.025, 'Commission markup for middle east is 5%');
 
 my $GDAXI_intraday = produce_contract('CALL_GDAXI_10_1448013600F_1448020800_S0P_0', 'USD');
 my $GDAXI_intraday_ask = $GDAXI_intraday->ask_probability;
-is(roundnear(1e-4, $GDAXI_intraday->commission_markup->amount), 0.025, 'Commission markup for indices is 3%');
+is(roundcommon(1e-4, $GDAXI_intraday->commission_markup->amount), 0.025, 'Commission markup for indices is 3%');
 
 1;

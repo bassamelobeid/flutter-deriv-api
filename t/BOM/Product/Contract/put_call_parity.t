@@ -6,7 +6,7 @@ use warnings;
 use Test::More tests => 6;
 use Test::Exception;
 use Date::Utility;
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -203,7 +203,7 @@ subtest 'put_call_parity_slope_non_japan' => sub {
             my $call_theo_prob  = $c->pricing_engine->_base_probability;
             my $put_theo_prob   = $c->opposite_contract->pricing_engine->_base_probability;
             my $discounted_prob = $c->discounted_probability->amount;
-            is roundnear(0.0000000001, $call_theo_prob + $put_theo_prob), roundnear(0.0000000001, $discounted_prob),
+            is roundcommon(0.0000000001, $call_theo_prob + $put_theo_prob), roundcommon(0.0000000001, $discounted_prob),
                 "put call parity hold for " . $c->shortcode . " with payout currency $currency";
         }
     }
@@ -232,8 +232,8 @@ subtest 'put_call_parity_slope_japan' => sub {
         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
         my $call_theo_prob  = $c->pricing_engine->_base_probability;
         my $put_theo_prob   = $c->opposite_contract->pricing_engine->_base_probability;
-        my $discounted_prob = roundnear(0.001, $c->discounted_probability->amount);
-        is roundnear(0.001, $call_theo_prob + $put_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
+        my $discounted_prob = roundcommon(0.001, $c->discounted_probability->amount);
+        is roundcommon(0.001, $call_theo_prob + $put_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
 
     }
 };
@@ -257,8 +257,8 @@ subtest 'put_call_parity_vv_non_japan' => sub {
             isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
             my $contract_theo_prob          = $c->pricing_engine->base_probability->amount;
             my $opposite_contract_theo_prob = $c->opposite_contract->pricing_engine->base_probability->amount;
-            my $discounted_prob             = roundnear(0.1, $c->discounted_probability->amount);
-            is roundnear(0.1, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob,
+            my $discounted_prob             = roundcommon(0.1, $c->discounted_probability->amount);
+            is roundcommon(0.1, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob,
                 "put call parity hold for " . $c->shortcode . " with payout currency $currency";
         }
     }
@@ -283,8 +283,8 @@ subtest 'put_call_parity_vv_japan' => sub {
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
         my $contract_theo_prob          = $c->pricing_engine->base_probability->amount;
         my $opposite_contract_theo_prob = $c->opposite_contract->pricing_engine->base_probability->amount;
-        my $discounted_prob             = roundnear(0.1, $c->discounted_probability->amount);
-        is roundnear(0.1, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
+        my $discounted_prob             = roundcommon(0.1, $c->discounted_probability->amount);
+        is roundcommon(0.1, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
 
     }
 };

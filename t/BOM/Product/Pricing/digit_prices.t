@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More tests => 2;
 use Test::FailWarnings;
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
@@ -152,7 +152,7 @@ subtest 'invalid selections' => sub {
 sub _check_amount {
     my ($which, $amount, $desc) = @_;
 
-    cmp_ok(roundnear(1e-4, $which->amount), '==', roundnear(1e-4, $amount), $desc . ' rounds to the correct number');
+    cmp_ok(roundcommon(1e-4, $which->amount), '==', roundcommon(1e-4, $amount), $desc . ' rounds to the correct number');
 }
 
 1;
