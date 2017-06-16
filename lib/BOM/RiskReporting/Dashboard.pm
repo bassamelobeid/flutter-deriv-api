@@ -20,7 +20,7 @@ use Moose;
 use Try::Tiny;
 use Cache::RedisDB;
 use Date::Utility;
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundcommon);
 use Time::Duration::Concise::Localize;
 extends 'BOM::RiskReporting::Base';
 
@@ -263,7 +263,7 @@ sub _open_bets_report {
         days => [],
     };
     for (my $days = 0; $days <= max(keys %$spark_info, 0); $days++) {
-        push @{$sparks->{mtm}}, roundnear(1, $spark_info->{$days}->{mtm} // 0);
+        push @{$sparks->{mtm}}, roundcommon(1, $spark_info->{$days}->{mtm} // 0);
         push @{$sparks->{days}}, $days;
     }
 
@@ -280,7 +280,7 @@ sub _open_bets_report {
             sort { $treemap_info->{$cat}->{$b} <=> $treemap_info->{$cat}->{$a} }
             keys %{$treemap_info->{$cat}})
         {
-            if (my $amount = roundnear(1, $treemap_info->{$cat}->{$symbol_cat})) {
+            if (my $amount = roundcommon(1, $treemap_info->{$cat}->{$symbol_cat})) {
                 push @ul_data,   $amount;
                 push @ul_labels, $symbol_cat;
             }

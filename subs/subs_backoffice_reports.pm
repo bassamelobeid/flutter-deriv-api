@@ -7,7 +7,7 @@ use Date::Manip;
 use JSON qw(from_json to_json);
 use List::Util qw( min max );
 use Cache::RedisDB;
-use Format::Util::Numbers qw/roundnear financialrounding/;
+use Format::Util::Numbers qw/roundcommon financialrounding/;
 
 use LandingCompany::Registry;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
@@ -94,7 +94,7 @@ sub DailyTurnOverReport {
         my ($USDbuys, $USDsells);
 
         foreach my $curr (@all_currencies) {
-            my $rate = $rates{$curr};
+            my $rate = $rates{$curr} // 0;
 
             my $buys = $aggregate_transactions->{$when->date_yyyymmdd}->{$action_bb}->{$curr}->{'amount'} // 0;
             $USDbuys += $buys * $rate;
@@ -108,12 +108,12 @@ sub DailyTurnOverReport {
             $tday{sells}->{$curr} = int $sells;
         }
 
-        $USDbuys  = roundnear(0.01, $USDbuys);
-        $USDsells = roundnear(0.01, $USDsells);
+        $USDbuys  = roundcommon(0.01, $USDbuys);
+        $USDsells = roundcommon(0.01, $USDsells);
         $tday{USD_buys}  = int $USDbuys;
         $tday{USD_sells} = int $USDsells;
 
-        my $pl = roundnear(0.01, $USDbuys - $USDsells);
+        my $pl = roundcommon(0.01, $USDbuys - $USDsells);
         $tday{pl} = int $pl;
 
         # aggregate outstanding bets
@@ -171,8 +171,8 @@ sub DailyTurnOverReport {
     $template{summarize_turnover} = 1;
     my $estimated_pl = int($allpl + $aggbetsdiff);
     $template{estimated_pl}        = $estimated_pl;
-    $template{pct_month_completed} = roundnear(0.01, 100 * $month_completed);
-    $template{pct_hold}            = roundnear(0.01, 100 * ($estimated_pl / ($allUSDbuys || 1)));
+    $template{pct_month_completed} = roundcommon(0.01, 100 * $month_completed);
+    $template{pct_hold}            = roundcommon(0.01, 100 * ($estimated_pl / ($allUSDbuys || 1)));
     $template{projected_pl}        = int($estimated_pl * $projection_ratio);
     $template{projected_turnover}  = int($allUSDbuys * $projection_ratio);
 

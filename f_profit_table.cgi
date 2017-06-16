@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundcommon);
 use Machine::Epsilon;
 use HTML::Entities;
 
@@ -109,9 +109,9 @@ if (defined $do_calculation) {
             sell_time    => \@sell_time,
         });
 
-        $inv_performance_probability = roundnear(0.01, 1 / ($performance_probability + machine_epsilon()));
+        $inv_performance_probability = roundcommon(0.01, 1 / ($performance_probability + machine_epsilon()));
         $performance_probability     = (1 - $performance_probability) * 100;
-        $performance_probability     = roundnear(0.001, $performance_probability);
+        $performance_probability     = roundcommon(0.001, $performance_probability);
     }
 }
 

@@ -23,7 +23,7 @@ use BOM::Backoffice::Request;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
-use Format::Util::Numbers qw( roundnear );
+use Format::Util::Numbers qw( roundcommon );
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use VolSurface::Utils qw( get_delta_for_strike get_strike_for_spot_delta get_1vol_butterfly);
 use BOM::MarketData::Fetcher::VolSurface;
@@ -376,11 +376,12 @@ sub _get_overview {
         },
         {
             label => 'Spot adjustment',
-            value => roundnear(0.0001, $bet->pricing_spot - $bet->current_spot),
+            value => roundcommon(0.0001, $bet->pricing_spot - $bet->current_spot),
         },
         {
             label => 'Barrier adjustment',
-            value => (defined $barrier_to_compare ? roundnear(0.0001, $bet->barriers_for_pricing->{barrier1} - $barrier_to_compare->as_absolute) : 0),
+            value =>
+                (defined $barrier_to_compare ? roundcommon(0.0001, $bet->barriers_for_pricing->{barrier1} - $barrier_to_compare->as_absolute) : 0),
         },
     );
 

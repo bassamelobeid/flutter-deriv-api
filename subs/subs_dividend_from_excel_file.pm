@@ -6,7 +6,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use Try::Tiny;
 use Spreadsheet::ParseExcel;
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundcommon);
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData qw(create_underlying_db);
@@ -174,7 +174,7 @@ sub read_discrete_forecasted_dividend_from_excel_files {
         }
 
         foreach my $term (sort { $a <=> $b } keys %{$data->{$underlying_symbol}->{dividend_points}}) {
-            my $div_rate = roundnear(0.01, (($data->{$underlying_symbol}->{dividend_points}->{$term} / $spot) * 365 / $term) * 100);
+            my $div_rate = roundcommon(0.01, (($data->{$underlying_symbol}->{dividend_points}->{$term} / $spot) * 365 / $term) * 100);
 
             # do not store if dividend > 10%
             if (not is_dividend_in_bounds($div_rate, $term)) {
