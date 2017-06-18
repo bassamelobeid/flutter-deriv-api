@@ -22,52 +22,44 @@ has [qw(for_date currencies brokercodes broker_path)] => (
     required => 1,
 );
 
-has [qw(collector_dbh balance_statement open_position_statement)] => (
+has [qw(collector_dbic balance_sql open_position_sql)] => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-sub _build_collector_dbh {
+sub _build_collector_dbic {
     my $self = shift;
-    # Now iterate over them in some kind of order.
-    my $db_write = BOM::Database::ClientDB->new({
+
+    return BOM::Database::ClientDB->new({
             broker_code => 'FOG',
             operation   => 'collector',
-        })->db;
-    my $dbh_write = $db_write->dbh;
-
-    # improve speed by commit for batch insert
-    $dbh_write->{AutoCommit} = 0;
-
-    return $dbh_write;
+        })->db->dbic;
 }
 
-sub _build_balance_statement {
-    my $self = shift;
-
-    return $self->collector_dbh->prepare(
-        q{
+sub _build_balance_sql {
+    return q{
                 INSERT INTO accounting.end_of_day_balances (account_id, effective_date, balance)
                     VALUES(?,?,?) RETURNING id
-                }
-    );
+                };
+
 }
 
-sub _build_open_position_statement {
-    my $self = shift;
-
-    return $self->collector_dbh->prepare(
-        q{
+sub _build_open_position_sql {
+    return q{
                 INSERT INTO accounting.end_of_day_open_positions
                     (end_of_day_balance_id, financial_market_bet_id, marked_to_market_value)
                     VALUES(?,?,?)
-                }
-    );
+                };
 }
 
 sub generate_report {
     my $self = shift;
+    return $self->dbic->run({$self->_generate_report($_)});
+}
 
+sub _generate_report {
+    my ($self, $dbh) = @_;
+    local $dbh->{AutoCommit} = 0;
     my $run_for           = Date::Utility->new($self->for_date);
     my $start_of_next_day = Date::Utility->new($run_for->epoch - $run_for->seconds_after_midnight)->datetime_iso8601;
     my $total_pl;
@@ -93,7 +85,7 @@ sub generate_report {
                 my $account_id = $client_ref->{$login_id}->{'account_id'};
                 my $acbalance  = $client_ref->{$login_id}->{'balance_at'};
 
-                my @eod_id = $self->collector_dbh->selectrow_array($self->balance_statement, {}, ($account_id, $self->for_date, $acbalance));
+                my @eod_id = $dbh->selectrow_array($self->balance_sql, {}, ($account_id, $self->for_date, $acbalance));
 
                 # Only execute this part if client had open bets at that time.
                 my @portfolios;
@@ -117,7 +109,8 @@ sub generate_report {
                             return 1;
                         } and next;
 
-                        $self->open_position_statement->execute(($eod_id[0], $bet_id, $theo));
+                        my $open_position_statement = $dbh->prepare($self->open_position_sql);
+                        $open_position_statement->execute(($eod_id[0], $bet_id, $theo));
 
                         my $portfolio = "1L $bet->{buy_price} $bet->{short_code} ($theo)";
                         push @portfolios, $portfolio;
@@ -144,7 +137,7 @@ sub generate_report {
             }
 
             if (scalar keys %{$client_ref} > 0) {
-                $self->collector_dbh->commit;
+                $dbh->commit;
             }
 
             if ($self->save_file) {
