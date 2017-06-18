@@ -391,7 +391,9 @@ sub validate_account_details {
         return $dob_error if $dob_error;
     }
 
-    foreach my $key (get_account_fields()) {
+    my $acc_type = BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '';
+
+    foreach my $key ($acc_type eq 'japan' ? get_account_fields_japan() : get_account_fields()) {
         my $value = $args->{$key};
         $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
 
@@ -427,6 +429,13 @@ sub get_account_fields {
     return qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
         address_city address_state address_postcode phone secret_question secret_answer place_of_birth
         tax_residence tax_identification_number account_opening_reason);
+}
+
+# japan does not require the validation of 'account_opening_reason'
+sub get_account_fields_japan {
+    return qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
+        address_city address_state address_postcode phone secret_question secret_answer place_of_birth
+        tax_residence tax_identification_number);
 }
 
 1;
