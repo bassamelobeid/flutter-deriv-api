@@ -17,7 +17,7 @@ override disable_trading_at_quiet_period => sub {
 };
 
 override _build_otm_threshold => sub {
-    return 0.035;    # a fixed 3.5% for japan regardless of market though we only offer forex now.
+    return 0.05;    # a fixed 5% for japan regardless of market though we only offer forex now.
 };
 
 # we do not want to apply this for Japan.
