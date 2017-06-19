@@ -35,7 +35,23 @@ my %redis_callbacks = (
         $callback->($mock, undef, $redis_storage{$key});
     },
     expire => sub {
+        shift;
+        my $mock     = shift;
+        my $key      = shift;
+        my $callback = pop;
+        my $value    = shift // 1;
+        my $key_ttl = $key.'_ttl';
+        ($redis_storage{$key.'_ttl'} //= -1) = $value;
+        
         $on_expiry->(@_);
+    },
+    ttl    => sub {
+       shift;
+       my $mock     = shift;
+       my $key      = shift;
+       my $callback = pop;
+       #my $key_ttl = key.'_ttl';
+       $callback->($mock, undef, $redis_storage{$key.'_ttl'});
     },
 );
 
