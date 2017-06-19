@@ -7,7 +7,7 @@ use Test::More;
 use Test::Exception;
 use Date::Utility;
 use YAML::XS qw(LoadFile DumpFile);
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use Test::BOM::UnitTestPrice qw(:init);
 
@@ -87,6 +87,6 @@ sub price_contract_at {
         }) if $bet_type eq 'CALL';
 
     my $c = produce_contract($bet_params);
-    is roundnear(0.00001, $c->bid_price), roundnear(0.00001, $expected_price);
+    is roundcommon(0.00001, $c->bid_price), roundcommon(0.00001, $expected_price);
 }
 

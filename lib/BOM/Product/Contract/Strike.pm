@@ -7,7 +7,7 @@ use Readonly;
 use Date::Utility;
 use POSIX qw( floor );
 use Scalar::Util qw(looks_like_number);
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -96,7 +96,7 @@ sub _build_as_relative {
     } else {
         my $relative_to = $self->basis_tick;
         my $diff        = ($self->supplied_type eq 'absolute') ? $self->supplied_barrier - $relative_to->quote : $self->supplied_barrier;
-        my $pip_diff    = roundnear(1, $diff / $self->underlying->pip_size);
+        my $pip_diff    = roundcommon(1, $diff / $self->underlying->pip_size);
 
         $relative = 'S' . $pip_diff . 'P';
     }
@@ -199,7 +199,7 @@ sub _build_for_shortcode {
 
     # Make sure it's an integer
     # There used to be a warning here if it wasn't, but the range finding set it off all the time.
-    $sc_version = roundnear(1, $sc_version);
+    $sc_version = roundcommon(1, $sc_version);
 
     return $sc_version;
 }
