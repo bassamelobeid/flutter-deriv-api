@@ -30,7 +30,7 @@ use POSIX qw(floor);
 use Time::HiRes qw(clock_nanosleep CLOCK_REALTIME TIMER_ABSTIME);
 
 # Seconds between updates. This should match the figure used in the price_queue.pl script.
-use constant PRICING_INTERVAL => 3;
+use constant PRICING_INTERVAL => 2;
 
 # Number of keys to set per Redis call, used to reduce network latency overhead
 use constant JOBS_PER_BATCH => 30;
@@ -145,17 +145,8 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
 
                 # At this point, we have contract(s) that we want to queue for pricing.
                 my @pricing_queue_args = (
-                    amount                 => 1000,
-                    basis                  => 'payout',
-                    currency               => 'JPY',
-                    contract_type          => $contract_parameters->{contract_type},
-                    price_daemon_cmd       => 'price',
-                    skips_price_validation => 1,
-                    landing_company        => 'japan',
-                    date_expiry            => $contract_parameters->{trading_period}{date_expiry}{epoch},
-                    trading_period_start   => $contract_parameters->{trading_period}{date_start}{epoch},
-                    symbol                 => $symbol,
-                    barriers               => [
+                    amount   => 1000,
+                    barriers => [
                         map {
                             ;
                             ref($_)
@@ -166,6 +157,16 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
                                 : $_
                         } @barriers
                     ],
+                    basis                  => 'payout',
+                    contract_type          => $contract_parameters->{contract_type},
+                    currency               => 'JPY',
+                    date_expiry            => $contract_parameters->{trading_period}{date_expiry}{epoch},
+                    landing_company        => 'japan',
+                    price_daemon_cmd       => 'price',
+                    proposal_array         => 1,
+                    skips_price_validation => 1,
+                    symbol                 => $symbol,
+                    trading_period_start   => $contract_parameters->{trading_period}{date_start}{epoch},
                 );
                 $log->tracef("Contract parameters will be %s", \@pricing_queue_args);
                 push @jobs, "PRICER_KEYS::" . encode_json(\@pricing_queue_args);
