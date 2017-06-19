@@ -455,7 +455,7 @@ sub _build_historical_vol_markup {
 }
 
 sub _calculate_historical_volatility {
-    my $self = @_;
+    my $self = shift;
 
     my $bet        = $self->bet;
     my $hist_ticks = $self->tick_source->get({
