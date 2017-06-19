@@ -30,7 +30,7 @@ use POSIX qw(floor);
 use Time::HiRes qw(clock_nanosleep CLOCK_REALTIME TIMER_ABSTIME);
 
 # Seconds between updates. This should match the figure used in the price_queue.pl script.
-use constant PRICING_INTERVAL => 3;
+use constant PRICING_INTERVAL => 2;
 
 # Number of keys to set per Redis call, used to reduce network latency overhead
 use constant JOBS_PER_BATCH => 30;
