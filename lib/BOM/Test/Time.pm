@@ -49,7 +49,7 @@ Accepts anything that Date::Utility can handle - epoch time, 'YYYY-mm-dd HH:MM:S
 sub set_date {
     my ($target_date) = @_;
     my $epoch = Date::Utility->new($target_date)->epoch;
-    set_absolute_time($epoch);
+    set_fixed_time($epoch);
     open my $fh, '>', $mocked_time_file;
     print $fh $epoch;
     close $fh;
@@ -67,7 +67,7 @@ sub set_date_from_file {
     open my $fh, '<', $mocked_time_file or return;
     my $epoch = <$fh>;
     close $fh;
-    set_absolute_time($epoch);
+    set_fixed_time($epoch);
     return;
 }
 
