@@ -17,7 +17,7 @@ use Finance::Exchange;
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
 use Pricing::Engine::Markup::TentativeEvents;
-use Pricing::Engine::Markup::OvernightVolUncertainty;
+use Pricing::Engine::Markup::HistoricalVol;
 
 =head2 tick_source
 
@@ -265,7 +265,7 @@ sub _build_risk_markup {
     });
 
     $risk_markup->include_adjustment('add', $self->economic_events_markup);
-    $risk_markup->include_adjustment('add', $self->overnight_vol_uncertainty_markup);
+    $risk_markup->include_adjustment('add', $self->historical_vol_markup);
 
     if ($bet->is_path_dependent) {
         my $iv_risk = Math::Util::CalculatedValue::Validatable->new({
@@ -424,13 +424,38 @@ sub is_in_quiet_period {
     return $quiet;
 }
 
-has overnight_vol_uncertainty_markup => (
+has historical_vol_markup => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-sub _build_overnight_vol_uncertainty_markup {
+sub _build_historical_vol_markup {
     my $self = shift;
+
+    my $bet = $self->bet;
+    # base vol is calculated from overnight vol
+    my $base_vol     = $bet->_pricing_args->{iv};
+    my $pricing_args = $bet->_pricing_args;
+    my $hist_vol     = $self->_calculate_historical_volatility;
+
+    my %args = (
+        strikes           => [$pricing_args->{barrier1}],
+        contract_type     => $bet->pricing_code,
+        payout_type       => 'binary',
+        underlying_symbol => $bet->underlying->symbol,
+        discount_rate     => 0,
+        mu                => 0,
+        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
+
+    return Pricing::Engine::Market::HistoricalVol->new(
+        historical_vol => $hist_vol,
+        pricing_vol    => $base_vol,
+        pricing_args   => \%args,
+    )->markup;
+}
+
+sub _calculate_historical_volatility {
+    my $self = @_;
 
     my $bet        = $self->bet;
     my $hist_ticks = $self->tick_source->get({
@@ -451,25 +476,7 @@ sub _build_overnight_vol_uncertainty_markup {
         push @returns_squared, ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 / $dt);
     }
 
-    my $hist_vol = sqrt(sum(@returns_squared) / @returns_squared);
-    # base vol is calculated from overnight vol
-    my $base_vol     = $bet->_pricing_args->{iv};
-    my $pricing_args = $bet->_pricing_args;
-
-    my %args = (
-        strikes           => [$pricing_args->{barrier1}],
-        contract_type     => $bet->pricing_code,
-        payout_type       => 'binary',
-        underlying_symbol => $bet->underlying->symbol,
-        discount_rate     => 0,
-        mu                => 0,
-        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
-
-    return Pricing::Engine::Market::OvernightVolUncertainty->new(
-        historical_vol => $hist_vol,
-        overnight_vol  => $base_vol,
-        pricing_args   => \%args,
-    )->markup;
+    return sqrt(sum(@returns_squared) / @returns_squared);
 }
 
 no Moose;
