@@ -3,7 +3,6 @@ package BOM::Pricing::PriceDaemon;
 use strict;
 use warnings;
 
-use DBIx::TransactionManager::Distributed qw(txn);
 use List::Util qw(first);
 use Time::HiRes ();
 use JSON::XS qw/encode_json decode_json/;
@@ -107,10 +106,7 @@ sub run {
             next;
         }
 
-        my $response = txn {
-            $self->process_job($redis, $next, $params);
-        }
-        qw(feed chronicle) or next;
+        my $response = $self->process_job($redis, $next, $params) or next;
 
         if (($response->{rpc_time} // 0) > 1000) {
             my $contract_type_string =
