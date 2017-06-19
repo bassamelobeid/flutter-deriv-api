@@ -265,7 +265,6 @@ sub _build_risk_markup {
     });
 
     $risk_markup->include_adjustment('add', $self->economic_events_markup);
-    $risk_markup->include_adjustment('add', $self->historical_vol_markup);
 
     if ($bet->is_path_dependent) {
         my $iv_risk = Math::Util::CalculatedValue::Validatable->new({
@@ -326,6 +325,12 @@ sub _build_risk_markup {
                     set_by      => __PACKAGE__,
                     base_amount => $shortterm_risk_interpolator->linear($bet->remaining_time->minutes),
                 })) if $bet->remaining_time->minutes <= 15;
+    }
+
+    # We do not want to add historical_vol_markup on top of existing risk_markup.
+    # We just want to take the max of the two markups.
+    if ($risk_markup->amount < $self->historical_vol_markup->amount) {
+        $risk_markup->include_adjustment('reset', $self->historical_vol_markup);
     }
 
     return $risk_markup;
