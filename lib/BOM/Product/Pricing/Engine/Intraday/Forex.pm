@@ -447,7 +447,7 @@ sub _build_historical_vol_markup {
         mu                => 0,
         (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
 
-    return Pricing::Engine::Market::HistoricalVol->new(
+    return Pricing::Engine::Markup::HistoricalVol->new(
         historical_vol => $hist_vol,
         pricing_vol    => $base_vol,
         pricing_args   => \%args,
