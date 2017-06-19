@@ -25,8 +25,7 @@ sub prepare_contract {
     my $expire = $start->plus_time_interval($interval);
     prepare_contract_db($underlying_symbol);
 
-    my $dbh = Postgres::FeedDB::read_dbh;
-    $dbh->{RaiseError} = 1;
+    my $dbic = Postgres::FeedDB::read_dbic;
 
     my @ticks;
     my @epoches = ($start->epoch, $start->epoch + 1, $expire->epoch);
@@ -35,7 +34,7 @@ sub prepare_contract {
     for my $epoch (@epoches) {
         my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
             underlying => $underlying_symbol,
-            db_handle  => $dbh
+            dbic       => $dbic,
         );
         my $tick = $api->tick_at({end_time => $epoch});
 
