@@ -17,6 +17,7 @@ use Finance::Exchange;
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
 use Pricing::Engine::Markup::TentativeEvents;
+use Pricing::Engine::Markup::OvernightVolUncertainty;
 
 =head2 tick_source
 
@@ -264,6 +265,7 @@ sub _build_risk_markup {
     });
 
     $risk_markup->include_adjustment('add', $self->economic_events_markup);
+    $risk_markup->include_adjustment('add', $self->overnight_vol_uncertainty_markup);
 
     if ($bet->is_path_dependent) {
         my $iv_risk = Math::Util::CalculatedValue::Validatable->new({
@@ -420,6 +422,54 @@ sub is_in_quiet_period {
     }
 
     return $quiet;
+}
+
+has overnight_vol_uncertainty_markup => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_overnight_vol_uncertainty_markup {
+    my $self = shift;
+
+    my $bet        = $self->bet;
+    my $hist_ticks = $self->tick_source->get({
+        underlying => $bet->underlying,
+        # We want to capture sudden jump in volatility due to unpredictable news in the market.
+        # Hence, we will only lookback 20 minutes and not the full contract duration to avoid over-averaging our vols.
+        start_epoch => $bet->date_pricing->epoch - 20 * 60,
+        end_epoch   => $bet->date_pricing->epoch,
+        backprice   => ($bet->underlying->for_date ? 1 : 0),
+    });
+
+    my @returns_squared;
+    # Ticks are in 15-second interval.
+    my $returns_sep = 4;
+    for (my $i = $returns_sep; $i <= $#$hist_ticks; $i++) {
+        my $dt = $hist_ticks->[$i]->{epoch} - $hist_ticks->[$i - $returns_sep]->{epoch};
+        # 252 is the number of trading days.
+        push @returns_squared, ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 / $dt);
+    }
+
+    my $hist_vol = sqrt(sum(@returns_squared) / @returns_squared);
+    # base vol is calculated from overnight vol
+    my $base_vol     = $bet->_pricing_args->{iv};
+    my $pricing_args = $bet->_pricing_args;
+
+    my %args = (
+        strikes           => [$pricing_args->{barrier1}],
+        contract_type     => $bet->pricing_code,
+        payout_type       => 'binary',
+        underlying_symbol => $bet->underlying->symbol,
+        discount_rate     => 0,
+        mu                => 0,
+        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
+
+    return Pricing::Engine::Market::OvernightVolUncertainty->new(
+        historical_vol => $hist_vol,
+        overnight_vol  => $base_vol,
+        pricing_args   => \%args,
+    )->markup;
 }
 
 no Moose;
