@@ -126,7 +126,7 @@ subtest 'payout' => sub {
         landing_company => 'japan'
     });
 
-    cmp_ok $c->ask_price, '==', 0.035 * 1000, 'Forex intraday non atm contract for japan is floored to 3.5%';
+    cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex intraday non atm contract for japan is floored to 5%';
 
     $c = produce_contract({
         bet_type        => 'CALL',
@@ -137,7 +137,7 @@ subtest 'payout' => sub {
         payout          => 1000,
         landing_company => 'japan'
     });
-    cmp_ok $c->ask_price, '==', 0.035 * 1000, 'Forex daily non atm contract for japan is floored to 3.5%';
+    cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex daily non atm contract for japan is floored to 5%';
 
     $c = produce_contract({
         bet_type   => 'CALL',
