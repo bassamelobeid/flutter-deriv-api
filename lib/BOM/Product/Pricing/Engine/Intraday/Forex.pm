@@ -459,9 +459,7 @@ sub _calculate_historical_volatility {
 
     my $bet        = $self->bet;
     my $hist_ticks = $self->tick_source->get({
-        underlying => $bet->underlying,
-        # We want to capture sudden jump in volatility due to unpredictable news in the market.
-        # Hence, we will only lookback 20 minutes and not the full contract duration to avoid over-averaging our vols.
+        underlying  => $bet->underlying,
         start_epoch => $bet->date_pricing->epoch - 20 * 60,
         end_epoch   => $bet->date_pricing->epoch,
         backprice   => ($bet->underlying->for_date ? 1 : 0),
@@ -474,6 +472,11 @@ sub _calculate_historical_volatility {
         my $dt = $hist_ticks->[$i]->{epoch} - $hist_ticks->[$i - $returns_sep]->{epoch};
         # 252 is the number of trading days.
         push @returns_squared, ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 / $dt);
+    }
+
+    unless (@returns_squared) {
+        warn "Historical ticks not found in Intraday::Forex pricing";
+        return 0.1;
     }
 
     return sqrt(sum(@returns_squared) / @returns_squared);
