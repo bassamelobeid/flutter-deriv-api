@@ -11,7 +11,7 @@ use Path::Tiny;
 use Brands;
 use Client::Account;
 use HTML::Entities;
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Database::DataMapper::Account;
@@ -309,7 +309,7 @@ sub get_client_by_status {
                     my $acbal      = $3;
                     my $openpl     = $4;
                     my $equity     = $5;
-                    $SUMMARYFILE{"$loginid-TOTALEQUITY"} += roundnear(0.01, in_USD($equity, $curr));
+                    $SUMMARYFILE{"$loginid-TOTALEQUITY"} += roundcommon(0.01, in_USD($equity, $curr));
                 }
             }
             close $sf;
