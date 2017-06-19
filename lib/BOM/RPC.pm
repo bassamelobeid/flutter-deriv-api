@@ -148,6 +148,10 @@ sub register {
                 $code->(@args);
             }
             catch {
+                # for calls which require _auth - args will contain Account::Client obj,
+                # which is big, not a part of RPC call params, and will broke encode_json call
+                # client's login id will be dumped anyway
+                delete $original_args[0]->{client};
                 warn "Exception when handling $method - $_ with parameters " . encode_json \@original_args;
                 BOM::RPC::v3::Utility::create_error({
                         code              => 'InternalServerError',
