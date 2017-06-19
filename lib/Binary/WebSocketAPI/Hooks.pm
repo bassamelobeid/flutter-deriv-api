@@ -20,7 +20,7 @@ sub start_timing {
     return;
 }
 
-sub cleanup_strored_contract_ids {
+sub cleanup_stored_contract_ids {
     my $c              = shift;
     my $last_contracts = $c->stash('last_contracts') // {};
     my $now            = time;
