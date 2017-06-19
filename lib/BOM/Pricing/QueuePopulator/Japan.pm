@@ -145,8 +145,8 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
 
                 # At this point, we have contract(s) that we want to queue for pricing.
                 my @pricing_queue_args = (
-                    amount                 => 1000,
-                    barriers               => [
+                    amount   => 1000,
+                    barriers => [
                         map {
                             ;
                             ref($_)
