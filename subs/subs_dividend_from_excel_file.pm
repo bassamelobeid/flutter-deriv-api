@@ -41,23 +41,16 @@ sub save_dividends {
     );
 
     foreach my $symbol (keys %{$data}) {
-        my $rates           = $data->{$symbol}->{dividend_yields};
-        my $discrete_points = $data->{$symbol}->{discrete_points};
+        my $rates = $data->{$symbol}->{dividend_yields};
 
         if (not $rates) {
             $rates = {365 => 0};
         }
 
-        if (not $discrete_points) {
-            my $now = Date::Utility->new->date_yyyymmdd;
-            $discrete_points = {$now => 0};
-
-        }
         try {
             my $dividends = Quant::Framework::Asset->new(
                 symbol           => $symbol,
                 rates            => $rates,
-                discrete_points  => $discrete_points,
                 recorded_date    => Date::Utility->new,
                 chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
@@ -66,7 +59,6 @@ sub save_dividends {
                 my $otc_dividend = Quant::Framework::Asset->new(
                     symbol           => 'OTC_' . $symbol,
                     rates            => $rates,
-                    discrete_points  => $discrete_points,
                     recorded_date    => Date::Utility->new,
                     chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
                     chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
@@ -169,7 +161,6 @@ sub read_discrete_forecasted_dividend_from_excel_files {
                 next FIX_TERM if ($fix_term > $default_term[$j]);
 
                 $data->{$underlying_symbol}->{dividend_points}->{$default_term[$j]} += $dividend_point;
-                $data->{$underlying_symbol}->{discrete_points}->{$ex_div->date_yyyymmdd} = $dividend_point;
             }
         }
 
