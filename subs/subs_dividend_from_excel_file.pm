@@ -41,7 +41,7 @@ sub save_dividends {
     );
 
     foreach my $symbol (keys %{$data}) {
-        my $rates           = $data->{$symbol}->{dividend_yields};
+        my $rates = $data->{$symbol}->{dividend_yields};
 
         if (not $rates) {
             $rates = {365 => 0};
