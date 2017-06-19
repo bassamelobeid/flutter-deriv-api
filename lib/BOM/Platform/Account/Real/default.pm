@@ -391,7 +391,7 @@ sub validate_account_details {
         return $dob_error if $dob_error;
     }
 
-    my $acc_type = BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '';
+    my $acc_type = LandingCompany::Registry::get_by_broker($broker)->short;
 
     foreach my $key ($acc_type eq 'japan' ? get_account_fields_japan() : get_account_fields()) {
         my $value = $args->{$key};
