@@ -139,8 +139,8 @@ subtest 'verify_with_shortcode_IH' => sub {
             'opposite_contract_risk_markup'                            => '0.000133358249061675',
             'opposite_contract_long_term_delta_correction'             => '-0.00715870742405422',
             'opposite_contract_historical_vol_mean_reversion'          => '0.10',
-            'opposite_contract_base_commission'                        => '0.005',
-            'opposite_contract_commission_markup'                      => '0.005',
+            'opposite_contract_base_commission'                        => '0.035',
+            'opposite_contract_commission_markup'                      => '0.035',
             'opposite_contract_K'                                      => '79.820'
         },
         'ask_probability' => {
@@ -148,7 +148,7 @@ subtest 'verify_with_shortcode_IH' => sub {
             'risk_markup'               => '0.000133358249061675',
             'bs_probability'            => '0.452090018843827',
             'intraday_delta_correction' => '0.0101509646703821',
-            'commission_markup'         => '0.005'
+            'commission_markup'         => '0.035'
         },
         'bs_probability' => {
             'S'             => '79.817',
@@ -174,7 +174,7 @@ subtest 'verify_with_shortcode_IH' => sub {
             'long_term_delta_correction'  => '0.00715870742405422'
         },
         'commission_markup' => {
-            'base_commission'       => '0.005',
+            'base_commission'       => '0.035',
             'commission_multiplier' => '1'
         },
         'contract_details' => {
@@ -219,7 +219,7 @@ subtest 'verify_with_shortcode_IH' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundcommon(1, $ask_prob * 1000), 471, 'Ask price is matching');
+    is(roundcommon(1, $ask_prob * 1000), 501, 'Ask price is matching');
     foreach my $key (keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
             is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
@@ -258,19 +258,19 @@ subtest 'verify_with_shortcode_Slope' => sub {
             'opposite_contract_put_discount_rate'       => '0.0266870816706373',
             'opposite_contract_risk_markup'             => '0.0119589835111611',
             'opposite_contract_put_weight'              => 1,
-            'opposite_contract_base_commission'         => '0.005',
-            'opposite_contract_commission_markup'       => '0.005',
+            'opposite_contract_base_commission'         => '0.035',
+            'opposite_contract_commission_markup'       => '0.035',
             'opposite_contract_put_t'                   => '0.0321427891933029',
             'opposite_contract_theoretical_probability' => '0.06620951544713'
         },
         'commission_markup' => {
-            'base_commission'       => '0.005',
+            'base_commission'       => '0.035',
             'commission_multiplier' => '1'
         },
         'ask_probability' => {
             'theoretical_probability' => '0.932933055115425',
             'risk_markup'             => '0.0119589835111611',
-            'commission_markup'       => '0.005'
+            'commission_markup'       => '0.035'
         },
         'contract_details' => {
             'ref_spot'               => 'NA',
@@ -317,7 +317,7 @@ subtest 'verify_with_shortcode_Slope' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundcommon(1, $ask_prob * 1000), 950, 'Ask price is matching');
+    is(roundcommon(1, $ask_prob * 1000), 980, 'Ask price is matching');
     foreach my $key (sort keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
             is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
@@ -346,7 +346,7 @@ subtest 'verify_with_shortcode_VV' => sub {
             'opposite_contract_bs_probability'                => '0.249332641703822',
             'opposite_contract_vanna_market_price'            => '0.0035847651797732',
             'opposite_contract_volga_survival_weight'         => '0.338682380060081',
-            'opposite_contract_commission_markup'             => '0.005',
+            'opposite_contract_commission_markup'             => '0.035',
             'opposite_contract_vega_survival_weight'          => '0.338682380060081',
             'opposite_contract_market_supplement'             => '0.00832877595422193',
             'opposite_contract_vega_market_price'             => '4.08641196158852e-17',
@@ -360,7 +360,7 @@ subtest 'verify_with_shortcode_VV' => sub {
             'opposite_contract_S'                             => '79.817',
             'opposite_contract_vanna_survival_weight'         => '0.141835393553629',
             'opposite_contract_spot_spread'                   => '0.025',
-            'opposite_contract_base_commission'               => '0.005',
+            'opposite_contract_base_commission'               => '0.035',
             'opposite_contract_K'                             => '79.500',
             'opposite_contract_spread_to_markup'              => 2,
             'opposite_contract_theoretical_probability'       => '0.257661417658044'
@@ -382,7 +382,7 @@ subtest 'verify_with_shortcode_VV' => sub {
         'ask_probability' => {
             'theoretical_probability' => '0.741966274538437',
             'risk_markup'             => '0.0183609887820614',
-            'commission_markup'       => '0.005'
+            'commission_markup'       => '0.035'
         },
         'theoretical_probability' => {
             'bs_probability'    => '0.750310838294096',
@@ -408,7 +408,7 @@ subtest 'verify_with_shortcode_VV' => sub {
             'bet_delta'                     => '0.760791959379195'
         },
         'commission_markup' => {
-            'base_commission'       => '0.005',
+            'base_commission'       => '0.035',
             'commission_multiplier' => '1'
         },
         'contract_details' => {
@@ -453,7 +453,7 @@ subtest 'verify_with_shortcode_VV' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundcommon(1, $ask_prob * 1000), 765, 'Ask price is matching');
+    is(roundcommon(1, $ask_prob * 1000), 795, 'Ask price is matching');
     foreach my $key (sort keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
             is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
@@ -480,7 +480,7 @@ subtest '2017_with_extra_data' => sub {
         my $ask    = $output->{ask_probability};
 
         is $ask->{bs_probability},            0.76978238455266,    'matched bs probability';
-        is $ask->{commission_markup},         0.005,               'matched commission markup';
+        is $ask->{commission_markup},         0.035,               'matched commission markup';
         is $ask->{intraday_delta_correction}, 0,                   'matched intraday delta correction';
         is $ask->{intraday_vega_correction},  -0.0235434604443186, 'matched intraday vega correction';
         is $ask->{risk_markup},               0.0452924547340695,  'matched risk markup';
