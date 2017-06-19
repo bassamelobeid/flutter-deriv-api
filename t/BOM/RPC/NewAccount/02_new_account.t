@@ -37,6 +37,7 @@ $client_details = {
     phone            => '+79272075932',
     secret_question  => 'test',
     secret_answer    => 'test',
+    account_opening_reason => 'Speculative',
 };
 
 $params = {

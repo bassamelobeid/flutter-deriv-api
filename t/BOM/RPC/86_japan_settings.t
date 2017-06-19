@@ -74,11 +74,10 @@ subtest 'create VRTJ & JP client' => sub {
         client => $vr_client,
         args   => \%jp_client_details
     });
-    $jp_loginid = $res->{client_id};
-    like $jp_loginid, qr/^JP\d+$/, "JP client created";
+    like $res->{client_id}, qr/^JP\d+$/, "JP client created";
 
     # activate JP real money a/c
-    $jp_client = Client::Account->new({loginid => $jp_loginid});
+    $jp_client = Client::Account->new({loginid => $res->{client_id}});
     $jp_client->clr_status('disabled');
     $jp_client->set_status('jp_activation_pending', 'test', 'for test');
     $jp_client->save;
@@ -150,6 +149,7 @@ subtest 'non-JP client get_settings' => sub {
             phone            => '+603 34567890',
             secret_question  => 'Favourite dish',
             secret_answer    => 'nasi lemak,teh tarik',
+            account_opening_reason => 'Assets Saving',
         );
 
         $res = BOM::RPC::v3::NewAccount::new_account_real({
