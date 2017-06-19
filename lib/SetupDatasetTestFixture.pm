@@ -150,7 +150,6 @@ sub _setup_rates {
             $asset = Quant::Framework::Asset->new(
                 symbol           => $asset->symbol,
                 rates            => $rates->{asset_rate}->{continuous},
-                discrete_points  => $rates->{asset_rate}->{discrete},
                 recorded_date    => $date,
                 chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
