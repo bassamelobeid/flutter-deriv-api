@@ -17,8 +17,6 @@ use BOM::Product::Pricing::Engine::Intraday::Forex;
 
 use BOM::Platform::Runtime;
 
-use BOM::Database::DataMapper::Transaction;
-
 sub parse_file {
     my ($file, $landing_company) = @_;
 
