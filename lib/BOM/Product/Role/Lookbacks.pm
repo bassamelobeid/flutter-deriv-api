@@ -4,6 +4,8 @@ use Moose::Role;
 use Time::Duration::Concise;
 use List::Util qw(min max first);
 
+use BOM::Product::Static;
+
 has [qw(ticks_for_lookbacks spot_min spot_max)] => (
     is         => 'ro',
     lazy_build => 1,
@@ -75,7 +77,22 @@ override _build_bid_price => sub {
 };
 
 override _validate_price => sub {
-    return;
+    my $self = shift;
+
+    return if $self->_for_sale;
+
+    my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+
+    my @err;
+    if (not $self->ask_price or $self->ask_price == 0) {
+        push @err,
+            {
+            message           => 'Lookbacks ask price can not be zero .',
+            message_to_client => [$ERROR_MAPPING->{InvalidLookbacksPrice}],
+            };
+    }
+
+    return @err;
 };
 
 override is_binary => sub {

@@ -44,6 +44,7 @@ my $config = {
         InvalidHighBarrier            => 'High barrier must be higher than low barrier.',
         InvalidHighLowBarrrierRange   => 'High barrier is out of acceptable range. Please adjust the high barrier.',
         InvalidLowBarrrierRange       => 'Low barrier is out of acceptable range. Please adjust the low barrier.',
+        InvalidLookbacksPrice         => 'Lookbacks price cannot be zero or less.',
         InvalidStake                  => 'Invalid stake/payout.',
         IcoTokenLimits                => 'Number of token placed must be between [_1] and [_2].',
         InavlidIcoBidPrice            => 'The auction bid price can not be less than zero.',
