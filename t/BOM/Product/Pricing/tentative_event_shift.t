@@ -18,6 +18,8 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
+my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
+$mocked->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..10)]});
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
