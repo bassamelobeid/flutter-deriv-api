@@ -661,19 +661,9 @@ subtest $method => sub {
             is_professional => 0
         });
         $test_client->save();
-        if ($flag) {
-            ok(
-                grep { $_ eq 'financial_assessment_not_complete' }
-                @{$c->tcall($method, {token => $token1})->{status}},
-                $msg
-            );
-        } else {
-            ok(
-                !(grep { $_ eq 'financial_assessment_not_complete' }
-                @{$c->tcall($method, {token => $token1})->{status}}),
-                $msg
-            );
-        }
+        ok($flag + length(grep { $_ eq 'financial_assessment_not_complete' }
+                    @{$c->tcall($method, {token => $token1})->{status}}),
+        $msg . '');
     }
     # test 1: when some answers are empty
     $data->{account_turnover}->{answer} = "";
