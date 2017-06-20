@@ -13,9 +13,11 @@ information in our various internal format.
 
 use Moose;
 use Text::CSV::Slurp;
-
+use SetupDatasetTestFixture;
 use Quant::Framework::VolSurface::Delta;
 use BOM::MarketData qw(create_underlying);
+use Text::CSV;
+use YAML::XS qw(LoadFile);
 
 =head1 ATTRIBUTES
 
@@ -112,11 +114,11 @@ has records => (
 );
 
 sub _build_records {
-    my $self = shift;
-
-    my $csv = Text::CSV::Slurp->load(file => $self->merlin_csv);
-    my %csv = map { $_->{bet_num} => $_ } @$csv;
-    my @records_to_execute = map { $csv{$_} } @{$self->pre_filters};
+    my $self                  = shift;
+    my $interest_rates_config = _get_interest_rate_data();
+    my $csv                   = Text::CSV::Slurp->load(file => $self->merlin_csv);
+    my %csv                   = map { $_->{bet_num} => $_ } @$csv;
+    my @records_to_execute    = map { $csv{$_} } @{$self->pre_filters};
     @records_to_execute = grep { $_->{mini} } @records_to_execute if $self->suite eq 'mini';
     my @records;
 
@@ -176,11 +178,25 @@ sub _build_records {
             underlying       => $record{underlying},
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-            recorded_date   => $surface_date,
-            surface         => $surface_data,
-            print_precision => undef,
-            cutoff          => $self->_expiry->{$record{volcut}}->{local},
+            recorded_date    => $surface_date,
+            surface          => $surface_data,
+            print_precision  => undef,
+            cutoff           => $self->_expiry->{$record{volcut}}->{local},
         );
+
+        my $asset_symbol           = $record{underlying}->asset_symbol;
+        my $quoted_currency_symbol = $record{underlying}->quoted_currency_symbol;
+
+        my $rate = {
+            asset_rate           => {continuous => $interest_rates_config->{$asset_symbol}},
+            quoted_currency_rate => $interest_rates_config->{$quoted_currency_symbol},
+        };
+
+        my $fixture = SetupDatasetTestFixture->new();
+        $fixture->setup_test_fixture({
+                underlying => $record{underlying},
+                rates      => $rate,
+                date       => $record{date_start}});
 
         $record{transformed_cut} = 0;
         if ($record{cut} ne $record{volcut}) {
@@ -243,6 +259,31 @@ sub _set_surface_data {
     }
 
     return $surface_data;
+}
+
+sub _get_interest_rate_data {
+    my $file_path = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/interest_rates.csv';
+    my $csv = Text::CSV->new({sep_char => ','});
+    open(my $data, '<', $file_path) or die "Could not open '$file_path' $!\n";
+    my $rates;
+    while (my $line = <$data>) {
+        chomp $line;
+
+        if ($csv->parse($line)) {
+            my @fields = $csv->fields();
+
+            my $symbol = $fields[0];
+
+            for (my $i = 1; $i < scalar @fields; $i += 2) {
+                my $tenor = $fields[$i];
+                my $rate  = $fields[$i + 1];
+
+                $rates->{$symbol}->{$tenor} = $rate;
+            }
+        }
+    }
+
+    return $rates;
 }
 
 no Moose;
