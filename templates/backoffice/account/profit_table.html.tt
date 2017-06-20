@@ -25,7 +25,9 @@
             <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => contract.short_code, purchase_time => contract.purchase_date.datetime, loginid => loginid}) | none %]">[% ident %]</a>
             <br/><label class="investigate"><input type="checkbox" name="investigate_list" value='[% ident %]:::[% contract.info.description FILTER truncate(70) %]:::[% contract.purchase_date.datetime %]'>QQ</label>
         </div>
-        <div class="grd-grid-1">[% display_amount(contract.payout_price) %]</div>
+        <div class="grd-grid-1">
+            [% display_amount(contract.payout_price) | none %]
+        </div>
         <div class="grd-grid-3">[% contract.info.description %]</div>
         <div class="grd-grid-1 right-aligned">
             [% display_amount(contract.buy_price) | none %]
