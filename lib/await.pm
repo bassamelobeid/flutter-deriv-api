@@ -36,7 +36,7 @@ sub wsapi_wait_for {
         });
 
     my $id = $ioloop->watch_time(
-        after => ($params->{timeout} || 1),
+        after => ($params->{timeout} || 2),
         code => sub {
             if ($messages_without_accidens == ($params->{wait_max} || 10)) {
                 return $f->fail("timeout");
