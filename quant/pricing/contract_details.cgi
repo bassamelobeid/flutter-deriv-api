@@ -51,7 +51,7 @@ if ($cgi->param('upload_file')) {
     $args->{landing_company} = $landing_company;
     $args->{broker}          = $broker;
 
-    my $details         = BOM::Database::DataMapper::Transaction->new({
+    my $details = BOM::Database::DataMapper::Transaction->new({
             broker_code => $broker,
             operation   => 'backoffice_replica',
         })->get_details_by_transaction_ref($id);
