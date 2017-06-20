@@ -8,7 +8,7 @@ use Test::Exception;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
 use Storable qw(dclone);
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
@@ -60,7 +60,7 @@ subtest 'tuesday to friday close' => sub {
             date_pricing => $now,
         });
 
-        is roundnear(0.00001, $c->theo_probability->amount), roundnear(0.00001, $data->{$now->datetime}{theo_probability}), 'theo_probability';
+        is roundcommon(0.00001, $c->theo_probability->amount), roundcommon(0.00001, $data->{$now->datetime}{theo_probability}), 'theo_probability';
         is $c->timeindays->amount, $data->{$now->datetime}{timeindays}, 'timeindays';
     }
 };

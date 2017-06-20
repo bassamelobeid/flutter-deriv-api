@@ -8,7 +8,7 @@ use Test::More tests => 5;
 use Date::Utility;
 use JSON qw(to_json);
 use Math::Util::CalculatedValue::Validatable;
-use Format::Util::Numbers qw/roundnear/;
+use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -119,25 +119,25 @@ subtest 'payout' => sub {
     $c = produce_contract({
         bet_type        => 'CALL',
         underlying      => 'frxUSDJPY',
-        barrier         => 'S500P',
+        barrier         => 'S50000P',
         duration        => '1h',
         currency        => 'JPY',
         payout          => 1000,
         landing_company => 'japan'
     });
 
-    cmp_ok $c->ask_price, '==', 0.035 * 1000, 'Forex intraday non atm contract for japan is floored to 3.5%';
+    cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex intraday non atm contract for japan is floored to 5%';
 
     $c = produce_contract({
         bet_type        => 'CALL',
         underlying      => 'frxUSDJPY',
-        barrier         => 'S50000P',
+        barrier         => 'S5000000P',
         duration        => '2d',
         currency        => 'JPY',
         payout          => 1000,
         landing_company => 'japan'
     });
-    cmp_ok $c->ask_price, '==', 0.035 * 1000, 'Forex daily non atm contract for japan is floored to 3.5%';
+    cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex daily non atm contract for japan is floored to 5%';
 
     $c = produce_contract({
         bet_type   => 'CALL',
@@ -263,7 +263,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    is $c->payout, roundcommon(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex intraday atm contract payout is not floor';
 
     $c = produce_contract({
@@ -275,7 +275,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    cmp_ok $c->payout, '!=', roundnear(0.01, $stake / 0.2), 'Forex intraday non atm contract payout is not floored to 20% ';
+    cmp_ok $c->payout, '!=', roundcommon(0.01, $stake / 0.2), 'Forex intraday non atm contract payout is not floored to 20% ';
 
     $c = produce_contract({
         bet_type    => 'CALL',
@@ -286,7 +286,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    is $c->payout, roundcommon(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex daily (> 7 days) non atm contract payout is not floor';
 
     $c = produce_contract({
@@ -298,7 +298,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    is $c->payout, roundcommon(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex daily (< 7 days) atm contract payout is not floor';
 
     $c = produce_contract({
@@ -310,7 +310,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / 0.20), 'Forex daily (< 7 days) non atm contract payout is floor to 20%';
+    is $c->payout, roundcommon(0.01, $stake / 0.20), 'Forex daily (< 7 days) non atm contract payout is floor to 20%';
 
     $c = produce_contract({
         bet_type    => 'CALL',
@@ -321,7 +321,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundnear(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
+    is $c->payout, roundcommon(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'VolIdx intraday non atm contract payout is not floor';
 };
 
@@ -390,7 +390,7 @@ subtest 'new commission structure' => sub {
                 base_commission  => $base_commission,
                 theo_probability => $fake_theo,
             });
-            is $c->payout, roundnear(0.01, $data->{payout}), 'correct payout amount';
+            is $c->payout, roundcommon(0.01, $data->{payout}), 'correct payout amount';
         }
     }
 };
@@ -404,7 +404,7 @@ subtest 'commission for japan' => sub {
     });
     my $args = {
         bet_type         => 'CALL',
-        underlying       => 'R_100',
+        underlying       => 'frxUSDJPY',
         barrier          => 'S0P',
         duration         => '1d',
         amount           => 100000,
