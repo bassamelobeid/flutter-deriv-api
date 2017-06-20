@@ -655,33 +655,33 @@ subtest $method => sub {
         "account_turnover"                     => {"answer" => 'Less than $25,000'}};
     # function to repeatedly test financial assessment
     sub test_financial_assessment {
-        my ($test_client, $c, $method, $token1, $data, $flag, $msg) = @_;
+        my ($data, $is_present, $msg) = @_;
         $test_client->financial_assessment({
             data            => encode_json $data,
             is_professional => 0
         });
         $test_client->save();
-        ok($flag + length(grep { $_ eq 'financial_assessment_not_complete' }
-                    @{$c->tcall($method, {token => $token1})->{status}}),
-        $msg . '');
+        my $res = ((grep { $_ eq 'financial_assessment_not_complete' }
+                    @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
+        ok($res, $msg);
     }
     # test 1: when some answers are empty
     $data->{account_turnover}->{answer} = "";
-    test_financial_assessment($test_client, $c, $method, $token1, $data, 1, 'financial_assessment_not_complete should present when answers is empty');
+    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when some answers are empty');
     # test 2: when some questions are not answered
     delete $data->{account_turnover};
-    test_financial_assessment($test_client, $c, $method, $token1, $data, 1, 'financial_assessment_not_complete should not present when questions are answered properly');
+    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when questions are answered properly');
     # test 3: when the client's risk classification is different
     $test_client->aml_risk_classification('high');
     $test_client->save();
-    test_financial_assessment($test_client, $c, $method, $token1, $data, 1, "financial_assessment_not_complete should not present regardless of the client's risk classification");
+    test_financial_assessment($data, 1, "financial_assessment_not_complete should present regardless of the client's risk classification");
     # test 4: when answer is '0' is should not 'financial_assessment_not_complete' should not present
     #         as '0' may be one of the acceptable answers for options in the future
     $data->{account_turnover}->{answer} = '0';
-    test_financial_assessment($test_client, $c, $method, $token1, $data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
+    test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
     # test 5: 'financial_assessment_not_complete' should not present when everything is complete
     $data->{account_turnover}->{answer} = 'Less than $25,000';
-    test_financial_assessment($test_client, $c, $method, $token1, $data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
+    test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
 
     # $test_client->set_status('tnc_approval', 'test staff', 1);
 
