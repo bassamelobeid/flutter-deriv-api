@@ -9,7 +9,7 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
 
 my $redis = ws_redis_master();
 
-for (@{$redis->scan_all(MATCH => 'rate_limits::*', COUNT => 20000)}) {
+for (@{$redis->keys("rate_limits::*")}) {
     my $exp = $redis->ttl($_);
     if($exp == -1) {
         #no need to use any tag here
