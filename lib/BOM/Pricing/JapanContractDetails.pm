@@ -8,7 +8,7 @@ This package is to output contract's pricing parameters that will be used by Jap
 
 use strict;
 use warnings;
-use lib qw(/home/git/regentmarkets/bom-backoffice);
+
 use Path::Tiny;
 use Excel::Writer::XLSX;
 use LandingCompany::Registry;
@@ -175,7 +175,7 @@ sub verify_with_shortcode {
 
     $pricing_parameters->{contract_details} = {
         short_code             => $short_code,
-        description            => BOM::Backoffice::Request::localize($original_contract->longcode),
+        description            => $original_contract->longcode,
         ccy                    => $original_contract->currency,
         payout                 => $original_contract->payout,
         trade_time             => $start->datetime,
