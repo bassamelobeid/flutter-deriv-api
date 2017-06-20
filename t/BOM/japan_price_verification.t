@@ -10,7 +10,7 @@ use Test::FailWarnings;
 use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
-use BOM::JapanContractDetails;
+use BOM::Pricing::JapanContractDetails;
 use BOM::MarketData qw(create_underlying);
 use BOM::Market::DataDecimate;
 use BOM::Platform::RedisReplicated;
@@ -202,8 +202,8 @@ subtest 'verify_with_shortcode_IH' => sub {
     $args->{contract_price}  = 520;
     $args->{currency}        = 'JPY';
     $args->{action_type}     = 'buy';
-    my $pricing_parameters = BOM::JapanContractDetails::verify_with_shortcode($args);
-    $pricing_parameters = BOM::JapanContractDetails::include_contract_details(
+    my $pricing_parameters = BOM::Pricing::JapanContractDetails::verify_with_shortcode($args);
+    $pricing_parameters = BOM::Pricing::JapanContractDetails::include_contract_details(
         $pricing_parameters,
         {
             order_type  => 'buy',
@@ -301,8 +301,8 @@ subtest 'verify_with_shortcode_Slope' => sub {
     $args->{contract_price}  = 928;
     $args->{currency}        = 'JPY';
     $args->{action_type}     = 'buy';
-    my $pricing_parameters = BOM::JapanContractDetails::verify_with_shortcode($args);
-    $pricing_parameters = BOM::JapanContractDetails::include_contract_details(
+    my $pricing_parameters = BOM::Pricing::JapanContractDetails::verify_with_shortcode($args);
+    $pricing_parameters = BOM::Pricing::JapanContractDetails::include_contract_details(
         $pricing_parameters,
         {
             order_type  => 'buy',
@@ -436,8 +436,8 @@ subtest 'verify_with_shortcode_VV' => sub {
     $args->{contract_price}  = 861;
     $args->{currency}        = 'JPY';
     $args->{action_type}     = 'buy';
-    my $pricing_parameters = BOM::JapanContractDetails::verify_with_shortcode($args);
-    $pricing_parameters = BOM::JapanContractDetails::include_contract_details(
+    my $pricing_parameters = BOM::Pricing::JapanContractDetails::verify_with_shortcode($args);
+    $pricing_parameters = BOM::Pricing::JapanContractDetails::include_contract_details(
         $pricing_parameters,
         {
             order_type  => 'buy',
@@ -476,7 +476,7 @@ subtest '2017_with_extra_data' => sub {
             landing_company => 'japan',
         };
 
-        my $output = BOM::JapanContractDetails::verify_with_shortcode($input);
+        my $output = BOM::Pricing::JapanContractDetails::verify_with_shortcode($input);
         my $ask    = $output->{ask_probability};
 
         is $ask->{bs_probability},            0.76978238455266,    'matched bs probability';
@@ -496,7 +496,7 @@ subtest '2017_with_extra_data' => sub {
             extra           => '110.500_0.135916237059658_0.133846265459211',
         };
 
-        my $output = BOM::JapanContractDetails::verify_with_shortcode($input);
+        my $output = BOM::Pricing::JapanContractDetails::verify_with_shortcode($input);
         is $output->{put_bs_probability}->{put_vol},   0.133846265459211;
         is $output->{call_bs_probability}->{call_vol}, 0.135916237059658;
     };
@@ -511,7 +511,7 @@ subtest '2017_with_extra_data' => sub {
             extra           => '83.769_0.119638984890473',
         };
 
-        my $output = BOM::JapanContractDetails::verify_with_shortcode($input);
+        my $output = BOM::Pricing::JapanContractDetails::verify_with_shortcode($input);
         is $output->{ask_probability}->{risk_markup},               0.00932723081365649, 'matched risk markup';
         is $output->{theoretical_probability}->{bs_probability},    0.212223673281774,   'matched bs probability';
         is $output->{theoretical_probability}->{market_supplement}, 0.0488906560526587,  'matched market supplement';

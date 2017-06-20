@@ -24,7 +24,7 @@ use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 use BOM::Platform::Runtime;
-use BOM::JapanContractDetails;
+use BOM::Pricing::JapanContractDetails;
 use Data::Dumper;
 my %params = %{request()->params};
 
@@ -39,8 +39,8 @@ if ($cgi->param('upload_file')) {
     copy($file, $filename);
     my $output_filename = $file;
     $output_filename =~ s/\.csv$/.xlsx/;
-    my $pricing_parameters = BOM::JapanContractDetails::parse_file($filename, $landing_company);
-    BOM::JapanContractDetails::batch_output_as_excel($pricing_parameters, $output_filename);
+    my $pricing_parameters = BOM::Pricing::JapanContractDetails::parse_file($filename, $landing_company);
+    BOM::JapanContractDetailsOutput::batch_output_as_excel($pricing_parameters, $output_filename);
 
 } elsif ($cgi->param('manual_verify_with_id')) {
     my $args;
@@ -48,9 +48,9 @@ if ($cgi->param('upload_file')) {
     $args->{transaction_id}  = $id;
     $args->{landing_company} = $landing_company;
     $args->{broker}          = $broker;
-    my $pricing_parameters = BOM::JapanContractDetails::verify_with_id($args);
+    my $pricing_parameters = BOM::Pricing::JapanContractDetails::verify_with_id($args);
     if ($cgi->param('download') eq 'download') {
-        BOM::JapanContractDetails::single_output_as_excel($pricing_parameters, $id . '.xlsx');
+        BOM::JapanContractDetailsOutput::single_output_as_excel($pricing_parameters, $id . '.xlsx');
 
     } else {
         load_template($cgi->param('broker'), $pricing_parameters);
