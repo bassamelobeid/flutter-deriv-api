@@ -782,9 +782,20 @@ sub price_list {
         } else {
             $contract_args->{barrier} = exported_high_barrier(\@fields, $headers);
         }
+        my $underlying =  create_underlying($underlying_symbol);
+        my $interest_rates_config = _get_interest_rate_data();
+
+        my $rate = {
+             asset_rate           => {continuous => $interest_rates_config->{$underlying->asset_symbol}},
+             quoted_currency_rate => $interest_rates_config->{$underlying->quoted_currency_symbol},
+         };
+
+
         my $fixture = SetupDatasetTestFixture->new;
         $fixture->setup_test_fixture({
-                underlying => create_underlying($underlying_symbol)});
+                underlying => $underlying,
+                rates      => $rate,
+                date       => $pricing_date});
         $contract_args->{volsurface} = $self->get_volsurface($underlying_symbol);
         try {
             $contract = CSVParser::Bloomberg->new($contract_args);
@@ -796,6 +807,32 @@ sub price_list {
     }
     return ($csv_header, $content);
 }
+
+sub _get_interest_rate_data {
+    my $file_path = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/interest_rates.csv';
+    my $csv = Text::CSV->new({sep_char => ','});
+    open(my $data, '<', $file_path) or die "Could not open '$file_path' $!\n";
+    my $rates;
+    while (my $line = <$data>) {
+        chomp $line;
+
+        if ($csv->parse($line)) {
+            my @fields = $csv->fields();
+
+            my $symbol = $fields[0];
+
+            for (my $i = 1; $i < scalar @fields; $i += 2) {
+                my $tenor = $fields[$i];
+                my $rate  = $fields[$i + 1];
+
+                $rates->{$symbol}->{$tenor} = $rate;
+            }
+        }
+    }
+
+    return $rates;
+}
+
 
 __PACKAGE__->meta->make_immutable;
 1;
