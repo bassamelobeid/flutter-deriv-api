@@ -10,12 +10,15 @@ use Test::FailWarnings;
 use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
-use BOM::Backoffice::Request::localize;
 use BOM::Pricing::JapanContractDetails;
 use BOM::MarketData qw(create_underlying);
 use BOM::Market::DataDecimate;
 use BOM::Platform::RedisReplicated;
 use Data::Decimate qw(decimate);
+
+use lib qw(/home/git/regentmarkets/bom-backoffice);
+use BOM::Backoffice::Request;
+use BOM::Backoffice::Sysinit ();
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -223,9 +226,10 @@ subtest 'verify_with_shortcode_IH' => sub {
     is(roundcommon(1, $ask_prob * 1000), 501, 'Ask price is matching');
     foreach my $key (keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
-            if ($sub_key eq 'description') {
-              next;           
-            } else {
+            if($sub_key eq 'description') {
+              my $desc = BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key});
+              is($desc, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            } else {    
               is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
             }
         }
@@ -324,8 +328,13 @@ subtest 'verify_with_shortcode_Slope' => sub {
     is(roundcommon(1, $ask_prob * 1000), 980, 'Ask price is matching');
     foreach my $key (sort keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
-            is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
 
+            if($sub_key eq 'description') {
+              my $desc = BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key});
+              is($desc, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+	    } else {
+              is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            }
         }
     }
 
@@ -460,8 +469,13 @@ subtest 'verify_with_shortcode_VV' => sub {
     is(roundcommon(1, $ask_prob * 1000), 795, 'Ask price is matching');
     foreach my $key (sort keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
-            is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
 
+            if($sub_key eq 'description') {
+              my $desc = BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key});
+              is($desc, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            } else {
+              is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            }
         }
 
     }
