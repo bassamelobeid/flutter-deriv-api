@@ -8,6 +8,7 @@ use BOM::Backoffice::Request;
 use Quant::Framework::EconomicEventCalendar;
 use BOM::MarketData qw(create_underlying_db);
 use Volatility::Seasonality;
+use BOM::MarketDataAutoUpdater::Forex;
 
 sub _get_tentative_events {
 
@@ -98,6 +99,7 @@ sub update_event {
         underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
         chronicle_writer   => $eec->chronicle_writer,
     });
+    BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
 
     return $update ? 1 : 0;
 }
