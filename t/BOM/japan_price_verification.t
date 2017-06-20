@@ -10,6 +10,7 @@ use Test::FailWarnings;
 use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
+use BOM::Backoffice::Request::localize;
 use BOM::Pricing::JapanContractDetails;
 use BOM::MarketData qw(create_underlying);
 use BOM::Market::DataDecimate;
@@ -222,8 +223,12 @@ subtest 'verify_with_shortcode_IH' => sub {
     is(roundcommon(1, $ask_prob * 1000), 501, 'Ask price is matching');
     foreach my $key (keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
-            is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
-
+            if ($sub_key eq 'description') {
+            
+              is(BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key}), $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            } else {
+              is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            }
         }
 
     }
