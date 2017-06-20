@@ -21,7 +21,7 @@ sub _build_ticks_for_lookbacks {
 
     my $self      = shift;
     my $now       = $self->date_pricing->epoch;
-    my $end_epoch = $now > $self->date_expiry->epoch ? $self->date_expiry->epoch : $now;
+    my $end_epoch = $self->date_expiry->epoch;
 
     my @ticks_since_start = @{
         $self->underlying->ticks_in_between_start_end({
