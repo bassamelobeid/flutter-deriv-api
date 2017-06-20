@@ -25,13 +25,12 @@
 [% client.name %] Email: [% client.email %] Country: [% client.country %] Residence: [% client.residence %] Tel: [% client.tel %]
 <br>
 
-
 <div class="grd-parent grd-grid-12 table-header grd-row-padding">
         <div class="grd-grid-10">
             <b>Balance on [% balance.date.date %]</b>
         </div>
         <div class="grd-grid-2 right-aligned">
-            <b>[% currency %] [% balance.amount %]</b>
+            <b>[% currency %] [% formatnumber('amount', currency, balance.amount) %]</b>
         </div>
 </div>
 <div id="statement_navigation" class="grd-parent grd-grid-12">
