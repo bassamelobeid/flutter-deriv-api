@@ -394,7 +394,6 @@ sub validate_account_details {
     my $acc_type = LandingCompany::Registry::get_by_broker($broker)->short;
 
     foreach my $key (get_account_fields($acc_type)) {
-        # skip as japan doesn't have 'account_opening_reason'
         my $value = $args->{$key};
         $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
 
@@ -429,8 +428,8 @@ sub validate_account_details {
 sub get_account_fields {
     my @account_fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
         address_city address_state address_postcode phone secret_question secret_answer place_of_birth
-        tax_residence tax_identification_number account_opening_reason);
-    push @account_fields, 'account_opening_reason' if !$_[0] or $_[0] ne 'japan';
+        tax_residence tax_identification_number);
+    push @account_fields, 'account_opening_reason' if (!$_[0] or $_[0] ne 'japan');
     return @account_fields;
 }
 
