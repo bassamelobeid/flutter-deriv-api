@@ -79,8 +79,6 @@ override _build_bid_price => sub {
 override _validate_price => sub {
     my $self = shift;
 
-    return if $self->_for_sale;
-
     my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
     my @err;
