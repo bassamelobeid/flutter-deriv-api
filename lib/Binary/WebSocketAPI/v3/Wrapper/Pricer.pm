@@ -345,7 +345,16 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
 sub proposal_open_contract {
     my ($c, $response, $req_storage) = @_;
 
-    my $args         = $req_storage->{args};
+    my $args = $req_storage->{args};
+
+    if ($args->{subscribe} && !$args->{contract_id}) {
+        ### we can catch buy only if subscribed on transaction stream
+        Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $c->stash('account_id'), 'poc', $args)
+            if $c->stash('account_id');
+        ### we need stream only in subscribed workers
+        $c->stash(proposal_open_contracts_subscribed => $args);
+    }
+
     my $empty_answer = {
         msg_type               => 'proposal_open_contract',
         proposal_open_contract => {}};
@@ -447,12 +456,9 @@ sub _process_proposal_open_contract_response {
                     next;
                 } else {
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                    my $copy_args = {%$args};
-                    $copy_args->{contract_id} = $contract->{contract_id};
-                    Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel(
+                    Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel(
                         $c, 'subscribe', delete $contract->{account_id},    # should not go to client
-                        $uuid, $copy_args
-                    );
+                        $uuid, $args, $contract->{contract_id});
                 }
             }
             my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
@@ -599,14 +605,18 @@ sub process_bid_event {
         my $results;
         unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data)) {
             my $passed_fields = $stash_data->{cache};
+
             $response->{id}              = $stash_data->{uuid};
             $response->{transaction_ids} = $passed_fields->{transaction_ids};
             $response->{buy_price}       = $passed_fields->{buy_price};
             $response->{purchase_time}   = $passed_fields->{purchase_time};
             $response->{is_sold}         = $passed_fields->{is_sold};
-            $response->{longcode}        = $passed_fields->{longcode};
-            $response->{contract_id}     = $stash_data->{args}->{contract_id} if exists $stash_data->{args}->{contract_id};
-            $results                     = {
+            Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid})
+                if $response->{is_sold};
+            $response->{longcode} = $passed_fields->{longcode};
+
+            $response->{contract_id} = $stash_data->{args}->{contract_id} if exists $stash_data->{args}->{contract_id};
+            $results = {
                 msg_type => $type,
                 $type    => $response
             };
@@ -812,10 +822,12 @@ sub send_proposal_open_contract_last_time {
             method      => 'proposal_open_contract',
             msg_type    => 'proposal_open_contract',
             call_params => {
-                token => $c->stash('token'),
+                token       => $c->stash('token'),
+                contract_id => $contract_id
             },
             rpc_response_cb => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
+
                 return {
                     msg_type => 'proposal_open_contract',
                     proposal_open_contract => $rpc_response->{$contract_id} || {}};

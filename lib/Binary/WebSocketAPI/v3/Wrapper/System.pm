@@ -107,7 +107,7 @@ sub _forget_transaction_subscription {
         foreach my $type (keys %{$channel}) {
             if ($typeoruuid eq $type or $typeoruuid eq $channel->{$type}->{uuid}) {
                 push @$removed_ids, $channel->{$type}->{uuid};
-                Binary::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
+                Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
             }
         }
     }
@@ -152,7 +152,6 @@ sub _forget_pricing_subscription {
                     delete $pricing_channel->{$channel}->{$subchannel};
                     delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid};
                     unless (keys %{$pricing_channel->{$channel}}) {
-                        stats_dec('bom_websocket_api.v_3.pricing_subscriptions.clients');
                         delete $pricing_channel->{$channel};
                     }
                 }
@@ -174,6 +173,10 @@ sub _forget_all_pricing_subscriptions {
     my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
+        Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'unsubscribe', $c->stash('account_id'), 'poc')
+            if $c->stash('account_id');
+        $c->stash('proposal_open_contracts_subscribed' => 0) if $type eq 'proposal_open_contract';
+
         @$removed_ids = keys %{$pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}};
         my $proposal_array_proposal_ids = _get_proposal_array_proposal_ids($c);
         @$removed_ids = array_minus(@$removed_ids, @$proposal_array_proposal_ids);
@@ -182,7 +185,6 @@ sub _forget_all_pricing_subscriptions {
             my $subchannel    = $pricing_channel->{uuid}->{$uuid}->{subchannel};
             delete $pricing_channel->{$redis_channel}{$subchannel};
             unless (keys %{$pricing_channel->{$redis_channel}}) {
-                stats_dec('bom_websocket_api.v_3.pricing_subscriptions.clients');
                 delete $pricing_channel->{$redis_channel};
             }
             delete $pricing_channel->{uuid}->{$uuid};
