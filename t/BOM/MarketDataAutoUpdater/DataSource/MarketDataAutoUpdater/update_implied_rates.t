@@ -12,7 +12,6 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 
-use Format::Util::Numbers qw(roundnear);
 use BOM::MarketDataAutoUpdater::ImpliedInterestRates;
 
 my $data_dir = dirname(__FILE__) . '/../../../../data/bbdl/implied_interest_rates';

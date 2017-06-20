@@ -6,7 +6,7 @@ use List::MoreUtils qw(notall);
 use Scalar::Util qw(looks_like_number);
 use Text::CSV::Slurp;
 
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundcommon);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Chronicle;
@@ -115,7 +115,7 @@ sub run {
                     my $TN_forward_outright = $forward_rates->{$underlying_symbol}->{rates}->{'TN'};
 
                     if ($currency_to_imply_symbol eq $underlying->asset_symbol) {
-                        $implied_rates->{$forward_day} = roundnear(
+                        $implied_rates->{$forward_day} = roundcommon(
                             0.0001,
                             ((
                                     ($ON_forward_outright * (1 + $quoted_currency_rate * ($forward_day / $quoted_currency_daycount))) /
@@ -124,7 +124,7 @@ sub run {
                             ) / ($forward_day / $asset_currency_daycount) * 100
                         );
                     } elsif ($currency_to_imply_symbol eq $underlying->quoted_currency_symbol) {
-                        $implied_rates->{$forward_day} = roundnear(
+                        $implied_rates->{$forward_day} = roundcommon(
                             0.0001,
                             (
                                 (($TN_forward_outright * (1 + $asset_currency_rate * ($forward_day / $asset_currency_daycount))) /
@@ -138,12 +138,12 @@ sub run {
 
                 if ($tenor_forward_outright) {
                     if ($currency_to_imply_symbol eq $underlying->asset_symbol) {
-                        $implied_rates->{$forward_day} = roundnear(0.0001,
+                        $implied_rates->{$forward_day} = roundcommon(0.0001,
                             ((($spot * (1 + $quoted_currency_rate * ($forward_day / $quoted_currency_daycount))) / $tenor_forward_outright) - 1) /
                                 ($forward_day / $asset_currency_daycount) *
                                 100);
                     } elsif ($currency_to_imply_symbol eq $underlying->quoted_currency_symbol) {
-                        $implied_rates->{$forward_day} = roundnear(0.0001,
+                        $implied_rates->{$forward_day} = roundcommon(0.0001,
                             ((($tenor_forward_outright * (1 + $asset_currency_rate * ($forward_day / $asset_currency_daycount))) / $spot) - 1) /
                                 ($forward_day / $quoted_currency_daycount) *
                                 100);
