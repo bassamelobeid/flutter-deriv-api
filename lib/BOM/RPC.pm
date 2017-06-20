@@ -151,7 +151,7 @@ sub register {
                 # for calls which require _auth - args will contain Account::Client obj,
                 # which is big, not a part of RPC call params, and will broke encode_json call
                 # client's login id will be dumped anyway
-                my $params = { $original_args[0] ? %{ $original_args[0] } : () };
+                my $params = {$original_args[0] ? %{$original_args[0]} : ()};
                 delete $params->{client};
                 warn "Exception when handling $method - $_ with parameters " . encode_json $params;
                 BOM::RPC::v3::Utility::create_error({
