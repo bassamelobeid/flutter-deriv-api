@@ -44,9 +44,8 @@ sub _initialize_symbol_dividend {
     my $rate   = shift;
 
     my $document = {
-        symbol          => $symbol,
-        rates           => {'365' => $rate},
-        discrete_points => undef
+        symbol => $symbol,
+        rates  => {'365' => $rate},
     };
 
     my $dv = Quant::Framework::Asset->new(

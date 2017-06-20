@@ -110,23 +110,23 @@ sub create_tick {
     # date for database
     my $ts = Date::Utility->new($defaults{epoch})->datetime_yyyymmdd_hhmmss;
 
-    my $dbh = Postgres::FeedDB::write_dbh;
-    $dbh->{PrintWarn}  = 0;
-    $dbh->{PrintError} = 0;
-    $dbh->{RaiseError} = 1;
-
     my $tick_sql = <<EOD;
 INSERT INTO feed.tick(underlying, ts, bid, ask, spot)
     VALUES(?, ?, ?, ?, ?)
 EOD
 
-    my $sth = $dbh->prepare($tick_sql);
-    $sth->bind_param(1, $defaults{underlying});
-    $sth->bind_param(2, $ts);
-    $sth->bind_param(3, $defaults{bid});
-    $sth->bind_param(4, $defaults{ask});
-    $sth->bind_param(5, $defaults{quote});
-    $sth->execute();
+    my $dbic = Postgres::FeedDB::write_dbic;
+    $dbic->run(
+        sub {
+            my $sth = $_->prepare($tick_sql);
+            $sth->bind_param(1, $defaults{underlying});
+            $sth->bind_param(2, $ts);
+            $sth->bind_param(3, $defaults{bid});
+            $sth->bind_param(4, $defaults{ask});
+            $sth->bind_param(5, $defaults{quote});
+            $sth->execute();
+
+        });
 
     return Postgres::FeedDB::Spot::Tick->new(\%defaults);
 }
@@ -152,22 +152,24 @@ sub create_ohlc_daily {
     # date for database
     my $ts = Date::Utility->new($defaults{epoch})->datetime_yyyymmdd_hhmmss;
 
-    my $dbh = Postgres::FeedDB::write_dbh;
+    my $dbic = Postgres::FeedDB::write_dbic;
 
     my $tick_sql = <<EOD;
 INSERT INTO feed.ohlc_daily(underlying, ts, open, high, low, close, official)
     VALUES(?, ?, ?, ?, ?, ?, ?)
 EOD
-
-    my $sth = $dbh->prepare($tick_sql);
-    $sth->bind_param(1, $defaults{underlying});
-    $sth->bind_param(2, $ts);
-    $sth->bind_param(3, $defaults{open});
-    $sth->bind_param(4, $defaults{high});
-    $sth->bind_param(5, $defaults{low});
-    $sth->bind_param(6, $defaults{close});
-    $sth->bind_param(7, 1);
-    $sth->execute();
+    $dbic->run(
+        sub {
+            my $sth = $_->prepare($tick_sql);
+            $sth->bind_param(1, $defaults{underlying});
+            $sth->bind_param(2, $ts);
+            $sth->bind_param(3, $defaults{open});
+            $sth->bind_param(4, $defaults{high});
+            $sth->bind_param(5, $defaults{low});
+            $sth->bind_param(6, $defaults{close});
+            $sth->bind_param(7, 1);
+            $sth->execute();
+        });
 
     delete $defaults{underlying};
     return Postgres::FeedDB::Spot::OHLC->new(\%defaults);
@@ -175,12 +177,16 @@ EOD
 
 sub _create_table_for_date {
     my $date = shift;
-    my $dbh  = Postgres::FeedDB::write_dbh;
+    my $dbic = Postgres::FeedDB::write_dbic;
 
     my $table_name = 'tick_' . $date->year . '_' . $date->month;
-    my $stmt       = $dbh->prepare(' select count(*) from pg_tables where schemaname=\'feed\' and tablename = \'' . $table_name . '\'');
-    $stmt->execute;
-    my $table_present = $stmt->fetchrow_arrayref;
+
+    my $table_present = $dbic->run(
+        sub {
+            my $stmt = $_->prepare(qq{select count(*) from pg_tables where schemaname='feed' and tablename = ?});
+            $stmt->execute($table_name);
+            return $stmt->fetchrow_arrayref;
+        });
 
     if ($table_present->[0] < 1) {
         my $db_postfix = $ENV{DB_POSTFIX} // '';
@@ -194,18 +200,18 @@ sub _create_table_for_date {
         $dbh->{RaiseError} = 1;
 
         my $partition_date = Date::Utility->new($date->epoch - (($date->day_of_month - 1) * 86400));
+        my $date_str = $partition_date->date_yyyymmdd;
         $dbh->do(
-            ' CREATE TABLE feed.' . $table_name . '(
+            qq{CREATE TABLE feed.$table_name (
             PRIMARY KEY (underlying, ts),
-            CHECK(ts>= \''
-                . $partition_date->date_yyyymmdd . '\' and ts<\'' . $partition_date->date_yyyymmdd . '\'::DATE + interval \'1 month\'),
-            CHECK(DATE_TRUNC(\'second\', ts) = ts)
+            CHECK(ts>= ? and ts<?::DATE + interval '1 month'),
+            CHECK(DATE_TRUNC('second', ts) = ts)
         )
-        INHERITS (feed.tick)'
+        INHERITS (feed.tick)}, undef, $date_str, $date_str
         );
-        $dbh->do('GRANT SELECT ON feed.' . $table_name . ' TO read');
+        $dbh->do("GRANT SELECT ON feed.$table_name  TO read");
 
-        $dbh->do('GRANT SELECT, INSERT, UPDATE, DELETE, TRIGGER ON feed.' . $table_name . ' TO write');
+        $dbh->do("GRANT SELECT, INSERT, UPDATE, DELETE, TRIGGER ON feed.$table_name TO write");
     }
 
     return;

@@ -279,13 +279,12 @@ sub create_fmb_with_ticks {
     $start = $start->minus_time_interval('1h 2m') if $is_expired;
     my $expire = $start->plus_time_interval('2m');
 
-    my $dbh = Postgres::FeedDB::read_dbh;
-    $dbh->{RaiseError} = 1;
+    my $dbic = Postgres::FeedDB::read_dbic;
 
     for my $epoch ($start->epoch, $start->epoch + 1, $expire->epoch) {
         my $api = Postgres::FeedDB::Spot::DatabaseAPI->new({
             underlying => 'R_100',
-            db_handle  => $dbh
+            dbic       => $dbic
         });
 
         my $tick = $api->tick_at({end_time => $epoch});
