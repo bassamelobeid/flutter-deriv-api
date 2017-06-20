@@ -323,7 +323,7 @@ sub get_account_status {
     push @status,
         'financial_assessment_not_complete'
         if (
-        any { !$financial_assessment->{$_}->{answer} }
+        any { !length $financial_assessment->{$_}->{answer} }
         keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     return {

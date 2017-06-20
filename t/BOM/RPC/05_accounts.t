@@ -684,8 +684,12 @@ subtest $method => sub {
     # test 3: when the client's risk classification is different
     $test_client->aml_risk_classification('high');
     $test_client->save();
-    # test 4: when assessments are completed
     test_financial_assessment($test_client, $c, $method, $token1, $data, 1, "financial_assessment_not_complete should not present regardless of the client's risk classification");
+    # test 4: when answer is '0' is should not 'financial_assessment_not_complete' should not present
+    #         as '0' may be one of the acceptable answers for options in the future
+    $data->{account_turnover}->{answer} = '0';
+    test_financial_assessment($test_client, $c, $method, $token1, $data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
+    # test 5: 'financial_assessment_not_complete' should not present when everything is complete
     $data->{account_turnover}->{answer} = 'Less than $25,000';
     test_financial_assessment($test_client, $c, $method, $token1, $data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
 
