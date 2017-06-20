@@ -54,7 +54,6 @@ my $bet_params = {
     duration     => '2m',
 };
 
-my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked->mock(
     'tick_cache_get',
     sub {
