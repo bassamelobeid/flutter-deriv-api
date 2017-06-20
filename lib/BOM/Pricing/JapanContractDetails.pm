@@ -58,13 +58,7 @@ sub verify_with_id {
 
     my $id              = $args->{transaction_id};
     my $landing_company = $args->{landing_company};
-    my $broker          = $args->{broker};
     my $details         = $args->{details};
-
-    #my $details         = BOM::Database::DataMapper::Transaction->new({
-    #        broker_code => $broker,
-    #        operation   => 'backoffice_replica',
-    #    })->get_details_by_transaction_ref($id);
 
     my $action_type     = $details->{action_type};
     my $requested_price = $details->{order_price};
