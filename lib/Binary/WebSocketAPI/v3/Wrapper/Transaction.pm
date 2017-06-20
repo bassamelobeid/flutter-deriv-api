@@ -14,7 +14,7 @@ sub buy_store_last_contract_id {
     my ($c, $api_response) = @_;
 
     my $last_contracts = $c->stash('last_contracts') // {};
-    # see cleanup at Binary::WebSocketAPI::Hooks::cleanup_strored_contract_ids
+    # see cleanup at Binary::WebSocketAPI::Hooks::cleanup_stored_contract_ids
     ### For usual buy
     my @contracts_ids = ($api_response->{contract_id});
     ### For buy_contract_for_multiple_accounts
