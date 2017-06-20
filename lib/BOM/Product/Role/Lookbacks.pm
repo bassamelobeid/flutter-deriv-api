@@ -107,4 +107,11 @@ override shortcode => sub {
     return uc join '_', @shortcode_elements;
 };
 
+override allowed_slippage => sub {
+    my $self = shift;
+
+    #This is just a dummy value just for testing and development.
+    return 0.05;
+};
+
 1;
