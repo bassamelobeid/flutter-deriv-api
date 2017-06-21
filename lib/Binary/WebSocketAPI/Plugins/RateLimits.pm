@@ -57,7 +57,7 @@ sub _update_redis {
 
     my $client_id = $c->rate_limitations_key;
     my $redis     = $c->app->ws_redis_master;
-    my $redis_key = $name . $client_id;
+    my $redis_key = $client_id . ':' . $name;
     my $f         = Future::Mojo->new;
     $redis->incrby(
         $redis_key,
