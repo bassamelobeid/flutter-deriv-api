@@ -17,6 +17,7 @@ use Finance::Exchange;
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
 use Pricing::Engine::Markup::TentativeEvents;
+use Pricing::Engine::Markup::HistoricalVol;
 
 =head2 tick_source
 
@@ -234,9 +235,9 @@ sub _build_intraday_vanilla_delta {
 
 my $iv_risk_interpolator = Math::Function::Interpolator->new(
     points => {
-        0.05 => 0.15,
+        0.05 => 0.30,
         0.5  => 0,
-        0.95 => 0.15,
+        0.95 => 0.30,
     });
 
 my $shortterm_risk_interpolator = Math::Function::Interpolator->new(
@@ -259,7 +260,9 @@ sub _build_risk_markup {
         name        => 'risk_markup',
         description => 'A set of markups added to accommodate for pricing risk',
         set_by      => __PACKAGE__,
-        minimum     => 0,
+        # We do not want to add historical_vol_markup on top of existing risk_markup.
+        # We just want to take the max of the two markups.
+        minimum     => $self->historical_vol_markup->amount,
         base_amount => 0,
     });
 
@@ -325,6 +328,9 @@ sub _build_risk_markup {
                     base_amount => $shortterm_risk_interpolator->linear($bet->remaining_time->minutes),
                 })) if $bet->remaining_time->minutes <= 15;
     }
+
+    # adding historical_vol_markup as an info for verification purposes.
+    $risk_markup->include_adjustment('info', $self->historical_vol_markup);
 
     return $risk_markup;
 }
@@ -420,6 +426,65 @@ sub is_in_quiet_period {
     }
 
     return $quiet;
+}
+
+has historical_vol_markup => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_historical_vol_markup {
+    my $self = shift;
+
+    my $bet = $self->bet;
+    # base vol is calculated from overnight vol
+    my $base_vol     = $bet->_pricing_args->{iv};
+    my $pricing_args = $bet->_pricing_args;
+    my $hist_vol     = $self->_calculate_historical_volatility;
+
+    my %args = (
+        strikes           => [$pricing_args->{barrier1}],
+        contract_type     => $bet->pricing_code,
+        payout_type       => 'binary',
+        underlying_symbol => $bet->underlying->symbol,
+        discount_rate     => 0,
+        mu                => 0,
+        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
+
+    return Pricing::Engine::Markup::HistoricalVol->new(
+        historical_vol => $hist_vol,
+        pricing_vol    => $base_vol,
+        pricing_args   => \%args,
+    )->markup;
+}
+
+sub _calculate_historical_volatility {
+    my $self = shift;
+
+    my $bet        = $self->bet;
+    my $hist_ticks = $self->tick_source->get({
+        underlying => $bet->underlying,
+        # we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
+        start_epoch => $bet->date_pricing->epoch - 20 * 60,
+        end_epoch   => $bet->date_pricing->epoch,
+        backprice   => ($bet->underlying->for_date ? 1 : 0),
+    });
+
+    my @returns_squared;
+    # Ticks are in 15-second interval.
+    my $returns_sep = 4;
+    for (my $i = $returns_sep; $i <= $#$hist_ticks; $i++) {
+        my $dt = $hist_ticks->[$i]->{epoch} - $hist_ticks->[$i - $returns_sep]->{epoch};
+        # 252 is the number of trading days.
+        push @returns_squared, ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 / $dt);
+    }
+
+    unless (@returns_squared) {
+        warn "Historical ticks not found in Intraday::Forex pricing";
+        return 0.1;
+    }
+
+    return sqrt(sum(@returns_squared) / @returns_squared);
 }
 
 no Moose;
