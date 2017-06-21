@@ -235,9 +235,9 @@ sub _build_intraday_vanilla_delta {
 
 my $iv_risk_interpolator = Math::Function::Interpolator->new(
     points => {
-        0.05 => 0.15,
+        0.05 => 0.30,
         0.5  => 0,
-        0.95 => 0.15,
+        0.95 => 0.30,
     });
 
 my $shortterm_risk_interpolator = Math::Function::Interpolator->new(
