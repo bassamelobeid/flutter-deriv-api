@@ -8,12 +8,22 @@ use Test::Exception;
 use Test::FailWarnings;
 use BOM::Product::ContractFactory qw(produce_batch_contract produce_contract);
 
+use Test::MockModule;
 use Postgres::FeedDB::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use Date::Utility;
 use JSON qw(to_json);
 
+my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
+$mocked->mock('historical_vol_markup', sub {
+    return Math::Util::CalculatedValue::Validatable->new({
+               name => 'historical_vol_markup',
+               set_by => 'test',
+               base_amount => 0,
+               description => 'test'
+           });
+    });
 my %custom_otm =
     map { rand(1234) => {conditions => {market => $_, expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
 BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json(\%custom_otm));
