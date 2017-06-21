@@ -10,9 +10,9 @@ __PACKAGE__->meta->setup(
 
     columns => [
         financial_market_bet_id => { type => 'bigint', not_null => 1 },
-        coin_address            => { type => 'text' },
-        token_type              => { type => 'text' },
-        number_of_tokens        => { type => 'numeric' },
+        coin_address            => { type => 'text', not_null => 1 },
+        token_type              => { type => 'text', not_null => 1 },
+        number_of_tokens        => { type => 'numeric', not_null => 1 },
         auction_date_start      => { type => 'timestamp' },
     ],
 
