@@ -16,7 +16,17 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use Test::MockModule;
 
+my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
+$mocked->mock('historical_vol_markup', sub {
+    return Math::Util::CalculatedValue::Validatable->new({
+               name => 'historical_vol_markup',
+               set_by => 'test',
+               base_amount => 0,
+               description => 'test'
+           });
+    });
 my $expectation = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/sellback_config.yml');
 my $start_time  = Date::Utility->new(1474860428);
 
