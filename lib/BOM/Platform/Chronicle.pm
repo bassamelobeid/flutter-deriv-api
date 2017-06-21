@@ -35,42 +35,36 @@ to save data and another method to retrieve it. All the underlying complexities 
 
 =back
 
-There are three important methods this module provides:
+There are two important methods this module provides:
 
 =over 4
 
-=item C<set>
+=item C<get_chronicle_reader>
 
-Given a category, name and value stores the JSONified value in Redis and PostgreSQL database under "category::name" group and also stores current
-system time as the timestamp for the data (Which can be used for future retrieval if we want to get data as of a specific time). Note that the value
-MUST be either hash-ref or array-ref.
+Returns a Data::Chronicle::Reader object.
 
-=item C<get>
+=item C<get_chronicle_writer>
 
-Given a category and name returns the latest version of the data according to current Redis cache
-
-=item C<get_for>
-
-Given a category, name and timestamp returns version of data under "category::name" as of the given date (using a DB lookup).
+Returns a Data::Chronicle::Writer object.
 
 =back
 
 =head1 Example
 
- my $d = get_some_data();
+    use BOM::Platform::Chronicle;
 
- #store data into Chronicle
- BOM::Platform::Chronicle::set("vol_surface", "frxUSDJPY", $d);
+    my $d = get_some_data();
+    my $reader = BOM::Platform::Chronicle::get_chronicle_reader();
+    my $writer = BOM::Platform::Chronicle::get_chronicle_writer();
 
- #retrieve latest data stored for "vol_surface" and "frxUSDJPY"
- my $dt = BOM::Platform::Chronicle::set("vol_surface", "frxUSDJPY");
+    #store data into Chronicle
+    writer->set("vol_surface", "frxUSDJPY", $d);
 
- #find vol_surface for frxUSDJPY as of a specific date
- my $some_old_data = get_for("vol_surface", "frxUSDJPY", $epoch1);
+    #retrieve latest data stored for "vol_surface" and "frxUSDJPY"
+    my $dt = $reader->get("vol_surface", "frxUSDJPY");
 
-=head1 Future directions
-
-As we continue migrating new data types to this model, there will probably be more changes to this module to make it fit for our requirements in Quant code-base.
+    #find vol_surface for frxUSDJPY as of a specific date
+    my $some_old_data = $reader->get_for("vol_surface", "frxUSDJPY", $epoch1);
 
 =cut
 
@@ -133,108 +127,108 @@ sub get_chronicle_reader {
     return $live_instance;
 }
 
-=head3 C<< set("category1", "name1", $value1)  >>
+# According to discussions made, we are supposed to support "Redis only" installation where there is not Pg.
+# The assumption is that we have Redis for all data which is important for continutation of our services
+# We also have Pg for an archive of data used later for non-live services (e.g back-testing, auditing, ...)
+# And in case for any reason, Redis has problems, we will need to re-populate its information not from Pg
+# But by re-running population scripts
+my $dbic;
 
-Store a piece of data "value1" under key "category1::name1" in Pg and Redis.
-
-=cut
-
-sub set {
-    my $category = shift;
-    my $name     = shift;
-    my $value    = shift;
-    my $rec_date = shift;
-
-    $rec_date //= Date::Utility->new();
-
-    die "Cannot store undefined values in Chronicle!" unless defined $value;
-    die "You can only store hash-ref or array-ref in Chronicle!" unless (ref $value eq 'ARRAY' or ref $value eq 'HASH');
-
-    $value = JSON::to_json($value);
-
-    my $key = $category . '::' . $name;
-    BOM::Platform::RedisReplicated::redis_write()->set($key, $value);
-    _archive($category, $name, $value, $rec_date) if dbic();
-
-    return 1;
-}
-
-=head3 C<< my $data = get("category1", "name1") >>
-
-Query for the latest data under "category1::name1" from Redis.
-
-=cut
-
-sub get {
-    my $category = shift;
-    my $name     = shift;
-
-    my $key         = $category . '::' . $name;
-    my $cached_data = BOM::Platform::RedisReplicated::redis_read()->get($key);
-
-    return JSON::from_json($cached_data) if defined $cached_data;
-    # FIXME assuming scalar context here, very dangerous - audit all callers
-    # and replace with return undef;
-    return;
-}
-
-=head3 C<< my $data = get_for("category1", "name1", 1447401505) >>
-
-Query Pg archive for the data under "category1::name1" at or exactly before the given epoch/Date::Utility.
-
-=cut
-
-sub get_for {
-    my $category = shift;
-    my $name     = shift;
-    my $date_for = shift;    #epoch or Date::Utility
-
-    my $db_timestamp = Date::Utility->new($date_for)->db_timestamp;
-
-    my $db_data = dbic()->run(
-        sub {
-            $_->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
-                'id', {}, $category, $name, $db_timestamp);
+sub dbic {
+    # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
+    return undef if not defined _config()->{chronicle};
+    $dbic //= DBIx::Connector::Pg->new(
+        _dbh_dsn(),
+        # User and password are part of the DSN
+        '', '',
+        {
+            RaiseError        => 1,
+            pg_server_prepare => 0,
         });
-
-    return if not %$db_data;
-
-    my $id_value = (sort keys %{$db_data})[0];
-    my $db_value = $db_data->{$id_value}->{value};
-
-    return JSON::from_json($db_value);
+    $dbic->mode('fixup');
+    return $dbic;
 }
 
-sub get_for_period {
-    my $category = shift;
-    my $name     = shift;
-    my $start    = shift;    #epoch or Date::Utility
-    my $end      = shift;    #epoch or Date::Utility
-
-    my $start_timestamp = Date::Utility->new($start)->db_timestamp;
-    my $end_timestamp   = Date::Utility->new($end)->db_timestamp;
-
-    my $db_data = dbic()->run(
-        sub {
-            $_->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? AND timestamp >=? order by timestamp desc},
-                'id', {}, $category, $name, $end_timestamp, $start_timestamp);
-        });
-
-    return if not %$db_data;
-
-    my @result;
-
-    for my $id_value (keys %$db_data) {
-        my $db_value = $db_data->{$id_value}->{value};
-
-        push @result, JSON::from_json($db_value);
-    }
-
-    return \@result;
+sub _dbh_dsn {
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    return "dbi:Pg:service=chronicle02;";
 }
 
-sub _archive {
-    my $category = shift;
+my $config;
+
+BEGIN {
+    $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
+}
+
+sub _config {
+    return $config;
+}
+
+sub _redis_write {
+    warn "Chronicle::_redis_write is deprecated. Please, use RedisReplicated::redis_write";
+    return BOM::Platform::RedisReplicated::redis_write;
+}
+
+1;
+package BOM::Platform::Chronicle;
+
+=head1 NAME
+
+BOM::Platform::Chronicle - Provides efficient data storage for volatile and time-based data
+
+=head1 DESCRIPTION
+
+This module contains helper methods which can be used to store and retrieve information
+on an efficient storage with below properties:
+
+=over 4
+
+=item B<Timeliness>
+
+It is assumed that data to be stored are time-based meaning they change over time and the latest version is most important for us.
+Many data structures in our system fall into this category (For example Volatility Surfaces, Interest Rate information, ...).
+
+=item B<Efficient>
+
+The module uses Redis cache to provide efficient data storage and retrieval.
+
+=item B<Persistent>
+
+In addition to caching every incoming data, it is also stored in PostgresSQL for future retrieval.
+
+=item B<Distributed>
+
+These data are stored in distributed storage so they will be replicated to other servers instantly.
+
+=item B<Transparent>
+
+This modules hides all the details about distribution, caching, database structure and ... from developer. He only needs to call a method
+to save data and another method to retrieve it. All the underlying complexities are handled by the module.
+
+=back
+
+There are three important methods this module provides:
+
+=over 4
+
+=item C<set>
+
+Given a category, name and value stores the JSONified value in Redis and PostgreSQL database under "category::name" group and also stores current
+system time as the timestamp for the data (Which can be used for future retrieval if we want to get data as of a specific time). Note that the value
+MUST be either hash-ref or array-ref.
+
+=item C<get>
+
+Given a category and name returns the latest version of the data according to current Redis cache
+
+=item C<get_for>
+
+Given a category, name and timestamp returns version of data under "category::name" as of the given date (using a DB lookup).
+
+=back
+
+=head1 Example
+
     my $name     = shift;
     my $value    = shift;
     my $rec_date = shift;
