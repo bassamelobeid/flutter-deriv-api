@@ -126,6 +126,16 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch + 60,
+    underlying => 'R_50',
+});
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch + 120,
+    underlying => 'R_50',
+});
+
 my $underlying        = create_underlying('frxUSDJPY');
 my $underlying_GDAXI  = create_underlying('GDAXI');
 my $underlying_WLDUSD = create_underlying('WLDUSD');
