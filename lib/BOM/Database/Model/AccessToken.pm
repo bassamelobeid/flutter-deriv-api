@@ -79,10 +79,9 @@ sub get_scopes_by_access_token {
 sub get_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
-    my @tokens;
-    $self->dbic->run(
+    my @tokens = $self->dbic->run(
         sub {
-
+            my @tokens;
             my $sth = $_->prepare("
         SELECT
             token, display_name, scopes, last_used::timestamp(0), valid_for_ip
@@ -93,6 +92,7 @@ sub get_tokens_by_loginid {
                 $r->{scopes} = __parse_array($r->{scopes});
                 push @tokens, $r;
             }
+            return @tokens;
         });
     return wantarray ? @tokens : \@tokens;
 }
