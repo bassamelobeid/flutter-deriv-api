@@ -148,11 +148,11 @@ sub register {
                 $code->(@args);
             }
             catch {
-                # for calls which require _auth - args will contain Account::Client obj,
-                # which is big, not a part of RPC call params, and will broke encode_json call
-                # client's login id will be dumped anyway
+                # replacing possible objects in $params with strings to avoid error in encode_json function
                 my $params = {$original_args[0] ? %{$original_args[0]} : ()};
-                delete $params->{client};
+                $params->{client} = blessed($params->{client}) . ' object: ' . $params->{client}->loginid
+                    if eval { $params->{client}->can('loginid') };
+                defined blessed($_) and $_ = blessed($_) . ' object' for (values %$params);
                 warn "Exception when handling $method - $_ with parameters " . encode_json $params;
                 BOM::RPC::v3::Utility::create_error({
                         code              => 'InternalServerError',
