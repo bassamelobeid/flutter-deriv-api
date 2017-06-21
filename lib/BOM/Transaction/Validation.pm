@@ -250,19 +250,19 @@ sub _validate_sell_pricing_adjustment_lookbacks {
     } elsif (abs($move) > $allowed_move) {
         return $self->_write_to_rejected({
             action            => 'sell',
-            amount            => $amount,
-            recomputed_amount => $recomputed_amount
+            amount            => $requested_price,
+            recomputed_amount => $recomputed_price
         });
     } else {
         if ($move <= $allowed_move) {
-            $final_value = $amount;
+            $final_value = $requested_price;
             # We absorbed the price difference here and we want to keep it in our book.
             $self->transaction->price_slippage($slippage);
         } elsif ($move > 0) {
             $self->transaction->execute_at_better_price(1);
             # We need to keep record of slippage even it is executed at better price
             $self->transaction->price_slippage($slippage);
-            $final_value = $recomputed_amount;
+            $final_value = $recomputed_price;
         }
     }
 
