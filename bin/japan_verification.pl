@@ -1,4 +1,16 @@
 #!/usr/bin/env perl
+
+# DESCRIPTION
+#
+# We will start using this script for post release verification to ensure each time
+# we do a production release, it does not break our pricing for japan.
+#
+# What does this script do?
+# This script will price contracts, save the pricing parameters in memory , and 
+# it will reprice, to ensure reprice works properly for japan.
+# It also checks that , payout - ask = ask of the opposite contract.
+# Measures pricing speed.
+
 use strict;
 use warnings;
 
