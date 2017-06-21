@@ -297,16 +297,16 @@ sub get_used_apps_by_loginid {
         });
     return [] unless $apps;
 
+    $_->{scopes} = __parse_array($_->{scopes}) for @$apps;
     $self->dbic->run(
         sub {
             my $get_last_used_sth = $_->prepare("
         SELECT MAX(last_used)::timestamp(0) FROM oauth.access_token WHERE app_id = ?
     ");
 
-            foreach (@$apps) {
-                $_->{scopes} = __parse_array($_->{scopes});
-                $get_last_used_sth->execute($_->{app_id});
-                $_->{last_used} = $get_last_used_sth->fetchrow_array;
+            foreach my $app (@$apps) {
+                $get_last_used_sth->execute($app->{app_id});
+                $app->{last_used} = $get_last_used_sth->fetchrow_array;
             }
         });
 
