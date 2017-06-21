@@ -661,8 +661,7 @@ subtest $method => sub {
             is_professional => 0
         });
         $test_client->save();
-        my $res = ((grep { $_ eq 'financial_assessment_not_complete' }
-                    @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
+        my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
         ok($res, $msg);
     }
     # test 1: when some answers are empty

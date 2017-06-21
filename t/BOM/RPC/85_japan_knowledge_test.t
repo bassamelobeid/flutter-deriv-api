@@ -213,19 +213,19 @@ subtest 'Test not allowed for non Japanese Client' => sub {
 
         # new CR client
         my %cr_client_details = (
-            salutation       => 'Ms',
-            last_name        => 'last-name',
-            first_name       => 'first\'name',
-            date_of_birth    => '1990-12-30',
-            residence        => 'au',
-            address_line_1   => 'Jalan Usahawan',
-            address_line_2   => 'Enterpreneur Center',
-            address_city     => 'Cyberjaya',
-            address_state    => 'Selangor',
-            address_postcode => '47120',
-            phone            => '+603 34567890',
-            secret_question  => 'Favourite dish',
-            secret_answer    => 'nasi lemak,teh tarik',
+            salutation             => 'Ms',
+            last_name              => 'last-name',
+            first_name             => 'first\'name',
+            date_of_birth          => '1990-12-30',
+            residence              => 'au',
+            address_line_1         => 'Jalan Usahawan',
+            address_line_2         => 'Enterpreneur Center',
+            address_city           => 'Cyberjaya',
+            address_state          => 'Selangor',
+            address_postcode       => '47120',
+            phone                  => '+603 34567890',
+            secret_question        => 'Favourite dish',
+            secret_answer          => 'nasi lemak,teh tarik',
             account_opening_reason => 'Assets Saving',
         );
 

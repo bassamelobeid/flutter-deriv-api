@@ -25,18 +25,18 @@ my ($t, $rpc_ct);
 my ($method, $params, $client_details);
 
 $client_details = {
-    salutation       => 'hello',
-    last_name        => 'Vostrov' . rand(999),
-    first_name       => 'Evgeniy' . rand(999),
-    date_of_birth    => '1987-09-04',
-    address_line_1   => 'Sovetskaya street',
-    address_line_2   => 'home 1',
-    address_city     => 'Samara',
-    address_state    => 'Samara',
-    address_postcode => '112233',
-    phone            => '+79272075932',
-    secret_question  => 'test',
-    secret_answer    => 'test',
+    salutation             => 'hello',
+    last_name              => 'Vostrov' . rand(999),
+    first_name             => 'Evgeniy' . rand(999),
+    date_of_birth          => '1987-09-04',
+    address_line_1         => 'Sovetskaya street',
+    address_line_2         => 'home 1',
+    address_city           => 'Samara',
+    address_state          => 'Samara',
+    address_postcode       => '112233',
+    phone                  => '+79272075932',
+    secret_question        => 'test',
+    secret_answer          => 'test',
     account_opening_reason => 'Speculative',
 };
 
