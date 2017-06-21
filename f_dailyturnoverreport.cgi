@@ -8,6 +8,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
+use Format::Util::Numbers qw(commas);
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -27,6 +28,7 @@ BOM::Backoffice::Request::template->process(
     'backoffice/daily_turnover_report.html.tt',
     {
         dtr        => \%template,
+        commas     => \&commas,
         this_month => $args->{month},
     });
 
