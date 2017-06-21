@@ -16,32 +16,35 @@
 
 <div class="container">
     <div id="inline">
-        <div style="<% if (lc($r->language) eq 'ja') { %>display:none<% } %>">
+        <% #replace lines with commented lines when releasing oneall %>
+        <!--<div style="<% if (lc($r->language) eq 'ja') { %>display:none<% } %>">-->
+        <div style="display:none">
             <div class="center-text">
                 <div id="oa_social_login_container"></div>
             </div>
         </div>
-        <div class="separators" style="<% if (lc($r->language) eq 'ja') { %>display:none<% } %>">
+        <!--<div class="separators" style="<% if (lc($r->language) eq 'ja') { %>display:none<% } %>">-->
+        <div class="separators" style="display:none">
             <div class="vertical-separator"></div>
             <div class="circle-separator"><%= l('or') %></div>
             <div class="vertical-separator"></div>
         </div>
-        <div id="wrapper" style="<% if (lc($r->language) eq 'ja') { %>width:100%<% } %>">
+        <div id="wrapper">
             <p class="center-text"><%= l('Log in using your email address') %></p>
-<% if (stash('error')) { %>
-<p class='error-msg center-text'><%= stash('error') %></p>
-    <% } %>
-<form id="frmLogin" method="POST">
-    <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
+            <% if (stash('error')) { %>
+            <p class='error-msg center-text'><%= stash('error') %></p>
+            <% } %>
+            <form id="frmLogin" method="POST">
+                <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
                 <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
                 <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
                 <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
             </form>
         </div>
     </div>
-<% if ($app->{id} eq 1) { %>
-<div class="center-text links">
-    <p><a id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a></p>
+    <% if ($app->{id} eq 1) { %>
+    <div class="center-text links">
+        <p><a id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a></p>
         <p><%= l('Don\'t have a Binary.com account?') %> <a id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Create one') %></a> <%= l('now.') %></p>
     </div>
     <% } %>
