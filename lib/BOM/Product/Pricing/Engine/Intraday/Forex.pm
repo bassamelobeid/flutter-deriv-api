@@ -260,7 +260,9 @@ sub _build_risk_markup {
         name        => 'risk_markup',
         description => 'A set of markups added to accommodate for pricing risk',
         set_by      => __PACKAGE__,
-        minimum     => 0,
+        # We do not want to add historical_vol_markup on top of existing risk_markup.
+        # We just want to take the max of the two markups.
+        minimum     => $self->historical_vol_markup->amount,
         base_amount => 0,
     });
 
@@ -327,11 +329,8 @@ sub _build_risk_markup {
                 })) if $bet->remaining_time->minutes <= 15;
     }
 
-    # We do not want to add historical_vol_markup on top of existing risk_markup.
-    # We just want to take the max of the two markups.
-    if ($risk_markup->amount < $self->historical_vol_markup->amount) {
-        $risk_markup->include_adjustment('reset', $self->historical_vol_markup);
-    }
+    # adding historical_vol_markup as an info for verification purposes.
+    $risk_markup->include_adjustment('info', $self->historical_vol_markup);
 
     return $risk_markup;
 }
