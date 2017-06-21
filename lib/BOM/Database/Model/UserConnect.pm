@@ -73,14 +73,15 @@ sub get_user_id_by_connect {
 sub get_connects_by_user_id {
     my ($self, $user_id) = @_;
 
-    my @providers;
-    $self->dbic->run(
+    my @providers = $self->dbic->run(
         sub {
             my $sth = $_->prepare("SELECT provider FROM users.binary_user_connects WHERE binary_user_id = ?");
             $sth->execute($user_id);
+            my @providers;
             while (my ($p) = $sth->fetchrow_array) {
                 push @providers, $p;
             }
+            return @providers;
         });
 
     return wantarray ? @providers : [@providers];
