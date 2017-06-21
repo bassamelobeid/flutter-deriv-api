@@ -136,6 +136,7 @@ subtest 'verify_with_shortcode_IH' => sub {
             'opposite_contract_economic_events_markup'                 => 0,
             'opposite_contract_economic_events_volatility_risk_markup' => 0,
             'opposite_contract_economic_events_spot_risk_markup'       => 0,
+            'opposite_contract_historical_vol_markup'                  => 0,
             'opposite_contract_S'                                      => '79.817',
             'opposite_contract_bs_probability'                         => '0.547909981156173',
             'opposite_contract_risk_markup'                            => '0.000133358249061675',
@@ -169,7 +170,8 @@ subtest 'verify_with_shortcode_IH' => sub {
             'economic_events_markup'                 => 0,
             'economic_events_spot_risk_markup'       => 0,
             'economic_events_volatility_risk_markup' => 0,
-            'intraday_historical_iv_risk'            => 0
+            'intraday_historical_iv_risk'            => 0,
+            'histirocal_vol_markup'                  => 0.0225831453183333,
         },
         'intraday_delta_correction' => {
             'short_term_delta_correction' => '0.0131432219167099',
