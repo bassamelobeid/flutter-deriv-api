@@ -171,7 +171,7 @@ subtest 'verify_with_shortcode_IH' => sub {
             'economic_events_spot_risk_markup'       => 0,
             'economic_events_volatility_risk_markup' => 0,
             'intraday_historical_iv_risk'            => 0,
-            'histirocal_vol_markup'                  => 0.0225831453183333,
+            'historical_vol_markup'                  => 0.0225831453183333,
         },
         'intraday_delta_correction' => {
             'short_term_delta_correction' => '0.0131432219167099',
