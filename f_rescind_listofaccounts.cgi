@@ -4,6 +4,7 @@ package main;
 use strict;
 use warnings;
 
+use Guard;
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 use BOM::Database::ClientDB;
@@ -79,7 +80,9 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     }
     $grandtotal += in_USD($balance, $curr);
 
-    $client_db->unfreeze;
+    scope_guard {
+        $client_db->unfreeze;
+    };
 }
 
 print "<hr>Grand total recovered (converted to USD): USD $grandtotal<P>";
