@@ -165,8 +165,12 @@ sub authorize {
         push @params, ($key => $c1->loginid);
 
         # token
-        $key = 'token' . $i++;
+        $key = 'token' . $i;
         push @params, ($key => $access_token);
+
+        # currency
+        $key = 'cur' . $i++;
+        push @params, ($key => $c1->default_account->currency_code) if $c1->default_account;
     }
 
     push @params, (state => $state) if defined $state;
