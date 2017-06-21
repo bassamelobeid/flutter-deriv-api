@@ -95,7 +95,7 @@ sub update_event {
     # regenerate economic event impacts curve after tentative event updates.
     my $latest_events = $eec->chronicle_reader->get('economic_events', 'economic_events');
     Volatility::Seasonality::generate_economic_event_seasonality({
-        economic_events    => $latest_events,
+        economic_events    => $latest_events->{events},
         underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
         chronicle_writer   => $eec->chronicle_writer,
     });
