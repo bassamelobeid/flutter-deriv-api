@@ -93,8 +93,8 @@ my $contract_args = {
 my $expected = {
     'CALL_0'        => 55.44,
     'CALL_1000'     => 56.9,
-    'NOTOUCH_0'     => 5.52,
-    'NOTOUCH_1000'  => 14.79,
+    'NOTOUCH_0'     => 5.54,
+    'NOTOUCH_1000'  => 15.23,
     'ONETOUCH_2000' => 100,
     'PUT_1000'      => 59.48,
     'PUT_0'         => 55.56
@@ -111,7 +111,6 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
     $contract_args->{barrier}             = 'S' . $pip_diff . 'P';
     $contract_args->{pricing_engine_name} = 'BOM::Product::Pricing::Engine::Intraday::Forex';
     $contract_args->{landing_company}     = 'japan';
-
     my $c = produce_contract($contract_args);
     cmp_ok $c->ask_price, '==', $expected->{$key}, "correct ask price for $key";
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', "correct engine for $key";
