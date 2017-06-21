@@ -246,7 +246,7 @@ sub _validate_sell_pricing_adjustment_lookbacks {
 
     my $final_value;
     if ($allowed_move == 0) {
-        $final_value = $recomputed_amount;
+        $final_value = $recomputed_price;
     } elsif (abs($move) > $allowed_move) {
         return $self->_write_to_rejected({
             action            => 'sell',
