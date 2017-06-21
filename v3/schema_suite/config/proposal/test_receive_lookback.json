@@ -33,7 +33,7 @@
                 },
                 "payout": {
                     "type": "number",
-                    "pattern": "^100$",
+                    "pattern": "^0$",
                     "required": "1"
                 },
                 "spot": {
