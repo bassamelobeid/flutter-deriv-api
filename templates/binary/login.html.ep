@@ -1,29 +1,3 @@
-<div id="wrapper" class="login">
-    <div id="main-header">
-        <div id="logo">
-            <img src="https://style.binary.com/images/logo/binary_logo_dark.svg" alt="Binary.com" />
-        </div>
-    </div>
-    <form id="frmLogin" method="POST">
-        <% if (stash('error')) { %>
-        <p class='error-msg center-text'><%= stash('error') %></p>
-        <% } %>
-        <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
-        <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
-        <div><button type="submit" class="button" name="login" value='<%= l('Log in') %>'><%= l('Log in') %></button></div>
-        <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
-        <div class="center-text" style="display:none;">
-            <div id="oa_social_login_container"></div>
-        </div>
-    </form>
+<div class="login">
+    %= include 'binary/login_container', login_text => 0, show_links => 0
 </div>
-
-<script type="text/javascript">
-var your_callback_script = '<%= $oneall_callback %>';
-
-/* Embeds the buttons into the container oa_social_login_container */
-var _oneall = _oneall || [];
-_oneall.push(['social_login', 'set_providers', ['google']]);
-_oneall.push(['social_login', 'set_callback_uri', your_callback_script]);
-_oneall.push(['social_login', 'do_render_ui', 'oa_social_login_container']);
-</script>
