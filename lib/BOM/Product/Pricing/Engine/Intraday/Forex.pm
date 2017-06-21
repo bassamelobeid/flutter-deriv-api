@@ -327,17 +327,10 @@ sub _build_risk_markup {
                 })) if $bet->remaining_time->minutes <= 15;
     }
 
-    # We do not want to add historical_vol_markup on top of existing risk_markup. We just want to take the max of the two markups.
-    # We could have done it with $risk_markup->inlcude_adjustment('reset', $self->historical_vol_markup),
-    # but that would mean that we will need a major documentation change for FFAJ. So this is a compromise.
+    # We do not want to add historical_vol_markup on top of existing risk_markup.
+    # We just want to take the max of the two markups.
     if ($risk_markup->amount < $self->historical_vol_markup->amount) {
-        my $remainder = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'historical_vol_markup',
-            description => 'remainder of the historical vol markup',
-            set_by      => __PACKAGE__,
-            base_amount => $self->historical_vol_markup->amount - $risk_markup->amount,
-        });
-        $risk_markup->include_adjustment('add', $remainder);
+        $risk_markup->include_adjustment('reset', $self->historical_vol_markup);
     }
 
     return $risk_markup;
