@@ -463,7 +463,7 @@ sub _calculate_historical_volatility {
 
     my $bet        = $self->bet;
     my $hist_ticks = $self->tick_source->get({
-        underlying  => $bet->underlying,
+        underlying => $bet->underlying,
         # we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
         start_epoch => $bet->date_pricing->epoch - 20 * 60,
         end_epoch   => $bet->date_pricing->epoch,
