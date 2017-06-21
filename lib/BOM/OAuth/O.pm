@@ -160,17 +160,13 @@ sub authorize {
     foreach my $c1 ($user->clients) {
         my ($access_token) = $oauth_model->store_access_token_only($app_id, $c1->loginid, $ua_fingerprint);
 
-        # loginid
-        my $key = 'acct' . $i;
-        push @params, ($key => $c1->loginid);
-
-        # token
-        $key = 'token' . $i;
-        push @params, ($key => $access_token);
-
-        # currency
-        $key = 'cur' . $i++;
-        push @params, ($key => $c1->default_account->currency_code) if $c1->default_account;
+        push @params,
+            (
+            'acct' . $i  => $c1->loginid,
+            'token' . $i => $access_token,
+            $c1->default_account ? ('cur' . $i => $c1->default_account->currency_code) : (),
+            );
+        $i++;
     }
 
     push @params, (state => $state) if defined $state;
