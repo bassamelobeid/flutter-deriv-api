@@ -53,7 +53,6 @@ before_install:
       regentmarkets/bom-transaction
       regentmarkets/php-mt5-webapi
       binary-com/translations-websockets-api
-      binary-com/websocket-bench
     - /tmp/travis-scripts/redis.sh
 
 install:
