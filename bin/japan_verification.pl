@@ -122,10 +122,6 @@ while (1) {
 
                 my $batch_contract = produce_batch_contract(\%pricing_queue_args);
 
-                my $batch_end = Time::HiRes::time;
-                my $elapsed   = $batch_end - $batch_start;
-                push @time_records, $elapsed;
-
                 my $contracts = $batch_contract->_contracts;
 
                 if (($contracts->[0]->ask_price + $contracts->[1]->bid_price) != $payout) {
@@ -136,6 +132,10 @@ while (1) {
                         . " bid: "
                         . $contracts->[1]->bid_price . "\n";
                 }
+
+                my $batch_end = Time::HiRes::time;
+                my $elapsed   = $batch_end - $batch_start;
+                push @time_records, $elapsed;
 
                 push @contracts_to_reprice,
                       $contracts->[0]->shortcode . ","
