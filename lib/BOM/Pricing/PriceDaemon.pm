@@ -18,7 +18,7 @@ sub new { return bless {@_[1 .. $#_]}, $_[0] }
 sub process_job {
     my ($self, $redis, $next, $params) = @_;
 
-    my $price_daemon_cmd = $params->{price_daemon_cmd} || '';
+    my $log_price_daemon_cmd = my $price_daemon_cmd = $params->{price_daemon_cmd} || '';
     my $current_time = time;
     my $response;
 
@@ -44,6 +44,8 @@ sub process_job {
     if ($price_daemon_cmd eq 'price') {
         $params->{streaming_params}->{add_theo_probability} = 1;
         $response = BOM::Pricing::v3::Contract::send_ask({args => $params});
+        # we want to log proposal array under different key
+        $log_price_daemon_cmd = 'price_batch' if $params->{proposal_array};
     } elsif ($price_daemon_cmd eq 'bid') {
         $params->{validation_params}->{skip_barrier_validation} = 1;
         $response = BOM::Pricing::v3::Contract::send_bid($params);
@@ -57,8 +59,8 @@ sub process_job {
     $redis->set($next, $current_time);
     $redis->expire($next, 300);
 
-    stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => $self->tags});
-    stats_timing("pricer_daemon.$price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
+    stats_inc("pricer_daemon.$log_price_daemon_cmd.call", {tags => $self->tags});
+    stats_timing("pricer_daemon.$log_price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
     $response->{price_daemon_cmd} = $price_daemon_cmd;
     delete $response->{contract_parameters};    # contract parameters are stored after first call, no need to send them with every stream message
     return $response;
