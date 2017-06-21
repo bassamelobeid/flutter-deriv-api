@@ -44,9 +44,14 @@ sub validate_trx_sell {
             return $res;
         }
     }
-    for (qw/ _is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing /) {
-        next if $_ eq '_validate_sell_pricing_adjustment' and not $self->transaction->contract->is_binary;
-        my $res = $self->$_();
+
+    my @validation_methods = qw/ _is_valid_to_sell  _validate_date_pricing /;
+    push @validation_methods, '_validate_sell_pricing_adjustment'           if $self->transaction->contract->is_binary;
+    push @validation_methods, '_validate_sell_pricing_adjustment_lookbacks' if not $self->transaction->contract->is_binary;
+
+    for my $method (@validation_methods) {
+
+        my $res = $self->$method();
         return $res if $res;
     }
     return;
@@ -93,7 +98,11 @@ sub validate_trx_buy {
     ### Order is very important
     ### _validate_trade_pricing_adjustment may contain some expensive calculations
     #### And last per-client checks must be after this calculations.
-    $res = $self->_validate_trade_pricing_adjustment() if $self->transaction->contract->is_binary;
+
+    $res =
+        ($self->transaction->contract->is_binary)
+        ? $self->_validate_trade_pricing_adjustment()
+        : $self->_validate_trade_pricing_adjustment_lookbacks();
     return $res if $res;
 
     CLI: for my $c (@$clients) {
