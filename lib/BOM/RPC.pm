@@ -148,7 +148,12 @@ sub register {
                 $code->(@args);
             }
             catch {
-                warn "Exception when handling $method - $_ with parameters " . encode_json \@original_args;
+                # replacing possible objects in $params with strings to avoid error in encode_json function
+                my $params = {$original_args[0] ? %{$original_args[0]} : ()};
+                $params->{client} = blessed($params->{client}) . ' object: ' . $params->{client}->loginid
+                    if eval { $params->{client}->can('loginid') };
+                defined blessed($_) and $_ = blessed($_) . ' object' for (values %$params);
+                warn "Exception when handling $method - $_ with parameters " . encode_json $params;
                 BOM::RPC::v3::Utility::create_error({
                         code              => 'InternalServerError',
                         message_to_client => localize("Sorry, an error occurred while processing your account.")});
