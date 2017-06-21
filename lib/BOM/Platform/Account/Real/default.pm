@@ -429,7 +429,7 @@ sub get_account_fields {
     my @account_fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
         address_city address_state address_postcode phone secret_question secret_answer place_of_birth
         tax_residence tax_identification_number);
-    push @account_fields, 'account_opening_reason' if (!$_[0] or $_[0] ne 'japan');
+    push @account_fields, 'account_opening_reason' if (!$_[0] || $_[0] ne 'japan');
     return @account_fields;
 }
 
