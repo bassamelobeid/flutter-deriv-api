@@ -62,8 +62,7 @@ sub _init {
     my $writer = BOM::Platform::Chronicle::get_chronicle_writer();
     #delete chronicle data too (Redis and Pg)
     $writer->cache_writer->flushall;
-    my $dbic = BOM::Platform::Chronicle::dbic();
-    BOM::Platform::Chronicle::dbic()->run(fixup => sub { $_->do('delete from chronicle;') }) if $dbic;
+    BOM::Platform::Chronicle::dbic()->run(fixup => sub { $_->do('delete from chronicle;') }) if BOM::Platform::Chronicle::dbic();
     $writer->set(
         'app_settings',
         'binary',
@@ -115,8 +114,7 @@ sub _init {
             },
             '_rev' => time
         },
-        Date::Utility->new,
-        $dbic
+        Date::Utility->new
     );
     # BOM::Platform::Runtime->instance(undef);
 
@@ -133,10 +131,9 @@ sub _init {
         JSON::from_json(
             "{\"symbol\":\"JPY-USD\",\"rates\":{\"365\":\"2.339\",\"180\":\"2.498\",\"90\":\"2.599\",\"30\":\"2.599\",\"7\":\"2.686\"},\"date\":\"2016-01-26T17:00:03Z\",\"type\":\"market\"}"
         ),
-        Date::Utility->new,
-        $dbic
+        Date::Utility->new
     );
-    $writer->set('economic_events', 'economic_events', {events => []}, Date::Utility->new, $dbic);
+    $writer->set('economic_events', 'economic_events', {events => []}, Date::Utility->new);
 
     return 1;
 }
