@@ -24,32 +24,32 @@ subtest 'Ico variations' => sub {
 
     my $c = produce_contract($bet_params);
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
-    is $c->code,      'Binaryico',                                                       'is a Binaryico';
+    is $c->code,      'BINARYICO',                                                       'is a Binaryico';
     is $c->ask_price, 0.0001,                                                            'correct ask price';
     is $c->payout,    0.0001,                                                            'correct payout';
     is $c->shortcode, 'BINARYICO_BTCICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400', 'correct shortcode';
-    is_deeply($c->longcode, ['Binary [_1] to be sent to [2]', 'ICO coloured coin', '1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v']);
+    is_deeply($c->longcode, ['Binary [_1] to be sent to [_2]', 'ICO coloured coin', '1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v']);
     ok $c->is_valid_to_buy, 'is valid to buy';
 
     $bet_params->{underlying} = 'ERC20ICO';
     $c = produce_contract($bet_params);
-    is $c->code,      'Binaryico',                                                         'is a Binaryico';
+    is $c->code,      'BINARYICO',                                                         'is a Binaryico';
     is $c->ask_price, 0.0001,                                                              'correct ask price';
     is $c->payout,    0.0001,                                                              'correct payout';
     is $c->shortcode, 'BINARYICO_ERC20ICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400', 'correct shortcode';
-    is_deeply($c->longcode, ['Binary [_1] to be sent to [2]', 'ERC20 Ethereum token', '1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v']);
+    is_deeply($c->longcode, ['Binary [_1] to be sent to [_2]', 'ERC20 Ethereum token', '1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v']);
     ok $c->is_valid_to_buy, 'is valid to buy';
 
     $bet_params->{bet_type} = 'CALL';
     $c = produce_contract($bet_params);
     isnt $c, 'BOM::Product::Contract::Binaryico', 'is not a Binaryico';
-    isnt $c->code, 'Binaryico', 'is not a binaryico';
+    isnt $c->code, 'BINARYICO', 'is not a binaryico';
 
     $bet_params->{bet_type}   = 'BINARYICO';
     $bet_params->{underlying} = 'frxUSDJPY';
     $c                        = produce_contract($bet_params);
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
-    is $c->code, 'Binaryico', 'is a Binaryico';
+    is $c->code, 'BINARYICO', 'is a Binaryico';
     ok !$c->is_valid_to_buy, 'is not valid to buy';
     is $c->primary_validation_error->message, 'Invalid token type. [symbol: frxUSDJPY]', 'Invalid token';
 
@@ -57,7 +57,7 @@ subtest 'Ico variations' => sub {
     $bet_params->{stake}      = '0.000';
     $c                        = produce_contract($bet_params);
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
-    is $c->code, 'Binaryico', 'is a Binaryico';
+    is $c->code, 'BINARYICO', 'is a Binaryico';
     ok !$c->is_valid_to_buy, 'is not valid to buy';
     is $c->primary_validation_error->message, 'The auction bid price can not be less than zero .', 'Zero bid price';
 
@@ -88,11 +88,11 @@ subtest 'shortcode_to_parameters' => sub {
 
     my $c = produce_contract($parameters);
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
-    is $c->code,      'Binaryico',                                                       'is a Binaryico';
+    is $c->code,      'BINARYICO',                                                       'is a Binaryico';
     is $c->ask_price, 0.0001,                                                            'correct ask price';
     is $c->payout,    0.0001,                                                            'correct payout';
     is $c->shortcode, 'BINARYICO_BTCICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400', 'correct shortcode';
-    is_deeply($c->longcode, ['Binary [_1] to be sent to [2]', 'ICO coloured coin', '1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v']);
+    is_deeply($c->longcode, ['Binary [_1] to be sent to [_2]', 'ICO coloured coin', '1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v']);
     ok $c->is_valid_to_buy, 'is valid to buy';
 
     cmp_deeply($parameters, $expected, 'BINARYICO shortcode.');
