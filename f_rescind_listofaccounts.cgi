@@ -46,6 +46,9 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     if (not $client_db->freeze) {
         die "Account stuck in previous transaction $loginID";
     }
+    scope_guard {
+        $client_db->unfreeze;
+    };
 
     my $curr         = $client->currency;
     my $balance      = $client->default_account->balance;
@@ -79,10 +82,6 @@ foreach my $loginID (split(/,/, $listaccounts)) {
         print "<br>[Simulate] $encoded_loginID ($encoded_name $encoded_email) <b>$encoded_curr$balance</b>";
     }
     $grandtotal += in_USD($balance, $curr);
-
-    scope_guard {
-        $client_db->unfreeze;
-    };
 }
 
 print "<hr>Grand total recovered (converted to USD): USD $grandtotal<P>";
