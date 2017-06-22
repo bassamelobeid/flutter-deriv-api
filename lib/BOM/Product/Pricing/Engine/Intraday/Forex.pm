@@ -462,13 +462,18 @@ sub _calculate_historical_volatility {
     my $self = shift;
 
     my $bet        = $self->bet;
+    my $dp         = $bet->date_pricing;
     my $hist_ticks = $self->tick_source->get({
         underlying => $bet->underlying,
         # we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
-        start_epoch => $bet->date_pricing->epoch - 20 * 60,
-        end_epoch   => $bet->date_pricing->epoch,
+        start_epoch => $dp->epoch - 20 * 60,
+        end_epoch   => $dp->epoch,
         backprice   => ($bet->underlying->for_date ? 1 : 0),
     });
+
+    # On monday mornings, we will not have ticks to calculation historical vol in the first 20 minutes.
+    # returns 10% volatility on monday mornings.
+    return 0.1 if ($dp->day_of_week == 1 && $dp->hour + 0 == 1 && $dp->minute + 0 <= 20);
 
     my @returns_squared;
     # Ticks are in 15-second interval.
@@ -484,7 +489,8 @@ sub _calculate_historical_volatility {
         push @returns_squared, ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 / $dt);
     }
 
-    unless (@returns_squared) {
+    # warns if ticks used to calculate historical vol is less than 80% of the expected ticks.
+    unless (scalar(@returns_squared) < 0.8 * 76) {
         warn "Historical ticks not found in Intraday::Forex pricing";
         return 0.1;
     }
