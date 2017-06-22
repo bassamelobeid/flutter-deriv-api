@@ -19,6 +19,7 @@ no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix the
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType);
+use BOM::Backoffice::Request;
 use BOM::Backoffice::Sysinit ();
 
 use BOM::Database::DataMapper::Transaction;
@@ -58,6 +59,11 @@ if ($cgi->param('upload_file')) {
     $args->{details} = $details;
 
     my $pricing_parameters = BOM::Pricing::JapanContractDetails::verify_with_id($args);
+    if (exists $pricing_parameters->{contract_details}->{description}) {
+        $pricing_parameters->{contract_details}->{description} =
+            BOM::Backoffice::Request::localize($pricing_parameters->{contract_details}->{description});
+    }
+
     if ($cgi->param('download') eq 'download') {
         BOM::JapanContractDetailsOutput::single_output_as_excel($pricing_parameters, $id . '.xlsx');
 
