@@ -471,18 +471,20 @@ subtest 'verify_with_shortcode_VV' => sub {
     }
 
     is(roundcommon(1, $ask_prob * 1000), 795, 'Ask price is matching');
-    foreach my $key (sort keys %{$pricing_parameters}) {
-        foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
+     
+    check_expected_parameters($pricing_parameters, $expected_parameters);
+    #foreach my $key (sort keys %{$pricing_parameters}) {
+    #    foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
 
-            if($sub_key eq 'description') {
-              my $desc = BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key});
-              is($desc, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
-            } else {
-              is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
-            }
-        }
+            #if($sub_key eq 'description') {
+            #  my $desc = BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key});
+            #  is($desc, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            #} else {
+            #  is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            #}
+       # }
 
-    }
+    #}
 };
 
 prepare_market_data(Date::Utility->new(1491448384));
@@ -552,5 +554,24 @@ subtest '2017_with_extra_data' => sub {
         is $output->{bs_probability}->{vol},                        0.119638984890473,   'matched vol';
     };
 };
+
+sub check_expected_parameters {
+    my ($pricing_parameters, $expected_parameters) = @_;
+
+    foreach my $key (sort keys %{$pricing_parameters}) {
+        foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
+
+            if($sub_key eq 'description') {
+              my $desc = BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key});
+              is($desc, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            } else {
+              is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            }
+        }
+
+    }
+
+    return;
+}
 
 done_testing;
