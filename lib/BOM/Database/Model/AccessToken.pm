@@ -79,22 +79,18 @@ sub get_scopes_by_access_token {
 sub get_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
-    my @tokens = $self->dbic->run(
+    my $tokens = $self->dbic->run(
         sub {
-            my @tokens;
             my $sth = $_->prepare("
         SELECT
             token, display_name, scopes, last_used::timestamp(0), valid_for_ip
         FROM auth.access_token WHERE client_loginid = ? ORDER BY display_name
     ");
             $sth->execute($loginid);
-            while (my $r = $sth->fetchrow_hashref) {
-                $r->{scopes} = __parse_array($r->{scopes});
-                push @tokens, $r;
-            }
-            return @tokens;
+            return $sth->fetchall_arrayref({});
         });
-    return wantarray ? @tokens : \@tokens;
+    $_->{scopes} = __parse_array($_->{scopes}) for @$tokens;
+    return wantarray ? @$tokens : $tokens;
 }
 
 sub get_token_count_by_loginid {

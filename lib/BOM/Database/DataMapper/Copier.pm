@@ -69,7 +69,7 @@ SQL
     return $self->db->dbic->run(
         sub {
             $_->selectcol_arrayref($sql, undef, @{$args}{qw/trader_id trade_type asset price/});
-        }) || [];
+        }) // [];
 }
 
 sub get_traders {

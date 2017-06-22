@@ -57,16 +57,13 @@ sub verify_app {
 sub confirm_scope {
     my ($self, $app_id, $loginid) = @_;
 
-    my ($is_exists) = $self->dbic->run(
+    $self->dbic->run(
         sub {
             $_->selectrow_array("
         SELECT true FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?
-    ", undef, $app_id, $loginid);
+    ", undef, $app_id, $loginid)
+                or $_->do("INSERT INTO oauth.user_scope_confirm (app_id, loginid) VALUES (?, ?)", undef, $app_id, $loginid);
         });
-    unless ($is_exists) {
-        $self->dbic->run(sub { $_->do("INSERT INTO oauth.user_scope_confirm (app_id, loginid) VALUES (?, ?)", undef, $app_id, $loginid); });
-    }
-
     return 1;
 }
 
@@ -116,8 +113,7 @@ sub get_scopes_by_access_token {
         WHERE access_token = ?
     ");
             $sth->execute($access_token);
-            my $scopes = $sth->fetchrow_array;
-            return $scopes;
+            return $sth->fetchrow_array;
         });
     $scopes = __parse_array($scopes);
     return @$scopes;
@@ -180,14 +176,9 @@ sub update_app {
     ");
             $sth->execute($app_id);
             my $old_scopes = $sth->fetchrow_array;
-            return $old_scopes;
-        });
+            $old_scopes = __parse_array($old_scopes);
 
-    $old_scopes = __parse_array($old_scopes);
-
-    $self->dbic->run(
-        sub {
-            my $sth = $_->prepare("
+            $sth = $_->prepare("
         UPDATE oauth.apps SET
             name = ?, scopes = ?, homepage = ?, github = ?,
             appstore = ?, googleplay = ?, redirect_uri = ?, app_markup_percentage = ?
@@ -204,6 +195,7 @@ sub update_app {
                 $app->{app_markup_percentage} || 0,
                 $app_id
             );
+            return $old_scopes;
         });
 
     ## revoke user_scope_confirm on scope changes
@@ -286,21 +278,19 @@ sub delete_app {
 sub get_used_apps_by_loginid {
     my ($self, $loginid) = @_;
 
-    my $apps = $self->dbic->run(
+    return $self->dbic->run(
         sub {
-            $_->selectall_arrayref("
+            my $dbh  = $_;
+            my $apps = $dbh->selectall_arrayref("
         SELECT
             u.app_id, a.name, a.scopes, a.app_markup_percentage
         FROM oauth.apps a JOIN oauth.user_scope_confirm u ON a.id=u.app_id
         WHERE u.loginid = ? AND a.active ORDER BY a.name
     ", {Slice => {}}, $loginid);
-        });
-    return [] unless $apps;
+            return [] unless $apps;
 
-    $_->{scopes} = __parse_array($_->{scopes}) for @$apps;
-    $self->dbic->run(
-        sub {
-            my $get_last_used_sth = $_->prepare("
+            $_->{scopes} = __parse_array($_->{scopes}) for @$apps;
+            my $get_last_used_sth = $dbh->prepare("
         SELECT MAX(last_used)::timestamp(0) FROM oauth.access_token WHERE app_id = ?
     ");
 
@@ -308,9 +298,9 @@ sub get_used_apps_by_loginid {
                 $get_last_used_sth->execute($app->{app_id});
                 $app->{last_used} = $get_last_used_sth->fetchrow_array;
             }
+            return $apps;
         });
 
-    return $apps;
 }
 
 sub revoke_app {

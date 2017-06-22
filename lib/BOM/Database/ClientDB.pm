@@ -119,11 +119,11 @@ sub getall_arrayref {
     my $result = $self->db->dbic->run(
         sub {
             my $sth = $_->prepare($query);
-            $sth->execute(@{$params});
+            $sth->execute(@$params);
             return $sth->fetchall_arrayref([0]);
         });
 
-    my @result = map { JSON::XS::decode_json($_->[0]) } @{$result};
+    my @result = map { JSON::XS::decode_json($_->[0]) } @$result;
     return \@result;
 }
 
@@ -165,9 +165,8 @@ sub lock_client_loginid {
     my $self = shift;
     my $client_loginid = shift || $self->loginid;
 
-    my $dbic = $self->db->dbic;
-    my $result;
-    $dbic->run(
+    my $dbic   = $self->db->dbic;
+    my $result = $dbic->run(
         sub {
             $_->do('SET synchronous_commit=local');
 
@@ -175,7 +174,7 @@ sub lock_client_loginid {
             $sth->execute($client_loginid);
 
             $_->do('SET synchronous_commit=on');
-            $result = $sth->fetchrow_arrayref;
+            return $sth->fetchrow_arrayref;
         });
 
     if ($result and $result->[0]) {
