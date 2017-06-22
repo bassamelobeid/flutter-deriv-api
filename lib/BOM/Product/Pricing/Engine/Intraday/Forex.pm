@@ -490,7 +490,7 @@ sub _calculate_historical_volatility {
     }
 
     # warns if ticks used to calculate historical vol is less than 80% of the expected ticks.
-    unless (scalar(@returns_squared) < 0.8 * 76) {
+    if (scalar(@returns_squared) < 0.8 * 76) {
         warn "Historical ticks not found in Intraday::Forex pricing";
         return 0.1;
     }
