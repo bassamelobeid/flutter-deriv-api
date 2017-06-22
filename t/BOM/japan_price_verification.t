@@ -228,17 +228,8 @@ subtest 'verify_with_shortcode_IH' => sub {
     }
 
     is(roundcommon(1, $ask_prob * 1000), 524, 'Ask price is matching');
-    foreach my $key (keys %{$pricing_parameters}) {
-        foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
-            if($sub_key eq 'description') {
-              my $desc = BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key});
-              is($desc, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
-            } else {    
-              is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
-            }
-        }
-
-    }
+    
+    check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
 
 subtest 'verify_with_shortcode_Slope' => sub {
@@ -330,18 +321,8 @@ subtest 'verify_with_shortcode_Slope' => sub {
     }
 
     is(roundcommon(1, $ask_prob * 1000), 980, 'Ask price is matching');
-    foreach my $key (sort keys %{$pricing_parameters}) {
-        foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
-
-            if($sub_key eq 'description') {
-              my $desc = BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key});
-              is($desc, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
-	    } else {
-              is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
-            }
-        }
-    }
-
+    
+    check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
 
 subtest 'verify_with_shortcode_VV' => sub {
@@ -472,19 +453,7 @@ subtest 'verify_with_shortcode_VV' => sub {
 
     is(roundcommon(1, $ask_prob * 1000), 795, 'Ask price is matching');
      
-    check_expected_parameters($pricing_parameters, $expected_parameters);
-    #foreach my $key (sort keys %{$pricing_parameters}) {
-    #    foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
-
-            #if($sub_key eq 'description') {
-            #  my $desc = BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key});
-            #  is($desc, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
-            #} else {
-            #  is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
-            #}
-       # }
-
-    #}
+    check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
 
 prepare_market_data(Date::Utility->new(1491448384));
@@ -555,7 +524,7 @@ subtest '2017_with_extra_data' => sub {
     };
 };
 
-sub check_expected_parameters {
+sub check_pricing_parameters {
     my ($pricing_parameters, $expected_parameters) = @_;
 
     foreach my $key (sort keys %{$pricing_parameters}) {
