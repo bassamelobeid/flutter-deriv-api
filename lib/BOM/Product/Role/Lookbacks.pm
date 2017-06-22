@@ -3,6 +3,7 @@ package BOM::Product::Role::Lookbacks;
 use Moose::Role;
 use Time::Duration::Concise;
 use List::Util qw(min max first);
+use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::Product::Static;
 
@@ -66,13 +67,13 @@ override _build_theo_price => sub {
 override _build_ask_price => sub {
     my $self = shift;
 
-    return sprintf('%0.0' . '2f', $self->theo_price);
+    return financialrounding('amount', $self->currency, $self->theo_price);
 };
 
 override _build_bid_price => sub {
     my $self = shift;
 
-    return sprintf('%0.0' . '2f', $self->theo_price);
+    return financialrounding('amount', $self->currency, $self->theo_price);
 };
 
 override _validate_price => sub {
