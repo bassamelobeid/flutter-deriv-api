@@ -9,6 +9,8 @@ use Test::Exception;
 use Test::FailWarnings;
 use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
+use Test::MockModule;
+use Math::Util::CalculatedValue::Validatable;
 
 use BOM::Pricing::JapanContractDetails;
 use BOM::MarketData qw(create_underlying);
@@ -138,6 +140,7 @@ subtest 'verify_with_shortcode_IH' => sub {
             'opposite_contract_economic_events_markup'                 => 0,
             'opposite_contract_economic_events_volatility_risk_markup' => 0,
             'opposite_contract_economic_events_spot_risk_markup'       => 0,
+            'opposite_contract_historical_vol_markup'                  => 0,
             'opposite_contract_S'                                      => '79.817',
             'opposite_contract_bs_probability'                         => '0.547909981156173',
             'opposite_contract_risk_markup'                            => '0.000133358249061675',
@@ -149,7 +152,7 @@ subtest 'verify_with_shortcode_IH' => sub {
         },
         'ask_probability' => {
             'intraday_vega_correction'  => '0.00381916923760695',
-            'risk_markup'               => '0.000133358249061675',
+            'risk_markup'               => '0.0225831453183333',
             'bs_probability'            => '0.452090018843827',
             'intraday_delta_correction' => '0.0101509646703821',
             'commission_markup'         => '0.035'
@@ -171,7 +174,8 @@ subtest 'verify_with_shortcode_IH' => sub {
             'economic_events_markup'                 => 0,
             'economic_events_spot_risk_markup'       => 0,
             'economic_events_volatility_risk_markup' => 0,
-            'intraday_historical_iv_risk'            => 0
+            'intraday_historical_iv_risk'            => 0,
+            'historical_vol_markup'                  => 0.0225831453183333,
         },
         'intraday_delta_correction' => {
             'short_term_delta_correction' => '0.0131432219167099',
@@ -223,7 +227,7 @@ subtest 'verify_with_shortcode_IH' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundcommon(1, $ask_prob * 1000), 501, 'Ask price is matching');
+    is(roundcommon(1, $ask_prob * 1000), 524, 'Ask price is matching');
     foreach my $key (keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
             if($sub_key eq 'description') {
@@ -494,7 +498,18 @@ subtest '2017_with_extra_data' => sub {
             landing_company => 'japan',
         };
 
+
+        my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
+        $mocked->mock('historical_vol_markup', sub {
+                    return Math::Util::CalculatedValue::Validatable->new({
+                                       name => 'historical_vol_markup',
+                                       set_by => 'test',
+                                       base_amount => 0,
+                                       description => 'test'
+                                   });
+                    });
         my $output = BOM::Pricing::JapanContractDetails::verify_with_shortcode($input);
+
         my $ask    = $output->{ask_probability};
 
         is $ask->{bs_probability},            0.76978238455266,    'matched bs probability';
@@ -502,6 +517,7 @@ subtest '2017_with_extra_data' => sub {
         is $ask->{intraday_delta_correction}, 0,                   'matched intraday delta correction';
         is $ask->{intraday_vega_correction},  -0.0235434604443186, 'matched intraday vega correction';
         is $ask->{risk_markup},               0.0452924547340695,  'matched risk markup';
+        $mocked->unmock_all();
     };
 
     subtest 'verify_with_shortcode_Slope' => sub {
