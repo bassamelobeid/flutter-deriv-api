@@ -10,7 +10,7 @@ BEGIN {
     $time_hires = \&Time::HiRes::time;
 }
 
-use Test::MockTime qw( :all );
+use Test::MockTime qw( set_fixed_time );
 use Test::MockTime::HiRes;
 use Date::Utility;
 
