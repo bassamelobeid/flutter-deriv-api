@@ -26,9 +26,7 @@ use constant {    # added for Transaction
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 my $ICO_config = {
-    'BINARYICO' => {
-        auction_date_start => 1496275200
-        }
+    'BINARYICO' => {auction_date_start => 1496275200}
 
 };
 
@@ -46,7 +44,6 @@ has ask_price => (
     isa        => 'Num',
     lazy_build => 1,
 );
-
 
 has app_markup_dollar_amount => (
     is      => 'ro',
@@ -210,7 +207,6 @@ sub _build_shortcode {
     return join '_', @element;
 }
 
-
 sub is_expired {
     my $self = shift;
 
@@ -232,13 +228,12 @@ sub _validate_price {
 
     my @err;
     if (not $self->ask_price or $self->ask_price == 0) {
-        push @err,
-            {
-            message           => 'The auction  total bid price can not be less than zero .',
+        push @err, {
+            message           => 'The auction total bid price can not be less than zero .',
             severity          => 99,
             message_to_client => [$ERROR_MAPPING->{InvalidIcoBidPrice}],
-     
-       };
+
+        };
     }
     return @err;
 }
