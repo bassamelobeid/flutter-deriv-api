@@ -22,18 +22,19 @@ use utf8;
 my ($email, $t, $rpc_ct) = ('test' . rand(999) . '@binary.com');
 
 my $client_details = {
-    salutation       => 'Mr',
-    last_name        => 'Kathuria' . rand(999),
-    first_name       => 'Raunak' . rand(999),
-    date_of_birth    => '1986-09-04',
-    address_line_1   => '3D Street',
-    address_line_2   => 'home 1',
-    address_city     => 'Faridabad',
-    address_state    => 'Haryana',
-    address_postcode => '122233',
-    phone            => '+91972075932',
-    secret_question  => 'test',
-    secret_answer    => 'test',
+    salutation             => 'Mr',
+    last_name              => 'Kathuria' . rand(999),
+    first_name             => 'Raunak' . rand(999),
+    date_of_birth          => '1986-09-04',
+    address_line_1         => '3D Street',
+    address_line_2         => 'home 1',
+    address_city           => 'Faridabad',
+    address_state          => 'Haryana',
+    address_postcode       => '122233',
+    phone                  => '+91972075932',
+    secret_question        => 'test',
+    secret_answer          => 'test',
+    account_opening_reason => 'Income Earning',
 };
 
 my $params = {
