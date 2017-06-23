@@ -58,38 +58,6 @@ sub vol_spread_markup {
     )->markup;
 }
 
-=head2 butterfly_cutoff_theoretical_value_amount
-
-Returns the theo probability of the same bet, but with the vol surface
-modified to reflect an ON butterfly equal to a specified butterfly_cutoff.
-
-=cut
-
-sub butterfly_cutoff_theoretical_value_amount {
-    my ($self, $butterfly_cutoff) = @_;
-    my $bet = $self->bet;
-
-    # obtain a copy of the ON smile from the current surface
-    my $surface_original  = $bet->volsurface;
-    my $surface_copy_data = $surface_original->surface;
-    my $first_tenor       = $surface_original->original_term_for_smile->[0];
-
-# determine the new 25 and 75 vols based on the original surface's ATM and RR, and the new butterfly_cutoff
-    my $rr_original  = $surface_original->get_market_rr_bf($first_tenor)->{RR_25};
-    my $atm_original = $surface_copy_data->{$first_tenor}->{smile}{50};
-    my $bf_modified  = $butterfly_cutoff;
-    my $c25_modified = $bf_modified + $atm_original + 0.5 * $rr_original;
-    my $c75_modified = $c25_modified - $rr_original;
-
-# genrate a new bet price based off of the modified surface, and insert the new 25 and 75 vols back into the smile
-    my $surface_modified = $surface_original->clone();
-    $surface_modified->surface->{$first_tenor}{smile}{25} = $c25_modified;
-    $surface_modified->surface->{$first_tenor}{smile}{75} = $c75_modified;
-    my $butterfly_cutoff_bet = BOM::Product::ContractFactory::make_similar_contract($bet, {volsurface => $surface_modified});
-
-    return $butterfly_cutoff_bet->pricing_engine->base_probability->amount;
-}
-
 sub spot_spread_markup {
     my $self      = shift;
     my $ss_markup = Pricing::Engine::Markup::SpotSpread->new(
