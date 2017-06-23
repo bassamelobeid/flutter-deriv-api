@@ -64,12 +64,9 @@ sub get_all_authenticated_payment_agent_countries {
             my $authenticated_payment_agents_statement =
                 $_->prepare('SELECT DISTINCT target_country FROM betonmarkets.payment_agent WHERE is_authenticated');
 
-            my $countries;
             if ($authenticated_payment_agents_statement->execute()) {
-                $countries = $authenticated_payment_agents_statement->fetchall_arrayref;
+                return $authenticated_payment_agents_statement->fetchall_arrayref;
             }
-
-            return $countries;
         });
 }
 

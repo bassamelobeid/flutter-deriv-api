@@ -147,6 +147,10 @@ sub dbi_connect {
 
     if (not exists $self->{dbic}) {
         $self->{dbic} = DBIx::Connector::Pg->new(@params);
+        # fixup mode is a safe and quick mode. That's why we switch from DBI  to  DBIx::Connector.
+        # So we set it as default mode
+        # But if the sub block will affect the outer environment, please use 'ping' mode instead.
+        # Please refer to the document of DBIx::Connector .
         $self->{dbic}->mode('fixup');
     }
     return $self->{dbic}->dbh;

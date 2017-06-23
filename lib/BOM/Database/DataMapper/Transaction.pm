@@ -598,8 +598,7 @@ sub get_bet_transactions_for_broker {
         sub {
             my $sth = $_->prepare($sql);
             $sth->execute($broker_code, $action_type, $start, $end);
-            my $result = $sth->fetchall_hashref('id');
-            return $result;
+            return $sth->fetchall_hashref('id');
         });
 }
 
