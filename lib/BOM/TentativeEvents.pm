@@ -6,6 +6,9 @@ use warnings;
 use BOM::Platform::Chronicle;
 use BOM::Backoffice::Request;
 use Quant::Framework::EconomicEventCalendar;
+use BOM::MarketData qw(create_underlying_db);
+use Volatility::Seasonality;
+use BOM::MarketDataAutoUpdater::Forex;
 
 sub _get_tentative_events {
 
@@ -81,11 +84,23 @@ sub update_event {
     my $diff = $existing->{blankout_end} - $existing->{blankout};
     return "Blackout start and Blackout end must be 2 hours apart. E.g. 5pm - 7pm" if ($diff != 7200);
 
-    my $update = Quant::Framework::EconomicEventCalendar->new({
-            recorded_date    => Date::Utility->new(),
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-        })->update($existing);
+    my $eec = Quant::Framework::EconomicEventCalendar->new({
+        recorded_date    => Date::Utility->new(),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
+
+    my $update = $eec->update($existing);
+
+    # regenerate economic event impacts curve after tentative event updates.
+    my $latest_events = $eec->chronicle_reader->get('economic_events', 'economic_events');
+    Volatility::Seasonality::generate_economic_event_seasonality({
+        economic_events    => $latest_events->{events},
+        underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
+        chronicle_writer   => $eec->chronicle_writer,
+    });
+    BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
+
     return $update ? 1 : 0;
 }
 

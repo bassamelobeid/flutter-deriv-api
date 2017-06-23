@@ -9,12 +9,18 @@ use Test::Exception;
 use Test::FailWarnings;
 use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
+use Test::MockModule;
+use Math::Util::CalculatedValue::Validatable;
 
-use BOM::JapanContractDetails;
+use BOM::Pricing::JapanContractDetails;
 use BOM::MarketData qw(create_underlying);
 use BOM::Market::DataDecimate;
 use BOM::Platform::RedisReplicated;
 use Data::Decimate qw(decimate);
+
+use lib qw(/home/git/regentmarkets/bom-backoffice);
+use BOM::Backoffice::Request;
+use BOM::Backoffice::Sysinit ();
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -134,6 +140,7 @@ subtest 'verify_with_shortcode_IH' => sub {
             'opposite_contract_economic_events_markup'                 => 0,
             'opposite_contract_economic_events_volatility_risk_markup' => 0,
             'opposite_contract_economic_events_spot_risk_markup'       => 0,
+            'opposite_contract_historical_vol_markup'                  => 0,
             'opposite_contract_S'                                      => '79.817',
             'opposite_contract_bs_probability'                         => '0.547909981156173',
             'opposite_contract_risk_markup'                            => '0.000133358249061675',
@@ -145,7 +152,7 @@ subtest 'verify_with_shortcode_IH' => sub {
         },
         'ask_probability' => {
             'intraday_vega_correction'  => '0.00381916923760695',
-            'risk_markup'               => '0.000133358249061675',
+            'risk_markup'               => '0.0225831453183333',
             'bs_probability'            => '0.452090018843827',
             'intraday_delta_correction' => '0.0101509646703821',
             'commission_markup'         => '0.035'
@@ -167,7 +174,8 @@ subtest 'verify_with_shortcode_IH' => sub {
             'economic_events_markup'                 => 0,
             'economic_events_spot_risk_markup'       => 0,
             'economic_events_volatility_risk_markup' => 0,
-            'intraday_historical_iv_risk'            => 0
+            'intraday_historical_iv_risk'            => 0,
+            'historical_vol_markup'                  => 0.0225831453183333,
         },
         'intraday_delta_correction' => {
             'short_term_delta_correction' => '0.0131432219167099',
@@ -202,8 +210,8 @@ subtest 'verify_with_shortcode_IH' => sub {
     $args->{contract_price}  = 520;
     $args->{currency}        = 'JPY';
     $args->{action_type}     = 'buy';
-    my $pricing_parameters = BOM::JapanContractDetails::verify_with_shortcode($args);
-    $pricing_parameters = BOM::JapanContractDetails::include_contract_details(
+    my $pricing_parameters = BOM::Pricing::JapanContractDetails::verify_with_shortcode($args);
+    $pricing_parameters = BOM::Pricing::JapanContractDetails::include_contract_details(
         $pricing_parameters,
         {
             order_type  => 'buy',
@@ -219,14 +227,9 @@ subtest 'verify_with_shortcode_IH' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundcommon(1, $ask_prob * 1000), 501, 'Ask price is matching');
-    foreach my $key (keys %{$pricing_parameters}) {
-        foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
-            is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
-
-        }
-
-    }
+    is(roundcommon(1, $ask_prob * 1000), 524, 'Ask price is matching');
+    
+    check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
 
 subtest 'verify_with_shortcode_Slope' => sub {
@@ -301,8 +304,8 @@ subtest 'verify_with_shortcode_Slope' => sub {
     $args->{contract_price}  = 928;
     $args->{currency}        = 'JPY';
     $args->{action_type}     = 'buy';
-    my $pricing_parameters = BOM::JapanContractDetails::verify_with_shortcode($args);
-    $pricing_parameters = BOM::JapanContractDetails::include_contract_details(
+    my $pricing_parameters = BOM::Pricing::JapanContractDetails::verify_with_shortcode($args);
+    $pricing_parameters = BOM::Pricing::JapanContractDetails::include_contract_details(
         $pricing_parameters,
         {
             order_type  => 'buy',
@@ -318,13 +321,8 @@ subtest 'verify_with_shortcode_Slope' => sub {
     }
 
     is(roundcommon(1, $ask_prob * 1000), 980, 'Ask price is matching');
-    foreach my $key (sort keys %{$pricing_parameters}) {
-        foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
-            is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
-
-        }
-    }
-
+    
+    check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
 
 subtest 'verify_with_shortcode_VV' => sub {
@@ -436,8 +434,8 @@ subtest 'verify_with_shortcode_VV' => sub {
     $args->{contract_price}  = 861;
     $args->{currency}        = 'JPY';
     $args->{action_type}     = 'buy';
-    my $pricing_parameters = BOM::JapanContractDetails::verify_with_shortcode($args);
-    $pricing_parameters = BOM::JapanContractDetails::include_contract_details(
+    my $pricing_parameters = BOM::Pricing::JapanContractDetails::verify_with_shortcode($args);
+    $pricing_parameters = BOM::Pricing::JapanContractDetails::include_contract_details(
         $pricing_parameters,
         {
             order_type  => 'buy',
@@ -454,13 +452,8 @@ subtest 'verify_with_shortcode_VV' => sub {
     }
 
     is(roundcommon(1, $ask_prob * 1000), 795, 'Ask price is matching');
-    foreach my $key (sort keys %{$pricing_parameters}) {
-        foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
-            is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
-
-        }
-
-    }
+     
+    check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
 
 prepare_market_data(Date::Utility->new(1491448384));
@@ -476,7 +469,18 @@ subtest '2017_with_extra_data' => sub {
             landing_company => 'japan',
         };
 
-        my $output = BOM::JapanContractDetails::verify_with_shortcode($input);
+
+        my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
+        $mocked->mock('historical_vol_markup', sub {
+                    return Math::Util::CalculatedValue::Validatable->new({
+                                       name => 'historical_vol_markup',
+                                       set_by => 'test',
+                                       base_amount => 0,
+                                       description => 'test'
+                                   });
+                    });
+        my $output = BOM::Pricing::JapanContractDetails::verify_with_shortcode($input);
+
         my $ask    = $output->{ask_probability};
 
         is $ask->{bs_probability},            0.76978238455266,    'matched bs probability';
@@ -484,6 +488,7 @@ subtest '2017_with_extra_data' => sub {
         is $ask->{intraday_delta_correction}, 0,                   'matched intraday delta correction';
         is $ask->{intraday_vega_correction},  -0.0235434604443186, 'matched intraday vega correction';
         is $ask->{risk_markup},               0.0452924547340695,  'matched risk markup';
+        $mocked->unmock_all();
     };
 
     subtest 'verify_with_shortcode_Slope' => sub {
@@ -496,7 +501,7 @@ subtest '2017_with_extra_data' => sub {
             extra           => '110.500_0.135916237059658_0.133846265459211',
         };
 
-        my $output = BOM::JapanContractDetails::verify_with_shortcode($input);
+        my $output = BOM::Pricing::JapanContractDetails::verify_with_shortcode($input);
         is $output->{put_bs_probability}->{put_vol},   0.133846265459211;
         is $output->{call_bs_probability}->{call_vol}, 0.135916237059658;
     };
@@ -511,12 +516,31 @@ subtest '2017_with_extra_data' => sub {
             extra           => '83.769_0.119638984890473',
         };
 
-        my $output = BOM::JapanContractDetails::verify_with_shortcode($input);
+        my $output = BOM::Pricing::JapanContractDetails::verify_with_shortcode($input);
         is $output->{ask_probability}->{risk_markup},               0.00932723081365649, 'matched risk markup';
         is $output->{theoretical_probability}->{bs_probability},    0.212223673281774,   'matched bs probability';
         is $output->{theoretical_probability}->{market_supplement}, 0.0488906560526587,  'matched market supplement';
         is $output->{bs_probability}->{vol},                        0.119638984890473,   'matched vol';
     };
 };
+
+sub check_pricing_parameters {
+    my ($pricing_parameters, $expected_parameters) = @_;
+
+    foreach my $key (sort keys %{$pricing_parameters}) {
+        foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
+
+            if($sub_key eq 'description') {
+              my $desc = BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key});
+              is($desc, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            } else {
+              is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            }
+        }
+
+    }
+
+    return;
+}
 
 done_testing;

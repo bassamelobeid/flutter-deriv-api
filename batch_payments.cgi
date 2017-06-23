@@ -46,6 +46,11 @@ my $now               = Date::Utility->new;
 Bar('Batch Credit/Debit to Clients Accounts');
 
 if ($preview) {
+    if ($cgi->param('payments_csv') !~ /csv$/) {
+        print "<br><br><br><h3>Provided file ", $cgi->param('payments_csv'),
+            " is not a CSV file.<br>Please, save it as <u>CSV (comma-separated values) file</u> in Excel first</h3>";
+        code_exit_BO();
+    }
     my $payments_csv_fh = $cgi->upload('payments_csv');
     binmode $payments_csv_fh, ':encoding(UTF-8)';
     open my $fh, '>:encoding(UTF-8)', $payments_csv_file or die "writing upload: $!";
@@ -233,8 +238,8 @@ if (%summary_amount_by_currency and scalar @invalid_lines == 0) {
     ];
     foreach my $currency (sort keys %summary_amount_by_currency) {
         my $c  = encode_entities($currency);
-        my $cr = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{credit}));
-        my $db = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{debit}));
+        my $cr = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{credit} // 0));
+        my $db = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{debit} // 0));
         $summary_table .= "<tr><th>$c</th><td>$cr</td><td>$db</td></tr>";
     }
     $summary_table .= '</table>';
