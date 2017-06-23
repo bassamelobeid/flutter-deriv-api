@@ -13,6 +13,7 @@ use Time::HiRes;
 use Try::Tiny;
 use Path::Tiny;
 use JSON::XS;
+use Scalar::Util q(blessed);
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
