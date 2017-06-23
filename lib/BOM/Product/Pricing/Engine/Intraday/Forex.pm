@@ -490,7 +490,8 @@ sub _calculate_historical_volatility {
     }
 
     # warns if ticks used to calculate historical vol is less than 80% of the expected ticks.
-    my $expected_interval = scalar(@returns_squared) - $returns_sep;
+    # the hard-coded number 80 is the number of expected 15-second interval in 20 minutes.
+    my $expected_interval = 80 - $returns_sep;
     if (scalar(@returns_squared) < 0.8 * $expected_interval) {
         warn "Historical ticks not found in Intraday::Forex pricing";
         return 0.1;
