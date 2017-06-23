@@ -224,7 +224,7 @@ sub _initialize_contract_parameters {
 
     if (defined $pp->{duration}) {
         if (my ($number_of_tokens) = $pp->{duration} =~ /(\d+)c$/) {
-            $pp->{number_of_tokens} = $number_of_tokens;
+            $pp->{number_of_tokens}    = $number_of_tokens;
             $pp->{per_token_bid_price} = $pp->{stake};
         } elsif (my ($number_of_ticks) = $pp->{duration} =~ /(\d+)t$/) {
             $pp->{tick_expiry} = 1;
