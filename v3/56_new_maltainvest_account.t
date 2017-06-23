@@ -35,12 +35,12 @@ my %client_details = (
     secret_question           => 'Favourite dish',
     secret_answer             => 'nasi lemak,teh tarik',
     tax_residence             => 'de,nl',
-    tax_identification_number => '111-222-333'
+    tax_identification_number => '111-222-333',
+    account_opening_reason    => 'Speculative',
 );
 
 my $mf_details = {
     new_account_maltainvest              => 1,
-    account_opening_reason               => "Speculative",
     account_turnover                     => 'Less than $25,000',
     forex_trading_experience             => '1-2 years',
     forex_trading_frequency              => '0-5 transactions in the past 12 months',
@@ -60,7 +60,8 @@ my $mf_details = {
     net_income                           => '$25,000 - $50,000',
     estimated_worth                      => '$250,001 - $500,000',
     "occupation"                         => 'Managers',
-    accept_risk                          => 1
+    accept_risk                          => 1,
+    account_opening_reason               => 'Speculative',
 };
 
 subtest 'MLT upgrade to MF account' => sub {

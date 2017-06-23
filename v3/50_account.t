@@ -109,6 +109,7 @@ for (1 .. 10) {
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
+
 is $authorize->{authorize}->{email},   'unit_test@binary.com';
 is $authorize->{authorize}->{loginid}, $test_client->loginid;
 
@@ -155,7 +156,6 @@ test_schema('get_limits', $res);
 
 my $args = {
     "set_financial_assessment"             => 1,
-    "account_opening_reason"               => "Speculative",
     "account_turnover"                     => 'Less than $25,000',
     "forex_trading_experience"             => "Over 3 years",
     "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
