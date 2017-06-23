@@ -64,11 +64,11 @@ subtest 'empty POC response' => sub {
     my $data = $t->await::proposal_open_contract({proposal_open_contract => 1});
     ok($data->{proposal_open_contract} && !keys %{$data->{proposal_open_contract}}, "got proposal");
 };
-my ( $contract_id);
+my ($contract_id);
 
 subtest 'buy n check' => sub {
 
-    my $proposal = $t->await::proposal( {
+    my $proposal = $t->await::proposal({
         "proposal"      => 1,
         "subscribe"     => 1,
         "amount"        => "2",
@@ -82,9 +82,8 @@ subtest 'buy n check' => sub {
     BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 
     my $data = $t->await::buy({
-        buy   => $proposal->{proposal}->{id},
-        price => $proposal->{proposal}->{ask_price}
-    });
+            buy   => $proposal->{proposal}->{id},
+            price => $proposal->{proposal}->{ask_price}});
 
     ok($contract_id = $data->{buy}->{contract_id}, "got contract_id");
 
@@ -109,7 +108,7 @@ subtest 'passthrough' => sub {
         req_id                 => 456,
         passthrough            => {'sample' => 1},
     });
-    is( $data->{proposal_open_contract}->{id}, undef, 'passthrough should not allow multiple proposal_open_contract subscription' );
+    is($data->{proposal_open_contract}->{id}, undef, 'passthrough should not allow multiple proposal_open_contract subscription');
 };
 
 subtest 'selling contract message' => sub {
@@ -143,7 +142,7 @@ subtest 'selling contract message' => sub {
     my $json = JSON::to_json($msg);
     BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
     my $data = $t->await::proposal_open_contract();
-    is( $data->{msg_type}, 'proposal_open_contract', 'Got message about selling contract');
+    is($data->{msg_type}, 'proposal_open_contract', 'Got message about selling contract');
 
     $module->unmock_all;
 };
@@ -152,7 +151,7 @@ subtest 'forget' => sub {
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
     is(scalar @{$data->{forget_all}}, 0, 'Forget all returns empty as contracts are already sold');
 
-    my (undef,  $call_params) = call_mocked_client(
+    my (undef, $call_params) = call_mocked_client(
         $t,
         {
             proposal_open_contract => 1,
@@ -183,21 +182,20 @@ subtest 'check two contracts subscription' => sub {
         subscribe              => 1
     });
     $t->await::buy({
-        buy   => $proposal->{proposal}->{id},
-        price => $proposal->{proposal}->{ask_price}
-    });
+            buy   => $proposal->{proposal}->{id},
+            price => $proposal->{proposal}->{ask_price}});
 
     my $i = 0;
     do {
         my $res = $t->await::proposal_open_contract();
         $ids->{$res->{proposal_open_contract}->{id}} = 1;
-    } while ( scalar keys %$ids < 2 ) && ( ++$i < 5 );
+    } while (scalar keys %$ids < 2) && (++$i < 5);
 
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
 
     is scalar keys %$ids, 2, 'Correct number of contracts';
-    ok( delete $ids->{shift @{$data->{forget_all}}}, "check id") for 0..1;
-    is( scalar @{$data->{forget_all}}, 0, 'Correct number of subscription forget');
+    ok(delete $ids->{shift @{$data->{forget_all}}}, "check id") for 0 .. 1;
+    is(scalar @{$data->{forget_all}}, 0, 'Correct number of subscription forget');
 };
 
 $t->finish_ok;
