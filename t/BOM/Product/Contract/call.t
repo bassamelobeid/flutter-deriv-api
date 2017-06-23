@@ -16,7 +16,10 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::RedisReplicated;
+use Test::MockModule;
 
+my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
+$mocked_decimate->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
@@ -108,7 +111,7 @@ subtest 'call variations' => sub {
         ok $c->is_intraday, 'is intraday';
         ok !$c->expiry_daily, 'not expiry daily';
 
-        is $c->ask_price, 5.33, 'correct ask price';
+        is $c->ask_price, 5.46, 'correct ask price';
         is roundcommon(0.001, $c->pricing_vol), 0.193, 'correct pricing vol';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         isa_ok $c->barrier,        'BOM::Product::Contract::Strike';
@@ -265,7 +268,7 @@ subtest 'pips size changes' => sub {
         cmp_ok $c->barrier->as_absolute, 'eq', '0.99360', 'correct absolute barrier (it will be pipsized) ';
         cmp_ok $c->entry_tick->quote,    'eq', '0.9936',  'correct entry tick';
         cmp_ok $c->current_spot, 'eq', '0.99360', 'correct current spot (it will be pipsized)';
-        cmp_ok $c->ask_price,    'eq', '5.36',    'correct ask price';
+        cmp_ok $c->ask_price,    'eq', '5.69',    'correct ask price';
         $args->{date_pricing} = $now->plus_time_interval('10m');
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'frxAUDCAD',
