@@ -31,7 +31,7 @@ initialize_realtime_ticks_db();
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked_decimate->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..10)]});
+$mocked_decimate->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
 my $mocked           = Test::MockModule->new('BOM::Product::Contract');
 $mocked->mock('market_is_inefficient', sub { 0 });
 my $oft_used_date   = Date::Utility->new('2013-03-29 15:00:34');
