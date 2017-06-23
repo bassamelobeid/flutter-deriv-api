@@ -27,7 +27,6 @@ my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 my $ICO_config = {
     'BINARYICO' => {
-        supported_tokens   => ['BTCICO', 'ERC20ICO'],
         auction_date_start => 1496275200
         }
 
@@ -38,9 +37,16 @@ has _for_sale => (
     isa     => 'Bool',
     default => 0,
 );
-has [qw(number_of_tokens token_type coin_address ask_price contract_type)] => (
+has [qw(number_of_tokens contract_type per_token_bid_price)] => (
     is => 'rw',
 );
+
+has ask_price => (
+    is         => 'rw',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
 
 has app_markup_dollar_amount => (
     is      => 'ro',
@@ -61,6 +67,11 @@ has payout => (
     lazy_build => 1,
 );
 
+sub _build_ask_price {
+    my $self = shift;
+    return $self->number_of_tokens * $self->per_token_bid_price;
+}
+
 sub _build_payout {
     my $self = shift;
     return $self->ask_price;
@@ -79,9 +90,8 @@ sub BUILD {
         max => 1000000,
     };
     $self->contract_type($self->build_parameters->{bet_type});
-    $self->token_type($self->build_parameters->{underlying}->symbol);
-    $self->coin_address($self->build_parameters->{coin_address});
     $self->number_of_tokens($self->build_parameters->{number_of_tokens});
+    $self->per_token_bid_price($self->build_parameters->{per_token_bid_price});
 
     if ($self->number_of_tokens < $limits->{min} or $self->number_of_tokens > $limits->{max}) {
 
@@ -196,18 +206,10 @@ has [qw(shortcode)] => (
 sub _build_shortcode {
     my $self          = shift;
     my $contract_type = uc($self->contract_type);
-    my $token_type    = uc($self->token_type);
-    my @element       = map { $_ } ($contract_type, $token_type, $self->coin_address, $self->ask_price, $self->number_of_tokens);
+    my @element       = map { $_ } ($contract_type, $self->per_token_bid_price, $self->number_of_tokens);
     return join '_', @element;
 }
 
-sub longcode {
-    my $self        = shift;
-    my $description = get_longcodes()->{'coinauction'};
-    my $coin_naming = $self->token_type eq 'ERC20ICO' ? 'ERC20 Ethereum token' : 'ICO coloured coin';
-    return [$description, $coin_naming, $self->coin_address];
-
-}
 
 sub is_expired {
     my $self = shift;
@@ -223,24 +225,6 @@ sub is_settleable {
 }
 
 # Validation
-sub _validate_token_type {
-    my $self = shift;
-
-    my @err;
-    my @supported_tokens = @{$ICO_config->{$self->contract_type}->{supported_tokens}};
-    my $token_type       = uc($self->token_type);
-    if (not grep { $_ eq $token_type } @supported_tokens) {
-        push @err,
-            {
-            message           => "Invalid token type. [symbol: " . $self->token_type . "]",
-            severity          => 98,
-            message_to_client => [$ERROR_MAPPING->{InvalidIcoToken}, $self->token_type],
-            };
-    }
-
-    return @err;
-}
-
 sub _validate_price {
     my $self = shift;
 
@@ -250,12 +234,12 @@ sub _validate_price {
     if (not $self->ask_price or $self->ask_price == 0) {
         push @err,
             {
-            message           => 'The auction bid price can not be less than zero .',
+            message           => 'The auction  total bid price can not be less than zero .',
             severity          => 99,
             message_to_client => [$ERROR_MAPPING->{InvalidIcoBidPrice}],
-            };
+     
+       };
     }
-
     return @err;
 }
 
