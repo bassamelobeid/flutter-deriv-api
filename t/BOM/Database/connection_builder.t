@@ -53,7 +53,7 @@ foreach my $broker_code (qw( VRTC CR MX MLT )) {
 
 $init_info->{broker_code} = 'VRTT';    # There is no such broker
 throws_ok { $connection_builder = BOM::Database::ClientDB->new($init_info); $db = $connection_builder->db; }
-qr/Missing required 'domain' argument/, 'Dies when invalid broker code is passed to ConnectionBuilder constructor';
+qr/No such domain with the broker code VRTT/, 'Dies when invalid broker code is passed to ConnectionBuilder constructor';
 
 delete $init_info->{broker_code};
 $init_info->{client_loginid} = 'VRTT1234';    # No such broker or loginid
