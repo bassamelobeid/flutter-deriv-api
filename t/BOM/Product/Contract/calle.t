@@ -15,7 +15,10 @@ use BOM::MarketData::Types;
 use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::Product::ContractFactory qw(produce_contract);
+use Test::MockModule;
 
+my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
+$mocked_decimate->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 initialize_realtime_ticks_db();

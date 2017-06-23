@@ -26,7 +26,7 @@ reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 note('mocking ticks to prevent warnings.');
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..10)]});
+$mocked->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
 $mocked->mock(
     'decimate_cache_get',
     sub {
