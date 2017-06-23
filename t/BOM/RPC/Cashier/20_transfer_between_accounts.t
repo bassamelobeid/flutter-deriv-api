@@ -77,9 +77,6 @@ subtest 'check_landing_company' => sub {
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as wrong landing companies')
         ->error_message_is('The account transfer is unavailable for your account.', 'Correct error message for transfer failure');
 
-    $client_cr = Client::Account->new({loginid => $client_cr->loginid});
-    ok $client_cr->get_status('disabled'), 'Client CR cannot transfer to MLT';
-
     $client_mf->set_default_account('EUR');
     $client_mlt->set_default_account('USD');
 
@@ -139,12 +136,6 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as wrong to client')
             ->error_message_is('The account transfer is unavailable for your account.', 'Correct error message for transfering to random client');
-
-        $client_mlt = Client::Account->new({loginid => $client_mlt->loginid});
-        ok $client_mlt->get_status('disabled'), 'Disabled as tampereb by transferring to random client';
-
-        $client_mlt->clr_status('disabled');
-        $client_mlt->save();
 
         $params->{args}->{account_to} = $client_mf->loginid;
         $rpc_ct->call_ok($method, $params)
@@ -241,8 +232,6 @@ subtest 'Sub account transfer' => sub {
             'Correct error message for sub account as client is not marked as allow_omnibus');
 
         $client_cr = Client::Account->new({loginid => $client_cr->loginid});
-        ok $client_cr->get_status('disabled'), 'Client CR disabled';
-        $client_cr->clr_status('disabled');
         # set allow_omnibus (master account has this set)
         $client_cr->allow_omnibus(1);
         $client_cr->save();
@@ -253,8 +242,6 @@ subtest 'Sub account transfer' => sub {
             'Correct error message for sub account as client has no sub account');
 
         $client_cr = Client::Account->new({loginid => $client_cr->loginid});
-        ok $client_cr->get_status('disabled'), 'Client CR disabled';
-        $client_cr->clr_status('disabled');
         $client_cr->allow_omnibus(1);
         $client_cr->save();
 

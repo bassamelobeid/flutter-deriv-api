@@ -7,6 +7,7 @@ use Test::Mojo;
 use Test::MockModule;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
+use JSON;
 use Encode qw(encode);
 use Email::Folder::Search;
 
@@ -567,6 +568,36 @@ subtest $method => sub {
     );
 };
 
+# placing this test here as need to test the calling of financial_assessment
+# before a financial assessment record has been created
+$method = 'get_financial_assessment';
+subtest $method => sub {
+    my $args = {"get_financial_assessment" => 1};
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token_vr,
+            args  => $args
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token_japan
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for japan account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token1
+        });
+    is_deeply($res, {}, 'empty assessment details');
+};
+
 $method = 'get_account_status';
 subtest $method => sub {
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
@@ -601,24 +632,61 @@ subtest $method => sub {
         'check authorization'
     );
 
-    is_deeply(
-        $c->tcall($method, {token => $token1}),
-        {
-            status              => ['has_password'],
-            risk_classification => 'low'
-        },
-        'status only has_password'
-    );
-    $test_client->set_status('tnc_approval', 'test staff', 1);
+    # test 'financial_assessment_not_complete'
+    my $data = {
+        "commodities_trading_experience"       => {"answer" => "1-2 years"},
+        "commodities_trading_frequency"        => {"answer" => "0-5 transactions in the past 12 months"},
+        "education_level"                      => {"answer" => "Secondary"},
+        "estimated_worth"                      => {"answer" => '$100,000 - $250,000'},
+        "employment_industry"                  => {"answer" => "Finance"},
+        "forex_trading_experience"             => {"answer" => "Over 3 years"},
+        "forex_trading_frequency"              => {"answer" => "0-5 transactions in the past 12 months"},
+        "income_source"                        => {"answer" => "Self-Employed"},
+        "indices_trading_experience"           => {"answer" => "Over 3 years"},
+        "indices_trading_frequency"            => {"answer" => "40 transactions or more in the past 12 months"},
+        "net_income"                           => {"answer" => '$25,000 - $50,000'},
+        "occupation"                           => {"answer" => "Managers"},
+        "other_derivatives_trading_experience" => {"answer" => "Over 3 years"},
+        "other_derivatives_trading_frequency"  => {"answer" => "0-5 transactions in the past 12 months"},
+        "other_instruments_trading_experience" => {"answer" => "Over 3 years"},
+        "other_instruments_trading_frequency"  => {"answer" => "6-10 transactions in the past 12 months"},
+        "stocks_trading_experience"            => {"answer" => "1-2 years"},
+        "stocks_trading_frequency"             => {"answer" => "0-5 transactions in the past 12 months"},
+        "account_turnover"                     => {"answer" => 'Less than $25,000'}};
+    # function to repeatedly test financial assessment
+    sub test_financial_assessment {
+        my ($data, $is_present, $msg) = @_;
+        $test_client->financial_assessment({
+            data            => encode_json $data,
+            is_professional => 0
+        });
+        $test_client->save();
+        my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
+        ok($res, $msg);
+    }
+    # test 1: when some answers are empty
+    $data->{account_turnover}->{answer} = "";
+    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when some answers are empty');
+    # test 2: when some questions are not answered
+    delete $data->{account_turnover};
+    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when questions are answered properly');
+    # test 3: when the client's risk classification is different
+    $test_client->aml_risk_classification('high');
     $test_client->save();
-    is_deeply(
-        $c->tcall($method, {token => $token1}),
-        {
-            status              => ['has_password'],
-            risk_classification => 'low'
-        },
-        'tnc_approval is excluded, still status only has has_password'
-    );
+    test_financial_assessment($data, 1, "financial_assessment_not_complete should present regardless of the client's risk classification");
+    # test 4: when answer is '0', 'financial_assessment_not_complete' should not present
+    #         as '0' may be one of the acceptable answers for options in the future
+    $data->{account_turnover}->{answer} = '0';
+    test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
+    # test 5: 'financial_assessment_not_complete' should not present when everything is complete
+    $data->{account_turnover}->{answer} = 'Less than $25,000';
+    test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
+
+    # $test_client->set_status('tnc_approval', 'test staff', 1);
+
+    # reset the risk classification for the following test
+    $test_client->aml_risk_classification('low');
+    $test_client->save();
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;
@@ -985,34 +1053,6 @@ subtest $method => sub {
         },
         'vr client return less messages'
     );
-};
-
-$method = 'get_financial_assessment';
-subtest $method => sub {
-    my $args = {"get_financial_assessment" => 1};
-    my $res = $c->tcall(
-        $method,
-        {
-            token => $token_vr,
-            args  => $args
-        });
-    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
-
-    $res = $c->tcall(
-        $method,
-        {
-            args  => $args,
-            token => $token_japan
-        });
-    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for japan account");
-
-    $res = $c->tcall(
-        $method,
-        {
-            args  => $args,
-            token => $token1
-        });
-    is_deeply($res, {}, 'empty assessment details');
 };
 
 $method = 'set_financial_assessment';
