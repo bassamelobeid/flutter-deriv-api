@@ -37,16 +37,16 @@
                 <tr[% IF day.is_weekend %] class="weekend"[% END %]>
                     <td>[% day.date %]</td>
                     [% FOREACH currency IN dtr.currencies %]
-                        <td>[% IF day.buys.$currency %][% currency %]<br>[% day.buys.$currency %][% ELSE %]&nbsp;[% END %]</td>
-                        <td>[% IF day.sells.$currency %][% currency %]<br>[% day.sells.$currency %][% ELSE %]&nbsp;[% END %]</td>
+                        <td>[% IF day.buys.$currency %][% currency %]<br>[% commas(day.buys.$currency) %][% ELSE %]&nbsp;[% END %]</td>
+                        <td>[% IF day.sells.$currency %][% currency %]<br>[% commas(day.sells.$currency) %][% ELSE %]&nbsp;[% END %]</td>
                     [% END %]
-                    <td><strong>USD<br>[% day.USD_buys %]</strong></td>
-                    <td><strong>USD<br>[% day.USD_sells %]</strong></td>
-                    <td class="[% IF day.pl < 0 %]down[% ELSE %]up[% END %]"><strong>USD<br>[% day.pl %]</td>
-                    <td>USD<br>[% day.agg_bets %]</td>
-                    <td class="[% IF day.pl_bets < 0 %]down[% ELSE %]up[% END %]"><strong>USD<br>[% day.pl_bets %]</strong></td>
+                    <td><strong>USD<br>[% commas(day.USD_buys) %]</strong></td>
+                    <td><strong>USD<br>[% commas(day.USD_sells) %]</strong></td>
+                    <td class="[% IF day.pl < 0 %]down[% ELSE %]up[% END %]"><strong>USD<br>[% commas(day.pl) %]</td>
+                    <td>USD<br>[% commas(day.agg_bets) %]</td>
+                    <td class="[% IF day.pl_bets < 0 %]down[% ELSE %]up[% END %]"><strong>USD<br>[% commas(day.pl_bets) %]</strong></td>
                     <td class="[% IF day.pl_on_day < 0 %]down[% ELSE %]up[% END %]">
-                        <strong>USD<br>[% day.pl_on_day %]</strong>
+                        <strong>USD<br>[% commas(day.pl_on_day) %]</strong>
                     </td>
                     <td>[% day.active_clients %]</td>
                 </tr>
@@ -54,14 +54,14 @@
         <tr>
             <td>TOTALS</td>
             [% FOREACH currency IN dtr.currencies %]
-                <td><strong>[% currency %] [% dtr.all_buys.$currency %]</strong></td>
-                <td><strong>[% currency %] [% dtr.all_sells.$currency %]</strong></td>
+                <td><strong>[% currency %] [% commas(dtr.all_buys.$currency) %]</strong></td>
+                <td><strong>[% currency %] [% commas(dtr.all_sells.$currency) %]</strong></td>
             [% END %]
-            <td><strong>USD [% dtr.all_USD_buys %]</strong></td>
-            <td><strong>USD [% dtr.all_USD_sells %]</strong></td>
-            <td><span [% IF dtr.all_pl < 0 %] class="warning"[% END %]><strong>USD [% dtr.all_pl %]</strong></span></td>
-            <td><span [% IF dtr.agg_bets_diff < 0 %] class="warning"[% END %]><strong>USD [% dtr.agg_bets_diff %]</strong></span></td>
-            <td><span [% IF dtr.all_prev_agg_bets < 0 %] class="warning"[% END %]><strong>USD [% dtr.all_prev_agg_bets %]</strong></span></td>
+            <td><strong>USD [% commas(dtr.all_USD_buys) %]</strong></td>
+            <td><strong>USD [% commas(dtr.all_USD_sells) %]</strong></td>
+            <td><span [% IF dtr.all_pl < 0 %] class="warning"[% END %]><strong>USD [% commas(dtr.all_pl) %]</strong></span></td>
+            <td><span [% IF dtr.agg_bets_diff < 0 %] class="warning"[% END %]><strong>USD [% commas(dtr.agg_bets_diff) %]</strong></span></td>
+            <td><span [% IF dtr.all_prev_agg_bets < 0 %] class="warning"[% END %]><strong>USD [% commas(dtr.all_prev_agg_bets) %]</strong></span></td>
             <td>N/A</td>
             <td>N/A</td>
         </tr>
@@ -75,8 +75,8 @@
 <tr><th/><th>Current</th><th>Projected</th></tr>
         </thead>
         <tbody>
-    <tr><th>Turnover</th><td>[% dtr.all_USD_buys %]</td><td>[% dtr.projected_turnover %]</td></tr>
-    <tr><th>Profit</th><td>[% dtr.estimated_pl %]</td><td>[% dtr.projected_pl %]</td></tr>
+    <tr><th>Turnover</th><td>[% commas(dtr.all_USD_buys) %]</td><td>[% commas(dtr.projected_turnover) %]</td></tr>
+    <tr><th>Profit</th><td>[% commas(dtr.estimated_pl) %]</td><td>[% commas(dtr.projected_pl) %]</td></tr>
     <tr><th>Hold</th><td colspan="2" class="shared">[% dtr.pct_hold %]%</td></tr>
         </tbody>
     </table>
