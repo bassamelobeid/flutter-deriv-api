@@ -447,7 +447,6 @@ sub prepare_buy {
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
-            $m->{limits} = $self->calculate_limits($m->{client});
             my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
             unless ($c) {
                 $m->{code}  = 'InvalidLoginid';
@@ -456,6 +455,7 @@ sub prepare_buy {
             }
 
             $m->{client} = $c;
+            $m->{limits} = $self->calculate_limits($m->{client});
         }
     }
 
@@ -1507,11 +1507,11 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 TEST
 
-    # run all test scripts # 
+    # run all test scripts #
     make test
-    # run one script # 
+    # run one script #
     prove t/BOM/001_structure.t
-    # run one script with perl # 
+    # run one script with perl #
     perl -MBOM::Test t/BOM/001_structure.t
 
 =cut
