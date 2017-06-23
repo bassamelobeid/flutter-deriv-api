@@ -467,7 +467,7 @@ sub _calculate_historical_volatility {
     my $bet        = $self->bet;
     my $dp         = $bet->date_pricing;
     my $hist_ticks = $self->tick_source->get({
-        underlying => $bet->underlying,
+        underlying  => $bet->underlying,
         start_epoch => $dp->epoch - HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES * 60,
         end_epoch   => $dp->epoch,
         backprice   => ($bet->underlying->for_date ? 1 : 0),
