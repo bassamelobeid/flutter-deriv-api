@@ -283,8 +283,8 @@ sub _validate_price {
             payout_too_many_places => sub {
                 my ($details) = @_;
                 return {
-                    message           => 'payout amount has too many decimal places ' . "[permitted: 2] " . "[payout: " . $details->[0] . "]",
-                    message_to_client => [$ERROR_MAPPING->{IncorrectPayoutDecimals}],
+                    message => 'payout amount has too many decimal places ' . "[permitted: " . $details->[0] . "] [payout: " . $details->[1] . "]",
+                    message_to_client => [$ERROR_MAPPING->{IncorrectPayoutDecimals}, $details->[0]],
                 };
             },
             stake_same_as_payout => sub {
