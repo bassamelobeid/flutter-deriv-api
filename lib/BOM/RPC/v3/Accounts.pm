@@ -10,6 +10,7 @@ use WWW::OneAll;
 use Date::Utility;
 use Data::Password::Meter;
 use HTML::Entities qw(encode_entities);
+use List::Util qw(any);
 
 use Brands;
 use Client::Account;
@@ -315,6 +316,15 @@ sub get_account_status {
     my $user = BOM::Platform::User->new({email => $client->email});
     push @status, 'has_password' if $user->password;
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->not_allow_trade($client);
+
+    # check whether the user need to perform financial assessment
+    my $financial_assessment = $client->financial_assessment();
+    $financial_assessment = ref($financial_assessment) ? from_json($financial_assessment->data || '{}') : {};
+    push @status,
+        'financial_assessment_not_complete'
+        if (
+        any { !length $financial_assessment->{$_}->{answer} }
+        keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     return {
         status              => \@status,
