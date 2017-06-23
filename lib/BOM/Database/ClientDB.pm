@@ -74,7 +74,8 @@ sub _build_db {
     my $self = shift;
 
     my $domain = $environment->{$self->broker_code};
-    my $type   = $self->operation;
+    confess "No such domain with the broker code " . $self->broker_code . "\n" unless $domain;
+    my $type = $self->operation;
 
     my @db_params = (
         domain => $domain,
@@ -177,10 +178,7 @@ sub lock_client_loginid {
             return $sth->fetchrow_arrayref;
         });
 
-    if ($result and $result->[0]) {
-
-        return 1;
-    }
+    return 1 if ($result and $result->[0]);
 
     return;
 }
@@ -205,9 +203,7 @@ sub unlock_client_loginid {
             return $sth->fetchrow_arrayref;
         });
 
-    if ($result and $result->[0]) {
-        return 1;
-    }
+    return 1 if ($result and $result->[0]);
 
     return;
 }
