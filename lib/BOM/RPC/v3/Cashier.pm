@@ -1218,13 +1218,7 @@ sub transfer_between_accounts {
         }
     }
 
-    unless ($is_good) {
-        $client->set_status('disabled', 'SYSTEM',
-            "Tried tampering with transfer input for account transfer, illegal from [$loginid_from], to [$loginid_to]");
-        $client->save;
-
-        return $error_sub->(localize('The account transfer is unavailable for your account.'));
-    }
+    return $error_sub->(localize('The account transfer is unavailable for your account.')) if (not $is_good);
 
     my %deposited = (
         $loginid_from => $client_from->default_account ? $client_from->default_account->currency_code : '',
