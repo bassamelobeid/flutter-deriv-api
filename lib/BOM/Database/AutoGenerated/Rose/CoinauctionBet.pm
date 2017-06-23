@@ -14,6 +14,7 @@ __PACKAGE__->meta->setup(
         token_type              => { type => 'text', not_null => 1 },
         number_of_tokens        => { type => 'numeric', not_null => 1 },
         auction_date_start      => { type => 'timestamp' },
+        per_token_bid_price     => { type => 'numeric', not_null => 1}
     ],
 
     primary_key_columns => [ 'financial_market_bet_id' ],
