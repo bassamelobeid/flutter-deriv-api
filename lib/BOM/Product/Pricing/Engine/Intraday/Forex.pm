@@ -473,7 +473,7 @@ sub _calculate_historical_volatility {
 
     # On monday mornings, we will not have ticks to calculation historical vol in the first 20 minutes.
     # returns 10% volatility on monday mornings.
-    return 0.1 if ($dp->day_of_week == 1 && $dp->hour + 0 == 0 && $dp->minute + 0 <= 20);
+    return 0.1 if ($dp->day_of_week == 1 && $dp->hour + 0 == 0 && $dp->minute + 0 < 20);
 
     my @returns_squared;
     # Ticks are in 15-second interval.
