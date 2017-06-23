@@ -9,20 +9,24 @@ use BOM::Test::Helper qw/build_wsapi_test test_schema/;
 use Test::MockModule;
 use Mojo::Redis2;
 use Clone;
+use BOM::Platform::Chronicle;
 
 my $t = build_wsapi_test();
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
 my $res = decode_json($t->message->[1]);
 
+my $reader = BOM::Platform::Chronicle::get_chronicle_reader();
+my $writer = BOM::Platform::Chronicle::get_chronicle_writer();
+
 is $res->{website_status}->{terms_conditions_version},
-    BOM::Platform::Chronicle::get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_version},
+    $reader->get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_version},
     'terms_conditions_version should be readed from chronicle';
 
 # Update terms_conditions_version at chronicle
 my $updated_tcv = 'Version 100 ' . Date::Utility->new->date;
-BOM::Platform::Chronicle::set('app_settings', 'binary', {global => {cgi => {terms_conditions_version => $updated_tcv}}});
+$writer->set('app_settings', 'binary', {global => {cgi => {terms_conditions_version => $updated_tcv}}}, Date::Utility->new);
 
-is BOM::Platform::Chronicle::get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_version}, $updated_tcv, 'Chronickle should be updated';
+is $reader->get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_version}, $updated_tcv, 'Chronickle should be updated';
 
 # The followind does NOT work on travis, as rpc lauched as separate process
 # my $time_mock =  Test::MockModule->new('App::Config::Chronicle');
