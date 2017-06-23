@@ -74,6 +74,7 @@ sub _build_db {
     my $self = shift;
 
     my $domain = $environment->{$self->broker_code};
+    die "No such domain with the broker code " . $self->broker_code . "\n" unless $domain;
     my $type   = $self->operation;
 
     my @db_params = (
