@@ -309,15 +309,6 @@ sub get_financial_input_mapping {
                 'Over $1,000,000'       => 4
             }
         },
-        account_opening_reason => {
-            'label'           => 'Purpose and reason for requesting the account opening',
-            'possible_answer' => {
-                "Speculative"    => 0,
-                "Income Earning" => 0,
-                "Assets Saving"  => 0,
-                "Hedging"        => 0,
-            }
-        },
         account_turnover => {
             'label'           => 'The anticipated account turnover',
             'possible_answer' => {
@@ -400,7 +391,9 @@ sub validate_account_details {
         return $dob_error if $dob_error;
     }
 
-    foreach my $key (get_account_fields()) {
+    my $acc_type = LandingCompany::Registry::get_by_broker($broker)->short;
+
+    foreach my $key (get_account_fields($acc_type)) {
         my $value = $args->{$key};
         $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
 
@@ -433,8 +426,11 @@ sub validate_account_details {
 }
 
 sub get_account_fields {
-    return qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
-        address_city address_state address_postcode phone secret_question secret_answer place_of_birth tax_residence tax_identification_number);
+    my @account_fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
+        address_city address_state address_postcode phone secret_question secret_answer place_of_birth
+        tax_residence tax_identification_number);
+    push @account_fields, 'account_opening_reason' if (!$_[0] || $_[0] ne 'japan');
+    return @account_fields;
 }
 
 1;
