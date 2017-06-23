@@ -19,6 +19,9 @@ use Pricing::Engine::Markup::EconomicEventsSpotRisk;
 use Pricing::Engine::Markup::TentativeEvents;
 use Pricing::Engine::Markup::HistoricalVol;
 
+# we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
+use constant HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES => 20;
+
 =head2 tick_source
 
 The source of the ticks used for this pricing. 
@@ -465,18 +468,16 @@ sub _calculate_historical_volatility {
     my $dp         = $bet->date_pricing;
     my $hist_ticks = $self->tick_source->get({
         underlying => $bet->underlying,
-        # we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
-        start_epoch => $dp->epoch - 20 * 60,
+        start_epoch => $dp->epoch - HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES * 60,
         end_epoch   => $dp->epoch,
         backprice   => ($bet->underlying->for_date ? 1 : 0),
     });
 
     # On monday mornings, we will not have ticks to calculation historical vol in the first 20 minutes.
     # returns 10% volatility on monday mornings.
-    return 0.1 if ($dp->day_of_week == 1 && $dp->hour + 0 == 0 && $dp->minute + 0 < 20);
+    return 0.1 if ($dp->day_of_week == 1 && $dp->hour == 0 && $dp->minute < HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES);
 
     my @returns_squared;
-    # Ticks are in 15-second interval.
     my $returns_sep = 4;
     for (my $i = $returns_sep; $i <= $#$hist_ticks; $i++) {
         my $dt = $hist_ticks->[$i]->{epoch} - $hist_ticks->[$i - $returns_sep]->{epoch};
@@ -490,8 +491,8 @@ sub _calculate_historical_volatility {
     }
 
     # warns if ticks used to calculate historical vol is less than 80% of the expected ticks.
-    # the hard-coded number 80 is the number of expected 15-second interval in 20 minutes.
-    my $expected_interval = 80 - $returns_sep;
+    # Ticks are in 15-second interval. Each minute has 4 intervals.
+    my $expected_interval = HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES * 4 - $returns_sep;
     if (scalar(@returns_squared) < 0.8 * $expected_interval) {
         warn "Historical ticks not found in Intraday::Forex pricing";
         return 0.1;
