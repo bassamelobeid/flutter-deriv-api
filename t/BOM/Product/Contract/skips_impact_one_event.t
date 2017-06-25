@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::FailWarnings;
+use Test::Warnings;
 use Date::Utility;
 
 use BOM::Product::ContractFactory qw(produce_contract);

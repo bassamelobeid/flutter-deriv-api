@@ -5,7 +5,7 @@ use Time::HiRes;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::Most qw(-Test::Deep);
-use Test::FailWarnings;
+use Test::Warnings;
 use JSON qw(decode_json);
 use Date::Utility;
 

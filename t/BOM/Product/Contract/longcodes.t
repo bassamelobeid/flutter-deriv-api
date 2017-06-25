@@ -6,7 +6,7 @@ use warnings;
 use Test::Most;
 use Test::Warnings qw/warning/;
 use Test::Exception;
-use Test::FailWarnings;
+use Test::Warnings;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);

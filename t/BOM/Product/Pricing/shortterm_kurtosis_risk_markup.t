@@ -6,7 +6,7 @@ use warnings;
 use Date::Utility;
 
 use Test::More;
-use Test::FailWarnings;
+use Test::Warnings;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);

@@ -4,7 +4,7 @@ use warnings;
 use Time::HiRes;
 use Test::MockTime qw/:all/;
 use Test::Most qw(-Test::Deep);
-use Test::FailWarnings;
+use Test::Warnings;
 use Test::Warnings qw/warning/;
 use DateTime;
 use Test::MockModule;

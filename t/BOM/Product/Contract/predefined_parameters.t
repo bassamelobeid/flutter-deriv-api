@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More;
 use Test::Deep;
-use Test::FailWarnings;
+use Test::Warnings;
 
 use List::Util qw(first);
 use Date::Utility;

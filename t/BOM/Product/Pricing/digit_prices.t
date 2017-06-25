@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More tests => 2;
-use Test::FailWarnings;
+use Test::Warnings;
 use Format::Util::Numbers qw/roundcommon/;
 
 use LandingCompany::Offerings qw(reinitialise_offerings);

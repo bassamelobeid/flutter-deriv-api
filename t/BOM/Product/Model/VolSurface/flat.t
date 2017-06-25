@@ -1,5 +1,5 @@
 use Test::Most;
-use Test::FailWarnings;
+use Test::Warnings;
 use JSON qw(decode_json);
 
 use BOM::MarketData::Fetcher::VolSurface;
