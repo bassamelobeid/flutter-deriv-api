@@ -9,7 +9,6 @@ matrix:
 services:
     - redis-server
 cache: apt
-sudo: required
 env:
     - TEST_SUITE=test SH=bash
     - TEST_SUITE=json_schema_1
