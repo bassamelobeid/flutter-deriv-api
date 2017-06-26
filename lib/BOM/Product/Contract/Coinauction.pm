@@ -263,6 +263,17 @@ sub _validate_date_pricing {
     return @err;
 
 }
+sub pricing_details {
+    my ($self, $action) = @_;
+
+    # This way the order of the fields is well-defined.
+    my @comment_fields = map { defined $_->[1] ? @$_ : (); } (
+        [number_of_tokens  => $self->binaryico_number_of_tokens],
+        [per_toke_bid_price => $self->binaryico_per_token_bid_price],
+    );
+
+    return \@comment_fields;
+}
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
