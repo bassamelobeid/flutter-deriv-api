@@ -13,10 +13,6 @@
           "pattern": "^[_1]$",
           "required": "1"
         },
-        "account_opening_reason": {
-          "type": "string",
-          "pattern": "^Speculative$"
-        },
         "account_turnover": {
           "type": "string",
           "pattern": "^Less than \\$25\\,000$"
