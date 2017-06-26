@@ -13,6 +13,7 @@ use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::Transaction;
+use BOM::Transaction::Validation;
 use BOM::Platform::Context qw (localize request);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
@@ -68,7 +69,7 @@ sub buy {
 
     try {
         die
-            unless BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters);
+            unless BOM::Transaction::Validation::pre_validate_start_expire_dates($contract_parameters);
     }
     catch {
         warn __PACKAGE__ . " buy pre_validate_start_expire_dates failed, parameters: " . encode_json($contract_parameters);
@@ -173,7 +174,7 @@ sub buy_contract_for_multiple_accounts {
     $contract_parameters->{landing_company} = $client->landing_company->short;
     my $amount_type = $contract_parameters->{amount_type};
 
-    unless (BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters)) {
+    unless (BOM::Transaction::Validation::pre_validate_start_expire_dates($contract_parameters)) {
         warn __PACKAGE__
             . " buy_contract_for_multiple_accounts pre_validate_start_expire_dates failed, parameters: "
             . encode_json($contract_parameters);
