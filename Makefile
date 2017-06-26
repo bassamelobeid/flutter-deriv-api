@@ -3,7 +3,7 @@ TESTS=unit_test_product_contract \
 
 M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
-P=/etc/rmg/bin/prove --timer -I$D/lib -I$D -I$D/t
+P=/etc/rmg/bin/prove -v --timer -I$D/lib -I$D -I$D/t
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 export PERL5OPT=-MTest::Warnings
 
