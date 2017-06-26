@@ -1,6 +1,6 @@
 #!/etc/rmg/bin/perl
 
-use Test::Most (tests => 4);
+use Test::Most (tests => 5);
 use Test::Warnings;
 
 use Postgres::FeedDB::Spot::Tick;
