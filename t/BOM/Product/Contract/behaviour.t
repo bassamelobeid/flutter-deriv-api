@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More tests => 15;
-use Test::Warnings;
+use Test::Warnings 'warning';
 
 use Time::HiRes;
 use Cache::RedisDB;
