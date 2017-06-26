@@ -230,10 +230,9 @@ sub _validate_feed {
         };
     } elsif ($self->trading_calendar->is_open_at($underlying->exchange, $self->date_pricing)
         and $self->date_pricing->epoch - $underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch)
-      {
-        use Carp qw(cluck);
+    {
         # only throw errors for quote too old, if the exchange is open at pricing time
-        cluck "Quote too old for "
+        warn "Quote too old for "
             . $underlying->symbol
             . ", epoch "
             . $self->current_tick->epoch
