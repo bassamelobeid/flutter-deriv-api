@@ -418,6 +418,7 @@ sub prepare_bet_data_for_buy {
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
         $bet_params->{binaryico_number_of_tokens}   = $contract->binaryico_number_of_tokens;
         $bet_params->{binaryico_auction_date_start} = $contract->binaryico_auction_date_start->db_timestamp;
+        $bet_params->{binaryico_per_token_bid_price} = $contract->binaryico_per_token_bid_price;
    }else {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
