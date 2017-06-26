@@ -125,7 +125,9 @@ subtest 'waiting for entry tick' => sub {
     $bet_params->{date_pricing} = $now->epoch + 302;    # 1 second too far
     $c = produce_contract($bet_params);
     ok !$c->is_expired,       'not expired';
-    ok !$c->is_valid_to_sell, 'not valid to sell';
+    my $is_valid;
+    like( warning {$is_valid = $c->is_valid_to_sell}, qr/Quote too old/, 'get warnings');
+    ok !$is_valid, 'not valid to sell';
     like($c->primary_validation_error->message, qr/Quote too old/, 'throws error');
     $bet_params->{date_pricing} = $now->epoch + 301;
     $c = produce_contract($bet_params);
