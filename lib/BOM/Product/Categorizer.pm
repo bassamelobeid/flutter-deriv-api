@@ -225,7 +225,7 @@ sub _initialize_contract_parameters {
     if (defined $pp->{duration}) {
         if (my ($binaryico_number_of_tokens) = $pp->{duration} =~ /(\d+)c$/) {
             $pp->{binaryico_number_of_tokens}    = $binaryico_number_of_tokens;
-            $pp->{binaryico_per_token_bid_price} = $pp->{stake};
+            $pp->{binaryico_per_token_bid_price} = $pp->{ask_price};
         } elsif (my ($number_of_ticks) = $pp->{duration} =~ /(\d+)t$/) {
             $pp->{tick_expiry} = 1;
             $pp->{tick_count}  = $number_of_ticks;
