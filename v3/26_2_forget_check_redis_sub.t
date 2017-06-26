@@ -16,20 +16,24 @@ use Test::MockModule;
 use Mojo::Redis2;
 
 my $redis2_module = Test::MockModule->new('Mojo::Redis2');
-my $keys_hash = {};
-$redis2_module->mock('subscribe', sub {
-                         my $redis = shift;
-                         my $keys = shift;
+my $keys_hash     = {};
+$redis2_module->mock(
+    'subscribe',
+    sub {
+        my $redis = shift;
+        my $keys  = shift;
 
-                         $keys_hash->{$_} = 1 for @$keys;
-                     });
+        $keys_hash->{$_} = 1 for @$keys;
+    });
 
-$redis2_module->mock('unsubscribe', sub {
-                         my $redis = shift;
-                         my $keys = shift;
+$redis2_module->mock(
+    'unsubscribe',
+    sub {
+        my $redis = shift;
+        my $keys  = shift;
 
-                         delete( $keys_hash->{$_} ) for @$keys;
-                     });
+        delete($keys_hash->{$_}) for @$keys;
+    });
 
 my $sub_ids = {};
 my @symbols = qw(frxUSDJPY frxAUDJPY frxAUDUSD);

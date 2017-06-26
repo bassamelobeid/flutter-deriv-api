@@ -5,7 +5,42 @@ use Test::Exception;
 use Test::More;
 use Test::Mojo;
 use Test::MockModule;
+
+
 use Mojo::Redis2;
+use Path::Tiny;
+
+my $tmp_dir = Path::Tiny->tempdir(CLEANUP => 1);
+my $rate_limits = <<RATE_LIMITS_END;
+virtual_buy_transaction:
+    1m: 40
+    1h: 80
+virtual_sell_transaction:
+    1m: 40
+    1h: 80
+virtual_batch_sell:
+    1m: 40
+    1h: 80
+websocket_call:
+    1m: 40
+    1h: 80
+websocket_call_expensive:
+    1m: 20
+    1h: 40
+websocket_call_pricing:
+    1m: 30
+    1h: 60
+websocket_call_email:
+    1m: 3
+    1h: 5
+websocket_real_pricing:
+    1m: 40
+    1h: 80
+RATE_LIMITS_END
+my $limits_file = path($tmp_dir, 'limits.yaml');
+$limits_file->spew($rate_limits);
+
+$ENV{BOM_TEST_RATE_LIMITATIONS} = $limits_file;
 
 my $redis2_module = Test::MockModule->new('Mojo::Redis2');
 my @commands_queue;
@@ -102,8 +137,8 @@ subtest "no limit for 'ping' or 'time'" => sub {
 
 subtest "high real account buy sell pricing limit" => sub {
     my @futures;
-    # 60 * 4 = 240, as in limits.yml
-    for (1 .. 60) {
+    # 10 * 4 = 40, as in limits.yml
+    for (1 .. 10) {
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'buy',                    1);
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'sell',                   1);
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal',               1);
@@ -116,7 +151,8 @@ subtest "high real account buy sell pricing limit" => sub {
 
 subtest "hit limits 'proposal' / 'proposal_open_contract' for virtual account" => sub {
     my @futures;
-    for (1 .. 60) {
+    # 2 * 16 > 30
+    for (1 .. 16) {
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 0);
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal_open_contract', 0);
     }
@@ -126,7 +162,8 @@ subtest "hit limits 'proposal' / 'proposal_open_contract' for virtual account" =
 
 subtest "hit limits 'portfolio' / 'profit_table' for virtual account" => sub {
     my @futures;
-    for (1 .. 30) {
+    # 2 * 10 = 20
+    for (1 .. 10) {
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio',    0);
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'profit_table', 0);
     }

@@ -54,14 +54,14 @@ is $authorize->{authorize}->{loginid}, $cr_1;
 
 ## app register/list/get
 $t = $t->send_ok({
-                  json => {
-                           app_register => 1,
-                           name         => 'App with no admin',
-                           scopes       => ['read', 'trade'],
-                           redirect_uri => 'https://www.example.com/',
-                           homepage     => 'https://www.homepage.com/',
-                          }})->message_ok;
-my $res = decode_json($t->message->[1]);
+        json => {
+            app_register => 1,
+            name         => 'App with no admin',
+            scopes       => ['read', 'trade'],
+            redirect_uri => 'https://www.example.com/',
+            homepage     => 'https://www.homepage.com/',
+        }})->message_ok;
+my $res          = decode_json($t->message->[1]);
 my $app_no_admin = $res->{app_register};
 
 $t = $t->send_ok({
@@ -75,7 +75,7 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'app_register';
 test_schema('app_register', $res);
-my $app1 = $res->{app_register};
+my $app1   = $res->{app_register};
 my $app_id = $app1->{app_id};
 is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
 is $app1->{redirect_uri}, 'https://www.example.com/',  'redirect_uri is right';
@@ -246,9 +246,9 @@ $t->finish_ok;
 $t = build_wsapi_test();
 $t = $t->send_ok({json => {authorize => $access_token}})->message_ok;
 $t = $t->send_ok({
-                  json => {
-                           oauth_apps => 1,
-                          }})->message_ok;
+        json => {
+            oauth_apps => 1,
+        }})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'oauth_apps';
 test_schema('oauth_apps', $res);
@@ -260,12 +260,11 @@ is_deeply([sort @{$used_apps->[0]->{scopes}}], ['read', 'trade'], 'scopes are ri
 $is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($app_no_admin_id, $cr_1);
 is $is_confirmed, 1, 'was confirmed';
 $t = $t->send_ok({
-                  json => {
-                           revoke_oauth_app => $test_appid,
-                          }})->message_ok;
+        json => {
+            revoke_oauth_app => $test_appid,
+        }})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{error}{code}, 'PermissionDenied', 'revoke_oauth_app failed';
-
 
 $t = build_wsapi_test({app_id => 333});
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;

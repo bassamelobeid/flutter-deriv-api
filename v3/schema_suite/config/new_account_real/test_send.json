@@ -12,5 +12,6 @@
   "address_postcode": "3002",
   "phone": "+6123456789",
   "secret_question": "Mother's maiden name",
-  "secret_answer": "Jones"
+  "secret_answer": "Jones",
+  "account_opening_reason": "Speculative"
 }
