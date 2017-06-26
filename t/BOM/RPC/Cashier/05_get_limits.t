@@ -101,12 +101,12 @@ subtest 'CR' => sub {
             'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
-            'num_of_days_limit'                   => $limits->{auth_limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f', $limits->{auth_lifetime_limit}),
+            'num_of_days_limit'                   => '99999999',
+            'lifetime_limit'                      => sprintf('%0.02f', '99999999'),
             'payout_per_symbol_and_contract_type' => '10000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => sprintf('%0.02f', $limits->{auth_lifetime_limit} - 1000),
+            'remainder'                           => sprintf('%0.02f', '99998999'),
 
         };
 
@@ -186,12 +186,12 @@ subtest 'JP' => sub {
             'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
-            'num_of_days_limit'                   => $limits->{auth_limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f', $limits->{auth_lifetime_limit}),
+            'num_of_days_limit'                   => '99999999',
+            'lifetime_limit'                      => sprintf('%0.02f', '99999999'),
             'payout_per_symbol_and_contract_type' => '1000000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => sprintf('%0.02f', $limits->{auth_lifetime_limit} - 1000),
+            'remainder'                           => sprintf('%0.02f', '99998999'),
 
         };
 
@@ -255,12 +255,12 @@ subtest 'MLT' => sub {
             'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
-            'num_of_days_limit'                   => $limits->{auth_limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f', $limits->{auth_lifetime_limit}),
+            'num_of_days_limit'                   => '99999999',
+            'lifetime_limit'                      => sprintf('%0.02f', '99999999'),
             'payout_per_symbol_and_contract_type' => '10000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => sprintf('%0.02f', $limits->{auth_lifetime_limit} - 1000),
+            'remainder'                           => sprintf('%0.02f', '99998999'),
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -323,12 +323,12 @@ subtest 'MX' => sub {
             'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
-            'num_of_days_limit'                   => $limits->{auth_limit_for_days}, 
-            'lifetime_limit'                      => sprintf('%0.02f', $limits->{auth_lifetime_limit}),
+            'num_of_days_limit'                   => '99999999', 
+            'lifetime_limit'                      => sprintf('%0.02f', '99999999'),
             'payout_per_symbol_and_contract_type' => '10000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => sprintf('%0.02f', $limits->{auth_lifetime_limit} - 1000),
+            'remainder'                           => sprintf('%0.02f', '99998999'),
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');

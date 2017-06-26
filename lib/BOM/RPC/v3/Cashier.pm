@@ -421,8 +421,8 @@ sub get_limits {
     my $lifetimelimit = $wl_config->{lifetime_limit};
 
     if ($client->client_fully_authenticated) {
-        $numdayslimit  = $wl_config->{auth_limit_for_days};
-        $lifetimelimit = $wl_config->{auth_lifetime_limit};
+        $numdayslimit  = 99999999;
+        $lifetimelimit = 99999999;
     }
 
     my $withdrawal_limit_curr;
