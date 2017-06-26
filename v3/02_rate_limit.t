@@ -267,16 +267,22 @@ subtest "keys without expiry" => sub {
     $process_queue->();
     %redis_storage = ();
 
+    my $expiration_sets = 0;
+    local $on_expiry = sub {
+        ++$expiration_sets;
+    };
+
     # trigger limit check
     Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio', 0)->get;
     $process_queue->();
+
     # confirm ttl is set.
     isnt $redis_storage{$_}{'ttl'}, -1 for (keys %redis_storage);
+    # confirm expire called 2 times.
+    is $expiration_sets, 2;
 
     # unset all ttls
     $redis_storage{$_}{'ttl'} = -1 for (keys %redis_storage);
-    # confirm ttl is unset
-    is $redis_storage{$_}{'ttl'}, -1 for (keys %redis_storage);
 
     # trigger a second limit check
     Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio', 0)->get;
@@ -284,6 +290,8 @@ subtest "keys without expiry" => sub {
 
     # confirm all ttls is set
     isnt $redis_storage{$_}{'ttl'}, -1 for (keys %redis_storage);
+    # confirm that expire has been called 4 times (2 times initially and 2 times to reset ttl)
+    is $expiration_sets, 4;
 };
 
 $t->finish_ok;
