@@ -8,7 +8,7 @@ use Finance::Contract;
 use BOM::Product::Static qw/get_longcodes get_error_mapping/;
 use List::Util qw(first);
 # Actual methods for introspection purposes.
-sub is_coinauction      { return 1 }
+sub is_binaryico      { return 1 }
 sub is_legacy           { return 0 }
 sub is_atm_bet          { return 0 }
 sub is_intraday         { return 0 }
