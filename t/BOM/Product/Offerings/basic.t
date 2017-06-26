@@ -1,8 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most (tests => 6);
-use Test::Warnings;
+use Test::Most (tests => 5);
 use Test::Warnings;
 
 use Cache::RedisDB;
