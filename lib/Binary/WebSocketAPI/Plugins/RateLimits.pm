@@ -87,7 +87,7 @@ sub _update_redis {
                             $c->app->log->warn("Redis error: $error");
                             return $f->fail($error);
                         }
-                        $c->app->log->warn("Trying to set TTL for a redis $redis_key that does not exist") if $redis_ttl == -2;
+                        # if ttl == -2 the key has just expired and we dont need a warning here.
                         _set_key_expiry($c, $redis_key, $ttl) if $redis_ttl == -1;
                     });
                 $f->done;
