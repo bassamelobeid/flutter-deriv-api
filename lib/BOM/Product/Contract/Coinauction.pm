@@ -205,6 +205,14 @@ sub _build_shortcode {
     my @element       = map { $_ } ($contract_type, $self->binaryico_per_token_bid_price, $self->binaryico_number_of_tokens);
     return join '_', @element;
 }
+sub longcode {
+    my $self        = shift;
+    my $description = get_longcodes()->{'binaryico'};
+    return [$description];    
+
+}
+
+
 
 sub is_expired {
     my $self = shift;
