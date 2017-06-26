@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Test::More tests => 4;
+use Test::Warnings;
 
 use Date::Utility;
 use Cache::RedisDB;

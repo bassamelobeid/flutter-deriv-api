@@ -1,7 +1,8 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 7;
+use Test::Most tests => 8;
+use Test::Warnings;
 use Test::Deep;
 use Test::Exception;
 use Finance::Contract::Category;

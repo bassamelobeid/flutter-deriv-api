@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
+use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

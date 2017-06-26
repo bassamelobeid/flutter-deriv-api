@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 6;
+use Test::Warnings;
 use Test::Exception;
 use Test::MockTime qw(set_absolute_time);
 use Time::HiRes qw(sleep);

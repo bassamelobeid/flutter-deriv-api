@@ -4,7 +4,8 @@ use strict;
 use warnings;
 
 use Test::MockModule;
-use Test::More tests => 5;
+use Test::More tests => 6;
+use Test::Warnings;
 use Date::Utility;
 use JSON qw(to_json);
 use Math::Util::CalculatedValue::Validatable;
