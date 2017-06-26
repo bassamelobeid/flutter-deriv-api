@@ -89,6 +89,10 @@ sub validate_trx_buy {
             return $res;
         }
     }
+    
+    # no need to do the subsequent check for binaryico
+    return if $self->transaction->contract->is_binaryico;
+
     ### Order is very important
     ### _validate_trade_pricing_adjustment may contain some expensive calculations
     #### And last per-client checks must be after this calculations.
@@ -515,6 +519,10 @@ sub _validate_jurisdictional_restrictions {
     my ($self, $client) = (shift, shift);
 
     my $contract    = $self->transaction->contract;
+
+    #TO DO: we need to set the jurisdictional check for ICO.
+    # The following check include check of market name which is not something we want , so I skip for here first.
+    return if $contract->is_binaryico;
     my $residence   = $client->residence;
     my $loginid     = $client->loginid;
     my $market_name = $contract->market->name;

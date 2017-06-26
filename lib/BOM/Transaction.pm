@@ -329,6 +329,8 @@ sub calculate_limits {
     my $contract = $self->contract;
     my $currency = $contract->currency;
 
+    return {} if $contract->is_binaryico;
+
     $limits{max_balance} = $client->get_limit_for_account_balance;
 
     if (not $contract->tick_expiry) {
@@ -413,7 +415,10 @@ sub prepare_bet_data_for_buy {
         $bet_params->{$contract->low_barrier->barrier_type . '_lower_barrier'}   = $contract->low_barrier->supplied_barrier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_TOUCH_BET) {
         $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
-    } else {
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
+        $bet_params->{binaryico_number_of_tokens}   = $contract->binaryico_number_of_tokens;
+        $bet_params->{binaryico_auction_date_start} = $contract->binaryico_auction_date_start->db_timestamp;
+   }else {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
             -mesg              => "Unsupported bet class $bet_params->{bet_class}",
@@ -482,7 +487,7 @@ sub prepare_buy {
                 ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
                 ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
                 action => 'buy'
-            })) unless @{$self->comment};
+            })) unless (@{$self->comment} or $self->contract->is_binaryico);
 
     return $self->prepare_bet_data_for_buy;
 }
@@ -534,7 +539,7 @@ sub buy {
     $self->transaction_id($txn->{id});
     $self->contract_id($fmb->{id});
 
-    enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
+    enqueue_new_transaction(_get_params_for_expiryqueue($self)) unless $self->contract->is_binaryico;    # For soft realtime expiration notification.
 
     return;
 }
@@ -642,7 +647,7 @@ sub batch_buy {
                 }
             }
             $stat{$broker}->{success} = $success;
-            enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
+            enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list)) unless $self->contract->is_binaryico;
         }
         catch {
             warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
@@ -1301,17 +1306,18 @@ sub sell_expired_contracts {
                     };
 
                 # price_slippage will not happen to expired contract, hence not needed.
-                my $comment_hash = _build_pricing_comment({
-                        contract => $contract,
-                        action   => 'autosell_expired_contract',
-                    })->[1];
                 my $quants_bet_variables;
-                if ($comment_hash) {
+                unless ($contract->is_binaryico) {
                     $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-                        data_object_params => $comment_hash,
-                    });
+                            data_object_params => _build_pricing_comment({
+                                    contract => $contract,
+                                    action   => 'autosell_expired_contract',
+                                }
+                            )->[1],
+                        });
                 }
                 push @quants_bet_variables, $quants_bet_variables;
+
 
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
