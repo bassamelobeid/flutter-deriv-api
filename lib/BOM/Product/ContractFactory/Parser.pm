@@ -41,7 +41,7 @@ sub shortcode_to_parameters {
     my (
         $bet_type,       $underlying_symbol, $payout,              $date_start,   $date_expiry,
         $barrier,        $barrier2,          $prediction,          $fixed_expiry, $tick_expiry,
-        $how_many_ticks, $forward_start,     $per_token_bid_price, $number_of_tokens
+        $how_many_ticks, $forward_start,     $binaryico_per_token_bid_price, $binaryico_number_of_tokens
     );
     my ($initial_bet_type) = split /_/, $shortcode;
 
@@ -56,8 +56,8 @@ sub shortcode_to_parameters {
     if ($shortcode =~ /^BINARYICO_(\d*\.?\d*)_(\d+)$/) {
         $bet_type            = 'BINARYICO';
         $underlying_symbol   = 'BINARYICO';
-        $per_token_bid_price = $1;
-        $number_of_tokens    = $2;
+        $binaryico_per_token_bid_price = $1;
+        $binaryico_number_of_tokens    = $2;
 
     } elsif ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
         # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
@@ -110,7 +110,7 @@ sub shortcode_to_parameters {
         bet_type     => $bet_type,
         underlying   => $underlying,
         amount_type  => $bet_type eq 'BINARYICO' ? 'stake' : 'payout',
-        amount       => $bet_type eq 'BINARYICO' ? $per_token_bid_price : $payout,
+        amount       => $bet_type eq 'BINARYICO' ? $binaryico_per_token_bid_price : $payout,
         date_start   => $date_start,
         date_expiry  => $date_expiry,
         prediction   => $prediction,
@@ -120,8 +120,8 @@ sub shortcode_to_parameters {
         tick_count   => $how_many_ticks,
         is_sold      => $is_sold,
         ($forward_start)       ? (starts_as_forward_starting => $forward_start)       : (),
-        ($number_of_tokens)    ? (number_of_tokens           => $number_of_tokens)    : (),
-        ($per_token_bid_price) ? (per_token_bid_price        => $per_token_bid_price) : (),
+        ($binaryico_number_of_tokens)    ? (binaryico_number_of_tokens           => $binaryico_number_of_tokens)    : (),
+        ($binaryico_per_token_bid_price) ? (binaryico_per_token_bid_price        => $binaryico_per_token_bid_price) : (),
         %barriers,
     };
 

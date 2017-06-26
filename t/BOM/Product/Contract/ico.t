@@ -57,14 +57,14 @@ subtest 'shortcode_to_parameters' => sub {
         prediction       => undef,
         amount_type      => 'stake',
         amount           => '0.0001',
-        per_token_bid_price => '0.0001',
+        binaryico_per_token_bid_price => '0.0001',
         date_start       => undef,
         date_expiry      => undef,
         fixed_expiry     => undef,
         tick_count       => undef,
         tick_expiry      => undef,
         is_sold          => undef,
-        number_of_tokens => 1400
+        binaryico_number_of_tokens => 1400
     };
 
     my $c = produce_contract($parameters);
