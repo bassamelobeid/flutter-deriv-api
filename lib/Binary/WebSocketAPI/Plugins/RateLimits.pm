@@ -112,6 +112,7 @@ sub _set_key_expiry {
                 unless $confirmation;
             $f->done if $f;
         });
+    return;
 }
 
 sub _check_single_limit {
