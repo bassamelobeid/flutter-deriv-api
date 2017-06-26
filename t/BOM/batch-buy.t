@@ -235,7 +235,7 @@ sub check_one_result {
 ####################################################################
 
 subtest 'batch-buy success + multisell', sub {
-    plan tests => 11;
+    plan tests => 12;
     lives_ok {
         my $clm = create_client;    # manager
         my $cl1 = create_client;
@@ -274,6 +274,21 @@ subtest 'batch-buy success + multisell', sub {
             multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
             purchase_date => Date::Utility->new,
         });
+
+        subtest 'check limits' => sub {
+            my $mock_client = Test::MockModule->new('Client::Account');
+            my $mocked_limit = 100;
+            $mock_client->mock(get_limit_for_account_balance => sub {
+                                   my $c = shift; return ( $c->loginid ); });
+
+            $txn->prepare_buy(1);
+            foreach my $m ( @{$txn->multiple} ) {
+                next if $m->{code} && $m->{code} eq 'ignore';
+                ok( !$m->{code}, 'no error' );
+                ok( $m->{client} && ref $m->{client} eq 'Client::Account', 'check client' );
+                is( $m->{limits}{max_balance}, $m->{client}->loginid, 'check_limit' );
+            }
+        };
 
         my $error = do {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
