@@ -477,6 +477,9 @@ sub _calculate_historical_volatility {
     # returns 10% volatility on monday mornings.
     return 0.1 if ($dp->day_of_week == 1 && $dp->hour == 0 && $dp->minute < HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES);
 
+    # Skips on non trading day
+    return 0.1 unless $bet->trading_calendar->trades_on($bet->underlying->exchange, $dp);
+
     my @returns_squared;
     my $returns_sep = 4;
     for (my $i = $returns_sep; $i <= $#$hist_ticks; $i++) {
