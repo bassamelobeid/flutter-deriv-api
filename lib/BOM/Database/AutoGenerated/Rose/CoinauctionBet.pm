@@ -10,11 +10,9 @@ __PACKAGE__->meta->setup(
 
     columns => [
         financial_market_bet_id => { type => 'bigint', not_null => 1 },
-        coin_address            => { type => 'text', not_null => 1 },
-        token_type              => { type => 'text', not_null => 1 },
-        number_of_tokens        => { type => 'numeric', not_null => 1 },
-        auction_date_start      => { type => 'timestamp' },
-        per_token_bid_price     => { type => 'numeric', not_null => 1}
+        binaryico_number_of_tokens        => { type => 'numeric', not_null => 1 },
+        binaryico_auction_date_start      => { type => 'timestamp' },
+        binaryico_per_token_bid_price     => { type => 'numeric', not_null => 1}
     ],
 
     primary_key_columns => [ 'financial_market_bet_id' ],
