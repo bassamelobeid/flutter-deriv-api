@@ -234,7 +234,7 @@ subtest 'longcode misbehaving for daily contracts' => sub {
 subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463087154_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
-    like(warning {ok $c2->expiry_daily, 'multiday contract'}, qr/No basis tick for frxGBPUSD/, 'get warning';
+    like(warning {ok $c2->expiry_daily, 'multiday contract'}, qr/No basis tick for frxGBPUSD/, 'get warning');
     is_deeply($c2->longcode,
         ['Win payout if [_3] is strictly lower than [_6] at [_5].', 'USD', '166.27', 'GBP/USD', [], ['close on [_1]', '2016-05-13'], ['entry spot']]);
     is $c->expiry_type, 'daily';
