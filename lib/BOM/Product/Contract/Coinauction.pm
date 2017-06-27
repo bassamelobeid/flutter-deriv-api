@@ -238,7 +238,7 @@ sub _validate_price {
     return if $self->_for_sale;
 
     my @err;
-    if (!$self->ask_price) {
+    if ($self->ask_price <= 0) {
         push @err, {
             message           => 'The total auction price can not be less than zero .',
             severity          => 99,
