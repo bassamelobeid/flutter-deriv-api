@@ -90,14 +90,14 @@ my $contracts_for = $t->await::contracts_for( {
         "product_type"      => $pt,
 });
 
-#note explain $contracts_for;
-
 my $put = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration} eq '2h15m'} @{$contracts_for->{contracts_for}{available}}]->[0];
+
+note explain $put;
 
 my $barriers = $put->{available_barriers};
 my $fixed_bars= [map {{barrier=>$_}} @$barriers];
 
-if ($put->{trading_period}{date_start}{epoch} - $now->epoch <= 600) {
+if ($put->{trading_period}{date_expiry}{epoch} - $now->epoch <= 600) {
     note "#############################################";
     note;
     note "Too close to the trading window border.";
