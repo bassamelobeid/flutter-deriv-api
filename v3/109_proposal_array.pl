@@ -40,7 +40,7 @@ my $now = Date::Utility->new;
 
 #build_test_frxUSDJPY_data();
 generate_trading_periods('frxUSDJPY');
-#initialize_realtime_ticks_db();
+initialize_realtime_ticks_db();
 
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY);
