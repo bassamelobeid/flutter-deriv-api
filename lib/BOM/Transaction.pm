@@ -379,7 +379,7 @@ sub prepare_bet_data_for_buy {
 
     if ($contract->is_binaryico) {
 
-        $self->price($contract->binaryico_number_of_tokens * $contract->binaryico_per_token_bid_price);
+        $self->price($contract->ask_price);
     }
 
     $self->price(financialrounding('price', $contract->currency, $self->price));
