@@ -7,7 +7,7 @@ use Quant::Framework::Underlying;
 use Finance::Contract;
 use BOM::Product::Static qw/get_longcodes get_error_mapping/;
 use List::Util qw(first);
-use Data::Utility;
+use Date::Utility;
 # Actual methods for introspection purposes.
 sub is_binaryico        { return 1 }
 sub is_legacy           { return 0 }
