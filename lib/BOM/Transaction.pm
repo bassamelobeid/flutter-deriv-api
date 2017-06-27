@@ -377,6 +377,11 @@ sub prepare_bet_data_for_buy {
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
 
+    if ($contract->is_binaryico) {
+
+        $self->price($contract->binaryico_number_of_tokens * $contract->binaryico_per_token_bid_price);
+    }
+
     $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
