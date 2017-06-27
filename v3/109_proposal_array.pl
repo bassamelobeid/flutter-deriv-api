@@ -97,6 +97,18 @@ my $put = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration
 my $barriers = $put->{available_barriers};
 my $fixed_bars= [map {{barrier=>$_}} @$barriers];
 
+if ($put->{trading_period}{date_start}{epoch} - $now->epoch <= 600) {
+    note "#############################################";
+    note;
+    note "Too close to the trading window border.";
+    note "Trading is not offered for this duration.";
+    note;
+    note "#############################################";
+    $t->finish_ok;
+    done_testing();
+    exit;
+}
+
 my $proposal_array_req = {
     'symbol' => 'frxUSDJPY',
     'req_id' => '1',
