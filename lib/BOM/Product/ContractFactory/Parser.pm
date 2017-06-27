@@ -117,9 +117,15 @@ sub shortcode_to_parameters {
         tick_expiry  => $tick_expiry,
         tick_count   => $how_many_ticks,
         is_sold      => $is_sold,
-        ($forward_start)                 ? (starts_as_forward_starting    => $forward_start)                 : (),
-        ($binaryico_number_of_tokens)    ? (binaryico_number_of_tokens    => $binaryico_number_of_tokens)    : (),
-        ($binaryico_per_token_bid_price) ? (binaryico_per_token_bid_price => $binaryico_per_token_bid_price) : (),
+        ($forward_start) ? (starts_as_forward_starting => $forward_start) : (),
+        (
+            $bet_type eq 'BINARYICO'
+            ? (
+                binaryico_number_of_tokens    => $binaryico_number_of_tokens,
+                binaryico_per_token_bid_price => $binaryico_per_token_bid_price
+                )
+            : ()
+        ),
         %barriers,
     };
 

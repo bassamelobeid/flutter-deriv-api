@@ -7,6 +7,7 @@ use Quant::Framework::Underlying;
 use Finance::Contract;
 use BOM::Product::Static qw/get_longcodes get_error_mapping/;
 use List::Util qw(first);
+use Data::Utility;
 # Actual methods for introspection purposes.
 sub is_binaryico        { return 1 }
 sub is_legacy           { return 0 }
@@ -26,7 +27,10 @@ use constant {    # added for Transaction
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 my $ICO_config = {
-    'BINARYICO' => {binaryico_auction_date_start => 1496275200}
+    'BINARYICO' => {
+        binaryico_auction_date_start => Date::Utility->new('2017-06-01'),
+        auction_duration             => '30d'
+        }
 
 };
 
@@ -100,7 +104,7 @@ sub BUILD {
                 . "[max: "
                 . $limits->{max} . "]",
             severity          => 99,
-            message_to_client => [$ERROR_MAPPING->{BinaryicoTokenLimits}, $limits->{min}, $limits->{max}],
+            message_to_client => [$ERROR_MAPPING->{BinaryIcoTokenLimits}, $limits->{min}, $limits->{max}],
         });
     }
 
@@ -135,13 +139,13 @@ sub _build_binaryico_auction_date_start {
             message => "Invalid contract type. [symbol: " . $self->contract_type . "]",
             ,
             severity          => 99,
-            message_to_client => [$ERROR_MAPPING->{InvalidBinaryicoContract}, $self->contract_type],
+            message_to_client => [$ERROR_MAPPING->{InvalidBinaryIcoContract}, $self->contract_type],
         });
         return Date::Utility->new;
 
     }
 
-    return Date::Utility->new($ICO_config->{$self->contract_type}->{binaryico_auction_date_start});
+    return $ICO_config->{$self->contract_type}->{binaryico_auction_date_start};
 
 }
 
@@ -154,7 +158,9 @@ has date_pricing => (
 sub _build_date_expiry {
     my $self = shift;
 
-    return $self->binaryico_auction_date_start->plus_time_interval('30d');
+    my $auction_duration = $ICO_config->{$self->contract_type}->{auction_duration};
+
+    return $self->binaryico_auction_date_start->plus_time_interval($auction_duration);
 }
 
 sub _build_date_settlement {
@@ -202,7 +208,7 @@ has [qw(shortcode)] => (
 sub _build_shortcode {
     my $self          = shift;
     my $contract_type = uc($self->contract_type);
-    my @element       = map { $_ } ($contract_type, $self->binaryico_per_token_bid_price, $self->binaryico_number_of_tokens);
+    my @element       = ($contract_type, $self->binaryico_per_token_bid_price, $self->binaryico_number_of_tokens);
     return join '_', @element;
 }
 
@@ -233,11 +239,11 @@ sub _validate_price {
     return if $self->_for_sale;
 
     my @err;
-    if (not $self->ask_price or $self->ask_price == 0) {
+    if (!$self->ask_price) {
         push @err, {
-            message           => 'The auction total bid price can not be less than zero .',
+            message           => 'The total auction price can not be less than zero .',
             severity          => 99,
-            message_to_client => [$ERROR_MAPPING->{InvalidBinaryicoBidPrice}],
+            message_to_client => [$ERROR_MAPPING->{InvalidBinaryIcoBidPrice}],
 
         };
     }
@@ -267,7 +273,7 @@ sub pricing_details {
     my ($self, $action) = @_;
 
     # This way the order of the fields is well-defined.
-    my @comment_fields = map { defined $_->[1] ? @$_ : (); }
+    my @comment_fields =
         ([binaryico_number_of_tokens => $self->binaryico_number_of_tokens], [binaryico_per_token_bid_price => $self->binaryico_per_token_bid_price],);
 
     return \@comment_fields;
