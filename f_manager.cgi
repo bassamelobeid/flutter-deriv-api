@@ -14,8 +14,8 @@ PrintContentType();
 BrokerPresentation('BACKOFFICE ACCOUNTS');
 my $broker           = request()->broker_code;
 my $encoded_broker   = encode_entities($broker);
-my $staff            = BOM::Backoffice::Auth0::can_access(['Payments']);
 my $clerk            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff            = BOM::Backoffice::Auth0::can_access(['Payments']);
 my $currency_options = get_currency_options();
 
 if (length($broker) < 2) {
@@ -103,33 +103,17 @@ Bar("BATCH CREDIT/DEBIT CLIENTS ACCOUNT: DOUGHFLOW");
 $tt->process('backoffice/account/manager_batch_doughflow.tt') || die $tt->error();
 
 ## CTC
-Bar("BTC withdrawal list");
+Bar("Crypto Cashier Withdrawal");
 
-use BOM::Database::ClientDB;
-my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-my $dbh = $clientdb->db->dbh;
+print '<br>';
 
-if (request()->param('ctc_sent')) {
-    my ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_sent(?, ?)', undef, request()->param('ctc_sent'), 'BTC');
-    # TODO: print warning if not $found
-}
-
-my $btc_trxs;
-my $ctc_view_type;
-if (request()->param('ctc_recent_sent')) {
-    $btc_trxs = $dbh->selectall_arrayref(q{SELECT * FROM payment.ctc_bo_get_withdrawal('BTC', 'SENT'::payment.CTC_STATUS, 50, NULL)}, {Slice => {}});
-    $ctc_view_type = 'recent_sent';
-} else {
-    $btc_trxs =
-        $dbh->selectall_arrayref(q{SELECT * FROM payment.ctc_bo_get_withdrawal('BTC', 'LOCKED'::payment.CTC_STATUS, NULL, NULL)}, {Slice => {}});
-    $ctc_view_type = 'locked';
-}
-$tt->process(
-    'backoffice/account/manager_btc_trxs.tt',
-    {
-        trxs      => $btc_trxs,
-        broker    => $broker,
-        view_type => $ctc_view_type,
-    }) || die $tt->error();
+print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
+print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
+print '<select name="currency">'
+    . '<option val="BTC">Bitcoin</option>'
+    . '<option val="ETH">Ethereum</option>'
+    . '<option val="LTC">Litecoin</option>';
+print '<INPUT type="submit" value="Go">';
+print '</FORM>';
 
 code_exit_BO();
