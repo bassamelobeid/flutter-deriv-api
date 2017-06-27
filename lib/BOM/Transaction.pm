@@ -416,10 +416,10 @@ sub prepare_bet_data_for_buy {
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_TOUCH_BET) {
         $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
-        $bet_params->{binaryico_number_of_tokens}   = $contract->binaryico_number_of_tokens;
-        $bet_params->{binaryico_auction_date_start} = $contract->binaryico_auction_date_start->db_timestamp;
+        $bet_params->{binaryico_number_of_tokens}    = $contract->binaryico_number_of_tokens;
+        $bet_params->{binaryico_auction_date_start}  = $contract->binaryico_auction_date_start->db_timestamp;
         $bet_params->{binaryico_per_token_bid_price} = $contract->binaryico_per_token_bid_price;
-   }else {
+    } else {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
             -mesg              => "Unsupported bet class $bet_params->{bet_class}",
@@ -481,14 +481,14 @@ sub prepare_buy {
 
     $self->comment(
         _build_pricing_comment({
-                contract         => $self->contract,
-                price            => $self->price,
-                requested_price  => $self->requested_price,
-                recomputed_price => $self->recomputed_price,
-                ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
+                contract => $self->contract,
+                price    => $self->price,
+                ($self->requested_price)      ? (requested_price      => $self->requested_price)                    : (),
+                ($self->recomputed_price)     ? (recomputed_price     => $self->recomputed_price)                   : (),
+                ($self->price_slippage)       ? (price_slippage       => $self->price_slippage)                     : (),
                 ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
                 action => 'buy'
-            })) unless (@{$self->comment} or $self->contract->is_binaryico);
+            })) unless (@{$self->comment});
 
     return $self->prepare_bet_data_for_buy;
 }
@@ -648,7 +648,8 @@ sub batch_buy {
                 }
             }
             $stat{$broker}->{success} = $success;
-            enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list)) unless $self->contract->is_binaryico;
+            enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list))
+                unless $self->contract->is_binaryico;
         }
         catch {
             warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
@@ -732,11 +733,11 @@ sub prepare_sell {
 
     $self->comment(
         _build_pricing_comment({
-                contract         => $self->contract,
-                price            => $self->price,
-                requested_price  => $self->requested_price,
-                recomputed_price => $self->recomputed_price,
-                ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
+                contract => $self->contract,
+                price    => $self->price,
+                ($self->requested_price)      ? (requested_price      => $self->requested_price)                    : (),
+                ($self->recomputed_price)     ? (recomputed_price     => $self->recomputed_price)                   : (),
+                ($self->price_slippage)       ? (price_slippage       => $self->price_slippage)                     : (),
                 ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
                 action => 'sell'
             })) unless @{$self->comment};
@@ -1186,6 +1187,22 @@ sub _build_pricing_comment {
 
     my @comment_fields = @{$contract->pricing_details($action)};
 
+    my $format = '%s[%0.5f]';
+    if ($contract->is_binaryico) {
+        if ($action eq 'buy') {
+            $format = '%s[%s]';
+            push @comment_fields,
+                (
+                binaryico_auction_status => 'bidding',
+                binaryico_claim_status   => 'N.A.',
+                binaryico_coin_address   => 'N.A.',
+                binaryico_token_type     => 'N.A.'
+                );
+
+        }
+    }
+
+    #NOTE The handling of sell whether the bid is sucess or not will be handle in next card
     # only manual sell and buy has a price
     if ($price) {
         push @comment_fields, (trade => $price);
@@ -1207,7 +1224,7 @@ sub _build_pricing_comment {
         push @comment_fields, (recomputed_price => $recomputed_price);
     }
 
-    my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
+    my $comment_str = sprintf join(' ', ($format) x (@comment_fields / 2)), @comment_fields;
 
     if (defined $trading_period_start) {
         push @comment_fields, (trading_period_start => $trading_period_start);
@@ -1318,7 +1335,6 @@ sub sell_expired_contracts {
                         });
                 }
                 push @quants_bet_variables, $quants_bet_variables;
-
 
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
