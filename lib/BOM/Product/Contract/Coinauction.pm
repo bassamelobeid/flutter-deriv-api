@@ -8,7 +8,7 @@ use Finance::Contract;
 use BOM::Product::Static qw/get_longcodes get_error_mapping/;
 use List::Util qw(first);
 # Actual methods for introspection purposes.
-sub is_binaryico      { return 1 }
+sub is_binaryico        { return 1 }
 sub is_legacy           { return 0 }
 sub is_atm_bet          { return 0 }
 sub is_intraday         { return 0 }
@@ -205,14 +205,13 @@ sub _build_shortcode {
     my @element       = map { $_ } ($contract_type, $self->binaryico_per_token_bid_price, $self->binaryico_number_of_tokens);
     return join '_', @element;
 }
+
 sub longcode {
     my $self        = shift;
     my $description = get_longcodes()->{'binaryico'};
-    return [$description];    
+    return [$description];
 
 }
-
-
 
 sub is_expired {
     my $self = shift;
@@ -263,14 +262,13 @@ sub _validate_date_pricing {
     return @err;
 
 }
+
 sub pricing_details {
     my ($self, $action) = @_;
 
     # This way the order of the fields is well-defined.
-    my @comment_fields = map { defined $_->[1] ? @$_ : (); } (
-        [binaryico_number_of_tokens  => $self->binaryico_number_of_tokens],
-        [binaryico_per_token_bid_price => $self->binaryico_per_token_bid_price],
-    );
+    my @comment_fields = map { defined $_->[1] ? @$_ : (); }
+        ([binaryico_number_of_tokens => $self->binaryico_number_of_tokens], [binaryico_per_token_bid_price => $self->binaryico_per_token_bid_price],);
 
     return \@comment_fields;
 }

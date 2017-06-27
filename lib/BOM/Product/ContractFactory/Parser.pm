@@ -38,11 +38,9 @@ Convert a shortcode and currency pair into parameters suitable for creating a BO
 sub shortcode_to_parameters {
     my ($shortcode, $currency, $is_sold) = @_;
 
-    my (
-        $bet_type,       $underlying_symbol, $payout,              $date_start,   $date_expiry,
-        $barrier,        $barrier2,          $prediction,          $fixed_expiry, $tick_expiry,
-        $how_many_ticks, $forward_start,     $binaryico_per_token_bid_price, $binaryico_number_of_tokens
-    );
+    my ($bet_type, $underlying_symbol, $payout, $date_start, $date_expiry, $barrier, $barrier2, $prediction, $fixed_expiry, $tick_expiry,
+        $how_many_ticks, $forward_start, $binaryico_per_token_bid_price,
+        $binaryico_number_of_tokens);
     my ($initial_bet_type) = split /_/, $shortcode;
 
     my $legacy_params = {
@@ -54,8 +52,8 @@ sub shortcode_to_parameters {
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
     if ($shortcode =~ /^BINARYICO_(\d*\.?\d*)_(\d+)$/) {
-        $bet_type            = 'BINARYICO';
-        $underlying_symbol   = 'BINARYICO';
+        $bet_type                      = 'BINARYICO';
+        $underlying_symbol             = 'BINARYICO';
         $binaryico_per_token_bid_price = $1;
         $binaryico_number_of_tokens    = $2;
 
@@ -119,9 +117,9 @@ sub shortcode_to_parameters {
         tick_expiry  => $tick_expiry,
         tick_count   => $how_many_ticks,
         is_sold      => $is_sold,
-        ($forward_start)       ? (starts_as_forward_starting => $forward_start)       : (),
-        ($binaryico_number_of_tokens)    ? (binaryico_number_of_tokens           => $binaryico_number_of_tokens)    : (),
-        ($binaryico_per_token_bid_price) ? (binaryico_per_token_bid_price        => $binaryico_per_token_bid_price) : (),
+        ($forward_start)                 ? (starts_as_forward_starting    => $forward_start)                 : (),
+        ($binaryico_number_of_tokens)    ? (binaryico_number_of_tokens    => $binaryico_number_of_tokens)    : (),
+        ($binaryico_per_token_bid_price) ? (binaryico_per_token_bid_price => $binaryico_per_token_bid_price) : (),
         %barriers,
     };
 
