@@ -235,8 +235,12 @@ subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday'
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463087154_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'multiday contract';
-    is_deeply($c2->longcode,
+    my $c2_longcode;
+    like(warning {$c2_longcode = $c2->longcode}, qr/No basis tick for frxGBPUSD/, 'get a warning');
+    diag("after");
+    is_deeply($c2_longcode,
         ['Win payout if [_3] is strictly lower than [_6] at [_5].', 'USD', '166.27', 'GBP/USD', [], ['close on [_1]', '2016-05-13'], ['entry spot']]);
+    diag("after again");
     is $c->expiry_type, 'daily';
     my $expiry_daily_longcode = $c2->longcode;
     $c2 = make_similar_contract($c, {date_pricing => $c->date_start->plus_time_interval('5h')});
@@ -249,8 +253,10 @@ subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday'
 subtest 'longcode of daily contracts at 10 minutes before friday close' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463172600_1463173200_S0P_0', 'usd');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
+    my $c2_longcode;
+    like(warning {$c2_longcode = $c2->longcode}, qr/No basis tick for frxGBPUSD/, 'get a warning');
     is_deeply(
-        $c2->longcode,
+        $c2_longcode,
         [
             'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
             'usd', '166.27', 'GBP/USD', ['contract start time'], ['10 minutes'], ['entry spot']]);
@@ -261,8 +267,10 @@ subtest 'longcode of daily contracts at 10 minutes before friday close' => sub {
 subtest 'longcode of 22 hours contract from Thursday 3GMT' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463022000_1463101200_S0P_0', 'usd');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
+    my $c2_longcode;
+    like(warning {$c2_longcode = $c2->longcode}, qr/No basis tick for frxGBPUSD/, 'get a warning');
     is_deeply(
-        $c2->longcode,
+        $c2_longcode,
         [
             'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
             'usd', '166.27', 'GBP/USD', ['contract start time'], ['22 hours'], ['entry spot']]);
@@ -274,8 +282,10 @@ subtest 'longcode of index daily contracts' => sub {
     my $c = produce_contract('PUT_GDAXI_166.27_1469523600_1469633400_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is daily contract';
+    my $c2_longcode;
+    like(warning {$c2_longcode = $c2->longcode}, qr/No basis tick for GDAXI/, 'get a warning');
     is_deeply(
-        $c2->longcode,
+        $c2_longcode,
         [
             'Win payout if [_3] is strictly lower than [_6] at [_5].',
             'USD', '166.27', 'German Index', [], ['close on [_1]', '2016-07-27'],
@@ -296,7 +306,9 @@ subtest 'longcode of daily contract on early close day' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1482332400_1482429600_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is a multiday contract';
-    is_deeply($c2->longcode,
+    my $c2_longcode;
+    like(warning {$c2_longcode = $c2->longcode}, qr/No basis tick for frxGBPUSD/, 'get a warning');
+    is_deeply($c2_longcode,
         ['Win payout if [_3] is strictly lower than [_6] at [_5].', 'USD', '166.27', 'GBP/USD', [], ['close on [_1]', '2016-12-22'], ['entry spot']]);
     is $c2->expiry_type, 'daily';
 };
@@ -305,8 +317,10 @@ subtest 'longcode of intraday contracts' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463126400_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->is_intraday, 'is an contract';
+    my $c2_longcode;
+    like(warning {$c2_longcode = $c2->longcode}, qr/No basis tick for frxGBPUSD/, 'get a warning');
     is_deeply(
-        $c2->longcode,
+        $c2_longcode,
         [
             'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
             'USD', '166.27', 'GBP/USD', ['contract start time'], ['13 hours'], ['entry spot']]);
