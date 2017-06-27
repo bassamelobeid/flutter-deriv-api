@@ -51,7 +51,7 @@ sub shortcode_to_parameters {
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
-    if ($shortcode =~ /^BINARYICO_(\d*\.?\d*)_(\d+)$/) {
+    if ($shortcode =~ /^BINARYICO_(\d+\.?\d*)_(\d+)$/) {
         $bet_type                      = 'BINARYICO';
         $underlying_symbol             = 'BINARYICO';
         $binaryico_per_token_bid_price = $1;

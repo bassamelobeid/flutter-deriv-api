@@ -136,7 +136,7 @@ sub _build_binaryico_auction_date_start {
 
     if (not $ICO_config->{$self->contract_type}) {
         $self->add_errors({
-            message => "Invalid contract type. [symbol: " . $self->contract_type . "]",
+            message           => "Invalid contract type. [symbol: " . $self->contract_type . "]",
             severity          => 99,
             message_to_client => [$ERROR_MAPPING->{InvalidBinaryIcoContract}, $self->contract_type],
         });
@@ -272,8 +272,10 @@ sub pricing_details {
     my ($self, $action) = @_;
 
     # This way the order of the fields is well-defined.
-    my @comment_fields =
-        (binaryico_number_of_tokens => $self->binaryico_number_of_tokens, binaryico_per_token_bid_price => $self->binaryico_per_token_bid_price);
+    my @comment_fields = (
+        binaryico_number_of_tokens    => $self->binaryico_number_of_tokens,
+        binaryico_per_token_bid_price => $self->binaryico_per_token_bid_price
+    );
 
     return \@comment_fields;
 }
