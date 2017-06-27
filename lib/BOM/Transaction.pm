@@ -1196,6 +1196,8 @@ sub _build_pricing_comment {
     if ($contract->is_binaryico) {
         if ($action eq 'buy') {
             $format = '%s[%s]';
+            # for binaryico, price is the per token bid price , hence the actual debited amount is the $c->ask_price
+            $price = $contract->ask_price;
             push @comment_fields,
                 (
                 binaryico_auction_status => 'bidding',
