@@ -89,7 +89,7 @@ sub validate_trx_buy {
             return $res;
         }
     }
-    
+
     # no need to do the subsequent check for binaryico
     return if $self->transaction->contract->is_binaryico;
 
@@ -518,7 +518,7 @@ Validates whether the client has provided his residence country
 sub _validate_jurisdictional_restrictions {
     my ($self, $client) = (shift, shift);
 
-    my $contract    = $self->transaction->contract;
+    my $contract = $self->transaction->contract;
 
     #TO DO: we need to set the jurisdictional check for ICO.
     # The following check include check of market name which is not something we want , so I skip for here first.
