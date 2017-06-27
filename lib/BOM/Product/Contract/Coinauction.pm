@@ -137,7 +137,6 @@ sub _build_binaryico_auction_date_start {
     if (not $ICO_config->{$self->contract_type}) {
         $self->add_errors({
             message => "Invalid contract type. [symbol: " . $self->contract_type . "]",
-            ,
             severity          => 99,
             message_to_client => [$ERROR_MAPPING->{InvalidBinaryIcoContract}, $self->contract_type],
         });
