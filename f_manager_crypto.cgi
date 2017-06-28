@@ -85,7 +85,7 @@ if ($view_type eq 'sent') {
         $currency);
 }
 
-Bar("LIST OF TRANSACTIONS");
+Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
 my $tt = BOM::Backoffice::Request::template;
 $tt->process(

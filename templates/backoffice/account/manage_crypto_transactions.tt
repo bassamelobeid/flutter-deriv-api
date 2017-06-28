@@ -1,3 +1,7 @@
+<br/>
+[% IF transactions.size == 0 %]
+    <p>There are no [% view_type %] transactions.</p>
+[% ELSE %]
 <table>
     <tr>
         <th>Currency</th>
@@ -34,19 +38,25 @@
     </tr>
     [% END %]
 </table>
-
-[% IF transactions.size == 0 %]
-    <p>There are no [% view_type %] transactions.</p>
 [% END %]
 
+<br/>
 <table>
 <tr>
-    <td><a href="?broker=[% broker %]&currency=[% currency %]&view_type=sent">View Sent Transactions</a></td>
+    <td>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_type=pending">View Pending Transactions</a>
+    </td>
     <td>|</td>
-    <td><a href="?broker=[% broker %]&currency=[% currency %]&view_type=pending">View Pending Transactions</a></td>
+    <td>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_type=verified">View Verified Transactions</a>
+    </td>
     <td>|</td>
-    <td><a href="?broker=[% broker %]&currency=[% currency %]&view_type=verified">View Verified Transactions</a></td>
+    <td>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_type=rejected">View Rejected Transaction</a>
+    </td>
     <td>|</td>
-    <td><a href="?broker=[% broker %]&currency=[% currency %]&view_type=rejected">View Rejected Transaction</a></td>
+    <td>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_type=sent">View Sent Transactions</a>
+    </td>
 </tr>
 </table>
