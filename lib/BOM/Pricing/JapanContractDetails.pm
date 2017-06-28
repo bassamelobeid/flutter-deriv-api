@@ -14,7 +14,7 @@ use Excel::Writer::XLSX;
 use LandingCompany::Registry;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
-
+use BOM::JapanContractDetailsOutput;
 use BOM::Platform::Runtime;
 
 sub parse_file {
@@ -27,7 +27,7 @@ sub parse_file {
         chomp $line;
         # Might have a trailing blank at the end, and any in the middle of the file are generally harmless too
         next unless length $line;
-        my ($shortcode, $ask_price, $bid_price, $extra) = extract_from_code($line);
+        my ($shortcode, $ask_price, $bid_price, $extra) = BOM::JapanContractDetailsOutput::extract_from_code($line);
 
         my $currency = $landing_company =~ /japan/ ? 'JPY' : 'USD';
         my $parameters = verify_with_shortcode({
