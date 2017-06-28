@@ -42,7 +42,7 @@ subtest 'Ico variations' => sub {
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
     is $c->code, 'BINARYICO', 'is a Binaryico';
     ok !$c->is_valid_to_buy, 'is not valid to buy';
-    is $c->primary_validation_error->message, 'The total auction price can not be less than zero .', 'Zero bid price';
+    is $c->primary_validation_error->message, 'The total auction price can not be less than  or equal to zero .', 'Zero bid price';
 
 };
 
