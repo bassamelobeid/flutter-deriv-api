@@ -42,6 +42,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => $_,
         recorded_date => $now
     }) for qw (frxUSDJPY frxAUDCAD frxUSDCAD frxAUDUSD);
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                         underlying => 'frxUSDJPY',
+                                                         epoch      => $now->minus_time_interval('10')->epoch
+                                                        });
+
+
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch
@@ -51,6 +58,8 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch + 1,
     quote      => 100,
 });
+
+
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxAUDCAD',
