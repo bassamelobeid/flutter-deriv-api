@@ -75,5 +75,4 @@ sub single_output_as_excel {
     return;
 }
 
-
 1;
