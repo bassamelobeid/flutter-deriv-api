@@ -227,7 +227,9 @@ subtest 'shortcodes' => sub {
         });
         isa_ok $c, 'BOM::Product::Contract::Call';
         my $expected_shortcode = 'CALL_FRXUSDJPY_10_' . $now->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
-        is $c->shortcode, $expected_shortcode, 'shortcode matches';
+        my $c_shortcode;
+        like(warning {$c_shortcode = $c->shortcode}, qr/No basis tick for frxUSDJPY/, 'get a warning');
+        is $c_shortcode, $expected_shortcode, 'shortcode matches';
     }
     'builds shortcode from params for forward starting call';
     lives_ok {
