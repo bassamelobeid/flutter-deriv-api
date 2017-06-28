@@ -273,13 +273,14 @@ subtest 'longcode of 22 hours contract from Thursday 3GMT' => sub {
 };
 
 subtest 'longcode of index daily contracts' => sub {
+    create_ticks([166.27, 1469523600, 'GDAXI']);
     my $c = produce_contract('PUT_GDAXI_166.27_1469523600_1469633400_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is daily contract';
-    my $c2_longcode;
-    like(warning {$c2_longcode = $c2->longcode}, qr/No basis tick for GDAXI/, 'get a warning');
+    #my $c2_longcode;
+    #like(warning {$c2_longcode = $c2->longcode}, qr/No basis tick for GDAXI/, 'get a warning');
     is_deeply(
-        $c2_longcode,
+        $c2->longcode,
         [
             'Win payout if [_3] is strictly lower than [_6] at [_5].',
             'USD', '166.27', 'German Index', [], ['close on [_1]', '2016-07-27'],
@@ -297,6 +298,8 @@ subtest 'longcode of index daily contracts' => sub {
 };
 
 subtest 'longcode of daily contract on early close day' => sub {
+    create_ticks([166.27, 1482332400, 'FrxGBPUSD']);
+    create_ticks([166.27, 1482429600, 'FrxGBPUSD']);
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1482332400_1482429600_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is a multiday contract';
@@ -306,6 +309,8 @@ subtest 'longcode of daily contract on early close day' => sub {
 };
 
 subtest 'longcode of intraday contracts' => sub {
+    create_ticks([166.27, 1463126400, 'FrxGBPUSD']);
+    create_ticks([166.27,1463173200,'FrxGBPUSD']);
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463126400_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->is_intraday, 'is an contract';
