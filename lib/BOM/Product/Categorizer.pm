@@ -262,9 +262,7 @@ sub _initialize_contract_parameters {
 
     # For Ico, the date_start , date_expiry and ask price will be determined in the Coinauction object
     if (defined $pp->{bet_type} and $pp->{bet_type} eq 'BINARYICO') {
-        delete $pp->{date_start};
-        delete $pp->{date_expiry};
-        delete $pp->{ask_price};
+        delete @{$pp}{qw/date_start date_expiry ask_price/};
     }
 
     return $pp;
