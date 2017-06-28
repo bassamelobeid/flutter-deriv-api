@@ -8,7 +8,7 @@
         <th>Verified Date</th>
         <th>Rejected Date</th>
         <th>Sent Date</th>
-        [% IF view_type == 'locked' %]
+        [% IF view_type == 'pending' %]
             <th>Verify</th>
             <th>Reject</th>
         [% END %]
@@ -23,7 +23,7 @@
         <td>[% trx.verified_date %]</td>
         <td>[% trx.rejected_date %]</td>
         <td>[% trx.sent_date %]</td>
-        [% IF view_type == 'locked' %]
+        [% IF view_type == 'pending' %]
             <td>
                 <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify">Verify transaction</a>
             </td>
@@ -43,7 +43,7 @@
 <tr>
     <td><a href="?broker=[% broker %]&currency=[% currency %]&view_type=sent">View Sent Transactions</a></td>
     <td>|</td>
-    <td><a href="?broker=[% broker %]&currency=[% currency %]&view_type=locked">View Pending Transactions</a></td>
+    <td><a href="?broker=[% broker %]&currency=[% currency %]&view_type=pending">View Pending Transactions</a></td>
     <td>|</td>
     <td><a href="?broker=[% broker %]&currency=[% currency %]&view_type=verified">View Verified Transactions</a></td>
     <td>|</td>

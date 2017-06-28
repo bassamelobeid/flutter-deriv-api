@@ -20,7 +20,7 @@ my $staff          = BOM::Backoffice::Auth0::can_access(['Payments']);
 my $currency       = request()->param('currency');
 my $action         = request()->param('action');
 my $address        = request()->param('address');
-my $view_type      = request()->param('view_type') // 'locked';
+my $view_type      = request()->param('view_type') // 'pending';
 
 if (length($broker) < 2) {
     print
@@ -33,12 +33,12 @@ if (not $currency or $currency !~ /^[A-Z]{3}$/) {
     code_exit_BO();
 }
 
-if (not $address or $address !~ /^\w+$/) {
+if ($address and $address !~ /^\w+$/) {
     print "Invalid address.";
     code_exit_BO();
 }
 
-if (not $action or $action !~ /^[a-zA-Z]{4,15}$/) {
+if ($action and $action !~ /^[a-zA-Z]{4,15}$/) {
     print "Invalid action.";
     code_exit_BO();
 }
@@ -53,7 +53,7 @@ my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
 my $dbh = $clientdb->db->dbh;
 
 my $found;
-if ($action eq 'verify') {
+if ($action and $action eq 'verify') {
     ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency);
     unless ($found) {
         print "ERROR: No record found. Please check with someone from IT team before proceeding.";
@@ -61,7 +61,7 @@ if ($action eq 'verify') {
     }
 }
 
-if ($action eq 'reject') {
+if ($action and $action eq 'reject') {
     ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency);
     unless ($found) {
         print "ERROR: No record found. Please check with someone from IT team before proceeding.";
