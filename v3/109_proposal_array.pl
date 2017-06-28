@@ -1,32 +1,22 @@
 use strict;
 use warnings;
-use JSON;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use Net::EmptyPort qw(empty_port);
-use Data::Dumper;
-use Devel::Refcount qw| refcount |;
-
+use Devel::Refcount qw(refcount);
 
 use Test::More;
 use Test::Deep;
-use Test::MockTime qw( set_absolute_time );
-use Test::MockModule;
 
 use await;
 
-use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client build_mojo_test/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Database::Model::OAuth;
-use BOM::Platform::RedisReplicated;
-use BOM::Database::DataMapper::FinancialMarketBet;
-use BOM::Platform::Runtime;
 
 use BOM::Test::RPC::BomRpc;
 use BOM::Test::RPC::PricingRpc;
@@ -60,18 +50,18 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'economic_events',
         {
             events => [{
-            symbol       => 'USD',
-            release_date => 1,
-            source       => 'forexfactory',
-            impact       => 1,
-            event_name   => 'FOMC',
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
             }]
         });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
-        symbol        => 'frxUSDJPY',
-        recorded_date => $now
+            symbol        => 'frxUSDJPY',
+            recorded_date => $now
         });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
@@ -108,8 +98,6 @@ for my $i (0 .. $#{$contracts_for->{contracts_for}{available}}) {
     };
 }
 
-
-
 my $proposal_array_req_tpl = {
     'symbol' => 'frxUSDJPY',
     'req_id' => '1',
@@ -123,8 +111,6 @@ my $proposal_array_req_tpl = {
     'contract_type' => undef,
     'passthrough' => {}
 };
-
-
 
 subtest 'allcombinations' => sub {
     for my $key (keys %$proposal_array_variants) {
@@ -172,26 +158,22 @@ subtest "one barrier, one contract_type" => sub {
 
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
-    note explain $response;
 
     $proposal_array_req_tpl->{barriers}                 = [{barrier => $put->{available_barriers}[0]}];
 
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
-    note explain $response;
 
     $proposal_array_req_tpl->{barriers}                 = $fixed_bars,
     $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
 
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
-    note explain $response;
 
     $proposal_array_req_tpl->{barriers}                 = [{barrier => $put->{available_barriers}[0]}];
 
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
-    note explain $response;
 };
 
 subtest "various results" => sub {
@@ -204,19 +186,16 @@ subtest "various results" => sub {
 
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
-    note explain $response;
     ok $response->{proposal_array}{proposals}{CALLE}[0]{ask_price}, "proposal is ok, price presented";
 
     $proposal_array_req_tpl->{barriers}                 = [{barrier => 99}];
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
-    note explain $response;
     ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : Minimum stake of 35 and maximum payout of 100000.";
 
     $proposal_array_req_tpl->{barriers}                 = [{barrier => 95}];
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
-    note explain $response;
     ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : This contract offers no return.";
 };
 
@@ -231,7 +210,6 @@ subtest 'subscriptions' => sub {
 
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
-    note explain $response;
 
     is(scalar keys %{$t->app->pricing_subscriptions()}, 1, "Subscription created");
     my $channel = [keys %{$t->app->pricing_subscriptions()}]->[0];
