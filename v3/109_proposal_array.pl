@@ -6,6 +6,8 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use Net::EmptyPort qw(empty_port);
 use Data::Dumper;
+use Devel::Refcount qw| refcount |;
+
 
 use Test::More;
 use Test::Deep;
@@ -17,6 +19,7 @@ use await;
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client build_mojo_test/;
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -27,9 +30,6 @@ use BOM::Platform::Runtime;
 
 use BOM::Test::RPC::BomRpc;
 use BOM::Test::RPC::PricingRpc;
-
-#my $eleventh = Date::Utility->new('2010-01-11 02:00:00');
-#set_absolute_time($eleventh->epoch);    # before opening time
 
 my $response;
 
@@ -136,21 +136,12 @@ subtest 'allcombinations' => sub {
         } else {
             $fbarriers = [map { {barrier=>$_} } @{$data->{available_barriers}}];
         }
-        note "key: $key";
         $proposal_array_req_tpl->{barriers}                 = $fbarriers;
         $proposal_array_req_tpl->{date_expiry}              = $data->{date_expiry};
         $proposal_array_req_tpl->{trading_period_start}     = $data->{trading_period_start};
         $proposal_array_req_tpl->{contract_type}            = [$ct1, $ct2];
-        note explain $proposal_array_req_tpl;
-        note "==================================";
         my $response = $t->await::proposal_array($proposal_array_req_tpl);
         test_schema('proposal_array', $response);
-        note "===++++" x 5;
-        if (0 && $data->{barriers} == 2) {
-            note explain $response;
-            done_testing;
-            exit;
-        }
     }
 };
 
@@ -172,7 +163,6 @@ if ($put->{trading_period}{date_expiry}{epoch} - Date::Utility->new->epoch <= 90
     exit;
 }
 
-
 subtest "one barrier, one contract_type" => sub {
 
     $proposal_array_req_tpl->{barriers}                 = $fixed_bars;
@@ -190,20 +180,68 @@ subtest "one barrier, one contract_type" => sub {
     test_schema('proposal_array', $response);
     note explain $response;
 
+    $proposal_array_req_tpl->{barriers}                 = $fixed_bars,
     $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
 
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
     note explain $response;
 
-    $proposal_array_req_tpl->{barriers}                 = $fixed_bars,
+    $proposal_array_req_tpl->{barriers}                 = [{barrier => $put->{available_barriers}[0]}];
 
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
     note explain $response;
 };
 
+subtest "various results" => sub {
 
+    $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch};
+    $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
+
+    $proposal_array_req_tpl->{barriers}                 = [{barrier => 97.2}];
+    $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
+
+    $response = $t->await::proposal_array($proposal_array_req_tpl);
+    test_schema('proposal_array', $response);
+    note explain $response;
+    ok $response->{proposal_array}{proposals}{CALLE}[0]{ask_price}, "proposal is ok, price presented";
+
+    $proposal_array_req_tpl->{barriers}                 = [{barrier => 99}];
+    $response = $t->await::proposal_array($proposal_array_req_tpl);
+    test_schema('proposal_array', $response);
+    note explain $response;
+    ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : Minimum stake of 35 and maximum payout of 100000.";
+
+    $proposal_array_req_tpl->{barriers}                 = [{barrier => 95}];
+    $response = $t->await::proposal_array($proposal_array_req_tpl);
+    test_schema('proposal_array', $response);
+    note explain $response;
+    ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : This contract offers no return.";
+};
+
+subtest 'subscriptions' => sub {
+    $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch};
+    $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
+
+    $proposal_array_req_tpl->{barriers}                 = [{barrier => 97}];
+    $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
+
+    $proposal_array_req_tpl->{subscribe}                = 1;
+
+    $response = $t->await::proposal_array($proposal_array_req_tpl);
+    test_schema('proposal_array', $response);
+    note explain $response;
+
+    is(scalar keys %{$t->app->pricing_subscriptions()}, 1, "Subscription created");
+    my $channel = [keys %{$t->app->pricing_subscriptions()}]->[0];
+    is(refcount($t->app->pricing_subscriptions()->{$channel}), 1, "check refcount");
+    ok(redis_pricer->get($channel), "check redis subscription");
+
+    $response = $t->await::forget_all({forget_all => "proposal_array"});
+    is($t->app->pricing_subscriptions()->{$channel}, undef, "Forgotten");
+                  
+};
 
 
 $t->finish_ok;
