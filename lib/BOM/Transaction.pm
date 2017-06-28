@@ -592,6 +592,7 @@ sub batch_buy {
     # TODO: shall we allow this operation only if $self->client is real-money?
     #       Or allow virtual $self->client only if all other clients are also
     #       virtual?
+    return $self->contract->is_binaryico;
 
     my $stats_data = $self->stats_start('batch_buy');
 
@@ -653,8 +654,7 @@ sub batch_buy {
                 }
             }
             $stat{$broker}->{success} = $success;
-            enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list))
-                unless $self->contract->is_binaryico;
+            enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
         }
         catch {
             warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
