@@ -269,9 +269,8 @@ sub ticks_history {
 }
 
 sub process_realtime_events {
-    my ($shared_info, $message, $chan) = @_;
-
-    my @m = split(';', $message);
+    my ($shared_info, $msg, $chan) = @_;
+    my $payload = decode_json($msg);
 
     # pick the per-user controller to send-back notifications to
     # related users only
@@ -285,7 +284,7 @@ sub process_realtime_events {
         my $arguments = $feed_channels_type->{$channel}->{args};
         my $cache     = $feed_channels_type->{$channel}->{cache};
 
-        if ($type eq 'tick' and $m[0] eq $symbol) {
+        if ($type eq 'tick' and $payload->{symbol} eq $symbol) {
             unless ($c->tx) {
                 _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
                 next;
@@ -294,11 +293,13 @@ sub process_realtime_events {
             my $tick = {
                 id     => $feed_channels_type->{$channel}->{uuid},
                 symbol => $symbol,
-                epoch  => $m[1],
-                quote  => $m[2]};
+                epoch  => $payload->{epoch},
+                quote  => $payload->{spot},
+                bid    => $payload->{bid},
+                ask    => $payload->{ask}};
 
             if ($cache) {
-                $feed_channel_cache->{$channel}->{$m[1]} = $tick;
+                $feed_channel_cache->{$channel}->{$payload->{epoch}} = $tick;
             } else {
                 $c->send({
                         json => {
@@ -310,29 +311,30 @@ sub process_realtime_events {
                             tick => $tick
                         }}) if $c->tx;
             }
-        } elsif ($m[0] eq $symbol) {
+        } elsif ($payload->{symbol} eq $symbol) {
             unless ($c->tx) {
                 _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
                 next;
             }
 
-            $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);?/;
-            my $ohlc = {
+            my ($open, $high, $low, $close) = $payload->{ohlc} =~ /$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);?/;
+            my $epoch = $payload->{epoch};
+            my $ohlc  = {
                 id        => $feed_channels_type->{$channel}->{uuid},
-                epoch     => $m[1],
+                epoch     => $epoch,
                 open_time => ($type and looks_like_number($type))
-                ? $m[1] - $m[1] % $type
-                : $m[1] - $m[1] % 60,    #defining default granularity
+                ? $epoch - $epoch % $type
+                : $epoch - $epoch % 60,    #defining default granularity
                 symbol      => $symbol,
                 granularity => $type,
-                open        => $1,
-                high        => $2,
-                low         => $3,
-                close       => $4
+                open        => $open,
+                high        => $high,
+                low         => $low,
+                close       => $close,
             };
 
             if ($cache) {
-                $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
+                $feed_channel_cache->{$channel}->{$epoch} = $ohlc;
             } else {
                 $c->send({
                         json => {
