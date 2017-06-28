@@ -37,12 +37,13 @@ subtest 'Ico variations' => sub {
 
     $bet_params->{bet_type} = 'BINARYICO';
     $bet_params->{underlying} = 'BINARYICO';
-    $bet_params->{stake}      = '0.000';
+    $bet_params->{stake}      = '0.0001';
+    $bet_params->{currency} = 'EUR';
     $c                        = produce_contract($bet_params);
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
     is $c->code, 'BINARYICO', 'is a Binaryico';
     ok !$c->is_valid_to_buy, 'is not valid to buy';
-    is $c->primary_validation_error->message, 'The total auction price can not be less than  or equal to zero .', 'Zero bid price';
+    is $c->primary_validation_error->message, 'The minimum bid is USD 1 or equivalent in other currency.', 'Minimum bid of USD1';
 
 };
 

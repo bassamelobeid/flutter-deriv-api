@@ -8,6 +8,7 @@ use Finance::Contract;
 use BOM::Product::Static qw/get_longcodes get_error_mapping/;
 use List::Util qw(first);
 use Date::Utility;
+use Postgres::FeedDB::CurrencyConverter qw (in_USD);
 # Actual methods for introspection purposes.
 sub is_binaryico        { return 1 }
 sub is_legacy           { return 0 }
@@ -93,6 +94,7 @@ sub BUILD {
     $self->contract_type($self->build_parameters->{bet_type});
     $self->binaryico_number_of_tokens($self->build_parameters->{binaryico_number_of_tokens});
     $self->binaryico_per_token_bid_price($self->build_parameters->{binaryico_per_token_bid_price});
+
     if ($self->binaryico_number_of_tokens < $limits->{min} or $self->binaryico_number_of_tokens > $limits->{max}) {
 
         $self->add_errors({
@@ -233,14 +235,18 @@ sub _validate_price {
 
     return if $self->_for_sale;
 
+    my $per_token_bid_price_in_usd = in_USD($self->binaryico_per_token_bid_price, $self->currency);
+
     my @err;
-    if ($self->ask_price <= 0) {
+    if ($per_token_bid_price_in_usd <= 1) {
         push @err, {
-            message           => 'The total auction price can not be less than  or equal to zero .',
-            severity          => 99,
-            message_to_client => [$ERROR_MAPPING->{InvalidBinaryIcoBidPrice}],
+            message  => 'The minimum bid is USD 1 or equivalent in other currency.',
+            severity => 99,
+            message_to_client =>
+                [$ERROR_MAPPING->{InvalidBinaryIcoBidPrice}, $self->currency, $self->binaryico_per_token_bid_price, $per_token_bid_price_in_usd],
 
         };
+
     }
     return @err;
 }
