@@ -232,12 +232,7 @@ subtest 'longcode misbehaving for daily contracts' => sub {
 };
 
 subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday' => sub {
-  create_ticks([166.26,1463020000, 'frxGBPUSD'],[166.27, 1463087154, 'frxGBPUSD']);
-  create_ticks([166.27, 1463126400, 'frxGBPUSD']);
-  create_ticks([166.27,1463173200,'frxGBPUSD']);
-  create_ticks([166.27, 1482332400, 'frxGBPUSD']);
-  create_ticks([166.27, 1482429600, 'frxGBPUSD']);
-
+    create_ticks([166.26,1463020000, 'frxGBPUSD'],[166.27, 1463087154, 'frxGBPUSD']);
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463087154_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'multiday contract';
@@ -282,6 +277,8 @@ subtest 'longcode of index daily contracts' => sub {
     my $c = produce_contract('PUT_GDAXI_166.27_1469523600_1469633400_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is daily contract';
+    #my $c2_longcode;
+    #like(warning {$c2_longcode = $c2->longcode}, qr/No basis tick for GDAXI/, 'get a warning');
     is_deeply(
         $c2->longcode,
         [
@@ -301,6 +298,8 @@ subtest 'longcode of index daily contracts' => sub {
 };
 
 subtest 'longcode of daily contract on early close day' => sub {
+    create_ticks([166.27, 1482332400, 'frxGBPUSD']);
+    create_ticks([166.27, 1482429600, 'frxGBPUSD']);
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1482332400_1482429600_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is a multiday contract';
@@ -310,6 +309,8 @@ subtest 'longcode of daily contract on early close day' => sub {
 };
 
 subtest 'longcode of intraday contracts' => sub {
+    create_ticks([166.27, 1463126400, 'frxGBPUSD']);
+    create_ticks([166.27,1463173200,'frxGBPUSD']);
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463126400_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->is_intraday, 'is an contract';
