@@ -592,7 +592,7 @@ sub batch_buy {
     # TODO: shall we allow this operation only if $self->client is real-money?
     #       Or allow virtual $self->client only if all other clients are also
     #       virtual?
-    return $self->contract->is_binaryico;
+    return if $self->contract->is_binaryico;
 
     my $stats_data = $self->stats_start('batch_buy');
 
@@ -1193,7 +1193,6 @@ sub _build_pricing_comment {
     my @comment_fields = @{$contract->pricing_details($action)};
 
     my $format = '%s[%0.5f]';
-    
 
     #NOTE The handling of sell whether the bid is sucess or not will be handle in next card
     # only manual sell and buy has a price
