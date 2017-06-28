@@ -42,13 +42,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => $_,
         recorded_date => $now
     }) for qw (frxUSDJPY frxAUDCAD frxUSDCAD frxAUDUSD);
-
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                         underlying => 'frxUSDJPY',
-                                                         epoch      => $now->minus_time_interval('10')->epoch
-                                                        });
-
-
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch
@@ -58,8 +51,6 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch + 1,
     quote      => 100,
 });
-
-
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxAUDCAD',
@@ -236,8 +227,6 @@ subtest 'shortcodes' => sub {
         });
         isa_ok $c, 'BOM::Product::Contract::Call';
         my $expected_shortcode = 'CALL_FRXUSDJPY_10_' . $now->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
-        #my $c_shortcode;
-#        like(warning {$c_shortcode = $c->shortcode}, qr/No basis tick for frxUSDJPY/, 'get a warning');
         is $c->shortcode, $expected_shortcode, 'shortcode matches';
     }
     'builds shortcode from params for forward starting call';
