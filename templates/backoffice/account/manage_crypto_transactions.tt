@@ -1,41 +1,52 @@
-
-<p>Please send it manually then mark it as SENT:</p>
-
-<table class="csv">
+<table>
     <tr>
+        <th>Currency</th>
         <th>Address</th>
         <th>LoginID</th>
         <th>Amount</th>
         <th>Creation Date</th>
-        [% IF view_type == 'recent_sent' %]
-        <td>Sent Date</td>
+        <th>Verified Date</th>
+        <th>Rejected Date</th>
+        <th>Sent Date</th>
+        [% IF view_type == 'locked' %]
+            <th>Verify</th>
+            <th>Reject</th>
         [% END %]
-        <th>Currency</th>
-        <th>Action</th>
     </tr>
-    [% FOREACH trx IN trxs %]
+    [% FOREACH trx IN transactions %]
     <tr>
+        <td>[% trx.currency_code %]</td>
         <td>[% trx.address %]</td>
         <td>[% trx.client_loginid %]</td>
         <td>[% trx.amount %]</td>
         <td>[% trx.creation_date %]</td>
-        [% IF view_type == 'recent_sent' %]
+        <td>[% trx.verified_date %]</td>
+        <td>[% trx.rejected_date %]</td>
         <td>[% trx.sent_date %]</td>
+        [% IF view_type == 'locked' %]
+            <td>
+                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify">Verify transaction</a>
+            </td>
+            <td>
+                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject">Reject transaction</a>
+            </td>
         [% END %]
-        <td>[% trx.currency_code %]</td>
-        <td>
-            [% IF view_type == 'locked' %]
-            <a href="?broker=[% broker %]&ctc_sent=[% trx.address %]">Mark as SENT</a>
-            [% END %]
-        </td>
     </tr>
     [% END %]
-
 </table>
 
-[% IF view_type != 'recent_sent' %]
-<p><a href="?broker=[% broker %]&ctc_recent_sent=1">View Recent 50 SENTs</a></p>
+[% IF transactions.size == 0 %]
+    <p>There are no [% view_type %] transactions.</p>
 [% END %]
-[% IF view_type != 'locked' %]
-<p><a href="?broker=[% broker %]">View Pending</a></p>
-[% END %]
+
+<table>
+<tr>
+    <td><a href="?broker=[% broker %]&currency=[% currency %]&view_type=sent">View Sent Transactions</a></td>
+    <td>|</td>
+    <td><a href="?broker=[% broker %]&currency=[% currency %]&view_type=locked">View Pending Transactions</a></td>
+    <td>|</td>
+    <td><a href="?broker=[% broker %]&currency=[% currency %]&view_type=verified">View Verified Transactions</a></td>
+    <td>|</td>
+    <td><a href="?broker=[% broker %]&currency=[% currency %]&view_type=rejected">View Rejected Transaction</a></td>
+</tr>
+</table>

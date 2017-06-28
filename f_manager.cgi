@@ -110,9 +110,9 @@ print '<br>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
 print '<select name="currency">'
-    . '<option val="BTC">Bitcoin</option>'
-    . '<option val="ETH">Ethereum</option>'
-    . '<option val="LTC">Litecoin</option>';
+    . '<option value="BTC">Bitcoin</option>'
+    . '<option value="ETH">Ethereum</option>'
+    . '<option value="LTC">Litecoin</option>';
 print '<INPUT type="submit" value="Go">';
 print '</FORM>';
 

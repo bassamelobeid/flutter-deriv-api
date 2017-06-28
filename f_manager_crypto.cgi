@@ -3,7 +3,6 @@ package main;
 use strict;
 use warnings;
 use HTML::Entities;
-use Format::Util::Strings qw( defang );
 
 use Client::Account;
 
@@ -15,12 +14,13 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('CRYTO CASHIER MANAGEMENT');
-my $broker           = request()->broker_code;
-my $encoded_broker   = encode_entities($broker);
-my $staff            = BOM::Backoffice::Auth0::can_access(['Payments']);
-my $currency         = defang(request()->param('currency'));
-my $action           = defang(request()->param('whattodo'));
-my $address          = defang(request()->param('address'));
+my $broker         = request()->broker_code;
+my $encoded_broker = encode_entities($broker);
+my $staff          = BOM::Backoffice::Auth0::can_access(['Payments']);
+my $currency       = request()->param('currency');
+my $action         = request()->param('action');
+my $address        = request()->param('address');
+my $view_type      = request()->param('view_type') // 'locked';
 
 if (length($broker) < 2) {
     print
@@ -28,23 +28,62 @@ if (length($broker) < 2) {
     code_exit_BO();
 }
 
-use BOM::Database::ClientDB;
+if (not $currency or $currency !~ /^[A-Z]{3}$/) {
+    print "Invalid currency.";
+    code_exit_BO();
+}
 
+if (not $address or $address !~ /^\w+$/) {
+    print "Invalid address.";
+    code_exit_BO();
+}
+
+if (not $action or $action !~ /^[a-zA-Z]{4,15}$/) {
+    print "Invalid action.";
+    code_exit_BO();
+}
+
+if (not $view_type or $view_type !~ /^[a-zA-Z]{4,15}$/) {
+    print "Invalid selection to view type of transactions.";
+    code_exit_BO();
+}
+
+use BOM::Database::ClientDB;
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
 my $dbh = $clientdb->db->dbh;
 
 my $found;
 if ($action eq 'verify') {
     ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency);
-    # TODO: print warning if not $found
+    unless ($found) {
+        print "ERROR: No record found. Please check with someone from IT team before proceeding.";
+        code_exit_BO();
+    }
 }
 
 if ($action eq 'reject') {
     ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency);
-    # TODO: print warning if not $found
+    unless ($found) {
+        print "ERROR: No record found. Please check with someone from IT team before proceeding.";
+        code_exit_BO();
+    }
 }
 
-my $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'LOCKED'::payment.CTC_STATUS, NULL, NULL)", {Slice => {}}, $currency);
+my $trxns;
+if ($view_type eq 'sent') {
+    $trxns =
+        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'SENT'::payment.CTC_STATUS, NULL, NULL)", {Slice => {}}, $currency);
+} elsif ($view_type eq 'verified') {
+    $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'VERIFIED'::payment.CTC_STATUS, NULL, NULL)",
+        {Slice => {}}, $currency);
+} elsif ($view_type eq 'rejected') {
+    $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'REJECTED'::payment.CTC_STATUS, NULL, NULL)",
+        {Slice => {}}, $currency);
+} else {
+    $trxns =
+        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'LOCKED'::payment.CTC_STATUS, NULL, NULL)", {Slice => {}},
+        $currency);
+}
 
 Bar("LIST OF TRANSACTIONS");
 
@@ -54,6 +93,8 @@ $tt->process(
     {
         transactions => $trxns,
         broker       => $broker,
+        view_type    => $view_type,
+        currency     => $currency,
     }) || die $tt->error();
 
 code_exit_BO();
