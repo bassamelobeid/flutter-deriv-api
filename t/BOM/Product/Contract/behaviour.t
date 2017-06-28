@@ -124,9 +124,9 @@ subtest 'waiting for entry tick' => sub {
     ok $c->is_valid_to_sell, 'valid to sell';
     $bet_params->{date_pricing} = $now->epoch + 302;    # 1 second too far
     $c = produce_contract($bet_params);
-    ok !$c->is_expired,       'not expired';
+    ok !$c->is_expired, 'not expired';
     my $is_valid;
-    like( warning {$is_valid = $c->is_valid_to_sell}, qr/Quote too old/, 'get warnings');
+    like(warning { $is_valid = $c->is_valid_to_sell }, qr/Quote too old/, 'get warnings');
     ok !$is_valid, 'not valid to sell';
     like($c->primary_validation_error->message, qr/Quote too old/, 'throws error');
     $bet_params->{date_pricing} = $now->epoch + 301;
@@ -232,7 +232,7 @@ subtest 'longcode misbehaving for daily contracts' => sub {
 };
 
 subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday' => sub {
-    create_ticks([166.26,1463020000, 'frxGBPUSD'],[166.27, 1463087154, 'frxGBPUSD']);
+    create_ticks([166.26, 1463020000, 'frxGBPUSD'], [166.27, 1463087154, 'frxGBPUSD']);
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463087154_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'multiday contract';
@@ -298,7 +298,7 @@ subtest 'longcode of index daily contracts' => sub {
 };
 
 subtest 'longcode of daily contract on early close day' => sub {
-    create_ticks([166.27, 1482332400, 'frxGBPUSD'],[166.27, 1482429600, 'frxGBPUSD']);
+    create_ticks([166.27, 1482332400, 'frxGBPUSD'], [166.27, 1482429600, 'frxGBPUSD']);
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1482332400_1482429600_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is a multiday contract';
@@ -308,7 +308,7 @@ subtest 'longcode of daily contract on early close day' => sub {
 };
 
 subtest 'longcode of intraday contracts' => sub {
-    create_ticks([166.27, 1463126400, 'frxGBPUSD'],[166.27,1463173200,'frxGBPUSD']);
+    create_ticks([166.27, 1463126400, 'frxGBPUSD'], [166.27, 1463173200, 'frxGBPUSD']);
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463126400_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->is_intraday, 'is an contract';
