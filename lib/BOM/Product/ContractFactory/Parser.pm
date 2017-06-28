@@ -51,13 +51,7 @@ sub shortcode_to_parameters {
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
-    if ($shortcode =~ /^BINARYICO_(\d+\.?\d*)_(\d+)$/) {
-        $bet_type                      = 'BINARYICO';
-        $underlying_symbol             = 'BINARYICO';
-        $binaryico_per_token_bid_price = $1;
-        $binaryico_number_of_tokens    = $2;
-
-    } elsif ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
+    if ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
         # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
         $bet_type          = $1;
         $underlying_symbol = $2;
@@ -85,7 +79,15 @@ sub shortcode_to_parameters {
             $tick_expiry    = 1;
             $how_many_ticks = $5;
         }
-    } else {
+    } elsif ($shortcode =~ /^BINARYICO_(\d+\.?\d*)_(\d+)$/) {
+        $bet_type                      = 'BINARYICO';
+        $underlying_symbol             = 'BINARYICO';
+        $binaryico_per_token_bid_price = $1;
+        $binaryico_number_of_tokens    = $2;
+
+    }
+
+    else {
         return $legacy_params;
     }
 

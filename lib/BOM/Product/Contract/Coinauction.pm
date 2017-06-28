@@ -205,17 +205,13 @@ has [qw(shortcode)] => (
 );
 
 sub _build_shortcode {
-    my $self          = shift;
-    my $contract_type = uc($self->contract_type);
-    my @element       = ($contract_type, $self->binaryico_per_token_bid_price, $self->binaryico_number_of_tokens);
-    return join '_', @element;
+    my $self = shift;
+    return join '_', uc($self->contract_type), $self->binaryico_per_token_bid_price, $self->binaryico_number_of_tokens;
 }
 
 sub longcode {
-    my $self        = shift;
-    my $description = get_longcodes()->{'binaryico'};
-    return [$description];
-
+    my $self = shift;
+    return [get_longcodes()->{'binaryico'}];
 }
 
 sub is_expired {
@@ -240,7 +236,7 @@ sub _validate_price {
     my @err;
     if ($self->ask_price <= 0) {
         push @err, {
-            message           => 'The total auction price can not be less than zero .',
+            message           => 'The total auction price can not be less than  or equal to zero .',
             severity          => 99,
             message_to_client => [$ERROR_MAPPING->{InvalidBinaryIcoBidPrice}],
 
@@ -271,13 +267,10 @@ sub _validate_date_pricing {
 sub pricing_details {
     my ($self, $action) = @_;
 
-    # This way the order of the fields is well-defined.
-    my @comment_fields = (
+    return [
         binaryico_number_of_tokens    => $self->binaryico_number_of_tokens,
         binaryico_per_token_bid_price => $self->binaryico_per_token_bid_price
-    );
-
-    return \@comment_fields;
+    ];
 }
 
 no Moose;
