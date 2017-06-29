@@ -26,6 +26,7 @@ use BOM::Product::Pricing::Greeks::BlackScholes;
 use BOM::Platform::Runtime;
 use BOM::Product::ContractVol;
 use BOM::Market::DataDecimate;
+use BOM::Platform::Config;
 
 ## ATTRIBUTES  #######################
 
@@ -161,7 +162,10 @@ has [qw(app_markup_dollar_amount app_markup)] => (
 
 # base_commission can be overridden on contract type level.
 # When this happens, underlying base_commission is ignored.
-has [qw(risk_markup commission_markup base_commission commission_from_stake)] => (
+#
+# min_commission_amount - the minimum commission charged per contract.
+# E.g. if the payout currency is in USD, the minimum commission we want to charge is 2 cents. (min_commission_amount = 0.02)
+has [qw(risk_markup commission_markup base_commission commission_from_stake min_commission_amount)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -173,6 +177,7 @@ my $pc_params_setters = {
     staking_limits         => sub { my $self = shift; $self->price_calculator->staking_limits($self->staking_limits) },
     theo_probability       => sub { my $self = shift; $self->price_calculator->theo_probability($self->theo_probability) },
     commission_markup      => sub { my $self = shift; $self->price_calculator->commission_markup($self->commission_markup) },
+    min_commission_amount  => sub { my $self = shift; $self->price_calculator->min_commission_amount($self->min_commission_amount) },
     commission_from_stake  => sub { my $self = shift; $self->price_calculator->commission_from_stake($self->commission_from_stake) },
     discounted_probability => sub { my $self = shift; $self->price_calculator->discounted_probability($self->discounted_probability) },
     probability            => sub {
@@ -203,7 +208,7 @@ my $pc_needed_params_map = {
     ask_probability        => [qw/ theo_probability /],
     bid_probability        => [qw/ theo_probability discounted_probability opposite_ask_probability /],
     payout                 => [qw/ theo_probability commission_from_stake /],
-    commission_markup      => [qw/ theo_probability /],
+    commission_markup      => [qw/ theo_probability min_commission_amount/],
     commission_from_stake  => [qw/ theo_probability commission_markup /],
     validate_price         => [qw/ theo_probability commission_markup commission_from_stake staking_limits /],
     discounted_probability => [qw/ timeinyears discount_rate /],
@@ -777,6 +782,14 @@ sub _match_symbol {
         return 1 if $_ eq $symbol;
     }
     return;
+}
+
+sub _build_min_commission_amount {
+    my $self = shift;
+
+    my $static = BOM::Platform::Config::quants;
+
+    return $static->{bet_limits}->{min_commission_amount}->{$self->currency} // 0;
 }
 
 1;
