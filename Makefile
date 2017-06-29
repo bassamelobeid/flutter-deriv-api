@@ -8,7 +8,7 @@ export PERL5OPT=-MTest::Warnings
 test: $(TESTS)
 
 unit_test_market:
-	@$(PROVE) -vr t/BOM/
+	@$(PROVE) -j2 -vr t/BOM/
 
 tidy:
 	find . -name '*.p?.bak' -delete
