@@ -1335,6 +1335,10 @@ sub sell_expired_contracts {
                     $failure->{reason} = $cpve->message;
                 } else {
                     $failure->{reason} = "Unknown failure in sell_expired_contracts, shortcode: " . $contract->shortcode;
+                    warn 'validation error missing when contract is invalid to sell, shortcode['
+                        . $contract->shortcode
+                        . '] pricing time ['
+                        . $contract->date_pricing->datetime . ']';
                 }
                 push @{$result->{failures}}, $failure;
             }
