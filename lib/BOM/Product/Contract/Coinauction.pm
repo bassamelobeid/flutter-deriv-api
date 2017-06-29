@@ -155,7 +155,6 @@ has is_sold => (
 sub _build_is_valid_to_buy {
     my $self = shift;
 
-    return 0 if $is_auction_ended;
     return $self->confirm_validity;
 }
 
@@ -237,7 +236,7 @@ sub _validate_date_pricing {
     return if $self->_for_sale;
 
     my @err;
-    if ($self->date_pricing->is_after($self->date_expiry)) {
+    if ($is_auction_ended) {
         push @err,
             {
             message           => 'The auction is already closed.',
