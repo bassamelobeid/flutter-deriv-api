@@ -14,6 +14,9 @@ use Format::Util::Numbers qw/roundcommon/;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
+my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
+$mocked->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
+
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
