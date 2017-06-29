@@ -153,7 +153,7 @@ subtest 'realtime report generation' => sub {
     my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
     $mailbox->init;
     $mailbox->clear;
-    lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
+    warning {lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.'; };
 
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
