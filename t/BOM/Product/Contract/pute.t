@@ -13,6 +13,11 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
+use Test::MockModule;
+
+my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
+$mocked->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
+
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
@@ -40,7 +45,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => 'frxUSDJPY',
         recorded_date => $now
     });
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+my $ct = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch
 });
@@ -179,6 +184,7 @@ subtest 'shortcodes' => sub {
             underlying   => 'frxUSDJPY',
             currency     => 'USD',
             payout       => 10,
+            current_tick => $ct,
         });
         isa_ok $c, 'BOM::Product::Contract::Pute';
         my $expected_shortcode = 'PUTE_FRXUSDJPY_10_' . $now->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
@@ -195,6 +201,7 @@ subtest 'shortcodes' => sub {
             underlying   => 'frxUSDJPY',
             currency     => 'USD',
             payout       => 10,
+            current_tick => $ct,
         });
         isa_ok $c, 'BOM::Product::Contract::Pute';
         my $expected_shortcode = 'PUTE_FRXUSDJPY_10_' . $now->epoch . '_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
