@@ -5,7 +5,7 @@ use Moose;
 with 'MooseX::Role::Validatable';
 use Quant::Framework::Underlying;
 use Finance::Contract;
-use BOM::Product::Static qw/get_error_mapping/;
+use BOM::Product::Static qw/get_longcodes get_error_mapping/;
 use List::Util qw(first);
 use Date::Utility;
 use BOM::Platform::Runtime;
@@ -194,7 +194,7 @@ sub _build_shortcode {
 
 sub longcode {
     my $self = shift;
-    return $self->binaryico_auction_status;
+    return [get_longcodes()->{$self->binaryico_auction_status}];
 }
 
 sub is_expired {
