@@ -5,7 +5,7 @@ use Moose;
 with 'MooseX::Role::Validatable';
 use Quant::Framework::Underlying;
 use Finance::Contract;
-use BOM::Product::Static qw/get_longcodes get_error_mapping/;
+use BOM::Product::Static qw/get_error_mapping/;
 use List::Util qw(first);
 use Date::Utility;
 use BOM::Platform::Runtime;
@@ -37,7 +37,7 @@ has _for_sale => (
     default => 0,
 );
 
-has [qw(binaryico_number_of_tokens contract_type binaryico_per_token_bid_price binaryico_per_token_bid_price_USD)] => (
+has [qw(binaryico_number_of_tokens contract_type binaryico_per_token_bid_price binaryico_per_token_bid_price_USD auction_status)] => (
     is => 'rw',
 );
 
@@ -167,12 +167,15 @@ sub _build_is_valid_to_sell {
     if ($is_auction_ended) {
         if ($self->binaryico_per_token_bid_price_USD < $auction_final_price) {
             $self->bid_price($self->ask_price);
+            $self->auction_status('unsuccessful');
             return 1;
         } else {
             $self->bid_price(0);
+            $self->auction_status('successful');
             return 0;
         }
     } else {
+        $self->auction_status('bidding');
         $self->bid_price($self->ask_price * 0.98);
         return 1;
     }
@@ -190,7 +193,7 @@ sub _build_shortcode {
 
 sub longcode {
     my $self = shift;
-    return [get_longcodes()->{'binaryico'}];
+    return $self->auction_status;
 }
 
 sub is_expired {
