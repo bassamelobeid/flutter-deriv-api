@@ -75,16 +75,4 @@ sub single_output_as_excel {
     return;
 }
 
-sub extract_from_code {
-    my $code = shift;
-
-    my @fields    = split ",", $code;
-    my $shortcode = $fields[0];
-    my $ask_price = $fields[2];
-    my $bid_price = $fields[3];
-    my $extra     = $fields[5];
-
-    return ($shortcode, $ask_price, $bid_price, $extra);
-}
-
 1;
