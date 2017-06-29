@@ -21,8 +21,9 @@ __PACKAGE__->meta->make_immutable;
 
 package main;
 
-use Test::More (tests => 2);
+use Test::More (tests => 3);
 use Test::Exception;
+use Test::Warnings;
 
 use Finance::Asset::Market::Types;
 
