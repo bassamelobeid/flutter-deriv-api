@@ -385,7 +385,7 @@ sub prepare_bet_data_for_buy {
     $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
-        quantity          => 1,
+        quantity          => $contract->is_binaryico ? $contract->binaryico_number_of_tokens : 1,
         short_code        => scalar $contract->shortcode,
         buy_price         => $self->price,
         remark            => $self->comment->[0] || '',
@@ -422,7 +422,6 @@ sub prepare_bet_data_for_buy {
         $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
         $bet_params->{binaryico_number_of_tokens}    = $contract->binaryico_number_of_tokens;
-        $bet_params->{binaryico_auction_date_start}  = $contract->binaryico_auction_date_start->db_timestamp;
         $bet_params->{binaryico_per_token_bid_price} = $contract->binaryico_per_token_bid_price;
     } else {
         return Error::Base->cuss(
@@ -431,7 +430,6 @@ sub prepare_bet_data_for_buy {
             -message_to_client => BOM::Platform::Context::localize("Unsupported bet class $bet_params->{bet_class}"),
         );
     }
-
     my $quants_bet_variables;
     if (my $comment_hash = $self->comment->[1]) {
         $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
@@ -507,7 +505,6 @@ sub buy {
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
-
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
         account_data => {
