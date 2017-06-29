@@ -14,7 +14,6 @@ use Excel::Writer::XLSX;
 use LandingCompany::Registry;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
-
 use BOM::Platform::Runtime;
 
 sub parse_file {
@@ -464,5 +463,16 @@ sub _get_market_supplement_parameters {
     return $ms_parameter;
 }
 
+sub extract_from_code {
+    my $code = shift;
+
+    my @fields    = split ",", $code;
+    my $shortcode = $fields[0];
+    my $ask_price = $fields[2];
+    my $bid_price = $fields[3];
+    my $extra     = $fields[5];
+
+    return ($shortcode, $ask_price, $bid_price, $extra);
+}
 1;
 
