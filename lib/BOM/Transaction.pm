@@ -1196,7 +1196,6 @@ sub _build_pricing_comment {
 
     my @comment_fields = @{$contract->pricing_details($action)};
 
-
     #NOTE The handling of sell whether the bid is sucess or not will be handle in next card
     # only manual sell and buy has a price
     if ($price) {
