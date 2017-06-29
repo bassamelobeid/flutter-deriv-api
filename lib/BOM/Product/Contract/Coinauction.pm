@@ -250,8 +250,7 @@ sub _validate_date_pricing {
 }
 
 sub pricing_details {
-    my ($self, $action) = @_;
-
+    my $self = shift;
     return [
         binaryico_number_of_tokens    => $self->binaryico_number_of_tokens,
         binaryico_per_token_bid_price => $self->binaryico_per_token_bid_price
