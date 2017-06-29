@@ -43,7 +43,7 @@ if ($action and $action !~ /^[a-zA-Z]{4,15}$/) {
     code_exit_BO();
 }
 
-if (not $view_type or $view_type !~ /^[a-zA-Z]{4,15}$/) {
+if (not $view_type or $view_type !~ /^(?:pending|verified|rejected|sent|error)$/) {
     print "Invalid selection to view type of transactions.";
     code_exit_BO();
 }
@@ -78,6 +78,9 @@ if ($view_type eq 'sent') {
         {Slice => {}}, $currency);
 } elsif ($view_type eq 'rejected') {
     $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'REJECTED'::payment.CTC_STATUS, NULL, NULL)",
+        {Slice => {}}, $currency);
+} elsif ($view_type eq 'error') {
+    $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'ERROR'::payment.CTC_STATUS, NULL, NULL)",
         {Slice => {}}, $currency);
 } else {
     $trxns =

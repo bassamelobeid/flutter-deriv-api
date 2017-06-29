@@ -58,5 +58,9 @@
     <td>
         <a href="?broker=[% broker %]&currency=[% currency %]&view_type=sent">View Sent Transactions</a>
     </td>
+    <td>|</td>
+    <td>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_type=error">View Errored Out Transactions</a>
+    </td>
 </tr>
 </table>
