@@ -48,9 +48,16 @@ has ask_price => (
 );
 
 has bid_price => (
-    is  => 'rw',
-    isa => 'Num',
+    is      => 'rw',
+    isa     => 'Num',
     default => 0,
+);
+
+has underlying => (
+    is       => 'ro',
+    isa      => 'underlying_object',
+    coerce   => 1,
+    required => 1,
 );
 
 has app_markup_dollar_amount => (
