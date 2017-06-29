@@ -59,10 +59,11 @@ sub _initialize_symbol_dividend {
 }
 
 sub _init {
+    my $writer = BOM::Platform::Chronicle::get_chronicle_writer();
     #delete chronicle data too (Redis and Pg)
-    BOM::Platform::RedisReplicated::redis_write()->flushall;
+    $writer->cache_writer->flushall;
     BOM::Platform::Chronicle::dbic()->run(fixup => sub { $_->do('delete from chronicle;') }) if BOM::Platform::Chronicle::dbic();
-    BOM::Platform::Chronicle::set(
+    $writer->set(
         'app_settings',
         'binary',
         {
@@ -112,7 +113,9 @@ sub _init {
                             }}}}
             },
             '_rev' => time
-        });
+        },
+        Date::Utility->new
+    );
     # BOM::Platform::Runtime->instance(undef);
 
     _initialize_symbol_dividend "R_25",   0;
@@ -122,13 +125,15 @@ sub _init {
     _initialize_symbol_dividend "RDBULL", -35;
     _initialize_symbol_dividend "RDBEAR", 20;
 
-    BOM::Platform::Chronicle::set(
+    $writer->set(
         'interest_rates',
         'JPY-USD',
         JSON::from_json(
             "{\"symbol\":\"JPY-USD\",\"rates\":{\"365\":\"2.339\",\"180\":\"2.498\",\"90\":\"2.599\",\"30\":\"2.599\",\"7\":\"2.686\"},\"date\":\"2016-01-26T17:00:03Z\",\"type\":\"market\"}"
-        ));
-    BOM::Platform::Chronicle::set('economic_events', 'economic_events', {events => []});
+        ),
+        Date::Utility->new
+    );
+    $writer->set('economic_events', 'economic_events', {events => []}, Date::Utility->new);
 
     return 1;
 }
