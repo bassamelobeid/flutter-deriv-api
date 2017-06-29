@@ -385,7 +385,7 @@ sub prepare_bet_data_for_buy {
     $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
-        quantity          => $contract->is_binaryico ? $contract->binaryico_number_of_tokens : 1,
+        quantity          => 1,
         short_code        => scalar $contract->shortcode,
         buy_price         => $self->price,
         remark            => $self->comment->[0] || '',
