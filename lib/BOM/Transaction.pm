@@ -329,6 +329,8 @@ sub calculate_limits {
     my $contract = $self->contract;
     my $currency = $contract->currency;
 
+    return {} if $contract->is_binaryico;
+
     $limits{max_balance} = $client->get_limit_for_account_balance;
 
     if (not $contract->tick_expiry) {
@@ -375,6 +377,11 @@ sub prepare_bet_data_for_buy {
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
 
+    if ($contract->is_binaryico) {
+
+        $self->price($contract->ask_price);
+    }
+
     $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
@@ -413,6 +420,10 @@ sub prepare_bet_data_for_buy {
         $bet_params->{$contract->low_barrier->barrier_type . '_lower_barrier'}   = $contract->low_barrier->supplied_barrier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_TOUCH_BET) {
         $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
+        $bet_params->{binaryico_number_of_tokens}    = $contract->binaryico_number_of_tokens;
+        $bet_params->{binaryico_auction_date_start}  = $contract->binaryico_auction_date_start->db_timestamp;
+        $bet_params->{binaryico_per_token_bid_price} = $contract->binaryico_per_token_bid_price;
     } else {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
@@ -475,14 +486,14 @@ sub prepare_buy {
 
     $self->comment(
         _build_pricing_comment({
-                contract         => $self->contract,
-                price            => $self->price,
-                requested_price  => $self->requested_price,
-                recomputed_price => $self->recomputed_price,
-                ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
+                contract => $self->contract,
+                price    => $self->price,
+                ($self->requested_price)      ? (requested_price      => $self->requested_price)                    : (),
+                ($self->recomputed_price)     ? (recomputed_price     => $self->recomputed_price)                   : (),
+                ($self->price_slippage)       ? (price_slippage       => $self->price_slippage)                     : (),
                 ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
                 action => 'buy'
-            })) unless @{$self->comment};
+            })) unless (@{$self->comment});
 
     return $self->prepare_bet_data_for_buy;
 }
@@ -534,7 +545,7 @@ sub buy {
     $self->transaction_id($txn->{id});
     $self->contract_id($fmb->{id});
 
-    enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
+    enqueue_new_transaction(_get_params_for_expiryqueue($self)) unless $self->contract->is_binaryico;    # For soft realtime expiration notification.
 
     return;
 }
@@ -581,6 +592,11 @@ sub batch_buy {
     # TODO: shall we allow this operation only if $self->client is real-money?
     #       Or allow virtual $self->client only if all other clients are also
     #       virtual?
+    return Error::Base->cuss(
+        -type              => 'DoNotSupportICO',
+        -mesg              => 'Client is not allow to place ICO via batch buy',
+        -message_to_client => BOM::Platform::Context::localize('Sorry, placement of ICO is not support for this service.'),
+    ) if $self->contract->is_binaryico;
 
     my $stats_data = $self->stats_start('batch_buy');
 
@@ -726,11 +742,11 @@ sub prepare_sell {
 
     $self->comment(
         _build_pricing_comment({
-                contract         => $self->contract,
-                price            => $self->price,
-                requested_price  => $self->requested_price,
-                recomputed_price => $self->recomputed_price,
-                ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
+                contract => $self->contract,
+                price    => $self->price,
+                ($self->requested_price)      ? (requested_price      => $self->requested_price)                    : (),
+                ($self->recomputed_price)     ? (recomputed_price     => $self->recomputed_price)                   : (),
+                ($self->price_slippage)       ? (price_slippage       => $self->price_slippage)                     : (),
                 ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
                 action => 'sell'
             })) unless @{$self->comment};
@@ -1180,6 +1196,7 @@ sub _build_pricing_comment {
 
     my @comment_fields = @{$contract->pricing_details($action)};
 
+    #NOTE The handling of sell whether the bid is sucess or not will be handle in next card
     # only manual sell and buy has a price
     if ($price) {
         push @comment_fields, (trade => $price);
@@ -1203,6 +1220,20 @@ sub _build_pricing_comment {
 
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
 
+    if ($contract->is_binaryico) {
+        if ($action eq 'buy') {
+            # for binaryico, price is the per token bid price , hence the actual debited amount is the $c->ask_price
+            $price = $contract->ask_price;
+            push @comment_fields,
+                (
+                binaryico_auction_status => 'bidding',
+                binaryico_claim_status   => 'N.A.',
+                binaryico_coin_address   => 'N.A.',
+                binaryico_token_type     => 'N.A.'
+                );
+
+        }
+    }
     if (defined $trading_period_start) {
         push @comment_fields, (trading_period_start => $trading_period_start);
     }
@@ -1301,15 +1332,15 @@ sub sell_expired_contracts {
                     };
 
                 # price_slippage will not happen to expired contract, hence not needed.
-                my $comment_hash = _build_pricing_comment({
-                        contract => $contract,
-                        action   => 'autosell_expired_contract',
-                    })->[1];
                 my $quants_bet_variables;
-                if ($comment_hash) {
+                unless ($contract->is_binaryico) {
                     $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-                        data_object_params => $comment_hash,
-                    });
+                            data_object_params => _build_pricing_comment({
+                                    contract => $contract,
+                                    action   => 'autosell_expired_contract',
+                                }
+                            )->[1],
+                        });
                 }
                 push @quants_bet_variables, $quants_bet_variables;
 
