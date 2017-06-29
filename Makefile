@@ -10,10 +10,10 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 test:
-	/etc/rmg/bin/prove --timer -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::Warnings' t/BOM
+	/etc/rmg/bin/prove --timer -v -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::Warnings' t/BOM
 
 syntax:
-	/etc/rmg/bin/prove --timer -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::Warnings' $(wildcard t/0*.t)
+	/etc/rmg/bin/prove --timer -v -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::Warnings' $(wildcard t/0*.t)
 
 i18n:
 	xgettext.pl -P haml=haml -P perl=pl,pm -P tt2=tt,tt2 -P generic=html.ep\
