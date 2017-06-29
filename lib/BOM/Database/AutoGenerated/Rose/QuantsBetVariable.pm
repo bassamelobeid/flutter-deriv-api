@@ -45,6 +45,12 @@ __PACKAGE__->meta->setup(
         news_adjusted_pricing_vol => { type => 'numeric' },
         long_term_prediction      => { type => 'numeric' },
         volatility_scaling_factor => { type => 'numeric' },
+        binaryico_number_of_tokens => { type => 'bigint' },
+        binaryico_per_token_bid_price  =>  { type => 'numeric' },
+        binaryico_auction_status =>  { type => 'text' },
+        binaryico_claim_status =>  { type => 'text' },
+        binaryico_coin_address =>  { type => 'text' },
+        binaryico_token_type =>  { type => 'text' },
     ],
 
     primary_key_columns => [ 'transaction_id' ],
