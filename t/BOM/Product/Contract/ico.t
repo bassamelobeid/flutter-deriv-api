@@ -10,6 +10,23 @@ use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::MarketData qw(create_underlying);
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
+initialize_realtime_ticks_db();
+my $now = Date::Utility->new;
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxEURUSD',
+    epoch      => $now->epoch,
+    quote      => 1.14
+});
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxUSDEUR',
+    epoch      => $now->epoch,
+    quote      => 1.14
+});
+
 
 my $bet_params = {
     bet_type     => 'BINARYICO',
