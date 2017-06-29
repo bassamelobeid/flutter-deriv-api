@@ -1196,7 +1196,6 @@ sub _build_pricing_comment {
 
     my @comment_fields = @{$contract->pricing_details($action)};
 
-    my $format = '%s[%0.5f]';
 
     #NOTE The handling of sell whether the bid is sucess or not will be handle in next card
     # only manual sell and buy has a price
@@ -1220,11 +1219,10 @@ sub _build_pricing_comment {
         push @comment_fields, (recomputed_price => $recomputed_price);
     }
 
-    my $comment_str = sprintf join(' ', ($format) x (@comment_fields / 2)), @comment_fields;
+    my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
 
     if ($contract->is_binaryico) {
         if ($action eq 'buy') {
-            $format = '%s[%s]';
             # for binaryico, price is the per token bid price , hence the actual debited amount is the $c->ask_price
             $price = $contract->ask_price;
             push @comment_fields,
