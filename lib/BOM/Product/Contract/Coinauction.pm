@@ -37,7 +37,7 @@ has _for_sale => (
     default => 0,
 );
 
-has [qw(binaryico_number_of_tokens contract_type binaryico_per_token_bid_price binaryico_per_token_bid_price_USD auction_status)] => (
+has [qw(binaryico_number_of_tokens contract_type binaryico_per_token_bid_price binaryico_per_token_bid_price_USD binaryico_auction_status)] => (
     is => 'rw',
 );
 
@@ -50,6 +50,7 @@ has ask_price => (
 has bid_price => (
     is  => 'rw',
     isa => 'Num',
+    default => 0,
 );
 
 has app_markup_dollar_amount => (
@@ -90,6 +91,7 @@ sub BUILD {
     $self->binaryico_number_of_tokens($self->build_parameters->{binaryico_number_of_tokens});
     $self->binaryico_per_token_bid_price($self->build_parameters->{binaryico_per_token_bid_price});
     $self->binaryico_per_token_bid_price_USD(in_USD($self->binaryico_per_token_bid_price, $self->currency));
+    $self->binaryico_auction_status('bidding');
     if ($self->binaryico_number_of_tokens < $limits->{min} or $self->binaryico_number_of_tokens > $limits->{max}) {
         $self->add_errors({
             message => 'number of tokens placed is not within limits '
@@ -166,16 +168,16 @@ sub _build_is_valid_to_sell {
     if ($is_auction_ended) {
         if ($self->binaryico_per_token_bid_price_USD < $auction_final_price) {
             $self->bid_price($self->ask_price);
-            $self->auction_status('unsuccessful');
+            $self->binaryico_auction_status('unsuccessful');
             return 1;
         } else {
             $self->bid_price(0);
-            $self->auction_status('successful');
+            $self->binaryico_auction_status('successful');
             return 0;
         }
     } else {
-        $self->auction_status('bidding');
         $self->bid_price($self->ask_price * 0.98);
+        $self->binaryico_auction_status('bidding');
         return 1;
     }
 }
@@ -192,7 +194,7 @@ sub _build_shortcode {
 
 sub longcode {
     my $self = shift;
-    return $self->auction_status;
+    return $self->binaryico_auction_status;
 }
 
 sub is_expired {
