@@ -65,6 +65,15 @@ bet_limits:
     BTC: 10000
     ETH: 10000
     LTC: 10000
+  min_commission_amount:
+    USD: 0.02 # 0.02 dollar
+    EUR: 0.02
+    AUD: 0.02
+    GBP: 0.02
+    JPY: 2 # two yen
+    BTC: 0.00000002
+    ETH: 0.00000002
+    LTC: 0.00000002
 
 risk_profile:
   no_business:
