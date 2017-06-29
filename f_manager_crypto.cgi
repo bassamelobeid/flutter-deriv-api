@@ -80,8 +80,8 @@ if ($view_type eq 'sent') {
     $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'REJECTED'::payment.CTC_STATUS, NULL, NULL)",
         {Slice => {}}, $currency);
 } elsif ($view_type eq 'error') {
-    $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'ERROR'::payment.CTC_STATUS, NULL, NULL)",
-        {Slice => {}}, $currency);
+    $trxns =
+        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'ERROR'::payment.CTC_STATUS, NULL, NULL)", {Slice => {}}, $currency);
 } else {
     $trxns =
         $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'LOCKED'::payment.CTC_STATUS, NULL, NULL)", {Slice => {}},
