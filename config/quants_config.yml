@@ -36,6 +36,7 @@ bet_limits:
       GBP: 1
       JPY: 70
       BTC: 0.0005
+      ETH: 0.005
       LTC: 0.05
     volidx:
       USD: 0.7
