@@ -168,7 +168,6 @@ sub _build_is_valid_to_sell {
         if ($self->binaryico_per_token_bid_price_USD < $auction_final_price) {
             $self->bid_price($self->ask_price);
             return 1;
-
         } else {
             $self->bid_price(0);
             return 0;
@@ -176,7 +175,6 @@ sub _build_is_valid_to_sell {
     } else {
         $self->bid_price($self->ask_price * 0.98);
         return 1;
-
     }
 }
 
