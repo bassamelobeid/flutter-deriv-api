@@ -116,7 +116,7 @@ sub buy_bet {
         @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source app_markup/},
 
         # data_collection.quants_bet_variables
-        $qv
+        defined $qv
         ? JSON::XS::encode_json(
             +{
                 map {

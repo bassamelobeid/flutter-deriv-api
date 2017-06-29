@@ -27,5 +27,5 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 orm_files:
-	perl -MBOM::Test::Data::Utility::UnitTestDatabase=:init -e0
-	PGPORT=5432 bin/rose_generation regentmarkets --all
+	perl -MBOM::Test -MBOM::Test::Data::Utility::UnitTestDatabase=:init -e0
+	PGPORT=5432 bin/rose_generation regentmarkets_test --all
