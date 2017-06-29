@@ -592,7 +592,11 @@ sub batch_buy {
     # TODO: shall we allow this operation only if $self->client is real-money?
     #       Or allow virtual $self->client only if all other clients are also
     #       virtual?
-    return if $self->contract->is_binaryico;
+    return Error::Base->cuss(
+        -type              => 'DoNotSupportICO',
+        -mesg              => 'Client is not allow to place ICO via batch buy',
+        -message_to_client => BOM::Platform::Context::localize('Sorry, placement of ICO is not support for this service.'),
+    ) if $self->contract->is_binaryico;
 
     my $stats_data = $self->stats_start('batch_buy');
 
