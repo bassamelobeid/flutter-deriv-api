@@ -28,8 +28,8 @@ use constant {    # added for Transaction
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 my $app_config          = BOM::Platform::Runtime->instance->app_config;
-my $is_auction_ended    = $app_config->system->auction_ended;
-my $auction_final_price = 1.09;                                           # just for testing
+my $is_auction_ended    = $app_config->system->suspend->is_auction_ended;
+my $auction_final_price = 1.09;                                             # just for testing
 
 has _for_sale => (
     is      => 'rw',
@@ -218,10 +218,12 @@ sub _validate_price {
     my @err;
     if ($self->binaryico_per_token_bid_price_USD <= 1) {
         push @err, {
-            message  => 'The minimum bid is USD 1 or equivalent in other currency.',
-            severity => 99,
-            message_to_client =>
-                [$ERROR_MAPPING->{InvalidBinaryIcoBidPrice}, $self->currency, $self->binaryico_per_token_bid_price, $per_token_bid_price_in_usd],
+            message           => 'The minimum bid is USD 1 or equivalent in other currency.',
+            severity          => 99,
+            message_to_client => [
+                $ERROR_MAPPING->{InvalidBinaryIcoBidPrice}, $self->currency,
+                $self->binaryico_per_token_bid_price,       $self->binaryico_per_token_bid_price_USD
+            ],
 
         };
 
