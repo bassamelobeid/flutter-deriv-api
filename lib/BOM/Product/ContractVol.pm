@@ -190,7 +190,7 @@ sub _build_pricing_vol_for_two_barriers {
     return if $self->pricing_engine_name ne 'Pricing::Engine::EuropeanDigitalSlope';
 
     my $vol_args = {
-        from => $self->date_start,
+        from => $self->effective_start,
         to   => $self->date_expiry,
     };
 
