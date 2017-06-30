@@ -57,10 +57,9 @@ sub website_status {
     my $params = shift;
 
     my $amt_precision = Format::Util::Numbers::get_precision_config()->{amount};
-    my $currencies_config = {map { $_ => {fractional_digits => $amt_precision->{$_}} } grep { $_ !~ /^(?:BTC|LTC|ETH|ETC)$/ } keys %$amt_precision};
-    foreach (qw(BTC LTC ETH ETC)) {
-        $currencies_config->{$_}->{type} = "cryptocurrencies";
-    }
+    my $currencies_config =
+        {map { $_ => {fractional_digits => $amt_precision->{$_}, type => "fiat"} } grep { $_ !~ /^(?:BTC|LTC|ETH|ETC)$/ } keys %$amt_precision};
+
     return {
         terms_conditions_version => BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version,
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,
