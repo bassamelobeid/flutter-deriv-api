@@ -54,7 +54,7 @@ my $password = 'jskjd8292922';
 
 # mock domain_name to suppress warnings
 my $mocked_request = Test::MockModule->new('BOM::Platform::Context::Request');
-$mocked_request->mock('domain_name', 'binaryqa.com');
+$mocked_request->mock('domain_name', 'www.binaryqa.com');
 
 my $t = Test::Mojo->new('BOM::OAuth');
 
