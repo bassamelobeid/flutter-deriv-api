@@ -39,7 +39,7 @@ if (not $currency or $currency !~ /^[A-Z]{3}$/) {
 }
 
 my $page = request()->param('submit');
-if($page eq 'Transactions') {
+if ($page eq 'Transactions') {
     PrintContentType_excel($currency . '.csv');
     BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
     if ($address and $address !~ /^\w+$/) {
@@ -79,8 +79,8 @@ if($page eq 'Transactions') {
 
     my $trxns;
     if ($view_type eq 'sent') {
-        $trxns =
-            $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'SENT'::payment.CTC_STATUS, NULL, NULL)", {Slice => {}}, $currency);
+        $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'SENT'::payment.CTC_STATUS, NULL, NULL)",
+            {Slice => {}}, $currency);
     } elsif ($view_type eq 'verified') {
         $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'VERIFIED'::payment.CTC_STATUS, NULL, NULL)",
             {Slice => {}}, $currency);
@@ -88,12 +88,11 @@ if($page eq 'Transactions') {
         $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'REJECTED'::payment.CTC_STATUS, NULL, NULL)",
             {Slice => {}}, $currency);
     } elsif ($view_type eq 'error') {
-        $trxns =
-            $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'ERROR'::payment.CTC_STATUS, NULL, NULL)", {Slice => {}}, $currency);
+        $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'ERROR'::payment.CTC_STATUS, NULL, NULL)",
+            {Slice => {}}, $currency);
     } else {
-        $trxns =
-            $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'LOCKED'::payment.CTC_STATUS, NULL, NULL)", {Slice => {}},
-            $currency);
+        $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'LOCKED'::payment.CTC_STATUS, NULL, NULL)",
+            {Slice => {}}, $currency);
     }
 
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
@@ -108,7 +107,7 @@ if($page eq 'Transactions') {
             currency     => $currency,
         }) || die $tt->error();
 
-} elsif($page eq 'Balances') {
+} elsif ($page eq 'Balances') {
     PrintContentType();
     # Things required for this to work:
     # Access to bitcoin/litecoin/eth servers
@@ -117,23 +116,24 @@ if($page eq 'Transactions') {
     # List addresses RPC call
     # Crypto database for address => login_id mapping
 
-    my $rpc_client = $currency eq 'BTC' ? Bitcoin::RPC::Client->new(%{$self->config->{bitcoin}}, timeout => 10) : die 'unsupported currency ' . $currency;
-    my $csv = Text::CSV->new;
-    my @hdrs = qw(address login_id transaction_date status reused amount currency_code);
+    my $rpc_client =
+        $currency eq 'BTC' ? Bitcoin::RPC::Client->new(%{$self->config->{bitcoin}}, timeout => 10) : die 'unsupported currency ' . $currency;
+    my $csv      = Text::CSV->new;
+    my @hdrs     = qw(address login_id transaction_date status reused amount currency_code);
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-    my $sth   = $dbh->prepare(q{SELECT * FROM payment.ctc_find_login_id_for_address(?, ?)});
+    my $sth      = $dbh->prepare(q{SELECT * FROM payment.ctc_find_login_id_for_address(?, ?)});
 
     # Track whether we have reused addresses
     my %seen;
     for my $transaction ($rpc_client->getaddresses) {
         my $address = $transaction->{address};
         my ($login_id) = @{$sth->fetchall_arrayref($currency, $address)} or die 'could not find login_id for address ' . $address;
-        $data{address} = $address;
+        $data{address}  = $address;
         $data{login_id} = $login_id;
         # $data{transaction_date} should be most recent transaction on the current address
         # $data{status} could be the most recent status from the crypto transactions table
-        $data{reused} = 1 if $seen{$address}++;
-        $data{amount} = $transaction->{amount};
+        $data{reused}        = 1 if $seen{$address}++;
+        $data{amount}        = $transaction->{amount};
         $data{currency_code} = $currency;
         $csv->combine(@data{@hdrs});
         print $csv->string . "\n";
