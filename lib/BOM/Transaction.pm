@@ -735,10 +735,10 @@ sub prepare_sell {
         @clients = map { $_->{client} } grep { ref $_->{client} } @{$self->multiple};
     }
 
-    my $error_status = BOM::Transaction::Validation->new({
+    my $error_status = !$self->contract->is_binaryico ? BOM::Transaction::Validation->new({
             transaction => $self,
             clients     => \@clients,
-        })->validate_trx_sell();
+        })->validate_trx_sell() : BOM::Transaction::Validation->new({transaction => $self, clients => $self->client})->validate_trx_sell_ico();
 
     return $error_status if $error_status;
 
