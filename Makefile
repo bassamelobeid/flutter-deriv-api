@@ -1,2 +1,2 @@
 test:
-	/etc/rmg/bin/prove -lr t/BOM/
+	/etc/rmg/bin/prove -vlr t/BOM/
