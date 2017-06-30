@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Test::More (tests => 4);
-use Test::NoWarnings;
+use Test::Warnings;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::MyAffiliates::ActivityReporter;
 
