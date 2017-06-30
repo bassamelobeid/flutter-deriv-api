@@ -47,6 +47,11 @@ has ask_price => (
     lazy_build => 1,
 );
 
+has binaryico_auction_status => (
+    is         => 'rw',
+    lazy_build => 1,
+);
+
 has bid_price => (
     is      => 'rw',
     isa     => 'Num',
@@ -82,6 +87,24 @@ sub _build_payout {
     return $self->ask_price;
 }
 
+sub _build_binaryico_auction_status {
+    my $self = shift;
+
+    if ($is_auction_ended) {
+        if ($self->binaryico_per_token_bid_price_USD < $auction_final_price) {
+            $self->bid_price($self->ask_price);
+            $self->binaryico_auction_status('unsuccessful bid');
+        } else {
+            $self->bid_price(0);
+            $self->binaryico_auction_status('successful bid');
+
+        }
+    } else {
+        $self->bid_price($self->ask_price * 0.98);
+        $self->binaryico_auction_status('bid');
+    }
+}
+
 has build_parameters => (
     is       => 'ro',
     isa      => 'HashRef',
@@ -98,7 +121,6 @@ sub BUILD {
     $self->binaryico_number_of_tokens($self->build_parameters->{binaryico_number_of_tokens});
     $self->binaryico_per_token_bid_price($self->build_parameters->{binaryico_per_token_bid_price});
     $self->binaryico_per_token_bid_price_USD(in_USD($self->binaryico_per_token_bid_price, $self->currency));
-    $self->binaryico_auction_status('bid');
     if ($self->binaryico_number_of_tokens < $limits->{min} or $self->binaryico_number_of_tokens > $limits->{max}) {
         $self->add_errors({
             message => 'number of tokens placed is not within limits '
@@ -172,21 +194,10 @@ sub _build_is_valid_to_sell {
 
     $self->_for_sale(1);
 
-    if ($is_auction_ended) {
-        if ($self->binaryico_per_token_bid_price_USD < $auction_final_price) {
-            $self->bid_price($self->ask_price);
-            $self->binaryico_auction_status('unsuccessful bid');
-            return 1;
-        } else {
-            $self->bid_price(0);
-            $self->binaryico_auction_status('successful bid');
-            return 0;
-        }
-    } else {
-        $self->bid_price($self->ask_price * 0.98);
-        $self->binaryico_auction_status('bid');
-        return 1;
-    }
+    return 1 if ($self->binaryico_auction_status eq 'unsuccessful bid' or $self->binaryico_auction_status eq 'bid');
+
+    return 0;
+
 }
 
 has [qw(shortcode)] => (
@@ -201,7 +212,7 @@ sub _build_shortcode {
 
 sub longcode {
     my $self = shift;
-    return 'Binary ICO: '.  $self->binaryico_auction_status;
+    return 'Binary ICO: ' . $self->binaryico_auction_status;
 }
 
 sub is_expired {
