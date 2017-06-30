@@ -182,7 +182,11 @@ sub statement {
                     $struct->{longcode} = localize('Could not retrieve contract details');
                 } else {
                     # this should be already localize
-                    $struct->{longcode} = $res->{longcode};
+                    my $longcode = $res->{longcode};
+                    # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
+                    $longcode = 'Binary ICO: canceled bid'
+                        if ($txn->{short_code} =~ /^BINARYICO/ and $txn->{amount} == 0.98 * $txn->{payout_price});
+                    $struct->{longcode} = $longcode;
                 }
             }
             $struct->{longcode} //= $txn->{payment_remark} // '';
@@ -260,7 +264,11 @@ sub profit_table {
                 $trx{longcode} = localize('Could not retrieve contract details');
             } else {
                 # this should already be localized
-                $trx{longcode} = $res->{longcodes}->{$row->{short_code}};
+                my $longcode = $res->{longcodes}->{$row->{short_code}};
+                # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
+                $longcode = 'Binary ICO: canceled bid' if ($row->{shortcode} =~ /^BINARYICO/ and $row->{sell_price} == 0.98 * $row->{payout_price});
+                $trx{longcode} = $longcode;
+
             }
         }
 
