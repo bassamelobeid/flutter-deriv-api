@@ -218,7 +218,7 @@ sub longcode {
 sub is_expired {
     my $self = shift;
 
-    return $self->date_pricing->is_after($self->date_expiry) ? 1 : 0;
+    return ($is_auction_ended) ? 1 : 0;
 }
 
 sub is_settleable {
