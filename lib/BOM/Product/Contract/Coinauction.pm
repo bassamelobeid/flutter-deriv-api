@@ -7,8 +7,12 @@ use Quant::Framework::Underlying;
 use Finance::Contract;
 use BOM::Product::Static qw/get_longcodes get_error_mapping/;
 use List::Util qw(first);
+use Date::Utility;
+use BOM::Platform::Runtime;
+use Postgres::FeedDB::CurrencyConverter qw (in_USD);
+
 # Actual methods for introspection purposes.
-sub is_coinauction      { return 1 }
+sub is_binaryico        { return 1 }
 sub is_legacy           { return 0 }
 sub is_atm_bet          { return 0 }
 sub is_intraday         { return 0 }
@@ -21,29 +25,30 @@ use constant {    # added for Transaction
     pricing_engine_name => '',
 };
 
-# This is to indicate whether this is a sale transaction.
-
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
-my $ICO_config = {
-    'BINARYICO' => {
-        supported_tokens   => ['BTCICO', 'ERC20ICO'],
-        auction_date_start => 1496275200
-        }
-
-};
+my $app_config          = BOM::Platform::Runtime->instance->app_config;
+my $is_auction_ended    = $app_config->system->suspend->is_auction_ended;
+my $auction_final_price = 1.09;                                             # just for testing
 
 has _for_sale => (
     is      => 'rw',
     isa     => 'Bool',
     default => 0,
 );
-has [qw(trading_period_start number_of_tokens token_type coin_address ask_price contract_type)] => (
+
+has [qw(binaryico_number_of_tokens contract_type binaryico_per_token_bid_price binaryico_per_token_bid_price_USD binaryico_auction_status)] => (
     is => 'rw',
 );
 
-has app_markup_dollar_amount => (
-    is      => 'ro',
+has ask_price => (
+    is         => 'rw',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+has bid_price => (
+    is      => 'rw',
     isa     => 'Num',
     default => 0,
 );
@@ -55,11 +60,22 @@ has underlying => (
     required => 1,
 );
 
+has app_markup_dollar_amount => (
+    is      => 'ro',
+    isa     => 'Num',
+    default => 0,
+);
+
 has payout => (
     is         => 'rw',
     isa        => 'Num',
     lazy_build => 1,
 );
+
+sub _build_ask_price {
+    my $self = shift;
+    return $self->binaryico_number_of_tokens * $self->binaryico_per_token_bid_price;
+}
 
 sub _build_payout {
     my $self = shift;
@@ -79,22 +95,21 @@ sub BUILD {
         max => 1000000,
     };
     $self->contract_type($self->build_parameters->{bet_type});
-    $self->token_type($self->build_parameters->{underlying}->symbol);
-    $self->coin_address($self->build_parameters->{coin_address});
-    $self->number_of_tokens($self->build_parameters->{number_of_tokens});
-
-    if ($self->number_of_tokens < $limits->{min} or $self->number_of_tokens > $limits->{max}) {
-
+    $self->binaryico_number_of_tokens($self->build_parameters->{binaryico_number_of_tokens});
+    $self->binaryico_per_token_bid_price($self->build_parameters->{binaryico_per_token_bid_price});
+    $self->binaryico_per_token_bid_price_USD(in_USD($self->binaryico_per_token_bid_price, $self->currency));
+    $self->binaryico_auction_status('bidding');
+    if ($self->binaryico_number_of_tokens < $limits->{min} or $self->binaryico_number_of_tokens > $limits->{max}) {
         $self->add_errors({
             message => 'number of tokens placed is not within limits '
                 . "[given: "
-                . $self->number_of_tokens . "] "
+                . $self->binaryico_number_of_tokens . "] "
                 . "[min: "
                 . $limits->{min} . "] "
                 . "[max: "
                 . $limits->{max} . "]",
             severity          => 99,
-            message_to_client => [$ERROR_MAPPING->{IcoTokenLimits}, $limits->{min}, $limits->{max}],
+            message_to_client => [$ERROR_MAPPING->{BinaryIcoTokenLimits}, $limits->{min}, $limits->{max}],
         });
     }
 
@@ -107,25 +122,16 @@ has currency => (
     required => 1,
 );
 
-has [qw(date_expiry date_settlement)] => (
-    is         => 'ro',
-    isa        => 'date_object',
-    lazy_build => 1,
-);
-
-has date_start => (
+has [qw(date_expiry date_settlement date_start)] => (
     is         => 'rw',
     isa        => 'date_object',
-    coerce     => 1,
     lazy_build => 1,
 );
 
 sub _build_date_start {
     my $self = shift;
-    my $now  = Date::Utility->new;
 
-    return $now->is_after($self->date_expiry) ? $self->date_expiry : $now;
-
+    return Date::Utility->new;
 }
 
 has date_pricing => (
@@ -137,8 +143,7 @@ has date_pricing => (
 sub _build_date_expiry {
     my $self = shift;
 
-    my $auction_start_date = Date::Utility->new($ICO_config->{$self->contract_type}->{auction_date_start});
-    return $auction_start_date->plus_time_interval('30d');
+    return Date::Utility->new->plus_time_interval('600d');
 }
 
 sub _build_date_settlement {
@@ -166,16 +171,22 @@ sub _build_is_valid_to_sell {
     my $self = shift;
 
     $self->_for_sale(1);
-    if ($self->date_pricing->is_after($self->date_expiry)) {
-        $self->add_errors({
-            message           => 'Auction already closed',
-            severity          => 99,
-            message_to_client => [$ERROR_MAPPING->{IcoClosed}],
-        });
-        return 0;
-    }
 
-    return $self->confirm_validity;
+    if ($is_auction_ended) {
+        if ($self->binaryico_per_token_bid_price_USD < $auction_final_price) {
+            $self->bid_price($self->ask_price);
+            $self->binaryico_auction_status('unsuccessful');
+            return 1;
+        } else {
+            $self->bid_price(0);
+            $self->binaryico_auction_status('successful');
+            return 0;
+        }
+    } else {
+        $self->bid_price($self->ask_price * 0.98);
+        $self->binaryico_auction_status('bidding');
+        return 1;
+    }
 }
 
 has [qw(shortcode)] => (
@@ -184,19 +195,13 @@ has [qw(shortcode)] => (
 );
 
 sub _build_shortcode {
-    my $self          = shift;
-    my $contract_type = uc($self->contract_type);
-    my $token_type    = uc($self->token_type);
-    my @element       = map { $_ } ($contract_type, $token_type, $self->coin_address, $self->ask_price, $self->number_of_tokens);
-    return join '_', @element;
+    my $self = shift;
+    return join '_', uc($self->contract_type), $self->binaryico_per_token_bid_price, $self->binaryico_number_of_tokens;
 }
 
 sub longcode {
-    my $self        = shift;
-    my $description = get_longcodes()->{'coinauction'};
-    my $coin_naming = $self->token_type eq 'ERC20ICO' ? 'ERC20 Ethereum token' : 'ICO coloured coin';
-    return [$description, $coin_naming, $self->coin_address];
-
+    my $self = shift;
+    return [get_longcodes()->{$self->binaryico_auction_status}];
 }
 
 sub is_expired {
@@ -213,39 +218,24 @@ sub is_settleable {
 }
 
 # Validation
-sub _validate_token_type {
-    my $self = shift;
-
-    my @err;
-    my @supported_tokens = @{$ICO_config->{$self->contract_type}->{supported_tokens}};
-    my $token_type       = uc($self->token_type);
-    if (not grep { $_ eq $token_type } @supported_tokens) {
-        push @err,
-            {
-            message           => "Invalid token type. [symbol: " . $self->token_type . "]",
-            severity          => 98,
-            message_to_client => [$ERROR_MAPPING->{InvalidIcoToken}, $self->token_type],
-            };
-    }
-
-    return @err;
-}
-
 sub _validate_price {
     my $self = shift;
 
     return if $self->_for_sale;
 
     my @err;
-    if (not $self->ask_price or $self->ask_price == 0) {
-        push @err,
-            {
-            message           => 'The auction bid price can not be less than zero .',
+    if ($self->binaryico_per_token_bid_price_USD <= 1) {
+        push @err, {
+            message           => 'The minimum bid is USD 1 or equivalent in other currency.',
             severity          => 99,
-            message_to_client => [$ERROR_MAPPING->{InvalidIcoBidPrice}],
-            };
-    }
+            message_to_client => [
+                $ERROR_MAPPING->{InvalidBinaryIcoBidPrice}, $self->currency,
+                $self->binaryico_per_token_bid_price,       $self->binaryico_per_token_bid_price_USD
+            ],
 
+        };
+
+    }
     return @err;
 }
 
@@ -255,7 +245,7 @@ sub _validate_date_pricing {
     return if $self->_for_sale;
 
     my @err;
-    if ($self->date_pricing->is_after($self->date_expiry)) {
+    if ($is_auction_ended) {
         push @err,
             {
             message           => 'The auction is already closed.',
@@ -266,6 +256,14 @@ sub _validate_date_pricing {
 
     return @err;
 
+}
+
+sub pricing_details {
+    my $self = shift;
+    return [
+        binaryico_number_of_tokens    => $self->binaryico_number_of_tokens,
+        binaryico_per_token_bid_price => $self->binaryico_per_token_bid_price
+    ];
 }
 
 no Moose;
