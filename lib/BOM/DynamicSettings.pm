@@ -169,6 +169,7 @@ sub get_settings_by_group {
                 system.suspend.payments
                 system.suspend.payment_agents
                 system.suspend.new_accounts
+                system.suspend.is_auction_ended
                 system.suspend.all_logins
                 system.suspend.logins
                 system.suspend.system
