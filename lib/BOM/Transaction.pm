@@ -675,6 +675,11 @@ sub prepare_bet_data_for_sell {
     my $self = shift;
     my $contract = shift || $self->contract;
 
+    if ($contract->is_binaryico) {
+
+        $self->price($contract->bid_price);
+    }
+
     $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
@@ -1218,11 +1223,7 @@ sub _build_pricing_comment {
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
 
     if ($contract->is_binaryico) {
-        if ($action eq 'buy') {
-            # for binaryico, price is the per token bid price , hence the actual debited amount is the $c->ask_price
-            $price = $contract->ask_price;
-            push @comment_fields, (binaryico_auction_status => $contract->binaryico_auction_status);
-        }
+        push @comment_fields, (binaryico_auction_status => $contract->binaryico_auction_status);
     }
     if (defined $trading_period_start) {
         push @comment_fields, (trading_period_start => $trading_period_start);
