@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use Test::More (tests => 27);
-use Test::NoWarnings;
+use Test::Warnings;
 use Test::Exception;
 use DateTime::Format::HTTP;
 

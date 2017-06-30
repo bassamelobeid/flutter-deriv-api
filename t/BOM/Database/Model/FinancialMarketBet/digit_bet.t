@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use Test::More (tests => 11);
-use Test::FailWarnings;
+use Test::Warnings;
 use Test::Exception;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::FinancialMarketBet::DigitBet;
