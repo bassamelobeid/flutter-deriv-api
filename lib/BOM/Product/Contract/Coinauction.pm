@@ -4,7 +4,7 @@ use Moose;
 
 with 'MooseX::Role::Validatable';
 use Quant::Framework::Underlying;
-use Finance::Contract;
+extends 'Finance::Contract';
 use BOM::Product::Static qw(get_error_mapping);
 use List::Util qw(first);
 use Date::Utility;
