@@ -1221,14 +1221,7 @@ sub _build_pricing_comment {
         if ($action eq 'buy') {
             # for binaryico, price is the per token bid price , hence the actual debited amount is the $c->ask_price
             $price = $contract->ask_price;
-            push @comment_fields,
-                (
-                binaryico_auction_status => 'bidding',
-                binaryico_claim_status   => 'N.A.',
-                binaryico_coin_address   => 'N.A.',
-                binaryico_token_type     => 'N.A.'
-                );
-
+            push @comment_fields, (binaryico_auction_status => $contract->binaryico_auction_status);
         }
     }
     if (defined $trading_period_start) {
