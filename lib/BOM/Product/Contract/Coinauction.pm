@@ -201,7 +201,7 @@ sub _build_shortcode {
 
 sub longcode {
     my $self = shift;
-    return 'Binary ICO:'.  $self->binaryico_auction_status;
+    return 'Binary ICO: '.  $self->binaryico_auction_status;
 }
 
 sub is_expired {
