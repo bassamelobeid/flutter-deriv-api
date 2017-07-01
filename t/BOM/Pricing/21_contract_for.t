@@ -24,7 +24,11 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 diag("100d is " . $now->minus_time_interval('100d')->date_yyyymmdd);
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                                                          underlying => 'frxUSDJPY',
-                                                         epoch      => $now->minus_time_interval('99d')->epoch,
+                                                         epoch      => Date::Utility->new('2016-03-15 00:00:00')->epoch;
+                                                        });
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                         underlying => 'frxUSDJPY',
+                                                         epoch      => Date::Utility->new('2016-03-16 00:00:00')->epoch;
                                                         });
 
 my ($t, $rpc_ct);
