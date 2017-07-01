@@ -15,11 +15,17 @@ use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods upd
 
 use utf8;
 
-set_absolute_time(Date::Utility->new('2016-03-18 00:00:00')->epoch);
+my $now = Date::Utility->new('2016-03-18 00:00:00');
+set_absolute_time($now->epoch);
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
-    epoch      => Date::Utility->new->minus_time_interval('100d')->epoch,
+    epoch      => $now->minus_time_interval('100d')->epoch,
 });
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                         underlying => 'frxUSDJPY',
+                                                         epoch      => $now->minus_time_interval('99d')->epoch,
+                                                        });
 
 my ($t, $rpc_ct);
 my $method = 'contracts_for';
