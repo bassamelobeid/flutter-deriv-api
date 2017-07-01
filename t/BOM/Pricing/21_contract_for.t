@@ -21,7 +21,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->minus_time_interval('100d')->epoch,
 });
-
+diag("100d is " . $now->minus_time_interval('100d'));
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                                                          underlying => 'frxUSDJPY',
                                                          epoch      => $now->minus_time_interval('99d')->epoch,
