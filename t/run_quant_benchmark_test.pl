@@ -62,7 +62,9 @@ sub _benchmark_testing_setup {
                     type    => 'market',
                     rates   => \%rates,
                     date    => '2010-01-01T00:00:00Z'
-                });
+                },
+                                   Data::Utility->new("2010-01-01")
+                                  );
 
         } else {
             warn "Line could not be parsed: $line\n";
