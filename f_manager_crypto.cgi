@@ -38,7 +38,10 @@ if (not $currency or $currency !~ /^[A-Z]{3}$/) {
     code_exit_BO();
 }
 
-my $page = request()->param('submit');
+my $page     = request()->param('submit');
+my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
+my $dbh      = $clientdb->db->dbh;
+
 if ($page eq 'Transactions') {
     PrintContentType_excel($currency . '.csv');
     BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
@@ -56,9 +59,6 @@ if ($page eq 'Transactions') {
         print "Invalid selection to view type of transactions.";
         code_exit_BO();
     }
-
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
-    my $dbh = $clientdb->db->dbh;
 
     my $found;
     if ($action and $action eq 'verify') {
@@ -117,7 +117,7 @@ if ($page eq 'Transactions') {
     # Crypto database for address => login_id mapping
 
     my $rpc_client =
-        $currency eq 'BTC' ? Bitcoin::RPC::Client->new(%{$self->config->{bitcoin}}, timeout => 10) : die 'unsupported currency ' . $currency;
+        $currency eq 'BTC' ? Bitcoin::RPC::Client->new(((), timeout => 10)) : die 'unsupported currency ' . $currency;
     my $csv      = Text::CSV->new;
     my @hdrs     = qw(address login_id transaction_date status reused amount currency_code);
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
@@ -128,13 +128,16 @@ if ($page eq 'Transactions') {
     for my $transaction ($rpc_client->getaddresses) {
         my $address = $transaction->{address};
         my ($login_id) = @{$sth->fetchall_arrayref($currency, $address)} or die 'could not find login_id for address ' . $address;
-        $data{address}  = $address;
-        $data{login_id} = $login_id;
+        my %data = {
+            address       => $address,
+            login_id      => $login_id,
+            amount        => $transaction->{amount},
+            currency_code => $currency,
+        };
         # $data{transaction_date} should be most recent transaction on the current address
         # $data{status} could be the most recent status from the crypto transactions table
-        $data{reused}        = 1 if $seen{$address}++;
-        $data{amount}        = $transaction->{amount};
-        $data{currency_code} = $currency;
+        $data{reused} = 1 if $seen{$address}++;
+
         $csv->combine(@data{@hdrs});
         print $csv->string . "\n";
     }
