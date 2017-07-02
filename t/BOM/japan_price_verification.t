@@ -228,7 +228,7 @@ subtest 'verify_with_shortcode_IH' => sub {
     }
 
     is(roundcommon(1, $ask_prob * 1000), 524, 'Ask price is matching');
-    
+
     check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
 
@@ -321,7 +321,7 @@ subtest 'verify_with_shortcode_Slope' => sub {
     }
 
     is(roundcommon(1, $ask_prob * 1000), 980, 'Ask price is matching');
-    
+
     check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
 
@@ -452,7 +452,7 @@ subtest 'verify_with_shortcode_VV' => sub {
     }
 
     is(roundcommon(1, $ask_prob * 1000), 795, 'Ask price is matching');
-     
+
     check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
 
@@ -469,19 +469,20 @@ subtest '2017_with_extra_data' => sub {
             landing_company => 'japan',
         };
 
-
         my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
-        $mocked->mock('historical_vol_markup', sub {
-                    return Math::Util::CalculatedValue::Validatable->new({
-                                       name => 'historical_vol_markup',
-                                       set_by => 'test',
-                                       base_amount => 0,
-                                       description => 'test'
-                                   });
-                    });
+        $mocked->mock(
+            'historical_vol_markup',
+            sub {
+                return Math::Util::CalculatedValue::Validatable->new({
+                    name        => 'historical_vol_markup',
+                    set_by      => 'test',
+                    base_amount => 0,
+                    description => 'test'
+                });
+            });
         my $output = BOM::Pricing::JapanContractDetails::verify_with_shortcode($input);
 
-        my $ask    = $output->{ask_probability};
+        my $ask = $output->{ask_probability};
 
         is $ask->{bs_probability},            0.76978238455266,    'matched bs probability';
         is $ask->{commission_markup},         0.035,               'matched commission markup';
@@ -530,11 +531,11 @@ sub check_pricing_parameters {
     foreach my $key (sort keys %{$pricing_parameters}) {
         foreach my $sub_key (keys %{$pricing_parameters->{$key}}) {
 
-            if($sub_key eq 'description') {
-              my $desc = BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key});
-              is($desc, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+            if ($sub_key eq 'description') {
+                my $desc = BOM::Backoffice::Request::localize($pricing_parameters->{$key}->{$sub_key});
+                is($desc, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
             } else {
-              is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
+                is($pricing_parameters->{$key}->{$sub_key}, $expected_parameters->{$key}->{$sub_key}, "The $sub_key are matching");
             }
         }
 
