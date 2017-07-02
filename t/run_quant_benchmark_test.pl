@@ -37,7 +37,7 @@ sub _benchmark_testing_setup {
 
     open(my $data, '<', $file_path) or die "Could not open '$file_path' $!\n";
     my $dummy_line = <$data>;
-
+    my $chronicle_writer = BOM::Platform::Chronicle::get_chronicle_writer;
     while (my $line = <$data>) {
         chomp $line;
 
@@ -54,7 +54,7 @@ sub _benchmark_testing_setup {
                 $rates{$tenor} = $rate;
             }
 
-            BOM::Platform::Chronicle::set(
+            $chronicle_writer->set(
                 'interest_rates',
                 $symbol,
                 {
@@ -72,7 +72,7 @@ sub _benchmark_testing_setup {
     close $data;
 
 
-    BOM::Platform::Chronicle::set('partial_trading', 'late_opens', {}, Date::Utility->new("2010-01-01"));
+    $chronicle_writer->set('partial_trading', 'late_opens', {}, Date::Utility->new("2010-01-01"));
 
 
     return 1;
