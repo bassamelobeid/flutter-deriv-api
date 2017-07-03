@@ -1,6 +1,7 @@
-use Test::More tests => 1;
+use Test::More tests => 2;
 use strict;
 use warnings;
+use Test::Warnings;
 
 if (my $r = `git grep "BOM::[A-Za-z]" | grep -v .proverc | grep -v README.md`) {
     print $r;
