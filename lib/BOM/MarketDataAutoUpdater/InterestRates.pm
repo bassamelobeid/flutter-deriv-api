@@ -74,7 +74,6 @@ sub run {
         365 => 0
     };
 
-
     foreach my $currency_symbol (keys %$rates) {
         my $data = $rates->{$currency_symbol}->{rates};
         if (my $validation_error = $self->_passes_sanity_check($data, $currency_symbol)) {
