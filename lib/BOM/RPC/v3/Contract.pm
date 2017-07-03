@@ -98,6 +98,8 @@ sub pre_validate_start_expire_dates {
     my $params = shift;
     my ($start_epoch, $expiry_epoch, $duration);
 
+    return 1 if $params->{bet_type} eq 'BINARYICO';
+
     state $pre_limits_max_duration = 31536000;    # 365 days
     state $pre_limits_max_forward  = 604800;      # 7 days (Maximum offset from now for creating a contract)
 
