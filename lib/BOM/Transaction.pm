@@ -735,7 +735,8 @@ sub prepare_sell {
         @clients = map { $_->{client} } grep { ref $_->{client} } @{$self->multiple};
     }
 
-    my $error_status = !$self->contract->is_binaryico
+    my $error_status =
+        !$self->contract->is_binaryico
         ? BOM::Transaction::Validation->new({
             transaction => $self,
             clients     => \@clients,

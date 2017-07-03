@@ -54,8 +54,7 @@ sub validate_trx_sell {
 sub validate_trx_sell_ico {
     my $self = shift;
 
-    my $res = $self->_is_valid_to_sell();
-    return $res if $res;
+    return $self->_is_valid_to_sell();
 }
 
 sub validate_trx_buy {
