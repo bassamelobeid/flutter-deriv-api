@@ -341,6 +341,8 @@ sub calculate_limits {
     my $contract = $self->contract;
     my $currency = $contract->currency;
 
+    return {} if $contract->is_binaryico;
+
     $limits{max_balance} = $client->get_limit_for_account_balance;
 
     if (not $contract->tick_expiry) {
@@ -387,6 +389,11 @@ sub prepare_bet_data_for_buy {
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
 
+    if ($contract->is_binaryico) {
+
+        $self->price($contract->ask_price);
+    }
+
     $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
@@ -429,6 +436,9 @@ sub prepare_bet_data_for_buy {
         $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_BET) {
         $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
+        $bet_params->{binaryico_number_of_tokens}    = $contract->binaryico_number_of_tokens;
+        $bet_params->{binaryico_per_token_bid_price} = $contract->binaryico_per_token_bid_price;
     } else {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
@@ -436,7 +446,6 @@ sub prepare_bet_data_for_buy {
             -message_to_client => BOM::Platform::Context::localize("Unsupported bet class $bet_params->{bet_class}"),
         );
     }
-
     my $quants_bet_variables;
     if (my $comment_hash = $self->comment->[1]) {
         $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
@@ -463,7 +472,6 @@ sub prepare_buy {
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
-            $m->{limits} = $self->calculate_limits($m->{client});
             my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
             unless ($c) {
                 $m->{code}  = 'InvalidLoginid';
@@ -472,6 +480,7 @@ sub prepare_buy {
             }
 
             $m->{client} = $c;
+            $m->{limits} = $self->calculate_limits($m->{client});
         }
     }
 
@@ -491,14 +500,14 @@ sub prepare_buy {
 
     $self->comment(
         _build_pricing_comment({
-                contract         => $self->contract,
-                price            => $self->price,
-                requested_price  => $self->requested_price,
-                recomputed_price => $self->recomputed_price,
-                ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
+                contract => $self->contract,
+                price    => $self->price,
+                ($self->requested_price)      ? (requested_price      => $self->requested_price)                    : (),
+                ($self->recomputed_price)     ? (recomputed_price     => $self->recomputed_price)                   : (),
+                ($self->price_slippage)       ? (price_slippage       => $self->price_slippage)                     : (),
                 ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
                 action => 'buy'
-            })) unless @{$self->comment};
+            })) unless (@{$self->comment});
 
     return $self->prepare_bet_data_for_buy;
 }
@@ -512,7 +521,6 @@ sub buy {
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
-
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
         account_data => {
@@ -550,7 +558,7 @@ sub buy {
     $self->transaction_id($txn->{id});
     $self->contract_id($fmb->{id});
 
-    enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
+    enqueue_new_transaction(_get_params_for_expiryqueue($self)) unless $self->contract->is_binaryico;    # For soft realtime expiration notification.
 
     return;
 }
@@ -597,6 +605,11 @@ sub batch_buy {
     # TODO: shall we allow this operation only if $self->client is real-money?
     #       Or allow virtual $self->client only if all other clients are also
     #       virtual?
+    return Error::Base->cuss(
+        -type              => 'DoNotSupportICO',
+        -mesg              => 'Client is not allow to place ICO via batch buy',
+        -message_to_client => BOM::Platform::Context::localize('Sorry, placement of ICO is not support for this service.'),
+    ) if $self->contract->is_binaryico;
 
     my $stats_data = $self->stats_start('batch_buy');
 
@@ -742,11 +755,11 @@ sub prepare_sell {
 
     $self->comment(
         _build_pricing_comment({
-                contract         => $self->contract,
-                price            => $self->price,
-                requested_price  => $self->requested_price,
-                recomputed_price => $self->recomputed_price,
-                ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
+                contract => $self->contract,
+                price    => $self->price,
+                ($self->requested_price)      ? (requested_price      => $self->requested_price)                    : (),
+                ($self->recomputed_price)     ? (recomputed_price     => $self->recomputed_price)                   : (),
+                ($self->price_slippage)       ? (price_slippage       => $self->price_slippage)                     : (),
                 ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
                 action => 'sell'
             })) unless @{$self->comment};
@@ -1196,6 +1209,7 @@ sub _build_pricing_comment {
 
     my @comment_fields = @{$contract->pricing_details($action)};
 
+    #NOTE The handling of sell whether the bid is sucess or not will be handle in next card
     # only manual sell and buy has a price
     if ($price) {
         push @comment_fields, (trade => $price);
@@ -1219,6 +1233,13 @@ sub _build_pricing_comment {
 
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
 
+    if ($contract->is_binaryico) {
+        if ($action eq 'buy') {
+            # for binaryico, price is the per token bid price , hence the actual debited amount is the $c->ask_price
+            $price = $contract->ask_price;
+            push @comment_fields, (binaryico_auction_status => $contract->binaryico_auction_status);
+        }
+    }
     if (defined $trading_period_start) {
         push @comment_fields, (trading_period_start => $trading_period_start);
     }
@@ -1317,15 +1338,15 @@ sub sell_expired_contracts {
                     };
 
                 # price_slippage will not happen to expired contract, hence not needed.
-                my $comment_hash = _build_pricing_comment({
-                        contract => $contract,
-                        action   => 'autosell_expired_contract',
-                    })->[1];
                 my $quants_bet_variables;
-                if ($comment_hash) {
+                unless ($contract->is_binaryico) {
                     $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-                        data_object_params => $comment_hash,
-                    });
+                            data_object_params => _build_pricing_comment({
+                                    contract => $contract,
+                                    action   => 'autosell_expired_contract',
+                                }
+                            )->[1],
+                        });
                 }
                 push @quants_bet_variables, $quants_bet_variables;
 
@@ -1351,6 +1372,10 @@ sub sell_expired_contracts {
                     $failure->{reason} = $cpve->message;
                 } else {
                     $failure->{reason} = "Unknown failure in sell_expired_contracts, shortcode: " . $contract->shortcode;
+                    warn 'validation error missing when contract is invalid to sell, shortcode['
+                        . $contract->shortcode
+                        . '] pricing time ['
+                        . $contract->date_pricing->datetime . ']';
                 }
                 push @{$result->{failures}}, $failure;
             }
@@ -1524,11 +1549,11 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 TEST
 
-    # run all test scripts # 
+    # run all test scripts #
     make test
-    # run one script # 
+    # run one script #
     prove t/BOM/001_structure.t
-    # run one script with perl # 
+    # run one script with perl #
     perl -MBOM::Test t/BOM/001_structure.t
 
 =cut
