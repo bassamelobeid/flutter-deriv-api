@@ -1,0 +1,68 @@
+<br/>
+[% IF transactions.size == 0 %]
+    <p>There are no [% view_type %] transactions.</p>
+[% ELSE %]
+<table>
+    <tr>
+        <th>Currency</th>
+        <th>Address</th>
+        <th>LoginID</th>
+        <th>Amount</th>
+        <th>Creation Date</th>
+        <th>Verified Date</th>
+        <th>Rejected Date</th>
+        <th>Sent Date</th>
+        [% IF view_type == 'pending' %]
+            <th>Verify</th>
+            <th>|</th>
+            <th>Reject</th>
+        [% END %]
+    </tr>
+    [% FOREACH trx IN transactions %]
+    <tr>
+        <td>[% trx.currency_code %]</td>
+        <td>[% trx.address %]</td>
+        <td>[% trx.client_loginid %]</td>
+        <td>[% trx.amount %]</td>
+        <td>[% trx.creation_date %]</td>
+        <td>[% trx.verified_date %]</td>
+        <td>[% trx.rejected_date %]</td>
+        <td>[% trx.sent_date %]</td>
+        [% IF view_type == 'pending' %]
+            <td>
+                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify">Verify transaction</a>
+            </td>
+            <td>|</td>
+            <td>
+                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject">Reject transaction</a>
+            </td>
+        [% END %]
+    </tr>
+    [% END %]
+</table>
+[% END %]
+
+<br/>
+<table>
+<tr>
+    <td>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_type=pending">View Pending Transactions</a>
+    </td>
+    <td>|</td>
+    <td>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_type=verified">View Verified Transactions</a>
+    </td>
+    <td>|</td>
+    <td>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_type=rejected">View Rejected Transaction</a>
+    </td>
+    <td>|</td>
+    <td>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_type=sent">View Sent Transactions</a>
+    </td>
+    <td>|</td>
+    <td>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_type=error">View Errored Out Transactions</a>
+    </td>
+</tr>
+</table>

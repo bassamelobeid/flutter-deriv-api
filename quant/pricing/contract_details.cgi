@@ -28,6 +28,7 @@ BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 use BOM::Platform::Runtime;
 use BOM::Pricing::JapanContractDetails;
+use BOM::JapanContractDetailsOutput;
 use Data::Dumper;
 my %params = %{request()->params};
 
