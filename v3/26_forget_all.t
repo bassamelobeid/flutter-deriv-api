@@ -13,6 +13,11 @@ use Date::Utility;
 use BOM::Platform::RedisReplicated;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+# switch off `use_numbers` because `fork` will mess up the number
+my $test_builder = Test::More->builder;
+$test_builder->use_numbers(0);
+
+
 initialize_realtime_ticks_db();
 
 {
