@@ -175,7 +175,9 @@ risk_profile:
           GBP: 500000
           JPY: 50000000
           BTC: 50
+          ETH: 500
           LTC: 5000
+          ETC: 500
       payout:
           USD: 50000
           EUR: 50000
