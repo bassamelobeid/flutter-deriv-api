@@ -38,11 +38,10 @@ Convert a shortcode and currency pair into parameters suitable for creating a BO
 sub shortcode_to_parameters {
     my ($shortcode, $currency, $is_sold) = @_;
 
-    my (
-        $bet_type,       $underlying_symbol, $payout,     $date_start,   $date_expiry,
-        $barrier,        $barrier2,          $prediction, $fixed_expiry, $tick_expiry,
-        $how_many_ticks, $forward_start,     $unit,       $coin_address, $number_of_tokens
-    );
+    my ($bet_type, $underlying_symbol, $payout, $date_start, $date_expiry, $barrier, $barrier2, $prediction, $fixed_expiry, $tick_expiry,
+        $how_many_ticks, $forward_start, $binaryico_per_token_bid_price,
+        $binaryico_number_of_tokens, $unit);
+
     my ($initial_bet_type) = split /_/, $shortcode;
 
     my $legacy_params = {
@@ -59,14 +58,8 @@ sub shortcode_to_parameters {
         $unit = $3;
     }
 
-    if ($shortcode =~ /^BINARYICO_([A-Z0-9]+)_(\w+)_(\d*\.?\d*)_(\d+)$/) {
-        $bet_type          = 'BINARYICO';
-        $underlying_symbol = $1;
-        $coin_address      = $2;
-        $payout            = $3;
-        $number_of_tokens  = $4;
+    if ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
 
-    } elsif ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
         # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
 
         $bet_type          = $1;
@@ -95,7 +88,15 @@ sub shortcode_to_parameters {
             $tick_expiry    = 1;
             $how_many_ticks = $5;
         }
-    } else {
+    } elsif ($shortcode =~ /^BINARYICO_(\d+\.?\d*)_(\d+)$/) {
+        $bet_type                      = 'BINARYICO';
+        $underlying_symbol             = 'BINARYICO';
+        $binaryico_per_token_bid_price = $1;
+        $binaryico_number_of_tokens    = $2;
+
+    }
+
+    else {
         return $legacy_params;
     }
 
@@ -115,11 +116,11 @@ sub shortcode_to_parameters {
 
     my $bet_parameters = {
 
-        shortcode   => $shortcode,
-        bet_type    => $bet_type,
-        underlying  => $underlying,
-        amount_type => $bet_type eq 'BINARYICO' ? 'stake' : 'payout',
-        amount      => $payout,
+        shortcode    => $shortcode,
+        bet_type     => $bet_type,
+        underlying   => $underlying,
+        amount_type  => $bet_type eq 'BINARYICO' ? 'stake' : 'payout',
+        amount       => $bet_type eq 'BINARYICO' ? $binaryico_per_token_bid_price : $payout,
         (defined $unit) ? (unit => $unit) : (),
 
         date_start   => $date_start,
@@ -130,9 +131,15 @@ sub shortcode_to_parameters {
         tick_expiry  => $tick_expiry,
         tick_count   => $how_many_ticks,
         is_sold      => $is_sold,
-        ($forward_start)    ? (starts_as_forward_starting => $forward_start)    : (),
-        ($number_of_tokens) ? (number_of_tokens           => $number_of_tokens) : (),
-        ($coin_address)     ? (coin_address               => $coin_address)     : (),
+        ($forward_start) ? (starts_as_forward_starting => $forward_start) : (),
+        (
+            $bet_type eq 'BINARYICO'
+            ? (
+                binaryico_number_of_tokens    => $binaryico_number_of_tokens,
+                binaryico_per_token_bid_price => $binaryico_per_token_bid_price
+                )
+            : ()
+        ),
         %barriers,
     };
 
