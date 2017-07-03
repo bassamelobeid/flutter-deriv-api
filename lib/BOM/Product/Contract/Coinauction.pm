@@ -172,24 +172,19 @@ sub _build_date_settlement {
     return shift->date_expiry;
 }
 
-has [qw(is_valid_to_buy is_valid_to_sell)] => (
-    is         => 'rw',
-    lazy_build => 1,
-);
-
 has is_sold => (
     is      => 'ro',
     isa     => 'Bool',
     default => 0
 );
 
-sub _build_is_valid_to_buy {
+sub is_valid_to_buy {
     my $self = shift;
 
     return $self->confirm_validity;
 }
 
-sub _build_is_valid_to_sell {
+sub is_valid_to_sell {
     my $self = shift;
 
     $self->_for_sale(1);
@@ -229,14 +224,14 @@ sub is_settleable {
 }
 
 # Validation
+
 sub _validate_price {
     my $self = shift;
 
     return if $self->_for_sale;
 
-    my @err;
     if ($self->binaryico_per_token_bid_price_USD <= 1) {
-        push @err, {
+        return {
             message           => 'The minimum bid is USD 1 or equivalent in other currency.',
             severity          => 99,
             message_to_client => [
@@ -247,7 +242,7 @@ sub _validate_price {
         };
 
     }
-    return @err;
+    return;
 }
 
 sub _validate_date_pricing {
@@ -255,17 +250,15 @@ sub _validate_date_pricing {
 
     return if $self->_for_sale;
 
-    my @err;
     if ($is_auction_ended) {
-        push @err,
-            {
+        return {
             message           => 'The auction is already closed.',
             severity          => 99,
             message_to_client => [$ERROR_MAPPING->{IcoClosed}],
-            };
+        };
     }
 
-    return @err;
+    return;
 
 }
 
