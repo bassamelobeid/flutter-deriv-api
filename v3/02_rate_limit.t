@@ -6,7 +6,6 @@ use Test::More;
 use Test::Mojo;
 use Test::MockModule;
 
-
 use Mojo::Redis2;
 use Path::Tiny;
 
@@ -44,7 +43,7 @@ $ENV{BOM_TEST_RATE_LIMITATIONS} = $limits_file;
 
 my $redis2_module = Test::MockModule->new('Mojo::Redis2');
 my @commands_queue;
-for my $command (qw/incrby expire/) {
+for my $command (qw/incrby expire ttl/) {
     $redis2_module->mock(
         $command,
         sub {
@@ -66,21 +65,37 @@ my %redis_callbacks = (
         my $key      = shift;
         my $callback = pop;
         my $value    = shift // 1;
-        ($redis_storage{$key} //= 0) += $value;
-        $callback->($mock, undef, $redis_storage{$key});
+        ($redis_storage{$key}{'value'} //= 0) += $value;
+        $redis_storage{$key}{'ttl'} //= -1;
+        $callback->($mock, undef, $redis_storage{$key}{'value'});
     },
     expire => sub {
+        shift;
+        my $mock     = shift;
+        my $key      = shift;
+        my $callback = pop;
+        my $value    = shift // 1;
+        $redis_storage{$key}{'ttl'} = $value;
+
         $on_expiry->(@_);
+    },
+    ttl => sub {
+        shift;
+        my $mock     = shift;
+        my $key      = shift;
+        my $callback = pop;
+        my $ttl      = $redis_storage{$key}{'ttl'} // -2;
+        $callback->($mock, undef, $ttl);
     },
 );
 
 my $process_queue = sub {
     my $count = shift;
     note "processing redis queue";
-    $count //= @commands_queue;
+    $count //= 0;
     my $i = 0;
     while (@commands_queue) {
-        return if $i++ == $count;
+        return if $count && $i++ == $count;
         my $command_data = shift @commands_queue;
         my $command      = $command_data->[0];
         my $processor    = $redis_callbacks{$command};
@@ -236,7 +251,7 @@ subtest "post-expiration of limits under heavy load" => sub {
     is $expiration_sets, 2;
 
     note "keys :" . join(", ", keys %redis_storage);
-    $redis_storage{$_} = 0 for (keys %redis_storage);
+    $redis_storage{$_}{'value'} = 0 for (keys %redis_storage);
 
     @commands_queue = grep { $_->[0] ne 'expire' } @cmds;
     # process incrs
@@ -245,6 +260,38 @@ subtest "post-expiration of limits under heavy load" => sub {
     $process_queue->();
     is $expiration_sets, 4;
 
+};
+
+subtest "keys without expiry" => sub {
+    # Flush redis
+    $process_queue->();
+    %redis_storage = ();
+
+    my $expiration_sets = 0;
+    local $on_expiry = sub {
+        ++$expiration_sets;
+    };
+
+    # trigger limit check
+    Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio', 0)->get;
+    $process_queue->();
+
+    # confirm ttl is set.
+    isnt $redis_storage{$_}{'ttl'}, -1 for (keys %redis_storage);
+    # confirm expire called 2 times.
+    is $expiration_sets, 2;
+
+    # unset all ttls
+    $redis_storage{$_}{'ttl'} = -1 for (keys %redis_storage);
+
+    # trigger a second limit check
+    Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio', 0)->get;
+    $process_queue->();
+
+    # confirm all ttls is set
+    isnt $redis_storage{$_}{'ttl'}, -1 for (keys %redis_storage);
+    # confirm that expire has been called 4 times (2 times initially and 2 times to reset ttl)
+    is $expiration_sets, 4;
 };
 
 $t->finish_ok;
