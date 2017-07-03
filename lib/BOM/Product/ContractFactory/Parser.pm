@@ -116,11 +116,11 @@ sub shortcode_to_parameters {
 
     my $bet_parameters = {
 
-        shortcode    => $shortcode,
-        bet_type     => $bet_type,
-        underlying   => $underlying,
-        amount_type  => $bet_type eq 'BINARYICO' ? 'stake' : 'payout',
-        amount       => $bet_type eq 'BINARYICO' ? $binaryico_per_token_bid_price : $payout,
+        shortcode   => $shortcode,
+        bet_type    => $bet_type,
+        underlying  => $underlying,
+        amount_type => $bet_type eq 'BINARYICO' ? 'stake' : 'payout',
+        amount      => $bet_type eq 'BINARYICO' ? $binaryico_per_token_bid_price : $payout,
         (defined $unit) ? (unit => $unit) : (),
 
         date_start   => $date_start,
