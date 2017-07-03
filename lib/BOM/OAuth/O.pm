@@ -121,8 +121,10 @@ sub authorize {
             foreach my $c1 ($user->clients) {
                 $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
             }
-        } else {
+        } elsif ($c->param('cancel_scopes')) {
             my $uri = $redirect_handle->($response_type, 'scope_denied', $state);
+            ## clear session for oneall login when scope is canceled
+            delete $c->session->{_oneall_user_id};
             return $c->redirect_to($uri);
         }
     }
