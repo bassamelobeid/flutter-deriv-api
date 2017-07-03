@@ -1,4 +1,4 @@
-use Test::Most;
+use Test::Most tests => 237;
 use Test::Mojo;
 use JSON::Schema;
 use JSON;
