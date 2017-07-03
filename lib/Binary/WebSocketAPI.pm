@@ -108,10 +108,14 @@ sub startup {
             }
 
             my $app_id = $c->app_id;
-            $c->render(
-                json   => {error => 'InvalidAppID'},
-                status => 401
-            ) unless $app_id;
+            do {
+                $c->render(
+                    json   => {error => 'InvalidAppID'},
+                    status => 401
+                );
+                return;
+            }
+            unless $app_id;
 
             my $client_ip = $c->client_ip;
             my $brand     = defang($c->req->param('brand'));
@@ -450,6 +454,7 @@ sub startup {
     $app->helper(
         'app_id' => sub {
             my $c               = shift;
+            return undef unless $c->tx;
             my $possible_app_id = $c->req->param('app_id');
             if (defined($possible_app_id) && $possible_app_id =~ /^(?!0)[0-9]{1,19}$/) {
                 return $possible_app_id;
