@@ -57,7 +57,7 @@ sub _update_redis {
 
     my $client_id = $c->rate_limitations_key;
     my $redis     = $c->app->ws_redis_master;
-    my $redis_key = $client_id . ':' . $name;
+    my $redis_key = $client_id . '::' . $name;
     my $f         = Future::Mojo->new;
     $redis->incrby(
         $redis_key,
@@ -66,7 +66,7 @@ sub _update_redis {
             my ($redis, $error, $count) = @_;
             if ($error) {
                 $c->app->log->warn("Redis error: $error");
-                return $f->fail($error) if $error;
+                return $f->fail($error);
             }
             # overwrite by force speculatively calculated value
             $local_storage->{$name}{value}              = $count;
@@ -77,16 +77,19 @@ sub _update_redis {
             # then our returned value should match the increment value... so we'd
             # want to set expiry in that case.
             if ($count == $diff) {
-                $redis->expire(
-                    $redis_key,
-                    $ttl,
-                    sub {
-                        my ($redis, $error, $confirmation) = @_;
-                        $c->app->log->warn("Expiration on $redis_key was not confirmed")
-                            unless $confirmation;
-                        $f->done;
-                    });
+                _set_key_expiry($c, $redis_key, $ttl, $f);
             } else {
+                $redis->ttl(
+                    $redis_key,
+                    sub {
+                        my ($redis, $error, $redis_ttl) = @_;
+                        if ($error) {
+                            $c->app->log->warn("Redis error: $error");
+                            return $f->fail($error);
+                        }
+                        # if ttl == -2 the key has just expired and we dont need a warning here.
+                        _set_key_expiry($c, $redis_key, $ttl) if $redis_ttl == -1;
+                    });
                 $f->done;
             }
             # retrigger scheduled updates
@@ -95,6 +98,21 @@ sub _update_redis {
             }
         });
     return $f;
+}
+
+sub _set_key_expiry {
+    my ($c, $redis_key, $ttl, $f) = @_;
+    my $redis = $c->app->ws_redis_master;
+    $redis->expire(
+        $redis_key,
+        $ttl,
+        sub {
+            my ($redis, $error, $confirmation) = @_;
+            $c->app->log->warn("Expiration on $redis_key was not confirmed")
+                unless $confirmation;
+            $f->done if $f;
+        });
+    return;
 }
 
 sub _check_single_limit {
