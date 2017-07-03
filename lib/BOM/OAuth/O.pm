@@ -86,7 +86,7 @@ sub authorize {
 
         ## show login form
         return $c->render(
-            template  => _get_login_template_name($app_id, $brand_name),
+            template  => _get_login_template_name($brand_name),
             layout    => $brand_name,
             app       => $app,
             error     => $error,
@@ -101,7 +101,7 @@ sub authorize {
     my $lc = $client->landing_company;
     if (grep { $brand_name ne $_ } @{$lc->allowed_for_brands}) {
         return $c->render(
-            template  => _get_login_template_name($app_id, $brand_name),
+            template  => _get_login_template_name($brand_name),
             layout    => $brand_name,
             app       => $app,
             error     => localize('This account is unavailable. For any questions please contact Customer Support.'),
@@ -255,7 +255,7 @@ sub _login {
 
     if ($err) {
         $c->render(
-            template  => _get_login_template_name($app->{id}, $brand->name),
+            template  => _get_login_template_name($brand->name),
             layout    => $brand->name,
             app       => $app,
             error     => $err,
@@ -409,13 +409,7 @@ sub _get_details_from_environment {
 }
 
 sub _get_login_template_name {
-    my ($app_id, $brand_name) = @_;
-
-    # we have different login template for binary.com
-    # and for other apps
-    if ($app_id eq '1' and $brand_name =~ /^binary$/) {
-        return 'binary/loginbinary';
-    }
+    my $brand_name = shift;
 
     return $brand_name . '/login';
 }
