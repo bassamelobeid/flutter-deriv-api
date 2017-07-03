@@ -202,6 +202,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        cryptocashier:
+          description: "Suspend cypto cashier"
+          isa: Bool
+          default: 0
+          global: 1
         new_accounts:
           description: "Suspend opening new accounts"
           isa: Bool
