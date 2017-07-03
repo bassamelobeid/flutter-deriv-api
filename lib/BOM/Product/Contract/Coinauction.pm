@@ -93,16 +93,16 @@ sub _build_binaryico_auction_status {
     if ($is_auction_ended) {
         if ($self->binaryico_per_token_bid_price_USD < $auction_final_price) {
             $self->bid_price($self->ask_price);
-            $self->binaryico_auction_status('unsuccessful bid');
+            return 'unsuccessful bid';
         } else {
             $self->bid_price(0);
-            $self->binaryico_auction_status('successful bid');
-
+            return 'successful bid';
         }
     } else {
         $self->bid_price($self->ask_price * 0.98);
-        $self->binaryico_auction_status('bid');
+        return 'bid';
     }
+
 }
 
 has build_parameters => (
