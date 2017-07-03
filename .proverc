@@ -1,5 +1,5 @@
 -Ilib
--MTest::FailWarnings=-allow_deps,1
+--exec '/etc/rmg/bin/perl -It/lib -MTest::Warnings'
 -MBOM::Test
 -MBOM::Test::RPC::PricingRpc
 -MBOM::Test::RPC::BomRpc
