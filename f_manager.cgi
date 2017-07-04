@@ -116,10 +116,11 @@ print '<br>';
 print '<h3>Deposit</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
+print '<INPUT type="hidden" name="view_type" value="pending">';
 print '<select name="currency">'
     . '<option value="BTC">Bitcoin</option>'
     . '</select>';
-print '<INPUT type="submit" value="Deposit Transactions" name="view_action"/> (not yet implemented)';
+print '<INPUT type="submit" value="Deposit Transactions" name="view_action"/>';
 print '</FORM>';
 
  

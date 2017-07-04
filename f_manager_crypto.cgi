@@ -110,6 +110,32 @@ if ($page eq 'Transactions') {
             currency     => $currency,
         }) || die $tt->error();
 
+} elsif ($page eq 'Deposit Transactions') {
+    PrintContentType();
+    BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
+
+    $view_type ||= 'new';
+    if (not $view_type or $view_type !~ /^(?:new|pending|confirmed|error)$/) {
+        print "Invalid selection to view type of transactions.";
+        code_exit_BO();
+    }
+
+    my $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(?, ?::payment.CTC_STATUS, NULL, NULL)",
+            {Slice => {}}, $currency, uc $view_type);
+
+    Bar("LIST OF TRANSACTIONS - DEPOSITS");
+
+    my $tt = BOM::Backoffice::Request::template;
+    $tt->process(
+        'backoffice/account/manage_crypto_transactions.tt',
+        {
+            transactions => $trxns,
+            broker       => $broker,
+            transaction_type  => 'deposit',
+            view_type    => $view_type,
+            currency     => $currency,
+        }) || die $tt->error();
+
 } elsif ($page eq 'Balances') {
     PrintContentType_excel($currency . '.csv');
 
