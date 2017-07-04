@@ -4,12 +4,15 @@ use strict;
 use warnings;
 use HTML::Entities;
 
+use Bitcoin::RPC::Client;
+use Data::Dumper;
+use YAML::XS;
 use Client::Account;
 use Text::CSV;
-use HTML::Entities;
+use List::UtilsBy qw(rev_nsort_by);
 
 use BOM::Database::ClientDB;
-use BOM::Backoffice::PlackHelpers qw( PrintContentType_excel );
+use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
@@ -38,12 +41,12 @@ if (not $currency or $currency !~ /^[A-Z]{3}$/) {
     code_exit_BO();
 }
 
-my $page     = request()->param('submit');
+my $page = request()->param('view_action') // '';
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
-my $dbh      = $clientdb->db->dbh;
+my $dbh = $clientdb->db->dbh;
 
 if ($page eq 'Transactions') {
-    PrintContentType_excel($currency . '.csv');
+    PrintContentType();
     BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
     if ($address and $address !~ /^\w+$/) {
         print "Invalid address.";
@@ -108,7 +111,8 @@ if ($page eq 'Transactions') {
         }) || die $tt->error();
 
 } elsif ($page eq 'Balances') {
-    PrintContentType();
+    PrintContentType_excel($currency . '.csv');
+
     # Things required for this to work:
     # Access to bitcoin/litecoin/eth servers
     # Credentials for RPC
@@ -140,6 +144,57 @@ if ($page eq 'Transactions') {
 
         $csv->combine(@data{@hdrs});
         print $csv->string . "\n";
+    }
+} elsif($page eq 'Run tool') {
+    PrintContentType();
+    my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
+    my $rpc_client = Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5));
+    my $cmd = request()->param('command');
+    my %valid_rpc_command = (
+        listaccounts => 1,
+        listtransactions => 1,
+        listaddressgroupings => 1,
+    );
+    if($valid_rpc_command{$cmd}) {
+        my $rslt = $rpc_client->$cmd;
+        if($cmd eq 'listaccounts') {
+            print '<table><thead><tr><th scope="col">Account</th><th scope="col">Amount</th></tr></thead><tbody>';
+            for my $k (sort keys %$rslt) {
+                my $amount = $rslt->{$k};
+                print '<tr><th scope="row">' . encode_entities($k) . '</th><td>' . encode_entities($amount) . '</td></tr>' . "\n";
+            }
+            print '</table>';
+        } elsif($cmd eq 'listtransactions') {
+            my @hdr = ('Account', 'Transaction ID', 'Amount', 'Transaction date', 'Confirmations', 'Address');
+            print '<table><thead><tr>';
+            print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
+            print '</tr></thead><tbody>';
+            for my $tran (rev_nsort_by { $_->{time} } @$rslt) {
+                my @fields = @{$tran}{qw(account txid amount time confirmations address)};
+                $_ = Date::Utility->new($_)->datetime_yyyymmdd_hhmmss for $fields[3];
+                @fields = map { encode_entities($_) } @fields;
+                $_ = '<a href="https://www.blocktrail.com/tBTC/tx/' . $_ . '">' . $_ . '</a>' for $fields[1];
+                print '<tr>';
+                print '<td>' . $_ . '</td>' for @fields;
+                print "</tr>\n";
+            }
+            print '</tbody></table>';
+        } elsif($cmd eq 'listaddressgroupings') {
+            print '<table><thead><tr><th scope="col">Account</th><th scope="col">Address</th><th scope="col">Amount</th></tr></thead><tbody>';
+            for my $item (@$rslt) {
+                for my $address (@$item) {
+                    print '<tr>';
+                    # Reverse the order so we show the account in the first column
+                    print '<td>' . encode_entities($_) . "</td>\n" for reverse @$address;
+                    print "<tr>\n";
+                }
+            }
+            print '</tbody></table>';
+        } else {
+            print encode_entities(Dumper $rslt); 
+        }
+    } else {
+        die 'Invalid BTC command: ' . $cmd;
     }
 }
 code_exit_BO();
