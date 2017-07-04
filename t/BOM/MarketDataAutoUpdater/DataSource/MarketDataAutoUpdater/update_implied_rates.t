@@ -3,10 +3,11 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 3);
+use Test::More (tests => 4);
 use Test::Exception;
 use File::Basename qw(dirname);
 use Test::MockObject::Extends;
+use Test::Warnings;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
