@@ -5,9 +5,9 @@ use warnings;
 
 use Test::More tests => 3;
 use Test::Exception;
-use Test::NoWarnings;
 use Test::Warn;
 use Test::MockModule;
+use Test::Warnings;
 
 use Date::Utility;
 use Crypt::NamedKeys;
