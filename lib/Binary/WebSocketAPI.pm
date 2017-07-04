@@ -108,14 +108,10 @@ sub startup {
             }
 
             my $app_id = $c->app_id;
-            do {
-                $c->render(
-                    json   => {error => 'InvalidAppID'},
-                    status => 401
-                );
-                return;
-                }
-                unless $app_id;
+            return $c->render(
+                json   => {error => 'InvalidAppID'},
+                status => 401
+            ) unless $app_id;
 
             my $client_ip = $c->client_ip;
             my $brand     = defang($c->req->param('brand'));
