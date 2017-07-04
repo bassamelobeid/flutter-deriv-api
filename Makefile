@@ -4,11 +4,11 @@ M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
 P=/etc/rmg/bin/prove --timer -I$D/lib -I$D -I$D/t  -I/home/git/regentmarkets/bom-postgres/lib
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
-export PERL5OPTS=-MTest::FailWarnings=-allow_deps,1
+export PERL5OPT=-MTest::Warnings
 test: $(TESTS)
 
 unit_test_market:
-	@$(PROVE) -r t/BOM/
+	@$(PROVE) -vr t/BOM/
 
 tidy:
 	find . -name '*.p?.bak' -delete

@@ -1,8 +1,9 @@
 use strict;
 use warnings;
 
-use Test::More tests => 29;
+use Test::More tests => 30;
 use Test::Exception;
+use Test::Warnings;
 
 use Date::Utility;
 
