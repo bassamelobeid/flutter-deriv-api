@@ -277,8 +277,6 @@ subtest 'longcode of index daily contracts' => sub {
     my $c = produce_contract('PUT_GDAXI_166.27_1469523600_1469633400_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is daily contract';
-    #my $c2_longcode;
-    #like(warning {$c2_longcode = $c2->longcode}, qr/No basis tick for GDAXI/, 'get a warning');
     is_deeply(
         $c2->longcode,
         [
