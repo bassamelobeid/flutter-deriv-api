@@ -9,6 +9,7 @@ use Data::Dumper;
 use YAML::XS;
 use Client::Account;
 use Text::CSV;
+use List::UtilsBy qw(rev_nsort_by);
 
 use BOM::Database::ClientDB;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
@@ -155,7 +156,31 @@ if ($page eq 'Transactions') {
     );
     if($valid_rpc_command{$cmd}) {
         my $rslt = $rpc_client->$cmd;
-        print encode_entities(Dumper $rslt); 
+        if($cmd eq 'listaccounts') {
+            print '<table><thead><tr><th scope="col">Account</th><th scope="col">Amount</th></tr></thead><tbody>';
+            for my $k (sort keys %$rslt) {
+                my $amount = $rslt->{$k};
+                print '<tr><th scope="row">' . encode_entities($k) . '</th><td>' . encode_entities($amount) . '</td></tr>' . "\n";
+            }
+            print '</table>';
+        } elsif($cmd eq 'listtransactions') {
+            my @hdr = ('Account', 'Transaction ID', 'Amount', 'Transaction date', 'Confirmations', 'Address');
+            print '<table><thead><tr>';
+            print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
+            print '</tr></thead><tbody>';
+            for my $tran (rev_nsort_by { $_->{time} } @$rslt) {
+                my @fields = @{$tran}{qw(account txid amount time confirmations address)};
+                $_ = Date::Utility->new($_)->datetime_yyyymmdd_hhmmss for $fields[3];
+                @fields = map { encode_entities($_) } @fields;
+                $_ = '<a href="https://www.blocktrail.com/tBTC/tx/' . $_ . '">' . $_ . '</a>' for $fields[1];
+                print '<tr>';
+                print '<td>' . $_ . '</td>' for @fields;
+                print "</tr>\n";
+            }
+            print '</tbody></table>';
+        } else {
+            print encode_entities(Dumper $rslt); 
+        }
     } else {
         die 'Invalid BTC command: ' . $cmd;
     }
