@@ -17,10 +17,6 @@ use BOM::Test::Helper qw/launch_redis/;
 use BOM::Platform::RedisReplicated;
 use BOM::Test::Helper qw/build_wsapi_test/;
 
-# switch off `use_numbers` because `fork` will mess up the number
-#my $test_builder = Test::More->builder;
-#$test_builder->use_numbers(0);
-
 initialize_realtime_ticks_db();
 
 # R_50 is used in example.json for ticks and ticks_history Websocket API calls
