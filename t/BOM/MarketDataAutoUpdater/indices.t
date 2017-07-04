@@ -3,9 +3,10 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Exception;
 use Test::MockModule;
+use Test::Warnings;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
