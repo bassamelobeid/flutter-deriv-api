@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 6;
+use Test::More;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -298,6 +298,8 @@ subtest 'create account failed' => sub {
         };
     };
 };
+
+done_testing;
 
 sub create_vr_account {
     my $args = shift;
