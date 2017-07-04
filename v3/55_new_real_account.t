@@ -299,8 +299,6 @@ subtest 'create account failed' => sub {
     };
 };
 
-done_testing;
-
 sub create_vr_account {
     my $args = shift;
     my $acc  = BOM::Platform::Account::Virtual::create_account({
@@ -316,3 +314,5 @@ sub create_vr_account {
 }
 
 $t->finish_ok;
+
+done_testing;
