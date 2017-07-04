@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 7;
+use Test::More;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -142,6 +142,8 @@ subtest 'insufficient data' => sub {
     is($res->{error}->{code}, 'InputValidationFailed', 'insufficient input');
     is($res->{new_account_virtual}, undef, 'NO account created');
 };
+
+done_testing;
 
 sub _get_token {
     my $redis = BOM::Platform::RedisReplicated::redis_read;
