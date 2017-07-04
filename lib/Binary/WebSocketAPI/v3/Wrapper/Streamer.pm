@@ -40,7 +40,7 @@ sub website_status {
                     my $rpc_response   = shift;
                     my $website_status = {};
                     $rpc_response->{clients_country} //= '';
-                    $website_status->{$_} = $rpc_response->{$_} for qw|api_call_limits clients_country supported_languages terms_conditions_version|;
+                    $website_status->{$_} = $rpc_response->{$_} for qw|api_call_limits clients_country supported_languages terms_conditions_version ico_status|;
 
                     $shared_info->{broadcast_notifications}{$c + 0}{'c'}            = $c;
                     $shared_info->{broadcast_notifications}{$c + 0}{echo}           = $args;
