@@ -109,9 +109,8 @@ print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') .
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
 print '<select name="currency">'
     . '<option value="BTC">Bitcoin</option>'
-    . '<option value="ETH">Ethereum</option>'
-    . '<option value="LTC">Litecoin</option>';
-print '<INPUT type="submit" value="Balances" name="view_action"/>';
+    . '</select>';
+print '<INPUT type="submit" value="Balances" name="view_action"/> (note: not yet functioning, requires DB function)';
 print '</FORM>';
 print '<br>';
 print '<h3>Deposit</h3>';
@@ -119,9 +118,8 @@ print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') .
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
 print '<select name="currency">'
     . '<option value="BTC">Bitcoin</option>'
-    . '<option value="ETH">Ethereum</option>'
-    . '<option value="LTC">Litecoin</option>';
-print '<INPUT type="submit" value="Transactions" name="view_action"/>';
+    . '</select>';
+print '<INPUT type="submit" value="Deposit Transactions" name="view_action"/> (not yet implemented)';
 print '</FORM>';
 
  
@@ -130,8 +128,7 @@ print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') .
 print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
 print '<select name="currency">'
     . '<option value="BTC">Bitcoin</option>'
-    . '<option value="ETH">Ethereum</option>'
-    . '<option value="LTC">Litecoin</option>';
+    . '</select>';
 print '<INPUT type="submit" value="Transactions" name="view_action"/>';
 print '</FORM>';
 
@@ -140,8 +137,6 @@ print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') .
 print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
 print '<select name="currency">'
     . '<option value="BTC">Bitcoin</option>'
-    . '<option value="ETH">Ethereum</option>'
-    . '<option value="LTC">Litecoin</option>'
     . '</select>';
 print '<select name="command">'
     . '<option value="listaccounts">List accounts</option>'

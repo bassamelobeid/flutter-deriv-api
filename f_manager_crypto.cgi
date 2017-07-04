@@ -112,6 +112,7 @@ if ($page eq 'Transactions') {
 
 } elsif ($page eq 'Balances') {
     PrintContentType_excel($currency . '.csv');
+
     # Things required for this to work:
     # Access to bitcoin/litecoin/eth servers
     # Credentials for RPC
