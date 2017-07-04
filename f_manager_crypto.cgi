@@ -180,11 +180,13 @@ if ($page eq 'Transactions') {
             print '</tbody></table>';
         } elsif($cmd eq 'listaddressgroupings') {
             print '<table><thead><tr><th scope="col">Account</th><th scope="col">Address</th><th scope="col">Amount</th></tr></thead><tbody>';
-            for my $address (@$rslt) {
-                print '<tr>';
-                # Reverse the order so we show the account in the first column
-                print '<td>' . encode_entities($_) . "</td>\n" for reverse map @$_, @$address;
-                print "<tr>\n";
+            for my $item (@$rslt) {
+                for my $address (@$item}) {
+                    print '<tr>';
+                    # Reverse the order so we show the account in the first column
+                    print '<td>' . encode_entities($_) . "</td>\n" for reverse @$address;
+                    print "<tr>\n";
+                }
             }
             print '</tbody></table>';
         } else {
