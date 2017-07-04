@@ -113,8 +113,8 @@ print '<select name="currency">'
     . '<option value="BTC">Bitcoin</option>'
     . '<option value="ETH">Ethereum</option>'
     . '<option value="LTC">Litecoin</option>';
-print '<INPUT type="submit" value="Transactions">';
-print '<INPUT type="submit" value="Balances">';
+print '<INPUT type="submit" value="Transactions" name="view_action"/>';
+print '<INPUT type="submit" value="Balances" name="view_action"/>';
 print '</FORM>';
 
 code_exit_BO();
