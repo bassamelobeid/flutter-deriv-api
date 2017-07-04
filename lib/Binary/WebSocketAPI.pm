@@ -107,8 +107,9 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
+            return unless $c->tx;
             my $app_id = $c->app_id;
-            $c->render(
+            return $c->render(
                 json   => {error => 'InvalidAppID'},
                 status => 401
             ) unless $app_id;
