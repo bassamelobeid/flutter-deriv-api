@@ -3,8 +3,9 @@
 use strict;
 use warnings;
 
-use Test::More tests => 15;
+use Test::More;
 use Test::Warnings 'warning';
+use Test::Deep;
 
 use Time::HiRes;
 use Cache::RedisDB;
@@ -126,7 +127,7 @@ subtest 'waiting for entry tick' => sub {
     $c = produce_contract($bet_params);
     ok !$c->is_expired, 'not expired';
     my $is_valid;
-    like(warning { $is_valid = $c->is_valid_to_sell }, qr/Quote too old/, 'get warnings');
+    cmp_deeply([warning { $is_valid = $c->is_valid_to_sell }], [qr/Quote too old/], 'get warnings');
     ok !$is_valid, 'not valid to sell';
     like($c->primary_validation_error->message, qr/Quote too old/, 'throws error');
     $bet_params->{date_pricing} = $now->epoch + 301;
@@ -337,6 +338,8 @@ subtest 'ATM and non ATM switches on sellback' => sub {
     ok $c->opposite_contract_for_sale->barrier->as_absolute == $c->opposite_contract_for_sale->current_spot, 'barrier identical to spot';
     ok !$c->opposite_contract_for_sale->is_atm_bet, 'non atm bet';
 };
+
+done_testing;
 
 sub create_ticks {
     my @ticks = @_;
