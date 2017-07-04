@@ -237,7 +237,6 @@ system:
           isa: Num
           default: 10
           global: 1
-
         mt5:
           description: "Suspend MT5 API calls"
           isa: Bool
