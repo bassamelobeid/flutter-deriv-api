@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More tests => 3;
-use Test::Warnings;
+use Test::Warnings qw(warning);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData qw(create_underlying);
