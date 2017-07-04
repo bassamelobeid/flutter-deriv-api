@@ -107,6 +107,7 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
+            return unless $c->tx;
             my $app_id = $c->app_id;
             return $c->render(
                 json   => {error => 'InvalidAppID'},
@@ -449,8 +450,7 @@ sub startup {
 
     $app->helper(
         'app_id' => sub {
-            my $c = shift;
-            return undef unless $c->tx;
+            my $c               = shift;
             my $possible_app_id = $c->req->param('app_id');
             if (defined($possible_app_id) && $possible_app_id =~ /^(?!0)[0-9]{1,19}$/) {
                 return $possible_app_id;
