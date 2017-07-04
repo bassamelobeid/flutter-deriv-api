@@ -107,9 +107,7 @@ Bar("Crypto Cashier");
 
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
-print '<select name="currency">'
-    . '<option value="BTC">Bitcoin</option>'
-    . '</select>';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
 print '<INPUT type="submit" value="Balances" name="view_action"/> (note: not yet functioning, requires DB function)';
 print '</FORM>';
 print '<br>';
@@ -117,28 +115,21 @@ print '<h3>Deposit</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
 print '<INPUT type="hidden" name="view_type" value="pending">';
-print '<select name="currency">'
-    . '<option value="BTC">Bitcoin</option>'
-    . '</select>';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
 print '<INPUT type="submit" value="Deposit Transactions" name="view_action"/>';
 print '</FORM>';
 
- 
 print '<h3>Withdrawal</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
-print '<select name="currency">'
-    . '<option value="BTC">Bitcoin</option>'
-    . '</select>';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
 print '<INPUT type="submit" value="Transactions" name="view_action"/>';
 print '</FORM>';
 
 print '<h3>Tools</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
-print '<select name="currency">'
-    . '<option value="BTC">Bitcoin</option>'
-    . '</select>';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
 print '<select name="command">'
     . '<option value="listaccounts">List accounts</option>'
     . '<option value="listtransactions">List transactions</option>'
