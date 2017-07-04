@@ -54,6 +54,9 @@ initialize_realtime_ticks_db();
     my $pid = fork;
     die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
     unless ($pid) {
+        # disable end test of Test::Warnings in child process
+        Test::Warnings->import(':no_end_test');
+
         sleep 1;
         _create_tick(700, 'R_50');
         sleep 1;
