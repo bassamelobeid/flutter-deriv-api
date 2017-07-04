@@ -1,6 +1,7 @@
 <script>
     \$(document).ready(function() {
         \$('.datepick').datepicker({dateFormat: "yy-mm-dd"}).datepicker('setDate', new Date());
+        \$('#ui-datepicker-div').hide();
         \$('#mdc_credit').click(function(){\$('#payment_debit_credit').text('CONFIRM CREDIT')});
         \$('#mdc_debit' ).click(function(){\$('#payment_debit_credit').text('CONFIRM DEBIT')});
         \$('.all_payment_types').hide();
