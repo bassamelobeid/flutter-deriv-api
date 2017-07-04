@@ -4,9 +4,11 @@ use strict;
 use warnings;
 use HTML::Entities;
 
+use Bitcoin::RPC::Client;
+use Data::Dumper;
+use YAML::XS;
 use Client::Account;
 use Text::CSV;
-use HTML::Entities;
 
 use BOM::Database::ClientDB;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
@@ -140,6 +142,22 @@ if ($page eq 'Transactions') {
 
         $csv->combine(@data{@hdrs});
         print $csv->string . "\n";
+    }
+} elsif($page eq 'Run tool') {
+    PrintContentType();
+    my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
+    my $rpc_client = Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5));
+    my $cmd = request()->param('command');
+    my %valid_rpc_command = (
+        listaccounts => 1,
+        listtransactions => 1,
+        listaddressgroupings => 1,
+    );
+    if($valid_rpc_command{$cmd}) {
+        my $rslt = $rpc_client->$cmd;
+        print encode_entities(Dumper $rslt); 
+    } else {
+        die 'Invalid BTC command: ' . $cmd;
     }
 }
 code_exit_BO();
