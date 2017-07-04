@@ -486,7 +486,7 @@ sub _calculate_historical_volatility {
         my $dt = $hist_ticks->[$i]->{epoch} - $hist_ticks->[$i - $returns_sep]->{epoch};
         if ($dt <= 0) {
             # this suggests that we still have bug in data decimate since the decimated ticks have the same epoch
-            warn 'invalid decimated ticks\' interval. [' . $dt . ']';
+            warn 'invalid decimated ticks\' interval. [' . $dt . '] for symbol ' . $bet->underlying->symbol;
             next;
         }
         # 252 is the number of trading days.
