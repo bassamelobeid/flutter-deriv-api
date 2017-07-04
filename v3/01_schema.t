@@ -1,4 +1,4 @@
-use Test::Most tests => 237;
+use Test::Most;
 use Test::Mojo;
 use JSON::Schema;
 use JSON;
@@ -18,8 +18,8 @@ use BOM::Platform::RedisReplicated;
 use BOM::Test::Helper qw/build_wsapi_test/;
 
 # switch off `use_numbers` because `fork` will mess up the number
-my $test_builder = Test::More->builder;
-$test_builder->use_numbers(0);
+#my $test_builder = Test::More->builder;
+#$test_builder->use_numbers(0);
 
 initialize_realtime_ticks_db();
 
@@ -77,4 +77,4 @@ foreach my $f (grep { -d } glob "$v/*") {
     if (not $result) { print " - $_\n" foreach $result->errors; print Data::Dumper::Dumper(Mojo::JSON::decode_json $t->message->[1]) }
 }
 
-
+done_testing;
