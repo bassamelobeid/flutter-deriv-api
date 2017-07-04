@@ -57,6 +57,12 @@ sub validate_trx_sell {
     return;
 }
 
+sub validate_trx_sell_ico {
+    my $self = shift;
+
+    return $self->_is_valid_to_sell();
+}
+
 sub validate_trx_buy {
     my $self = shift;
     # all these validations MUST NOT use the database
