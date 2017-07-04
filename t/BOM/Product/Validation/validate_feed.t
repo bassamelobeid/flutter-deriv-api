@@ -60,10 +60,9 @@ subtest 'open contracts - missing current tick & quote too old' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_expired, 'contract not expired';
     like(
-        warning({
-                ok !$c->is_valid_to_buy, 'not valid to buy';
-            }
-        ),
+        warning {
+            ok !$c->is_valid_to_buy, 'not valid to buy';
+        },
         qr/No current_tick for/,
         'warns if current tick is missing'
     );
@@ -79,10 +78,9 @@ subtest 'open contracts - missing current tick & quote too old' => sub {
     $bet_params->{current_tick} = $old_tick;
     $c = produce_contract($bet_params);
     like(
-        warning({
-                ok !$c->is_valid_to_buy, 'not valid to buy';
-            }
-        ),
+        warning {
+            ok !$c->is_valid_to_buy, 'not valid to buy';
+        },
         qr/Quote too old for/,
         'warns if quote is too old'
     );
