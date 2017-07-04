@@ -9,7 +9,7 @@ use Text::CSV;
 use HTML::Entities;
 
 use BOM::Database::ClientDB;
-use BOM::Backoffice::PlackHelpers qw( PrintContentType_excel );
+use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
@@ -38,12 +38,12 @@ if (not $currency or $currency !~ /^[A-Z]{3}$/) {
     code_exit_BO();
 }
 
-my $page     = request()->param('submit');
+my $page = request()->param('view_action') // '';
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
-my $dbh      = $clientdb->db->dbh;
+my $dbh = $clientdb->db->dbh;
 
 if ($page eq 'Transactions') {
-    PrintContentType_excel($currency . '.csv');
+    PrintContentType();
     BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
     if ($address and $address !~ /^\w+$/) {
         print "Invalid address.";
@@ -108,7 +108,7 @@ if ($page eq 'Transactions') {
         }) || die $tt->error();
 
 } elsif ($page eq 'Balances') {
-    PrintContentType();
+    PrintContentType_excel($currency . '.csv');
     # Things required for this to work:
     # Access to bitcoin/litecoin/eth servers
     # Credentials for RPC
