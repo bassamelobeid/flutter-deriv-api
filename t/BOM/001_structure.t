@@ -1,6 +1,7 @@
-use Test::More tests => 1;
+use Test::More tests => 2;
 use strict;
 use warnings;
+use Test::Warnings;
 
 if (my $r = `git grep BOM::|grep -v BOM::Test|grep -v BOM::Database|grep -v BOM::Platform|grep -v BOM::API::Payment`) {
     print $r;

@@ -1,5 +1,5 @@
 test:
-	/etc/rmg/bin/prove -lr t/
+	/etc/rmg/bin/prove -lvr t/
 
 critique:
 	/etc/rmg/bin/prove -l t/BOM/003_autosyntax.t
