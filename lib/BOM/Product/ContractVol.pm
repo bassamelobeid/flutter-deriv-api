@@ -147,7 +147,7 @@ sub _calculate_historical_volatility {
     }
 
     my $k = 1;
-    if ($flag) {
+    unless ($flag) {
         my $vs = Volatility::Seasonality->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1));
         my $sea_past = $vs->get_seasonality({
             underlying_symbol => $self->underlying->symbol,
