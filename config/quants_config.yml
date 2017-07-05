@@ -19,7 +19,7 @@ bet_limits:
     BTC: 0.1
     ETH: 1
     LTC: 10
-    ETC: 1
+    ETC: 10
   maximum_payout:
     USD: 50000
     EUR: 50000
@@ -29,7 +29,7 @@ bet_limits:
     BTC: 10
     ETH: 100
     LTC: 1000
-    ETC: 100
+    ETC: 1000
   min_payout:
     default:
       USD: 1
@@ -40,7 +40,7 @@ bet_limits:
       BTC: 0.0005
       ETH: 0.005
       LTC: 0.05
-      ETC: 0.005
+      ETC: 0.05
     volidx:
       USD: 0.7
       EUR: 0.7
@@ -50,7 +50,7 @@ bet_limits:
       BTC: 0.00035
       ETH: 0.0035
       LTC: 0.035
-      ETC: 0.0035
+      ETC: 0.035
   min_stake:
     maltainvest:
       USD: 5
@@ -60,7 +60,7 @@ bet_limits:
       BTC: 0.0025
       ETH: 0.025
       LTC: 0.25
-      ETC: 0.025
+      ETC: 0.25
   open_positions_payout_per_symbol_and_bet_type_limit:
     USD: 10000
     EUR: 10000
@@ -114,7 +114,7 @@ risk_profile:
           BTC: 0.5
           ETH: 5
           LTC: 50
-          ETC: 5
+          ETC: 50
       payout:
           USD: 100
           EUR: 100
@@ -124,7 +124,7 @@ risk_profile:
           BTC: 0.05
           ETH: 0.5
           LTC: 5
-          ETC: 0.5
+          ETC: 5
   high_risk:
       turnover:
           USD: 50000
@@ -135,7 +135,7 @@ risk_profile:
           BTC: 25
           ETH: 50
           LTC: 500
-          ETC: 50
+          ETC: 500
       payout:
           USD: 5000
           EUR: 5000
@@ -145,7 +145,7 @@ risk_profile:
           BTC: 2.5
           ETH: 25
           LTC: 250
-          ETC: 25
+          ETC: 250
   medium_risk:
       turnover:
           USD: 100000
@@ -156,7 +156,7 @@ risk_profile:
           BTC: 50
           ETH: 500
           LTC: 5000
-          ETC: 500
+          ETC: 5000
       payout:
           USD: 20000
           EUR: 20000
@@ -166,7 +166,7 @@ risk_profile:
           BTC: 10
           ETH: 100
           LTC: 1000
-          ETC: 100
+          ETC: 1000
   low_risk:
       turnover:
           USD: 500000
@@ -177,7 +177,7 @@ risk_profile:
           BTC: 50
           ETH: 500
           LTC: 5000
-          ETC: 500
+          ETC: 5000
       payout:
           USD: 50000
           EUR: 50000
@@ -187,4 +187,4 @@ risk_profile:
           BTC: 10
           ETH: 100
           LTC: 1000
-          ETC: 100
+          ETC: 1000
