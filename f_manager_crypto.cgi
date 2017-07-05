@@ -159,41 +159,53 @@ if ($page eq 'Withdrawal Transactions') {
 
     my %db_by_address;
     for my $db_tran (@$db_transactions) {
-        print '<p style="color:red;">Seen duplicate for address ' . encode_entities($db_tran->{account}) . ": " . encode_entities(Dumper $db_tran) . " - please share a screenshot of this information with IT</p>\n" if exists $db_by_address{$db_tran->{address}};
+        push @{$db_tran->{comments}}, 'Duplicate entries found in DB' if exists $db_by_address{$db_tran->{address}};
         $db_by_address{$db_tran->{address}} = $db_tran;
     }
 
     # Also need this for withdrawals:
     # my $blockchain_transactions = $rpc_client->listtransactions('', 1000);
-    my $blockchain_transactions = $rpc_client->listreceivedbyaddress(0);
-warn "tx count = " . @$blockchain_transactions;
+    my $blockchain_transactions = $rpc_client->listreceivedbyaddress(0) or do {
+        print '<p style="color:red;">Unable to request transactions from RPC</p>';
+        code_exit_BO();
+    };
     for my $blockchain_tran (sort_by { $_->{address} } @$blockchain_transactions) {
         my $address = $blockchain_tran->{address};
         my $db_tran = $db_by_address{$address} or do {
             # TODO This should filter by prefix, not just ignore when we have a prefix!
-            print '<p style="color:red;">No database entry for address ' . encode_entities($address) . ", blockchain info is " . encode_entities(Dumper $blockchain_tran) . " - please share a screenshot of this information with IT</p>\n" unless $cfg->{account_prefix};
+            $db_by_address{$address} = { address => $address, comments => [ 'Not found in database' ] };
             next;
         };
         if(financialrounding(
             price => $currency,
             $blockchain_tran->{amount}
         ) != $db_tran->{amount}) {
-            print '<p style="color:red;">Amount does not match for ' . encode_entities($address) . ", blockchain info is " . encode_entities(Dumper $blockchain_tran) . " and DBD is " . encode_entities($db_tran) . " - please share a screenshot of this information with IT</p>\n";
+            push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
         }
         $db_tran->{confirmations} = $blockchain_tran->{confirmations};
+        if(Date::Utility->new($db_tran->{date})->epoch < time - 2*120) {
+            if($blockchain_tran->{confirmations} < 3 and not ($db_tran->{status} eq 'PENDING' or $db_tran->{status} eq 'NEW')) {
+                push @{$db_tran->{comments}}, 'Invalid status - should be new or pending';
+            } elsif($blockchain_tran->{confirmations} >= 3 and not ($db_tran->{status} eq 'CONFIRMED')) {
+                push @{$db_tran->{comments}}, 'Invalid status - should be confirmed';
+            }
+        }
         if(@{$blockchain_tran->{txids}} > 1) {
-            print '<p style="color:red;">Multiple transactions for ' . encode_entities($address) . ", blockchain info is " . encode_entities(Dumper $blockchain_tran) . " and DBD is " . encode_entities(Dumper $db_tran) . " - please share a screenshot of this information with IT</p>\n";
+            push @{$db_tran->{comments}},  'Multiple transactions seen';
         }
         $db_tran->{transaction_id} = $blockchain_tran->{txids}[0];
     }
 
-    my @hdr = ('Client ID',  'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations','Transaction ID');
-    print '<table style="width:100%;"><thead><tr>';
+    my @hdr = ('Client ID',  'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations','Transaction ID', 'Errors');
+    print '<table style="width:100%;" border="1"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
-    for my $db_tran (@$db_transactions) {
+    for my $db_tran (sort_by { $_->{address} } values %db_by_address) {
         print '<tr>';
-        print '<td>' . encode_entities($_) . '</td>' for @{$db_tran}{qw(client_loginid address amount status date confirmations transaction_id)};
+        print '<td>' . encode_entities($_) . '</td>' for @{$db_tran}{qw(client_loginid address amount status date)};
+        print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>' for @{$db_tran}{qw(confirmations)};
+        print '<td><a href="https://www.blocktrail.com/tBTC/tx/' . $_ . '">' . encode_entities(substr $_, 0, 6) . '</td>' for @{$db_tran}{qw(transaction_id)};
+        print '<td style="color:red;">' . (join '<br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
     }
     print '</tbody></table>';
