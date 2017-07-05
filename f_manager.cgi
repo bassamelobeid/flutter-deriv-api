@@ -107,9 +107,12 @@ Bar("Crypto Cashier");
 
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
+print '<input type="text" name="start_date" required class="datepick">';
+print '<input type="text" name="end_date" required class="datepick">';
 print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
-print '<INPUT type="submit" value="Balances" name="view_action"/> (note: not yet functioning, requires DB function)';
+print '<INPUT type="submit" value="Recon" name="view_action"/>';
 print '</FORM>';
+
 print '<br>';
 print '<h3>Deposit</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
@@ -123,7 +126,7 @@ print '<h3>Withdrawal</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
 print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
-print '<INPUT type="submit" value="Transactions" name="view_action"/>';
+print '<INPUT type="submit" value="Withdrawal Transactions" name="view_action"/>';
 print '</FORM>';
 
 print '<h3>Tools</h3>';
