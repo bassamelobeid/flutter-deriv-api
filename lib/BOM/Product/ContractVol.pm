@@ -127,7 +127,7 @@ sub _build_vol_at_strike {
 }
 
 sub _calculate_historical_volatility {
-    my ($self, $start, $end) = @_;
+    my ($self, $start, $end, $flag) = @_;
 
     my $hist_ticks = BOM::Market::DataDecimate->new->get({
         underlying => $self->underlying,
@@ -146,26 +146,30 @@ sub _calculate_historical_volatility {
         push @returns_squared, ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 / $dt);
     }
 
-    my $vs = Volatility::Seasonality->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1));
-    my $sea_past = $vs->get_seasonality({
-        underlying_symbol => $self->underlying->symbol,
-        from              => $start,
-        to                => $end
-    });
-    my $sea_fut = $vs->get_seasonality({
-        underlying_symbol => $self->underlying->symbol,
-        from              => $start,
-        to                => $end
-    });
-    my $past_mean = sum(map { $_ * $_ } @$sea_past) / @$sea_past;
-    my $fut_mean  = sum(map { $_ * $_ } @$sea_fut) / @$sea_fut;
+    my $k = 1;
+    if ($flag) {
+        my $vs = Volatility::Seasonality->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1));
+        my $sea_past = $vs->get_seasonality({
+            underlying_symbol => $self->underlying->symbol,
+            from              => $start,
+            to                => $end
+        });
+        my $sea_fut = $vs->get_seasonality({
+            underlying_symbol => $self->underlying->symbol,
+            from              => $start,
+            to                => $end
+        });
+        my $past_mean = sum(map { $_ * $_ } @$sea_past) / @$sea_past;
+        my $fut_mean  = sum(map { $_ * $_ } @$sea_fut) / @$sea_fut;
+        $k = $fut_mean / $past_mean;
+    }
 
     unless (@returns_squared) {
         warn "Historical ticks not found in Intraday::Forex pricing";
         return 0.1;
     }
 
-    return (sqrt(sum(@returns_squared) / @returns_squared)) * $fut_mean / $past_mean;
+    return (sqrt(sum(@returns_squared) / @returns_squared)) * $k;
 }
 
 my $vol_weight_interpolator = Math::Function::Interpolator->new(
