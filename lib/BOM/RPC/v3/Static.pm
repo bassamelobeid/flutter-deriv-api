@@ -66,6 +66,7 @@ sub website_status {
         clients_country          => $params->{country_code},
         supported_languages      => BOM::Platform::Runtime->instance->app_config->cgi->supported_languages,
         currencies_config        => $currencies_config,
+        ico_status               => BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_ended == 1 ? 'closed' : 'open',
     };
 }
 
