@@ -141,14 +141,14 @@ if ($page eq 'Withdrawal Transactions') {
 } elsif ($page eq 'Recon') {
     Bar('BTC Reconciliation');
 
-    my $clientdb   = BOM::Database::ClientDB->new({broker_code => 'CR'});
+    my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
     my $start_date = request()->param('start_date') || do { my $date = Date::Uility->new; $date->day_of_month(0); $date };
     $start_date = Date::Utility->new($start_date) unless ref $start_date;
     my $end_date = request()->param('end_date') || do { my $date = $start_date; $date->month($date->month + 1); $date->day_of_month(0); $date };
     $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
     my %db_by_address;
-    { # First, we get a mapping from address to database transaction information
+    {    # First, we get a mapping from address to database transaction information
         my $db_transactions = $dbh->selectall_arrayref(
             q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
             {Slice => {}},
@@ -157,12 +157,14 @@ if ($page eq 'Withdrawal Transactions') {
 
         for my $db_tran (@$db_transactions) {
             push @{$db_tran->{comments}}, 'Duplicate entries found in DB' if exists $db_by_address{$db_tran->{address}};
-            push @{$db_tran->{comments}}, 'Invalid entry - no amount in database' unless length($db_tran->{amount} // '') or $db_tran->{status} eq 'NEW';
+            push @{$db_tran->{comments}}, 'Invalid entry - no amount in database'
+                unless length($db_tran->{amount} // '')
+                or $db_tran->{status} eq 'NEW';
             $db_by_address{$db_tran->{address}} = $db_tran;
         }
     }
 
-    { # Next, we retrieve all blockchain information relating to deposits
+    {    # Next, we retrieve all blockchain information relating to deposits
         my $blockchain_transactions = $rpc_client->listreceivedbyaddress(0) or do {
             print '<p style="color:red;">Unable to request transactions from RPC</p>';
             code_exit_BO();
@@ -172,13 +174,13 @@ if ($page eq 'Withdrawal Transactions') {
             my $db_tran = $db_by_address{$address} or do {
                 # TODO This should filter by prefix, not just ignore when we have a prefix!
                 $db_by_address{$address} = {
-                    address  => $address,
+                    address             => $address,
                     found_in_blockchain => 1,
-                    comments => ['Deposit not found in database']};
+                    comments            => ['Deposit not found in database']};
                 next;
             };
             $db_tran->{found_in_blockchain} = 1;
-            if($db_tran->{transaction_type} ne 'deposit') {
+            if ($db_tran->{transaction_type} ne 'deposit') {
                 push @{$db_tran->{comments}}, 'Expected deposit, found ' . $db_tran->{transaction_type};
             }
 
@@ -205,7 +207,7 @@ if ($page eq 'Withdrawal Transactions') {
         }
     }
 
-    { # Now we check for withdrawals
+    {    # Now we check for withdrawals
         my $blockchain_transactions = $rpc_client->listtransactions('', 1000) or do {
             print '<p style="color:red;">Unable to request transactions from RPC</p>';
             code_exit_BO();
@@ -215,13 +217,13 @@ if ($page eq 'Withdrawal Transactions') {
             my $db_tran = $db_by_address{$address} or do {
                 # TODO This should filter by prefix, not just ignore when we have a prefix!
                 $db_by_address{$address} = {
-                    address  => $address,
+                    address             => $address,
                     found_in_blockchain => 1,
-                    comments => ['Withdrawal not found in database']};
+                    comments            => ['Withdrawal not found in database']};
                 next;
             };
             $db_tran->{found_in_blockchain} = 1;
-            if($db_tran->{transaction_type} ne 'withdrawal') {
+            if ($db_tran->{transaction_type} ne 'withdrawal') {
                 push @{$db_tran->{comments}}, 'Expected withdrawal, found ' . $db_tran->{transaction_type};
             }
             if (
