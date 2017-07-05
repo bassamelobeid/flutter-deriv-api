@@ -9,7 +9,8 @@ use Data::Dumper;
 use YAML::XS;
 use Client::Account;
 use Text::CSV;
-use List::UtilsBy qw(rev_nsort_by);
+use List::UtilsBy qw(rev_nsort_by sort_by);
+use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::Database::ClientDB;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
@@ -146,33 +147,56 @@ if ($page eq 'Withdrawal Transactions') {
 # Transactions that are in the blockchain but not in PG
 # Transactions that are in PG but not the blockchain
 # Transactions that differ in amount between PG and blockchain
-
-} elsif ($page eq 'Balances') {
-    PrintContentType_excel($currency . '.csv');
-
-    my $csv      = Text::CSV->new;
     my @hdrs     = qw(address login_id transaction_date status reused amount currency_code);
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-    my $sth      = $dbh->prepare(q{SELECT * FROM payment.ctc_find_login_id_for_address(?, ?)});
+    my $start_date = request()->param('start_date') || do { my $date = Date::Uility->new; $date->day_of_month(0); $date };
+    $start_date = Date::Utility->new($start_date) unless ref $start_date;
+    my $end_date = request()->param('end_date') || do { my $date = $start_date; $date->month($date->month + 1); $date->day_of_month(0); $date };
+    $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
-    # Track whether we have reused addresses
-    my %seen;
-    for my $transaction ($rpc_client->getaddresses) {
-        my $address = $transaction->{address};
-        my ($login_id) = @{$sth->fetchall_arrayref($currency, $address)} or die 'could not find login_id for address ' . $address;
-        my %data = {
-            address       => $address,
-            login_id      => $login_id,
-            amount        => $transaction->{amount},
-            currency_code => $currency,
-        };
-        # $data{transaction_date} should be most recent transaction on the current address
-        # $data{status} could be the most recent status from the crypto transactions table
-        $data{reused} = 1 if $seen{$address}++;
+    PrintContentType();
+    my $db_transactions = $dbh->selectall_arrayref(q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)}, { Slice => {} }, $currency, $start_date->iso8601, $end_date->iso8601) or die 'failed to run ctc_bo_transactions_for_reconciliation';
 
-        $csv->combine(@data{@hdrs});
-        print $csv->string . "\n";
+    my %db_by_address;
+    for my $db_tran (@$db_transactions) {
+        print '<p style="color:red;">Seen duplicate for address ' . encode_entities($db_tran->{account}) . ": " . encode_entities(Dumper $db_tran) . " - please share a screenshot of this information with IT</p>\n" if exists $db_by_address{$db_tran->{address}};
+        $db_by_address{$db_tran->{address}} = $db_tran;
     }
+
+    # Also need this for withdrawals:
+    # my $blockchain_transactions = $rpc_client->listtransactions('', 1000);
+    my $blockchain_transactions = $rpc_client->listreceivedbyaddress(0);
+warn "tx count = " . @$blockchain_transactions;
+    for my $blockchain_tran (sort_by { $_->{address} } @$blockchain_transactions) {
+        my $address = $blockchain_tran->{address};
+        my $db_tran = $db_by_address{$address} or do {
+            # TODO This should filter by prefix, not just ignore when we have a prefix!
+            print '<p style="color:red;">No database entry for address ' . encode_entities($address) . ", blockchain info is " . encode_entities(Dumper $blockchain_tran) . " - please share a screenshot of this information with IT</p>\n" unless $cfg->{account_prefix};
+            next;
+        };
+        if(financialrounding(
+            price => $currency,
+            $blockchain_tran->{amount}
+        ) != $db_tran->{amount}) {
+            print '<p style="color:red;">Amount does not match for ' . encode_entities($address) . ", blockchain info is " . encode_entities(Dumper $blockchain_tran) . " and DBD is " . encode_entities($db_tran) . " - please share a screenshot of this information with IT</p>\n";
+        }
+        $db_tran->{confirmations} = $blockchain_tran->{confirmations};
+        if(@{$blockchain_tran->{txids}} > 1) {
+            print '<p style="color:red;">Multiple transactions for ' . encode_entities($address) . ", blockchain info is " . encode_entities(Dumper $blockchain_tran) . " and DBD is " . encode_entities(Dumper $db_tran) . " - please share a screenshot of this information with IT</p>\n";
+        }
+        $db_tran->{transaction_id} = $blockchain_tran->{txids}[0];
+    }
+
+    my @hdr = ('Client ID',  'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations','Transaction ID');
+    print '<table style="width:100%;"><thead><tr>';
+    print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
+    print '</thead><tbody>';
+    for my $db_tran (@$db_transactions) {
+        print '<tr>';
+        print '<td>' . encode_entities($_) . '</td>' for @{$db_tran}{qw(client_loginid address amount status date confirmations transaction_id)};
+        print '</tr>';
+    }
+    print '</tbody></table>';
 } elsif ($page eq 'Run tool') {
     PrintContentType();
     my $cmd               = request()->param('command');
@@ -181,8 +205,12 @@ if ($page eq 'Withdrawal Transactions') {
         listtransactions     => 1,
         listaddressgroupings => 1,
     );
+    my @param;
     if ($valid_rpc_command{$cmd}) {
-        my $rslt = $rpc_client->$cmd;
+        if($cmd eq 'listtransactions') {
+            push @param, '', 500;
+        }
+        my $rslt = $rpc_client->$cmd(@param);
         if ($cmd eq 'listaccounts') {
             print '<table><thead><tr><th scope="col">Account</th><th scope="col">Amount</th></tr></thead><tbody>';
             for my $k (sort keys %$rslt) {
