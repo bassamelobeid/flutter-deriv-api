@@ -143,7 +143,6 @@ subtest 'insufficient data' => sub {
     is($res->{new_account_virtual}, undef, 'NO account created');
 };
 
-
 sub _get_token {
     my $redis = BOM::Platform::RedisReplicated::redis_read;
     my $tokens = $redis->execute('keys', 'VERIFICATION_TOKEN::*');
