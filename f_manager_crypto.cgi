@@ -157,6 +157,7 @@ if ($page eq 'Withdrawal Transactions') {
 
         for my $db_tran (@$db_transactions) {
             push @{$db_tran->{comments}}, 'Duplicate entries found in DB' if exists $db_by_address{$db_tran->{address}};
+            push @{$db_tran->{comments}}, 'Invalid entry - no amount in database' unless length($db_tran->{amount} // '') or $db_tran->{status} eq 'NEW';
             $db_by_address{$db_tran->{address}} = $db_tran;
         }
     }
@@ -175,6 +176,10 @@ if ($page eq 'Withdrawal Transactions') {
                 comments => ['Not found in database']};
             next;
         };
+        if($db_tran->{transaction_type} ne 'deposit') {
+            push @{$db_tran->{comments}}, 'Expected deposit, found ' . $db_tran->{transaction_type};
+        }
+
         if (
             financialrounding(
                 price => $currency,
