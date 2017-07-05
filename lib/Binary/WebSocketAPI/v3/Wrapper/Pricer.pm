@@ -651,8 +651,12 @@ sub process_proposal_array_event {
         $c->proposal_array_collector;
     }
 
-    my @stash_items = grep { ref($_) eq 'HASH' } values %{$pricing_channel->{$redis_channel}};
-    for my $stash_data (@stash_items) {
+    #my @stash_items = grep { ref($_) eq 'HASH' } values %{$pricing_channel->{$redis_channel}};
+    for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+        unless (ref($stash_data) eq 'HASH') {
+            warn __PACKAGE__ . "process_proposal_array_event: : HASH not found as redis_channel data: " . JSON::XS->new->allow_blessed->encode($stash_data);
+            next;
+        }
         $stash_data->{cache}{contract_parameters}{currency} ||= $stash_data->{args}{currency};
         my %proposals;
         for my $contract_type (keys %{$response->{proposals}}) {
