@@ -45,7 +45,10 @@ my $page = request()->param('view_action') // '';
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
 my $dbh = $clientdb->db->dbh;
 
-if ($page eq 'Transactions') {
+my $cfg               = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
+my $rpc_client        = Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5));
+
+if ($page eq 'Withdrawal Transactions') {
     PrintContentType();
     BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
     if ($address and $address !~ /^\w+$/) {
@@ -139,18 +142,14 @@ if ($page eq 'Transactions') {
             currency         => $currency,
         }) || die $tt->error();
 
+} elsif ($page eq 'Recon') {
+# Transactions that are in the blockchain but not in PG
+# Transactions that are in PG but not the blockchain
+# Transactions that differ in amount between PG and blockchain
+
 } elsif ($page eq 'Balances') {
     PrintContentType_excel($currency . '.csv');
 
-    # Things required for this to work:
-    # Access to bitcoin/litecoin/eth servers
-    # Credentials for RPC
-    # Client::Account
-    # List addresses RPC call
-    # Crypto database for address => login_id mapping
-
-    my $rpc_client =
-        $currency eq 'BTC' ? Bitcoin::RPC::Client->new(((), timeout => 10)) : die 'unsupported currency ' . $currency;
     my $csv      = Text::CSV->new;
     my @hdrs     = qw(address login_id transaction_date status reused amount currency_code);
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
@@ -176,8 +175,6 @@ if ($page eq 'Transactions') {
     }
 } elsif ($page eq 'Run tool') {
     PrintContentType();
-    my $cfg               = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
-    my $rpc_client        = Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5));
     my $cmd               = request()->param('command');
     my %valid_rpc_command = (
         listaccounts         => 1,

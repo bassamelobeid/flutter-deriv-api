@@ -123,7 +123,7 @@ print '<h3>Withdrawal</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
 print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
-print '<INPUT type="submit" value="Transactions" name="view_action"/>';
+print '<INPUT type="submit" value="Withdrawal Transactions" name="view_action"/>';
 print '</FORM>';
 
 print '<h3>Tools</h3>';
