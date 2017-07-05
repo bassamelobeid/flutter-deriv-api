@@ -2,8 +2,9 @@
 
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
+use Test::Warnings;
 
 use Client::Account;
 use Client::Account::PaymentAgent;
