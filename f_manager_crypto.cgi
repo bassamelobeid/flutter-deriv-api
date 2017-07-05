@@ -19,6 +19,9 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
+PrintContentType();
+BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
+
 my $broker         = request()->broker_code;
 my $encoded_broker = encode_entities($broker);
 my $staff          = BOM::Backoffice::Auth0::can_access(['Payments']);
@@ -28,16 +31,12 @@ my $address        = request()->param('address');
 my $view_type      = request()->param('view_type') // 'pending';
 
 if (length($broker) < 2) {
-    PrintContentType();
-    BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
     print
         "We cannot process your request because it would seem that your browser is not configured to accept cookies.  Please check that the 'enable cookies' function is set if your browser, then please try again.";
     code_exit_BO();
 }
 
 if (not $currency or $currency !~ /^[A-Z]{3}$/) {
-    PrintContentType();
-    BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
     print "Invalid currency.";
     code_exit_BO();
 }
@@ -50,8 +49,6 @@ my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
 my $rpc_client = Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5));
 
 if ($page eq 'Withdrawal Transactions') {
-    PrintContentType();
-    BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
     if ($address and $address !~ /^\w+$/) {
         print "Invalid address.";
         code_exit_BO();
@@ -115,8 +112,6 @@ if ($page eq 'Withdrawal Transactions') {
         }) || die $tt->error();
 
 } elsif ($page eq 'Deposit Transactions') {
-    PrintContentType();
-    BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
     $view_type ||= 'new';
     if (not $view_type or $view_type !~ /^(?:new|pending|confirmed|error)$/) {
@@ -144,7 +139,6 @@ if ($page eq 'Withdrawal Transactions') {
         }) || die $tt->error();
 
 } elsif ($page eq 'Recon') {
-    BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
     Bar('BTC Reconciliation');
 
     my $clientdb   = BOM::Database::ClientDB->new({broker_code => 'CR'});
@@ -221,7 +215,6 @@ if ($page eq 'Withdrawal Transactions') {
     }
     print '</tbody></table>';
 } elsif ($page eq 'Run tool') {
-    PrintContentType();
     my $cmd               = request()->param('command');
     my %valid_rpc_command = (
         listaccounts         => 1,
