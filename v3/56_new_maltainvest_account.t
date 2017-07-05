@@ -94,7 +94,7 @@ subtest 'MLT upgrade to MF account' => sub {
         note explain %details;
         $t = $t->send_ok({json => \%details})->message_ok;
         my $res = decode_json($t->message->[1]);
-        not explain $res;
+        explain $res;
         is($res->{msg_type}, 'new_account_maltainvest');
         ok($res->{new_account_maltainvest});
         test_schema('new_account_maltainvest', $res);
