@@ -184,7 +184,7 @@ sub _build_ticks_for_trend {
     my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
 
     my $ticks;
-    my $backprice = ($bet->underlying->for_date) ? 1 : 0;
+    my $backprice = ($bet->underlying->for_date && !$self->more_than_short_term_cutoff) ? 1 : 0;
     $ticks = $self->tick_source->get({
         underlying  => $bet->underlying,
         start_epoch => $bet->date_pricing->epoch - $remaining_interval->seconds,
@@ -260,13 +260,13 @@ sub _build_risk_markup {
 
     my $bet         = $self->bet;
     my $risk_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'risk_markup',
-        description => 'A set of markups added to accommodate for pricing risk',
-        set_by      => __PACKAGE__,
-        # We do not want to add historical_vol_markup on top of existing risk_markup.
-        # We just want to take the max of the two markups.
-        minimum     => $self->historical_vol_markup->amount,
-        base_amount => 0,
+            name        => 'risk_markup',
+            description => 'A set of markups added to accommodate for pricing risk',
+            set_by      => __PACKAGE__,
+            # We do not want to add historical_vol_markup on top of existing risk_markup.
+            # We just want to take the max of the two markups.
+#        minimum     => $self->historical_vol_markup->amount,
+            base_amount => 0,
     });
 
     $risk_markup->include_adjustment('add', $self->economic_events_markup);
@@ -333,7 +333,7 @@ sub _build_risk_markup {
     }
 
     # adding historical_vol_markup as an info for verification purposes.
-    $risk_markup->include_adjustment('info', $self->historical_vol_markup);
+#    $risk_markup->include_adjustment('info', $self->historical_vol_markup);
 
     return $risk_markup;
 }
@@ -470,7 +470,6 @@ sub _calculate_historical_volatility {
         underlying  => $bet->underlying,
         start_epoch => $dp->epoch - HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES * 60,
         end_epoch   => $dp->epoch,
-        backprice   => ($bet->underlying->for_date ? 1 : 0),
     });
 
     # On monday mornings, we will not have ticks to calculation historical vol in the first 20 minutes.
@@ -486,7 +485,7 @@ sub _calculate_historical_volatility {
         my $dt = $hist_ticks->[$i]->{epoch} - $hist_ticks->[$i - $returns_sep]->{epoch};
         if ($dt <= 0) {
             # this suggests that we still have bug in data decimate since the decimated ticks have the same epoch
-            warn 'invalid decimated ticks\' interval. [' . $dt . '] for symbol ' . $bet->underlying->symbol;
+            warn 'invalid decimated ticks\' interval. [' . $dt . ']';
             next;
         }
         # 252 is the number of trading days.

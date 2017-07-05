@@ -3,6 +3,7 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
+use List::Util qw(sum);
 use List::MoreUtils qw(none all);
 use VolSurface::IntradayFX;
 use BOM::Market::DataDecimate;
@@ -10,6 +11,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Static;
 use Quant::Framework::VolSurface;
 use Quant::Framework::VolSurface::Utils qw(effective_date_for);
+use Volatility::Seasonality;
 
 ## ATTRIBUTES  #######################
 
@@ -124,17 +126,99 @@ sub _build_vol_at_strike {
     return $self->volsurface->get_volatility($vol_args);
 }
 
+sub _calculate_historical_volatility {
+    my ($self, $start, $end) = @_;
+
+    my $hist_ticks = BOM::Market::DataDecimate->new->get({
+        underlying => $self->underlying,
+        # we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
+        start_epoch => $start->epoch,
+        end_epoch   => $end->epoch,
+    });
+
+    my @returns_squared;
+    # Ticks are in 15-second interval.
+    my $returns_sep = 4;
+    for (my $i = $returns_sep; $i <= $#$hist_ticks; $i++) {
+        my $dt = $hist_ticks->[$i]->{epoch} - $hist_ticks->[$i - $returns_sep]->{epoch};
+        next if $dt <= 0;
+        # 252 is the number of trading days.
+        push @returns_squared, ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 / $dt);
+    }
+
+    my $vs = Volatility::Seasonality->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1));
+    my $sea_past = $vs->get_seasonality({
+        underlying_symbol => $self->underlying->symbol,
+        from              => $start,
+        to                => $end
+    });
+    my $sea_fut = $vs->get_seasonality({
+        underlying_symbol => $self->underlying->symbol,
+        from              => $start,
+        to                => $end
+    });
+    my $past_mean = sum(map { $_ * $_ } @$sea_past) / @$sea_past;
+    my $fut_mean  = sum(map { $_ * $_ } @$sea_fut) / @$sea_fut;
+
+    unless (@returns_squared) {
+        warn "Historical ticks not found in Intraday::Forex pricing";
+        return 0.1;
+    }
+
+    return (sqrt(sum(@returns_squared) / @returns_squared)) * $fut_mean / $past_mean;
+}
+
+my $vol_weight_interpolator = Math::Function::Interpolator->new(
+    points => {
+        15  => 1,
+        360 => 0
+    });
+
+sub weight_interpolator {
+    my ($self, $min) = @_;
+    return $vol_weight_interpolator->linear($min);
+}
+
+sub _weighted_vol {
+    my $self = shift;
+
+    my $vol;
+    my $volatility_error;
+    my $remaining_min = $self->remaining_time->minutes;
+
+    if ($remaining_min <= 15) {
+        $vol = $self->_calculate_historical_volatility($self->date_pricing->minus_time_interval('20m'), $self->date_pricing);
+    } elsif ($remaining_min >= 6 * 60) {
+        $vol = $self->intradayfx_volsurface->get_volatility({
+            from                          => $self->effective_start->epoch,
+            to                            => $self->date_expiry->epoch,
+            include_economic_event_impact => 1,
+        });
+    } else {
+        my $historical_vol_weight = $self->weight_interpolator($remaining_min);
+        my $hist_vol              = $self->_calculate_historical_volatility($self->date_pricing->minus_time_interval('20m'), $self->date_pricing);
+        my $market_vol            = $self->intradayfx_volsurface->get_volatility({
+            from                          => $self->effective_start->epoch,
+            to                            => $self->date_expiry->epoch,
+            include_economic_event_impact => 1,
+        });
+        $vol = $historical_vol_weight * $hist_vol + (1 - $historical_vol_weight) * $market_vol;
+    }
+    return $vol;
+}
+
 sub _build_pricing_vol {
     my $self = shift;
 
     my $vol;
     my $volatility_error;
     if ($self->priced_with_intraday_model) {
-        $vol = $self->intradayfx_volsurface->get_volatility({
-            from                          => $self->effective_start->epoch,
-            to                            => $self->date_expiry->epoch,
-            include_economic_event_impact => 1,
-        });
+        $vol = $self->_weighted_vol();
+#        $vol = $self->intradayfx_volsurface->get_volatility({
+#            from                          => $self->effective_start->epoch,
+#            to                            => $self->date_expiry->epoch,
+#            include_economic_event_impact => 1,
+#        });
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
@@ -190,7 +274,7 @@ sub _build_pricing_vol_for_two_barriers {
     return if $self->pricing_engine_name ne 'Pricing::Engine::EuropeanDigitalSlope';
 
     my $vol_args = {
-        from => $self->effective_start,
+        from => $self->date_start,
         to   => $self->date_expiry,
     };
 
