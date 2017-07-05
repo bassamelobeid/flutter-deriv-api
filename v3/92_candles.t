@@ -53,6 +53,9 @@ $t->send_ok({
 my $pid = fork;
 die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
 unless ($pid) {
+    # disable end test of Test::Warnings in child process
+    Test::Warnings->import(':no_end_test');
+
     sleep 1;
     for (1 .. 2) {
         _create_tick(700 + $_, 'R_50');
