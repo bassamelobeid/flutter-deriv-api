@@ -46,8 +46,8 @@ my $page = request()->param('view_action') // '';
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
 my $dbh = $clientdb->db->dbh;
 
-my $cfg               = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
-my $rpc_client        = Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5));
+my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
+my $rpc_client = Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5));
 
 if ($page eq 'Withdrawal Transactions') {
     PrintContentType();
@@ -147,15 +147,19 @@ if ($page eq 'Withdrawal Transactions') {
 # Transactions that are in the blockchain but not in PG
 # Transactions that are in PG but not the blockchain
 # Transactions that differ in amount between PG and blockchain
-    my @hdrs     = qw(address login_id transaction_date status reused amount currency_code);
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
+    my @hdrs       = qw(address login_id transaction_date status reused amount currency_code);
+    my $clientdb   = BOM::Database::ClientDB->new({broker_code => 'CR'});
     my $start_date = request()->param('start_date') || do { my $date = Date::Uility->new; $date->day_of_month(0); $date };
     $start_date = Date::Utility->new($start_date) unless ref $start_date;
     my $end_date = request()->param('end_date') || do { my $date = $start_date; $date->month($date->month + 1); $date->day_of_month(0); $date };
     $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
     PrintContentType();
-    my $db_transactions = $dbh->selectall_arrayref(q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)}, { Slice => {} }, $currency, $start_date->iso8601, $end_date->iso8601) or die 'failed to run ctc_bo_transactions_for_reconciliation';
+    my $db_transactions = $dbh->selectall_arrayref(
+        q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
+        {Slice => {}},
+        $currency, $start_date->iso8601, $end_date->iso8601
+    ) or die 'failed to run ctc_bo_transactions_for_reconciliation';
 
     my %db_by_address;
     for my $db_tran (@$db_transactions) {
@@ -173,30 +177,34 @@ if ($page eq 'Withdrawal Transactions') {
         my $address = $blockchain_tran->{address};
         my $db_tran = $db_by_address{$address} or do {
             # TODO This should filter by prefix, not just ignore when we have a prefix!
-            $db_by_address{$address} = { address => $address, comments => [ 'Not found in database' ] };
+            $db_by_address{$address} = {
+                address  => $address,
+                comments => ['Not found in database']};
             next;
         };
-        if(financialrounding(
-            price => $currency,
-            $blockchain_tran->{amount}
-        ) != $db_tran->{amount}) {
+        if (
+            financialrounding(
+                price => $currency,
+                $blockchain_tran->{amount}
+            ) != $db_tran->{amount})
+        {
             push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
         }
         $db_tran->{confirmations} = $blockchain_tran->{confirmations};
-        if(Date::Utility->new($db_tran->{date})->epoch < time - 2*120) {
-            if($blockchain_tran->{confirmations} < 3 and not ($db_tran->{status} eq 'PENDING' or $db_tran->{status} eq 'NEW')) {
+        if (Date::Utility->new($db_tran->{date})->epoch < time - 2 * 120) {
+            if ($blockchain_tran->{confirmations} < 3 and not($db_tran->{status} eq 'PENDING' or $db_tran->{status} eq 'NEW')) {
                 push @{$db_tran->{comments}}, 'Invalid status - should be new or pending';
-            } elsif($blockchain_tran->{confirmations} >= 3 and not ($db_tran->{status} eq 'CONFIRMED')) {
+            } elsif ($blockchain_tran->{confirmations} >= 3 and not($db_tran->{status} eq 'CONFIRMED')) {
                 push @{$db_tran->{comments}}, 'Invalid status - should be confirmed';
             }
         }
-        if(@{$blockchain_tran->{txids}} > 1) {
-            push @{$db_tran->{comments}},  'Multiple transactions seen';
+        if (@{$blockchain_tran->{txids}} > 1) {
+            push @{$db_tran->{comments}}, 'Multiple transactions seen';
         }
         $db_tran->{transaction_id} = $blockchain_tran->{txids}[0];
     }
 
-    my @hdr = ('Client ID',  'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations','Transaction ID', 'Errors');
+    my @hdr = ('Client ID', 'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations', 'Transaction ID', 'Errors');
     print '<table style="width:100%;" border="1"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
@@ -204,7 +212,8 @@ if ($page eq 'Withdrawal Transactions') {
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for @{$db_tran}{qw(client_loginid address amount status date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>' for @{$db_tran}{qw(confirmations)};
-        print '<td><a href="https://www.blocktrail.com/tBTC/tx/' . $_ . '">' . encode_entities(substr $_, 0, 6) . '</td>' for @{$db_tran}{qw(transaction_id)};
+        print '<td><a href="https://www.blocktrail.com/tBTC/tx/' . $_ . '">' . encode_entities(substr $_, 0, 6) . '</td>'
+            for @{$db_tran}{qw(transaction_id)};
         print '<td style="color:red;">' . (join '<br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
     }
@@ -219,7 +228,7 @@ if ($page eq 'Withdrawal Transactions') {
     );
     my @param;
     if ($valid_rpc_command{$cmd}) {
-        if($cmd eq 'listtransactions') {
+        if ($cmd eq 'listtransactions') {
             push @param, '', 500;
         }
         my $rslt = $rpc_client->$cmd(@param);
