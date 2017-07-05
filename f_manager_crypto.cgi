@@ -162,48 +162,73 @@ if ($page eq 'Withdrawal Transactions') {
         }
     }
 
-    # Next, we retrieve all blockchain information relating to deposits
-    my $blockchain_transactions = $rpc_client->listreceivedbyaddress(0) or do {
-        print '<p style="color:red;">Unable to request transactions from RPC</p>';
-        code_exit_BO();
-    };
-    for my $blockchain_tran (sort_by { $_->{address} } @$blockchain_transactions) {
-        my $address = $blockchain_tran->{address};
-        my $db_tran = $db_by_address{$address} or do {
-            # TODO This should filter by prefix, not just ignore when we have a prefix!
-            $db_by_address{$address} = {
-                address  => $address,
-                comments => ['Not found in database']};
-            next;
+    { # Next, we retrieve all blockchain information relating to deposits
+        my $blockchain_transactions = $rpc_client->listreceivedbyaddress(0) or do {
+            print '<p style="color:red;">Unable to request transactions from RPC</p>';
+            code_exit_BO();
         };
-        if($db_tran->{transaction_type} ne 'deposit') {
-            push @{$db_tran->{comments}}, 'Expected deposit, found ' . $db_tran->{transaction_type};
-        }
-
-        if (
-            financialrounding(
-                price => $currency,
-                $blockchain_tran->{amount}
-            ) != $db_tran->{amount})
-        {
-            push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
-        }
-        $db_tran->{confirmations} = $blockchain_tran->{confirmations};
-        if (Date::Utility->new($db_tran->{date})->epoch < time - 2 * 120) {
-            if ($blockchain_tran->{confirmations} < 3 and not($db_tran->{status} eq 'PENDING' or $db_tran->{status} eq 'NEW')) {
-                push @{$db_tran->{comments}}, 'Invalid status - should be new or pending';
-            } elsif ($blockchain_tran->{confirmations} >= 3 and not($db_tran->{status} eq 'CONFIRMED')) {
-                push @{$db_tran->{comments}}, 'Invalid status - should be confirmed';
+        for my $blockchain_tran (sort_by { $_->{address} } @$blockchain_transactions) {
+            my $address = $blockchain_tran->{address};
+            my $db_tran = $db_by_address{$address} or do {
+                # TODO This should filter by prefix, not just ignore when we have a prefix!
+                $db_by_address{$address} = {
+                    address  => $address,
+                    comments => ['Deposit not found in database']};
+                next;
+            };
+            $db_tran->{found_in_blockchain} = 1;
+            if($db_tran->{transaction_type} ne 'deposit') {
+                push @{$db_tran->{comments}}, 'Expected deposit, found ' . $db_tran->{transaction_type};
             }
+
+            if (
+                financialrounding(
+                    price => $currency,
+                    $blockchain_tran->{amount}
+                ) != $db_tran->{amount})
+            {
+                push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
+            }
+            $db_tran->{confirmations} = $blockchain_tran->{confirmations};
+            if (Date::Utility->new($db_tran->{date})->epoch < time - 2 * 120) {
+                if ($blockchain_tran->{confirmations} < 3 and not($db_tran->{status} eq 'PENDING' or $db_tran->{status} eq 'NEW')) {
+                    push @{$db_tran->{comments}}, 'Invalid status - should be new or pending';
+                } elsif ($blockchain_tran->{confirmations} >= 3 and not($db_tran->{status} eq 'CONFIRMED')) {
+                    push @{$db_tran->{comments}}, 'Invalid status - should be confirmed';
+                }
+            }
+            if (@{$blockchain_tran->{txids}} > 1) {
+                push @{$db_tran->{comments}}, 'Multiple transactions seen';
+            }
+            $db_tran->{transaction_id} = $blockchain_tran->{txids}[0];
         }
-        if (@{$blockchain_tran->{txids}} > 1) {
-            push @{$db_tran->{comments}}, 'Multiple transactions seen';
-        }
-        $db_tran->{transaction_id} = $blockchain_tran->{txids}[0];
     }
 
-    # Also need this for withdrawals:
-    # my $blockchain_transactions = $rpc_client->listtransactions('', 1000);
+    { # Now we check for withdrawals
+        my $blockchain_transactions = $rpc_client->listtransactions('', 1000) or do {
+            print '<p style="color:red;">Unable to request transactions from RPC</p>';
+            code_exit_BO();
+        };
+        for my $blockchain_tran (sort_by { $_->{address} } @$blockchain_transactions) {
+            my $address = $blockchain_tran->{address};
+            my $db_tran = $db_by_address{$address} or do {
+                # TODO This should filter by prefix, not just ignore when we have a prefix!
+                $db_by_address{$address} = {
+                    address  => $address,
+                    comments => ['Withdrawal not found in database']};
+                next;
+            };
+            $db_tran->{found_in_blockchain} = 1;
+            if($db_tran->{transaction_type} ne 'withdrawal') {
+                push @{$db_tran->{comments}}, 'Expected withdrawal, found ' . $db_tran->{transaction_type};
+            }
+        }
+    }
+
+    # Find out what's left over in the database
+    for my $db_tran (grep { !$_->{found_in_blockchain} } values %db_by_address) {
+        push @{$db_tran->{comments}}, 'Database entry not found in blockchain' unless $db_tran->{status} eq 'NEW';
+    }
 
     my @hdr = ('Client ID', 'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations', 'Transaction ID', 'Errors');
     print '<table style="width:100%;" border="1"><thead><tr>';
