@@ -173,6 +173,7 @@ if ($page eq 'Withdrawal Transactions') {
                 # TODO This should filter by prefix, not just ignore when we have a prefix!
                 $db_by_address{$address} = {
                     address  => $address,
+                    found_in_blockchain => 1,
                     comments => ['Deposit not found in database']};
                 next;
             };
@@ -215,12 +216,21 @@ if ($page eq 'Withdrawal Transactions') {
                 # TODO This should filter by prefix, not just ignore when we have a prefix!
                 $db_by_address{$address} = {
                     address  => $address,
+                    found_in_blockchain => 1,
                     comments => ['Withdrawal not found in database']};
                 next;
             };
             $db_tran->{found_in_blockchain} = 1;
             if($db_tran->{transaction_type} ne 'withdrawal') {
                 push @{$db_tran->{comments}}, 'Expected withdrawal, found ' . $db_tran->{transaction_type};
+            }
+            if (
+                financialrounding(
+                    price => $currency,
+                    $blockchain_tran->{amount}
+                ) != $db_tran->{amount})
+            {
+                push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
             }
         }
     }
