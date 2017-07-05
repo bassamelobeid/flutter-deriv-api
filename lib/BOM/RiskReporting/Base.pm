@@ -109,6 +109,16 @@ sub _build_live_open_bets {
     return $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id');
 }
 
+has live_open_ico => (
+    isa        => 'HashRef',
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_live_open_ico {
+    my $self = shift;
+    return $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id');
+}
 sub generate {
     return 1;
 }
