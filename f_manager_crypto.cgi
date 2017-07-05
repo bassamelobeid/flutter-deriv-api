@@ -144,31 +144,30 @@ if ($page eq 'Withdrawal Transactions') {
         }) || die $tt->error();
 
 } elsif ($page eq 'Recon') {
-# Transactions that are in the blockchain but not in PG
-# Transactions that are in PG but not the blockchain
-# Transactions that differ in amount between PG and blockchain
-    my @hdrs       = qw(address login_id transaction_date status reused amount currency_code);
+    BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
+    Bar('BTC Reconciliation');
+
     my $clientdb   = BOM::Database::ClientDB->new({broker_code => 'CR'});
     my $start_date = request()->param('start_date') || do { my $date = Date::Uility->new; $date->day_of_month(0); $date };
     $start_date = Date::Utility->new($start_date) unless ref $start_date;
     my $end_date = request()->param('end_date') || do { my $date = $start_date; $date->month($date->month + 1); $date->day_of_month(0); $date };
     $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
-    PrintContentType();
-    my $db_transactions = $dbh->selectall_arrayref(
-        q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
-        {Slice => {}},
-        $currency, $start_date->iso8601, $end_date->iso8601
-    ) or die 'failed to run ctc_bo_transactions_for_reconciliation';
-
     my %db_by_address;
-    for my $db_tran (@$db_transactions) {
-        push @{$db_tran->{comments}}, 'Duplicate entries found in DB' if exists $db_by_address{$db_tran->{address}};
-        $db_by_address{$db_tran->{address}} = $db_tran;
+    { # First, we get a mapping from address to database transaction information
+        my $db_transactions = $dbh->selectall_arrayref(
+            q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
+            {Slice => {}},
+            $currency, $start_date->iso8601, $end_date->iso8601
+        ) or die 'failed to run ctc_bo_transactions_for_reconciliation';
+
+        for my $db_tran (@$db_transactions) {
+            push @{$db_tran->{comments}}, 'Duplicate entries found in DB' if exists $db_by_address{$db_tran->{address}};
+            $db_by_address{$db_tran->{address}} = $db_tran;
+        }
     }
 
-    # Also need this for withdrawals:
-    # my $blockchain_transactions = $rpc_client->listtransactions('', 1000);
+    # Next, we retrieve all blockchain information relating to deposits
     my $blockchain_transactions = $rpc_client->listreceivedbyaddress(0) or do {
         print '<p style="color:red;">Unable to request transactions from RPC</p>';
         code_exit_BO();
@@ -203,6 +202,9 @@ if ($page eq 'Withdrawal Transactions') {
         }
         $db_tran->{transaction_id} = $blockchain_tran->{txids}[0];
     }
+
+    # Also need this for withdrawals:
+    # my $blockchain_transactions = $rpc_client->listtransactions('', 1000);
 
     my @hdr = ('Client ID', 'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations', 'Transaction ID', 'Errors');
     print '<table style="width:100%;" border="1"><thead><tr>';
