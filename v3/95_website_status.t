@@ -65,7 +65,7 @@ $redis->on(
         Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($shared_info, $msg, $channel);
     });
 is($redis->set($is_on_key, 1), 'OK');
-my $t = build_wsapi_test(
+$t = build_wsapi_test(
     {},
     {},
     sub {
