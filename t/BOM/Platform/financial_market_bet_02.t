@@ -3,8 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 27;
-use Test::NoWarnings ();    # no END block test
+use Test::More tests => 28;
+use Test::Warnings;
 use Test::Exception;
 
 use Client::Account;

@@ -1,6 +1,7 @@
-use Test::Most 0.22 (tests => 16);
+use Test::Most 0.22 (tests => 17);
 use Test::Warn;
 use Test::MockModule;
+use Test::Warnings;
 use File::Spec;
 use JSON qw(decode_json);
 

@@ -1,4 +1,5 @@
-use Test::Most 0.22 (tests => 21);
+use Test::Most 0.22 (tests => 22);
+use Test::Warnings;
 use Data::Hash::DotNotation;
 use Sys::Hostname qw(hostname);
 

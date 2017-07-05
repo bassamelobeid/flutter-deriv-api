@@ -6,7 +6,7 @@ D=$(CURDIR)
 export PERL5OPT=-MTest::FailWarnings=-allow_deps,1
 export SKIP_EMAIL=1
 I=-I$D/lib -I$D -I/home/git/regentmarkets/bom/t -I/home/git/regentmarkets/bom-postgres/lib -I/home/git/regentmarkets/bom/lib -I/home/git/regentmarkets/bom-market/lib
-P=/etc/rmg/bin/prove --timer $I
+P=/etc/rmg/bin/prove -v --timer $I
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test: $(TESTS)

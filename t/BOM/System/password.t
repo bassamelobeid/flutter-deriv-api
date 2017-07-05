@@ -3,7 +3,8 @@ use warnings;
 use utf8;
 binmode STDOUT, ':utf8';
 
-use Test::More tests => 20;
+use Test::More tests => 21;
+use Test::Warnings;
 use BOM::Platform::Password;
 use Digest::SHA;
 use Crypt::ScryptKDF;
