@@ -1,4 +1,4 @@
-use Test::More tests => 2;
+use Test::More;
 use strict;
 use warnings;
 use Test::Warnings;
@@ -9,3 +9,5 @@ if (my $r = `git grep "BOM::[A-Za-z]" | grep -v .proverc | grep -v README.md`) {
 } else {
     ok 1, "Structure dependency is OK";
 }
+
+done_testing;
