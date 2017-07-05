@@ -2,8 +2,9 @@
 
 use strict;
 use warnings;
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Test::Exception;
+use Test::Warnings;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::ClientDB;
 
