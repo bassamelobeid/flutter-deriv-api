@@ -110,6 +110,35 @@ if ($page eq 'Transactions') {
             currency     => $currency,
         }) || die $tt->error();
 
+} elsif ($page eq 'Deposit Transactions') {
+    PrintContentType();
+    BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
+
+    $view_type ||= 'new';
+    if (not $view_type or $view_type !~ /^(?:new|pending|confirmed|error)$/) {
+        print "Invalid selection to view type of transactions.";
+        code_exit_BO();
+    }
+
+    my $trxns = $dbh->selectall_arrayref(
+        "SELECT * FROM payment.ctc_bo_get_deposit(?, ?::payment.CTC_STATUS, NULL, NULL)",
+        {Slice => {}},
+        $currency, uc $view_type
+    );
+
+    Bar("LIST OF TRANSACTIONS - DEPOSITS");
+
+    my $tt = BOM::Backoffice::Request::template;
+    $tt->process(
+        'backoffice/account/manage_crypto_transactions.tt',
+        {
+            transactions     => $trxns,
+            broker           => $broker,
+            transaction_type => 'deposit',
+            view_type        => $view_type,
+            currency         => $currency,
+        }) || die $tt->error();
+
 } elsif ($page eq 'Balances') {
     PrintContentType_excel($currency . '.csv');
 
@@ -145,26 +174,26 @@ if ($page eq 'Transactions') {
         $csv->combine(@data{@hdrs});
         print $csv->string . "\n";
     }
-} elsif($page eq 'Run tool') {
+} elsif ($page eq 'Run tool') {
     PrintContentType();
-    my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
-    my $rpc_client = Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5));
-    my $cmd = request()->param('command');
+    my $cfg               = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
+    my $rpc_client        = Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5));
+    my $cmd               = request()->param('command');
     my %valid_rpc_command = (
-        listaccounts => 1,
-        listtransactions => 1,
+        listaccounts         => 1,
+        listtransactions     => 1,
         listaddressgroupings => 1,
     );
-    if($valid_rpc_command{$cmd}) {
+    if ($valid_rpc_command{$cmd}) {
         my $rslt = $rpc_client->$cmd;
-        if($cmd eq 'listaccounts') {
+        if ($cmd eq 'listaccounts') {
             print '<table><thead><tr><th scope="col">Account</th><th scope="col">Amount</th></tr></thead><tbody>';
             for my $k (sort keys %$rslt) {
                 my $amount = $rslt->{$k};
                 print '<tr><th scope="row">' . encode_entities($k) . '</th><td>' . encode_entities($amount) . '</td></tr>' . "\n";
             }
             print '</table>';
-        } elsif($cmd eq 'listtransactions') {
+        } elsif ($cmd eq 'listtransactions') {
             my @hdr = ('Account', 'Transaction ID', 'Amount', 'Transaction date', 'Confirmations', 'Address');
             print '<table><thead><tr>';
             print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
@@ -179,7 +208,7 @@ if ($page eq 'Transactions') {
                 print "</tr>\n";
             }
             print '</tbody></table>';
-        } elsif($cmd eq 'listaddressgroupings') {
+        } elsif ($cmd eq 'listaddressgroupings') {
             print '<table><thead><tr><th scope="col">Account</th><th scope="col">Address</th><th scope="col">Amount</th></tr></thead><tbody>';
             for my $item (@$rslt) {
                 for my $address (@$item) {
@@ -191,7 +220,7 @@ if ($page eq 'Transactions') {
             }
             print '</tbody></table>';
         } else {
-            print encode_entities(Dumper $rslt); 
+            print encode_entities(Dumper $rslt);
         }
     } else {
         die 'Invalid BTC command: ' . $cmd;
