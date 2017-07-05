@@ -240,12 +240,9 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         "streaming_params" => {add_theo_probability => 1},
     };
     my $result   = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-    my $expected = {
-        error => {
-            'code'              => 'ContractCreationFailure',
-            'message_to_client' => 'Cannot create contract',
-        }};
-    cmp_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is payout');
+
+    is($result->{error}{code}, 'ContractBuyValidationError', 'errors response is correct when date_expiry < date_start with payout_type is payout');
+    is($result->{error}{message_to_client}, 'Expiry time cannot be in the past.', 'errors response is correct when date_expiry < date_start with payout_type is payout');
 
     $params = {
         'proposal'         => 1,
@@ -261,13 +258,10 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         "streaming_params" => {add_theo_probability => 1},
     };
     $result   = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-    $expected = {
-        error => {
-            'code'              => 'ContractCreationFailure',
-            'message_to_client' => 'Cannot create contract',
-        }};
 
-    cmp_deeply($result, $expected, 'errors response is correct when date_expiry < date_start with payout_type is stake');
+    is($result->{error}{code}, 'ContractBuyValidationError', 'errors response is correct when date_expiry < date_start with payout_type is stake');
+    is($result->{error}{message_to_client}, 'Expiry time cannot be in the past.', 'errors response is correct when date_expiry < date_start with payout_type is stake');
+
     $params = {
         'proposal'         => 1,
         'fixed_expiry'     => 1,
@@ -282,13 +276,9 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         "streaming_params" => {add_theo_probability => 1},
     };
     $result   = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-    $expected = {
-        error => {
-            'code'              => 'ContractCreationFailure',
-            'message_to_client' => 'Cannot create contract',
-        }};
 
-    cmp_deeply($result, $expected, 'errors response is correct when date_expiry = date_start with payout_type is stake');
+    is($result->{error}{code}, 'ContractBuyValidationError', 'errors response is correct when date_expiry = date_start with payout_type is stake');
+    is($result->{error}{message_to_client}, 'Expiry time cannot be equal to start time.', 'errors response is correct when date_expiry = date_start with payout_type is stake');
 
 };
 
@@ -358,7 +348,7 @@ subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
 
             "streaming_params" => {add_theo_probability => 1},
         }};
-    $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
+    $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractBuyValidationError')->error_message_is('Expiry time cannot be in the past.');
 
 };
 
