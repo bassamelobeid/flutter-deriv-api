@@ -36,7 +36,7 @@ subtest 'Saving delta then moneyness.' => sub {
             underlying       => $forex,
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-            recorded_date    => $now,
+            creation_date    => $now,
             surface          => {
                 1 => {
                     smile => {
@@ -64,7 +64,7 @@ subtest 'Saving delta then moneyness.' => sub {
             underlying       => $indices,
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-            recorded_date    => $now,
+            creation_date    => $now,
             surface          => {
                 7 => {
                     smile => {
@@ -87,7 +87,7 @@ subtest 'Saving delta then moneyness.' => sub {
     is_deeply($saved->surface, $moneyness_surface->surface, 'Moneyness surface matches.');
 };
 
-subtest 'recorded_date on Randoms.' => sub {
+subtest 'creation_date on Randoms.' => sub {
     plan tests => 2;
 
     my $now = Date::Utility->new('2012-08-01 10:00:00');
@@ -97,10 +97,10 @@ subtest 'recorded_date on Randoms.' => sub {
         for_date   => $now->minus_time_interval('1d'),
     });
     note('Recorded date should be at most 2 seconds from ' . $now->datetime);
-    cmp_ok($surface->recorded_date->epoch - $now->epoch, '<=', 2, 'fetch_surface on a Random Index surface with given for_date.');
+    cmp_ok($surface->creation_date->epoch - $now->epoch, '<=', 2, 'fetch_surface on a Random Index surface with given for_date.');
 
     $surface = $dm->fetch_surface({underlying => create_underlying('R_100')});
-    is($surface->recorded_date->datetime, $now->datetime, 'fetch_surface on a Random Index surface "now".');
+    is($surface->creation_date->datetime, $now->datetime, 'fetch_surface on a Random Index surface "now".');
     restore_time();
 };
 
@@ -117,7 +117,7 @@ subtest 'Consecutive saves.' => sub {
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
         });
-    my @recorded_dates = ($surface->recorded_date);    # keep track of all saved surface recorded_dates
+    my @creation_dates = ($surface->creation_date);    # keep track of all saved surface creation_dates
 
     for (0 .. 2) {
         my $recorded_date = $now->minus_time_interval(2 - $_ . 'h');
@@ -129,30 +129,30 @@ subtest 'Consecutive saves.' => sub {
                 chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
                 chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
             });
-        unshift @recorded_dates, $recorded_date;
+        unshift @creation_dates, $recorded_date;
     }
 
     my $dm = BOM::MarketData::Fetcher::VolSurface->new;
     my $current = $dm->fetch_surface({underlying => $underlying});
-    is($current->recorded_date->datetime, $recorded_dates[0]->datetime, 'Current surface has expected date.');
+    is($current->creation_date->datetime, $creation_dates[0]->datetime, 'Current surface has expected date.');
 
     my $first_historical = $dm->fetch_surface({
         underlying => $underlying,
-        for_date   => Date::Utility->new($current->recorded_date->epoch - 1),
+        for_date   => Date::Utility->new($current->creation_date->epoch - 1),
     });
-    is($first_historical->recorded_date->datetime, $recorded_dates[1]->datetime, 'First historical surface has expected date.');
+    is($first_historical->creation_date->datetime, $creation_dates[1]->datetime, 'First historical surface has expected date.');
 
     $first_historical = $dm->fetch_surface({
         underlying => $underlying,
-        for_date   => $first_historical->recorded_date,
+        for_date   => $first_historical->creation_date,
     });
-    is($first_historical->recorded_date->datetime, $recorded_dates[1]->datetime, 'First historical surface fetch correctly when its own date given.');
+    is($first_historical->creation_date->datetime, $creation_dates[1]->datetime, 'First historical surface fetch correctly when its own date given.');
 
     my $second_historical = $dm->fetch_surface({
         underlying => $underlying,
-        for_date   => Date::Utility->new($first_historical->recorded_date->epoch - 1),
+        for_date   => Date::Utility->new($first_historical->creation_date->epoch - 1),
     });
-    is($second_historical->recorded_date->datetime, $recorded_dates[2]->datetime, 'Second historical surface has expected date.');
+    is($second_historical->creation_date->datetime, $creation_dates[2]->datetime, 'Second historical surface has expected date.');
 };
 
 done_testing;
