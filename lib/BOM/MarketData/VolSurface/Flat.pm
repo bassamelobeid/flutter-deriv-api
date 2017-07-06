@@ -149,7 +149,7 @@ sub _build_surface_data {
     return $self->surface;
 }
 
-has recorded_date => (
+has creation_date => (
     is      => 'ro',
     default => sub { Date::Utility->new },
 );
