@@ -219,7 +219,7 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
         };
         my $bet;
         lives_ok { $bet = produce_contract($bet_params); } "Can create example $bet_type bet on $underlying";
-        is($bet->volsurface->recorded_date->datetime_iso8601, '2014-04-22T07:43:56Z',        'We loaded the correct volsurface');
+        is($bet->volsurface->creation_date->datetime_iso8601, '2014-04-22T07:43:56Z',        'We loaded the correct volsurface');
         is($bet->pricing_engine_name,                         $expectations->{price_engine}, 'Contract selected ' . $expectations->{price_engine});
 
         if ($bet->two_barriers) {
