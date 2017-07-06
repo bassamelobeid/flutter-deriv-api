@@ -120,9 +120,8 @@ sub BUILD {
     $self->contract_type($self->build_parameters->{bet_type});
     $self->binaryico_number_of_tokens($self->build_parameters->{binaryico_number_of_tokens});
     $self->binaryico_per_token_bid_price($self->build_parameters->{binaryico_per_token_bid_price});
-    my $binaryico_per_token_bid_price_USD =
-        financialrounding('price', $self->currency, in_USD($self->binaryico_per_token_bid_price, $self->currency));
-    $self->binaryico_per_token_bid_price_USD($binaryico_per_token_bid_price_USD);
+    $self->binaryico_per_token_bid_price_USD(
+        financialrounding('price', $self->currency, in_USD($self->binaryico_per_token_bid_price, $self->currency)));
     if ($self->binaryico_number_of_tokens < $limits->{min} or $self->binaryico_number_of_tokens > $limits->{max}) {
         $self->add_errors({
             message => 'number of tokens placed is not within limits '
