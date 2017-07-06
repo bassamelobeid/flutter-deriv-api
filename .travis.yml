@@ -10,10 +10,6 @@ services:
     - redis-server
 cache: apt
 sudo: required
-env:
-    - TEST_SUITE=test SH=bash
-    - TEST_SUITE=json_schema_1
-    - TEST_SUITE=json_schema_2
 
 before_install:
     - git clone ssh://git@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
