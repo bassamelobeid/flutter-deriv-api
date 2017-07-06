@@ -29,7 +29,7 @@ my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 my $app_config          = BOM::Platform::Runtime->instance->app_config;
 my $is_auction_ended    = $app_config->system->suspend->is_auction_ended;
-my $auction_final_price = 1.09;                                             # just for testing
+my $auction_final_price = $app_config->system->suspend->ico_final_price;
 
 has _for_sale => (
     is      => 'rw',
