@@ -339,15 +339,15 @@ for (my $time = $start->epoch; $time <= $end->epoch; $time += 300) {
     my $price_date = $bet->date_pricing->datetime_iso8601;
     my %current    = (
         frxEURUSD => {
-            date  => $bet->volsurface->recorded_date->datetime_iso8601,
+            date  => $bet->volsurface->creation_date->datetime_iso8601,
             value => $bet->atm_vols->{fordom},
         },
         frxEURAUD => {
-            date  => $bet->forqqq->{volsurface}->recorded_date->datetime_iso8601,
+            date  => $bet->forqqq->{volsurface}->creation_date->datetime_iso8601,
             value => $bet->atm_vols->{forqqq},
         },
         frxAUDUSD => {
-            date  => $bet->domqqq->{volsurface}->recorded_date->datetime_iso8601,
+            date  => $bet->domqqq->{volsurface}->creation_date->datetime_iso8601,
             value => $bet->atm_vols->{domqqq},
         },
         USD => {
