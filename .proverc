@@ -1,3 +1,4 @@
 -It/lib
+-MTest::FailWarnings=-allow_deps,1
 -MBOM::Test
 -MBOM::Test::RPC::PricingRpc

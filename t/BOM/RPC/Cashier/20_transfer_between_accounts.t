@@ -153,10 +153,7 @@ subtest $method => sub {
 
     subtest 'Transfer between mlt and mf' => sub {
         $params->{args} = {};
-        diag($method);
-        diag(explain($params));
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-        diag(explain($result));
         is scalar(@{$result->{accounts}}), 2, 'two accounts';
         my ($tmp) = grep { $_->{loginid} eq $client_mlt->loginid } @{$result->{accounts}};
         is $tmp->{balance}, "0.00", 'balance is 0';

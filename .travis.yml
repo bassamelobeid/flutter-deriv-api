@@ -10,6 +10,10 @@ services:
     - redis-server
 cache: apt
 sudo: required
+env:
+    - TEST_SUITE=test SH=bash
+    - TEST_SUITE=json_schema_1
+    - TEST_SUITE=json_schema_2
 
 before_install:
     - git clone ssh://git@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
@@ -58,10 +62,7 @@ install:
     - perl /home/git/regentmarkets/bom-pricing/bin/binary_pricing_rpc.pl  daemon -m production -l http://*:5006/jsonrpc  &
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    #- if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
-    - echo $PERL5LIB
-    #- prove -v t/BOM/RPC/Cashier/20_transfer_between_accounts.t
-    - make test
+    - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
