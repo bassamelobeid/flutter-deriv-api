@@ -189,7 +189,7 @@ subtest 'big difference' => sub {
         surfaces_from_file => {
             frxUSDJPY => {
                 surface       => $fake_surface->surface_data,
-                recorded_date => $fake_surface->recorded_date,
+                creation_date => $fake_surface->creation_date,
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
@@ -211,7 +211,7 @@ subtest 'save valid' => sub {
         surfaces_from_file => {
             frxUSDJPY => {
                 surface       => $fake_surface->surface_data,
-                recorded_date => $fake_surface->recorded_date,
+                creation_date => $fake_surface->creation_date,
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
@@ -275,7 +275,7 @@ subtest 'do not update one hour after rollover' => sub {
         surfaces_from_file => {
             frxUSDJPY => {
                 surface       => $fake_surface->surface_data,
-                recorded_date => $rollover_date,
+                creation_date => $rollover_date,
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
@@ -286,7 +286,7 @@ subtest 'do not update one hour after rollover' => sub {
         surfaces_from_file => {
             frxUSDJPY => {
                 surface       => $fake_surface->surface_data,
-                recorded_date => $rollover_date->plus_time_interval('1h1s'),
+                creation_date => $rollover_date->plus_time_interval('1h1s'),
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
