@@ -484,7 +484,10 @@ sub _calculate_historical_volatility {
     my $returns_sep = 4;
     for (my $i = $returns_sep; $i <= $#$hist_ticks; $i++) {
         my $dt = $hist_ticks->[$i]->{epoch} - $hist_ticks->[$i - $returns_sep]->{epoch};
-        if ($dt <= 0) {
+
+        # $dt can be 0 during periods with less trading.
+        next if $dt == 0;
+        if ($dt < 0) {
             # this suggests that we still have bug in data decimate since the decimated ticks have the same epoch
             warn 'invalid decimated ticks\' interval. [' . $dt . '] for symbol ' . $bet->underlying->symbol;
             next;
