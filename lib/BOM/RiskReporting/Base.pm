@@ -119,6 +119,7 @@ sub _build_live_open_ico {
     my $self = shift;
     return $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id');
 }
+
 sub generate {
     return 1;
 }
