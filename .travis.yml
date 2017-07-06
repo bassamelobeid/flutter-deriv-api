@@ -59,6 +59,7 @@ install:
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     #- if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
+    - echo $PERL5LIB
     - prove -v t/BOM/RPC/Cashier/20_transfer_between_accounts.t
 
 after_script:
