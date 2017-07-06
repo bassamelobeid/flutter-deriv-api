@@ -19,6 +19,7 @@ use warnings;
 use BOM::Platform::Config;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use LandingCompany::Registry;
+use Format::Util::Numbers qw/financialrounding/;
 
 local $\ = undef;    # Sigh.
 
@@ -117,7 +118,17 @@ has live_open_ico => (
 
 sub _build_live_open_ico {
     my $self = shift;
-    return $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id');
+    my $live_open_ico = $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id');
+
+    foreach my $c (keys %$live_open_ico) {
+        $live_open_ico->{$c}->{per_token_bid_price_USD} = financialrounding(
+            'price',
+            $live_open_ico->{$c}->{currency_code},
+            in_USD($live_open_ico->{$c}->{per_token_bid_price}, $live_open_ico->{$c}->{currency_code}));
+
+    }
+    return $live_open_ico;
+
 }
 
 sub generate {
