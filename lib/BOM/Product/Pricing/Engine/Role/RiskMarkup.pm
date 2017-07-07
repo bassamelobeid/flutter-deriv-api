@@ -54,7 +54,7 @@ sub vol_spread_markup {
     )->markup;
 }
 
-sub _build_vol_spread {
+sub vol_spread {
     my $self = shift;
 
     return $self->bet->volsurface->get_spread({

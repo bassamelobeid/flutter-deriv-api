@@ -368,12 +368,7 @@ sub economic_events_spot_risk_markup {
     )->markup;
 }
 
-has vol_spread_markup => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_vol_spread_markup {
+sub vol_spread_markup {
     my $self = shift;
 
     my $bet           = $self->bet;
@@ -381,35 +376,21 @@ sub _build_vol_spread_markup {
     my $args          = $bet->_pricing_args;
     my @strikes       = $bet->two_barriers ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
     my $vega          = $vega_formulae->($args->{S}, @strikes, $args->{t}, 0, 0, 0.1, $bet->payouttime_code);
+
     return Pricing::Engine::Markup::VolSpread->new(
         bet_vega   => $vega,
-        vol_spread => $self->vol_spread->amount,
+        vol_spread => $self->vol_spread,
     )->markup;
 }
 
-has vol_spread => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_vol_spread',
-);
-
-sub _build_vol_spread {
+sub vol_spread {
     my $self = shift;
 
     my $bet               = $self->bet;
     my $two_hour_vol      = $bet->_calculate_historical_volatility($bet->date_pricing->minus_time_interval('2h'), $bet->date_pricing);
     my $twenty_minute_vol = $bet->_calculate_historical_volatility($bet->date_pricing->minus_time_interval('20m'), $bet->date_pricing);
 
-    my $vol_spread = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'vol_spread',
-        set_by      => __PACKAGE__,
-        description => 'markup added to account for variable ticks interval for volatility calculation.',
-        minimum     => 0,
-        maximum     => 0.1,
-        base_amount => $two_hour_vol - $twenty_minute_vol,
-    });
-
-    return $vol_spread;
+    return $two_hour_vol - $twenty_minute_vol;
 }
 
 =head2 is_in_quiet_period
