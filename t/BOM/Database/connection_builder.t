@@ -3,8 +3,9 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 36);
+use Test::More (tests => 37);
 use Test::Exception;
+use Test::Warnings;
 
 use BOM::Database::ClientDB;
 
