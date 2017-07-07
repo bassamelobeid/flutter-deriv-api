@@ -206,6 +206,8 @@ subtest $method => sub {
             "amount"       => 10
         };
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        use Data::Dumper;
+        diag(Dumper($result));
         is $result->{client_to_loginid},   $client_mf->loginid,   'transfer_between_accounts to client is ok';
         is $result->{client_to_full_name}, $client_mf->full_name, 'transfer_between_accounts to client name is ok';
         }
