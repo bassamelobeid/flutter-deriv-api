@@ -50,12 +50,17 @@ sub vol_spread_markup {
     my $bet = $self->bet;
     return Pricing::Engine::Markup::VolSpread->new(
         bet_vega   => $bet->vega,
-        vol_spread => $bet->volsurface->get_spread({
-                sought_point => 'max',
-                day          => $bet->timeindays->amount
-            }
-        ),
+        vol_spread => $self->vol_spread,
     )->markup;
+}
+
+sub _build_vol_spread {
+    my $self = shift;
+
+    return $self->bet->volsurface->get_spread({
+        sought_point => 'max',
+        day          => $self->bet->timeindays->amount
+    });
 }
 
 sub spot_spread_markup {

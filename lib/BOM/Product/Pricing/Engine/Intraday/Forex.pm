@@ -375,13 +375,17 @@ has vol_spread => (
 sub _build_vol_spread {
     my $self = shift;
 
+    my $bet               = $self->bet;
+    my $two_hour_vol      = $bet->_calculate_historical_volatility($bet->date_pricing->minus_time_interval('2h'), $bet->date_pricing);
+    my $twenty_minute_vol = $bet->_calculate_historical_volatility($bet->date_pricing->minus_time_interval('20m'), $bet->date_pricing);
+
     my $vol_spread = Math::Util::CalculatedValue::Validatable->new({
         name        => 'vol_spread',
         set_by      => __PACKAGE__,
         description => 'markup added to account for variable ticks interval for volatility calculation.',
         minimum     => 0,
         maximum     => 0.1,
-        base_amount => 0,
+        base_amount => $two_hour_vol - $twenty_minute_vol,
     });
 
     return $vol_spread;
