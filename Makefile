@@ -11,7 +11,7 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 test:
-	/etc/rmg/bin/prove -lr --exec 'perl -Ilib -It/lib -MTest::FailWarnings=-allow_deps,1' t/
+	/etc/rmg/bin/prove -vlr --exec 'perl -Ilib -It/lib -MTest::Warnings' t/
 
 doc:
 	pod2markdown lib/BOM/Test.pm > README.md
