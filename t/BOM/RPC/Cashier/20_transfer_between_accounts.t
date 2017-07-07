@@ -188,18 +188,17 @@ subtest $method => sub {
         $client_mlt = Client::Account->new({loginid => $client_mlt->loginid});
         $client_mf  = Client::Account->new({loginid => $client_mf->loginid});
         ok $client_mlt->default_account->balance == 4990, '-10';
-        ok $client_mf->default_account->balance == 10,  '+10';
+        ok $client_mf->default_account->balance == 10,    '+10';
     };
 
     subtest 'test limit from mlt to mf' => sub {
-      $client_mlt->payment_free_gift(
-                                     currency => 'EUR',
-                                     amount   => -2000,
-                                     remark   => 'free gift',
-                                    );
-      ok $client_mlt->default_account->load->balance == 2990, '-2000';
-    }
-
+        $client_mlt->payment_free_gift(
+            currency => 'EUR',
+            amount   => -2000,
+            remark   => 'free gift',
+        );
+        ok $client_mlt->default_account->load->balance == 2990, '-2000';
+        }
 
 };
 
