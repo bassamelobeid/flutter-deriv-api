@@ -191,6 +191,16 @@ subtest $method => sub {
         ok $client_mf->default_account->balance == 10,  '+10';
     };
 
+    subtest 'test limit from mlt to mf' => sub {
+      $client_mlt->payment_free_gift(
+                                     currency => 'EUR',
+                                     amount   => -2000,
+                                     remark   => 'free gift',
+                                    );
+      ok $client_mlt->default_account->load->balance == 2990, '-2000';
+    }
+
+
 };
 
 subtest 'Sub account transfer' => sub {
