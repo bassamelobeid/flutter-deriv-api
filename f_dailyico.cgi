@@ -26,14 +26,21 @@ use BOM::JapanContractDetailsOutput;
 use BOM::RiskReporting::BinaryIco;
 
 if (request()->param('download_csv')) {
-    warn "param present";
     my $res;
     try {
         $res = BOM::RiskReporting::BinaryIco->new->generate_output_in_csv;
     }
     catch { warn "Error $_"; };
     return $res;
-} else {
+}elsif (request()->param('plot_histogram')){ 
+ my $res;
+    try {
+        $res = BOM::RiskReporting::BinaryIco->new->generate_output_in_histogram;
+    }
+    catch { warn "Error $_"; };
+    return $res;
+
+}else {
 
     PrintContentType();
     BrokerPresentation("ICO placement");

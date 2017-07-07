@@ -8,3 +8,9 @@
 </form>
 <p><b>Display the current open ICO bid deals on a histogram: </b></p>
 
+<form  name="download_csv" action="[% upload_url %]" method="POST" enctype="multipart/form-data">
+    <table>
+        <tr><input type="hidden" name="plot_histogram" value="1"></input></tr>
+        <tr><td colspan=2><INPUT type="submit" name="plot_histogram" value="Plot chart"></td></tr>
+    </table>
+</form>
