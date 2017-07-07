@@ -19,6 +19,7 @@ use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
 use Pricing::Engine::Markup::TentativeEvents;
 use Pricing::Engine::Markup::HistoricalVol;
+use Pricing::Engine::Markup::VolSpread;
 
 # we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
 use constant HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES => 20;
@@ -382,7 +383,7 @@ sub _build_vol_spread_markup {
     my $vega          = $vega_formulae->($args->{S}, @strikes, $args->{t}, 0, 0, 0.1, $bet->payouttime_code);
     return Pricing::Engine::Markup::VolSpread->new(
         bet_vega   => $vega,
-        vol_spread => $self->vol_spread,
+        vol_spread => $self->vol_spread->amount,
     )->markup;
 }
 
