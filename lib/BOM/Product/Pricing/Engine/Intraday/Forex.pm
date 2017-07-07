@@ -375,7 +375,7 @@ sub vol_spread_markup {
     my $vega_formulae = "Math::Business::BlackScholes::Binaries::Greeks::Vega"->can(lc $bet->pricing_code);
     my $args          = $bet->_pricing_args;
     my @strikes       = $bet->two_barriers ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
-    my $vega          = $vega_formulae->($args->{S}, @strikes, $args->{t}, 0, 0, 0.1, $bet->payouttime_code);
+    my $vega          = $vega_formulae->($args->{spot}, @strikes, $args->{t}, 0, 0, 0.1, $args->{payouttime_code});
 
     return Pricing::Engine::Markup::VolSpread->new(
         bet_vega   => $vega,
