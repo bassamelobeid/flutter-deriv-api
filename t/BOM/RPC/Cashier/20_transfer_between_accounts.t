@@ -198,18 +198,17 @@ subtest $method => sub {
             remark   => 'free gift',
         );
         ok $client_mlt->default_account->load->balance == 2990, '-2000';
-        }
 
         $params->{args} = {
-        "account_from" => $client_mlt->loginid,
-        "account_to"   => $client_mf->loginid,
-        "currency"     => "EUR",
-        "amount"       => 10
+            "account_from" => $client_mlt->loginid,
+            "account_to"   => $client_mf->loginid,
+            "currency"     => "EUR",
+            "amount"       => 10
         };
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{client_to_loginid},   $client_mf->loginid,   'transfer_between_accounts to client is ok';
-    is $result->{client_to_full_name}, $client_mf->full_name, 'transfer_between_accounts to client name is ok';
-
+        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        is $result->{client_to_loginid},   $client_mf->loginid,   'transfer_between_accounts to client is ok';
+        is $result->{client_to_full_name}, $client_mf->full_name, 'transfer_between_accounts to client name is ok';
+        }
 };
 
 subtest 'Sub account transfer' => sub {
