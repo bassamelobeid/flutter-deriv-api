@@ -205,7 +205,7 @@ subtest $method => sub {
             "currency"     => "EUR",
             "amount"       => 10
         };
-        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
         is $result->{client_to_loginid},   $client_mf->loginid,   'transfer_between_accounts to client is ok';
         is $result->{client_to_full_name}, $client_mf->full_name, 'transfer_between_accounts to client name is ok';
         }
