@@ -4,6 +4,7 @@ use Moose;
 extends 'BOM::Product::Pricing::Engine';
 with 'BOM::Product::Pricing::Engine::Role::RiskMarkup';
 
+use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use List::Util qw(max min sum first);
 use List::MoreUtils qw(any);
 use Array::Utils qw(:all);
@@ -363,6 +364,25 @@ sub economic_events_spot_risk_markup {
         date_expiry       => $bet->date_expiry,
         economic_events   => $self->economic_events,
         underlying_symbol => $bet->underlying->symbol,
+    )->markup;
+}
+
+has vol_spread_markup => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_vol_spread_markup {
+    my $self = shift;
+
+    my $bet           = $self->bet;
+    my $vega_formulae = "Math::Business::BlackScholes::Binaries::Greeks::Vega"->can(lc $bet->pricing_code);
+    my $args          = $bet->_pricing_args;
+    my @strikes       = $bet->two_barriers ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
+    my $vega          = $vega_formulae->($args->{S}, @strikes, $args->{t}, 0, 0, 0.1, $bet->payouttime_code);
+    return Pricing::Engine::Markup::VolSpread->new(
+        bet_vega   => $vega,
+        vol_spread => $self->vol_spread,
     )->markup;
 }
 
