@@ -160,7 +160,7 @@ subtest $method => sub {
 
         $client_mlt->payment_free_gift(
             currency => 'EUR',
-            amount   => 100,
+            amount   => 500,
             remark   => 'free gift',
         );
 
@@ -170,7 +170,7 @@ subtest $method => sub {
         $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
         is scalar(@{$result->{accounts}}), 2, 'two accounts';
         ($tmp) = grep { $_->{loginid} eq $client_mlt->loginid } @{$result->{accounts}};
-        is $tmp->{balance}, "100.00", 'balance is 100';
+        is $tmp->{balance}, "5000.00", 'balance is 5000';
         ($tmp) = grep { $_->{loginid} eq $client_mf->loginid } @{$result->{accounts}};
         is $tmp->{balance}, "0.00", 'balance is 0.00 for other account';
 
@@ -187,7 +187,7 @@ subtest $method => sub {
         ## after withdraw, check both balance
         $client_mlt = Client::Account->new({loginid => $client_mlt->loginid});
         $client_mf  = Client::Account->new({loginid => $client_mf->loginid});
-        ok $client_mlt->default_account->balance == 90, '-10';
+        ok $client_mlt->default_account->balance == 4990, '-10';
         ok $client_mf->default_account->balance == 10,  '+10';
     };
 
