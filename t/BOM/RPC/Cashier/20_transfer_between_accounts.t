@@ -160,7 +160,7 @@ subtest $method => sub {
 
         $client_mlt->payment_free_gift(
             currency => 'EUR',
-            amount   => 500,
+            amount   => 5000,
             remark   => 'free gift',
         );
 
