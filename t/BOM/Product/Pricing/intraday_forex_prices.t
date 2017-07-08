@@ -1,7 +1,8 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 4;
+use Test::Most tests => 5;
+use Test::Warnings;
 use File::Spec;
 use YAML::XS qw(LoadFile);
 use LandingCompany::Offerings qw(get_offerings_with_filter);

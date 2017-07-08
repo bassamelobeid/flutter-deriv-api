@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 9;
+use Test::Warnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Postgres::FeedDB::Spot::Tick;

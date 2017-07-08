@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
+use Test::Warnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -13,6 +14,10 @@ use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::Product::ContractFactory qw(produce_contract);
+use Test::MockModule;
+
+my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
+$mocked->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
@@ -41,7 +46,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => 'frxUSDJPY',
         recorded_date => $now
     });
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+my $ct = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch
 });
@@ -179,6 +184,7 @@ subtest 'shortcodes' => sub {
             underlying   => 'frxUSDJPY',
             currency     => 'USD',
             payout       => 10,
+            current_tick => $ct,
         });
         isa_ok $c, 'BOM::Product::Contract::Put';
         my $expected_shortcode = 'PUT_FRXUSDJPY_10_' . $now->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
@@ -195,6 +201,7 @@ subtest 'shortcodes' => sub {
             underlying   => 'frxUSDJPY',
             currency     => 'USD',
             payout       => 10,
+            current_tick => $ct,
         });
         isa_ok $c, 'BOM::Product::Contract::Put';
         my $expected_shortcode = 'PUT_FRXUSDJPY_10_' . $now->epoch . '_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';

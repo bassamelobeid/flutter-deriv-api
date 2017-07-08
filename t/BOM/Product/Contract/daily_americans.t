@@ -3,9 +3,9 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 2;
+use Test::Most tests => 3;
 use Test::Exception;
-use Test::FailWarnings;
+use Test::Warnings;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
