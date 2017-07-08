@@ -587,11 +587,14 @@ sub process_pricing_events {
     my $response = decode_json($message);
     my $price_daemon_cmd = delete $response->{price_daemon_cmd} // '';
 
+    my $pricing_channel_udated = undef;
     if (exists $pricer_cmd_handler{$price_daemon_cmd}) {
-        $pricer_cmd_handler{$price_daemon_cmd}->($c, $response, $channel_name, $pricing_channel);
+        $pricing_channel_udated = $pricer_cmd_handler{$price_daemon_cmd}->($c, $response, $channel_name, $pricing_channel);
     } else {
         warn "Unknown command received from pricer daemon : " . ($price_daemon_cmd // 'undef');
     }
+
+    $c->stash(pricing_channel => $pricing_channel) if $pricing_channel_udated;
 
     return;
 }
@@ -642,7 +645,8 @@ sub process_bid_event {
 
 sub process_proposal_array_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
-    my $type = 'proposal';
+    my $type                   = 'proposal';
+    my $pricing_channel_udated = undef;
 
     unless ($c->stash('proposal_array_collector_running')) {
         $c->stash('proposal_array_collector_running' => 1);
@@ -651,10 +655,14 @@ sub process_proposal_array_event {
         $c->proposal_array_collector;
     }
 
-    #my @stash_items = grep { ref($_) eq 'HASH' } values %{$pricing_channel->{$redis_channel}};
-    for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
+    for my $stash_data_key (keys %{$pricing_channel->{$redis_channel}}) {
+        my $stash_data = $pricing_channel->{$redis_channel}{$stash_data_key};
         unless (ref($stash_data) eq 'HASH') {
-            warn __PACKAGE__ . "process_proposal_array_event: : HASH not found as redis_channel data: " . JSON::XS->new->allow_blessed->encode($stash_data);
+            warn __PACKAGE__
+                . " process_proposal_array_event: HASH not found as redis_channel data: "
+                . JSON::XS->new->allow_blessed->encode($stash_data);
+            delete $pricing_channel->{$redis_channel}{$stash_data_key};
+            $pricing_channel_udated = 1;
             next;
         }
         $stash_data->{cache}{contract_parameters}{currency} ||= $stash_data->{args}{currency};
@@ -664,6 +672,9 @@ sub process_proposal_array_event {
             for my $price (@{$response->{proposals}{$contract_type}}) {
                 my $result = try {
                     if (my $invalid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
+                        warn __PACKAGE__
+                            . " process_proposal_array_event: _get_validation_for_type failed, results: "
+                            . JSON::XS->new->allow_blessed->encode($invalid);
                         return $invalid;
                     } elsif (exists $price->{error}) {
                         return $price;
@@ -684,7 +695,7 @@ sub process_proposal_array_event {
                     }
                 }
                 catch {
-                    warn "Failed to apply price - $_ - with a price struc containing " . Dumper($price);
+                    warn __PACKAGE__ . " Failed to apply price - $_ - with a price struc containing " . Dumper($price);
                     return +{
                         error => {
                             message_to_client => $c->l('Sorry, an error occurred while processing your request.'),
@@ -713,20 +724,29 @@ sub process_proposal_array_event {
             }
         }
     }
-    return;
+    return $pricing_channel_udated;
 }
 
 sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
-    my $type = 'proposal';
+    my $type                   = 'proposal';
+    my $pricing_channel_udated = undef;
 
     return process_proposal_array_event($c, $response, $redis_channel, $pricing_channel) if exists $response->{proposals};
 
     my $theo_probability = delete $response->{theo_probability};
-    my @stash_items = grep { ref($_) eq 'HASH' } values %{$pricing_channel->{$redis_channel}};
-    for my $stash_data (@stash_items) {
+    for my $stash_data_key (keys %{$pricing_channel->{$redis_channel}}) {
+        my $stash_data = $pricing_channel->{$redis_channel}{$stash_data_key};
+        unless (ref($stash_data) eq 'HASH') {
+            warn __PACKAGE__ . " process_ask_event: HASH not found as redis_channel data: " . JSON::XS->new->allow_blessed->encode($stash_data);
+            delete $pricing_channel->{$redis_channel}{$stash_data_key};
+            $pricing_channel_udated = 1;
+            next;
+        }
         my $results;
-        unless ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
+        if ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
+            warn __PACKAGE__ . " process_ask_event: _get_validation_for_type failed, results: " . JSON::XS->new->allow_blessed->encode($results);
+        } else {
             $stash_data->{cache}->{contract_parameters}->{longcode} = $stash_data->{cache}->{longcode};
             my $adjusted_results =
                 _price_stream_results_adjustment($c, $stash_data->{args}, $stash_data->{cache}, $response, $theo_probability);
@@ -734,6 +754,9 @@ sub process_ask_event {
                 my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
                 $results = $err;
+                warn __PACKAGE__
+                    . " process_ask_event: _price_stream_results_adjustment failed, results: "
+                    . JSON::XS->new->allow_blessed->encode($results);
             } else {
                 $results = {
                     msg_type => $type,
@@ -754,7 +777,7 @@ sub process_ask_event {
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)} if $results->{$type};
         $c->send({json => $results}, {args => $stash_data->{args}});
     }
-    return;
+    return $pricing_channel_udated;
 }
 
 sub _price_stream_results_adjustment {
