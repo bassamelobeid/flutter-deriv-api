@@ -65,7 +65,7 @@ $redis->on(
         Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($shared_info, $msg, $channel);
     });
 is($redis->set($is_on_key, 1), 'OK');
-my $t = build_wsapi_test(
+$t = build_wsapi_test(
     {},
     {},
     sub {
@@ -88,6 +88,9 @@ my $pid = fork;
 
 die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
 unless ($pid) {
+    # disable end test of Test::Warnings in child process
+    Test::Warnings->import(':no_end_test');
+
     sleep 1;
     for (1 .. 2) {
         $redis->publish($channel_name => '{"site_status": "up", "message": "Unit test ' . $_ . '"}');

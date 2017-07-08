@@ -1,7 +1,7 @@
 #!perl
 use strict;
 use warnings;
-use Test::More tests => 6;
+use Test::More;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -241,3 +241,4 @@ sub create_vr_account {
 }
 
 $t->finish_ok;
+done_testing;
