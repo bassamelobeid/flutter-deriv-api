@@ -206,7 +206,7 @@ subtest $method => sub {
             "amount"       => 110
         };
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-        is($result->{error}{message_to_client}, 'The maximum amount you may transfer is: EUR -10.00.','error for limit');
+        is($result->{error}{message_to_client}, 'The maximum amount you may transfer is: EUR -10.00.', 'error for limit');
         is($result->{error}{code}, 'TransferBetweenAccountsError', 'error code for limit');
         }
 };
