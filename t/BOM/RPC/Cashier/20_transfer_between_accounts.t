@@ -203,13 +203,11 @@ subtest $method => sub {
             "account_from" => $client_mlt->loginid,
             "account_to"   => $client_mf->loginid,
             "currency"     => "EUR",
-            "amount"       => 10
+            "amount"       => 110
         };
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-        use Data::Dumper;
-        diag(Dumper($result));
-        is $result->{client_to_loginid},   $client_mf->loginid,   'transfer_between_accounts to client is ok';
-        is $result->{client_to_full_name}, $client_mf->full_name, 'transfer_between_accounts to client name is ok';
+        is($result->{error}{message_to_client}, 'The maximum amount you may transfer is: EUR -10.00.','error for limit');
+        is($result->{error}{code}, 'TransferBetweenAccountsError', 'error code for limit');
         }
 };
 
