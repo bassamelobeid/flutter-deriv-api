@@ -435,30 +435,28 @@ sub get_limits {
 
     $limit->{num_of_days}       = $numdays;
     $limit->{num_of_days_limit} = $numdayslimit;
-    $limit->{lifetime_limit}    = formatnumber('amount', $currency, $lifetimelimit);
+    $limit->{lifetime_limit}    = formatnumber('amount', $currency, $lifetimelimit) * 1;
 
-    if (not $client->client_fully_authenticated) {
-        # withdrawal since $numdays
-        my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
-        my $withdrawal_for_x_days = $payment_mapper->get_total_withdrawal({
-            start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
-            exclude    => ['currency_conversion_transfer'],
-        });
-        $withdrawal_for_x_days = amount_from_to_currency($withdrawal_for_x_days, $currency, $withdrawal_limit_curr);
+    # withdrawal since $numdays
+    my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
+    my $withdrawal_for_x_days = $payment_mapper->get_total_withdrawal({
+        start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
+        exclude    => ['currency_conversion_transfer'],
+    });
+    $withdrawal_for_x_days = amount_from_to_currency($withdrawal_for_x_days, $currency, $withdrawal_limit_curr);
 
-        # withdrawal since inception
-        my $withdrawal_since_inception = amount_from_to_currency($payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']}),
-            $currency, $withdrawal_limit_curr);
+    # withdrawal since inception
+    my $withdrawal_since_inception = amount_from_to_currency($payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']}),
+        $currency, $withdrawal_limit_curr);
 
-        my $remainder = min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception));
-        if ($remainder < 0) {
-            $remainder = 0;
-        }
-
-        $limit->{withdrawal_since_inception_monetary} = formatnumber('amount', $currency, $withdrawal_since_inception);
-        $limit->{withdrawal_for_x_days_monetary}      = formatnumber('amount', $currency, $withdrawal_for_x_days);
-        $limit->{remainder}                           = formatnumber('amount', $currency, $remainder);
+    my $remainder = min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception));
+    if ($remainder < 0) {
+        $remainder = 0;
     }
+
+    $limit->{withdrawal_since_inception_monetary} = formatnumber('amount', $currency, $withdrawal_since_inception);
+    $limit->{withdrawal_for_x_days_monetary}      = formatnumber('amount', $currency, $withdrawal_for_x_days);
+    $limit->{remainder}                           = formatnumber('amount', $currency, $remainder);
 
     return $limit;
 }
