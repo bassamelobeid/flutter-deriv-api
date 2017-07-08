@@ -72,7 +72,7 @@ subtest 'CR' => sub {
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => $limits->{lifetime_limit},
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                         => formatnumber('amount', 'USD', $limits->{lifetime_limit}),
@@ -96,14 +96,18 @@ subtest 'CR' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'                   => sprintf('%0.02f', $client->get_limit_for_account_balance),
-            'open_positions'                    => $client->get_limit_for_open_positions,
-            'payout'                            => sprintf('%0.02f', $client->get_limit_for_payout),
-            'market_specific'                   => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'                       => $limits->{for_days},
-            'num_of_days_limit'                 => '99999999',
-            'lifetime_limit'                    => sprintf('%0.02f', '99999999'),
-            payout_per_symbol_and_contract_type => '10000.00',
+            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
+            'open_positions'                      => $client->get_limit_for_open_positions,
+            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
+            'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
+            'num_of_days'                         => $limits->{for_days},
+            'num_of_days_limit'                   => 99999999,
+            'lifetime_limit'                      => 99999999,
+            'payout_per_symbol_and_contract_type' => '10000.00',
+            'withdrawal_since_inception_monetary' => '1000.00',
+            'withdrawal_for_x_days_monetary'      => '1000.00',
+            'remainder'                           => sprintf('%0.02f', '99998999'),
+
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -149,12 +153,13 @@ subtest 'JP' => sub {
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => $limits->{lifetime_limit},
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                         => formatnumber('amount', 'JPY', $limits->{lifetime_limit}),
             payout_per_symbol_and_contract_type => '1000000.00',
         };
+
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
         $client->smart_payment(%deposit, currency => 'JPY');
@@ -176,14 +181,18 @@ subtest 'JP' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'                   => sprintf('%0.02f', $client->get_limit_for_account_balance),
-            'open_positions'                    => $client->get_limit_for_open_positions,
-            'payout'                            => sprintf('%0.02f', $client->get_limit_for_payout),
-            'market_specific'                   => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'                       => $limits->{for_days},
-            'num_of_days_limit'                 => '99999999',
-            'lifetime_limit'                    => sprintf('%0.02f', '99999999'),
-            payout_per_symbol_and_contract_type => '1000000.00',
+            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
+            'open_positions'                      => $client->get_limit_for_open_positions,
+            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
+            'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
+            'num_of_days'                         => $limits->{for_days},
+            'num_of_days_limit'                   => 99999999,
+            'lifetime_limit'                      => 99999999,
+            'payout_per_symbol_and_contract_type' => '1000000.00',
+            'withdrawal_since_inception_monetary' => '1000.00',
+            'withdrawal_for_x_days_monetary'      => '1000.00',
+            'remainder'                           => sprintf('%0.02f', '99998999'),
+
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -214,7 +223,7 @@ subtest 'MLT' => sub {
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => $limits->{lifetime_limit},
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                         => formatnumber('amount', 'EUR', $limits->{lifetime_limit}),
@@ -241,14 +250,17 @@ subtest 'MLT' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'                   => sprintf('%0.02f', $client->get_limit_for_account_balance),
-            'open_positions'                    => $client->get_limit_for_open_positions,
-            'payout'                            => sprintf('%0.02f', $client->get_limit_for_payout),
-            'market_specific'                   => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'                       => $limits->{for_days},
-            'num_of_days_limit'                 => '99999999',
-            'lifetime_limit'                    => sprintf('%0.02f', '99999999'),
-            payout_per_symbol_and_contract_type => '10000.00',
+            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
+            'open_positions'                      => $client->get_limit_for_open_positions,
+            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
+            'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
+            'num_of_days'                         => $limits->{for_days},
+            'num_of_days_limit'                   => 99999999,
+            'lifetime_limit'                      => 99999999,
+            'payout_per_symbol_and_contract_type' => '10000.00',
+            'withdrawal_since_inception_monetary' => '1000.00',
+            'withdrawal_for_x_days_monetary'      => '1000.00',
+            'remainder'                           => sprintf('%0.02f', '99998999'),
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -279,7 +291,7 @@ subtest 'MX' => sub {
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => $limits->{lifetime_limit},
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                         => formatnumber('amount', 'EUR', $limits->{limit_for_days}),
@@ -306,14 +318,17 @@ subtest 'MX' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'                   => sprintf('%0.02f', $client->get_limit_for_account_balance),
-            'open_positions'                    => $client->get_limit_for_open_positions,
-            'payout'                            => sprintf('%0.02f', $client->get_limit_for_payout),
-            'market_specific'                   => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'                       => $limits->{for_days},
-            'num_of_days_limit'                 => '99999999',
-            'lifetime_limit'                    => sprintf('%0.02f', '99999999'),
-            payout_per_symbol_and_contract_type => '10000.00',
+            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
+            'open_positions'                      => $client->get_limit_for_open_positions,
+            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
+            'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
+            'num_of_days'                         => $limits->{for_days},
+            'num_of_days_limit'                   => 99999999, 
+            'lifetime_limit'                      => 99999999,
+            'payout_per_symbol_and_contract_type' => '10000.00',
+            'withdrawal_since_inception_monetary' => '1000.00',
+            'withdrawal_for_x_days_monetary'      => '1000.00',
+            'remainder'                           => sprintf('%0.02f', '99998999'),
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
