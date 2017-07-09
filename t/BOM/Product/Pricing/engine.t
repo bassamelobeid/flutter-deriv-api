@@ -3,7 +3,7 @@ use warnings;
 
 use Test::Most;
 use Scalar::Util qw( looks_like_number );
-use Test::FailWarnings;
+use Test::Warnings;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);

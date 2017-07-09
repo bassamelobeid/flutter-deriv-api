@@ -4,7 +4,8 @@ use strict;
 use warnings;
 
 use Test::MockModule;
-use Test::More tests => 5;
+use Test::More tests => 6;
+use Test::Warnings;
 use Date::Utility;
 use JSON qw(to_json);
 use Math::Util::CalculatedValue::Validatable;
@@ -12,6 +13,16 @@ use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+
+my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
+$mocked->mock('historical_vol_markup', sub {
+    return Math::Util::CalculatedValue::Validatable->new({
+               name => 'historical_vol_markup',
+               set_by => 'test',
+               base_amount => 0,
+               description => 'test'
+           });
+    });
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract

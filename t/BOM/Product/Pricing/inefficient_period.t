@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::FailWarnings;
+use Test::Warnings;
 use Test::Warnings qw/warning/;
 use Test::MockModule;
 use Date::Utility;

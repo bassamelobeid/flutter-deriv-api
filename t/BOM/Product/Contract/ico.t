@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 use Test::Deep qw( cmp_deeply );
-use Test::More tests => 2;
+use Test::More tests => 3;
+use Test::Warnings;
 use Test::Exception;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
