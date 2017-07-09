@@ -5,10 +5,14 @@ use Test::More;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_mojo_test build_test_R_50_data/;
-
 use Devel::Refcount qw| refcount |;
+use Test::MockModule;
+
+use BOM::Test::Helper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
+
+#use BOM::Test::RPC::BomRpc;
+#use BOM::Test::RPC::PricingRpc;
 
 my $subs_count = 3;
 
@@ -64,33 +68,27 @@ subtest "Born and die" => sub {
 
 subtest "Create Subscribes" => sub {
 
-    my $future = Future->new();
-
     my $callback = sub {
         my ($tx, $msg) = @_;
 
         test_schema('proposal', decode_json $msg );
 
-        $future->done() and $tx->finish if ($user_first->{$tx->req->cookie('user')->value} || 0) > 5;
-        ### We need cookies for user identify
-        return if $user_first->{$tx->req->cookie('user')->value}++;
         $user_first->{$tx->req->cookie('user')->value} = 1;
-        $subs_count--;
-        if ($subs_count == 0) {
+        if (--$subs_count == 0) {
             is(scalar keys %{$test_server->app->pricing_subscriptions()}, 1, "One subscription by few clients");
             $channel = [keys %{$test_server->app->pricing_subscriptions()}]->[0];
             is(refcount($test_server->app->pricing_subscriptions()->{$channel}), 3, "check refcount");
         }
     };
-    my $i = 1;
 
+    my @connections;
     for my $i (0 .. $subs_count - 1) {
-        my $t_client = Test::Mojo->new;
         my $t = $test_server->websocket_ok($url => {});
+        push @connections, $t;
 
         $t->tx->req->cookies({
                 name  => 'user',
-                value => ('#' . ++$i)});
+                value => ('#' . $i)});
 
         $t->tx->on(message => $callback);
 
@@ -102,16 +100,49 @@ subtest "Create Subscribes" => sub {
                 }})->message_ok;
     }
 
-    $future->on_ready(
-        sub {
-            note "The operation is complete " . shift;
-        });
+    cmp_ok(keys %$user_first, '==', 3 , "3 subscription created ok");
+    $test_server->send_ok({ json => {'forget_all' => 'proposal'}})->message_ok;
+
+    $_->finish_ok for @connections;
 
 };
 
-my $total = 0;
-map { $total += $_ } values %$user_first;
+subtest "Count Subscribes" => sub {
+    my $sets   = {};
+    my $subscr = {};
 
-ok($total > $subs_count, "check streaming");
+    my $redis2_module = Test::MockModule->new('Mojo::Redis2');
+    $redis2_module->mock('set', sub {
+        my ($redis, $channel_name, $value) = @_;
+        $sets->{$channel_name}++;
+    });
+    $redis2_module->mock('subscribe', sub {
+        my ($redis, $channel_names, $callback) = @_;
+        my $channel_name = shift @$channel_names;
+        $subscr->{$channel_name}++;
+    });
+
+    my @connections;
+    for my $i (0 .. 2) {
+        my $t = $test_server->websocket_ok($url => {});
+        push @connections, $t;
+        $t->send_ok({
+                json => {
+                    "proposal"  => 1,
+                    "subscribe" => 1,
+                    %contractParameters,
+                    "contract_type"  => "CALL",
+                }})->message_ok;
+        my $res = decode_json($t->message->[1]);
+        test_schema('proposal', $res);
+    }
+
+    cmp_ok(keys %$sets, '==', 1, "One key expected");
+    cmp_ok(keys %$subscr, '==', 1, "One subscription expected");
+
+    $redis2_module->unmock_all;
+    $_->finish_ok for @connections;
+
+};
 
 done_testing();
