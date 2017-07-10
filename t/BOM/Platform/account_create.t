@@ -4,10 +4,11 @@ use Test::MockTime::HiRes;
 use Guard;
 use JSON;
 
-use Test::More (tests => 3);
+use Test::More (tests => 4);
 use Test::Exception;
 use Test::Warn;
 use Test::MockModule;
+use Test::Warnings;
 
 use Client::Account;
 
