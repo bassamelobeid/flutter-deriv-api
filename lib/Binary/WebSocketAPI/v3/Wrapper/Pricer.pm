@@ -587,14 +587,14 @@ sub process_pricing_events {
     my $response = decode_json($message);
     my $price_daemon_cmd = delete $response->{price_daemon_cmd} // '';
 
-    my $pricing_channel_udated = undef;
+    my $pricing_channel_updated = undef;
     if (exists $pricer_cmd_handler{$price_daemon_cmd}) {
-        $pricing_channel_udated = $pricer_cmd_handler{$price_daemon_cmd}->($c, $response, $channel_name, $pricing_channel);
+        $pricing_channel_updated = $pricer_cmd_handler{$price_daemon_cmd}->($c, $response, $channel_name, $pricing_channel);
     } else {
         warn "Unknown command received from pricer daemon : " . ($price_daemon_cmd // 'undef');
     }
 
-    $c->stash(pricing_channel => $pricing_channel) if $pricing_channel_udated;
+    $c->stash(pricing_channel => $pricing_channel) if $pricing_channel_updated;
 
     return;
 }
@@ -646,7 +646,7 @@ sub process_bid_event {
 sub process_proposal_array_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type                   = 'proposal';
-    my $pricing_channel_udated = undef;
+    my $pricing_channel_updated = undef;
 
     unless ($c->stash('proposal_array_collector_running')) {
         $c->stash('proposal_array_collector_running' => 1);
@@ -662,7 +662,7 @@ sub process_proposal_array_event {
                 . " process_proposal_array_event: HASH not found as redis_channel data: "
                 . JSON::XS->new->allow_blessed->encode($stash_data);
             delete $pricing_channel->{$redis_channel}{$stash_data_key};
-            $pricing_channel_udated = 1;
+            $pricing_channel_updated = 1;
             next;
         }
         $stash_data->{cache}{contract_parameters}{currency} ||= $stash_data->{args}{currency};
@@ -724,13 +724,13 @@ sub process_proposal_array_event {
             }
         }
     }
-    return $pricing_channel_udated;
+    return $pricing_channel_updated;
 }
 
 sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type                   = 'proposal';
-    my $pricing_channel_udated = undef;
+    my $pricing_channel_updated = undef;
 
     return process_proposal_array_event($c, $response, $redis_channel, $pricing_channel) if exists $response->{proposals};
 
@@ -740,7 +740,7 @@ sub process_ask_event {
         unless (ref($stash_data) eq 'HASH') {
             warn __PACKAGE__ . " process_ask_event: HASH not found as redis_channel data: " . JSON::XS->new->allow_blessed->encode($stash_data);
             delete $pricing_channel->{$redis_channel}{$stash_data_key};
-            $pricing_channel_udated = 1;
+            $pricing_channel_updated = 1;
             next;
         }
         my $results;
@@ -777,7 +777,7 @@ sub process_ask_event {
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)} if $results->{$type};
         $c->send({json => $results}, {args => $stash_data->{args}});
     }
-    return $pricing_channel_udated;
+    return $pricing_channel_updated;
 }
 
 sub _price_stream_results_adjustment {
