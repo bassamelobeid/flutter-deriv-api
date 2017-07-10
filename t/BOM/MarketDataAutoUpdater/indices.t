@@ -76,7 +76,7 @@ subtest 'more than 4 hours old' => sub {
     is keys %{$au->report}, 1, 'only atttempt one underlying if specified';
     ok $au->report->{TOP40}, 'attempts TOP40';
     ok !$au->report->{TOP40}->{success}, 'update failed';
-    like $au->report->{TOP40}->{reason}, qr/more than 4 hours old/, 'correct error message';
+    like $au->report->{TOP40}->{reason}, qr/is expired/, 'correct error message';
 };
 
 subtest 'surface data not found' => sub {
@@ -105,7 +105,7 @@ subtest 'surface has not change' => sub {
         surfaces_from_file => {TOP40 => $test_surface});
     $au->run;
     ok !$au->report->{TOP40}->{success}, 'update failed';
-    like $au->report->{TOP40}->{reason}, qr/has not changed since last update/, 'correct error message';
+    like $au->report->{TOP40}->{reason}, qr/identical to existing one, and existing is expired/, 'correct error message';
 };
 
 my $mocked = Test::MockModule->new('Quant::Framework::VolSurface');

@@ -120,7 +120,7 @@ subtest 'more than 4 hours old' => sub {
     is keys %{$au->report}, 1, 'only process one underlying';
     ok $au->report->{frxUSDJPY}, 'process frxUSDJPY';
     ok !$au->report->{frxUSDJPY}->{success}, 'update failed';
-    like $au->report->{frxUSDJPY}->{reason}, qr/more than 4 hours/, 'reason: more than 4 hours old';
+    like $au->report->{frxUSDJPY}->{reason}, qr/is expired/, 'reason: more than 4 hours old';
 };
 
 subtest 'does not exists' => sub {
