@@ -73,23 +73,31 @@ sub generate_output_in_histogram {
         push @number_of_tokens,    $open_ico_ref->{$c}->{number_of_tokens};
         push @per_token_price,     $open_ico_ref->{$c}->{per_token_bid_price};
         push @per_token_price_usd, $open_ico_ref->{$c}->{per_token_bid_price_USD};
-
     }
-    my $chart = Chart::Gnuplot->new(
+    my $chart_1 = Chart::Gnuplot->new(
         output => $filename,
-        title  => "Simple testing",
-        xlabel => "Bid price per token",
-        ylabel => "Number of token",
+        title  => {
+            text => "Histogram: Open ICO deals in USD",
+            font => "arial, 20"
+        },
+        xlabel => "Per Token Bid Price in USD",
+        ylabel => "Number of tokens",
+        grid   => "off",
+
     );
 
-    my $dataSet = Chart::Gnuplot::DataSet->new(
-        xdata => \@per_token_price,
+    my $dataSet_1 = Chart::Gnuplot::DataSet->new(
+        xdata => \@per_token_price_usd,
         ydata => \@number_of_tokens,
-        title => "Histogram: Open ICO ",
         style => "histograms",
-        using => "2:xticlabels(1)",
+        fill  => {
+            color   => '#33bb33',
+            density => 0.2,
+        },
+        using => "2:xticlabels(1)"
     );
-    $chart->plot2d($dataSet);
+
+    $chart_1->plot2d($dataSet_1);
     PrintContentType_image('gif');
     binmode STDOUT;
     open(IMAGE, '<', $filename);
