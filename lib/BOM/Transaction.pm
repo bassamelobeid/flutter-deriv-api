@@ -15,6 +15,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 use Brands;
 use Client::Account;
 use Finance::Asset::Market::Types;
+use Finance::Contract::Category;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 
 use BOM::Platform::Config;
@@ -336,8 +337,23 @@ sub calculate_limits {
     if (not $contract->tick_expiry) {
         $limits{max_open_bets}        = $client->get_limit_for_open_positions;
         $limits{max_payout_open_bets} = $client->get_limit_for_payout;
-        $limits{max_payout_per_symbol_and_bet_type} =
-            $static_config->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
+
+        my $categories = Finance::Contract::Category::get_all_contract_categories();
+        my ($option_type, @bet_type_list);
+        if ($contract->is_path_dependent) {
+            $option_type = 'american';
+            @bet_type_list = map { @{$_->{available_types}} } grep { $_->{is_path_dependent} } values %$categories;
+        } else {
+            $option_type = 'european';
+            @bet_type_list = map { @{$_->{available_types}} } grep { !$_->{is_path_dependent} } values %$categories;
+        }
+        my $duration_type = $contract->timeindays->amount <= 7 ? 'less_than_seven_days' : 'more_than_seven_days';
+
+        $limits{max_payout_per_symbol_and_option_type} = [{
+                symbol => [{n => $contract->underlying->symbol}],
+                bet_type => [map { {n => $_} } @bet_type_list],
+                limit => $static_config->{bet_limits}->{open_positions_payout_perl_symbol_limit}->{$option_type}->{$duration_type}->{$currency},
+            }];
     }
 
     my $lim;
