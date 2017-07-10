@@ -1310,7 +1310,7 @@ sub transfer_between_accounts {
 
         return $error_unfreeze_msg_sub->(
             "$err_msg validate_payment failed for $loginid_from [$err]",
-            (defined $limit) ? "The maximum amount you may transfer is: $limit." : '',
+            (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : '',
             $client_from->loginid, $client_to->loginid
         );
     }
