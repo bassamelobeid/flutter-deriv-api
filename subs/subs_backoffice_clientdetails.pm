@@ -383,6 +383,9 @@ sub client_statement_summary {
         $payment_system = $1 if $transaction->{payment_remark} =~ /Wire\s+payment\s+from\s+([\S]+\s[\d\-]+) on/;
         $payment_system = $1 if $transaction->{payment_remark} =~ /Wire\s+deposit\s+.+\s+Recieved\s+by\s+([\S]+\s[\d\-]+)/;
 
+        # transfer between accounts
+        $payment_system = "internal_transfer" if $transaction->{payment_remark} =~ /Account transfer from /;
+
         $summary->{$k}{$payment_system} += $transaction->{amount};
     }
     foreach my $type (keys %$summary) {
