@@ -8,7 +8,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Test::More;
 use Test::MockModule;
 use Test::Warn;
-use Test::FailWarnings;
+use Test::Warnings;
 use Date::Utility;
 
 subtest 'monday mornings intraday' => sub {

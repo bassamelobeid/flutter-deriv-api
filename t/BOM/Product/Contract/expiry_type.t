@@ -5,7 +5,8 @@ use warnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 
-use Test::More tests => 2;
+use Test::More tests => 3;
+use Test::Warnings;
 use Test::Exception;
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestMarketData;

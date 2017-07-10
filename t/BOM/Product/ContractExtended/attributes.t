@@ -4,7 +4,6 @@ use warnings;
 use Test::Most;
 use Test::Exception;
 use Test::Warnings qw/warning/;
-use Test::FailWarnings;
 use Scalar::Util qw( looks_like_number );
 use Test::MockModule;
 use File::Spec;

@@ -1,7 +1,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
+use Test::Warnings;
 use Test::MockModule;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData qw(create_underlying);
@@ -17,6 +18,8 @@ use Quant::Framework;
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
 initialize_realtime_ticks_db;
+my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
+$mocked->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
 
 my $trading_calendar    = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
 my $weekday             = Date::Utility->new('2016-03-29');
@@ -343,6 +346,14 @@ subtest 'date start blackouts' => sub {
     $bet_params->{underlying}      = 'frxAUDUSD';
     $bet_params->{barrier}         = 76.8999;
     $bet_params->{landing_company} = 'japan';
+    Cache::RedisDB->flushall;
+    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxAUDUSD',
+        epoch      => Date::Utility->new('2015-01-01 00:00:00')->epoch,
+    });
+    my $mocked_hl = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
+    $mocked_hl->mock('_get_expired_barriers', sub {[]});
     $c                             = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid for japan';
     delete $bet_params->{landing_company};

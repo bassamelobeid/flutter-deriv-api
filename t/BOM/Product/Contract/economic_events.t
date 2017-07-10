@@ -2,7 +2,6 @@ use strict;
 use warnings;
 
 use Test::Most;
-use Test::FailWarnings;
 use Test::Warnings qw/warning/;
 
 use Date::Utility;

@@ -6,10 +6,10 @@ with 'MooseX::Role::Validatable';
 use Quant::Framework::Underlying;
 extends 'Finance::Contract';
 use BOM::Product::Static qw(get_error_mapping);
-use List::Util qw(first);
 use Date::Utility;
 use BOM::Platform::Runtime;
 use Postgres::FeedDB::CurrencyConverter qw (in_USD);
+use Format::Util::Numbers qw/financialrounding/;
 
 # Actual methods for introspection purposes.
 sub is_binaryico        { return 1 }
@@ -120,7 +120,8 @@ sub BUILD {
     $self->contract_type($self->build_parameters->{bet_type});
     $self->binaryico_number_of_tokens($self->build_parameters->{binaryico_number_of_tokens});
     $self->binaryico_per_token_bid_price($self->build_parameters->{binaryico_per_token_bid_price});
-    $self->binaryico_per_token_bid_price_USD(in_USD($self->binaryico_per_token_bid_price, $self->currency));
+    $self->binaryico_per_token_bid_price_USD(
+        financialrounding('price', $self->currency, in_USD($self->binaryico_per_token_bid_price, $self->currency)));
     if ($self->binaryico_number_of_tokens < $limits->{min} or $self->binaryico_number_of_tokens > $limits->{max}) {
         $self->add_errors({
             message => 'number of tokens placed is not within limits '
@@ -230,15 +231,11 @@ sub _validate_price {
 
     return if $self->_for_sale;
 
-    if ($self->binaryico_per_token_bid_price_USD <= 1) {
+    if ($self->binaryico_per_token_bid_price_USD < 1) {
         return {
             message           => 'The minimum bid is USD 1 or equivalent in other currency.',
             severity          => 99,
-            message_to_client => [
-                $ERROR_MAPPING->{InvalidBinaryIcoBidPrice}, $self->currency,
-                $self->binaryico_per_token_bid_price,       $self->binaryico_per_token_bid_price_USD
-            ],
-
+            message_to_client => [$ERROR_MAPPING->{InvalidBinaryIcoBidPrice}],
         };
 
     }

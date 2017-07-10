@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 1;
+use Test::More tests => 2;
+use Test::Warnings;
 
 use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
