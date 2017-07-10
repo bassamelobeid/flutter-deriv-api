@@ -378,7 +378,7 @@ sub vol_spread_markup {
     my $vega          = $vega_formulae->($args->{spot}, @strikes, $args->{t}, 0, 0, 0.1, $args->{payouttime_code});
 
     return Pricing::Engine::Markup::VolSpread->new(
-        bet_vega   => $vega,
+        bet_vega   => $bet->vega,
         vol_spread => $self->vol_spread,
     )->markup;
 }
