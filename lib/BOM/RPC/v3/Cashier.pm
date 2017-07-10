@@ -435,7 +435,7 @@ sub get_limits {
 
     $limit->{num_of_days}       = $numdays;
     $limit->{num_of_days_limit} = $numdayslimit;
-    $limit->{lifetime_limit}    = formatnumber('amount', $currency, $lifetimelimit) * 1;
+    $limit->{lifetime_limit}    = formatnumber('amount', $currency, $lifetimelimit);
 
     # withdrawal since $numdays
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
