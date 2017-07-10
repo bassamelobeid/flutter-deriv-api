@@ -1,5 +1,5 @@
 test:
-	/etc/rmg/bin/prove -lr t/BOM/
+	/etc/rmg/bin/prove -lvr t/BOM/
 
 tidy:
 	find . -name '*.p?.bak' -delete
