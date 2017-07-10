@@ -32,20 +32,17 @@ if (request()->param('download_csv')) {
     }
     catch { warn "Error $_"; };
     return $res;
-}elsif (request()->param('plot_histogram')){ 
- my $res;
+} elsif (request()->param('plot_histogram')) {
+    my $res;
     try {
         $res = BOM::RiskReporting::BinaryIco->new->generate_output_in_histogram;
     }
     catch { warn "Error $_"; };
     return $res;
-
-}else {
-
+} else {
     PrintContentType();
-    BrokerPresentation("ICO placement");
+    BrokerPresentation("Open ICO deals");
     Bar("Tools");
-
     BOM::Backoffice::Request::template->process(
         'backoffice/ico.html.tt',
         {

@@ -21,10 +21,12 @@ extends 'BOM::RiskReporting::Base';
 use BOM::Database::ClientDB;
 use Time::Duration::Concise::Localize;
 use BOM::Platform::Config;
+use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Backoffice::Request;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_XSendfile PrintContentType_image);
 use File::Temp;
 use Chart::Gnuplot;
+
 sub generate_output_in_csv {
     my $self = shift;
 
@@ -60,7 +62,7 @@ sub generate_output_in_histogram {
     my $self = shift;
 
     local $\ = "\n";
-    my $filename = File::Temp->new(SUFFIX => '.png')->filename;
+    my $filename = get_tmp_path_or_die() . "/graph_1.gif";
     open my $fh, '>:encoding(UTF-8)', $filename;
 
     my $open_ico_ref = $self->live_open_ico;
@@ -88,6 +90,11 @@ sub generate_output_in_histogram {
         using => "2:xticlabels(1)",
     );
     $chart->plot2d($dataSet);
+    PrintContentType_image('gif');
+    binmode STDOUT;
+    open(IMAGE, '<', $filename);
+    print <IMAGE>;
+    close IMAGE;
 
     return;
 
