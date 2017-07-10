@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 288;
+use Test::More tests => 289;
+use Test::Warnings;
 use Test::Exception;
 use Date::Utility;
 use YAML::XS qw(LoadFile);

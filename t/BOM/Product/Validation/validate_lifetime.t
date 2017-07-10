@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
-use Test::FailWarnings;
+use Test::Warnings;
 
 use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
