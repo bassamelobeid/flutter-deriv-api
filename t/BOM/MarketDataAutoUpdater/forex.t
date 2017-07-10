@@ -204,7 +204,7 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => Date::Utility->new(time - 7199),
     });
 
-subtest 'save valid' => sub {
+subtest 'save identical' => sub {
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
@@ -215,6 +215,24 @@ subtest 'save valid' => sub {
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
+    ok !$au->report->{frxUSDJPY}->{success}, 'update failed';
+    like $au->report->{frxUSDJPY}->{reason}, qr/equal/, 'reason: equal';
+};
+
+subtest 'save valid' => sub {
+    my $clone = dclone($fake_surface->surface_data);
+    $clone->{14}->{smile}->{25} *= 1.01;
+    my $au = BOM::MarketDataAutoUpdater::Forex->new(
+        symbols_to_update  => ['frxUSDJPY'],
+        _connect_ftp       => 0,
+        surfaces_from_file => {
+            frxUSDJPY => {
+                surface       => $clone,
+                recorded_date => $fake_surface->recorded_date,
+                type          => $fake_surface->type
+            }});
+    lives_ok { $au->run } 'run without dying';
+    use Data::Dumper;
     ok $au->report->{frxUSDJPY}->{success}, 'update successful';
 };
 
@@ -268,6 +286,8 @@ subtest "Friday after close, weekend, won't open check." => sub {
 
 subtest 'do not update one hour after rollover' => sub {
     my $rollover_date = NY1700_rollover_date_on($fake_date);
+    my $clone         = dclone($fake_surface->surface_data);
+    $clone->{14}->{smile}->{25} *= 1.01;
 
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
@@ -285,7 +305,7 @@ subtest 'do not update one hour after rollover' => sub {
         _connect_ftp       => 0,
         surfaces_from_file => {
             frxUSDJPY => {
-                surface       => $fake_surface->surface_data,
+                surface       => $clone,
                 recorded_date => $rollover_date->plus_time_interval('1h1s'),
                 type          => $fake_surface->type
             }});
