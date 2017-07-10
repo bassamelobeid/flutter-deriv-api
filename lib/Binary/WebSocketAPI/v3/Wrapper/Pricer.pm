@@ -645,7 +645,7 @@ sub process_bid_event {
 
 sub process_proposal_array_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
-    my $type                   = 'proposal';
+    my $type                    = 'proposal';
     my $pricing_channel_updated = undef;
 
     unless ($c->stash('proposal_array_collector_running')) {
@@ -729,7 +729,7 @@ sub process_proposal_array_event {
 
 sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
-    my $type                   = 'proposal';
+    my $type                    = 'proposal';
     my $pricing_channel_updated = undef;
 
     return process_proposal_array_event($c, $response, $redis_channel, $pricing_channel) if exists $response->{proposals};
