@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 7;
+use Test::More;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -161,3 +161,5 @@ sub _get_token {
 }
 
 $t->finish_ok;
+
+done_testing;
