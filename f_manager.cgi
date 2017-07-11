@@ -103,18 +103,42 @@ Bar("BATCH CREDIT/DEBIT CLIENTS ACCOUNT: DOUGHFLOW");
 $tt->process('backoffice/account/manager_batch_doughflow.tt') || die $tt->error();
 
 ## CTC
-Bar("Crypto Cashier Withdrawal");
-
-print '<br>';
+Bar("Crypto Cashier");
 
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
+print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
+print '<input type="text" name="start_date" required class="datepick">';
+print '<input type="text" name="end_date" required class="datepick">';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
+print '<INPUT type="submit" value="Recon" name="view_action"/>';
+print '</FORM>';
+
+print '<br>';
+print '<h3>Deposit</h3>';
+print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
+print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
+print '<INPUT type="hidden" name="view_type" value="pending">';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
+print '<INPUT type="submit" value="Deposit Transactions" name="view_action"/>';
+print '</FORM>';
+
+print '<h3>Withdrawal</h3>';
+print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
-print '<select name="currency">'
-    . '<option value="BTC">Bitcoin</option>'
-    . '<option value="ETH">Ethereum</option>'
-    . '<option value="LTC">Litecoin</option>';
-print '<INPUT type="submit" value="Transactions">';
-print '<INPUT type="submit" value="Balances">';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
+print '<INPUT type="submit" value="Withdrawal Transactions" name="view_action"/>';
+print '</FORM>';
+
+print '<h3>Tools</h3>';
+print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
+print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
+print '<select name="command">'
+    . '<option value="listaccounts">List accounts</option>'
+    . '<option value="listtransactions">List transactions</option>'
+    . '<option value="listaddressgroupings">List address groupings</option>'
+    . '</select>';
+print '<INPUT type="submit" value="Run tool" name="view_action"/>';
 print '</FORM>';
 
 code_exit_BO();
