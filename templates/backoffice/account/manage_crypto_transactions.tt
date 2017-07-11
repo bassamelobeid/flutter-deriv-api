@@ -70,6 +70,7 @@
         <th>Remark</th>
         <th>ErrorInfo</th>
         <th>ResolutionInfo</th>
+        <th>Blockchain Txn Id</th>
     </tr>
     [% FOREACH trx IN transactions %]
     <tr>
@@ -96,6 +97,7 @@
         <td>[% trx.remark %]</td>
         <td>[% trx.error_text %]</td>
         <td>[% trx.resolution %]</td>
+        <td>[% trx.blockchain_txn %]</td>
     </tr>
     [% END %]
 </table>
