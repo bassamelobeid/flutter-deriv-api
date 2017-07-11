@@ -406,8 +406,8 @@ sub get_limits {
     my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency);
 
     my $limit = +{
-        account_balance                     => formatnumber('price', $currency, $client->get_limit_for_account_balance),
-        payout                              => formatnumber('price', $currency, $client->get_limit_for_payout),
+        account_balance                     => formatnumber('amount', $currency, $client->get_limit_for_account_balance),
+        payout                              => formatnumber('price',  $currency, $client->get_limit_for_payout),
         payout_per_symbol_and_contract_type => formatnumber(
             'price', $currency, BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency}
         ),

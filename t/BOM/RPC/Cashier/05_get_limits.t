@@ -66,16 +66,16 @@ subtest 'CR' => sub {
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
-            'account_balance'                     => formatnumber('price', 'USD', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => formatnumber('price', 'USD', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'USD', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => formatnumber('price', 'USD', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => formatnumber('price',  'USD', $limits->{lifetime_limit}),
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
-            'remainder'                           => formatnumber('price', 'USD', $limits->{lifetime_limit}),
+            'remainder'                           => formatnumber('price',  'USD', $limits->{lifetime_limit}),
             'payout_per_symbol_and_contract_type' => '10000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
@@ -96,17 +96,17 @@ subtest 'CR' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'                     => formatnumber('price', 'USD', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => formatnumber('price', 'USD', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'USD', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
-            'lifetime_limit'                      => formatnumber('price', 'USD', 99999999),
+            'lifetime_limit'                      => formatnumber('price',  'USD', 99999999),
             'payout_per_symbol_and_contract_type' => '10000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => formatnumber('price', 'USD', 99998999),
+            'remainder'                           => formatnumber('price',  'USD', 99998999),
 
         };
 
@@ -147,16 +147,16 @@ subtest 'JP' => sub {
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
-            'account_balance'                     => formatnumber('price', 'JPY', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'JPY', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => formatnumber('price', 'JPY', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'JPY', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => formatnumber('price', 'JPY', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => formatnumber('price',  'JPY', $limits->{lifetime_limit}),
             'withdrawal_for_x_days_monetary'      => 0,
             'withdrawal_since_inception_monetary' => 0,
-            'remainder'                           => formatnumber('price', 'JPY', $limits->{lifetime_limit}),
+            'remainder'                           => formatnumber('price',  'JPY', $limits->{lifetime_limit}),
             'payout_per_symbol_and_contract_type' => 1000000,
         };
 
@@ -181,17 +181,17 @@ subtest 'JP' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'                     => formatnumber('price', 'JPY', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'JPY', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => formatnumber('price', 'JPY', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'JPY', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
-            'lifetime_limit'                      => formatnumber('price', 'JPY', 99999999),
+            'lifetime_limit'                      => formatnumber('price',  'JPY', 99999999),
             'payout_per_symbol_and_contract_type' => 1000000,
             'withdrawal_since_inception_monetary' => 1000,
             'withdrawal_for_x_days_monetary'      => 1000,
-            'remainder'                           => formatnumber('price', 'JPY', 99998999),
+            'remainder'                           => formatnumber('price',  'JPY', 99998999),
 
         };
 
@@ -217,16 +217,16 @@ subtest 'MLT' => sub {
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
-            'account_balance'                     => formatnumber('price', 'EUR', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => formatnumber('price', 'EUR', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => formatnumber('price', 'EUR', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => formatnumber('price',  'EUR', $limits->{lifetime_limit}),
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
-            'remainder'                           => formatnumber('price', 'EUR', $limits->{lifetime_limit}),
+            'remainder'                           => formatnumber('price',  'EUR', $limits->{lifetime_limit}),
             payout_per_symbol_and_contract_type   => '10000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
@@ -250,17 +250,17 @@ subtest 'MLT' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'                     => formatnumber('price', 'EUR', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => formatnumber('price', 'EUR', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
-            'lifetime_limit'                      => formatnumber('price', 'EUR', 99999999),
+            'lifetime_limit'                      => formatnumber('price',  'EUR', 99999999),
             'payout_per_symbol_and_contract_type' => '10000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => formatnumber('price', 'EUR', 99998999)};
+            'remainder'                           => formatnumber('price',  'EUR', 99998999)};
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
     };
@@ -284,16 +284,16 @@ subtest 'MX' => sub {
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
-            'account_balance'                     => formatnumber('price', 'EUR', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => formatnumber('price', 'EUR', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => formatnumber('price', 'EUR', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => formatnumber('price',  'EUR', $limits->{lifetime_limit}),
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
-            'remainder'                           => formatnumber('price', 'EUR', $limits->{limit_for_days}),
+            'remainder'                           => formatnumber('price',  'EUR', $limits->{limit_for_days}),
             payout_per_symbol_and_contract_type   => '10000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
@@ -317,17 +317,17 @@ subtest 'MX' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'                     => formatnumber('price', 'EUR', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => formatnumber('price', 'EUR', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
-            'lifetime_limit'                      => formatnumber('price', 'EUR', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => formatnumber('price',  'EUR', $limits->{lifetime_limit}),
             'payout_per_symbol_and_contract_type' => '10000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => formatnumber('price', 'EUR', 99998999),
+            'remainder'                           => formatnumber('price',  'EUR', 99998999),
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
