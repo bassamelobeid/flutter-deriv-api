@@ -3,12 +3,14 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 4);
+use Test::More (tests => 5);
+use Test::Warnings;
 use Date::Utility;
 use Text::CSV::Slurp;
 use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::MarketData qw(create_underlying);
@@ -876,6 +878,10 @@ my $data = [{
     },
 ];
 
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'AS51',
+    epoch      => 1428458885
+});
 foreach my $d (@$data) {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',

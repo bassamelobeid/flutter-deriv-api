@@ -1,7 +1,7 @@
 #!/etc/rmg/bin/perl
 
-use Test::More tests => 1;
-
+use Test::More tests => 2;
+use Test::Warnings;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 use LandingCompany::Registry;
 use Finance::Asset::Market::Registry;

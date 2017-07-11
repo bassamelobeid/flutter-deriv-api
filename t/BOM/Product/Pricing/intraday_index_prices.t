@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 30;
+use Test::More tests => 31;
+use Test::Warnings;
 use Test::Exception;
 
 use BOM::Product::ContractFactory qw(produce_contract);

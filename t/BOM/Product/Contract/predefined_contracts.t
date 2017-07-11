@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::FailWarnings;
+use Test::Warnings;
 use Test::MockModule;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);

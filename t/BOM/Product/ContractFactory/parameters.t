@@ -2,8 +2,8 @@ use strict;
 use warnings;
 
 use Test::Deep qw( cmp_deeply );
-use Test::More (tests => 1);
-use Test::FailWarnings;
+use Test::More (tests => 2);
+use Test::Warnings;
 use Test::Exception;
 use Test::MockModule;
 

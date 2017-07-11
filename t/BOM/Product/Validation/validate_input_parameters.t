@@ -1,7 +1,7 @@
 #!/etc/rmg/bin/perl
 
 use Test::More;
-use Test::FailWarnings;
+use Test::Warnings;
 use Test::Fatal;
 
 use Date::Utility;

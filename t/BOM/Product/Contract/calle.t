@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
+use Test::Warnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -47,7 +48,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         underlying    => create_underlying('frxUSDJPY'),
         recorded_date => $now
     });
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+my $ct = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch
 });
@@ -186,6 +187,7 @@ subtest 'shortcodes' => sub {
             underlying   => 'frxUSDJPY',
             currency     => 'USD',
             payout       => 10,
+            current_tick => $ct,
         });
         isa_ok $c, 'BOM::Product::Contract::Calle';
         my $expected_shortcode = 'CALLE_FRXUSDJPY_10_' . $now->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
@@ -202,6 +204,7 @@ subtest 'shortcodes' => sub {
             underlying   => 'frxUSDJPY',
             currency     => 'USD',
             payout       => 10,
+            current_tick => $ct,
         });
         isa_ok $c, 'BOM::Product::Contract::Calle';
         my $expected_shortcode = 'CALLE_FRXUSDJPY_10_' . $now->epoch . '_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
