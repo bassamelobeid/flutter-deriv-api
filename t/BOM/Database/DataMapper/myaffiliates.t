@@ -1,6 +1,7 @@
 use strict;
 use warnings;
-use Test::More (tests => 7);
+use Test::More (tests => 8);
+use Test::Warnings;
 use Test::Exception;
 use BOM::Database::DataMapper::MyAffiliates;
 use Date::Utility;

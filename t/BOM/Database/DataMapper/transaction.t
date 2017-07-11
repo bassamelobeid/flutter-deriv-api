@@ -1,8 +1,9 @@
 use strict;
 use warnings;
-use Test::Most (tests => 36);
+use Test::Most (tests => 37);
 use Test::MockTime qw( set_absolute_time restore_time );
 use Test::Exception;
+use Test::Warnings;
 
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;

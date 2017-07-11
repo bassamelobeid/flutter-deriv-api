@@ -1,6 +1,7 @@
 use 5.010;
-use Test::Most 0.22 (tests => 1);
+use Test::Most 0.22 (tests => 2);
 use Test::Exception;
+use Test::Warnings;
 
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;
