@@ -138,7 +138,8 @@ sub _calculate_historical_volatility {
     my $start      = $dp->minus_time_interval(HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES . 'm');
     my $end        = $dp;
 
-    my $hist_ticks = BOM::Market::DataDecimate->new->get({
+    my $data_decimate = BOM::Market::DataDecimate->new;
+    my $hist_ticks    = $data_decimate->get({
         underlying  => $underlying,
         start_epoch => $start->epoch,
         end_epoch   => $end->epoch,
@@ -154,14 +155,10 @@ sub _calculate_historical_volatility {
     my @returns_squared;
     my $returns_sep = 4;
     for (my $i = $returns_sep; $i <= $#$hist_ticks; $i++) {
-        my $dt = $hist_ticks->[$i]->{epoch} - $hist_ticks->[$i - $returns_sep]->{epoch};
-        if ($dt <= 0) {
-            # this suggests that we still have bug in data decimate since the decimated ticks have the same epoch
-            warn 'invalid decimated ticks\' interval. [' . $dt . ']';
-            next;
-        }
         # 252 is the number of trading days.
-        push @returns_squared, ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 / $dt);
+        push @returns_squared,
+            ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 /
+                $data_decimate->sampling_frequency->seconds);
     }
 
     my $vs = Volatility::Seasonality->new(
