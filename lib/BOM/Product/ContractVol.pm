@@ -5,7 +5,7 @@ use warnings;
 
 use List::Util qw(sum);
 use List::MoreUtils qw(none all);
-use VolSurface::IntradayFX;
+use VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Static;
 use Quant::Framework::VolSurface;
@@ -42,12 +42,6 @@ has atm_vols => (
     is         => 'ro',
     isa        => 'HashRef',
     lazy_build => 1
-);
-
-has intradayfx_volsurface => (
-    is         => 'ro',
-    isa        => 'Maybe[VolSurface::IntradayFX]',
-    lazy_build => 1,
 );
 
 has volsurface => (
@@ -130,102 +124,22 @@ sub _build_vol_at_strike {
     return $self->volsurface->get_volatility($vol_args);
 }
 
-sub _calculate_historical_volatility {
-    my $self = shift;
-
-    my $underlying = $self->underlying;
-    my $dp         = $self->effective_start;
-    my $start      = $dp->minus_time_interval(HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES . 'm');
-    my $end        = $dp;
-
-    my $data_decimate = BOM::Market::DataDecimate->new;
-    my $hist_ticks    = $data_decimate->get({
-        underlying  => $underlying,
-        start_epoch => $start->epoch,
-        end_epoch   => $end->epoch,
-    });
-
-    # On monday mornings, we will not have ticks to calculation historical vol in the first 20 minutes.
-    # returns 10% volatility on monday mornings.
-    return 0.1 if ($dp->day_of_week == 1 && $dp->hour == 0 && $dp->minute < HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES);
-
-    # Skips on non trading day
-    return 0.1 unless $self->trading_calendar->trades_on($underlying->exchange, $dp);
-
-    my @returns_squared;
-    my $returns_sep = 4;
-    for (my $i = $returns_sep; $i <= $#$hist_ticks; $i++) {
-        # 252 is the number of trading days.
-        push @returns_squared,
-            ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 /
-                $data_decimate->sampling_frequency->seconds);
-    }
-
-    my $vs = Volatility::Seasonality->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    );
-
-    my ($seasonality_past, $seasonality_fut) =
-        map { $vs->get_seasonality({underlying_symbol => $underlying->symbol, from => $_->[0], to => $_->[1],}) }
-        ([$start, $end], [$end, $self->date_expiry]);
-    my $past_mean = sum(map { $_ * $_ } @$seasonality_past) / @$seasonality_past;
-    my $fut_mean  = sum(map { $_ * $_ } @$seasonality_fut) / @$seasonality_fut;
-    my $k         = $fut_mean / $past_mean;
-
-    # warns if ticks used to calculate historical vol is less than 80% of the expected ticks.
-    # Ticks are in 15-second interval. Each minute has 4 intervals.
-    my $expected_interval = HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES * 4 - $returns_sep;
-
-    if (scalar(@returns_squared) < 0.8 * $expected_interval) {
-        warn "Historical ticks not found in Intraday::Forex pricing";
-        return 0.1;
-    }
-
-    return sqrt(sum(@returns_squared) / @returns_squared) * $k;
-}
-
-my $vol_weight_interpolator = Math::Function::Interpolator->new(
-    points => {
-        15  => 1,
-        360 => 0
-    });
-
-sub _weighted_vol {
-    my $self = shift;
-
-    my $vol;
-    my $remaining_min = $self->remaining_time->minutes;
-
-    if ($remaining_min <= 15) {
-        $vol = $self->_calculate_historical_volatility();
-    } elsif ($remaining_min >= 6 * 60) {
-        $vol = $self->intradayfx_volsurface->get_volatility({
-            from                          => $self->effective_start->epoch,
-            to                            => $self->date_expiry->epoch,
-            include_economic_event_impact => 1,
-        });
-    } else {
-        my $historical_vol_weight = $vol_weight_interpolator->linear($remaining_min);
-        my $hist_vol              = $self->_calculate_historical_volatility();
-        my $market_vol            = $self->intradayfx_volsurface->get_volatility({
-            from                          => $self->effective_start->epoch,
-            to                            => $self->date_expiry->epoch,
-            include_economic_event_impact => 1,
-        });
-        $vol = $historical_vol_weight * $hist_vol + (1 - $historical_vol_weight) * $market_vol;
-    }
-
-    return $vol;
-}
-
 sub _build_pricing_vol {
     my $self = shift;
 
     my $vol;
     my $volatility_error;
     if ($self->priced_with_intraday_model) {
-        $vol = $self->_weighted_vol();
+        my $ticks = BOM::Market::DataDecimate->get({
+            underlying  => $self->underlying,
+            start_epoch => $self->effective_start->minus_time_interval('20m')->epoch,
+            end_epoch   => $self->effective_start->epoch,
+        });
+        $vol = $self->empirical_volsurface->get_volatility({
+            from  => $self->effective_start,
+            to    => $self->date_expiry,
+            ticks => $ticks,
+        });
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
@@ -309,16 +223,23 @@ sub _build_volsurface {
     });
 }
 
-sub _build_intradayfx_volsurface {
+has empirical_volsurface => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_empirical_volsurface {
     my $self = shift;
-    return VolSurface::IntradayFX->new(
+
+    return VolSurface::Empirical->new(
         underlying       => $self->underlying,
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-        backprice        => ($self->underlying->for_date) ? 1 : 0,
     );
 }
 
+# should be removed once we verified that intraday vega correction is not useful
+# in our intraday FX pricing model.
 has [qw(long_term_prediction)] => (
     is         => 'ro',
     lazy_build => 1,
@@ -326,7 +247,7 @@ has [qw(long_term_prediction)] => (
 
 sub _build_long_term_prediction {
     my $self = shift;
-    return $self->intradayfx_volsurface->long_term_prediction;
+    return $self->empirical_volsurface->long_term_prediction;
 }
 
 1;
