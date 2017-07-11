@@ -26,6 +26,8 @@ use BOM::Backoffice::Request;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_XSendfile PrintContentType_image);
 use File::Temp;
 use Chart::Gnuplot;
+use List::MoreUtils qw(uniq);
+use List::Util qw(min max);
 
 sub generate_output_in_csv {
     my $self = shift;
@@ -61,91 +63,85 @@ sub generate_output_in_csv {
 sub generate_output_in_histogram {
     my $self = shift;
 
-    local $\ = "\n";
-    my $filename_1 = get_tmp_path_or_die() . "/graph_1.gif";
-    open my $fh, '>:encoding(UTF-8)', $filename_1;
-    my $filename_2 = get_tmp_path_or_die() . "/graph_2.gif";
-    open $fh, '>:encoding(UTF-8)', $filename_2;
     my $open_ico_ref = $self->live_open_ico;
-    my @number_of_tokens;
     my @per_token_price;
-    my @per_token_price_usd;
     my @currency;
 
-    foreach my $c (sort keys %{$open_ico_ref}) {
-        push @number_of_tokens,    $open_ico_ref->{$c}->{number_of_tokens};
-        push @per_token_price,     $open_ico_ref->{$c}->{per_token_bid_price};
-        push @per_token_price_usd, $open_ico_ref->{$c}->{per_token_bid_price_USD};
+    my @all_currency_pairs   = map { $open_ico_ref->{$_}->{currency_code} } keys %$open_ico_ref;
+    my @uniq_currencies      = uniq @all_currency_pairs;
+    my @number_of_tokens_usd = map { $open_ico_ref->{$_}->{number_of_tokens} } sort keys %$open_ico_ref;
+    my @per_token_price_usd  = map { $open_ico_ref->{$_}->{per_token_bid_price_USD} } sort keys %$open_ico_ref;
+    my $multiChart           = Chart::Gnuplot->new(
+        output    => get_tmp_path_or_die() . "/graph.png",
+        imagesize => "3, 2.5",
+    );
+
+    my @charts = ();
+    $charts[0][0] = Chart::Gnuplot->new(
+        title => {
+            text => "Histogram: All Open ICO deals in USD",
+            font => "arial, 24"
+        },
+        xlabel => "Bid price per token in USD",
+        ylabel => "Number of tokens",
+        grid   => "off",
+
+    );
+    my $dataSet = Chart::Gnuplot::DataSet->new(
+        xdata => \@per_token_price_usd,
+        ydata => \@number_of_tokens_usd,
+        style => "histograms",
+        color => "dark-green",
+        fill  => {
+            density => 0.2,
+        },
+    );
+    $charts[0][0]->add2d($dataSet);
+
+    my $i = 1;
+    foreach my $currency (@uniq_currencies) {
+        my @token =
+            map { $open_ico_ref->{$_}->{number_of_tokens} } grep { $open_ico_ref->{$_}->{currency_code} eq $currency } sort keys %$open_ico_ref;
+        my @bid_price =
+            map { $open_ico_ref->{$_}->{per_token_bid_price} } grep { $open_ico_ref->{$_}->{currency_code} eq $currency } sort keys %$open_ico_ref;
+        my $max_token = max @token;
+        my $max_price = max @bid_price;
+        $charts[$i][0] = Chart::Gnuplot->new(
+            title => {
+                text => "Histogram: Open ICO deals in $currency",
+                font => "arial, 24"
+            },
+            xlabel => "Bid price per token in $currency",
+            ylabel => "Number of tokens",
+            grid   => "off",
+            yrange => [0, $max_token],
+
+        );
+        my $dataSet1 = Chart::Gnuplot::DataSet->new(
+            color => "blue",
+            xdata => \@bid_price,
+            ydata => \@token,
+            title => $currency,
+            style => "histograms",
+            fill  => {
+                density => 0.2,
+            },
+        );
+
+        $charts[$i][0]->add2d($dataSet1);
+        $i += 1;
+
     }
 
-    my $chart_1 = Chart::Gnuplot->new(
-        output => $filename_1,
-        title  => {
-            text => "Histogram: Open ICO deals in USD",
-            font => "arial, 20"
-        },
-        xlabel => "Per Token Bid Price in USD",
-        ylabel => "Number of tokens",
-        grid   => "off",
+# Plot the multplot chart
+    $multiChart->multiplot(\@charts);
 
-    );
-
-    my $dataSet_1 = Chart::Gnuplot::DataSet->new(
-        xdata => \@per_token_price_usd,
-        ydata => \@number_of_tokens,
-        style => "histograms",
-
-        fill => {
-            color   => '#33bb33',
-            density => 0.2,
-        },
-        using => "2:xticlabels(1)"
-    );
-    $chart_1->plot2d($dataSet_1);
-
-    my $chart_2 = Chart::Gnuplot->new(
-        output => $filename_2,
-        title  => {
-            text => "Histogram: Open ICO deals in USD",
-            font => "arial, 20"
-        },
-        xlabel => "Currency",
-        ylabel => "Number of tokens",
-        grid   => "off",
-
-    );
-    my $dataSet_2 = Chart::Gnuplot::DataSet->new(
-        xdata => [1.2, 1.5, 1.6],
-        ydata => [100, 100, 400],
-        title => 'USD',
-        style => "histograms",
-        fill  => {
-            color   => 'red',
-            density => 0.2,
-        },
-    );
-    my $dataSet_3 = Chart::Gnuplot::DataSet->new(
-        xdata => [1.15, 1.15, 1.11],
-        ydata => [500,  1000, 4000],
-        title => "EUR",
-        style => "histograms",
-        fill  => {
-            color   => 'yellow',
-            density => 0.2,
-        },
-    );
-
-    $chart_2->plot2d($dataSet_2, $dataSet_3);
-
-    PrintContentType_image('gif');
+    my $file = get_tmp_path_or_die() . "/graph.png";
+    PrintContentType_image('png');
     binmode STDOUT;
-    open(IMAGE, '<', $filename_2);
+    open(IMAGE, '<', $file);
     print <IMAGE>;
     close IMAGE;
-    binmode STDOUT;
-    open(IMAGE2, '<', $filename_2);
-    print <IMAGE2>;
-    close IMAGE2;
 
     return;
 
