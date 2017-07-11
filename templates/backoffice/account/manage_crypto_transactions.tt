@@ -86,11 +86,11 @@
 [% END -%]
         [% IF view_type == 'pending' %]
             <td>
-                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=Transactions" class="confirm_crypto_action">Verify transaction</a>
+                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Verify transaction</a>
             </td>
             <td>|</td>
             <td>
-                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject&view_action=Transactions" class="confirm_crypto_action">Reject transaction</a>
+                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Reject transaction</a>
             </td>
         [% END %]
         <td>[% trx.remark %]</td>
@@ -124,27 +124,27 @@
 [% ELSE -%]
 <tr>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Transactions&view_type=pending">View Pending Transactions</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=pending">View Pending Transactions</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Transactions&view_type=verified">View Verified Transactions</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=verified">View Verified Transactions</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Transactions&view_type=rejected">View Rejected Transaction</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=rejected">View Rejected Transaction</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=processing">View transactions under processing</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=processing">View transactions under processing</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Transactions&view_type=sent">View Sent Transactions</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=sent">View Sent Transactions</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Transactions&view_type=error">View Errored Out Transactions</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=error">View Errored Out Transactions</a>
     </td>
 </tr>
 [% END -%]
