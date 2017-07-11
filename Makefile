@@ -1,5 +1,4 @@
 M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
-export PERL5OPT=-MTest::Warnings
 P=/etc/rmg/bin/prove --timer -rvl -I lib
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
