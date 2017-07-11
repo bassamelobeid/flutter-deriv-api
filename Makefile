@@ -1,8 +1,7 @@
 M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
-export PERL5OPT=-MTest::FailWarnings=-allow_deps,1
 MOJO_LOG_LEVEL?=info
 export MOJO_LOG_LEVEL
-P=/etc/rmg/bin/prove --timer -rl
+P=/etc/rmg/bin/prove --timer -v -rl
 
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
