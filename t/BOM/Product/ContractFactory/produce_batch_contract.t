@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
-use Test::FailWarnings;
+use Test::Warnings;
 use BOM::Product::ContractFactory qw(produce_batch_contract produce_contract);
 
 use Test::MockModule;

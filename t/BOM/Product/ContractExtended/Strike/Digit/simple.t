@@ -1,7 +1,7 @@
 #!/etc/rmg/bin/perl
 
-use Test::Most (tests => 2);
-use Test::FailWarnings;
+use Test::Most (tests => 3);
+use Test::Warnings;
 
 use Postgres::FeedDB::Spot::Tick;
 use BOM::Product::Contract::Strike::Digit;

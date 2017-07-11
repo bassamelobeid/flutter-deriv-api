@@ -2,7 +2,6 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::FailWarnings;
 use Test::Warnings qw/warning/;
 use Test::Exception;
 use Test::MockModule;

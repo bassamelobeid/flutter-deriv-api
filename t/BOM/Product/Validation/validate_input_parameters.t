@@ -1,7 +1,7 @@
 #!/etc/rmg/bin/perl
 
 use Test::More;
-use Test::FailWarnings;
+use Test::Warnings;
 use Test::Fatal;
 
 use Date::Utility;
@@ -136,13 +136,14 @@ subtest 'absolute barrier for a non-intraday contract' => sub {
 
     my $forex = create_underlying('frxUSDJPY');
 
-    my $delta_surface = Quant::Framework::VolSurface::Delta->new({
-            deltas           => [75, 50, 25],
+    Quant::Framework::Utils::Test::create_doc(
+        'volsurface_delta',
+        {
             underlying       => $forex,
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
             recorded_date    => $now,
-            surface          => {
+            surface_data     => {
                 1 => {
                     smile => {
                         25 => 0.19,
@@ -163,9 +164,7 @@ subtest 'absolute barrier for a non-intraday contract' => sub {
                         50 => 0.02,
                     },
                 },
-            },
-        });
-    $delta_surface->save;
+            }});
 
     my $c = produce_contract($bet_params2);
     ok !$c->is_valid_to_buy, 'not valid to buy';

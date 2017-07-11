@@ -132,6 +132,7 @@ Daily contract:
 3) Monthly contract: Start at 00:00GMT of the first trading day of the calendar month and end at the close of the last trading day of the month
 4) Quarterly contract: Start at 00:00GMT of the first trading day of the quarter and end at the close of the last trading day of the quarter.
 5) Yearly contract: Start at 00:00GMT of the first trading day of the year and end at the close of the last trading day of the year.
+
 =cut
 
 sub generate_trading_periods {
@@ -479,20 +480,22 @@ sub _get_intraday_trading_window {
         duration   => '2h'
     });
 
-    # Previous 2 hours contract should be always available in the first 15 minutes of the next one
-    # (except start of the trading day and also the first window after the break)
-    my $skips_prev_window = first { $even_hour - 2 == $_ } @skips_hour;
-    if (($date->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && !$skips_prev_window) {
-        push @intraday_windows,
-            _get_intraday_window({
-                now        => $date,
-                underlying => $underlying,
-                date_start => $start_of_day->plus_time_interval(($even_hour - 2) . 'h'),
-                duration   => '2h'
-            });
-    }
+    if ($window_2h) {
+        # Previous 2 hours contract should be always available in the first 15 minutes of the next one
+        # (except start of the trading day and also the first window after the break)
+        my $skips_prev_window = first { $even_hour - 2 == $_ } @skips_hour;
+        if (($date->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && !$skips_prev_window) {
+            push @intraday_windows,
+                _get_intraday_window({
+                    now        => $date,
+                    underlying => $underlying,
+                    date_start => $start_of_day->plus_time_interval(($even_hour - 2) . 'h'),
+                    duration   => '2h'
+                });
+        }
 
-    push @intraday_windows, $window_2h;
+        push @intraday_windows, $window_2h;
+    }
     if ($odd_hour >= 1 and $odd_hour < 17) {
         push @intraday_windows,
             _get_intraday_window({

@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
+use Test::Warnings;
 use Test::Exception;
 use Date::Utility;
 use Format::Util::Numbers qw/roundcommon/;

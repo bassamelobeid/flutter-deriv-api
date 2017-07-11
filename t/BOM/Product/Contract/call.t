@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 6;
+use Test::Warnings;
 use Test::Exception;
 use Date::Utility;
 use Cache::RedisDB;
@@ -80,17 +81,6 @@ $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 $defaults{epoch} = $now->epoch + 1;
 $defaults{quote} = 0.9936;
 $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
-
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDCAD',
-    epoch      => $now->epoch + 1,
-    quote      => 0.9936,
-});
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxAUDUSD',
-    epoch      => $now->epoch + 1,
-    quote      => 0.9936,
-});
 
 my $args = {
     bet_type     => 'CALL',
@@ -199,6 +189,10 @@ subtest 'expiry conditions' => sub {
 };
 
 subtest 'shortcodes' => sub {
+    my $ct = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => time
+    });
     lives_ok {
         my $c =
             produce_contract('CALL_FRXUSDJPY_10_' . $now->plus_time_interval('10m')->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0',
@@ -223,6 +217,7 @@ subtest 'shortcodes' => sub {
             underlying   => 'frxUSDJPY',
             currency     => 'USD',
             payout       => 10,
+            current_tick => $ct,
         });
         isa_ok $c, 'BOM::Product::Contract::Call';
         my $expected_shortcode = 'CALL_FRXUSDJPY_10_' . $now->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
