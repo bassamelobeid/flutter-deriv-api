@@ -1,7 +1,15 @@
 [% IF user %]
     [% IF history %]
-        [% IF limit AND history.size >= limit %]
-            <p color="red">Showing last [% limit %] logins only</p>
+        [% IF limit == '0'%]
+            <p color="red">Showing ALL records</p>
+        [% ELSIF limit AND history.size >= limit %]
+            <p color="red">Showing last [% limit %] records only,
+            <form method="POST" action="[%request.url_for('backoffice/f_viewloginhistory.cgi') | none %]" style="display:inline">
+            <input name="email" value="[%user.email%]" type="hidden">
+            <input name="limit" value="0" type="hidden">
+            <input type="submit" value="view all">
+            </form>
+            </p>
         [% END %]
         <table class="collapsed">
 [%       FOREACH l IN history.reverse;
