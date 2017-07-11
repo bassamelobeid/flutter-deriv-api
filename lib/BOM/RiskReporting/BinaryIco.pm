@@ -27,7 +27,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_XSendfil
 use File::Temp;
 use Chart::Gnuplot;
 use List::MoreUtils qw(uniq);
-use List::Util qw(min max);
+use List::Util qw(max);
 
 sub generate_output_in_csv {
     my $self = shift;
@@ -67,11 +67,13 @@ sub generate_output_in_histogram {
     my @per_token_price;
     my @currency;
 
-    my @all_currency_pairs   = map { $open_ico_ref->{$_}->{currency_code} } keys %$open_ico_ref;
-    my @uniq_currencies      = uniq @all_currency_pairs;
-    my @number_of_tokens_usd = map { $open_ico_ref->{$_}->{number_of_tokens} } sort keys %$open_ico_ref;
-    my @per_token_price_usd  = map { $open_ico_ref->{$_}->{per_token_bid_price_USD} } sort keys %$open_ico_ref;
-    my $multiChart           = Chart::Gnuplot->new(
+    my @all_currency_pairs = map { $open_ico_ref->{$_}->{currency_code} } keys %$open_ico_ref;
+    my @uniq_currencies = uniq @all_currency_pairs;
+    my @xy =
+        sort { $b->[0] <=> $a->[0] }
+        map { [$open_ico_ref->{$_}->{per_token_bid_price_USD}, $open_ico_ref->{$_}->{number_of_tokens}] } sort keys %$open_ico_ref;
+
+    my $multiChart = Chart::Gnuplot->new(
         output    => get_tmp_path_or_die() . "/graph.png",
         imagesize => "3, 2.5",
     );
@@ -79,7 +81,7 @@ sub generate_output_in_histogram {
     my @charts = ();
     $charts[0][0] = Chart::Gnuplot->new(
         title => {
-            text => "Histogram: All Open ICO deals in USD",
+            text => "Histogram: All Open ICO deals converted into USD",
             font => "arial, 24"
         },
         xlabel => "Bid price per token in USD",
@@ -88,11 +90,10 @@ sub generate_output_in_histogram {
 
     );
     my $dataSet = Chart::Gnuplot::DataSet->new(
-        xdata => \@per_token_price_usd,
-        ydata => \@number_of_tokens_usd,
-        style => "histograms",
-        color => "dark-green",
-        fill  => {
+        points => \@xy,
+        style  => "histograms",
+        color  => "dark-green",
+        fill   => {
             density => 0.2,
         },
     );
@@ -100,12 +101,12 @@ sub generate_output_in_histogram {
 
     my $i = 1;
     foreach my $currency (@uniq_currencies) {
-        my @token =
-            map { $open_ico_ref->{$_}->{number_of_tokens} } grep { $open_ico_ref->{$_}->{currency_code} eq $currency } sort keys %$open_ico_ref;
-        my @bid_price =
-            map { $open_ico_ref->{$_}->{per_token_bid_price} } grep { $open_ico_ref->{$_}->{currency_code} eq $currency } sort keys %$open_ico_ref;
-        my $max_token = max @token;
-        my $max_price = max @bid_price;
+        my @xy_1 =
+            sort { $b->[0] <=> $a->[0] }
+            map { [$open_ico_ref->{$_}->{per_token_bid_price}, $open_ico_ref->{$_}->{number_of_tokens}] }
+            grep { $open_ico_ref->{$_}->{currency_code} eq $currency } sort keys %$open_ico_ref;
+
+        my $max_token = max(map { $_->[1] } @xy_1);
         $charts[$i][0] = Chart::Gnuplot->new(
             title => {
                 text => "Histogram: Open ICO deals in $currency",
@@ -118,12 +119,11 @@ sub generate_output_in_histogram {
 
         );
         my $dataSet1 = Chart::Gnuplot::DataSet->new(
-            color => "blue",
-            xdata => \@bid_price,
-            ydata => \@token,
-            title => $currency,
-            style => "histograms",
-            fill  => {
+            color  => "blue",
+            points => \@xy_1,
+            title  => $currency,
+            style  => "histograms",
+            fill   => {
                 density => 0.2,
             },
         );
