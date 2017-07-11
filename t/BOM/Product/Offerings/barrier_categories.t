@@ -1,8 +1,8 @@
 use strict;
 use warnings;
 
-use Test::Most (tests => 1);
-use Test::FailWarnings;
+use Test::Most (tests => 2);
+use Test::Warnings;
 
 use BOM::Test::Data::Utility::UnitTestRedis;
 

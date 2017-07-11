@@ -5,7 +5,8 @@ use warnings;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
-use Test::More tests => 1;
+use Test::More tests => 2;
+use Test::Warnings;
 use Test::Exception;
 use Test::Memory::Cycle;
 use Test::MockModule;
