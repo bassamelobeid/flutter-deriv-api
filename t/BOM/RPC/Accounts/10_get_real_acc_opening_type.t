@@ -4,7 +4,8 @@ use Test::MockTime::HiRes;
 use Guard;
 use JSON;
 
-use Test::More (tests => 1);
+use Test::More (tests => 2);
+use Test::Warnings;
 use Test::Exception;
 use Test::Warn;
 use Test::MockModule;

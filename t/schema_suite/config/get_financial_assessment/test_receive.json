@@ -84,7 +84,7 @@
     },
     "net_income": {
       "type": "string",
-      "pattern": "^Over \\$500\\,001$",
+      "pattern": "^Over \\$500\\,000$",
       "required": "1"
     },
     "estimated_worth": {
