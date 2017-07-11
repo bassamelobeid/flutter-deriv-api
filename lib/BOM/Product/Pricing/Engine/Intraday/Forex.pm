@@ -485,7 +485,7 @@ sub _calculate_historical_volatility {
     for (my $i = $returns_sep; $i <= $#$hist_ticks; $i++) {
         my $dt = $hist_ticks->[$i]->{epoch} - $hist_ticks->[$i - $returns_sep]->{epoch};
 
-        # $dt can be 0 during periods with less trading.
+        # $dt can be 0 during a quiet period with very few ticks. This usually is the case for frxAUDPLN and frxXAGUSD based on observation.
         next if $dt == 0;
         if ($dt < 0) {
             # this suggests that we still have bug in data decimate since the decimated ticks have the same epoch
