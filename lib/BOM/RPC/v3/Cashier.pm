@@ -407,7 +407,7 @@ sub get_limits {
 
     my $limit = +{
         account_balance                     => formatnumber('price', $currency, $client->get_limit_for_account_balance),
-        payout                              => formatnumber('price',  $currency, $client->get_limit_for_payout),
+        payout                              => formatnumber('price', $currency, $client->get_limit_for_payout),
         payout_per_symbol_and_contract_type => formatnumber(
             'price', $currency, BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency}
         ),
