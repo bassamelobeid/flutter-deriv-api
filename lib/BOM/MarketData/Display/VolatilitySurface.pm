@@ -105,7 +105,7 @@ sub rmg_table_format {
 
         for (my $i = 0; $i < scalar @days; $i++) {
             my $day    = $days[$i];
-            my $smile  = $volsurface->get_smile($day);
+            my $smile  = $volsurface->get_variances(Date::Utility->new($day));
             my $spread = $volsurface->get_smile_spread($day);
 
             if ($atm_spread_point ne 'atm_spread') {
@@ -233,19 +233,20 @@ sub get_forward_vol {
     my $volsurface = $self->surface;
     my $atm_key = (grep { $volsurface->type =~ $_ } qw(delta flat )) ? 50 : 100;
 
-    my @days = @{$volsurface->original_term_for_smile};
-
+    my @days = sort {$a <=> $b} @{$volsurface->original_term_for_smile};
+    my @expiries = sort {$a <=> $b} keys %{$volsurface->variance_table};
+                             
     my %implied_vols;
-    foreach my $day (@days) {
-        my $smile = $volsurface->get_smile($day);
-        $implied_vols{$day} = $smile->{$atm_key};
-    }
+    for(my $i=0; $i<$#days; $i++) { 
+        use Data::Dumper;
+        warn "Date::" . Dumper($expiries[$i]);
+        my $smile = $volsurface->get_variances(Date::Utility->new($expiries[$i]));
+        $implied_vols{$i} = $smile->{$atm_key};
+    }      
 
-    my $trading_calendar =
-        Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($volsurface->for_date), $volsurface->for_date);
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
-        $weights{$i} = $trading_calendar->weight_on($volsurface->underlying, $volsurface->recorded_date->epoch + $i * 86400);
+        $weights{$i} = $volsurface->weight_on($volsurface->recorded_date->epoch + $i * 86400);
     }
 
     my $forward_vols;
