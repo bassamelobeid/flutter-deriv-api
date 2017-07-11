@@ -66,13 +66,13 @@ subtest 'CR' => sub {
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
-            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'USD', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => formatnumber('amount', 'USD', $limits->{lifetime_limit}),
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('amount', 'USD', $limits->{lifetime_limit}),
@@ -85,9 +85,9 @@ subtest 'CR' => sub {
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal);
 
-        $expected_result->{withdrawal_for_x_days_monetary}      = sprintf('%0.02f', $withdraw_amount);
-        $expected_result->{withdrawal_since_inception_monetary} = sprintf('%0.02f', $withdraw_amount);
-        $expected_result->{remainder}                           = sprintf('%0.02f', $limits->{lifetime_limit} - $withdraw_amount);
+        $expected_result->{withdrawal_for_x_days_monetary}      = formatnumber('amount', 'USD', $withdraw_amount);
+        $expected_result->{withdrawal_since_inception_monetary} = formatnumber('amount', 'USD', $withdraw_amount);
+        $expected_result->{remainder}                           = formatnumber('amount', 'USD', $limits->{lifetime_limit} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -96,17 +96,17 @@ subtest 'CR' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'USD', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
-            'lifetime_limit'                      => sprintf('%0.02f', '99999999'),
+            'lifetime_limit'                      => formatnumber('amount', 'USD', 99999999),
             'payout_per_symbol_and_contract_type' => '10000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => sprintf('%0.02f', '99998999'),
+            'remainder'                           => formatnumber('amount', 'USD', 99998999),
 
         };
 
@@ -147,13 +147,13 @@ subtest 'JP' => sub {
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
-            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'JPY', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'JPY', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => formatnumber('amount', 'JPY', $limits->{lifetime_limit}),
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('amount', 'JPY', $limits->{lifetime_limit}),
@@ -170,9 +170,9 @@ subtest 'JP' => sub {
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal, currency => 'JPY');
 
-        $expected_result->{'withdrawal_for_x_days_monetary'}      = sprintf('%0.02f', $withdraw_amount);
-        $expected_result->{'withdrawal_since_inception_monetary'} = sprintf('%0.02f', $withdraw_amount);
-        $expected_result->{'remainder'}                           = sprintf('%0.02f', $limits->{lifetime_limit} - $withdraw_amount);
+        $expected_result->{'withdrawal_for_x_days_monetary'}      = formatnumber('amount', 'JPY', $withdraw_amount);
+        $expected_result->{'withdrawal_since_inception_monetary'} = formatnumber('amount', 'JPY', $withdraw_amount);
+        $expected_result->{'remainder'}                           = formatnumber('amount', 'JPY', $limits->{lifetime_limit} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -181,17 +181,17 @@ subtest 'JP' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'JPY', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'JPY', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
-            'lifetime_limit'                      => sprintf('%0.02f', '99999999'),
+            'lifetime_limit'                      => formatnumber('amount', 'JPY', 99999999),
             'payout_per_symbol_and_contract_type' => '1000000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => sprintf('%0.02f', '99998999'),
+            'remainder'                           => formatnumber('amount', 'JPY', 99998999),
 
         };
 
@@ -217,17 +217,17 @@ subtest 'MLT' => sub {
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
-            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => formatnumber('amount', 'JPY', $limits->{lifetime_limit}),
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
-            'remainder'                         => formatnumber('amount', 'EUR', $limits->{lifetime_limit}),
-            payout_per_symbol_and_contract_type => '10000.00',
+            'remainder'                           => formatnumber('amount', 'EUR', $limits->{lifetime_limit}),
+            payout_per_symbol_and_contract_type   => '10000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -239,9 +239,9 @@ subtest 'MLT' => sub {
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal, currency => 'EUR');
 
-        $expected_result->{'withdrawal_for_x_days_monetary'}      = sprintf('%0.02f', $withdraw_amount);
-        $expected_result->{'withdrawal_since_inception_monetary'} = sprintf('%0.02f', $withdraw_amount);
-        $expected_result->{'remainder'}                           = sprintf('%0.02f', $limits->{lifetime_limit} - $withdraw_amount);
+        $expected_result->{'withdrawal_for_x_days_monetary'}      = formatnumber('amount', 'EUR', $withdraw_amount);
+        $expected_result->{'withdrawal_since_inception_monetary'} = formatnumber('amount', 'EUR', $withdraw_amount);
+        $expected_result->{'remainder'}                           = formatnumber('amount', 'EUR', $limits->{lifetime_limit} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -250,18 +250,17 @@ subtest 'MLT' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
-            'lifetime_limit'                      => sprintf('%0.02f', '99999999'),
+            'lifetime_limit'                      => formatnumber('amount', 'EUR', 99999999),
             'payout_per_symbol_and_contract_type' => '10000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => sprintf('%0.02f', '99998999'),
-        };
+            'remainder'                           => formatnumber('amount', 'EUR', 99998999)};
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
     };
@@ -285,17 +284,17 @@ subtest 'MX' => sub {
 
     subtest 'unauthenticated' => sub {
         my $expected_result = {
-            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => $limits->{limit_for_days},
-            'lifetime_limit'                      => sprintf('%0.02f', $limits->{lifetime_limit}),
+            'lifetime_limit'                      => formatnumber('amount', 'EUR', $limits->{lifetime_limit}),
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
-            'remainder'                         => formatnumber('amount', 'EUR', $limits->{limit_for_days}),
-            payout_per_symbol_and_contract_type => '10000.00',
+            'remainder'                           => formatnumber('amount', 'EUR', $limits->{limit_for_days}),
+            payout_per_symbol_and_contract_type   => '10000.00',
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -307,9 +306,9 @@ subtest 'MX' => sub {
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal, currency => 'EUR');
 
-        $expected_result->{'withdrawal_for_x_days_monetary'}      = sprintf('%0.02f', $withdraw_amount);
-        $expected_result->{'withdrawal_since_inception_monetary'} = sprintf('%0.02f', $withdraw_amount);
-        $expected_result->{'remainder'}                           = sprintf('%0.02f', $limits->{limit_for_days} - $withdraw_amount);
+        $expected_result->{'withdrawal_for_x_days_monetary'}      = formatnumber('amount', 'EUR', $withdraw_amount);
+        $expected_result->{'withdrawal_since_inception_monetary'} = formatnumber('amount', 'EUR', $withdraw_amount);
+        $expected_result->{'remainder'}                           = formatnumber('amount', 'EUR', $limits->{limit_for_days} - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -318,17 +317,17 @@ subtest 'MX' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
-            'account_balance'                     => sprintf('%0.02f', $client->get_limit_for_account_balance),
+            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => sprintf('%0.02f', $client->get_limit_for_payout),
+            'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
-            'lifetime_limit'                      => sprintf('%0.02f', '99999999'),
+            'lifetime_limit'                      => formatnumber('amount', 'EUR', $limits->{lifetime_limit}),
             'payout_per_symbol_and_contract_type' => '10000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => sprintf('%0.02f', '99998999'),
+            'remainder'                           => formatnumber('amount', 'EUR', 99998999),
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
