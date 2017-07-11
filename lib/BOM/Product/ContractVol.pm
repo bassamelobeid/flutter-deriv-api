@@ -16,6 +16,9 @@ use BOM::Platform::Chronicle;
 
 ## ATTRIBUTES  #######################
 
+# we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
+use constant HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES => 20;
+
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 has economic_events_for_volatility_calculation => (
@@ -130,10 +133,10 @@ sub _build_vol_at_strike {
 sub _calculate_historical_volatility {
     my $self = shift;
 
-    # we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
-    my $start      = $self->date_pricing->minus_time_interval('20m');
-    my $end        = $self->date_pricing;
     my $underlying = $self->underlying;
+    my $dp         = $self->effective_start;
+    my $start      = $dp->minus_time_interval(HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES . 'm');
+    my $end        = $dp;
 
     my $hist_ticks = BOM::Market::DataDecimate->new->get({
         underlying  => $underlying,
@@ -141,12 +144,22 @@ sub _calculate_historical_volatility {
         end_epoch   => $end->epoch,
     });
 
+    # On monday mornings, we will not have ticks to calculation historical vol in the first 20 minutes.
+    # returns 10% volatility on monday mornings.
+    return 0.1 if ($dp->day_of_week == 1 && $dp->hour == 0 && $dp->minute < HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES);
+
+    # Skips on non trading day
+    return 0.1 unless $self->trading_calendar->trades_on($underlying->exchange, $dp);
+
     my @returns_squared;
-    # Ticks are in 15-second interval.
     my $returns_sep = 4;
     for (my $i = $returns_sep; $i <= $#$hist_ticks; $i++) {
         my $dt = $hist_ticks->[$i]->{epoch} - $hist_ticks->[$i - $returns_sep]->{epoch};
-        next if $dt <= 0;
+        if ($dt <= 0) {
+            # this suggests that we still have bug in data decimate since the decimated ticks have the same epoch
+            warn 'invalid decimated ticks\' interval. [' . $dt . ']';
+            next;
+        }
         # 252 is the number of trading days.
         push @returns_squared, ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 / $dt);
     }
@@ -155,6 +168,7 @@ sub _calculate_historical_volatility {
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     );
+
     my ($seasonality_past, $seasonality_fut) =
         map { $vs->get_seasonality({underlying_symbol => $underlying->symbol, from => $_->[0], to => $_->[1],}) }
         ([$start, $end], [$end, $self->date_expiry]);
@@ -162,12 +176,16 @@ sub _calculate_historical_volatility {
     my $fut_mean  = sum(map { $_ * $_ } @$seasonality_fut) / @$seasonality_fut;
     my $k         = $fut_mean / $past_mean;
 
-    unless (@returns_squared) {
+    # warns if ticks used to calculate historical vol is less than 80% of the expected ticks.
+    # Ticks are in 15-second interval. Each minute has 4 intervals.
+    my $expected_interval = HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES * 4 - $returns_sep;
+
+    if (scalar(@returns_squared) < 0.8 * $expected_interval) {
         warn "Historical ticks not found in Intraday::Forex pricing";
         return 0.1;
     }
 
-    return (sqrt(sum(@returns_squared) / @returns_squared)) * $k;
+    return sqrt(sum(@returns_squared) / @returns_squared) * $k;
 }
 
 my $vol_weight_interpolator = Math::Function::Interpolator->new(
