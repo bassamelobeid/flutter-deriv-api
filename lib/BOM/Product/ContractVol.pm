@@ -6,12 +6,13 @@ use warnings;
 use List::Util qw(sum);
 use List::MoreUtils qw(none all);
 use VolSurface::IntradayFX;
-use BOM::Market::DataDecimate;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Static;
 use Quant::Framework::VolSurface;
 use Quant::Framework::VolSurface::Utils qw(effective_date_for);
 use Volatility::Seasonality;
+use BOM::Market::DataDecimate;
+use BOM::Platform::Chronicle;
 
 ## ATTRIBUTES  #######################
 
@@ -127,11 +128,15 @@ sub _build_vol_at_strike {
 }
 
 sub _calculate_historical_volatility {
-    my ($self, $start, $end, $flag) = @_;
+    my $self = shift;
+
+    # we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
+    my $start      = $self->date_pricing->minus_time_interval('20m');
+    my $end        = $self->date_pricing;
+    my $underlying = $self->underlying;
 
     my $hist_ticks = BOM::Market::DataDecimate->new->get({
-        underlying => $self->underlying,
-        # we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
+        underlying  => $underlying,
         start_epoch => $start->epoch,
         end_epoch   => $end->epoch,
     });
@@ -146,23 +151,16 @@ sub _calculate_historical_volatility {
         push @returns_squared, ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 / $dt);
     }
 
-    my $k = 1;
-    unless ($flag) {
-        my $vs = Volatility::Seasonality->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1));
-        my $sea_past = $vs->get_seasonality({
-            underlying_symbol => $self->underlying->symbol,
-            from              => $start,
-            to                => $end
-        });
-        my $sea_fut = $vs->get_seasonality({
-            underlying_symbol => $self->underlying->symbol,
-            from              => $start,
-            to                => $end
-        });
-        my $past_mean = sum(map { $_ * $_ } @$sea_past) / @$sea_past;
-        my $fut_mean  = sum(map { $_ * $_ } @$sea_fut) / @$sea_fut;
-        $k = $fut_mean / $past_mean;
-    }
+    my $vs = Volatility::Seasonality->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    );
+    my ($seasonality_past, $seasonality_fut) =
+        map { $vs->get_seasonality({underlying_symbol => $underlying->symbol, from => $_->[0], to => $_->[1],}) }
+        ([$start, $end], [$end, $self->date_expiry]);
+    my $past_mean = sum(map { $_ * $_ } @$seasonality_past) / @$seasonality_past;
+    my $fut_mean  = sum(map { $_ * $_ } @$seasonality_fut) / @$seasonality_fut;
+    my $k         = $fut_mean / $past_mean;
 
     unless (@returns_squared) {
         warn "Historical ticks not found in Intraday::Forex pricing";
@@ -178,20 +176,14 @@ my $vol_weight_interpolator = Math::Function::Interpolator->new(
         360 => 0
     });
 
-sub weight_interpolator {
-    my ($self, $min) = @_;
-    return $vol_weight_interpolator->linear($min);
-}
-
 sub _weighted_vol {
     my $self = shift;
 
     my $vol;
-    my $volatility_error;
     my $remaining_min = $self->remaining_time->minutes;
 
     if ($remaining_min <= 15) {
-        $vol = $self->_calculate_historical_volatility($self->date_pricing->minus_time_interval('20m'), $self->date_pricing);
+        $vol = $self->_calculate_historical_volatility();
     } elsif ($remaining_min >= 6 * 60) {
         $vol = $self->intradayfx_volsurface->get_volatility({
             from                          => $self->effective_start->epoch,
@@ -199,8 +191,8 @@ sub _weighted_vol {
             include_economic_event_impact => 1,
         });
     } else {
-        my $historical_vol_weight = $self->weight_interpolator($remaining_min);
-        my $hist_vol              = $self->_calculate_historical_volatility($self->date_pricing->minus_time_interval('20m'), $self->date_pricing);
+        my $historical_vol_weight = $vol_weight_interpolator->linear($remaining_min);
+        my $hist_vol              = $self->_calculate_historical_volatility();
         my $market_vol            = $self->intradayfx_volsurface->get_volatility({
             from                          => $self->effective_start->epoch,
             to                            => $self->date_expiry->epoch,
@@ -208,6 +200,7 @@ sub _weighted_vol {
         });
         $vol = $historical_vol_weight * $hist_vol + (1 - $historical_vol_weight) * $market_vol;
     }
+
     return $vol;
 }
 
@@ -218,11 +211,6 @@ sub _build_pricing_vol {
     my $volatility_error;
     if ($self->priced_with_intraday_model) {
         $vol = $self->_weighted_vol();
-#        $vol = $self->intradayfx_volsurface->get_volatility({
-#            from                          => $self->effective_start->epoch,
-#            to                            => $self->date_expiry->epoch,
-#            include_economic_event_impact => 1,
-#        });
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
