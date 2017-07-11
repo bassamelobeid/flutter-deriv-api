@@ -74,7 +74,7 @@ sub _build_records {
 
     my $surface = Quant::Framework::VolSurface::Delta->new(
         underlying    => $underlying,
-        recorded_date => $date_start,
+        creation_date => $date_start,
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         surface       => $surface_data,

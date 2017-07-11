@@ -699,15 +699,12 @@ sub get_volsurface {
     my ($self, $underlying_symbol) = @_;
 
     my $data          = $self->config->{volsurface}->{$underlying_symbol};
-    my $surface_data  = $data->{surface_data};
-    my $recorded_date = $data->{recorded_date};
-    my $cutoff        = $data->{cutoff};
     my $surface       = Quant::Framework::VolSurface::Delta->new(
         underlying      => create_underlying($underlying_symbol),
-        recorded_date   => Date::Utility->new($recorded_date),
-        surface         => $surface_data,
+        creation_date   => Date::Utility->new($data->{creation_date}),
+        surface         => $data->{surface_data},
         print_precision => undef,
-        cutoff          => $cutoff,
+        cutoff          => $data->{cutoff},
         deltas          => [25, 50, 75],
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),

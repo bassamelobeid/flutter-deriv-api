@@ -4,7 +4,7 @@ payout: 100
 volsurface:
     frxAUDJPY:
         cutoff: "New York 10:00"
-        recorded_date: "23-JAN-12 21:00GMT"
+        creation_date: "23-JAN-12 21:00GMT"
         surface_data:
             "1Y":
                vol_spread:
@@ -85,7 +85,7 @@ volsurface:
                    75: 0.18823
     frxEURCHF:
         cutoff: "New York 10:00"
-        recorded_date: "23-JAN-12 21:00GMT"
+        creation_date: "23-JAN-12 21:00GMT"
         surface_data:
            "1Y":
                vol_spread:
@@ -166,7 +166,7 @@ volsurface:
                    75: 0.11174
     frxGBPUSD:
         cutoff: "New York 10:00"
-        recorded_date: "23-JAN-12 21:00GMT"
+        creation_date: "23-JAN-12 21:00GMT"
         surface_data:
            "1Y":
                vol_spread:
@@ -247,7 +247,7 @@ volsurface:
                    75: 0.11698
     frxUSDCAD:
         cutoff: "New York 10:00"
-        recorded_date: "23-JAN-12 21:00GMT"
+        creation_date: "23-JAN-12 21:00GMT"
         surface_data:
            "1Y":
                vol_spread:
@@ -328,7 +328,7 @@ volsurface:
                    75: 0.0948
     frxEURUSD:
         cutoff: "New York 10:00"
-        recorded_date: "23-JAN-12 21:00GMT"
+        creation_date: "23-JAN-12 21:00GMT"
         surface_data:
            "1Y":
                vol_spread:
