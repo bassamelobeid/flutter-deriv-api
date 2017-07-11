@@ -1,3 +1,50 @@
+<table>
+    <thead>
+        <th>Status</th>
+        <th>Description</th>
+    </thead>
+    <tbody>
+[% IF transaction_type == 'deposit' -%]
+        <tr>
+            <td>New</td>
+            <td>List transactions with new addresses i.e no blockchain transaction has been performed</td>
+        </tr>
+        <tr>
+            <td>Pending</td>
+            <td>List transactions that are on blockchain but not yet confirmed (we wait for 3 confirmations)</td>
+        </tr>
+        <tr>
+            <td>Confirmed</td>
+            <td>List transactions that are confirmed on blockchain and client account should be credited</td>
+        </tr>
+[% ELSE -%]
+        <tr>
+            <td>Pending</td>
+            <td>List withdrawal requests initiated by client</td>
+        </tr>
+        <tr>
+            <td>Verified</td>
+            <td>List withdrawal requests verified by payments team after validation</td>
+        </tr>
+        <tr>
+            <td>Rejected</td>
+            <td>List withdrawal requests rejected by payments team after validation</td>
+        </tr>
+        <tr>
+            <td>Processing</td>
+            <td>List withdrawal requests where client account is debited but blockchain transaction is not yet confirmed</td>
+        </tr>
+        <tr>
+            <td>Sent</td>
+            <td>List withdrawal requests finally processed i.e debit and both blockchain completed</td>
+        </tr>
+[% END -%]
+        <tr>
+            <td>Error</td>
+            <td>List errored out transaction, reason would be specified in error info.</td>
+        </tr>
+    </tbody>
+</table>
 <br/>
 [% IF transactions.size == 0 %]
     <p>There are no [% view_type %] transactions.</p>
@@ -59,7 +106,7 @@
 [% IF transaction_type == 'deposit' -%]
 <tr>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=new">View transactions on new addresses</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=new">View new addresses</a>
     </td>
     <td>|</td>
     <td>
@@ -86,6 +133,10 @@
     <td>|</td>
     <td>
         <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Transactions&view_type=rejected">View Rejected Transaction</a>
+    </td>
+    <td>|</td>
+    <td>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=processing">View transactions under processing</a>
     </td>
     <td>|</td>
     <td>
