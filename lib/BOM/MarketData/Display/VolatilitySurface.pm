@@ -86,19 +86,15 @@ sub rmg_table_format {
         @surface =
             map { [$volsurface->flat_vol, $volsurface->flat_atm_spread] } @days;
     } elsif ($volsurface->type eq 'delta') {
-        my @deltas = $volsurface->smile_points;
+        my @deltas = @{$volsurface->smile_points};
         my @vol_spreads_points;
 
         foreach my $delta (@{$volsurface->spread_points}) {
             if ($delta =~ /^\d+/) {
-                push @vol_spreads_points, $delta . 'D_spread' . '</th>';
+                push @vol_spreads_points, $delta . 'D_spread';
             } else {
                 push @vol_spreads_points, $delta;
             }
-        }
-
-        foreach (@deltas) {
-            push @headers, $_;
         }
 
         @headers = ('days', 'tenor', 'date', @deltas, @vol_spreads_points, '1-day Forward Vol', 'RR', '2vBF', '1vBF', 'Skew', 'Kurtosis');
