@@ -75,7 +75,6 @@ sub script_run {
                     underlying                 => create_underlying($_),
                     chronicle_reader           => BOM::Platform::Chronicle::get_chronicle_reader(),
                     chronicle_writer           => BOM::Platform::Chronicle::get_chronicle_writer(),
-                    write_to_centralized_redis => 1
                 })->refresh_cache();
             $pm->finish();
         }
