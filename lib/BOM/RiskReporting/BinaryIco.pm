@@ -70,7 +70,7 @@ sub generate_output_in_histogram {
     my @all_currency_pairs = map { $open_ico_ref->{$_}->{currency_code} } keys %$open_ico_ref;
     my @uniq_currencies = uniq @all_currency_pairs;
     my @xy =
-        sort { $b->[0] <=> $a->[0] }
+        sort { $a->[0] <=> $b->[0] }
         map { [$open_ico_ref->{$_}->{per_token_bid_price_USD}, $open_ico_ref->{$_}->{number_of_tokens}] } sort keys %$open_ico_ref;
 
     my $multiChart = Chart::Gnuplot->new(
@@ -96,13 +96,14 @@ sub generate_output_in_histogram {
         fill   => {
             density => 0.2,
         },
+        using => "2:xticlabels(1)",
     );
     $charts[0][0]->add2d($dataSet);
 
     my $i = 1;
     foreach my $currency (@uniq_currencies) {
         my @xy_1 =
-            sort { $b->[0] <=> $a->[0] }
+            sort { $a->[0] <=> $b->[0] }
             map { [$open_ico_ref->{$_}->{per_token_bid_price}, $open_ico_ref->{$_}->{number_of_tokens}] }
             grep { $open_ico_ref->{$_}->{currency_code} eq $currency } sort keys %$open_ico_ref;
 
@@ -126,6 +127,7 @@ sub generate_output_in_histogram {
             fill   => {
                 density => 0.2,
             },
+            using => "2:xticlabels(1)"
         );
 
         $charts[$i][0]->add2d($dataSet1);
