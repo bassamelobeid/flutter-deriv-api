@@ -195,7 +195,7 @@
        "won": {
          "type": "boolean",
          "title": "Contract result",
-         "description": "Show the contract win or lose when the contract expired. This field will not appear until the contract expired. The value is true if contract win, false otherwise"
+         "description": "Show the contract won or lost when the contract expired. This field will not appear until the contract expired. The value is true if contract won, false if lost"
         }
       }
     },
