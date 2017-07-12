@@ -155,13 +155,6 @@ sub _build_surfaces_from_file {
     return $combined;
 }
 
-has _warmup_seasonality_cache => (
-    is      => 'ro',
-    default => sub {
-        return {map { $_ => 1 } create_underlying_db->symbols_for_intraday_fx};
-    },
-);
-
 has _connect_ftp => (
     is      => 'ro',
     default => 1,
@@ -219,7 +212,6 @@ sub run {
         });
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
-            $volsurface->warmup_cache() if $self->_warmup_seasonality_cache->{$underlying->symbol};
             $volsurface->save;
             $self->report->{$symbol}->{success} = 1;
         } else {
