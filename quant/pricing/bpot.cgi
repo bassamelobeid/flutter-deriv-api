@@ -88,6 +88,7 @@ if ($bet) {
 BOM::Backoffice::Request::template->process(
     'backoffice/bpot.html.tt',
     {
+        longcode   => localize($bet->longcode),
         bet        => $bet,
         start      => $start ? $start->datetime : '',
         end        => $end ? $end->datetime : '',

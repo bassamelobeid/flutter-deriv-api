@@ -1,4 +1,5 @@
-<p>[% bet.longcode %]</p>
+<p>[% longcode %]</p>
+
 <form action="" method="post">
     <table>
         <tr><td>Shortcode</td><td><input value="[% bet.shortcode %]" size="80" type="text" name="shortcode" id="shortcode"/></td></tr>
