@@ -1,0 +1,19 @@
+[% IF client.broker == 'MF' %]
+    <form>
+    <tr>
+        <td class="small_header" colspan="2">#MIFIR ID Number</td>
+    </tr>
+    <tr>
+        <td class="label">MIFIR ID</td>
+        <td>:
+        [% IF client.mifir_id %]
+            <span>[% client.mifir_id %]</span>
+            <input type="submit" name="mifir_reset" value="DELETE">
+        [% ELSE %]
+            <input type="text" name="mifir_id" value=""> upto 35 alphanumeric symbols
+            <input type="submit" name="mifir_set_concat" value="CONCAT">
+        [% END %]
+        </td>
+    </tr>
+    </form>
+[% END %]

@@ -31,6 +31,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
+use BOM::Backoffice::MIFIR;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -66,6 +67,23 @@ my $broker         = $client->broker;
 my $encoded_broker = encode_entities($broker);
 my $staff          = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+
+if ($broker eq 'MF') {
+    if ($input{mifir_reset}) {
+        $client->mifir_id('');
+        $client->save;
+    }
+    if ($input{mifir_set_concat}) {
+        $client->mifir_id(
+            BOM::Backoffice::MIFIR::generate({
+                    cc         => $client->residence,
+                    date       => $client->date_of_birth,
+                    first_name => $client->first_name,
+                    last_name  => $client->last_name,
+                }));
+        $client->save;
+    }
+}
 
 # sync authentication status to Doughflow
 if ($input{whattodo} eq 'sync_to_DF') {
@@ -161,7 +179,6 @@ if ($input{whattodo} eq 'uploadID') {
     local $CGI::DISABLE_UPLOADS = 0;              # enable uploads
 
     my $cgi            = CGI->new;
-    my $broker_code    = $cgi->param('broker');
     my $docnationality = $cgi->param('docnationality');
     my $result         = "";
     my $used_doctypes  = {};                              #we need to keep list of used doctypes to provide for them uniq filenames
@@ -509,6 +526,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->tax_identification_number($input{$key});
         }
 
+        $client->mifir_id($input{mifir_id}) if ($input{mifir_id} and $client->mifir_id eq '' and $broker eq 'MF');
+
         $client->allow_omnibus($input{allow_omnibus});
     }
 
@@ -810,7 +829,6 @@ BOM::Backoffice::Request::template->process(
         history => $login_history,
         limit   => $limit
     });
-
 code_exit_BO();
 
 1;
