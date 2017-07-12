@@ -216,7 +216,7 @@ subtest 'save identical' => sub {
             }});
     lives_ok { $au->run } 'run without dying';
     ok !$au->report->{frxUSDJPY}->{success}, 'update failed';
-    like $au->report->{frxUSDJPY}->{reason}, qr/equal/, 'reason: equal';
+    like $au->report->{frxUSDJPY}->{reason}, 'New volsurface for frxUSDJPY is identical to existing one', 'reason: identical';
 };
 
 subtest 'save valid' => sub {
