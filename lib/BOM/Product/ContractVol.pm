@@ -15,9 +15,6 @@ use BOM::Platform::Chronicle;
 
 ## ATTRIBUTES  #######################
 
-# we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
-use constant HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES => 20;
-
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 has economic_events_for_volatility_calculation => (
