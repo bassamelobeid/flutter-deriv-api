@@ -361,8 +361,12 @@ sub vol_spread {
     my $self = shift;
 
     my $bet               = $self->bet;
-    my $two_hour_vol      = 0.07;                                       # fixed 7% volatility
-    my $twenty_minute_vol = $bet->_calculate_historical_volatility();
+    my $two_hour_vol      = 0.07;                                                    # fixed 7% volatility
+    my $twenty_minute_vol = $bet->empirical_volsurface->get_historical_volatility({
+        from  => $bet->effective_start,
+        to    => $bet->date_expiry,
+        ticks => $bet->ticks_for_volatility_calculation,
+    });
 
     return $two_hour_vol - $twenty_minute_vol;
 }

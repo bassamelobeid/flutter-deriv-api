@@ -130,15 +130,10 @@ sub _build_pricing_vol {
     my $vol;
     my $volatility_error;
     if ($self->priced_with_intraday_model) {
-        my $ticks = BOM::Market::DataDecimate->get({
-            underlying  => $self->underlying,
-            start_epoch => $self->effective_start->minus_time_interval('20m')->epoch,
-            end_epoch   => $self->effective_start->epoch,
-        });
         $vol = $self->empirical_volsurface->get_volatility({
             from  => $self->effective_start,
             to    => $self->date_expiry,
-            ticks => $ticks,
+            ticks => $self->ticks_for_volatility_calculation,
         });
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
@@ -248,6 +243,21 @@ has [qw(long_term_prediction)] => (
 sub _build_long_term_prediction {
     my $self = shift;
     return $self->empirical_volsurface->long_term_prediction;
+}
+
+has ticks_for_volatility_calculation => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_ticks_for_volatility_calculation {
+    my $self = shift;
+
+    return BOM::Market::DataDecimate->new->get({
+        underlying  => $self->underlying,
+        start_epoch => $self->effective_start->minus_time_interval('20m')->epoch,
+        end_epoch   => $self->effective_start->epoch,
+    });
 }
 
 1;
