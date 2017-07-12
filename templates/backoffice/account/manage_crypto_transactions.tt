@@ -51,39 +51,90 @@
 [% ELSE %]
 <table>
     <tr>
-        <th>Currency</th>
-        <th>Address</th>
-        <th>LoginID</th>
-        <th>Amount</th>
+        <th>BlockchainInfo</th>
+        <th>
+            <table>
+                <thead>
+                    <th>PaymentInfo</th>
+                </thead>
+            </table>
+        </th>
 [% IF transaction_type == 'deposit' -%]
 [% ELSE -%]
-        <th>Creation Date</th>
-        <th>Verified Date</th>
-        <th>Rejected Date</th>
-        <th>Sent Date</th>
+        <th>
+            <table>
+                <thead>
+                    <th>Date</th>
+                </thead>
+            </table>
+        </th>
         [% IF view_type == 'pending' %]
             <th>Verify</th>
             <th>|</th>
             <th>Reject</th>
         [% END %]
 [% END -%]
-        <th>Remark</th>
-        <th>ErrorInfo</th>
-        <th>ResolutionInfo</th>
-        <th>BlockchainTxnId</th>
+        <th>
+            <table>
+                <thead>
+                    <th>Details</th>
+                </thead>
+            </table>
+        </th>
     </tr>
     [% FOREACH trx IN transactions %]
     <tr>
-        <td>[% trx.currency_code %]</td>
-        <td>[% trx.address %]</td>
-        <td>[% trx.client_loginid %]</td>
-        <td>[% trx.amount %]</td>
+        <td>
+            <table>
+                <tbody>
+                    <tr>
+                        <td><b>Address</b>: [% trx.address %]</td>
+                    </tr>
+                    <tr>
+                        <td><b>BlockchainId</b>: [% trx.blockchain_txn %]</td>
+                    </tr>
+                </tbody>
+            </table>
+        </td>
+        <td>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>[% trx.currency_code %] [% trx.amount %]</td>
+                    </tr>
+                    <tr>
+                        <td>[% trx.client_loginid %]<td>
+                    </tr>
+                    <tr>
+                        <td>Id: [% trx.payment_id %]</td>
+                    </tr>
+                </tbody>
+            </table>
+        </td>
 [% IF transaction_type == 'deposit' -%]
 [% ELSE -%]
-        <td>[% trx.creation_date %]</td>
-        <td>[% trx.verified_date %]</td>
-        <td>[% trx.rejected_date %]</td>
-        <td>[% trx.sent_date %]</td>
+        <td>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Creation: [% trx.creation_date %]</td>
+                    </tr>
+                    <tr>
+                        <td>Verified: [% trx.verified_date %]</td>
+                    </tr>
+                    <tr>
+                        <td>Rejected: [% trx.rejected_date %]</td>
+                    </tr>
+                    <tr>
+                        <td>Processing: [% trx.processing_date %]</td>
+                    </tr>
+                    <tr>
+                        <td>Sent:[% trx.sent_date %]</td>
+                    </tr>
+                    </tr>
+                </tbody>
+            </table>
+        </td>
         [% IF view_type == 'pending' %]
             <td>
                 <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Verify transaction</a>
@@ -94,10 +145,21 @@
             </td>
         [% END %]
 [% END -%]
-        <td>[% trx.remark %]</td>
-        <td>[% trx.error_text %]</td>
-        <td>[% trx.resolution %]</td>
-        <td>[% trx.blockchain_txn %]</td>
+        <td>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Remark: [% trx.remark %]</td>
+                    </tr>
+                    <tr>
+                        <td>Error: [% trx.error_text %]</td>
+                    </tr>
+                    <tr>
+                        <td>Resolution: [% trx.resolution %]</td>
+                    </tr>
+                </tbody>
+            </table>
+        </td>
     </tr>
     [% END %]
 </table>
