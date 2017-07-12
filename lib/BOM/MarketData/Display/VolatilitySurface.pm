@@ -86,7 +86,7 @@ sub rmg_table_format {
         @surface =
             map { [$volsurface->flat_vol, $volsurface->flat_atm_spread] } @days;
     } elsif ($volsurface->type eq 'delta') {
-        my @deltas = (sort { $a <=> $b } @{$volsurface->deltas});
+        my @deltas = sort { $a <=> $b } $volsurface->get_surface_volatility(@days, $volsurface->smile_points);
         my @vol_spreads_points;
 
         foreach my $delta (@{$volsurface->spread_points}) {
@@ -105,7 +105,7 @@ sub rmg_table_format {
 
         for (my $i = 0; $i < scalar @days; $i++) {
             my $day    = $days[$i];
-            my $smile  = $volsurface->get_smile($day);
+            my $smile  = $volsurface->get_surface_smile($day);
             my $spread = $volsurface->get_smile_spread($day);
 
             if ($atm_spread_point ne 'atm_spread') {
@@ -237,15 +237,13 @@ sub get_forward_vol {
 
     my %implied_vols;
     foreach my $day (@days) {
-        my $smile = $volsurface->get_smile($day);
+        my $smile = $volsurface->get_surface_smile($day);
         $implied_vols{$day} = $smile->{$atm_key};
     }
 
-    my $trading_calendar =
-        Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($volsurface->for_date), $volsurface->for_date);
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
-        $weights{$i} = $trading_calendar->weight_on($volsurface->underlying, $volsurface->recorded_date->epoch + $i * 86400);
+        $weights{$i} = $volsurface->weight_on($volsurface->recorded_date->epoch + $i * 86400);
     }
 
     my $forward_vols;
