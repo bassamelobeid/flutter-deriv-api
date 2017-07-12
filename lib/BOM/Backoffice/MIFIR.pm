@@ -10,7 +10,7 @@ use YAML qw/LoadFile/;
 use utf8;
 
 my $converter = Text::Iconv->new("UTF-8", "ASCII//TRANSLIT//IGNORE");
-our $config = LoadFile('mifir.yml');
+our $config = LoadFile('config/mifir.yml');
 
 sub process_name {
     my ($str) = @_;
