@@ -6,6 +6,5 @@
         <tr><td colspan=2><INPUT type="submit" name="download_csv" value="Download File"></td></tr>
     </table>
 </form>
-<p><b>Display the current open ICO bid deals on a histogram: </b></p>
 
 <div id="histogram_chart"></div>

@@ -22,9 +22,8 @@ use JSON qw(to_json);
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 use BOM::Platform::Runtime;
-use BOM::JapanContractDetailsOutput;
 use BOM::RiskReporting::BinaryIco;
-
+ 
 if (request()->param('download_csv')) {
     my $res;
     try {
@@ -32,18 +31,8 @@ if (request()->param('download_csv')) {
     }
     catch { warn "Error $_"; };
     return $res;
-} elsif (request()->param('plot_histogram')) {
-    my $res;
-    try {
-        $res = BOM::RiskReporting::BinaryIco->new->generate_output_in_histogram;
 
-        PrintContentType_JSON();
-        print to_json($res);
-
-    }
-    catch { warn "Error $_"; };
-    return $res;
-} else {
+}
     PrintContentType();
     BrokerPresentation("Open ICO deals");
     Bar("Tools");
@@ -52,8 +41,7 @@ if (request()->param('download_csv')) {
         {
             upload_url => 'f_dailyico.cgi',
         }) || die BOM::Backoffice::Request::template->error;
-    return;
+    return ;
 
-}
 
 code_exit_BO();
