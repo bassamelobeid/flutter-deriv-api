@@ -86,7 +86,7 @@ sub rmg_table_format {
         @surface =
             map { [$volsurface->flat_vol, $volsurface->flat_atm_spread] } @days;
     } elsif ($volsurface->type eq 'delta') {
-        my @deltas = sort { $a <=> $b } $volsurface->get_surface_volatility(@days, $volsurface->smile_points);
+        my @deltas = $volsurface->smile_points;
         my @vol_spreads_points;
 
         foreach my $delta (@{$volsurface->spread_points}) {
