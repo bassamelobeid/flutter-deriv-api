@@ -61,16 +61,16 @@
         <th>Verified Date</th>
         <th>Rejected Date</th>
         <th>Sent Date</th>
-[% END -%]
         [% IF view_type == 'pending' %]
             <th>Verify</th>
             <th>|</th>
             <th>Reject</th>
         [% END %]
+[% END -%]
         <th>Remark</th>
         <th>ErrorInfo</th>
         <th>ResolutionInfo</th>
-        <th>Blockchain Txn Id</th>
+        <th>BlockchainTxnId</th>
     </tr>
     [% FOREACH trx IN transactions %]
     <tr>
@@ -84,7 +84,6 @@
         <td>[% trx.verified_date %]</td>
         <td>[% trx.rejected_date %]</td>
         <td>[% trx.sent_date %]</td>
-[% END -%]
         [% IF view_type == 'pending' %]
             <td>
                 <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Verify transaction</a>
@@ -94,6 +93,7 @@
                 <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Reject transaction</a>
             </td>
         [% END %]
+[% END -%]
         <td>[% trx.remark %]</td>
         <td>[% trx.error_text %]</td>
         <td>[% trx.resolution %]</td>
