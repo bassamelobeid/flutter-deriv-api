@@ -191,6 +191,11 @@
               "description": "Sell transaction id for that contract, only present when contract is already sold."
             }
           }
+        },
+       "won": {
+         "type": "boolean",
+         "title": "Contract result",
+         "description": "Show the contract win or lose when the contract expired. This field will not appear until the contract expired. The value is true if contract win, false otherwise"
         }
       }
     },
