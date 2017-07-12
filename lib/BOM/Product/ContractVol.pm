@@ -131,9 +131,10 @@ sub _build_pricing_vol {
     my $volatility_error;
     if ($self->priced_with_intraday_model) {
         $vol = $self->empirical_volsurface->get_volatility({
-            from  => $self->effective_start,
-            to    => $self->date_expiry,
-            ticks => $self->ticks_for_volatility_calculation,
+            from                          => $self->effective_start,
+            to                            => $self->date_expiry,
+            ticks                         => $self->ticks_for_volatility_calculation,
+            include_economic_event_impact => 1,
         });
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
