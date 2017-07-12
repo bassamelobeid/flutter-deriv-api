@@ -236,7 +236,6 @@ sub get_forward_vol {
     my @days = @{$volsurface->original_term_for_smile};
 
     my %implied_vols;
-
     foreach my $day (@days) {
         my $smile = $volsurface->get_surface_smile($day);
         $implied_vols{$day} = $smile->{$atm_key};

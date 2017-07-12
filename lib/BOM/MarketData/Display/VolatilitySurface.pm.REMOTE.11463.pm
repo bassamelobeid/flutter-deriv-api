@@ -86,7 +86,7 @@ sub rmg_table_format {
         @surface =
             map { [$volsurface->flat_vol, $volsurface->flat_atm_spread] } @days;
     } elsif ($volsurface->type eq 'delta') {
-        my @deltas = sort { $a <=> $b } $volsurface->get_surface_volatility(@days, $volsurface->smile_points);
+        my @deltas = (sort { $a <=> $b } @{$volsurface->deltas});
         my @vol_spreads_points;
 
         foreach my $delta (@{$volsurface->spread_points}) {
@@ -105,7 +105,7 @@ sub rmg_table_format {
 
         for (my $i = 0; $i < scalar @days; $i++) {
             my $day    = $days[$i];
-            my $smile  = $volsurface->get_surface_smile($day);
+            my $smile  = $volsurface->get_variances(Date::Utility->new($day));
             my $spread = $volsurface->get_smile_spread($day);
 
             if ($atm_spread_point ne 'atm_spread') {
@@ -233,14 +233,16 @@ sub get_forward_vol {
     my $volsurface = $self->surface;
     my $atm_key = (grep { $volsurface->type =~ $_ } qw(delta flat )) ? 50 : 100;
 
-    my @days = @{$volsurface->original_term_for_smile};
-
+    my @days = sort {$a <=> $b} @{$volsurface->original_term_for_smile};
+    my @expiries = sort {$a <=> $b} keys %{$volsurface->variance_table};
+                             
     my %implied_vols;
-
-    foreach my $day (@days) {
-        my $smile = $volsurface->get_surface_smile($day);
-        $implied_vols{$day} = $smile->{$atm_key};
-    }
+    for(my $i=0; $i<$#days; $i++) { 
+        use Data::Dumper;
+        warn "Date::" . Dumper($expiries[$i]);
+        my $smile = $volsurface->get_variances(Date::Utility->new($expiries[$i]));
+        $implied_vols{$i} = $smile->{$atm_key};
+    }      
 
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
