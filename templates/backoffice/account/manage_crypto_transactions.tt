@@ -52,35 +52,17 @@
 <table>
     <tr>
         <th>BlockchainInfo</th>
-        <th>
-            <table>
-                <thead>
-                    <th>PaymentInfo</th>
-                </thead>
-            </table>
-        </th>
+        <th>PaymentInfo</th>
 [% IF transaction_type == 'deposit' -%]
 [% ELSE -%]
-        <th>
-            <table>
-                <thead>
-                    <th>Date</th>
-                </thead>
-            </table>
-        </th>
+        <th>Date</th>
         [% IF view_type == 'pending' %]
             <th>Verify</th>
             <th>|</th>
             <th>Reject</th>
         [% END %]
 [% END -%]
-        <th>
-            <table>
-                <thead>
-                    <th>Details</th>
-                </thead>
-            </table>
-        </th>
+        <th>Details</th>
     </tr>
     [% FOREACH trx IN transactions %]
     <tr>
