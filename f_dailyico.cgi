@@ -15,10 +15,10 @@ use Try::Tiny;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
-use BOM::Backoffice::PlackHelpers qw( PrintContentType);
+use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_JSON);
 use BOM::Backoffice::Request;
 use BOM::Backoffice::Sysinit ();
-
+use JSON qw(to_json);
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 use BOM::Platform::Runtime;
@@ -36,6 +36,10 @@ if (request()->param('download_csv')) {
     my $res;
     try {
         $res = BOM::RiskReporting::BinaryIco->new->generate_output_in_histogram;
+
+        PrintContentType_JSON();
+        print to_json($res);
+
     }
     catch { warn "Error $_"; };
     return $res;
