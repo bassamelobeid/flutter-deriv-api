@@ -278,8 +278,6 @@ sub _get_volsurface {
         warn "Failed to fetch historical surface data (usually just a timeout): $_";
     };
 
-    my $tabs;
-
     # master vol surface
     my $master_vol_url         = 'mv';
     my $master_display         = BOM::MarketData::Display::VolatilitySurface->new(surface => $self->master_surface);
