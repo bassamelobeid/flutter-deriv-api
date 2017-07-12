@@ -1,19 +1,48 @@
-[% IF client.broker == 'MF' %]
-    <form>
+[%
+MACRO documents_info BLOCK;
+'Possible documents for ' _ data.country _ '<br>'  | none;
+FOREACH i IN data.keys;
+    NEXT IF i == 'country';
+    IF i == 'CONCAT';
+            '<input type="submit" name="mifir_set_concat" value="CONCAT"><br>' | none;
+            NEXT;
+    END;
+    h = data.$i;
+    '<b>' _ i _ '</b>' | none;
+    IF h.size;
+    ", can be obtained from:<ul>" | none;
+    ELSE;
+    "<br>" | none;
+    END;
+    FOREACH j IN h;
+        "<li>" _ j _ "</li>" | none;
+    END;
+    "</ul>" IF h;
+END;
+END;
+%]
+
+[% IF client.broker == 'MF' or 1==1 %]
     <tr>
         <td class="small_header" colspan="2">#MIFIR ID Number</td>
     </tr>
     <tr>
         <td class="label">MIFIR ID</td>
-        <td>:
+        <td><table><tr><td valign="top" style="padding-top: 0px; border-right: 1px solid #888888; padding-right: 10px">:
         [% IF client.mifir_id %]
             <span>[% client.mifir_id %]</span>
             <input type="submit" name="mifir_reset" value="DELETE">
         [% ELSE %]
-            <input type="text" name="mifir_id" value=""> upto 35 alphanumeric symbols
-            <input type="submit" name="mifir_set_concat" value="CONCAT">
+            <input type="text" name="mifir_id" value=""><br>
+            upto 35 alphanumeric symbols
         [% END %]
         </td>
+        <td style="padding-top: 0px; padding-left: 10px">
+        [% c = client.residence.upper;%]
+        [% documents_info(data => mifir_config.countries.$c)%]
+        </td>
+        </tr>
+        </table>
+        </td>
     </tr>
-    </form>
 [% END %]
