@@ -3,7 +3,6 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
-use List::Util qw(sum);
 use List::MoreUtils qw(none all);
 use VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
