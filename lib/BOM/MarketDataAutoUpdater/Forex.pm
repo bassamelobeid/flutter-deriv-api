@@ -216,11 +216,10 @@ sub run {
             surface                    => $raw_volsurface->{surface},
             chronicle_reader           => BOM::Platform::Chronicle::get_chronicle_reader(),
             chronicle_writer           => BOM::Platform::Chronicle::get_chronicle_writer(),
-            write_to_centralized_redis => 1
         });
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
-            $volsurface->warmup_cache('volsurface_updated') if $self->_warmup_seasonality_cache->{$underlying->symbol};
+            $volsurface->warmup_cache() if $self->_warmup_seasonality_cache->{$underlying->symbol};
             $volsurface->save;
             $self->report->{$symbol}->{success} = 1;
         } else {
