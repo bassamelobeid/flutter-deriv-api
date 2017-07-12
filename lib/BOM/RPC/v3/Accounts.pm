@@ -1078,7 +1078,7 @@ sub set_self_exclusion {
         send_email({
             from    => $compliance_email,
             to      => $to_email,
-            subject => "Client set self-exclusion limits",
+            subject => "Client " . $client->loginid . " set self-exclusion limits",
             message => [$message],
         });
     }
