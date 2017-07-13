@@ -6,6 +6,7 @@
         <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The time given on forexfactory is GMT-4)</td></tr>
         <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
         <tr><td>Source</td><td> : <INPUT type="text" name="source" value="forexfactory"></td></tr>
+        <tr><td>Custom Magnitude</td><td>: <INPUT type="text" name="custom_magnitude"></td><td>( *This will override the magnitude set in yaml for this event.)</td></tr>
         <tr><td>Impact</td>
             <td> : <select name=impact>
                     <option value=1>1</option>

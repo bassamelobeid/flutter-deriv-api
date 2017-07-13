@@ -85,6 +85,7 @@ my $source                 = request()->param('source');
 my $save_economic_event    = request()->param('save_economic_event');
 my $is_tentative           = request()->param('is_tentative');
 my $estimated_release_date = request()->param('estimated_release_date');
+my $custom_magnitude       = request()->param('custom_magnitude') // 0;
 
 if ($save_economic_event) {
     try {
@@ -95,6 +96,7 @@ if ($save_economic_event) {
             source     => $source,
             impact     => $impact,
             symbol     => $symbol,
+            $custom_magnitude ? (custom_magnitude => $custom_magnitude) : (),
         };
 
         if ($is_tentative) {
