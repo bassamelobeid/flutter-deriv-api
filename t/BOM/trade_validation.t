@@ -3,10 +3,11 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 9;
+use Test::Most tests => 10;
 use File::Spec;
 use JSON qw(decode_json);
 use YAML::XS qw(LoadFile);
+use Test::Warnings;
 
 use Date::Utility;
 use Test::MockObject::Extends;
