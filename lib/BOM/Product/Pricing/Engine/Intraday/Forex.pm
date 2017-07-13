@@ -501,7 +501,7 @@ sub _calculate_historical_volatility {
     );
     my ($seasonality_past, $seasonality_fut) =
         map { $seasonality_obj->get_seasonality({underlying_symbol => $bet->underlying->symbol, from => $_->[0], to => $_->[1],}) }
-        ([$dp->minus_time_interval(HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES . 'm'), $dp], [$dp, $self->date_expiry]);
+        ([$dp->minus_time_interval(HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES . 'm'), $dp], [$dp, $bet->date_expiry]);
     my $past_mean = sum(map { $_ * $_ } @$seasonality_past) / @$seasonality_past;
     my $fut_mean  = sum(map { $_ * $_ } @$seasonality_fut) / @$seasonality_fut;
     my $k         = $fut_mean / $past_mean;
