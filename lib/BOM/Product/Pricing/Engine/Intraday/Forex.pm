@@ -18,6 +18,8 @@ use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
 use Pricing::Engine::Markup::TentativeEvents;
 use Pricing::Engine::Markup::HistoricalVol;
+use Volatility::Seasonality;
+use BOM::Platform::Chronicle;
 
 # we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
 use constant HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES => 20;
@@ -493,6 +495,17 @@ sub _calculate_historical_volatility {
         push @returns_squared, ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 / $dt);
     }
 
+    my $seasonality_obj = Volatility::Seasonality->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    );
+    my ($seasonality_past, $seasonality_fut) =
+        map { $seasonality_obj->get_seasonality({underlying_symbol => $self->underlying->symbol, from => $_->[0], to => $_->[1],}) }
+        ([$dp->minus_time_interval(HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES . 'm'), $dp], [$dp, $self->date_expiry]);
+    my $past_mean = sum(map { $_ * $_ } @$seasonality_past) / @$seasonality_past;
+    my $fut_mean  = sum(map { $_ * $_ } @$seasonality_fut) / @$seasonality_fut;
+    my $k         = $fut_mean / $past_mean;
+
     # warns if ticks used to calculate historical vol is less than 80% of the expected ticks.
     # Ticks are in 15-second interval. Each minute has 4 intervals.
     my $expected_interval = HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES * 4 - $returns_sep;
@@ -501,7 +514,7 @@ sub _calculate_historical_volatility {
         return 0.1;
     }
 
-    return sqrt(sum(@returns_squared) / @returns_squared);
+    return sqrt(sum(@returns_squared) / @returns_squared) * $k;
 }
 
 no Moose;
