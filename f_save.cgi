@@ -108,7 +108,7 @@ if ($filen eq 'editvol') {
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         surface          => $surface_data,
-        recorded_date    => Date::Utility->new,
+        creation_date    => Date::Utility->new,
         (request()->param('spot_reference') ? (spot_reference => request()->param('spot_reference')) : ()),
     );
     my $existing_surface_args = {
