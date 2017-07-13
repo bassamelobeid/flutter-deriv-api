@@ -123,7 +123,7 @@ sub _build_live_open_ico {
     foreach my $c (keys %$live_open_ico) {
         $live_open_ico->{$c}->{per_token_bid_price_USD} = financialrounding(
             'price',
-            $live_open_ico->{$c}->{currency_code},
+            'USD',
             in_USD($live_open_ico->{$c}->{per_token_bid_price}, $live_open_ico->{$c}->{currency_code}));
 
     }
