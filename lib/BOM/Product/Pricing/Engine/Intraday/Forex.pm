@@ -496,11 +496,11 @@ sub _calculate_historical_volatility {
     }
 
     my $seasonality_obj = Volatility::Seasonality->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($bet->underlying->for_date),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     );
     my ($seasonality_past, $seasonality_fut) =
-        map { $seasonality_obj->get_seasonality({underlying_symbol => $self->underlying->symbol, from => $_->[0], to => $_->[1],}) }
+        map { $seasonality_obj->get_seasonality({underlying_symbol => $bet->underlying->symbol, from => $_->[0], to => $_->[1],}) }
         ([$dp->minus_time_interval(HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES . 'm'), $dp], [$dp, $self->date_expiry]);
     my $past_mean = sum(map { $_ * $_ } @$seasonality_past) / @$seasonality_past;
     my $fut_mean  = sum(map { $_ * $_ } @$seasonality_fut) / @$seasonality_fut;
