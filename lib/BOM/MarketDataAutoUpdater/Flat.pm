@@ -84,7 +84,7 @@ sub run {
         Quant::Framework::VolSurface::Delta->new({
                 underlying       => create_underlying($symbol),
                 surface_data     => $surface_data,
-                recorded_date    => $now,
+                creation_date    => $now,
                 chronicle_reader => $chronicle_r,
                 chronicle_writer => $chronicle_w,
             })->save;
@@ -96,7 +96,7 @@ sub run {
         Quant::Framework::VolSurface::Moneyness->new({
                 underlying       => $underlying,
                 surface_data     => $surface_data,
-                recorded_date    => $now,
+                creation_date    => $now,
                 chronicle_reader => $chronicle_r,
                 chronicle_writer => $chronicle_w,
                 spot_reference   => $underlying->spot,

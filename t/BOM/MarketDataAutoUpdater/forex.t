@@ -189,7 +189,7 @@ subtest 'big difference' => sub {
         surfaces_from_file => {
             frxUSDJPY => {
                 surface       => $fake_surface->surface_data,
-                recorded_date => $fake_surface->recorded_date,
+                creation_date => $fake_surface->creation_date,
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
@@ -204,17 +204,35 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => Date::Utility->new(time - 7199),
     });
 
-subtest 'save valid' => sub {
+subtest 'save identical' => sub {
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
         surfaces_from_file => {
             frxUSDJPY => {
                 surface       => $fake_surface->surface_data,
-                recorded_date => $fake_surface->recorded_date,
+                creation_date => $fake_surface->creation_date,
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
+    ok !$au->report->{frxUSDJPY}->{success}, 'update failed';
+    like $au->report->{frxUSDJPY}->{reason}, qr/New volsurface for frxUSDJPY is identical to existing one/, 'reason: identical';
+};
+
+subtest 'save valid' => sub {
+    my $clone = dclone($fake_surface->surface_data);
+    $clone->{14}->{smile}->{25} *= 1.01;
+    my $au = BOM::MarketDataAutoUpdater::Forex->new(
+        symbols_to_update  => ['frxUSDJPY'],
+        _connect_ftp       => 0,
+        surfaces_from_file => {
+            frxUSDJPY => {
+                surface       => $clone,
+                creation_date => $fake_surface->creation_date,
+                type          => $fake_surface->type
+            }});
+    lives_ok { $au->run } 'run without dying';
+    use Data::Dumper;
     ok $au->report->{frxUSDJPY}->{success}, 'update successful';
 };
 
@@ -268,6 +286,8 @@ subtest "Friday after close, weekend, won't open check." => sub {
 
 subtest 'do not update one hour after rollover' => sub {
     my $rollover_date = NY1700_rollover_date_on($fake_date);
+    my $clone         = dclone($fake_surface->surface_data);
+    $clone->{14}->{smile}->{25} *= 1.01;
 
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
@@ -275,7 +295,7 @@ subtest 'do not update one hour after rollover' => sub {
         surfaces_from_file => {
             frxUSDJPY => {
                 surface       => $fake_surface->surface_data,
-                recorded_date => $rollover_date,
+                creation_date => $rollover_date,
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
@@ -285,8 +305,8 @@ subtest 'do not update one hour after rollover' => sub {
         _connect_ftp       => 0,
         surfaces_from_file => {
             frxUSDJPY => {
-                surface       => $fake_surface->surface_data,
-                recorded_date => $rollover_date->plus_time_interval('1h1s'),
+                surface       => $clone,
+                creation_date => $rollover_date->plus_time_interval('1h1s'),
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
