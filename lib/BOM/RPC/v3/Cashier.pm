@@ -407,9 +407,9 @@ sub get_limits {
 
     my $limit = +{
         account_balance                     => formatnumber('amount', $currency, $client->get_limit_for_account_balance),
-        payout                              => formatnumber('amount', $currency, $client->get_limit_for_payout),
+        payout                              => formatnumber('price',  $currency, $client->get_limit_for_payout),
         payout_per_symbol_and_contract_type => formatnumber(
-            'amount', $currency, BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency}
+            'price', $currency, BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency}
         ),
         open_positions => $client->get_limit_for_open_positions,
     };
@@ -435,7 +435,7 @@ sub get_limits {
 
     $limit->{num_of_days}       = $numdays;
     $limit->{num_of_days_limit} = $numdayslimit;
-    $limit->{lifetime_limit}    = formatnumber('amount', $currency, $lifetimelimit) * 1;
+    $limit->{lifetime_limit}    = formatnumber('price', $currency, $lifetimelimit);
 
     # withdrawal since $numdays
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
@@ -454,9 +454,9 @@ sub get_limits {
         $remainder = 0;
     }
 
-    $limit->{withdrawal_since_inception_monetary} = formatnumber('amount', $currency, $withdrawal_since_inception);
-    $limit->{withdrawal_for_x_days_monetary}      = formatnumber('amount', $currency, $withdrawal_for_x_days);
-    $limit->{remainder}                           = formatnumber('amount', $currency, $remainder);
+    $limit->{withdrawal_since_inception_monetary} = formatnumber('price', $currency, $withdrawal_since_inception);
+    $limit->{withdrawal_for_x_days_monetary}      = formatnumber('price', $currency, $withdrawal_for_x_days);
+    $limit->{remainder}                           = formatnumber('price', $currency, $remainder);
 
     return $limit;
 }
@@ -1298,7 +1298,7 @@ sub transfer_between_accounts {
         } elsif ($err =~ /includes frozen bonus \[(.+)\]/) {
             my $frozen_bonus = $1;
             $limit = $currency . ' ' . formatnumber('amount', $currency, $client_from->default_account->balance - $frozen_bonus);
-        } elsif ($err =~ /exceeds withdrawal limit \[(.+)\]\s+\((.+)\)/) {
+        } elsif ($err =~ /exceeds withdrawal limit \[(.+)\](?:\s+\((.+)\))?/) {
             my $bal_1 = $1;
             my $bal_2 = $2;
             $limit = $bal_1;
@@ -1310,7 +1310,7 @@ sub transfer_between_accounts {
 
         return $error_unfreeze_msg_sub->(
             "$err_msg validate_payment failed for $loginid_from [$err]",
-            (defined $limit) ? "The maximum amount you may transfer is: $limit." : '',
+            (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : '',
             $client_from->loginid, $client_to->loginid
         );
     }
