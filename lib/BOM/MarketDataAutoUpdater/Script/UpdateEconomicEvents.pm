@@ -16,6 +16,7 @@ use Path::Tiny;
 use BOM::Platform::Chronicle;
 use Try::Tiny;
 use List::Util qw(first uniq);
+use Email::Stuffer;
 
 sub documentation { return 'This script runs economic events update from forex factory at 00:00 GMT'; }
 
@@ -28,9 +29,10 @@ sub script_run {
     #has its last Friday as a holiday, we will still have some events in the cache.
     my $events_received = $parser->extract_economic_events(2, Date::Utility->new()->minus_time_interval('4d'));
 
+    my $now = Date::Utility->new;
     stats_gauge('economic_events_updates', scalar(@$events_received));
 
-    my $file_timestamp = Date::Utility->new->date_yyyymmdd;
+    my $file_timestamp = $now->date_yyyymmdd;
 
     #this will be an array of all extracted economic events. Later we will store
 
@@ -62,6 +64,18 @@ sub script_run {
 
         print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.";
 
+        # get all the events happening today
+        if (
+            my @alert = grep {
+                       $_->{release_date} >= $now->truncate_to_day->epoch
+                    && $_->{release_date} <= $now->plus_time_interval('1d')->truncate_to_day->epoch
+            } @$events_received
+            )
+        {
+            my $subject_line = 'Forex Factory Alert';
+            my $body = join "\n", map { $_->{event_name} . ' release at ' . Date::Utility->new($_->{release_date})->datetime } @alert;
+            Email::Stuffer->from('system@binary.com')->to('quants-market-data@binary.com')->subject($subject_line)->text_body($body)->send_or_die;
+        }
     }
     catch {
         print 'Error occured while saving events: ' . $_;
