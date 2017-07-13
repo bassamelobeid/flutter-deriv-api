@@ -228,7 +228,7 @@ subtest 'save valid' => sub {
         surfaces_from_file => {
             frxUSDJPY => {
                 surface       => $clone,
-                recorded_date => $fake_surface->recorded_date,
+                creation_date => $fake_surface->creation_date,
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
