@@ -1,7 +1,5 @@
 package BOM::MarketData::VolSurface::Flat;
 
-use feature 'state';
-
 use Moose;
 use YAML::XS qw(LoadFile);
 use Quant::Framework::Utils::Types;
@@ -31,7 +29,7 @@ Return the surface type
 
 =cut
 
-state $vol = LoadFile('/home/git/regentmarkets/bom-market/config/files/flat_volatility.yml');
+my $vol = LoadFile('/home/git/regentmarkets/bom-market/config/files/flat_volatility.yml');
 
 has '+type' => (
     default => 'flat',
@@ -149,7 +147,7 @@ sub _build_surface_data {
     return $self->surface;
 }
 
-has recorded_date => (
+has creation_date => (
     is      => 'ro',
     default => sub { Date::Utility->new },
 );
