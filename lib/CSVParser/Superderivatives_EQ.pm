@@ -53,7 +53,7 @@ sub _build_records {
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         surface          => $surface_data,
-        recorded_date    => Date::Utility->new($date_start),
+        creation_date    => Date::Utility->new($date_start),
         spot_reference   => $spot,
         parameterization => {
             values            => $data->{sabr_params},
@@ -136,7 +136,7 @@ sub _setup_quanto_rate {
     my $rate = Quant::Framework::InterestRate->new(
         symbol           => $symbol,
         rates            => \%applicable_rates,
-        recorded_date    => $date->datetime_iso8601,
+        creation_date    => $date->datetime_iso8601,
         type             => 'market',
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
@@ -164,7 +164,7 @@ sub _setup_quanto_volsurface {
         underlying       => $underlying,
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-        recorded_date => $date,
+        creation_date => $date,
     );
 
     return $volsurface->save;

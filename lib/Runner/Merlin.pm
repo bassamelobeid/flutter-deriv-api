@@ -143,7 +143,7 @@ sub _calculate_results {
 sub _get_bet_args {
     my $record = shift;
     my $when   = Date::Utility->new($record->{date_start});
-    $record->{surface}->{recorded_date} = $when;
+    $record->{surface}->{creation_date} = $when;
     my $args   = {
         current_spot => $record->{current_spot},
         underlying   => $record->{underlying},
