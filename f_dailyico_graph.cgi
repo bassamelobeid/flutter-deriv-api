@@ -27,7 +27,6 @@ use BOM::Platform::Runtime;
 try {
     my $data = BOM::RiskReporting::BinaryIco->new->generate_output_in_histogram;
     PrintContentType_JSON();
-    warn $data->{USD}[1][0];
     print to_json($data);
 }
 
