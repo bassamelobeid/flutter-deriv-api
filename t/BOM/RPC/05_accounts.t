@@ -1440,7 +1440,7 @@ subtest 'get and set self_exclusion' => sub {
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     my @msgs = $mailbox->search(
         email   => 'compliance@binary.com,support@binary.com,marketing@binary.com',
-        subject => qr/Client set self-exclusion limits/
+        subject => qr/Client $test_loginid set self-exclusion limits/
     );
     ok(@msgs, "msg sent to support, marketing and compliance email");
     like($msgs[0]{body}, qr/.*Exclude from website until/s, 'email content is ok');
