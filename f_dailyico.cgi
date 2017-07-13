@@ -21,7 +21,7 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 use BOM::RiskReporting::BinaryIco;
- 
+
 if (request()->param('download_csv')) {
     my $res;
     try {
@@ -31,15 +31,14 @@ if (request()->param('download_csv')) {
     return $res;
 
 }
-    PrintContentType();
-    BrokerPresentation("Open ICO deals");
-    Bar("Tools");
-    BOM::Backoffice::Request::template->process(
-        'backoffice/ico.html.tt',
-        {
-            upload_url => 'f_dailyico.cgi',
-        }) || die BOM::Backoffice::Request::template->error;
-    return ;
-
+PrintContentType();
+BrokerPresentation("Open ICO deals");
+Bar("Tools");
+BOM::Backoffice::Request::template->process(
+    'backoffice/ico.html.tt',
+    {
+        upload_url => 'f_dailyico.cgi',
+    }) || die BOM::Backoffice::Request::template->error;
 
 code_exit_BO();
+

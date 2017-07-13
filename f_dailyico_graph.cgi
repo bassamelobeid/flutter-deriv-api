@@ -33,5 +33,4 @@ try {
 
 catch { warn "Error $_"; };
 
-return;
 code_exit_BO();
