@@ -1298,7 +1298,7 @@ sub transfer_between_accounts {
         } elsif ($err =~ /includes frozen bonus \[(.+)\]/) {
             my $frozen_bonus = $1;
             $limit = $currency . ' ' . formatnumber('amount', $currency, $client_from->default_account->balance - $frozen_bonus);
-        } elsif ($err =~ /exceeds withdrawal limit \[(.+)\]\s+\((.+)\)/) {
+        } elsif ($err =~ /exceeds withdrawal limit \[(.+)\](?:\s+\((.+)\))?/) {
             my $bal_1 = $1;
             my $bal_2 = $2;
             $limit = $bal_1;
@@ -1310,7 +1310,7 @@ sub transfer_between_accounts {
 
         return $error_unfreeze_msg_sub->(
             "$err_msg validate_payment failed for $loginid_from [$err]",
-            (defined $limit) ? "The maximum amount you may transfer is: $limit." : '',
+            (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : '',
             $client_from->loginid, $client_to->loginid
         );
     }
