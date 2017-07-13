@@ -66,7 +66,7 @@ bet_limits:
     EUR: 10000
     AUD: 10000
     GBP: 10000
-    JPY: 1000000
+    JPY: 200000
     BTC: 1
     ETH: 10
     LTC: 50
