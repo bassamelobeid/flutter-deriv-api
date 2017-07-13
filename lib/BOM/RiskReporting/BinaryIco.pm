@@ -63,8 +63,6 @@ sub generate_output_in_histogram {
     my $self = shift;
 
     my $open_ico_ref = $self->live_open_ico;
-    my @per_token_price;
-    my @currency;
 
     my $data;
     my @all_currency_pairs = map { $open_ico_ref->{$_}->{currency_code} } keys %$open_ico_ref;
