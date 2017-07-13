@@ -69,6 +69,7 @@ sub script_run {
             my @alert = grep {
                        $_->{release_date} >= $now->truncate_to_day->epoch
                     && $_->{release_date} <= $now->plus_time_interval('1d')->truncate_to_day->epoch
+                    && $_->{forex_factory_alert}
             } @$events_received
             )
         {
