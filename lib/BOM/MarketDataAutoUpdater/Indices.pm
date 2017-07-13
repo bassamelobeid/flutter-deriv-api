@@ -114,13 +114,13 @@ sub run {
                 # We do not have feed of BIST100 cash index, hence it need to use the spot of OTC_BIST100
                 $raw_volsurface->{spot_reference} =
                     $symbol eq 'BIST100'
-                    ? create_underlying('OTC_BIST100')->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote
-                    : $underlying->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote;
+                    ? create_underlying('OTC_BIST100')->tick_at($raw_volsurface->{creation_date}->epoch, {allow_inconsistent => 1})->quote
+                    : $underlying->tick_at($raw_volsurface->{creation_date}->epoch, {allow_inconsistent => 1})->quote;
 
             }
             my $volsurface = Quant::Framework::VolSurface::Moneyness->new({
                 underlying       => $underlying,
-                recorded_date    => $raw_volsurface->{recorded_date},
+                creation_date    => $raw_volsurface->{creation_date},
                 spot_reference   => $raw_volsurface->{spot_reference},
                 chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
