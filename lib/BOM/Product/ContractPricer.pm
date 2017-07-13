@@ -288,7 +288,7 @@ sub _create_new_interface_engine {
             q_rate                   => $self->q_rate,
             r_rate                   => $self->r_rate,
             volsurface               => $self->volsurface->surface,
-            volsurface_recorded_date => $self->volsurface->recorded_date,
+            volsurface_creation_date => $self->volsurface->creation_date,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
         %pricing_parameters = (
