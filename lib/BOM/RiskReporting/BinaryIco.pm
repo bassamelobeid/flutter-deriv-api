@@ -70,18 +70,15 @@ sub generate_output_in_histogram {
     my @all_currency_pairs = map { $open_ico_ref->{$_}->{currency_code} } keys %$open_ico_ref;
     my @uniq_currencies = uniq @all_currency_pairs;
     my @xy =
-        sort { $a->[0] <=> $b->[0] }
-        map { [$open_ico_ref->{$_}->{per_token_bid_price_USD} + 0, $open_ico_ref->{$_}->{number_of_tokens} + 0] } sort keys %$open_ico_ref;
+        map { [$open_ico_ref->{$_}->{per_token_bid_price_USD}, $open_ico_ref->{$_}->{number_of_tokens}] } sort keys %$open_ico_ref;
 
     $data->{converted_in_usd} = \@xy;
     foreach my $currency (@uniq_currencies) {
         my @xy_1 =
-            sort { $a->[0] <=> $b->[0] }
-            map { [$open_ico_ref->{$_}->{per_token_bid_price} + 0, $open_ico_ref->{$_}->{number_of_tokens} + 0] }
+            map { [$open_ico_ref->{$_}->{per_token_bid_price}, $open_ico_ref->{$_}->{number_of_tokens}] }
             grep { $open_ico_ref->{$_}->{currency_code} eq $currency } sort keys %$open_ico_ref;
 
         $data->{$currency} = \@xy_1;
-
     }
 
     return $data;
