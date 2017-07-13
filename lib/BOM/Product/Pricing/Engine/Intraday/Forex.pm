@@ -514,7 +514,7 @@ sub _calculate_historical_volatility {
         return 0.1;
     }
 
-    return sqrt(sum(@returns_squared) / @returns_squared) * $k;
+    return sqrt(sum(@returns_squared) / @returns_squared * $k);
 }
 
 no Moose;
