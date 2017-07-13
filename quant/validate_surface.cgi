@@ -29,7 +29,7 @@ BOM::Backoffice::Sysinit::init();
 # out characters from my URL encoded JSON, breaking it.
 my $cgi           = CGI->new;
 my $underlying    = create_underlying($cgi->param('symbol'));
-my $recorded_date = Date::Utility->new($cgi->param('recorded_epoch'));
+my $creation_date = Date::Utility->new($cgi->param('recorded_epoch'));
 my $type          = $cgi->param('type');
 my $spot          = $cgi->param('spot');
 
@@ -43,7 +43,7 @@ my $surface;
 $surface = $class->new(
     underlying     => $underlying,
     surface        => $surface_data,
-    recorded_date  => $recorded_date,
+    creation_date  => $creation_date,
     spot_reference => $spot,
 );
 
