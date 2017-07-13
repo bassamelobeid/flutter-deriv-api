@@ -590,7 +590,7 @@ sub _validate_volsurface {
 
     my $volsurface  = $self->volsurface;
     my $now         = $self->date_pricing;
-    my $surface_age = ($now->epoch - $volsurface->recorded_date->epoch) / 3600;
+    my $surface_age = ($now->epoch - $volsurface->creation_date->epoch) / 3600;
 
     if ($volsurface->validation_error) {
         warn "Volsurface validation error for " . $self->underlying->symbol;
@@ -610,7 +610,7 @@ sub _validate_volsurface {
         $exceeded = '6h';
     } elsif ($self->market->name eq 'indices' and $surface_age > 24 and not $self->is_atm_bet) {
         $exceeded = '24h';
-    } elsif ($volsurface->recorded_date->days_between($self->trading_calendar->trade_date_before($self->underlying->exchange, $now)) < 0) {
+    } elsif ($volsurface->creation_date->days_between($self->trading_calendar->trade_date_before($self->underlying->exchange, $now)) < 0) {
         # will discuss if this can be removed.
         $exceeded = 'different day';
     }

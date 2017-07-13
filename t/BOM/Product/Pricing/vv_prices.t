@@ -62,8 +62,8 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         spot       => $spot,
                         volatility => $volsurface->get_volatility({
                                 delta => 50,
-                                from  => $volsurface->recorded_date,
-                                to    => $volsurface->recorded_date->plus_time_interval($duration),
+                                from  => $volsurface->creation_date,
+                                to    => $volsurface->creation_date->plus_time_interval($duration),
                             }
                         ),
                     })};
