@@ -73,7 +73,7 @@ subtest 'lbfixedcall' => sub {
         is $c->sentiment, undef;
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
     }
     'generic';
@@ -114,7 +114,7 @@ subtest 'lbfixedput' => sub {
         
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
     }
     'generic';
@@ -123,7 +123,7 @@ subtest 'lbfixedput' => sub {
         $args->{duration} = '1d';
         $args->{barrier}  = 100.030;
         my $c = produce_contract($args);
-        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
         is $c->expiry_type, 'daily';
         ok !$c->is_expired, 'not expired';
@@ -158,7 +158,7 @@ subtest 'lbfloatcall' => sub {
         
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
     }
     'generic';
@@ -167,7 +167,7 @@ subtest 'lbfloatcall' => sub {
         $args->{duration} = '1d';
         $args->{barrier}  = 100.030;
         my $c = produce_contract($args);
-        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
         is $c->expiry_type, 'daily';
         ok !$c->is_expired, 'not expired';
@@ -202,7 +202,7 @@ subtest 'lbfloatput' => sub {
         
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
     }
     'generic';
@@ -211,7 +211,7 @@ subtest 'lbfloatput' => sub {
         $args->{duration} = '1d';
         $args->{barrier}  = 100.030;
         my $c = produce_contract($args);
-        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
         is $c->expiry_type, 'daily';
         ok !$c->is_expired, 'not expired';
@@ -246,7 +246,7 @@ subtest 'lbhighlow' => sub {
         
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
     }
     'generic';
@@ -255,7 +255,7 @@ subtest 'lbhighlow' => sub {
         $args->{duration} = '1d';
         $args->{barrier}  = 100.030;
         my $c = produce_contract($args);
-        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookbacks';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
         is $c->expiry_type, 'daily';
         ok !$c->is_expired, 'not expired';

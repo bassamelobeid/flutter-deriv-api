@@ -106,7 +106,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                             push @codes, $c->barrier->as_absolute;
                         }
                         my $code = join '_', @codes;
-                        isa_ok $c->pricing_engine_name, 'Pricing::Engine::Lookbacks';
+                        isa_ok $c->pricing_engine_name, 'Pricing::Engine::Lookback';
 my $prc = $c->theo_price;
 
 print $code . ': ' . $prc . "\n";

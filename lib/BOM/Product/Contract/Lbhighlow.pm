@@ -42,7 +42,7 @@ sub check_expiry_conditions {
 }
 
 sub _build_pricing_engine_name {
-    return 'Pricing::Engine::Lookbacks';
+    return 'Pricing::Engine::Lookback';
 }
 
 no Moose;

@@ -16,7 +16,7 @@ use Quant::Framework::CorrelationMatrix;
 use Pricing::Engine::EuropeanDigitalSlope;
 use Pricing::Engine::TickExpiry;
 use Pricing::Engine::BlackScholes;
-use Pricing::Engine::Lookbacks;
+use Pricing::Engine::Lookback;
 use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use BOM::MarketData qw(create_underlying_db);
@@ -298,7 +298,7 @@ sub _create_new_interface_engine {
             mu            => $self->mu,
             vol           => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
         );
-    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Lookbacks') {
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Lookback') {
         %pricing_parameters = (
             strikes         => [grep { $_ } values %{$self->barriers_for_pricing}],
             spot            => $self->pricing_spot,
@@ -522,7 +522,7 @@ sub _build_new_interface_engine {
         'Pricing::Engine::Digits'               => 1,
         'Pricing::Engine::TickExpiry'           => 1,
         'Pricing::Engine::EuropeanDigitalSlope' => 1,
-        'Pricing::Engine::Lookbacks'            => 1,
+        'Pricing::Engine::Lookback'             => 1,
     );
 
     return $engines{$self->pricing_engine_name} // 0;
