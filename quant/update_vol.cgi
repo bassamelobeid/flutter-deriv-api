@@ -22,7 +22,7 @@ my $cgi           = CGI->new;
 my $underlying    = create_underlying($cgi->param('symbol'));
 my $which         = $cgi->param('which');
 my $spot          = $cgi->param('spot');
-my $recorded_date = Date::Utility->new($cgi->param('recorded_epoch'));
+my $creation_date = Date::Utility->new($cgi->param('recorded_epoch'));
 
 my $surface_string = url_decode($cgi->param('surface'));
 $surface_string =~ s/point/./g;
@@ -31,7 +31,7 @@ my $surface_data = from_json($surface_string);
 my $surface = Quant::Framework::VolSurface::Moneyness->new(
     underlying     => $underlying,
     surface        => $surface_data,
-    recorded_date  => $recorded_date,
+    creation_date  => $creation_date,
     spot_reference => $spot,
 );
 

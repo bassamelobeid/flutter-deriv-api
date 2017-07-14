@@ -99,11 +99,38 @@ sub rmg_table_format {
 
         @headers = ('days', 'tenor', 'date', @deltas, @vol_spreads_points, '1-day Forward Vol', 'RR', '2vBF', '1vBF', 'Skew', 'Kurtosis');
 
-        foreach my $day (@days) {
+        for (my $i = 0; $i < scalar @days; $i++) {
+            my $day    = $days[$i];
             my $smile  = $volsurface->get_surface_smile($day);
             my $spread = $volsurface->get_smile_spread($day);
 
-            $spread = $spread->{'vol_spread'} if $atm_spread_point ne 'atm_spread';
+            if ($atm_spread_point ne 'atm_spread') {
+                $spread = $spread->{'vol_spread'};
+            }
+
+            my @row;
+            for (my $j = 0; $j < scalar @deltas; $j++) {
+                my $delta = $deltas[$j];
+
+                # display as %
+                push @row, sprintf('%.3f', $smile->{$delta} * 100);
+
+            }
+
+            foreach (@{$volsurface->spread_points}) {
+                my $spread_point = $_;
+
+                # display as %
+                push @row, sprintf('%.3f', $spread->{$spread_point} * 100);
+
+            }
+
+            # Forward Vol
+            my $fv;
+            if (grep { $day == $_ } @{$volsurface->original_term_for_smile}) {
+                $fv = sprintf('%.3f', $forward_vols->{$day} * 100);
+            }
+            push @row, $fv;
 
             # rr, 2vBF
             my $rr_bf = $volsurface->get_rr_bf_for_smile($smile);
@@ -123,17 +150,16 @@ sub rmg_table_format {
                 premium_adjusted => $underlying->{market_convention}->{delta_premium_adjusted},
                 bf_style         => '2_vol',
             });
+            foreach ($rr_bf->{RR_25}, $rr_bf->{BF_25}, $bf_1vol) {
+                push @row, sprintf('%.3f', ($_ * 100));
+            }
 
-            push @surface, [
-                map { defined $_ ? sprintf('%.3f', $_) : '—' } (
-                    (map { $smile->{$_} * 100 } @deltas),
-                    (map { $spread->{$_} * 100 } @{$volsurface->spread_points}),
-                    # Forward Vol
-                    ((grep { $day == $_ } @{$volsurface->original_term_for_smile}) ? ($forward_vols->{$day} * 100) : undef),
-                    (map { $_ * 100 } ($rr_bf->{RR_25}, $rr_bf->{BF_25}, $bf_1vol)),
-                    # skew, kurtosis
-                    (map { $_ // 0 } @{$self->get_skew_kurtosis($rr_bf)}{qw/skew kurtosis/}),
-                )];
+            # skew, kurtosis
+            my $skew = $self->get_skew_kurtosis($rr_bf);
+            foreach ($skew->{skew}, $skew->{kurtosis}) {
+                push @row, sprintf('%.3f', (($_) ? $_ : "0"));
+            }
+            push @surface, [@row];
         }
     }
 
@@ -214,7 +240,13 @@ sub get_forward_vol {
 
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
-        $weights{$i} = $volsurface->weight_on($volsurface->creation_date->epoch + $i * 86400);
+<<<<<<< HEAD
+        $weights{$i} = $volsurface->weight_on($volsurface->recorded_date->epoch + $i * 86400);
+||||||| merged common ancestors
+        $weights{$i} = $trading_calendar->weight_on($volsurface->underlying, $volsurface->recorded_date->epoch + $i * 86400);
+=======
+        $weights{$i} = $trading_calendar->weight_on($volsurface->underlying, $volsurface->creation_date->epoch + $i * 86400);
+>>>>>>> be65acc1b4d7fa000705337fd7afd8d87cba99a2
     }
 
     my $forward_vols;
