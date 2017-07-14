@@ -215,7 +215,8 @@ sub run {
             $volsurface->save;
             $self->report->{$symbol}->{success} = 1;
         } else {
-            if ($quanto_only eq 'NO' || $volsurface->validation_error =~ /identical to existing one/ && $volsurface->validation_error !~ /expired/) {
+            if ($quanto_only eq 'NO' && $volsurface->validation_error =~ /identical to existing one/ && $volsurface->validation_error !~ /expired/)
+            {
                 $self->report->{$symbol} = {
                     success => 0,
                     reason  => $volsurface->validation_error,
