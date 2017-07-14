@@ -18,9 +18,10 @@ BOM::Backoffice::MIFIR - provides CONCAT code generation out of client data acco
     use BOM::Backoffice::MIFIR;
 
     print BOM::Backoffice::MIFIR::concat({
-        date => '1960-01-01',
-        first_name => 'Jack',
-        last_name  => 'Daniels',
+        cc          => 'DE',
+        date        => '1960-01-01',
+        first_name  => 'Jack',
+        last_name   => 'Daniels',
     });
 
 =cut
