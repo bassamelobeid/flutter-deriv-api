@@ -64,19 +64,6 @@ sub script_run {
 
         print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.";
 
-        # get all the events happening today
-        if (
-            my @alert = grep {
-                       $_->{release_date} >= $now->truncate_to_day->epoch
-                    && $_->{release_date} <= $now->plus_time_interval('1d')->truncate_to_day->epoch
-                    && $_->{forex_factory_alert}
-            } @$events_received
-            )
-        {
-            my $subject_line = 'Forex Factory Alert';
-            my $body = join "\n", map { $_->{event_name} . ' release at ' . Date::Utility->new($_->{release_date})->datetime } @alert;
-            Email::Stuffer->from('system@binary.com')->to('quants-market-data@binary.com')->subject($subject_line)->text_body($body)->send_or_die;
-        }
     }
     catch {
         print 'Error occured while saving events: ' . $_;
