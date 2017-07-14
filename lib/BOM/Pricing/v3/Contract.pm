@@ -120,7 +120,7 @@ sub contract_metadata {
 sub _get_ask {
     my ($args_copy, $app_markup_percentage) = @_;
     my $streaming_params = delete $args_copy->{streaming_params};
-    my ($contract, $response);
+    my ($contract, $response, $contract_parameters);
 
     my $tv = [Time::HiRes::gettimeofday];
     $args_copy->{app_markup_percentage} = $app_markup_percentage // 0;
@@ -138,7 +138,16 @@ sub _get_ask {
 
     return handle_batch_contract($contract, $args_copy) if $contract->isa('BOM::Product::Contract::Batch');
 
-    my $contract_parameters = {%$args_copy, %{contract_metadata($contract)}};
+    try {
+        $contract_parameters = {%$args_copy, %{contract_metadata($contract)}};
+    }
+    catch {
+        warn __PACKAGE__ . " _get_ask contract_metadata failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($args_copy);
+        $response = BOM::Pricing::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => localize('Cannot create contract')});
+    };
+    return $response if $response;
 
     try {
         if (!($contract->is_valid_to_buy({landing_company => $args_copy->{landing_company}}))) {
