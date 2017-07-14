@@ -10,12 +10,16 @@ use YAML qw/LoadFile/;
 use utf8;
 
 my $converter = Text::Iconv->new("UTF-8", "ASCII//TRANSLIT//IGNORE");
+#Text::Iconv->raise_error(0);
 our $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/mifir.yml');
+our $romanization = LoadFile('/home/git/regentmarkets/bom-backoffice/config/romanization.yml');
 
 sub process_name {
     my ($str) = @_;
     $str = lc($str);
+    $str =~ s/$_/$romanization->{$_}/g for keys %$romanization;
     $str =~ s/$_\s+//g for (@{$config->{titles}}, @{$config->{prefixes}});
+    $str =~ s/’//g;              # our iconv does not handle this correctly, it returns empty string is we have it
     $str = $converter->convert($str);
     $str =~ s/[^a-z]//g;
     if (length($str) < 5) {
