@@ -128,7 +128,7 @@ try {
         Quant::Framework::EconomicEventCalendar->new(
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-        )->delete($event_param);
+        )->delete_event($event_param);
     }
 }
 catch {
