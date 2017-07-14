@@ -1,7 +1,7 @@
 use strict;
 use warnings;
-use Test::More (tests => 15);
-use DBD::SQLite;
+use Test::More (tests => 16);
+use Test::Warnings;
 use Test::Exception;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::FinancialMarketBet;

@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests=>15;
+use Test::More tests=>16;
 use Test::Exception;
 use Test::FailWarnings -allow_from => [ qw/BOM::Database::Rose::DB/ ];
 use BOM::Database::Model::Account;

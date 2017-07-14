@@ -1,6 +1,7 @@
 use strict;
 use warnings;
-use Test::More (tests => 13);
+use Test::More (tests => 14);
+use Test::Warnings;
 use Test::Exception;
 use Test::Warn;
 use BOM::Database::Model::Account;

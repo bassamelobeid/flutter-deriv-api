@@ -1,6 +1,7 @@
 use strict;
 
-use Test::More tests => 11;
+use Test::More tests => 12;
+use Test::Warnings;
 use Test::Exception;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::Transaction;
