@@ -67,8 +67,8 @@ sub rmg_table_format {
     }
 
     my @headers  = ('days');
-    my $hour_age = sprintf('%.2f', (Date::Utility->new->epoch - $volsurface->recorded_date->epoch) / 3600);
-    my $title    = $volsurface->recorded_date->datetime . ' (' . $hour_age . ' hours ago)';
+    my $hour_age = sprintf('%.2f', (Date::Utility->new->epoch - $volsurface->creation_date->epoch) / 3600);
+    my $title    = $volsurface->creation_date->datetime . ' (' . $hour_age . ' hours ago)';
 
     my $forward_vols = $self->get_forward_vol();
     my @surface;
@@ -173,7 +173,7 @@ sub rmg_table_format {
         my $day  = $_;
         my $date = 'n/a';
         if (grep { $day eq $_ } @{$volsurface->original_term_for_smile}) {
-            $date = Date::Utility->new($volsurface->recorded_date->epoch + $day * 86400)->date;
+            $date = Date::Utility->new($volsurface->creation_date->epoch + $day * 86400)->date;
         }
         $date;
     } @days;
@@ -245,7 +245,7 @@ sub get_forward_vol {
         Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($volsurface->for_date), $volsurface->for_date);
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
-        $weights{$i} = $trading_calendar->weight_on($volsurface->underlying, $volsurface->recorded_date->epoch + $i * 86400);
+        $weights{$i} = $trading_calendar->weight_on($volsurface->underlying, $volsurface->creation_date->epoch + $i * 86400);
     }
 
     my $forward_vols;
@@ -583,8 +583,8 @@ sub calculate_moneyness_vol_for_display {
         my %delta_smile = map {
             $_ => $volsurface->get_volatility({
                     delta => $_,
-                    from  => $volsurface->recorded_date,
-                    to    => $volsurface->recorded_date->plus_time_interval($term . 'd')})
+                    from  => $volsurface->creation_date,
+                    to    => $volsurface->creation_date->plus_time_interval($term . 'd')})
         } qw(25 50 75);
         my $rr_bf = $volsurface->get_rr_bf_for_smile(\%delta_smile);
         push @row, roundcommon(0.0001, $rr_bf->{RR_25});

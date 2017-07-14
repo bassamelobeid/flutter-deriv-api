@@ -55,7 +55,7 @@ if ($bet->two_barriers) {
     $barrier2 = $barrier;    # No idea how this might be changed by digit two barriers.
 }
 
-my $vs_date = $bet->volsurface->recorded_date->datetime_iso8601;
+my $vs_date = $bet->volsurface->creation_date->datetime_iso8601;
 
 my (@times, @epochs, @spots, @barriers, @barriers2, @wins, @losses, @vs_changes);
 my %prices = (
@@ -99,7 +99,7 @@ while ($graph_more) {
             push @{$prices{$attr}}, financialrounding('amount', $bet->currency, (abs $amount > 3) ? $amount : $amount * 100);
         }
 
-        my $current_vs = $bet->volsurface->recorded_date->datetime_iso8601;
+        my $current_vs = $bet->volsurface->creation_date->datetime_iso8601;
         push @vs_changes, scalar @times - 1 if ($vs_date ne $current_vs);
         $vs_date = $current_vs;
 
