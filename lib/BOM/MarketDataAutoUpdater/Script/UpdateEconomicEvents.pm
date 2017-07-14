@@ -16,7 +16,6 @@ use Path::Tiny;
 use BOM::Platform::Chronicle;
 use Try::Tiny;
 use List::Util qw(first uniq);
-use Email::Stuffer;
 
 sub documentation { return 'This script runs economic events update from forex factory at 00:00 GMT'; }
 
@@ -29,10 +28,9 @@ sub script_run {
     #has its last Friday as a holiday, we will still have some events in the cache.
     my $events_received = $parser->extract_economic_events(2, Date::Utility->new()->minus_time_interval('4d'));
 
-    my $now = Date::Utility->new;
     stats_gauge('economic_events_updates', scalar(@$events_received));
 
-    my $file_timestamp = $now->date_yyyymmdd;
+    my $file_timestamp = Date::Utility->new->date_yyyymmdd;
 
     #this will be an array of all extracted economic events. Later we will store
 
