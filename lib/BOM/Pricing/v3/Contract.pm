@@ -38,7 +38,7 @@ sub _create_error {
             code              => $args->{code},
             message_to_client => $args->{message_to_client},
             $args->{message} ? (message => $args->{message}) : (),
-            $args->{details} ? (details => $args->{details}) : ()}};
+        }};
 }
 
 sub _validate_symbol {
@@ -169,23 +169,15 @@ sub _get_ask {
                     ? $contract->payout
                     : $contract->ask_price;
                 $response = _create_error({
-                        message_to_client => $message_to_client,
-                        code              => $code,
-                        details           => {
-                            display_value => formatnumber('price', $contract->currency, $display_value),
-                            payout        => formatnumber('price', $contract->currency, $display_value),
-                        },
-                    });
+                    message_to_client => $message_to_client,
+                    code              => $code,
+                });
 
             } else {
                 $response = _create_error({
-                        message_to_client => $message_to_client,
-                        code              => $code,
-                        details           => {
-                            display_value => formatnumber('price', $contract->currency, $contract->ask_price),
-                            payout        => formatnumber('price', $contract->currency, $contract->payout),
-                        },
-                    });
+                    message_to_client => $message_to_client,
+                    code              => $code,
+                });
             }
             # proposal_array streaming could get error on a first call
             # but later could produce valid contract dependant on volatility moves
