@@ -9,12 +9,37 @@ use Data::Dumper;
 use YAML qw/LoadFile/;
 use utf8;
 
+=head1 NAME
+
+BOM::Backoffice::MIFIR - provides CONCAT code generation out of client data according to MIFIR rules
+
+=head1 SYNOPSIS
+
+    use BOM::Backoffice::MIFIR;
+
+    print BOM::Backoffice::MIFIR::concat({
+        date => '1960-01-01',
+        first_name => 'Jack',
+        last_name  => 'Daniels',
+    });
+
+=cut
+
 my $converter = Text::Iconv->new("UTF-8", "ASCII//TRANSLIT//IGNORE");
-#Text::Iconv->raise_error(0);
 our $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/mifir.yml');
 our $romanization = LoadFile('/home/git/regentmarkets/bom-backoffice/config/romanization.yml');
 
-sub process_name {
+sub concat {
+    my $args = shift;
+    my $cc   = $args->{cc};
+    my $date = Date::Utility->new($args->{date})->date_yyyymmdd;
+    $date =~ s/\-//g;
+    my $first_name = process_name($args->{first_name});
+    my $last_name  = process_name($args->{last_name});
+    return uc($cc . $date . $first_name . $last_name);
+}
+
+sub _process_name {
     my ($str) = @_;
     $str = lc($str);
     $str =~ s/$_/$romanization->{$_}/g for keys %$romanization;
@@ -29,15 +54,4 @@ sub process_name {
     }
     return $str;
 }
-
-sub generate {
-    my $args = shift;
-    my $cc   = $args->{cc};
-    my $date = Date::Utility->new($args->{date})->date_yyyymmdd;
-    $date =~ s/\-//g;
-    my $first_name = process_name($args->{first_name});
-    my $last_name  = process_name($args->{last_name});
-    return uc($cc . $date . $first_name . $last_name);
-}
-
 1;

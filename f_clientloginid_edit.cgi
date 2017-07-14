@@ -75,7 +75,7 @@ if ($broker eq 'MF') {
     }
     if ($input{mifir_set_concat}) {
         $client->mifir_id(
-            BOM::Backoffice::MIFIR::generate({
+            BOM::Backoffice::MIFIR::concat({
                     cc         => $client->residence,
                     date       => $client->date_of_birth,
                     first_name => $client->first_name,
