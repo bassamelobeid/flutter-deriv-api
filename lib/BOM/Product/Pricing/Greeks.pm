@@ -22,12 +22,7 @@ use Math::Business::BlackScholes::Binaries::Greeks::Vanna;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use Math::Business::BlackScholes::Binaries::Greeks::Volga;
 
-use Math::Business::LookBacks::Greeks::Delta;
-use Math::Business::LookBacks::Greeks::Gamma;
-use Math::Business::LookBacks::Greeks::Theta;
-use Math::Business::LookBacks::Greeks::Vanna;
-use Math::Business::LookBacks::Greeks::Volga;
-use Math::Business::LookBacks::Greeks::Vega;
+use Math::Business::Lookback::Greeks::Delta;
 
 has bet => (
     is       => 'ro',
