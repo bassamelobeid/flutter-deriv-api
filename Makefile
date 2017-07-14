@@ -5,9 +5,6 @@ P=/etc/rmg/bin/prove --timer -v -rl
 
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
-won_contract:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/81_proposal_open_contract.t
-
 v3_1:
 	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(0\|1\|2\|4\)')
 
