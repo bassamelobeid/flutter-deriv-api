@@ -209,7 +209,7 @@ sub _get_ask {
                 contract_parameters => $contract_parameters,
             };
 
-            if ($streaming_params->{add_theo_probability}) {
+            if ($streaming_params->{add_theo_probability} and $contract->is_binary) {
                 $response->{theo_probability} = $contract->theo_probability->amount;
             }
 
