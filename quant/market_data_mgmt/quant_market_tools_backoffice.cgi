@@ -82,12 +82,13 @@ my $impact                 = request()->param('impact');
 my $event_name             = request()->param('event_name');
 my $release_date           = request()->param('release_date');
 my $source                 = request()->param('source');
-my $save_economic_event    = request()->param('save_economic_event');
 my $is_tentative           = request()->param('is_tentative');
 my $estimated_release_date = request()->param('estimated_release_date');
 my $custom_magnitude       = request()->param('custom_magnitude') // 0;
+my $save_event             = request()->param('save_eco');
+my $delete_event           = request()->param('delete_eco');
 
-if ($save_economic_event) {
+if ($save_event) {
     try {
         my $ref         = BOM::Platform::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
         my @events      = @{$ref->{events}};
@@ -109,7 +110,8 @@ if ($save_economic_event) {
         }
 
         my $id_date = $release_date || $estimated_release_date;
-        $event_param->{id} = ForexFactory::generate_id(Date::Utility->new($id_date)->truncate_to_day()->epoch . $event_name . $symbol . $impact);
+        $event_param->{id} = ForexFactory::generate_id(
+            Date::Utility->new($id_date)->truncate_to_day()->epoch . $event_name . $symbol . $impact . ($custom_magnitude // ''));
         push @{$ref->{events}}, $event_param;
         Quant::Framework::EconomicEventCalendar->new({
                 events           => $ref->{events},
@@ -129,6 +131,19 @@ if ($save_economic_event) {
     }
     catch {
 
+        print 'Error: ' . encode_entities($_);
+    };
+} elsif ($delete_event) {
+    try {
+        my $id_date = $release_date || $estimated_release_date;
+        my $event_id = ForexFactory::generate_id(
+            Date::Utility->new($id_date)->truncate_to_day()->epoch . $event_name . $symbol . $impact . ($custom_magnitude // ''));
+        Quant::Framework::EconomicEventCalendar->new(
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        )->delete($event_id);
+    }
+    catch {
         print 'Error: ' . encode_entities($_);
     };
 }
