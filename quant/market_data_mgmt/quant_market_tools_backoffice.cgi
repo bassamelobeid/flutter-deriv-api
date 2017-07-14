@@ -19,7 +19,6 @@ use BOM::Platform::Config;
 PrintContentType();
 BrokerPresentation("QUANT BACKOFFICE");
 
-use ForexFactory;
 use BOM::Platform::Config;
 use BOM::Platform::Runtime;
 use Date::Utility;
@@ -88,30 +87,28 @@ my $custom_magnitude       = request()->param('custom_magnitude') // 0;
 my $save_event             = request()->param('save_eco');
 my $delete_event           = request()->param('delete_eco');
 
-if ($save_event) {
-    try {
-        my $ref         = BOM::Platform::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
-        my @events      = @{$ref->{events}};
-        my $event_param = {
-            event_name => $event_name,
-            source     => $source,
-            impact     => $impact,
-            symbol     => $symbol,
-            $custom_magnitude ? (custom_magnitude => $custom_magnitude) : (),
-        };
+my $event_param = {
+    event_name => $event_name,
+    source     => $source,
+    impact     => $impact,
+    symbol     => $symbol,
+    $custom_magnitude ? (custom_magnitude => $custom_magnitude) : (),
+};
 
-        if ($is_tentative) {
-            $event_param->{is_tentative} = $is_tentative;
-            die 'Must specify estimated announcement date for tentative events' if (not $estimated_release_date);
-            $event_param->{estimated_release_date} = Date::Utility->new($estimated_release_date)->truncate_to_day->epoch;
-        } else {
-            die 'Must specify announcement date for economic events' if (not $release_date);
-            $event_param->{release_date} = Date::Utility->new($release_date)->epoch;
-        }
+try {
+    if ($is_tentative) {
+        $event_param->{is_tentative} = $is_tentative;
+        die 'Must specify estimated announcement date for tentative events' if (not $estimated_release_date);
+        $event_param->{estimated_release_date} = Date::Utility->new($estimated_release_date)->truncate_to_day->epoch;
+    } else {
+        die 'Must specify announcement date for economic events' if (not $release_date);
+        $event_param->{release_date} = Date::Utility->new($release_date)->epoch;
+    }
 
-        my $id_date = $release_date || $estimated_release_date;
-        $event_param->{id} = ForexFactory::generate_id(
-            Date::Utility->new($id_date)->truncate_to_day()->epoch . $event_name . $symbol . $impact . ($custom_magnitude // ''));
+    if ($save_event) {
+        my $ref = BOM::Platform::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
+        my @events = @{$ref->{events}};
+
         push @{$ref->{events}}, $event_param;
         Quant::Framework::EconomicEventCalendar->new({
                 events           => $ref->{events},
@@ -127,25 +124,14 @@ if ($save_event) {
         BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
 
         print 'Econmic Announcement saved!</br></br>';
-        $save_economic_event = 0;
-    }
-    catch {
-
-        print 'Error: ' . encode_entities($_);
-    };
-} elsif ($delete_event) {
-    try {
-        my $id_date = $release_date || $estimated_release_date;
-        my $event_id = ForexFactory::generate_id(
-            Date::Utility->new($id_date)->truncate_to_day()->epoch . $event_name . $symbol . $impact . ($custom_magnitude // ''));
+    } elsif ($delete_event) {
         Quant::Framework::EconomicEventCalendar->new(
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-        )->delete($event_id);
+        )->delete($event_param);
     }
-    catch {
-        print 'Error: ' . encode_entities($_);
-    };
 }
-
+catch {
+    print 'Error: ' . encode_entities($_);
+};
 code_exit_BO();
