@@ -157,7 +157,7 @@ subtest 'JP' => sub {
             'withdrawal_for_x_days_monetary'      => 0,
             'withdrawal_since_inception_monetary' => 0,
             'remainder'                           => formatnumber('price',  'JPY', $limits->{lifetime_limit}),
-            'payout_per_symbol_and_contract_type' => 1000000,
+            'payout_per_symbol_and_contract_type' => 200000,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
@@ -188,7 +188,7 @@ subtest 'JP' => sub {
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
             'lifetime_limit'                      => formatnumber('price',  'JPY', 99999999),
-            'payout_per_symbol_and_contract_type' => 1000000,
+            'payout_per_symbol_and_contract_type' => 200000,
             'withdrawal_since_inception_monetary' => 1000,
             'withdrawal_for_x_days_monetary'      => 1000,
             'remainder'                           => formatnumber('price',  'JPY', 99998999),
