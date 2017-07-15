@@ -3,8 +3,9 @@
 use strict;
 use warnings;
 
-use Test::More tests => 10;
+use Test::More tests => 11;
 use Test::Exception;
+use Test::Warnings;
 
 use Date::Utility;
 use BOM::Database::Model::Account;
