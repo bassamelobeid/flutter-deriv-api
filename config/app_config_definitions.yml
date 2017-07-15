@@ -193,7 +193,7 @@ system:
           default: 0
           global: 1
         payments:
-          description: "Suspend all payments system we support, for payment agent select suspend payment_agents"
+          description: "Suspend all payments we support"
           isa: Bool
           default: 0
           global: 1
