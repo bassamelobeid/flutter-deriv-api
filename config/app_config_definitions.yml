@@ -193,7 +193,7 @@ system:
           default: 0
           global: 1
         payments:
-          description: "Suspend all payments (withdrawal and deposit), including payment agents"
+          description: "Suspend all payments system we support, for payment agent select suspend payment_agents"
           isa: Bool
           default: 0
           global: 1
@@ -203,7 +203,7 @@ system:
           default: 0
           global: 1
         cryptocashier:
-          description: "Suspend crypto cashier"
+          description: "Suspend crypto cashier only"
           isa: Bool
           default: 0
           global: 1
