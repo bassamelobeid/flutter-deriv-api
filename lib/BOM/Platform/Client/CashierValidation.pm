@@ -1,3 +1,5 @@
+package BOM::Platform::Client::CashierValidation;
+
 use strict;
 use warnings;
 
