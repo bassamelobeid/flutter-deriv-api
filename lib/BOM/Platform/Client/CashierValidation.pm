@@ -15,7 +15,10 @@ sub validate {
     return _create_error('CashierForwardError', localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
         if (is_system_suspended() or is_payment_suspended());
 
-    my $client = Client::Account->new({loginid => $loginid}) or return _create_error('CashierForwardError', localize('Invalid account.'));
+    my $client = Client::Account->new({
+            loginid      => $loginid,
+            db_operation => 'replica'
+        }) or return _create_error('CashierForwardError', localize('Invalid account.'));
 
     my $currency = $client->default_account ? $client->default_account->currency_code : '';
     return _create_error('CashierForwardError', localize('Invalid currency.')) unless $currency;
