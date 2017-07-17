@@ -26,6 +26,7 @@ sub script_run {
                 && $_->{release_date} >= $now->truncate_to_day->epoch
                 && $_->{release_date} <= $now->plus_time_interval('1d')->truncate_to_day->epoch
                 && $_->{forex_factory_alert}
+                && $now->epoch < $_->{release_date}
         } @$events_received
         )
     {
