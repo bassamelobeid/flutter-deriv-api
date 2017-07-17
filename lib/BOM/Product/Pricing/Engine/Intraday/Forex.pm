@@ -357,7 +357,7 @@ sub economic_events_spot_risk_markup {
     )->markup;
 }
 
-sub vol_spread {
+sub vol_spread_markup {
     my $self = shift;
 
     my $bet               = $self->bet;
@@ -368,7 +368,11 @@ sub vol_spread {
         ticks => $bet->ticks_for_volatility_calculation,
     });
 
-    return $two_hour_vol - $twenty_minute_vol;
+    my $vol_spread = $two_hour_vol - $twenty_minute_vol;
+    return Pricing::Engine::Markup::VolSpread->new(
+        bet_vega   => $bet->vega,
+        vol_spread => $vol_spread,
+    )->markup;
 }
 
 =head2 is_in_quiet_period
