@@ -34,7 +34,7 @@ my $pg = Test::PostgreSQL->new or plan skip_all => $Test::PostgreSQL::errstr;
         isnt(refaddr(my $child_dbh = BOM::Platform::Chronicle::dbic()->dbh), $addr, 'refaddr changes in a fork');
         isa_ok($child_dbh, 'DBI::db');
         is(refaddr(BOM::Platform::Chronicle::dbic()->dbh), refaddr($child_dbh), 'but subsequent calls get the same object');
-        ok($child_dbh->ping,                       'can ping the first handle');
+        ok($child_dbh->ping,                            'can ping the first handle');
         ok(BOM::Platform::Chronicle::dbic()->dbh->ping, 'can ping the second handle');
         exit 0;
     }

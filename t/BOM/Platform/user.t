@@ -5,9 +5,10 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
+use Test::Warnings;
 
 use Cache::RedisDB;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

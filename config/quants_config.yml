@@ -16,18 +16,20 @@ bet_limits:
     AUD: 200
     GBP: 200
     JPY: 20000
-    BTC: 0.1
-    ETH: 1
-    LTC: 10
+    BTC: 0.05
+    ETH: 0.5
+    LTC: 2.5
+    ETC: 2.5
   maximum_payout:
     USD: 50000
     EUR: 50000
     AUD: 50000
     GBP: 50000
     JPY: 5000000
-    BTC: 10
-    ETH: 100
-    LTC: 1000
+    BTC: 1
+    ETH: 10
+    LTC: 50
+    ETC: 50
   min_payout:
     default:
       USD: 1
@@ -35,35 +37,50 @@ bet_limits:
       AUD: 1
       GBP: 1
       JPY: 70
-      BTC: 0.0005
-      LTC: 0.05
+      BTC: 0.0004
+      ETH: 0.004
+      LTC: 0.02
+      ETC: 0.02
     volidx:
       USD: 0.7
       EUR: 0.7
       AUD: 0.7
       GBP: 0.7
       JPY: 70
-      BTC: 0.00035
-      ETH: 0.0035
-      LTC: 0.035
+      BTC: 0.0004
+      ETH: 0.004
+      LTC: 0.02
+      ETC: 0.02
   min_stake:
     maltainvest:
       USD: 5
       EUR: 5
       AUD: 5
       GBP: 5
-      BTC: 0.0025
-      ETH: 0.025
+      BTC: 0.005
+      ETH: 0.05
       LTC: 0.25
+      ETC: 0.25
   open_positions_payout_per_symbol_and_bet_type_limit:
     USD: 10000
     EUR: 10000
     AUD: 10000
     GBP: 10000
-    JPY: 1000000
-    BTC: 10000
-    ETH: 10000
-    LTC: 10000
+    JPY: 200000
+    BTC: 1
+    ETH: 10
+    LTC: 50
+    ETC: 50
+  min_commission_amount:
+    USD: 0.02 # 0.02 dollar
+    EUR: 0.02
+    AUD: 0.02
+    GBP: 0.02
+    JPY: 2 # two yen
+    BTC: 0.000015
+    ETH: 0.00015
+    LTC: 0.00075
+    ETC: 0.0015
 
 risk_profile:
   no_business:
@@ -76,6 +93,7 @@ risk_profile:
           BTC: 0
           ETH: 0
           LTC: 0
+          ETC: 0
       payout:
           USD: 0
           EUR: 0
@@ -85,25 +103,28 @@ risk_profile:
           BTC: 0
           ETH: 0
           LTC: 0
+          ETC: 0
   extreme_risk:
       turnover:
           USD: 1000
           EUR: 1000
           AUD: 1000
           GBP: 1000
-          JPY: 500000
-          BTC: 0.5
-          ETH: 5
-          LTC: 50
+          JPY: 100000
+          BTC: 0.2
+          ETH: 2
+          LTC: 10
+          ETC: 10
       payout:
           USD: 100
           EUR: 100
           AUD: 100
           GBP: 100
-          JPY: 100000
-          BTC: 0.05
-          ETH: 0.5
-          LTC: 5
+          JPY: 10000
+          BTC: 0.02
+          ETH: 0.2
+          LTC: 1
+          ETC: 1
   high_risk:
       turnover:
           USD: 50000
@@ -111,37 +132,41 @@ risk_profile:
           AUD: 50000
           GBP: 50000
           JPY: 5000000
-          BTC: 25
+          BTC: 5
           ETH: 50
-          LTC: 500
+          LTC: 250
+          ETC: 250
       payout:
           USD: 5000
           EUR: 5000
           AUD: 5000
           GBP: 5000
           JPY: 500000
-          BTC: 2.5
-          ETH: 25
-          LTC: 250
+          BTC: 0.5
+          ETH: 5
+          LTC: 50
+          ETC: 50
   medium_risk:
       turnover:
           USD: 100000
           EUR: 100000
           AUD: 100000
           GBP: 100000
-          JPY: 10000000
-          BTC: 50
-          ETH: 500
-          LTC: 5000
+          JPY: 500000
+          BTC: 5
+          ETH: 50
+          LTC: 250
+          ETC: 250
       payout:
           USD: 20000
           EUR: 20000
           AUD: 20000
           GBP: 20000
-          JPY: 2000000
-          BTC: 10
-          ETH: 100
-          LTC: 1000
+          JPY: 100000
+          BTC: 0.5
+          ETH: 5
+          LTC: 50
+          ETC: 50
   low_risk:
       turnover:
           USD: 500000
@@ -149,14 +174,17 @@ risk_profile:
           AUD: 500000
           GBP: 500000
           JPY: 50000000
-          BTC: 50
-          LTC: 5000
+          BTC: 10
+          ETH: 100
+          LTC: 500
+          ETC: 500
       payout:
           USD: 50000
           EUR: 50000
           AUD: 50000
           GBP: 50000
           JPY: 5000000
-          BTC: 10
-          ETH: 100
-          LTC: 1000
+          BTC: 1
+          ETH: 10
+          LTC: 50
+          ETC: 50

@@ -202,6 +202,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        cryptocashier:
+          description: "Suspend crypto cashier"
+          isa: Bool
+          default: 0
+          global: 1
         new_accounts:
           description: "Suspend opening new accounts"
           isa: Bool
@@ -221,6 +226,16 @@ system:
           description: "Suspend viewing any page in the system"
           isa: Bool
           default: 0
+          global: 1
+        is_auction_ended:
+          description: "End the ICO auction"
+          isa: Bool
+          default: 0
+          global: 1
+        ico_final_price:
+          description: "The final price of the  ICO auction"
+          isa: Num
+          default: 10
           global: 1
         mt5:
           description: "Suspend MT5 API calls"

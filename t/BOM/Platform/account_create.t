@@ -4,10 +4,11 @@ use Test::MockTime::HiRes;
 use Guard;
 use JSON;
 
-use Test::More (tests => 3);
+use Test::More (tests => 4);
 use Test::Exception;
 use Test::Warn;
 use Test::MockModule;
+use Test::Warnings;
 
 use Client::Account;
 
@@ -76,6 +77,7 @@ my %real_client_details = (
     myaffiliates_token_registered => 0,
     checked_affiliate_exposures   => 0,
     latest_environment            => '',
+    account_opening_reason        => 'Hedging',
 );
 
 my %financial_data = (
@@ -115,6 +117,8 @@ subtest 'create account' => sub {
         }
         "create $broker acc OK, after verify email";
         is($real_client->broker, $broker, 'Successfully create ' . $real_client->loginid);
+        # test account_opening_reason
+        is($real_client->account_opening_reason, $real_client_details{account_opening_reason}, "Account Opening Reason should be the same");
 
         # duplicate acc
         lives_ok { $real_acc = create_real_acc($vr_client, $user, $broker); } "Try create duplicate $broker acc";
