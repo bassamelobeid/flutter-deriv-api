@@ -202,7 +202,7 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         underlying    => $usdjpy,
-        recorded_date => Date::Utility->new(time - MAX_ALLOWED_AGE),
+        recorded_date => Date::Utility->new(time - 60 * 60 + 1),
     });
 
 subtest 'save identical' => sub {
@@ -218,7 +218,7 @@ subtest 'save identical' => sub {
     lives_ok { $au->run } 'run without dying';
     ok !$au->report->{frxUSDJPY}->{reason}, 'Silently passes on identical VS which is not expired';
 
-    set_absolute_time(time + 2);
+    set_absolute_time($fake_date->epoch + MAX_ALLOWED_AGE + 2);
 
     $au = BOM::MarketDataAutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
