@@ -30,9 +30,13 @@ reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
-my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked_decimate->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
-my $mocked           = Test::MockModule->new('BOM::Product::Contract');
+my $mocked_decimate  = Test::MockModule->new('BOM::Market::DataDecimate');
+$mocked_decimate->mock(
+    'get',
+    sub {
+        [map { {epoch => $_, quote => 100 + rand(0.1)} } (0 .. 80)];
+    });
+my $mocked = Test::MockModule->new('BOM::Product::Contract');
 $mocked->mock('market_is_inefficient', sub { 0 });
 my $oft_used_date   = Date::Utility->new('2013-03-29 15:00:34');
 my $an_hour_earlier = Date::Utility->new($oft_used_date->epoch - 3600);
@@ -677,7 +681,11 @@ subtest 'invalid start times' => sub {
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/blackout period/];
+    my $mocked = Test::MockModule->new('BOM::Product::Contract');
+    $mocked->mock('_validate_lifetime', sub { note "mocked lifetime"; return; });
+
     test_error_list('buy', $bet, $expected_reasons);
+    $mocked->unmock_all;
 
     $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
