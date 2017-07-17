@@ -42,7 +42,7 @@ print generate_dividend_upload_form({
     upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
 });
 
-if (request()->param('whattodo') eq 'process_dividend') {
+if (request()->param('whattodo') and request()->param('whattodo') eq 'process_dividend') {
     my $cgi                      = CGI->new;
     my $filetoupload             = $cgi->param('filetoupload');
     my $update_discrete_dividend = request()->param('update_discrete_dividend');
@@ -55,7 +55,7 @@ print generate_correlations_upload_form({
     upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
 });
 
-if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
+if (request()->param('whattodo') and request()->param('whattodo') eq 'process_superderivatives_correlations') {
     my $cgi          = CGI->new;
     my $filetoupload = $cgi->param('filetoupload');
     local $CGI::POST_MAX        = 1024 * 100 * 8;    # max 800K posts
