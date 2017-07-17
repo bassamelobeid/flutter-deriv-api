@@ -12,6 +12,7 @@ sub documentation { return 'This script checks for forex factory alert on econom
 sub script_run {
     my $self = shift;
 
+    my $now    = Date::Utility->new;
     my $parser = ForexFactory->new();
 
     #read economic events for one week (7-days) starting from 4 days back, so in case of a Monday which
@@ -21,7 +22,8 @@ sub script_run {
     # get all the events happening today
     if (
         my @alert = grep {
-                   $_->{release_date} >= $now->truncate_to_day->epoch
+                   defined $_->{release_date}
+                && $_->{release_date} >= $now->truncate_to_day->epoch
                 && $_->{release_date} <= $now->plus_time_interval('1d')->truncate_to_day->epoch
                 && $_->{forex_factory_alert}
         } @$events_received
