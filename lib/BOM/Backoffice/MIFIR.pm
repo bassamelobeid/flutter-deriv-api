@@ -27,7 +27,7 @@ BOM::Backoffice::MIFIR - provides CONCAT code generation out of client data acco
 =cut
 
 my $converter = Text::Iconv->new("UTF-8", "ASCII//TRANSLIT//IGNORE");
-our $config = LoadFile('/home/git/regentmarkets/bom-backoffice/config/mifir.yml');
+our $config       = LoadFile('/home/git/regentmarkets/bom-backoffice/config/mifir.yml');
 our $romanization = LoadFile('/home/git/regentmarkets/bom-backoffice/config/romanization.yml');
 
 sub concat {
@@ -45,7 +45,7 @@ sub _process_name {
     $str = lc($str);
     $str =~ s/$_/$romanization->{$_}/g for keys %$romanization;
     $str =~ s/$_\s+//g for (@{$config->{titles}}, @{$config->{prefixes}});
-    $str =~ s/’//g;              # our iconv does not handle this correctly, it returns empty string is we have it
+    $str =~ s/’//g;    # our iconv does not handle this correctly, it returns empty string is we have it
     $str = $converter->convert($str);
     $str =~ s/[^a-z]//g;
     if (length($str) < 5) {
