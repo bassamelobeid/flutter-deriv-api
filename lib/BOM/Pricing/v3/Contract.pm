@@ -38,7 +38,7 @@ sub _create_error {
             code              => $args->{code},
             message_to_client => $args->{message_to_client},
             $args->{message} ? (message => $args->{message}) : (),
-            $args->{details} ? (details => $args->{details}) : ()}};
+        }};
 }
 
 sub _validate_symbol {
@@ -124,15 +124,7 @@ sub _get_ask {
 
     my $tv = [Time::HiRes::gettimeofday];
     $args_copy->{app_markup_percentage} = $app_markup_percentage // 0;
-    try {
-        die unless _pre_validate_start_expire_dates($args_copy);
-    }
-    catch {
-        $response = BOM::Pricing::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => localize('Cannot create contract')});
-    };
-    return $response if $response;
+
     try {
         $contract = $args_copy->{proposal_array} ? produce_batch_contract($args_copy) : produce_contract($args_copy);
     }
@@ -169,32 +161,11 @@ sub _get_ask {
                 $code              = "ContractValidationError";
             }
 
-            # When the date_expiry is smaller than date_start, we can not price, display the payout|stake on error message
-            if ($contract->date_expiry->epoch <= $contract->date_start->epoch) {
+            $response = _create_error({
+                message_to_client => $message_to_client,
+                code              => $code,
+            });
 
-                my $display_value =
-                      $contract->has_payout
-                    ? $contract->payout
-                    : $contract->ask_price;
-                $response = _create_error({
-                        message_to_client => $message_to_client,
-                        code              => $code,
-                        details           => {
-                            display_value => formatnumber('price', $contract->currency, $display_value),
-                            payout        => formatnumber('price', $contract->currency, $display_value),
-                        },
-                    });
-
-            } else {
-                $response = _create_error({
-                        message_to_client => $message_to_client,
-                        code              => $code,
-                        details           => {
-                            display_value => formatnumber('price', $contract->currency, $contract->ask_price),
-                            payout        => formatnumber('price', $contract->currency, $contract->payout),
-                        },
-                    });
-            }
             # proposal_array streaming could get error on a first call
             # but later could produce valid contract dependant on volatility moves
             # so we need to store contract_parameters and longcode to use them later
@@ -771,42 +742,6 @@ sub _log_exception {
     warn "Unhandled exception in $component: $err\n";
     stats_inc('contract.exception.' . $component);
     return;
-}
-
-# pre-check
-# this sub indicates error on RPC level if date_start or date_expiry of a new ask/contract are too far from now
-sub _pre_validate_start_expire_dates {
-    my $params = shift;
-    my ($start_epoch, $expiry_epoch, $duration);
-
-    state $pre_limits_max_duration = 31536000;    # 365 days
-    state $pre_limits_max_forward  = 604800;      # 7 days (Maximum offset from now for creating a contract)
-
-    my $now_epoch = Date::Utility->new->epoch;
-
-    # no try/catch here, expecting higher level try/catch
-    $start_epoch =
-        $params->{date_start}
-        ? Date::Utility->new($params->{date_start})->epoch
-        : $now_epoch;
-    if ($params->{duration}) {
-        if ($params->{duration} =~ /^(\d+)t$/) {    # ticks
-            $duration = $1 * 2;
-        } else {
-            $duration = Time::Duration::Concise->new(interval => $params->{duration})->seconds;
-        }
-        $expiry_epoch = $start_epoch + $duration;
-    } else {
-        $expiry_epoch = Date::Utility->new($params->{date_expiry})->epoch;
-        $duration     = $expiry_epoch - $start_epoch;
-    }
-
-    return
-           if $start_epoch + 5 < $now_epoch
-        or $start_epoch - $now_epoch > $pre_limits_max_forward
-        or $duration > $pre_limits_max_duration;
-
-    return 1;    # seems like ok, but everything will be fully checked later.
 }
 
 1;
