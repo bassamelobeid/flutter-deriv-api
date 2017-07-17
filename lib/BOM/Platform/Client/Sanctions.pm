@@ -1,8 +1,13 @@
 package BOM::Platform::Client::Sanctions;
 
+use strict;
+use warnings;
+
 use Moo;
 
+use Brands;
 use Data::Validate::Sanctions;
+use BOM::Platform::Config;
 
 has client => (
     is  => 'ro',
@@ -21,15 +26,16 @@ sub check {
 
     return if $client->is_virtual;
 
-    my $client_loginid = $client->loginid;
-    my $client_name    = join(' ', $client->salutation, $client->first_name, $client->last_name);
-    my $sanctioned     = $sanctions->is_sanctioned($client->first_name, $client->last_name);
+    my $sanctioned = $sanctions->is_sanctioned($client->first_name, $client->last_name);
     $client->add_sanctions_check({
         type   => $self->type,
         result => $sanctioned
     });
 
     return unless $sanctioned;
+
+    my $client_loginid = $client->loginid;
+    my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
 
     $client->set_status('disabled', 'system', 'client disabled as marked as UNTERR');
     $client->save;
