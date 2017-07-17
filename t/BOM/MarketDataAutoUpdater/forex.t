@@ -17,6 +17,7 @@ use LandingCompany::Offerings qw(reinitialise_offerings);
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = 0;
+use constant MAX_ALLOWED_AGE => 4 * 60 * 60;
 use Postgres::FeedDB::Spot;
 my $module = Test::MockModule->new('Postgres::FeedDB::Spot');
 $module->mock(
@@ -108,7 +109,7 @@ my $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         underlying    => $usdjpy,
         surface       => $data,
-        recorded_date => Date::Utility->new(time - (4 * 3600 + 1)),
+        recorded_date => Date::Utility->new(time - (MAX_ALLOWED_AGE + 1)),
     });
 
 subtest 'more than 4 hours old' => sub {
@@ -157,7 +158,7 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         underlying    => $usdjpy,
         recorded_date => Date::Utility->new(time - 7199),
-        surface       => $data
+        surface       => $data,
     });
 
 subtest 'big jump' => sub {
@@ -171,7 +172,7 @@ subtest 'big jump' => sub {
 };
 
 my $clone = dclone($data);
-$clone->{14}->{smile}->{25} = 1.3;
+$clone->{14}->{smile}->{25} *= 1.01;
 
 $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -201,7 +202,7 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         underlying    => $usdjpy,
-        recorded_date => Date::Utility->new(time - 7199),
+        recorded_date => Date::Utility->new(time - MAX_ALLOWED_AGE),
     });
 
 subtest 'save identical' => sub {
@@ -215,8 +216,23 @@ subtest 'save identical' => sub {
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
+    ok !$au->report->{frxUSDJPY}->{reason}, 'Silently passes on identical VS which is not expired';
+
+    set_absolute_time(time + 2);
+
+    $au = BOM::MarketDataAutoUpdater::Forex->new(
+        symbols_to_update  => ['frxUSDJPY'],
+        _connect_ftp       => 0,
+        surfaces_from_file => {
+            frxUSDJPY => {
+                surface       => $fake_surface->surface_data,
+                creation_date => $fake_surface->creation_date->plus_time_interval(MAX_ALLOWED_AGE),
+                type          => $fake_surface->type
+            }});
+    lives_ok { $au->run } 'run without dying';
     ok !$au->report->{frxUSDJPY}->{success}, 'update failed';
-    like $au->report->{frxUSDJPY}->{reason}, qr/New volsurface for frxUSDJPY is identical to existing one/, 'reason: identical';
+    like $au->report->{frxUSDJPY}->{reason}, qr/New volsurface for frxUSDJPY is identical to existing one/,
+        'Rises an error in case identical & expired';
 };
 
 subtest 'save valid' => sub {
@@ -228,11 +244,10 @@ subtest 'save valid' => sub {
         surfaces_from_file => {
             frxUSDJPY => {
                 surface       => $clone,
-                creation_date => $fake_surface->creation_date,
+                creation_date => $fake_surface->creation_date->plus_time_interval(MAX_ALLOWED_AGE),
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
-    use Data::Dumper;
     ok $au->report->{frxUSDJPY}->{success}, 'update successful';
 };
 
