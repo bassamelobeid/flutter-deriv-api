@@ -254,6 +254,7 @@ sub _build_ticks_for_volatility_calculation {
         underlying  => $self->underlying,
         start_epoch => $self->effective_start->minus_time_interval('20m')->epoch,
         end_epoch   => $self->effective_start->epoch,
+        backprice   => $self->underlying->for_date,
     });
 }
 
