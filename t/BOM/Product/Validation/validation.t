@@ -1161,6 +1161,7 @@ subtest 'tentative events' => sub {
                     symbol       => 'USD',
                     release_date => $now->epoch,
                     blankout     => $blackout_start->epoch,
+                    estimated_release_date => $now->epoch,
                     blankout_end => $blackout_end->epoch,
                     is_tentative => 1,
                     event_name   => 'Test tentative',
