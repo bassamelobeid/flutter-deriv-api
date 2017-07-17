@@ -91,11 +91,11 @@ SQL
 sub get_signup_uri_by_app_id {
     my ($self, $app_id) = @_;
 
-    my $app = $self->dbh->selectrow_hashref("
+    my ($signup_uri) = $self->dbh->selectrow_array("
         SELECT signup_uri FROM oauth.apps WHERE id = ? AND active
     ", undef, $app_id);
 
-    return $app;
+    return $signup_uri;
 }
 
 sub get_scopes_by_access_token {
