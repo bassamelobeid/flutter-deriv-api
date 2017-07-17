@@ -61,6 +61,8 @@ sub cashier {
     my $action   = $args->{cashier}  // 'deposit';
     my $provider = $args->{provider} // 'doughflow';
 
+    # this should come before all validation as verification
+    # token is mandatory for withdrawal.
     if ($action eq 'withdraw') {
         my $token = $args->{verification_code} // '';
 
