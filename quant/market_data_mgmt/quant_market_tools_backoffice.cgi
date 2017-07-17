@@ -129,6 +129,7 @@ try {
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         )->delete_event($event_param);
+        print 'Economic Announcement deleted';
     }
 }
 catch {
