@@ -7,7 +7,6 @@ use Date::Utility;
 use Try::Tiny;
 use Locale::Country;
 use List::MoreUtils qw(any);
-use Data::Validate::Sanctions;
 
 use Brands;
 use Client::Account;
@@ -18,6 +17,7 @@ use BOM::Platform::Config;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
+use BOM::Platform::Client::Sanctions;
 
 sub validate {
     my $args = shift;
@@ -136,21 +136,10 @@ sub after_register_client {
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
 
+    BOM::Platform::Client::Sanctions->new({client => $client})->check();
+
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
-    state $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Platform::Config::sanction_file);
-    if ($sanctions->is_sanctioned($client->first_name, $client->last_name)) {
-        $client->set_status('disabled', 'system', 'client disabled as marked as UNTERR');
-        $client->save;
-        $client->add_note('UNTERR', "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list.");
-        my $brand = Brands->new(name => request()->brand);
-        send_email({
-            from    => $brand->emails('support'),
-            to      => $brand->emails('compliance'),
-            subject => $client->loginid . ' marked as UNTERR',
-            message => ["UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list."],
-        });
-    }
 
     my $notemsg = "$client_loginid - Name and Address\n\n\n\t\t $client_name \n\t\t";
     my @address = map { $client->$_ } qw(address_1 address_2 city state postcode);
