@@ -15,7 +15,7 @@ use Try::Tiny;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
-use BOM::Backoffice::PlackHelpers qw(PrintContentType PrintContentType_JSON);
+use BOM::Backoffice::PlackHelpers qw(PrintContentType_JSON);
 use BOM::Backoffice::Request;
 use BOM::Backoffice::Sysinit ();
 use JSON qw(to_json);

@@ -23,7 +23,7 @@ use Time::Duration::Concise::Localize;
 use BOM::Platform::Config;
 use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Backoffice::Request;
-use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_XSendfile PrintContentType_image);
+use BOM::Backoffice::PlackHelpers qw( PrintContentType_XSendfile);
 use File::Temp;
 use List::MoreUtils qw(uniq);
 use List::Util qw(max);
