@@ -34,6 +34,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Config;
 use BOM::Platform::AuditLog;
 use BOM::Platform::RiskProfile;
+use BOM::Platform::Client::CashierValidation;
 use BOM::RPC::v3::Utility;
 use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
@@ -82,11 +83,11 @@ sub cashier {
 
     my $client_loginid = $client->loginid;
     my $validation = BOM::Platform::Client::CashierValidation::validate($client_loginid, $action);
-    # this validation is also done in RPC but better to be done here as well to be double sure
-    return BOM::RPC::v3::Utility::create_error(
-        code              => $validation->{error}->{code},
-        message_to_client => $validation->{error}->{message_to_client}) if exists $validation->{error};
+    return BOM::RPC::v3::Utility::create_error({
+            code              => $validation->{error}->{code},
+            message_to_client => $validation->{error}->{message_to_client}}) if exists $validation->{error};
 
+    my ($brand, $currency) = (Brands->new(name => request()->brand), $client->default_account->currency_code);
     ## if cashier provider == 'epg', we'll return epg url
     if ($provider eq 'epg') {
         return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
@@ -658,7 +659,8 @@ sub paymentagent_withdraw {
 
     # expire token only when its not dry run
     unless ($args->{dry_run}) {
-        my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email, 'paymentagent_withdraw')->{error};
+        my $err =
+            BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email, 'paymentagent_withdraw')->{error};
         if ($err) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => $err->{code},
