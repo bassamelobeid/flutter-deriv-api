@@ -409,12 +409,10 @@ sub proposal_open_contract {
             return;
         };
         # perform rpc call again and entering in retries loop
-        $call_sub->($c, $req_storage);
+        return $call_sub->($c, $req_storage);
     } else {
         return $empty_answer;
     }
-
-    return;
 }
 
 sub _process_proposal_open_contract_response {
