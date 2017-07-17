@@ -52,7 +52,7 @@ sub validate {
 
         return _create_error('JP_NOT_ACTIVATION', localize('Account not activated.')) if $client->get_status('jp_activation_pending');
 
-        return _create_error('ASK_AGE_VERIFICATION', localize('Account needs age verification'))
+        return _create_error('ASK_AGE_VERIFICATION', localize('Account needs age verification.'))
             if (not $client->get_status('age_verification') and not $client->has_valid_documents);
     }
 
