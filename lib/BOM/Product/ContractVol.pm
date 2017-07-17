@@ -127,8 +127,8 @@ sub _build_pricing_vol {
     my $volatility_error;
     if ($self->priced_with_intraday_model) {
         $vol = $self->empirical_volsurface->get_volatility({
-            from                          => $self->effective_start,
-            to                            => $self->date_expiry,
+            from                          => $self->effective_start->epoch,
+            to                            => $self->date_expiry->epoch,
             ticks                         => $self->ticks_for_volatility_calculation,
             include_economic_event_impact => 1,
         });
