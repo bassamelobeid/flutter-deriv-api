@@ -1,4 +1,10 @@
 ---
+- event_name: Construction Spending m/m
+  id: abc123
+  impact: 5
+  release_date: 1352345145
+  recorded_date: 1491296083
+  symbol: USD
 - event_name: Employment Change
   id: 71ddfbd2d2656ea6
   impact: 5
