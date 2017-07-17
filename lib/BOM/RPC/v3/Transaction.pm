@@ -13,7 +13,6 @@ use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::Transaction;
-use BOM::Transaction::Validation;
 use BOM::Platform::Context qw (localize request);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
