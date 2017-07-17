@@ -12,9 +12,6 @@ use BOM::Platform::Context qw/request localize/;
 sub validate {
     my ($loginid, $action) = @_;
 
-    return _create_error(localize('This is a virtual-money account. Please switch to a real-money account to access cashier.'))
-        if $client->is_virtual;
-
     return _create_error(localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
         if (is_system_suspended() or is_payment_suspended());
 
@@ -22,6 +19,9 @@ sub validate {
             loginid      => $loginid,
             db_operation => 'replica'
         }) or return _create_error(localize('Invalid account.'));
+
+    return _create_error(localize('This is a virtual-money account. Please switch to a real-money account to access cashier.'))
+        if $client->is_virtual;
 
     my $currency = $client->default_account ? $client->default_account->currency_code : '';
     return _create_error(localize('Please set the currency.'), 'ASK_CURRENCY') unless $currency;
@@ -60,7 +60,6 @@ sub validate {
             if (not $client->get_status('age_verification') and not $client->has_valid_documents);
     }
 
-    my $action = $self->action;
     return _create_error(localize('Your account is restricted to withdrawals only.'))
         if ($action eq 'deposit' and $client->get_status('unwelcome'));
 
