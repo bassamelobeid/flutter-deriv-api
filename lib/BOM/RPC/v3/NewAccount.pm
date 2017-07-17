@@ -150,16 +150,22 @@ sub verify_email {
             });
     } elsif ($type eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $email})) {
+            my $app_id       = $params->{source};
+            my $oauth        = BOM::Database::Model::OAuth->new;
+            my $signup_uri   = $oauth->get_signup_uri_by_app_id($app_id);
+            my $website_name = $params->{website_name};
+
+            my $message =
+                $signup_uri ?
+                BOM::Platform::Context::localize('<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Click <a href="[_3]?verification_token=[_1]">here</a> or enter the following verification token into the form to create an account: <p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>', $code, $website_name, $signup_uri) :
+                BOM::Platform::Context::localize('<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>', $code, $website_name);
+
+            warn $message;
             send_email({
                     from => Brands->new(name => request()->brand)->emails('support'),
                     to   => $email,
                     subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-                    message => [
-                        BOM::Platform::Context::localize(
-                            '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                            $code,
-                            $params->{website_name})
-                    ],
+                    message => [$message],
                     use_email_template    => 1,
                     email_content_is_html => 1,
                 });
