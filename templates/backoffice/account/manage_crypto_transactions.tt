@@ -1,54 +1,147 @@
+<table>
+    <thead>
+        <th>Status</th>
+        <th>Description</th>
+    </thead>
+    <tbody>
+[% IF transaction_type == 'deposit' -%]
+        <tr>
+            <td>New</td>
+            <td>List transactions with new addresses i.e no blockchain transaction has been performed</td>
+        </tr>
+        <tr>
+            <td>Pending</td>
+            <td>List transactions that are on blockchain but not yet confirmed (we wait for 3 confirmations)</td>
+        </tr>
+        <tr>
+            <td>Confirmed</td>
+            <td>List transactions that are confirmed on blockchain and client account should be credited</td>
+        </tr>
+[% ELSE -%]
+        <tr>
+            <td>Pending</td>
+            <td>List withdrawal requests initiated by client</td>
+        </tr>
+        <tr>
+            <td>Verified</td>
+            <td>List withdrawal requests verified by payments team after validation</td>
+        </tr>
+        <tr>
+            <td>Rejected</td>
+            <td>List withdrawal requests rejected by payments team after validation</td>
+        </tr>
+        <tr>
+            <td>Processing</td>
+            <td>List withdrawal requests where client account is debited but blockchain transaction is not yet confirmed</td>
+        </tr>
+        <tr>
+            <td>Sent</td>
+            <td>List withdrawal requests finally processed i.e debit and both blockchain completed</td>
+        </tr>
+[% END -%]
+        <tr>
+            <td>Error</td>
+            <td>List errored out transaction, reason would be specified in error info.</td>
+        </tr>
+    </tbody>
+</table>
 <br/>
 [% IF transactions.size == 0 %]
     <p>There are no [% view_type %] transactions.</p>
 [% ELSE %]
 <table>
     <tr>
-        <th>Currency</th>
-        <th>Address</th>
-        <th>LoginID</th>
-        <th>Amount</th>
+        <th>BlockchainInfo</th>
+        <th>PaymentInfo</th>
 [% IF transaction_type == 'deposit' -%]
 [% ELSE -%]
-        <th>Creation Date</th>
-        <th>Verified Date</th>
-        <th>Rejected Date</th>
-        <th>Sent Date</th>
-[% END -%]
+        <th>Date</th>
         [% IF view_type == 'pending' %]
             <th>Verify</th>
             <th>|</th>
             <th>Reject</th>
         [% END %]
-        <th>Remark</th>
-        <th>ErrorInfo</th>
-        <th>ResolutionInfo</th>
+[% END -%]
+        <th>Details</th>
     </tr>
     [% FOREACH trx IN transactions %]
     <tr>
-        <td>[% trx.currency_code %]</td>
-        <td>[% trx.address %]</td>
-        <td>[% trx.client_loginid %]</td>
-        <td>[% trx.amount %]</td>
+        <td>
+            <table>
+                <tbody>
+                    <tr>
+                        <td><b>Address</b>: [% trx.address %]</td>
+                    </tr>
+                    <tr>
+                        <td><b>BlockchainId</b>: [% trx.blockchain_txn %]</td>
+                    </tr>
+                </tbody>
+            </table>
+        </td>
+        <td>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>[% trx.currency_code %] [% trx.amount %]</td>
+                    </tr>
+                    <tr>
+                        <td>[% trx.client_loginid %]<td>
+                    </tr>
+                    <tr>
+                        <td>Id: [% trx.payment_id %]</td>
+                    </tr>
+                </tbody>
+            </table>
+        </td>
 [% IF transaction_type == 'deposit' -%]
 [% ELSE -%]
-        <td>[% trx.creation_date %]</td>
-        <td>[% trx.verified_date %]</td>
-        <td>[% trx.rejected_date %]</td>
-        <td>[% trx.sent_date %]</td>
-[% END -%]
+        <td>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Creation: [% trx.creation_date %]</td>
+                    </tr>
+                    <tr>
+                        <td>Verified: [% trx.verified_date %]</td>
+                    </tr>
+                    <tr>
+                        <td>Rejected: [% trx.rejected_date %]</td>
+                    </tr>
+                    <tr>
+                        <td>Processing: [% trx.processing_date %]</td>
+                    </tr>
+                    <tr>
+                        <td>Sent:[% trx.sent_date %]</td>
+                    </tr>
+                    </tr>
+                </tbody>
+            </table>
+        </td>
         [% IF view_type == 'pending' %]
             <td>
-                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=Transactions" class="confirm_crypto_action">Verify transaction</a>
+                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Verify transaction</a>
             </td>
             <td>|</td>
             <td>
-                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject&view_action=Transactions" class="confirm_crypto_action">Reject transaction</a>
+                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Reject transaction</a>
             </td>
         [% END %]
-        <td>[% trx.remark %]</td>
-        <td>[% trx.error_text %]</td>
-        <td>[% trx.resolution %]</td>
+[% END -%]
+        <td>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Remark: [% trx.remark %]</td>
+                    </tr>
+                    <tr>
+                        <td>Error: [% trx.error_text %]</td>
+                    </tr>
+                    <tr>
+                        <td>Resolution: [% trx.resolution %]</td>
+                    </tr>
+                </tbody>
+            </table>
+        </td>
     </tr>
     [% END %]
 </table>
@@ -59,7 +152,7 @@
 [% IF transaction_type == 'deposit' -%]
 <tr>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=new">View transactions on new addresses</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=new">View new addresses</a>
     </td>
     <td>|</td>
     <td>
@@ -77,23 +170,27 @@
 [% ELSE -%]
 <tr>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Transactions&view_type=pending">View Pending Transactions</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=pending">View Pending Transactions</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Transactions&view_type=verified">View Verified Transactions</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=verified">View Verified Transactions</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Transactions&view_type=rejected">View Rejected Transaction</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=rejected">View Rejected Transaction</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Transactions&view_type=sent">View Sent Transactions</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=processing">View transactions under processing</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Transactions&view_type=error">View Errored Out Transactions</a>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=sent">View Sent Transactions</a>
+    </td>
+    <td>|</td>
+    <td>
+        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=error">View Errored Out Transactions</a>
     </td>
 </tr>
 [% END -%]
