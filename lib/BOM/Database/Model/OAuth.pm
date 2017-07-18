@@ -123,7 +123,7 @@ sub create_app {
 
     my $sth = $self->dbh->prepare("
         INSERT INTO oauth.apps
-            (name, scopes, homepage, github, appstore, googleplay, redirect_uri, app_markup_percentage, binary_user_id)
+            (name, scopes, homepage, github, appstore, googleplay, redirect_uri, signup_uri, app_markup_percentage, binary_user_id)
         VALUES
             (?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
@@ -136,6 +136,7 @@ sub create_app {
         $app->{appstore}              || '',
         $app->{googleplay}            || '',
         $app->{redirect_uri}          || '',
+        $app->{signup_uri}            || '',
         $app->{app_markup_percentage} || 0,
         $app->{user_id});
 
@@ -146,6 +147,7 @@ sub create_app {
         name                  => $app->{name},
         scopes                => $app->{scopes},
         redirect_uri          => $app->{redirect_uri},
+        signup_uri            => $app->{signup_uri},
         homepage              => $app->{homepage} || '',
         github                => $app->{github} || '',
         appstore              => $app->{appstore} || '',
