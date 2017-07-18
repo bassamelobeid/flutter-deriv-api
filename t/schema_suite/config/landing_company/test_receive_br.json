@@ -73,7 +73,7 @@
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch)$",
+                        "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback)$",
                         "required": "1"
                     }
                 },
@@ -140,7 +140,7 @@
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch)$",
+                        "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback)$",
                         "required": "1"
                     }
                 },
