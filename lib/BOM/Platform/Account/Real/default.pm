@@ -136,7 +136,9 @@ sub after_register_client {
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
 
-    BOM::Platform::Client::Sanctions->new({client => $client})->check();
+    BOM::Platform::Client::Sanctions->new({
+            client => $client,
+            brand  => Brands->new(name => request()->brand)})->check();
 
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
