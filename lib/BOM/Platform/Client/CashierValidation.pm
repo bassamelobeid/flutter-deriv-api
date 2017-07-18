@@ -1,13 +1,32 @@
 package BOM::Platform::Client::CashierValidation;
 
+=head1 NAME
+
+BOM::Platform::Client::CashierValidation
+
+=head1 DESCRIPTION
+
+Handles validation for cashier
+
+=cut
+
 use strict;
 use warnings;
+
+use Date::Utility;
 
 use Brands;
 use Client::Account;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw/request localize/;
+
+=head2 validate
+
+Validates various checks related to cashier including
+regulation, compliance requirements
+
+=cut
 
 sub validate {
     my ($loginid, $action) = @_;
@@ -79,19 +98,88 @@ sub validate {
     return _create_error(localize('[_1] transactions may not be performed with this account.', $currency))
         unless ($landing_company->is_currency_legal($currency));
 
-    return {success => 1};
+    return;
 }
+
+=head2 is_system_suspended
+
+Returns whether system is currently suspended or not
+
+=cut
 
 sub is_system_suspended {
     return BOM::Platform::Runtime->instance->app_config->system->suspend->system;
 }
 
+=head2 is_payment_suspended
+
+Returns whether payment is currently suspended or not
+
+=cut
+
 sub is_payment_suspended {
     return BOM::Platform::Runtime->instance->app_config->system->suspend->payments;
 }
 
+=head2 is_crypto_cashier_suspended
+
+Returns whether crypto cashier is currently suspended or not
+
+=cut
+
 sub is_crypto_cashier_suspended {
     return BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocashier;
+}
+
+=head2 pre_withdrawal_validation
+
+=cut
+
+sub pre_withdrawal_validation {
+    my ($loginid, $amount) = @_;
+
+    my $client = Client::Account->new({
+            loginid      => $loginid,
+            db_operation => 'replica'
+        }) or return _create_error(localize('Invalid account.'));
+
+    my $total = 0;
+    if (my $p = _withdrawal_validation_period($client->landing_company->short)) {
+        $total = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid})->get_total_withdrawal($p);
+    }
+
+    if (my $err = _withdrawal_validation($client, $total + $amount)) {
+        return $err;
+    }
+
+    return;
+}
+
+sub _withdrawal_validation_period {
+    my $lc = shift;
+
+    return {
+        start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * 30),
+        exclude    => ['currency_conversion_transfer'],
+    } if $lc eq 'iom';
+
+    return {
+        exclude => ['currency_conversion_transfer'],
+    } if $lc eq 'malta';
+
+    return;
+}
+
+sub _withdrawal_validation {
+    my ($client, $total) = @_;
+
+    my ($lc, $is_authenticated) = ($client->landing_company->short, $client->client_fully_authenticated);
+
+    return _create_error(localize('Account needs age verification.')) if ($lc =~ /^(?:malta|iom)$/ and not $client->get_status('age_verification'));
+    return _create_error(localize('Client is not fully authenticated.')) if ($lc eq 'iom'   and not $is_authenticated and $total >= 3000);
+    return _create_error(localize('Client is not fully authenticated.')) if ($lc eq 'malta' and not $is_authenticated and $total >= 2000);
+
+    return;
 }
 
 sub _create_error {
