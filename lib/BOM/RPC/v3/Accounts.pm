@@ -1065,7 +1065,7 @@ sub set_self_exclusion {
         my $ret          = $client->set_exclusion->exclude_until($args{exclude_until});
         my $statuses     = join '/', map { uc $_->status_code } $client->client_status;
         my $name         = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
-        my $client_title = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " , current status: [$statuses]" : '');
+        my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
 
         my $brand            = Brands->new(name => request()->brand);
         my $marketing_email  = $brand->emails('marketing');
