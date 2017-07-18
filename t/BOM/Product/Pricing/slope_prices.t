@@ -30,6 +30,7 @@ my %skip_category = (
     asian   => 1,
     digits  => 1,
     spreads => 1,
+    lookback => 1,
 );
 
 my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/slope_config.yml');

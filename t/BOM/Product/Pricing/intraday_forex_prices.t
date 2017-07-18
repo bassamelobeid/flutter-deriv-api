@@ -103,7 +103,16 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => Date::Utility->new($volsurfaces->{frxUSDJPY}->{date}),
         surface       => $volsurfaces->{frxUSDJPY}->{surfaces}->{'New York 10:00'},
     });
-my @ct = grep { !$equal{$_} } get_offerings_with_filter(
+
+my %skip_type = (
+     LBFIXEDCALL => 1,
+     LBFIXEDPUT  => 1,
+     LBFLOATCALL => 1,
+     LBFLOATPUT  => 1,
+     LBHIGHLOW   => 1,
+);
+ 
+my @ct = grep { not $skip_type{$_} } grep { !$equal{$_} } get_offerings_with_filter(
     $offerings_cfg,
     'contract_type',
     {
