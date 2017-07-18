@@ -21,12 +21,12 @@ my %expected_type = (
     virtual         => [
         'ASIAND',     'ASIANU',     'CALL',        'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD', 'DIGITOVER',
         'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',        'PUTE',     'RANGE',
-        'UPORDOWN',   'CALLE',      'EXPIRYRANGEE', 'LBFIXEDCALL', 'LBFIXEDPUT', 'LBFLOATCALL', 'LBFLOATPUT', 'LBHIGHLOW'
+        'UPORDOWN',   'CALLE',      'EXPIRYRANGEE', 
     ],
     costarica => [
         'ASIAND',     'ASIANU',     'CALL',        'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD', 'DIGITOVER',
         'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',        'PUTE',     'RANGE',
-        'UPORDOWN',   'CALLE',      'EXPIRYRANGEE', 'LBFIXEDCALL', 'LBFIXEDPUT', 'LBFLOATCALL', 'LBFLOATPUT', 'LBHIGHLOW'
+        'UPORDOWN',   'CALLE',      'EXPIRYRANGEE',
     ],
     maltainvest => ['CALL', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'PUTE', 'RANGE', 'UPORDOWN', 'CALLE', 'EXPIRYRANGEE'],
     japan => ['CALLE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'RANGE', 'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],

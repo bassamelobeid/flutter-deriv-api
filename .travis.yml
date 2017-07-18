@@ -10,6 +10,16 @@ env:
     - TEST_SUITE=unit_test_validation
     - TEST_SUITE=unit_test_pricing
     - TEST_SUITE=unit_test_intraday
+    - TEST_SUITE=merlin_benchmark
+    - TEST_SUITE=SDFX_benchmark_major
+    - TEST_SUITE=SDFX_benchmark_minor
+    - TEST_SUITE=SDEQ_benchmark_DJI
+    - TEST_SUITE=SDEQ_benchmark_FCHI
+    - TEST_SUITE=SDEQ_benchmark_SPC
+    - TEST_SUITE=SDEQ_benchmark_N225
+    - TEST_SUITE=SDEQ_benchmark_SSECOMP
+    - TEST_SUITE=SDEQ_benchmark_FTSE
+    - TEST_SUITE=OVRA_benchmark
 
 services:
     - redis-server
@@ -28,6 +38,7 @@ before_install:
       regentmarkets/bom-platform
       regentmarkets/bom-postgres
       regentmarkets/bom-market
+      regentmarkets/bom-quant-benchmark
       binary-com/translations-websockets-api
 
     - /tmp/travis-scripts/postgres_restart.sh
@@ -47,6 +58,7 @@ install:
 
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - make $TEST_SUITE
+    - if [[ $TEST_SUITE == *"benchmark"* ]]; then ( cd /home/git/regentmarkets/bom-quant-benchmark && make $TEST_SUITE ); else make $TEST_SUITE; fi
+
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
