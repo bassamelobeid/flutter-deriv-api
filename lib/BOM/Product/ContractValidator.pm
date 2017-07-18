@@ -88,13 +88,13 @@ sub _confirm_validity {
     # Looking them up can be too slow for pricing speed constraints.
     # This is the default list of validations.
     my @validation_methods = qw(_validate_input_parameters _validate_offerings);
-    push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) unless $self->underlying->always_available;
     push @validation_methods, '_validate_lifetime';
-    push @validation_methods, '_validate_barrier'                                         unless $args->{skip_barrier_validation};
-    push @validation_methods, '_validate_barrier_type'                                    unless $self->for_sale;
+    push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) unless $self->underlying->always_available;
+    push @validation_methods, '_validate_barrier' unless $args->{skip_barrier_validation};
+    push @validation_methods, '_validate_barrier_type' unless $self->for_sale;
     push @validation_methods, '_validate_feed';
-    push @validation_methods, '_validate_price'                                           unless $self->skips_price_validation;
-    push @validation_methods, '_validate_volsurface'                                      unless $self->volsurface->type eq 'flat';
+    push @validation_methods, '_validate_price' unless $self->skips_price_validation;
+    push @validation_methods, '_validate_volsurface' unless $self->volsurface->type eq 'flat';
     push @validation_methods, '_validate_appconfig_age';
 
     foreach my $method (@validation_methods) {
@@ -590,7 +590,7 @@ sub _validate_volsurface {
 
     my $volsurface  = $self->volsurface;
     my $now         = $self->date_pricing;
-    my $surface_age = ($now->epoch - $volsurface->recorded_date->epoch) / 3600;
+    my $surface_age = ($now->epoch - $volsurface->creation_date->epoch) / 3600;
 
     if ($volsurface->validation_error) {
         warn "Volsurface validation error for " . $self->underlying->symbol;
@@ -610,7 +610,7 @@ sub _validate_volsurface {
         $exceeded = '6h';
     } elsif ($self->market->name eq 'indices' and $surface_age > 24 and not $self->is_atm_bet) {
         $exceeded = '24h';
-    } elsif ($volsurface->recorded_date->days_between($self->trading_calendar->trade_date_before($self->underlying->exchange, $now)) < 0) {
+    } elsif ($volsurface->creation_date->days_between($self->trading_calendar->trade_date_before($self->underlying->exchange, $now)) < 0) {
         # will discuss if this can be removed.
         $exceeded = 'different day';
     }
@@ -656,7 +656,7 @@ sub _validate_volsurface {
 }
 
 =head2 _validate_appconfig_age
- 
+
 We also want to guard against old appconfig.
 
 =cut
