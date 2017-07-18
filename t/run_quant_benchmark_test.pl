@@ -63,7 +63,6 @@ sub _benchmark_testing_setup {
                     rates  => \%rates,
                     date   => '2010-01-01T00:00:00Z'
                 },
-#                Date::Utility->new("2010-01-01"));
                 Date::Utility->new(),
             );
         } else {
