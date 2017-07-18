@@ -26,6 +26,8 @@ sub validate {
     my $currency = $client->default_account ? $client->default_account->currency_code : '';
     return _create_error(localize('Please set the currency.'), 'ASK_CURRENCY') unless $currency;
 
+    return _create_error(localize('Please set your country of residence.')) unless $client->residence;
+
     my $landing_company = $client->landing_company;
     if ($landing_company->short eq 'maltainvest') {
         return _create_error(localize('Client is not fully authenticated.'), 'ASK_AUTHENTICATE') unless $client->client_fully_authenticated;
