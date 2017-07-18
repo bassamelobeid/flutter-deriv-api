@@ -13,7 +13,7 @@ use BOM::Platform::Client::Utility ();
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::Backoffice::FormAccounts;
-use BOM::Backoffice::MIFIR;
+use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 sub get_currency_options {
     my $currency_options;
@@ -101,7 +101,7 @@ sub print_client_details {
     }
 
     my $template_param = {
-        mifir_config            => $BOM::Backoffice::MIFIR::config,
+        mifir_config            => $Finance::MIFIR::CONCAT::config,
         client                  => $client,
         self_exclusion_enabled  => $self_exclusion_enabled,
         lang                    => request()->language,

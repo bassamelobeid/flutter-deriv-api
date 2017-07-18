@@ -31,7 +31,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
-use BOM::Backoffice::MIFIR;
+use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 BOM::Backoffice::Sysinit::init();
 
@@ -75,7 +75,7 @@ if ($broker eq 'MF') {
     }
     if ($input{mifir_set_concat}) {
         $client->mifir_id(
-            BOM::Backoffice::MIFIR::concat({
+            mifir_concat({
                     cc         => $client->residence,
                     date       => $client->date_of_birth,
                     first_name => $client->first_name,
