@@ -61,7 +61,7 @@ bet_limits:
       ETH: 0.05
       LTC: 0.25
       ETC: 0.25
-  open_positions_payout_perl_symbol_limit:
+  open_positions_payout_per_symbol_limit:
     european:
       less_than_seven_days: &less_than_seven_days
         USD: 10000
