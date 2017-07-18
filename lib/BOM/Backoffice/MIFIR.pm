@@ -5,7 +5,6 @@ use strict;
 
 use Text::Iconv;
 use Date::Utility;
-use Data::Dumper;
 use YAML qw/LoadFile/;
 use utf8;
 
@@ -48,11 +47,7 @@ sub _process_name {
     $str =~ s/’//g;    # our iconv does not handle this correctly, it returns empty string is we have it
     $str = $converter->convert($str);
     $str =~ s/[^a-z]//g;
-    if (length($str) < 5) {
-        $str .= '#' x (5 - length($str));
-    } else {
-        $str = substr($str, 0, 5);
-    }
+    $str = substr($str . '######', 0, 5);
     return $str;
 }
 1;
