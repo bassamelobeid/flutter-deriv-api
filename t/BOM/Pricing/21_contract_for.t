@@ -16,7 +16,7 @@ use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods upd
 use utf8;
 
 my $mock = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
-$mock->mock('_get_predefined_highlow', sub {(100,90)});
+$mock->mock('_get_predefined_highlow', sub { (100, 90) });
 set_absolute_time(Date::Utility->new('2016-03-18 00:00:00')->epoch);
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
