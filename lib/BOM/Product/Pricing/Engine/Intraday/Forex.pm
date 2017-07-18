@@ -71,7 +71,12 @@ has [qw(base_probability probability long_term_prediction intraday_vanilla_delta
     lazy_build => 1,
 );
 
-sub _build_base_probability {
+has base_engine => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_base_engine {
     my $self = shift;
 
     my $bet          = $self->bet;
@@ -89,8 +94,13 @@ sub _build_base_probability {
         mu                   => 0,
         (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
 
-    my $engine = Pricing::Engine::Intraday::Forex::Base->new(%args,);
-    return $engine->base_probability;
+    return Pricing::Engine::Intraday::Forex::Base->new(%args,);
+}
+
+sub _build_base_probability {
+    my $self = shift;
+
+    return $self->base_engine->base_probability;
 }
 
 =head1 probability
@@ -336,12 +346,34 @@ sub economic_events_volatility_risk_markup {
     if ((my $tentative_events_markup = $self->_tentative_events_markup)->amount) {
         return $tentative_events_markup;
     }
-    #dummy value maintain for japan documentation purposes. Set to zero.
+
+    my $bet = $self->bet;
+
+    my ($high_vol, $low_vol) = map {
+        $bet->empirical_volsurface->get_volatility({
+                from                          => $bet->effective_start->epoch,
+                to                            => $bet->date_expiry->epoch,
+                ticks                         => $bet->ticks_for_volatility_calculation,
+                include_economic_event_impact => 1,
+                multiplier                    => $_,
+            })
+    } (1.5, 0.5);
+
+    my $bs_high = do {
+        $self->base_engine->{vol} = $high_vol;
+        $self->base_engine->theo_probability;
+    };
+
+    my $bs_low = do {
+        $self->base_engine->{vol} = $low_vol;
+        $self->base_engine->theo_probability;
+    };
+
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_volatility_risk_markup',
         description => 'markup to account for volatility risk of economic events',
         set_by      => __PACKAGE__,
-        base_amount => 0,
+        base_amount => abs($bs_high - $bs_low),
     });
 }
 
