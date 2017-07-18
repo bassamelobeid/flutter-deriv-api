@@ -77,7 +77,7 @@ subtest 'common' => sub {
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier forward error as client is virtual')
-        ->error_message_is('This is a virtual-money account. Please switch to a real-money account to deposit funds.',
+        ->error_message_is('This is a virtual-money account. Please switch to a real-money account to access cashier.',
         'Correct error message for virtual account');
 
     my $user_mocked = Test::MockModule->new('BOM::Platform::User');
@@ -107,11 +107,17 @@ subtest 'common' => sub {
     $client_cr->save;
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_CURRENCY', 'Client has no default currency')
+        ->error_message_is('Please set the currency.', 'Correct error message when currency is not set');
+
+    $client_cr->set_default_account('USD');
+    $client_cr->save;
+
     $client_mocked->mock('documents_expired', sub { return 1 });
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client documents have expired')
         ->error_message_is(
-        'Your identity documents have passed their expiration date. Kindly send a scan of a valid ID to <a href="mailto:support@binary.com">support@binary.com</a> to unlock your cashier.',
+        'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to support@binary.com to unlock your cashier.',
         'Correct error message for documents expired'
         );
 
@@ -120,7 +126,7 @@ subtest 'common' => sub {
     $client_cr->save;
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has cashier lock')
-        ->error_message_is('Your cashier is locked', 'Correct error message for locked cashier');
+        ->error_message_is('Your cashier is locked.', 'Correct error message for locked cashier');
 
     $client_cr->clr_status('cashier_locked');
     $client_cr->set_status('disabled', 'system');
@@ -139,12 +145,6 @@ subtest 'common' => sub {
 
     $client_cr->cashier_setting_password('');
     $client_cr->save;
-
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_CURRENCY', 'Client has no default currency')
-        ->error_message_is('Please set the currency.', 'Correct error message when currency is not set');
-
-    $client_cr->set_default_account('USD');
-    $client_cr->save;
 };
 
 subtest 'deposit' => sub {
@@ -156,7 +156,6 @@ subtest 'deposit' => sub {
 
     $client_cr->clr_status('unwelcome');
     $client_cr->save;
-
 };
 
 subtest 'withdraw' => sub {
@@ -165,15 +164,19 @@ subtest 'withdraw' => sub {
     $client_cr->set_status('withdrawal_locked', 'system', 'locked for security reason');
     $client_cr->save;
 
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_EMAIL_VERIFY', 'Withdrawal needs verification token')
+        ->error_message_is('Verify your withdraw request.', 'Withdrawal needs verification token');
+
+    $params->{args}->{verification_code} = BOM::Platform::Token->new({
+            email       => $client_cr->email,
+            expires_in  => 3600,
+            created_for => 'payment_withdraw',
+        })->token;
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has withdrawal lock')
         ->error_message_is('Your account is locked for withdrawals. Please contact customer service.', 'Client is withdrawal locked');
 
     $client_cr->clr_status('withdrawal_locked');
     $client_cr->save;
-
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_EMAIL_VERIFY', 'Withdrawal needs verification token')
-        ->error_message_is('Verify your withdraw request.', 'Withdrawal needs verification token');
-
 };
 
 subtest 'landing_companies_specific' => sub {
@@ -262,7 +265,7 @@ subtest 'landing_companies_specific' => sub {
     $client_jp->clr_status('jp_activation_pending');
     $client_jp->save;
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_AGE_VERIFICATION', 'need age verification')
-        ->error_message_is('Account needs age verification', 'need verification');
+        ->error_message_is('Account needs age verification.', 'need verification');
 
 };
 
