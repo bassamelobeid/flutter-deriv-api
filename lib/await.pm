@@ -41,16 +41,19 @@ sub wsapi_wait_for {
             if ($messages_without_accidens == ($params->{wait_max} || 10)) {
                 return $f->fail("timeout");
             }
-            $f->cancel('try again');
-            wsapi_wait_for($t, $wait_for, sub { $t->message_ok }, $params, ++$messages_without_accidens);
+            $f->cancel();
         },
     );
     $f->on_ready(sub { shift->loop->unwatch_time($id) });
 
     $action_sub->();
 
-    my $data = $ioloop->await($f)->get;
-    return $data;
+    $f = $ioloop->await($f);
+
+    return wsapi_wait_for($t, $wait_for, sub { $t->message_ok }, $params, ++$messages_without_accidens)
+        if $f->is_cancelled;
+
+    return $f->get;
 }
 
 our $AUTOLOAD;
