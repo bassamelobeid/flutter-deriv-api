@@ -386,6 +386,7 @@ sub proposal_open_contract {
             if (!$valid_response && --$retries) {
                 # we still have to retry, so sleep a second and perform rpc call again
                 Mojo::IOLoop->timer(1, $call_sub);
+                return;
             }
 
             # no need any more
