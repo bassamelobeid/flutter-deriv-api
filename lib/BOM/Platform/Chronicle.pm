@@ -133,6 +133,8 @@ sub get_chronicle_reader {
 my $dbic;
 
 sub dbic {
+    # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
+    return undef if not defined $ENV{PGSERVICEFILE};
     $dbic //= DBIx::Connector::Pg->new(
         _dbh_dsn(),
         # User and password are part of the DSN
