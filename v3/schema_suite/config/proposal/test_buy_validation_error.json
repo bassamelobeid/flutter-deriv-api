@@ -14,10 +14,6 @@
                 "message": {
                     "type": "string",
                     "required": "1"
-                },
-               "details": {
-                    "type": "object",
-                    "required": "1"                    
                 }
             }
         },
