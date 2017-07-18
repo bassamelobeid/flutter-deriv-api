@@ -36,8 +36,8 @@ sub _benchmark_testing_setup {
     my $csv = Text::CSV->new({sep_char => ','});
 
     open(my $data, '<', $file_path) or die "Could not open '$file_path' $!\n";
-    my $dummy_line = <$data>;
-
+    my $dummy_line       = <$data>;
+    my $chronicle_writer = BOM::Platform::Chronicle::get_chronicle_writer;
     while (my $line = <$data>) {
         chomp $line;
 
@@ -54,7 +54,7 @@ sub _benchmark_testing_setup {
                 $rates{$tenor} = $rate;
             }
 
-            BOM::Platform::Chronicle::get_chronicle_writer->set(
+            $chronicle_writer->set(
                 'interest_rates',
                 $symbol,
                 {
@@ -65,7 +65,6 @@ sub _benchmark_testing_setup {
                 },
                 Date::Utility->new(),
             );
-
         } else {
             warn "Line could not be parsed: $line\n";
         }
@@ -73,7 +72,7 @@ sub _benchmark_testing_setup {
 
     close $data;
 
-    BOM::Platform::Chronicle::get_chronicle_writer->set('partial_trading', 'late_opens', {}, Date::Utility->new("2010-01-01"));
+    $chronicle_writer->set('partial_trading', 'late_opens', {}, Date::Utility->new("2010-01-01"));
 
     return 1;
 }
