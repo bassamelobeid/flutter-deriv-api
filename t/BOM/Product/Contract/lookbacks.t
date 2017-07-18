@@ -72,7 +72,6 @@ subtest 'lbfixedcall' => sub {
 
         is $c->sentiment, undef;
         ok !$c->is_path_dependent;
-        is_deeply $c->supported_expiries, ['intraday', 'daily'];
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
     }
@@ -113,7 +112,6 @@ subtest 'lbfixedput' => sub {
         is $c->pricing_code, 'LBFIXEDPUT';
         
         ok !$c->is_path_dependent;
-        is_deeply $c->supported_expiries, ['intraday', 'daily'];
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
     }
@@ -157,7 +155,6 @@ subtest 'lbfloatcall' => sub {
         is $c->pricing_code, 'LBFLOATCALL';
         
         ok !$c->is_path_dependent;
-        is_deeply $c->supported_expiries, ['intraday', 'daily'];
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
     }
@@ -201,7 +198,6 @@ subtest 'lbfloatput' => sub {
         is $c->pricing_code, 'LBFLOATPUT';
         
         ok !$c->is_path_dependent;
-        is_deeply $c->supported_expiries, ['intraday', 'daily'];
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
     }
@@ -245,7 +241,6 @@ subtest 'lbhighlow' => sub {
         is $c->pricing_code, 'LBHIGHLOW';
         
         ok !$c->is_path_dependent;
-        is_deeply $c->supported_expiries, ['intraday', 'daily'];
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
     }
