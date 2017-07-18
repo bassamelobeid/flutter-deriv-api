@@ -84,7 +84,7 @@ sub rmg_table_format {
     } elsif ($volsurface->type eq 'flat') {
         push @headers, qw(tenor date flat_vol flat_atm_spread);
         @surface =
-            map { [$volsurface->flat_vol, $volsurface->flat_atm_spread] } @days;
+            map { [$volsurface->flat_vol, $volsurface->atm_spread_point] } @days;
     } elsif ($volsurface->type eq 'delta') {
         my @deltas = @{$volsurface->smile_points};
         my @vol_spreads_points;
