@@ -81,7 +81,7 @@ sub _collect_vol_ages {
         next if $underlying->flat_smile;
         my $dm              = BOM::MarketData::Fetcher::VolSurface->new;
         my $surface_in_used = $dm->fetch_surface({underlying => $underlying});
-        my $vol_age         = (time - $surface_in_used->recorded_date->epoch) / 3600;
+        my $vol_age         = (time - $surface_in_used->creation_date->epoch) / 3600;
         my $market          = $underlying->market->name;
         if ($market eq 'forex' or $market eq 'commodities') {
             if ($underlying->quanto_only) {
