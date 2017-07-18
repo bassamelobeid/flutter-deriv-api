@@ -34,6 +34,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Config;
 use BOM::Platform::AuditLog;
 use BOM::Platform::RiskProfile;
+use BOM::Platform::Client::CashierValidation;
 use BOM::RPC::v3::Utility;
 use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
@@ -47,117 +48,6 @@ my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payme
 sub cashier {
     my $params = shift;
 
-    my $client = $params->{client};
-
-    if ($client->is_virtual) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'CashierForwardError',
-            message_to_client => localize('This is a virtual-money account. Please switch to a real-money account to deposit funds.'),
-        });
-    }
-
-    my $args     = $params->{args};
-    my $action   = $args->{cashier} // 'deposit';
-    my $provider = $args->{provider} // 'doughflow';
-
-    my $currency;
-    if (my $account = $client->default_account) {
-        $currency = $account->currency_code;
-    }
-
-    # still no currency?  Try the first financial sibling with same landing co.
-    unless ($currency) {
-        my $user = BOM::Platform::User->new({email => $client->email});
-        unless ($user) {
-            warn __PACKAGE__ . "::cashier Error:  Unable to get user data for " . $client->loginid . "\n";
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'CashierForwardError',
-                message_to_client => localize('Internal server error'),
-            });
-        }
-        for (grep { $_->landing_company->short eq $client->landing_company->short } $user->clients) {
-            if (my $default_account = $_->default_account) {
-                $currency = $default_account->currency_code;
-                last;
-            }
-        }
-    }
-
-    my $landing_company = $client->landing_company;
-    if ($landing_company->short eq 'maltainvest') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ASK_AUTHENTICATE',
-                message_to_client => localize('Client is not fully authenticated.')}) unless $client->client_fully_authenticated;
-
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ASK_FINANCIAL_RISK_APPROVAL',
-                message_to_client => localize('Financial Risk approval is required.')}) unless $client->get_status('financial_risk_approval');
-
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ASK_TIN_INFORMATION',
-                message_to_client => localize(
-                    'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')}
-        ) unless $client->get_status('crs_tin_information');
-    }
-
-    if ($client->residence eq 'gb') {
-        unless ($client->get_status('ukgc_funds_protection')) {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'ASK_UK_FUNDS_PROTECTION',
-                message_to_client => localize('Please accept Funds Protection.'),
-            });
-        }
-        if ($client->get_status('ukrts_max_turnover_limit_not_set')) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET',
-                    message_to_client => localize('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.')});
-        }
-    }
-
-    if ($client->residence eq 'jp' and ($client->get_status('jp_knowledge_test_pending') or $client->get_status('jp_knowledge_test_fail'))) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_JP_KNOWLEDGE_TEST',
-            message_to_client => localize('You must complete the knowledge test to activate this account.'),
-        });
-    }
-
-    if ($client->residence eq 'jp' and $client->get_status('jp_activation_pending')) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'JP_NOT_ACTIVATION',
-            message_to_client => localize('Account not activated.'),
-        });
-    }
-
-    if (   $client->landing_company->country eq 'Japan'
-        && !$client->get_status('age_verification')
-        && !$client->has_valid_documents)
-    {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_AGE_VERIFICATION',
-            message_to_client => localize('Account needs age verification'),
-        });
-    }
-
-    my $error = '';
-    my $brand = Brands->new(name => request()->brand);
-    if ($action eq 'deposit' and $client->get_status('unwelcome')) {
-        $error = localize('Your account is restricted to withdrawals only.');
-    } elsif ($client->documents_expired) {
-        $error = localize(
-            'Your identity documents have passed their expiration date. Kindly send a scan of a valid ID to <a href="mailto:[_1]">[_1]</a> to unlock your cashier.',
-            $brand->emails('support'));
-    } elsif ($client->get_status('cashier_locked')) {
-        $error = localize('Your cashier is locked');
-    } elsif ($client->get_status('disabled')) {
-        $error = localize('Your account is disabled');
-    } elsif ($client->cashier_setting_password) {
-        $error = localize('Your cashier is locked as per your request.');
-    } elsif ($action eq 'withdraw' and $client->get_status('withdrawal_locked')) {
-        $error = localize('Your account is locked for withdrawals. Please contact customer service.');
-    } elsif ($currency and not $landing_company->is_currency_legal($currency)) {
-        $error = localize('[_1] transactions may not be performed with this account.', $currency);
-    }
-
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
         BOM::RPC::v3::Utility::create_error({
@@ -167,34 +57,20 @@ sub cashier {
         });
     };
 
-    if ($error) {
-        return $error_sub->($error);
-    }
+    my ($client, $args) = @{$params}{qw/client args/};
+    my $action   = $args->{cashier}  // 'deposit';
+    my $provider = $args->{provider} // 'doughflow';
 
-    my $df_client;
-    my $client_loginid = $client->loginid;
-    if ($provider eq 'doughflow') {
-        $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
-        # We ask the client which currency they wish to deposit/withdraw in
-        # if they've never deposited before
-        $currency = $currency || $df_client->doughflow_currency;
-    }
-
-    if (not $currency) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_CURRENCY',
-            message_to_client => 'Please set the currency.',
-        });
-    }
-
-    my $email = $client->email;
+    # this should come before all validation as verification
+    # token is mandatory for withdrawal.
     if ($action eq 'withdraw') {
         my $token = $args->{verification_code} // '';
 
+        my $email = $client->email;
         if (not $email or $email =~ /\s+/) {
-            $error_sub->(localize("Client email not set."));
+            return $error_sub->(localize("Please provide a valid email address."));
         } elsif ($token) {
-            if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($token, $client->email, 'payment_withdraw')->{error}) {
+            if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($token, $email, 'payment_withdraw')->{error}) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => $err->{code},
                         message_to_client => $err->{message_to_client}});
@@ -207,6 +83,13 @@ sub cashier {
         }
     }
 
+    my $client_loginid = $client->loginid;
+    my $validation = BOM::Platform::Client::CashierValidation::validate($client_loginid, $action);
+    return BOM::RPC::v3::Utility::create_error({
+            code              => $validation->{error}->{code},
+            message_to_client => $validation->{error}->{message_to_client}}) if exists $validation->{error};
+
+    my ($brand, $currency) = (Brands->new(name => request()->brand), $client->default_account->currency_code);
     ## if cashier provider == 'epg', we'll return epg url
     if ($provider eq 'epg') {
         return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
@@ -217,6 +100,7 @@ sub cashier {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
+    my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
     # hit DF's CreateCustomer API
     my $ua = LWP::UserAgent->new(timeout => 20);
     $ua->ssl_opts(
@@ -777,7 +661,8 @@ sub paymentagent_withdraw {
 
     # expire token only when its not dry run
     unless ($args->{dry_run}) {
-        my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email, 'paymentagent_withdraw')->{error};
+        my $err =
+            BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email, 'paymentagent_withdraw')->{error};
         if ($err) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => $err->{code},
