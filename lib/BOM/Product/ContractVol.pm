@@ -3,6 +3,7 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
+use List::Util qw(sum);
 use List::MoreUtils qw(none all);
 use VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -120,6 +121,44 @@ sub _build_vol_at_strike {
     return $self->volsurface->get_volatility($vol_args);
 }
 
+sub get_variance_mean {
+    my ($self, $from, $to) = @_;
+
+    my $ticks = $self->decimate_object->get({
+        underlying  => $self->underlying,
+        start_epoch => $from,
+        end_epoch   => $to,
+        backprice   => $self->underlying->for_date,
+    });
+
+    my $return_sep = 4;
+    my @returns_squared;
+    for (my $i = $return_sep; $i <= $#$ticks; $i++) {
+        my $dt = $ticks->[$i]->{decimate_epoch} - $ticks->[$i - $return_sep]->{decimate_epoch};
+        next if $dt <= 0;
+        push @returns_squared, ((log($ticks->[$i]->{quote} / $ticks->[$i - $return_sep]->{quote})**2) * 252 * 86400 / $dt);
+    }
+
+    return sum(@returns_squared) / scalar(@returns_squared);
+}
+
+sub calculate_new_magnitude {
+    my $self = shift;
+
+    my $pricing_epoch = $self->date_pricing->epoch;
+    # only the last 20 minutes
+    my $start_epoch = $self->date_pricing->minus_time_interval('20m')->epoch;
+    my @economic_events = grep { $_->{release_date} >= $start_epoch && $_->{release_date} <= $pricing_epoch } @{$self->_applicable_economic_events};
+
+    foreach my $event (@economic_events) {
+        my $v1 = $self->get_variance_mean($start_epoch, $event->{release_date});
+        my $v2 = $self->get_variance_mean($event->{release_date},$pricing_epoch);
+        $event->{custom_magnitude} = $v2 / $v1;
+    }
+
+    return \@economic_events;
+}
+
 sub _build_pricing_vol {
     my $self = shift;
 
@@ -131,6 +170,7 @@ sub _build_pricing_vol {
             to                            => $self->date_expiry->epoch,
             ticks                         => $self->ticks_for_volatility_calculation,
             include_economic_event_impact => 1,
+            economic_events               => $self->calculate_new_magnitude,
         });
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
@@ -245,6 +285,17 @@ sub _build_long_term_prediction {
     return $self->empirical_volsurface->long_term_prediction // 0.1;
 }
 
+has decimate_object => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_decimate_object {
+    my $self = shift;
+
+    return BOM::Market::DataDecimate->new;
+}
+
 has ticks_for_volatility_calculation => (
     is         => 'ro',
     lazy_build => 1,
@@ -253,7 +304,7 @@ has ticks_for_volatility_calculation => (
 sub _build_ticks_for_volatility_calculation {
     my $self = shift;
 
-    return BOM::Market::DataDecimate->new->get({
+    return $self->decimate_object->get({
         underlying  => $self->underlying,
         start_epoch => $self->effective_start->minus_time_interval('20m')->epoch,
         end_epoch   => $self->effective_start->epoch,
