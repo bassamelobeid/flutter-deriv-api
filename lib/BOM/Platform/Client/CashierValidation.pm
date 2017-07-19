@@ -47,7 +47,28 @@ sub validate {
 
     return _create_error(localize('Please set your country of residence.')) unless $client->residence;
 
+    # better to do generic error validation before landing company or account specific
+    return _create_error(localize('Your cashier is locked.'))                     if ($client->get_status('cashier_locked'));
+    return _create_error(localize('Your account is disabled.'))                   if ($client->get_status('disabled'));
+    return _create_error(localize('Your cashier is locked as per your request.')) if ($client->cashier_setting_password);
+
     my $landing_company = $client->landing_company;
+    return _create_error(localize('[_1] transactions may not be performed with this account.', $currency))
+        unless ($landing_company->is_currency_legal($currency));
+
+    return _create_error(
+        localize(
+            'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to [_1] to unlock your cashier.',
+            Brands->new(name => request()->brand)->emails('support'))) if ($client->documents_expired);
+
+    # action specific validation
+    return _create_error(localize('Your account is restricted to withdrawals only.'))
+        if ($action eq 'deposit' and $client->get_status('unwelcome'));
+
+    return _create_error(localize('Your account is locked for withdrawals. Please contact customer service.'))
+        if ($action eq 'withdraw' and $client->get_status('withdrawal_locked'));
+
+    # landing company or country specific validations
     if ($landing_company->short eq 'maltainvest') {
         return _create_error(localize('Client is not fully authenticated.'), 'ASK_AUTHENTICATE') unless $client->client_fully_authenticated;
 
@@ -80,23 +101,6 @@ sub validate {
         return _create_error(localize('Account needs age verification.'), 'ASK_AGE_VERIFICATION')
             if (not $client->get_status('age_verification') and not $client->has_valid_documents);
     }
-
-    return _create_error(localize('Your account is restricted to withdrawals only.'))
-        if ($action eq 'deposit' and $client->get_status('unwelcome'));
-
-    return _create_error(
-        localize(
-            'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to [_1] to unlock your cashier.',
-            Brands->new(name => request()->brand)->emails('support'))) if ($client->documents_expired);
-
-    return _create_error(localize('Your cashier is locked.'))                     if ($client->get_status('cashier_locked'));
-    return _create_error(localize('Your account is disabled.'))                   if ($client->get_status('disabled'));
-    return _create_error(localize('Your cashier is locked as per your request.')) if ($client->cashier_setting_password);
-    return _create_error(localize('Your account is locked for withdrawals. Please contact customer service.'))
-        if ($action eq 'withdraw' and $client->get_status('withdrawal_locked'));
-
-    return _create_error(localize('[_1] transactions may not be performed with this account.', $currency))
-        unless ($landing_company->is_currency_legal($currency));
 
     return;
 }
