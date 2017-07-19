@@ -66,7 +66,9 @@ sub get_last_generated_historical_marked_to_market_time {
     my $self = shift;
     my $dbic = $self->db->dbic;
 
-    my $sql = q{
+    my $result = $dbic->run(
+        sub {
+            my $sql = q{
         SELECT
             date_trunc('second', calculation_time) as max_time
         FROM
@@ -76,8 +78,6 @@ sub get_last_generated_historical_marked_to_market_time {
         LIMIT 1
     };
 
-    my $result = $dbic->run(
-        sub {
             my $sth = $_->prepare($sql);
             $sth->execute();
             return $sth->fetchrow_hashref();
@@ -98,9 +98,9 @@ sub get_active_accounts_payment_profit {
     my $self = shift;
     my $args = shift;
 
-    my $sql = q{ SELECT * FROM accounting.get_active_accounts_payment_profit(?, ?) };
     return $self->db->dbic->run(
         sub {
+            my $sql = q{ SELECT * FROM accounting.get_active_accounts_payment_profit(?, ?) };
             my $sth = $_->prepare($sql);
             $sth->execute($args->{start_time}->db_timestamp, $args->{end_time}->db_timestamp);
             return values %{$sth->fetchall_hashref('account_id')};
