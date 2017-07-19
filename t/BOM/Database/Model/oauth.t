@@ -24,9 +24,14 @@ my $app1 = $m->create_app({
     github       => 'https://github.com/binary-com/binary-static',
     user_id      => $test_user_id,
     redirect_uri => 'https://www.example.com',
+    signup_uri => 'https://www.example.com/signup',
 });
 my $test_appid = $app1->{app_id};
 is $app1->{homepage}, 'http://www.example.com/', 'homepage is correct';
+is $app1->{signup_uri}, 'https://www.example.com/signup', 'signup_uri is correct';
+
+my $signup_uri = $m->get_signup_uri_by_app_id($test_appid);
+is $app1->{signup_uri}, $signup_uri, 'get_signup_uri_by_app_id';
 
 ## it's in test db
 my $app = $m->verify_app($test_appid);
@@ -55,10 +60,13 @@ $app1 = $m->update_app(
         name         => 'App 1',
         scopes       => ['read', 'payments', 'trade'],
         redirect_uri => 'https://www.example.com/callback',
+        signup_uri => 'https://www.example.com/signup_updated',
         homepage     => 'http://www.example2.com/',
     });
 is $app1->{redirect_uri}, 'https://www.example.com/callback', 'redirect_uri is updated';
+is $app1->{signup_uri}, 'https://www.example.com/signup_updated', 'signup_uri is updated';
 is $app1->{homepage},     'http://www.example2.com/',         'homepage is updated';
+
 
 ### get app_register/app_list/app_get
 my $get_app = $m->get_app($test_user_id, $app1->{app_id});
