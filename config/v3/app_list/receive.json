@@ -31,7 +31,7 @@
             "required": 1
           },
           "signup_uri": {
-            "type": "string",
+            "type": ["string", "null"],
             "description":"Application signup_uri",
             "required": 1
           },
