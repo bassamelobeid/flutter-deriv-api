@@ -51,6 +51,11 @@
       "description":"Application redirect_uri",
       "required": "1"
     },
+    "signup_uri": {
+      "type": "string",
+      "pattern": "^(https?:\/\/)?(localhost:?\\d*\/?|([\\da-z\\.-]+)\\.([a-z\\.]{2,8})([\\/\\w \\.-]*)*\/?)$",
+      "description":"Application signup_uri"
+    },
     "app_markup_percentage": {
       "type": "number",
       "pattern": "^([0-4](\\.[0-9][0-9]?)?|5(\\.00?)?)$",

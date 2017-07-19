@@ -24,6 +24,10 @@
           "type": "string",
           "description":"Application redirect_uri"
         },
+        "signup_uri": {
+          "type": "string",
+          "description":"Application signup_uri"
+        },
         "homepage": {
           "type": "string",
           "description":"Application's homepage"
