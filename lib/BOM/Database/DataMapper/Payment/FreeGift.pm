@@ -71,11 +71,12 @@ sub get_clients_with_only_one_freegift_transaction_and_inactive {
                 my $sth = $_->prepare($sql);
                 my @bind_value = ($before_than, $broker_code . "%");
                 $sth->execute(@bind_value);
-                my @no_used_gift_clients;
+                # A new variable is created. We don't want to affect outer environment for we are using 'fixup' mode of DBIx::Connector
+                my @inner_no_used_gift_clients;
                 while (my $txn_hashref = $sth->fetchrow_hashref) {
-                    push @no_used_gift_clients, $txn_hashref;
+                    push @inner_no_used_gift_clients, $txn_hashref;
                 }
-                return @no_used_gift_clients;
+                return @inner_no_used_gift_clients;
             });
     }
     catch {
