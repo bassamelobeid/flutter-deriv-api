@@ -158,6 +158,8 @@ sub pre_withdrawal_validation {
             db_operation => 'replica'
         }) or return _create_error(localize('Invalid account.'));
 
+    # TODO: implement logic to compare to EUR/USD limits
+    # as currenctly it returns amount in account currency
     my $total = 0;
     if (my $p = _withdrawal_validation_period($client->landing_company->short)) {
         $total = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid})->get_total_withdrawal($p);
