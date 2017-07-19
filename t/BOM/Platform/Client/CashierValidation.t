@@ -1,10 +1,11 @@
 use strict;
 use warnings;
 
+use Date::Utility;
 use Test::More qw(no_plan);
 use Test::Exception;
+use Test::MockModule;
 use Test::FailWarnings;
-use Date::Utility;
 
 use Client::Account;
 
@@ -12,7 +13,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Client::CashierValidation;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_jpy, $mlt_client, $mx_client, $jp_client) = ('CashierForwardError');
+my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_jpy, $mf_client, $mx_client, $jp_client) = ('CashierForwardError');
 
 subtest prepare => sub {
     lives_ok {
@@ -34,9 +35,9 @@ subtest prepare => sub {
             email       => $new_email,
         });
 
-        $new_email  = 'test' . rand . '@binary.com';
-        $mlt_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MLT',
+        $new_email = 'test' . rand . '@binary.com';
+        $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MF',
             email       => $new_email,
         });
 
@@ -166,8 +167,8 @@ subtest 'Cashier validation deposit' => sub {
     $cr_client->save();
 
     my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-    is $res->{error}->{message_to_client}, 'Your account is restricted to withdrawals only.', 'Correct error message';
+    is $res->{error}->{code}, $generic_err_code, 'Correct error code for unwelcome client';
+    is $res->{error}->{message_to_client}, 'Your account is restricted to withdrawals only.', 'Correct error message for unwelcome client';
 
     $cr_client->clr_status('unwelcome');
     $cr_client->save();
@@ -178,11 +179,47 @@ subtest 'Cashier validation withdraw' => sub {
     $cr_client->save();
 
     my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-    is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals. Please contact customer service.', 'Correct error message';
+    is $res->{error}->{code}, $generic_err_code, 'Correct error code for withdrawal locked';
+    is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals. Please contact customer service.',
+        'Correct error message for withdrawal locked';
 
     $cr_client->clr_status('withdrawal_locked');
     $cr_client->save();
+};
+
+subtest 'Cashier validation landing company and country specific' => sub {
+    subtest 'maltainvest' => sub {
+        my $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        is $res->{error}->{code},              'ASK_CURRENCY',             'Correct error code for account currency not set';
+        is $res->{error}->{message_to_client}, 'Please set the currency.', 'Correct error message for account currency not set';
+
+        $mf_client->set_default_account('EUR');
+        $mf_client->save;
+
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        is $res->{error}->{code}, 'ASK_AUTHENTICATE', 'Correct error code for not authenticated';
+        is $res->{error}->{message_to_client}, 'Client is not fully authenticated.', 'Correct error message for not authenticated';
+
+        my $mock_client = Test::MockModule->new('Client::Account');
+        $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
+
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        is $res->{error}->{code},              'ASK_FINANCIAL_RISK_APPROVAL',          'Correct error code';
+        is $res->{error}->{message_to_client}, 'Financial Risk approval is required.', 'Correct error message';
+
+        $mf_client->set_status('financial_risk_approval', 'system', 'Accepted approval');
+        $mf_client->save();
+
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        is $res->{error}->{code}, 'ASK_TIN_INFORMATION', 'Correct error code';
+        is $res->{error}->{message_to_client},
+            'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
+            'Correct error message';
+        $mf_client->set_status('crs_tin_information', 'system', '111-111-222');
+        $mf_client->save();
+
+        is BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit'), undef, 'Validation passed';
+    };
 };
 
 done_testing();
