@@ -34,6 +34,10 @@
               "type": "string",
               "required": "1"
             },
+            "signup_uri": {
+              "type": "string",
+              "required": "1"
+            },
             "homepage": {
               "type": "string",
               "required": "1"
