@@ -13,7 +13,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Client::CashierValidation;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_jpy, $mf_client, $mx_client, $jp_client) = ('CashierForwardError');
+my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_jpy, $mlt_client, $mf_client, $mx_client, $jp_client) = ('CashierForwardError');
 
 subtest prepare => sub {
     lives_ok {
@@ -32,6 +32,12 @@ subtest prepare => sub {
         $new_email     = 'test' . rand . '@binary.com';
         $cr_client_jpy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
+            email       => $new_email,
+        });
+
+        $new_email  = 'test' . rand . '@binary.com';
+        $mlt_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MLT',
             email       => $new_email,
         });
 
@@ -218,6 +224,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $mf_client->save();
 
         is BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit'), undef, 'Validation passed';
+        $mock_client->unmock('client_fully_authenticated');
     };
 
     subtest 'gb as residence' => sub {
@@ -244,6 +251,8 @@ subtest 'Cashier validation landing company and country specific' => sub {
 
         $mx_client->clr_status('ukrts_max_turnover_limit_not_set');
         $mx_client->save;
+
+        is BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit'), undef, 'Validation passed';
     };
 
     subtest 'jp as residence' => sub {
@@ -306,6 +315,53 @@ subtest 'Cashier validation landing company and country specific' => sub {
 
         is BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit'), undef,
             'Validation passed as not age verified but has valid documents';
+    };
+
+    subtest 'pre withdrawal validation' => sub {
+        my $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation('CR332112', undef);
+        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
+        is $res->{error}->{message_to_client}, 'Invalid amount.', 'Correct error message';
+
+        $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation('CR332112', 100);
+        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
+        is $res->{error}->{message_to_client}, 'Invalid account.', 'Correct error message';
+
+        $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 1000);
+        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
+        is $res->{error}->{message_to_client}, 'Account needs age verification.', 'Correct error message';
+
+        $mlt_client->set_status('age_verification', 'system', 1);
+        $mlt_client->save;
+
+        $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 2000);
+        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
+        is $res->{error}->{message_to_client}, 'Client is not fully authenticated.', 'Correct error message';
+        is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 1999), undef,
+            'Amount less than allowed limit hence validation passed';
+
+        $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mx_client->loginid, 1000);
+        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
+        is $res->{error}->{message_to_client}, 'Account needs age verification.', 'Correct error message';
+
+        $mx_client->set_status('age_verification', 'system', 1);
+        $mx_client->save;
+
+        $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mx_client->loginid, 3000);
+        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
+        is $res->{error}->{message_to_client}, 'Client is not fully authenticated.', 'Correct error message';
+
+        is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($cr_client->loginid, 10000), undef,
+            'Not applicable for CR hence validation passed';
+
+        my $mock_client = Test::MockModule->new('Client::Account');
+        $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
+
+        is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 10000), undef,
+            'Fully authenticated and age verified hence passed';
+        is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mx_client->loginid, 10000), undef,
+            'Fully authenticated and age verified hence passed';
+
+        $mock_client->unmock('client_fully_authenticated');
     };
 };
 
