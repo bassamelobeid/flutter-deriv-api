@@ -386,6 +386,7 @@ sub proposal_open_contract {
             if (!$valid_response && --$retries) {
                 # we still have to retry, so sleep a second and perform rpc call again
                 Mojo::IOLoop->timer(1, $call_sub);
+                return;
             }
 
             # no need any more
@@ -783,9 +784,14 @@ sub _price_stream_results_adjustment {
     if (my $error = $price_calculator->validate_price) {
         my $error_map = {
             zero_stake             => sub { "Invalid stake." },
-            payout_too_many_places => sub { 'Payout can not have more than two decimal places.' },
-            stake_same_as_payout   => sub { 'This contract offers no return.' },
-            stake_outside_range    => sub {
+            payout_too_many_places => sub {
+                my ($details) = @_;
+                return ('Payout can not have more than [_1] decimal places.', $details->[0]);
+            },
+            stake_same_as_payout => sub {
+                'This contract offers no return.';
+            },
+            stake_outside_range => sub {
                 my ($details) = @_;
                 return ('Minimum stake of [_1] and maximum payout of [_2].', $details->[0], $details->[1]);
             },
