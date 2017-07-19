@@ -747,6 +747,9 @@ sub set_settings {
     my $phone           = ($args->{'phone'} // $client->phone) // '';
     my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
 
+    # filter out irrelevant spaces and commas
+    foreach ($address1, $address2, $addressTown) { $_ =~ s/(?:,?\s*,)+\s*/, /g }
+
     my $cil_message;
     if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
@@ -812,11 +815,12 @@ sub set_settings {
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
     my $residence_country = Locale::Country::code2country($client->residence);
+    my $full_address = join(', ', (map { $client->$_ } qw(address_1 address_2 city state postcode)), $residence_country);
 
     my @updated_fields = (
         [localize('Email address'),        $client->email],
         [localize('Country of Residence'), $residence_country],
-        [localize('Address'),              join(', ', (map { $client->$_ } qw(address_1 address_2 city state postcode)), $residence_country)],
+        [localize('Address'),              $full_address],
         [localize('Telephone'),            $client->phone]);
 
     my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($client->tax_residence || '');
@@ -839,9 +843,9 @@ sub set_settings {
     foreach my $updated_field (@updated_fields) {
         $message .=
               '<tr><td style="vertical-align:top; text-align:left;"><strong>'
-            . encode_entities($updated_field->[0])
+            . $updated_field->[0]
             . '</strong></td><td style="vertical-align:top;">:&nbsp;</td><td style="vertical-align:top;text-align:left;">'
-            . encode_entities($updated_field->[1])
+            . $updated_field->[1]
             . '</td></tr>';
     }
     $message .= '</table>';
