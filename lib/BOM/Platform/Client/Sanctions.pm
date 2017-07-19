@@ -40,7 +40,7 @@ our $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Platform::
 
  Check client against sanctioned list. For virtual check is not done. For unauthenticated clients, client is blocked & email is sent.
 
- Returns none if not matched, and 1 if matched.
+ Returns none if not matched, and list id if matched.
 
 =cut
 
@@ -50,31 +50,33 @@ sub check {
 
     return if $client->is_virtual;
 
-    my $sanctioned = $sanctions->is_sanctioned($client->first_name, $client->last_name);
+    my $found_in_list = $sanctions->is_sanctioned($client->first_name, $client->last_name);
     $client->add_sanctions_check({
         type   => $self->type,
-        result => $sanctioned
+        result => $found_in_list
     });
 
     # we don't mark or log fully_authenticated clients
-    return unless $sanctioned or $client->client_fully_authenticated;
+    return unless $found_in_list or $client->client_fully_authenticated;
 
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
+
+    my $message = "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list found in [$found_in_list].";
 
     # do not add another note & block if client is already disabled
     if (!$client->get_status('disabled')) {
         $client->set_status('disabled', 'system', 'client disabled as marked as UNTERR');
         $client->save;
-        $client->add_note('UNTERR', "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list.");
+        $client->add_note('UNTERR', $message);
     }
     send_email({
             from    => $self->brand->emails('support'),
             to      => $self->brand->emails('compliance'),
             subject => $client->loginid . ' marked as UNTERR',
-            message => ["UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list."],
+            message => [$message],
         }) unless $self->skip_email;
-    return 1;
+    return $found_in_list;
 }
 
 __PACKAGE__->meta->make_immutable;
