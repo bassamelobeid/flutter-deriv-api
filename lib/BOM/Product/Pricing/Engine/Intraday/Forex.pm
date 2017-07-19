@@ -347,6 +347,13 @@ sub economic_events_volatility_risk_markup {
         return $tentative_events_markup;
     }
 
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'economic_events_volatility_risk_markup',
+        description => 'markup to account for volatility risk of economic events',
+        set_by      => __PACKAGE__,
+        base_amount => 0,
+    });
+
     my $bet = $self->bet;
 
     my ($high_vol, $low_vol) = map {
