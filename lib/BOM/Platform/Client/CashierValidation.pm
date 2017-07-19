@@ -151,7 +151,7 @@ but EPG and crypto cashier need it explicitly
 sub pre_withdrawal_validation {
     my ($loginid, $amount) = @_;
 
-    return _create_error(localize('Invalid amount.')) if (not $amount or $amount <= 0 or not looks_like_number($amount));
+    return _create_error(localize('Invalid amount.')) if (not $amount or not looks_like_number($amount) or $amount <= 0);
 
     my $client = Client::Account->new({
             loginid      => $loginid,
