@@ -1229,11 +1229,11 @@ subtest $method => sub {
 
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     my $res = $c->tcall('get_settings', {token => $token1});
-    is($res->{tax_identification_number}, $params->{args}{tax_identification_number},       "Check tax information");
-    is($res->{tax_residence},             $params->{args}{tax_residence},                   "Check tax information");
-    is('address line 1, a, b, c, d',      $res->{address_line_1} =~ s/(?:,?\s*,)+\s*/, /gr, "Address line 1 is valid after formatting");
-    is('address line 2, a, b',            $res->{address_line_2} =~ s/(?:,?\s*,)+\s*/, /gr, "Address line 2 is valid after formatting");
-    is('address city, a, b',              $res->{address_city} =~ s/(?:,?\s*,)+\s*/, /gr,   "Address city is valid after formatting");
+    is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");
+    is($res->{tax_residence},             $params->{args}{tax_residence},             "Check tax information");
+    is('address line 1, a, b, c, d',      $res->{address_line_1},                     "Address line 1 is valid after formatting");
+    is('address line 2, a, b',            $res->{address_line_2},                     "Address line 2 is valid after formatting");
+    is('address city, a, b',              $res->{address_city},                       "Address city is valid after formatting");
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
     $test_client->load();
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
