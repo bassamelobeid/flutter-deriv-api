@@ -14,6 +14,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use Scalar::Util qw(looks_like_number);
 
 use Brands;
 use Client::Account;
@@ -137,10 +138,20 @@ sub is_crypto_cashier_suspended {
 
 =head2 pre_withdrawal_validation
 
+Validates withdrawal amount
+
+Used to validate withdrawal request before forwarding
+to external cashiers
+
+As of now doughflow have these checks in their code
+but EPG and crypto cashier need it explicitly
+
 =cut
 
 sub pre_withdrawal_validation {
     my ($loginid, $amount) = @_;
+
+    return _create_error(localize('Invalid amount.')) if (not $amount or $amount <= 0 or not looks_like_number($amount));
 
     my $client = Client::Account->new({
             loginid      => $loginid,
