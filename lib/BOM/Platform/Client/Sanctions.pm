@@ -4,6 +4,7 @@ use Moose;
 
 use Data::Validate::Sanctions;
 use BOM::Platform::Config;
+use BOM::Platform::Email qw(send_email);
 use Client::Account;
 
 has client => (
