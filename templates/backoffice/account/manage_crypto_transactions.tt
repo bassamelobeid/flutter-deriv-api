@@ -152,45 +152,45 @@
 [% IF transaction_type == 'deposit' -%]
 <tr>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=new">View new addresses</a>
+        <a [% IF view_type == 'new' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=new">View new addresses</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=pending">View pending transactions</a>
+        <a [% IF view_type == 'pending' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=pending">View pending transactions</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=confirmed">View confirmed transactions</a>
+        <a [% IF view_type == 'confirmed' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=confirmed">View confirmed transactions</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=error">View errored transactions</a>
+        <a [% IF view_type == 'error' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=error">View errored transactions</a>
     </td>
 </tr>
 [% ELSE -%]
 <tr>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=pending">View Pending Transactions</a>
+        <a [% IF view_type == 'pending' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=pending">View Pending Transactions</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=verified">View Verified Transactions</a>
+        <a [% IF view_type == 'verified' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=verified">View Verified Transactions</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=rejected">View Rejected Transaction</a>
+        <a [% IF view_type == 'rejected' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=rejected">View Rejected Transaction</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=processing">View transactions under processing</a>
+        <a [% IF view_type == 'processing' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=processing">View transactions under processing</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=sent">View Sent Transactions</a>
+        <a [% IF view_type == 'sent' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=sent">View Sent Transactions</a>
     </td>
     <td>|</td>
     <td>
-        <a href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=error">View Errored Out Transactions</a>
+        <a [% IF view_type == 'error' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=error">View Errored Out Transactions</a>
     </td>
 </tr>
 [% END -%]
