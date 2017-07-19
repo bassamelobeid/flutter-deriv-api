@@ -74,8 +74,6 @@ use warnings;
 # we cache connection to Redis, so we use state feature.
 use feature "state";
 
-# used for loading chronicle config file which contains connection information
-use YAML::XS;
 use JSON;
 use DBIx::Connector::Pg;
 use DateTime;
@@ -136,7 +134,7 @@ my $dbic;
 
 sub dbic {
     # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
-    return undef if not defined _config()->{chronicle};
+    return undef if not defined $ENV{PGSERVICEFILE} and not -e $ENV{HOME} . '/.pg_service.conf';
     $dbic //= DBIx::Connector::Pg->new(
         _dbh_dsn(),
         # User and password are part of the DSN
@@ -150,18 +148,7 @@ sub dbic {
 }
 
 sub _dbh_dsn {
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
-    return "dbi:Pg:dbname=chronicle$db_postfix;port=6432;host=/var/run/postgresql;user=write";
-}
-
-my $config;
-
-BEGIN {
-    $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
-}
-
-sub _config {
-    return $config;
+    return "dbi:Pg:service=chronicle";
 }
 
 sub _redis_write {
