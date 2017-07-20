@@ -269,13 +269,18 @@ sub _build_ticks_for_volatility_calculation {
 sub _get_tick_windows {
     my $self = shift;
 
-    my $start_epoch = $self->effective_start->epoch;
+    my $start_epoch                 = $self->effective_start->epoch;
+    my $twenty_minutes_in_secs      = 20 * 60;
+    my $twenty_minutes_before_start = $start_epoch - $twenty_minutes_in_secs;
+
     # just take events from two hour back
     my $categorized_events = Volatility::Seasonality::categorize_events(
         $self->underlying->symbol,
         [
             sort { $b->{release_date} <=> $a->{release_date} }
             grep { $_->{release_date} > $start_epoch - 2 * 3600 && $_->{release_date} < $start_epoch } @{$self->_applicable_economic_events}]);
+
+    return [[$twenty_minutes_before_start, $start_epoch]] unless @$categorized_events;
 
     # remove duplicate release epoch
     my %similar = ();
@@ -298,9 +303,7 @@ sub _get_tick_windows {
         }
     }
 
-    my $twenty_minutes_in_secs      = 20 * 60;
-    my $twenty_minutes_before_start = $start_epoch - $twenty_minutes_in_secs;
-    my $seconds_left                = $twenty_minutes_in_secs;
+    my $seconds_left = $twenty_minutes_in_secs;
     my @tick_windows;
 
     if ($combined[0][1] < $twenty_minutes_before_start) {
