@@ -210,6 +210,7 @@ if ($page eq 'Withdrawal Transactions') {
         ) or die 'failed to run ctc_bo_transactions_for_reconciliation';
 
         for my $db_tran (@$db_transactions) {
+            $db_tran->{type} = delete $db_tran->{transaction_type};
             push @{$db_tran->{comments}}, 'Duplicate entries found in DB' if exists $db_by_address{$db_tran->{address}};
             push @{$db_tran->{comments}}, 'Invalid entry - no amount in database'
                 unless length($db_tran->{amount} // '')
@@ -229,13 +230,14 @@ if ($page eq 'Withdrawal Transactions') {
                 # TODO This should filter by prefix, not just ignore when we have a prefix!
                 $db_by_address{$address} = {
                     address             => $address,
+                    type                => 'deposit',
                     found_in_blockchain => 1,
                     comments            => ['Deposit not found in database']};
                 next;
             };
             $db_tran->{found_in_blockchain} = 1;
-            if ($db_tran->{transaction_type} ne 'deposit') {
-                push @{$db_tran->{comments}}, 'Expected deposit, found ' . $db_tran->{transaction_type};
+            if ($db_tran->{type} ne 'deposit') {
+                push @{$db_tran->{comments}}, 'Expected deposit, found ' . $db_tran->{type};
             }
 
             if (
@@ -272,13 +274,15 @@ if ($page eq 'Withdrawal Transactions') {
                 # TODO This should filter by prefix, not just ignore when we have a prefix!
                 $db_by_address{$address} = {
                     address             => $address,
+                    type                => 'withdrawal',
                     found_in_blockchain => 1,
                     comments            => ['Withdrawal not found in database']};
                 next;
             };
+            $db_tran->{type} = 'withdrawal';
             $db_tran->{found_in_blockchain} = 1;
-            if ($db_tran->{transaction_type} ne 'withdrawal') {
-                push @{$db_tran->{comments}}, 'Expected withdrawal, found ' . $db_tran->{transaction_type};
+            if ($db_tran->{type} ne 'withdrawal') {
+                push @{$db_tran->{comments}}, 'Expected withdrawal, found ' . $db_tran->{type};
             }
             if (
                 financialrounding(
@@ -296,13 +300,13 @@ if ($page eq 'Withdrawal Transactions') {
         push @{$db_tran->{comments}}, 'Database entry not found in blockchain' unless $db_tran->{status} eq 'NEW';
     }
 
-    my @hdr = ('Client ID', 'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations', 'Transaction ID', 'Errors');
+    my @hdr = ('Client ID', 'Type', 'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations', 'Transaction ID', 'Errors');
     print '<table style="width:100%;" border="1"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
     for my $db_tran (sort_by { $_->{address} } values %db_by_address) {
         print '<tr>';
-        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid address amount status date)};
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type address amount status date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
         print '<td><a href="https://www.blocktrail.com/tBTC/tx/' . $_ . '">' . encode_entities(substr $_, 0, 6) . '</td>'
