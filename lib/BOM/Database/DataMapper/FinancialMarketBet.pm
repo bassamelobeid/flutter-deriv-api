@@ -234,7 +234,14 @@ sub get_contract_details_with_transaction_ids {
         # delete these as we don't want to send it
         delete $record->{transaction_id};
         delete $record->{action_type};
-
+        if ($record->{is_sold}) {
+            # if sold before expiry time
+            if (Date::Utility->new($record->{sell_time})->epoch < Date::Utility->new($record->{expiry_time})->epoch) {
+                $record->{status} = 'sold';
+            } else {
+                $record->{status} = $record->{buy_price} <= $record->{payout_price} ? 'true' : 'false';
+            }
+        }
         push @$response, $record;
     }
 
@@ -272,7 +279,7 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
         $param->{'coinauction_bet_record'} = $rose_object->coinauction_bet;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::CoinauctionBet';
-    }else {
+    } else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
     }
 
