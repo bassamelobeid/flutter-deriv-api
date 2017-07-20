@@ -482,11 +482,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             }
         }
 
-        if ($key eq 'account_opening_reason' and not $client->is_virtual) {
-            $client->account_opening_reason($input{$key});
-            next CLIENT_KEY;
-        }
-
         if ($key eq 'client_aml_risk_classification' and not $client->is_virtual) {
             $client->aml_risk_classification($input{$key});
         }
