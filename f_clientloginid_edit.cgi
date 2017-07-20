@@ -62,9 +62,6 @@ my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
     code_exit_BO();
 };
 
-use Data::Dumper;
-warn Dumper($client);
-
 my $broker         = $client->broker;
 my $encoded_broker = encode_entities($broker);
 my $staff          = BOM::Backoffice::Auth0::can_access(['CS']);
@@ -176,7 +173,8 @@ if ($input{whattodo} eq 'uploadID') {
         my $comments        = substr(encode_entities($cgi->param('comments_' . $i)), 0, 255);
 
         if ($broker_code == 'MF') {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Nationality is mandatory for maltainvest client when uploading documenets.</p><br />";
+            $result .=
+                "<br /><p style=\"color:red; font-weight:bold;\">Error: Nationality is mandatory for maltainvest client when uploading documenets.</p><br />";
             next;
         }
 
