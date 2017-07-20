@@ -171,10 +171,9 @@ if ($input{whattodo} eq 'uploadID') {
         my $docformat       = $cgi->param('docformat_' . $i);
         my $expiration_date = $cgi->param('expiration_date_' . $i);
         my $comments        = substr(encode_entities($cgi->param('comments_' . $i)), 0, 255);
-
-        if ($broker_code == 'MF') {
-            $result .=
-                "<br /><p style=\"color:red; font-weight:bold;\">Error: Nationality is mandatory for maltainvest client when uploading documenets.</p><br />";
+        
+        if ($broker_code eq 'MF' && $docnationality eq '') {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Nationality is mandatory for maltainvest client when uploading documenets.</p><br />"; 
             next;
         }
 
