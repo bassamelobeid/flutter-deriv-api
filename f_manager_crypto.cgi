@@ -6,6 +6,7 @@ use HTML::Entities;
 
 use Bitcoin::RPC::Client;
 use Data::Dumper;
+use Date::Utility;
 use YAML::XS;
 use Client::Account;
 use Text::CSV;
@@ -46,15 +47,17 @@ my $tt = BOM::Backoffice::Request::template;
 ## CTC
 Bar("Actions");
 
-my $start_date = request()->param('start_date') || do { my $date = Date::Uility->new; $date->day_of_month(0); $date };
+use POSIX ();
+my $now = Date::Utility->new;
+my $start_date = request()->param('start_date') || Date::Utility->new(POSIX::mktime 0,0,0, 0, $now->month, $now->year);
 $start_date = Date::Utility->new($start_date) unless ref $start_date;
-my $end_date = request()->param('end_date') || do { my $date = $start_date; $date->month($date->month + 1); $date->day_of_month(0); $date };
+my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 0,0,0, -1, $now->month + 1, $now->year);
 $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
 print '<input type="text" name="start_date" required class="datepick" value="' . $start_date->date_yyyymmdd . '">';
-print '<input type="text" name="end_date" required class="datepick" value="' . $start_date->date_yyyymmdd . '">';
+print '<input type="text" name="end_date" required class="datepick" value="' . $end_date->date_yyyymmdd . '">';
 print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
 print '<INPUT type="submit" value="Recon" name="view_action"/>';
 print '</FORM>';
@@ -80,7 +83,7 @@ print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') .
 print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
 print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
 {
-    my $cmd = request()->param('command');
+    my $cmd = request()->param('command') // '';
     print '<select name="command">'
         . '<option '
         . ($cmd eq 'getbalance' ? 'selected="selected" ' : '')
