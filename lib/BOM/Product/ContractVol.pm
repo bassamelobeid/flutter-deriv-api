@@ -253,42 +253,75 @@ has ticks_for_volatility_calculation => (
 sub _build_ticks_for_volatility_calculation {
     my $self = shift;
 
+    my $decimate = BOM::Market::DataDecimate->new;
+    my @ticks    = map {
+        $decimate->get({
+                underlying  => $self->underlying,
+                start_epoch => $_->[0],
+                end_epoch   => $_->[1],
+                backprice   => $self->underlying->for_date,
+            })
+    } @{$self->_get_tick_windows};
+
+    return \@ticks;
+}
+
+sub _get_tick_windows {
+    my $self = shift;
+
     my $start_epoch = $self->effective_start->epoch;
     # just take events from two hour back
-    my @economic_events =
-        sort { $b->{release_date} <=> $a->{release_date} }
-        grep { $_->{release_date} > $start_epoch - 2*3600 && $_->{release_date} < $start_epoch } @{$self->_applicable_economic_events};
-    my $event_periods = map { [$_->{release_epoch}, $_->{release_epoch} + $_->{duration}] }
-        @{Volatility::Seasonality::categorize_events($self->underlying->symbol, \@economic_events)};
+    my $categorized_events = Volatility::Seasonality::categorize_events(
+        $self->underlying->symbol,
+        [
+            sort { $b->{release_date} <=> $a->{release_date} }
+            grep { $_->{release_date} > $start_epoch - 2 * 3600 && $_->{release_date} < $start_epoch } @{$self->_applicable_economic_events}]);
 
-    my @tick_windows;
-    my $twenty_minutes_in_secs      = 20 * 60;
-    my $twenty_minutes_before_start = $start_epoch - $twenty_minutes_in_secs;
-    if ($event_periods->[0][1] < $twenty_minutes_before_start) {
-        push @tick_windows, [$twenty_minutes_before_start, $start_epoch];
-    } else {
-        my $seconds_left  = $twenty_minutes_in_secs;
-        my $end_of_period = $start_epoch;
-        foreach my $period (@$event_periods) {
-            my $start_of_period = max($period->[1], $end_of_period - $seconds_left);
-            push @tick_windows, [$start_of_period, $end_of_period];
-            $seconds_left -= ($end_of_period - $start_of_period);
-            $end_of_period = $period->[0];
-            last if $seconds_left <= 0;
+    # remove duplicate release epoch
+    my %similar = ();
+    foreach my $event (@$categorized_events) {
+        my $duration = max($event->{duration}, 900);
+        $similar{$event->{release_epoch}} = $duration unless $similar{$event->{release_epoch}};
+        $similar{$event->{release_epoch}} = max($similar{$event->{release_epoch}}, $duration);
+    }
+
+    my @event_periods = map { [$_, $_ + $similar{$_}] } sort { $b <=> $a } keys %similar;
+    # combine overlapping events
+    my @combined;
+    for (my $i = 0; $i <= $#event_periods; $i++) {
+        my $curr = $event_periods[$i];
+        my $next = $event_periods[$i + 1];
+        if (defined $next and $next->[1] >= $curr->[0]) {
+            push @combined, [$next->[0], $curr->[1]];
+        } else {
+            push @combined, $curr;
         }
     }
 
-    my $decimate = BOM::Market::DataDecimate->new;
-    my @ticks    = map { [
-            $decimate->get({
-                    underlying  => $self->underlying,
-                    start_epoch => $_->[0],
-                    end_epoch   => $_->[1],
-                    backprice   => $self->underlying->for_date,
-                })]
-    } @tick_windows;
+    my $twenty_minutes_in_secs      = 20 * 60;
+    my $twenty_minutes_before_start = $start_epoch - $twenty_minutes_in_secs;
+    my $seconds_left                = $twenty_minutes_in_secs;
+    my @tick_windows;
 
-    return \@ticks;
+    if ($combined[0][1] < $twenty_minutes_before_start) {
+        push @tick_windows, [$twenty_minutes_before_start, $start_epoch];
+    } else {
+        my $end_of_period = $start_epoch;
+        my $seconds_left  = $twenty_minutes_in_secs;
+        foreach my $period (@combined) {
+            if (@combined == 1 and $period->[1] >= $end_of_period) {
+                push @tick_windows, [$period->[0] - $seconds_left, $period->[0]];
+            } else {
+                my $start_of_period = max($period->[1], $end_of_period - $seconds_left);
+                push @tick_windows, [$start_of_period, $end_of_period];
+                $seconds_left -= ($end_of_period - $start_of_period);
+                last if $seconds_left <= 0;
+                $end_of_period = $period->[0];
+            }
+        }
+    }
+
+    return \@tick_windows;
 }
 
 1;
