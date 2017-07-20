@@ -791,7 +791,10 @@ sub _build_tentative_events {
     #Add check for blankout and blankout_end.
     return [
         grep {
-            $_->{is_tentative} and $affected_currency{$_->{symbol}} and $_->{blankout} <= $effective_start and $_->{blankout_end} >= $effective_start
+                    $_->{is_tentative}
+                and $affected_currency{$_->{symbol}}
+                and $_->{blankout} <= $effective_start
+                and $_->{blankout_end} >= $effective_start
         } @{$self->_applicable_economic_events}];
 }
 
