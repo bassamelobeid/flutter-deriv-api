@@ -843,9 +843,9 @@ sub set_settings {
     foreach my $updated_field (@updated_fields) {
         $message .=
               '<tr><td style="vertical-align:top; text-align:left;"><strong>'
-            . $updated_field->[0]
+            . encode_entities($updated_field->[0])
             . '</strong></td><td style="vertical-align:top;">:&nbsp;</td><td style="vertical-align:top;text-align:left;">'
-            . $updated_field->[1]
+            . encode_entities($updated_field->[1])
             . '</td></tr>';
     }
     $message .= '</table>';
