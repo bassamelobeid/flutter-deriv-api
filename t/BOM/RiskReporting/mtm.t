@@ -47,6 +47,27 @@ my %date_string = (
 );
 
 initialize_realtime_ticks_db();
+
+create_underlying('frxBTCUSD')->set_combined_realtime({
+    epoch => time,
+    quote => 100
+});
+
+create_underlying('frxLTCUSD')->set_combined_realtime({
+    epoch => time,
+    quote => 100
+});
+
+create_underlying('frxETHUSD')->set_combined_realtime({
+    epoch => time,
+    quote => 100
+});
+
+create_underlying('frxETCUSD')->set_combined_realtime({
+    epoch => time,
+    quote => 100
+});
+
 foreach my $symbol (keys %date_string) {
     my @dates = @{$date_string{$symbol}};
     foreach my $date (@dates) {
