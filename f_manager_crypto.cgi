@@ -49,9 +49,9 @@ Bar("Actions");
 
 use POSIX ();
 my $now = Date::Utility->new;
-my $start_date = request()->param('start_date') || Date::Utility->new(POSIX::mktime 0,0,0, 0, $now->month, $now->year);
+my $start_date = request()->param('start_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 0, $now->month, $now->year);
 $start_date = Date::Utility->new($start_date) unless ref $start_date;
-my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 0,0,0, -1, $now->month + 1, $now->year);
+my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, -1, $now->month + 1, $now->year);
 $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
@@ -334,8 +334,7 @@ if ($page eq 'Withdrawal Transactions') {
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type address amount status date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
-        print '<td><a href="' . ($blockchain_uri . $_) . '">' . encode_entities(substr $_, 0, 6) . '</td>'
-            for @{$db_tran}{qw(transaction_id)};
+        print '<td><a href="' . ($blockchain_uri . $_) . '">' . encode_entities(substr $_, 0, 6) . '</td>' for @{$db_tran}{qw(transaction_id)};
         print '<td style="color:red;">' . (join '<br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
     }
