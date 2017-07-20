@@ -239,7 +239,7 @@ sub get_contract_details_with_transaction_ids {
             if (Date::Utility->new($record->{sell_time})->epoch < Date::Utility->new($record->{expiry_time})->epoch) {
                 $record->{status} = 'sold';
             } else {
-                $record->{status} = $record->{buy_price} <= $record->{payout_price} ? 'true' : 'false';
+                $record->{status} = $record->{buy_price} <= $record->{payout_price} ? 'won' : 'lost';
             }
         }
         push @$response, $record;
