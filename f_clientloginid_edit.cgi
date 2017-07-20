@@ -168,7 +168,7 @@ if ($input{whattodo} eq 'uploadID') {
 
     # nationality presents in uploaded docs for all broker codes
     if ($docnationality eq '') {
-        $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Nationality is mandatory when uploading documenets.</p><br />";
+        $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Nationality is mandatory when uploading documents.</p><br />";
     }
 
     foreach my $i (1 .. 4) {
