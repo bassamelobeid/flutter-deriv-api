@@ -86,6 +86,7 @@ my $estimated_release_date = request()->param('estimated_release_date');
 my $custom_magnitude       = request()->param('custom_magnitude') // 0;
 my $save_event             = request()->param('save_eco');
 my $delete_event           = request()->param('delete_eco');
+my $event_id               = request()->param('event_id');
 
 my $event_param = {
     event_name => $event_name,
@@ -93,6 +94,7 @@ my $event_param = {
     impact     => $impact,
     symbol     => $symbol,
     $custom_magnitude ? (custom_magnitude => $custom_magnitude) : (),
+    $event_id ? (id => $event_id) : (),
 };
 
 try {
