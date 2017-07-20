@@ -9,10 +9,6 @@ matrix:
 services:
     - redis-server
 cache: apt
-addons:
-    apt:
-        packages:
-            - php5-cli
 env:
     - TEST_SUITE=test SH=bash
     - TEST_SUITE=json_schema_1
