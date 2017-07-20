@@ -179,11 +179,11 @@ subtest $method => sub {
 
         $params->{token} = $token;
         $result = $rpc_ct->call_ok('payout_currencies', $params)->has_no_system_error->result;
-        is scalar @$result, 7, 'Correct number of currencies when omnibus token is passed';
+        is scalar @$result, 8, 'Correct number of currencies when omnibus token is passed';
 
         $params->{token} = $sub_token;
         $result = $rpc_ct->call_ok('payout_currencies', $params)->has_no_system_error->result;
-        is scalar @$result, 7, 'Correct number of currencies when sub account token is passed';
+        is scalar @$result, 8, 'Correct number of currencies when sub account token is passed';
     };
 
 };
