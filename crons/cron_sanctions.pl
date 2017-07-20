@@ -2,10 +2,6 @@
 use strict;
 use warnings;
 
-BEGIN {
-    push @INC, "/home/git/regentmarkets/bom-backoffice/lib";
-}
-
 use Brands;
 use Client::Account;
 use BOM::Database::ClientDB;
