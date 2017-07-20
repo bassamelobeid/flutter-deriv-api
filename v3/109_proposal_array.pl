@@ -8,8 +8,6 @@ use Devel::Refcount qw(refcount);
 use Test::More;
 use Test::Deep;
 
-use await;
-
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -39,8 +37,7 @@ my $contract_type_pairs = {
 
 my $trading_frames = {};
 
-#build_test_frxUSDJPY_data();
-generate_trading_periods('frxUSDJPY');
+generate_trading_periods($symbol);
 initialize_realtime_ticks_db();
 
 
@@ -60,18 +57,17 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
-            symbol        => 'frxUSDJPY',
+            symbol        => $symbol, 
             recorded_date => $now
         });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
+        underlying => $symbol,
         epoch      => $now->epoch,
         quote      => 100,
         });
 
 
 my $t = build_wsapi_test();
-
 
 my $contracts_for = $t->await::contracts_for( {
         "contracts_for"     => $symbol,
@@ -99,7 +95,7 @@ for my $i (0 .. $#{$contracts_for->{contracts_for}{available}}) {
 }
 
 my $proposal_array_req_tpl = {
-    'symbol' => 'frxUSDJPY',
+    'symbol' => $symbol,
     'req_id' => '1',
     'barriers' => undef,
     'date_expiry' => undef,
@@ -138,13 +134,7 @@ my $barriers = $put->{available_barriers};
 my $fixed_bars= [map {{barrier=>$_}} @$barriers];
 
 if ($put->{trading_period}{date_expiry}{epoch} - Date::Utility->new->epoch <= 900) {
-    note "#############################################";
-    note;
-    note "Too close to the trading window border.";
-    note "Trading is not offered for this duration.";
-    note;
-    note "#############################################";
-    $t->finish_ok;
+    BAIL_OUT( "Too close to the trading window border. Trading is not offered for this duration.");
     done_testing();
     exit;
 }
