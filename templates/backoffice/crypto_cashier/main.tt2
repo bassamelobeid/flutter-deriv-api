@@ -1,0 +1,10 @@
+<script>
+    \$(document).ready(function() {
+        \$('.datepick').datepicker({dateFormat: "yy-mm-dd"}).datepicker('setDate', new Date());
+        \$('#ui-datepicker-div').hide();
+    })
+</script>
+<style type="text/css">
+a.selected { text-decoration: underline; text-transform: uppercase; }
+</style>
+
