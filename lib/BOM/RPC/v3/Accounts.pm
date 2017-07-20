@@ -65,7 +65,7 @@ sub payout_currencies {
         return $lc->legal_allowed_currencies;
     }
 
-    return [grep { $_ !~ /^(?:BTC|LTC|ETH)$/ } @{$lc->legal_allowed_currencies}];
+    return [grep { $_ !~ /^(?:BTC|LTC|ETH|ETC)$/ } @{$lc->legal_allowed_currencies}];
 }
 
 sub landing_company {
@@ -119,7 +119,7 @@ sub __build_landing_company {
         address                           => $lc->address,
         country                           => $lc->country,
         legal_default_currency            => $lc->legal_default_currency,
-        legal_allowed_currencies          => [grep { $_ !~ /^(?:BTC|LTC|ETH)$/ } @{$lc->legal_allowed_currencies}],
+        legal_allowed_currencies          => [grep { $_ !~ /^(?:BTC|LTC|ETH|ETC)$/ } @{$lc->legal_allowed_currencies}],
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0
@@ -1241,7 +1241,7 @@ sub set_account_currency {
 
     # only allow crypto currencies when its omnibus account or sub account
     # TODO: remove once we make crypto currencies live
-    return {status => 0} if ($currency =~ /^(?:BTC|LTC|ETH)$/ and not($client->allow_omnibus or $client->sub_account_of));
+    return {status => 0} if ($currency =~ /^(?:BTC|LTC|ETH|ETC)$/ and not($client->allow_omnibus or $client->sub_account_of));
 
     # no change in default account currency if default account is already set
     return {status => 1} if (not $client->default_account and $client->set_default_account($currency));
