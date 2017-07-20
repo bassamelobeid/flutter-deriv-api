@@ -9,6 +9,10 @@ matrix:
 services:
     - redis-server
 cache: apt
+addons:
+    apt:
+        packages:
+            - php5-cli
 env:
     - TEST_SUITE=test SH=bash
     - TEST_SUITE=json_schema_1
@@ -23,7 +27,6 @@ before_install:
     - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/fixHostName.sh
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
-    - sudo ln -s /home/git /home/travis
 
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom-test
