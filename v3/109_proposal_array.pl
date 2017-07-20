@@ -57,7 +57,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
-            symbol        => $symbol, 
+            symbol        => $symbol,
             recorded_date => $now
         });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
