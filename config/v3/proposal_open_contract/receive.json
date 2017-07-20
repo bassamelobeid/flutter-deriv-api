@@ -192,10 +192,11 @@
             }
           }
         },
-       "won": {
-         "type": "boolean",
-         "title": "Contract result",
-         "description": "Show the contract won or lost when the contract expired. This field will not appear until the contract expired. The value is true if contract won, false if lost"
+       "status": {
+         "type": "string",
+         "enum": ["sold", "won", "lost"],
+         "title": "Contract status",
+         "description": "Will be 'sold' if the contract was sold earlier, 'won' if won and 'lost' if lost"
         }
       }
     },
