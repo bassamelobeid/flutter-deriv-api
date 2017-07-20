@@ -253,12 +253,42 @@ has ticks_for_volatility_calculation => (
 sub _build_ticks_for_volatility_calculation {
     my $self = shift;
 
-    return BOM::Market::DataDecimate->new->get({
-        underlying  => $self->underlying,
-        start_epoch => $self->effective_start->minus_time_interval('20m')->epoch,
-        end_epoch   => $self->effective_start->epoch,
-        backprice   => $self->underlying->for_date,
-    });
+    my $start_epoch = $self->effective_start->epoch;
+    # just take events from two hour back
+    my @economic_events =
+        sort { $b->{release_date} <=> $a->{release_date} }
+        grep { $_->{release_date} > $start_epoch - 2*3600 && $_->{release_date} < $start_epoch } @{$self->_applicable_economic_events};
+    my $event_periods = map { [$_->{release_epoch}, $_->{release_epoch} + $_->{duration}] }
+        @{Volatility::Seasonality::categorize_events($self->underlying->symbol, \@economic_events)};
+
+    my @tick_windows;
+    my $twenty_minutes_in_secs      = 20 * 60;
+    my $twenty_minutes_before_start = $start_epoch - $twenty_minutes_in_secs;
+    if ($event_periods->[0][1] < $twenty_minutes_before_start) {
+        push @tick_windows, [$twenty_minutes_before_start, $start_epoch];
+    } else {
+        my $seconds_left  = $twenty_minutes_in_secs;
+        my $end_of_period = $start_epoch;
+        foreach my $period (@$event_periods) {
+            my $start_of_period = max($period->[1], $end_of_period - $seconds_left);
+            push @tick_windows, [$start_of_period, $end_of_period];
+            $seconds_left -= ($end_of_period - $start_of_period);
+            $end_of_period = $period->[0];
+            last if $seconds_left <= 0;
+        }
+    }
+
+    my $decimate = BOM::Market::DataDecimate->new;
+    my @ticks    = map { [
+            $decimate->get({
+                    underlying  => $self->underlying,
+                    start_epoch => $_->[0],
+                    end_epoch   => $_->[1],
+                    backprice   => $self->underlying->for_date,
+                })]
+    } @tick_windows;
+
+    return \@ticks;
 }
 
 1;
