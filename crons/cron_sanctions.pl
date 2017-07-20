@@ -57,6 +57,7 @@ sub do_report {
         message    => ["Here is a list of clients against sanctions:\n$r"],
         attachment => $csv_filename,
     });
+    return;
 }
 
 sub map_client_data {
