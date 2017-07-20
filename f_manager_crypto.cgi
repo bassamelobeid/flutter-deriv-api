@@ -39,10 +39,8 @@ if (length($broker) < 2) {
 my $page = request()->param('view_action') // '';
 my $tt = BOM::Backoffice::Request::template;
 {
-    my $cmd               = request()->param('command');
-    $tt->process('backoffice/crypto_cashier/main.tt2', {
-        rpc_command => $cmd
-    }) || die $tt->error();
+    my $cmd = request()->param('command');
+    $tt->process('backoffice/crypto_cashier/main.tt2', {rpc_command => $cmd}) || die $tt->error();
 }
 
 ## CTC
@@ -82,16 +80,30 @@ print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') .
 print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
 print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
 {
-    my $cmd               = request()->param('command');
+    my $cmd = request()->param('command');
     print '<select name="command">'
-        . '<option ' . ($cmd eq 'getbalance' ? 'selected="selected" ' : '') . ' value="getbalance">Get balance</option>'
-        . '<option ' . ($cmd eq 'listaccounts' ? 'selected="selected" ' : '') . ' value="listaccounts">List accounts</option>'
-        . '<option ' . ($cmd eq 'listtransactions' ? 'selected="selected" ' : '') . ' value="listtransactions">List transactions</option>'
-        . '<option ' . ($cmd eq 'listaddressgroupings' ? 'selected="selected" ' : '') . ' value="listaddressgroupings">List address groupings</option>'
+        . '<option '
+        . ($cmd eq 'getbalance' ? 'selected="selected" ' : '')
+        . ' value="getbalance">Get balance</option>'
+        . '<option '
+        . ($cmd eq 'listaccounts' ? 'selected="selected" ' : '')
+        . ' value="listaccounts">List accounts</option>'
+        . '<option '
+        . ($cmd eq 'listtransactions' ? 'selected="selected" ' : '')
+        . ' value="listtransactions">List transactions</option>'
+        . '<option '
+        . ($cmd eq 'listaddressgroupings' ? 'selected="selected" ' : '')
+        . ' value="listaddressgroupings">List address groupings</option>'
         . '<option value="..." disabled="disabled">---</option>'
-        . '<option ' . ($cmd eq 'getinfo' ? 'selected="selected" ' : '') . ' value="getinfo">Get info</option>'
-        . '<option ' . ($cmd eq 'getpeerinfo' ? 'selected="selected" ' : '') . ' value="getpeerinfo">Get peer info</option>'
-        . '<option ' . ($cmd eq 'getnetworkinfo' ? 'selected="selected" ' : '') . ' value="getnetworkinfo">Get network info</option>'
+        . '<option '
+        . ($cmd eq 'getinfo' ? 'selected="selected" ' : '')
+        . ' value="getinfo">Get info</option>'
+        . '<option '
+        . ($cmd eq 'getpeerinfo' ? 'selected="selected" ' : '')
+        . ' value="getpeerinfo">Get peer info</option>'
+        . '<option '
+        . ($cmd eq 'getnetworkinfo' ? 'selected="selected" ' : '')
+        . ' value="getnetworkinfo">Get network info</option>'
         . '</select>';
 }
 print '<INPUT type="submit" value="Run tool" name="view_action"/>';
@@ -288,7 +300,7 @@ if ($page eq 'Withdrawal Transactions') {
                     comments            => ['Withdrawal not found in database']};
                 next;
             };
-            $db_tran->{type} = 'withdrawal';
+            $db_tran->{type}                = 'withdrawal';
             $db_tran->{found_in_blockchain} = 1;
             if ($db_tran->{type} ne 'withdrawal') {
                 push @{$db_tran->{comments}}, 'Expected withdrawal, found ' . $db_tran->{type};
