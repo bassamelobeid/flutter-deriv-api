@@ -165,9 +165,10 @@ if ($input{whattodo} eq 'uploadID') {
     my $docnationality = $cgi->param('docnationality');
     my $result         = "";
     my $used_doctypes  = {};                              #we need to keep list of used doctypes to provide for them uniq filenames
-    
-    if ($broker_code eq 'MF' && $docnationality eq '') {
-        $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Nationality is mandatory for maltainvest client when uploading documenets.</p><br />"; 
+
+    # nationality presents in uploaded docs for all broker codes
+    if ($docnationality eq '') {
+        $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Nationality is mandatory when uploading documenets.</p><br />";
     }
 
     foreach my $i (1 .. 4) {
@@ -176,7 +177,6 @@ if ($input{whattodo} eq 'uploadID') {
         my $docformat       = $cgi->param('docformat_' . $i);
         my $expiration_date = $cgi->param('expiration_date_' . $i);
         my $comments        = substr(encode_entities($cgi->param('comments_' . $i)), 0, 255);
-        
 
         if (not $filetoupload) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />"
