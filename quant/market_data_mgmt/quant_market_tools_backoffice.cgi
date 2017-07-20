@@ -125,11 +125,12 @@ try {
 
         print 'Econmic Announcement saved!</br></br>';
     } elsif ($delete_event) {
-        Quant::Framework::EconomicEventCalendar->new(
+        my $deleted = Quant::Framework::EconomicEventCalendar->new(
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         )->delete_event($event_param);
-        print 'Economic Announcement deleted';
+        my $msg = $deleted ? 'Economic Announcement deleted' : 'No economic event found. Nothing is deleted';
+        print $msg;
     }
 }
 catch {
