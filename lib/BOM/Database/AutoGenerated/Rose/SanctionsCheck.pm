@@ -12,7 +12,7 @@ __PACKAGE__->meta->setup(
         client_loginid => { type => 'varchar', length => 12, not_null => 1 },
         tstmp          => { type => 'timestamp', default => 'now()', not_null => 1 },
         type           => { type => 'varchar', default => 'R', length => 1, not_null => 1 },
-        result         => { type => 'boolean' },
+        result         => { type => 'varchar', default => '', length => 128, not_null => 1 },
     ],
 
     primary_key_columns => [ 'client_loginid', 'tstmp' ],
