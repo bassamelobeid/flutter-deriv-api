@@ -36,12 +36,63 @@ if (length($broker) < 2) {
     code_exit_BO();
 }
 
+my $page = request()->param('view_action') // '';
+my $tt = BOM::Backoffice::Request::template;
+$tt->process('backoffice/crypto_cashier/main.tt2') || die $tt->error();
+
+## CTC
+Bar("Actions");
+
+print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
+print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
+print '<input type="text" name="start_date" required class="datepick">';
+print '<input type="text" name="end_date" required class="datepick">';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
+print '<INPUT type="submit" value="Recon" name="view_action"/>';
+print '</FORM>';
+
+print '<br>';
+print '<h3>Deposit</h3>';
+print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
+print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
+print '<INPUT type="hidden" name="view_type" value="pending">';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
+print '<INPUT type="submit" value="Deposit Transactions" name="view_action"/>';
+print '</FORM>';
+
+print '<h3>Withdrawal</h3>';
+print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
+print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
+print '<INPUT type="submit" value="Withdrawal Transactions" name="view_action"/>';
+print '</FORM>';
+
+print '<h3>Tools</h3>';
+print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
+print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
+print '<select name="command">'
+    . '<option value="getbalance">Get balance</option>'
+    . '<option value="listaccounts">List accounts</option>'
+    . '<option value="listtransactions">List transactions</option>'
+    . '<option value="listaddressgroupings">List address groupings</option>'
+    . '<option value="..." disabled="disabled">---</option>'
+    . '<option value="getinfo">Get info</option>'
+    . '<option value="getpeerinfo">Get peer info</option>'
+    . '<option value="getnetworkinfo">Get network info</option>'
+    . '</select>';
+print '<INPUT type="submit" value="Run tool" name="view_action"/>';
+print '</FORM>';
+
+unless ($page) {
+    code_exit_BO();
+}
+
 if (not $currency or $currency !~ /^[A-Z]{3}$/) {
     print "Invalid currency.";
     code_exit_BO();
 }
 
-my $page = request()->param('view_action') // '';
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
 my $dbh = $clientdb->db->dbh;
 
@@ -251,8 +302,9 @@ if ($page eq 'Withdrawal Transactions') {
     print '</thead><tbody>';
     for my $db_tran (sort_by { $_->{address} } values %db_by_address) {
         print '<tr>';
-        print '<td>' . encode_entities($_) . '</td>' for @{$db_tran}{qw(client_loginid address amount status date)};
-        print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>' for @{$db_tran}{qw(confirmations)};
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid address amount status date)};
+        print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
+            for map { $_ // '' } @{$db_tran}{qw(confirmations)};
         print '<td><a href="https://www.blocktrail.com/tBTC/tx/' . $_ . '">' . encode_entities(substr $_, 0, 6) . '</td>'
             for @{$db_tran}{qw(transaction_id)};
         print '<td style="color:red;">' . (join '<br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
@@ -262,6 +314,10 @@ if ($page eq 'Withdrawal Transactions') {
 } elsif ($page eq 'Run tool') {
     my $cmd               = request()->param('command');
     my %valid_rpc_command = (
+        getbalance           => 1,
+        getinfo              => 1,
+        getpeerinfo          => 1,
+        getnetworkinfo       => 1,
         listaccounts         => 1,
         listtransactions     => 1,
         listaddressgroupings => 1,
@@ -295,13 +351,14 @@ if ($page eq 'Withdrawal Transactions') {
             }
             print '</tbody></table>';
         } elsif ($cmd eq 'listaddressgroupings') {
-            print '<table><thead><tr><th scope="col">Account</th><th scope="col">Address</th><th scope="col">Amount</th></tr></thead><tbody>';
+            print '<table><thead><tr><th scope="col">Address</th><th scope="col">Account</th><th scope="col">Amount</th></tr></thead><tbody>';
             for my $item (@$rslt) {
                 for my $address (@$item) {
                     print '<tr>';
-                    # Reverse the order so we show the account in the first column
-                    print '<td>' . encode_entities($_) . "</td>\n" for reverse @$address;
-                    print "<tr>\n";
+                    $address->[2] = join(',', splice @$address, 2) // '';
+                    # Swap address and amount so that the amount is at the end
+                    print '<td>' . encode_entities($_) . "</td>\n" for @{$address}[0, 2, 1];
+                    print "</tr>\n";
                 }
             }
             print '</tbody></table>';
