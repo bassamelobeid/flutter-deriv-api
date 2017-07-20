@@ -781,7 +781,7 @@ sub _build_applicable_economic_events {
 sub _build_tentative_events {
     my $self = shift;
 
-    my $effective_start = $self->effective_start;
+    my $effective_start = $self->effective_start->epoch;
 
     my %affected_currency = (
         $self->underlying->asset_symbol           => 1,
