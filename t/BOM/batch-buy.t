@@ -242,7 +242,8 @@ subtest 'batch-buy success + multisell', sub {
         my $cl2 = create_client;
         my $cl3 = create_client;
 
-        top_up $clm, 'USD', 0;      # the manager has no money
+        $clm->set_default_account('USD');
+        $clm->save;
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 5000;
 
@@ -372,7 +373,8 @@ subtest 'batch-buy success 2', sub {
     lives_ok {
         my $clm = create_client;    # manager
 
-        top_up $clm, 'USD', 0;      # the manager has no money
+        $clm->set_default_account('USD');
+        $clm->save;
 
         my $contract = produce_contract({
             underlying   => $underlying,
@@ -433,7 +435,8 @@ subtest 'contract already started', sub {
     lives_ok {
         my $clm = create_client;    # manager
 
-        top_up $clm, 'USD', 0;      # the manager has no money
+        $clm->set_default_account('USD');
+        $clm->save;
 
         my $contract = produce_contract({
             underlying   => $underlying,
@@ -486,7 +489,9 @@ subtest 'single contract fails in database', sub {
         my $cl1 = create_client;
         my $cl2 = create_client;
 
-        top_up $clm, 'USD', 0;      # the manager has no money
+        $clm->set_default_account('USD');
+        $clm->save;
+
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 90;
 
@@ -569,7 +574,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
         push @cl, create_client 'MF';
         push @cl, create_client 'VRTC';
 
-        top_up $clm, 'USD', 0;              # the manager has no money
+        $clm->set_default_account('USD');
+        $clm->save;
+
         top_up $_, 'USD', 5000 for (@cl);
 
         my @acc;
