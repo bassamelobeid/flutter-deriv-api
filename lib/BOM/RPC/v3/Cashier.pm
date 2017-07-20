@@ -95,8 +95,8 @@ sub cashier {
         return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
-    ## if currency == BTC|ETH|LTC, use cryptocurrency cashier
-    if (grep { $currency eq $_ } ('BTC', 'ETH', 'LTC')) {
+    ## if currency == BTC|ETH|LTC|ETC, use cryptocurrency cashier
+    if (grep { $currency eq $_ } ('BTC', 'ETH', 'LTC', 'ETC')) {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 

@@ -15,6 +15,10 @@ subtest 'check amount precision' => sub {
     is formatnumber('amount', 'ETH', 10),               '10.00000000', 'ETH 10 -> 10.00000000';
     is formatnumber('amount', 'ETH', 10.000001),        '10.00000100', 'ETH 10.000001 -> 10.00000100';
     is formatnumber('amount', 'ETH', 10.0000000000001), '10.00000000', 'ETH 10.0000000000001 -> 10.00000000';
+    is formatnumber('amount', 'ETC', 10),               '10.00000000', 'ETC 10 -> 10.00000000';
+    is formatnumber('amount', 'ETC', 10.000001),        '10.00000100', 'ETC 10.000001 -> 10.00000100';
+    is formatnumber('amount', 'ETC', 10.0000000000001), '10.00000000', 'ETC 10.0000000000001 -> 10.00000000';
+
 };
 
 subtest 'check price precision' => sub {
@@ -28,6 +32,10 @@ subtest 'check price precision' => sub {
     is formatnumber('price', 'ETH', 10),               '10.00000000', 'ETH 10 -> 10.00000000';
     is formatnumber('price', 'ETH', 10.000001),        '10.00000100', 'ETH 10.000001 -> 10.00000100';
     is formatnumber('price', 'ETH', 10.0000000000001), '10.00000000', 'ETH 10.0000000000001 -> 10.00000000';
+    is formatnumber('price', 'ETC', 10),               '10.00000000', 'ETC 10 -> 10.00000000';
+    is formatnumber('price', 'ETC', 10.000001),        '10.00000100', 'ETC 10.000001 -> 10.00000100';
+    is formatnumber('price', 'ETC', 10.0000000000001), '10.00000000', 'ETC 10.0000000000001 -> 10.00000000';
+
 };
 
 done_testing();
