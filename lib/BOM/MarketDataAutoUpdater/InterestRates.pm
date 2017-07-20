@@ -53,7 +53,7 @@ sub run {
         }
     }
 
-    # we need to include rates for BTC LTC ETH here. Currently setting it to zero rates.
+    # we need to include rates for BTC LTC ETH ETC here. Currently setting it to zero rates.
     $rates->{BTC}->{rates} = {
         0   => 0,
         365 => 0
@@ -65,6 +65,11 @@ sub run {
     };
 
     $rates->{ETH}->{rates} = {
+        0   => 0,
+        365 => 0
+    };
+
+    $rates->{ETC}->{rates} = {
         0   => 0,
         365 => 0
     };
