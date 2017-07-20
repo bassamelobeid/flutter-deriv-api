@@ -612,8 +612,6 @@ sub process_bid_event {
             $response->{buy_price}       = $passed_fields->{buy_price};
             $response->{purchase_time}   = $passed_fields->{purchase_time};
             $response->{is_sold}         = $passed_fields->{is_sold};
-            $response->{won}             = 'sold' if $passed_fields->{is_sold};
-            $response->{won}             //= $response->{buy_price} < $response->{sell_price} ? 'true' : 'false' if $response->{is_expired} // 0 == 1;
             Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid})
                 if $response->{is_sold};
             $response->{longcode} = $passed_fields->{longcode};
