@@ -1185,9 +1185,9 @@ subtest $method => sub {
     # test real account
     $params->{token} = $token1;
     my %full_args = (
-        address_line_1   => 'address line 1',
-        address_line_2   => 'address line 2',
-        address_city     => 'address city',
+        address_line_1   => 'address line 1, ,,, ,,, a,b,, ,,c, ,d',
+        address_line_2   => 'address line 2, ,a, ,b',
+        address_city     => 'address city, ,a,, b',
         address_state    => 'address state',
         address_postcode => '12345',
         phone            => '2345678',
@@ -1231,7 +1231,9 @@ subtest $method => sub {
     my $res = $c->tcall('get_settings', {token => $token1});
     is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");
     is($res->{tax_residence},             $params->{args}{tax_residence},             "Check tax information");
-
+    is('address line 1, a, b, c, d',      $res->{address_line_1},                     "Address line 1 is valid after formatting");
+    is('address line 2, a, b',            $res->{address_line_2},                     "Address line 2 is valid after formatting");
+    is('address city, a, b',              $res->{address_city},                       "Address city is valid after formatting");
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
     $test_client->load();
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
@@ -1241,7 +1243,11 @@ subtest $method => sub {
         subject => qr/\Q$subject\E/
     );
     ok(@msgs, 'send a email to client');
-    like($msgs[0]{body}, qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
+    like(
+        $msgs[0]{body},
+        qr/>address line 1, a, b, c, d, address line 2, a, b, address city, a, b, address state, 12345, Indonesia/s,
+        'email content correct'
+    );
 
     is($c->tcall('get_settings', {token => $token1})->{email_consent}, 1, "Was able to set email consent correctly");
 
