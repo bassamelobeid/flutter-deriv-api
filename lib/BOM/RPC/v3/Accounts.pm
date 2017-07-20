@@ -747,9 +747,6 @@ sub set_settings {
     my $phone           = ($args->{'phone'} // $client->phone) // '';
     my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
 
-    # filter out irrelevant spaces and commas
-    foreach ($address1, $address2, $addressTown) { $_ =~ s/(?:,?\s*,)+\s*/, /g }
-
     my $cil_message;
     if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
@@ -811,11 +808,15 @@ sub set_settings {
         map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($client->salutation),
         $client->first_name, $client->last_name
     ) . "\n\n";
-
+    my $state_text;
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
+    # state lookup by id
+    my $state_value = $client->state;
+    my ($state_text) =
+        sort map { $_->{text} } grep { $_->{value} eq $state_value } @{BOM::Platform::Locale::get_state_option($client->residence) || []};
     my $residence_country = Locale::Country::code2country($client->residence);
-    my $full_address = join(', ', (map { $client->$_ } qw(address_1 address_2 city state postcode)), $residence_country);
+    my $full_address = join(', ', grep { /\S/ } (map { $client->$_ } qw(address_1 address_2 city)), $state_text, $client->postcode);
 
     my @updated_fields = (
         [localize('Email address'),        $client->email],
