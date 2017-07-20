@@ -25,8 +25,7 @@ my $d_old = {
 
 my $first_save_epoch = time;
 is $writer->set("vol_surface", "frxUSDJPY", $d, Date::Utility->new), 1, "data is stored without problem";
-is $writer->set("vol_surface", "frxUSDJPY-old", $d_old, Date::Utility->new(0)), 1,
-    "data is stored without problem when specifying recorded date";
+is $writer->set("vol_surface", "frxUSDJPY-old", $d_old, Date::Utility->new(0)), 1, "data is stored without problem when specifying recorded date";
 
 my $old_data = $reader->get_for("vol_surface", "frxUSDJPY-old", 0);
 is_deeply $old_data, $d_old, "data stored using recorded_date is retrieved successfully";
