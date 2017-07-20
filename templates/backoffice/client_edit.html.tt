@@ -341,6 +341,26 @@ IF client.landing_company.short == "iom"
             </select>
         </td>
     </tr>
+    [%
+        account_opening_reasons = [
+            'Speculative',
+            'Income Earning',
+            'Assets Saving',
+            'Hedging'
+        ]
+    %]
+    <tr>
+        <td class="label">Account Opening Reason</td>
+        <td>:
+            <select name="account_opening_reason">
+                [% FOREACH opening_reason = account_opening_reasons %]
+                    <option value="[% opening_reason %]" [% IF opening_reason == client.account_opening_reason %]selected="selected"[% END %]>
+                        [% opening_reason %]
+                    </option>
+                [% END %]
+            </select>
+        </td>
+    </tr>
     <tr>
         <td class="small_header" colspan="2">#Custom Limits </td>
     </tr>
