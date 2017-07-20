@@ -38,15 +38,25 @@ if (length($broker) < 2) {
 
 my $page = request()->param('view_action') // '';
 my $tt = BOM::Backoffice::Request::template;
-$tt->process('backoffice/crypto_cashier/main.tt2') || die $tt->error();
+{
+    my $cmd               = request()->param('command');
+    $tt->process('backoffice/crypto_cashier/main.tt2', {
+        rpc_command => $cmd
+    }) || die $tt->error();
+}
 
 ## CTC
 Bar("Actions");
 
+my $start_date = request()->param('start_date') || do { my $date = Date::Uility->new; $date->day_of_month(0); $date };
+$start_date = Date::Utility->new($start_date) unless ref $start_date;
+my $end_date = request()->param('end_date') || do { my $date = $start_date; $date->month($date->month + 1); $date->day_of_month(0); $date };
+$end_date = Date::Utility->new($end_date) unless ref $end_date;
+
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
-print '<input type="text" name="start_date" required class="datepick">';
-print '<input type="text" name="end_date" required class="datepick">';
+print '<input type="text" name="start_date" required class="datepick" value="' . $start_date->date_yyyymmdd . '">';
+print '<input type="text" name="end_date" required class="datepick" value="' . $start_date->date_yyyymmdd . '">';
 print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
 print '<INPUT type="submit" value="Recon" name="view_action"/>';
 print '</FORM>';
@@ -71,16 +81,19 @@ print '<h3>Tools</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
 print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
-print '<select name="command">'
-    . '<option value="getbalance">Get balance</option>'
-    . '<option value="listaccounts">List accounts</option>'
-    . '<option value="listtransactions">List transactions</option>'
-    . '<option value="listaddressgroupings">List address groupings</option>'
-    . '<option value="..." disabled="disabled">---</option>'
-    . '<option value="getinfo">Get info</option>'
-    . '<option value="getpeerinfo">Get peer info</option>'
-    . '<option value="getnetworkinfo">Get network info</option>'
-    . '</select>';
+{
+    my $cmd               = request()->param('command');
+    print '<select name="command">'
+        . '<option ' . ($cmd eq 'getbalance' ? 'selected="selected" ' : '') . ' value="getbalance">Get balance</option>'
+        . '<option ' . ($cmd eq 'listaccounts' ? 'selected="selected" ' : '') . ' value="listaccounts">List accounts</option>'
+        . '<option ' . ($cmd eq 'listtransactions' ? 'selected="selected" ' : '') . ' value="listtransactions">List transactions</option>'
+        . '<option ' . ($cmd eq 'listaddressgroupings' ? 'selected="selected" ' : '') . ' value="listaddressgroupings">List address groupings</option>'
+        . '<option value="..." disabled="disabled">---</option>'
+        . '<option ' . ($cmd eq 'getinfo' ? 'selected="selected" ' : '') . ' value="getinfo">Get info</option>'
+        . '<option ' . ($cmd eq 'getpeerinfo' ? 'selected="selected" ' : '') . ' value="getpeerinfo">Get peer info</option>'
+        . '<option ' . ($cmd eq 'getnetworkinfo' ? 'selected="selected" ' : '') . ' value="getnetworkinfo">Get network info</option>'
+        . '</select>';
+}
 print '<INPUT type="submit" value="Run tool" name="view_action"/>';
 print '</FORM>';
 
@@ -196,10 +209,6 @@ if ($page eq 'Withdrawal Transactions') {
     Bar('BTC Reconciliation');
 
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-    my $start_date = request()->param('start_date') || do { my $date = Date::Uility->new; $date->day_of_month(0); $date };
-    $start_date = Date::Utility->new($start_date) unless ref $start_date;
-    my $end_date = request()->param('end_date') || do { my $date = $start_date; $date->month($date->month + 1); $date->day_of_month(0); $date };
-    $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
     my %db_by_address;
     {    # First, we get a mapping from address to database transaction information
