@@ -166,11 +166,6 @@ if ($input{whattodo} eq 'uploadID') {
     my $result         = "";
     my $used_doctypes  = {};                              #we need to keep list of used doctypes to provide for them uniq filenames
 
-    # nationality presents in uploaded docs for all broker codes
-    if ($docnationality eq '') {
-        $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Nationality is mandatory when uploading documents.</p><br />";
-    }
-
     foreach my $i (1 .. 4) {
         my $doctype         = $cgi->param('doctype_' . $i);
         my $filetoupload    = $cgi->param('FILE_' . $i);
@@ -216,6 +211,9 @@ if ($input{whattodo} eq 'uploadID') {
                 $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality</p><br />";
                 next;
             }
+        } elsif ($docnationality eq '') {    # nationality presents in uploaded docs for all broker codes
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Nationality is mandatory when uploading documents.</p><br />";
+            next;
         }
 
         my $path = "$dbloc/clientIDscans/$broker";
