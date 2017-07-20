@@ -1,4 +1,4 @@
-package main;
+#!/etc/rmg/bin/perl
 use strict;
 use warnings;
 
@@ -25,7 +25,7 @@ my $reports_path = '/home/nobody/compliance-sanctions-lists';
 my $brand        = Brands->new(name => 'binary');
 
 my $last_run = (stat $file_flag)[9] // 0;
-#$BOM::Platform::Client::Sanctions::sanctions->update_data();
+$BOM::Platform::Client::Sanctions::sanctions->update_data();
 { open my $fh, '>', $file_flag; close $fh };
 exit if $last_run > $BOM::Platform::Client::Sanctions::sanctions->last_updated();
 
