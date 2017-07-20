@@ -6,42 +6,64 @@ BEGIN {
     push @INC, "/home/git/regentmarkets/bom-backoffice/lib";
 }
 
-use BOM::Backoffice::Sysinit ();
-use BOM::Database::DataMapper::CollectorReporting;
+use Brands;
 use Client::Account;
 use BOM::Database::ClientDB;
 use BOM::Platform::Client::Sanctions;
-use Brands;
-use Data::Dumper;
+use BOM::Platform::Email qw(send_email);
 
 =head2
 
- This scripts runs check for all clients agains sanctioned list, but only if list has changed since last run
+ This scripts:
+ - tries to update sanctions cached file
+ - runs check for all clients agains sanctioned list, but only if list has changed since last run
 
 =cut
 
-my $file_flag = '/tmp/last_cron_sanctions_check_run';
-$BOM::Platform::Client::Sanctions::sanctions->update_data();
+my $file_flag    = '/tmp/last_cron_sanctions_check_run';
+my $reports_path = '/home/nobody/compliance-sanctions-lists';
+my $brand        = Brands->new(name => 'binary');
 
 my $last_run = (stat $file_flag)[9] // 0;
+#$BOM::Platform::Client::Sanctions::sanctions->update_data();
 { open my $fh, '>', $file_flag; close $fh };
 exit if $last_run > $BOM::Platform::Client::Sanctions::sanctions->last_updated();
 
 my $brokers = ['CR', 'MF', 'MLT', 'MX'];
 my $matched;
 $matched->{$_} = do_broker($_) for @$brokers;
-my $headers = 'List Name,Database,LoginID,First Name,Last Name,Email,Phone,Gender,DateOfBirth,DateJoined,Residence,Citizen,Status,Reason\n';
-my $r       = '';
-foreach my $k (keys %$matched) {
-    $r .= map_client_data($_) . "\n" for @{$matched->{$k}};
+do_report($matched);
+
+sub do_report {
+    my $matched = shift;
+    my $headers = 'List Name,Database,LoginID,First Name,Last Name,Email,Phone,Gender,DateOfBirth,DateJoined,Residence,Citizen,Status,Reason';
+    my $r       = '';
+    foreach my $k (keys %$matched) {
+        $r .= map_client_data($_) . "\n" for @{$matched->{$k}};
+    }
+    print $r;
+
+    my $csv_filename = $reports_path . '/sanctions-run-' . Date::Utility->new()->date . '.csv';
+    open my $fh, '>', $csv_filename;
+    print $fh $headers, "\n";
+    print $fh $r;
+    close $fh;
+
+    send_email({
+        from       => $brand->emails('support'),
+        to         => $brand->emails('compliance'),
+        cc         => 'sysadmin@binary.com',
+        subject    => 'Sanction list checked',
+        message    => ["Here is a list of clients against sanctions:\n$r"],
+        attachment => $csv_filename,
+    });
 }
-print $r;
 
 sub map_client_data {
     my ($c, $list) = @{+shift};
     my $r = '';
     $r .= $list . ',';
-    $r .= $c->$_ . ',' foreach qw(broker loginid first_name last_name email phone gender date_of_birth date_joined residence citizen);
+    $r .= $c->$_ // '' . ',' foreach qw(broker loginid first_name last_name email phone gender date_of_birth date_joined residence citizen);
     $r .= $_->status_code . ',' . $_->reason . ',' for ($c->client_status->[0]);    #use only last status
     return $r;
 }
@@ -69,13 +91,10 @@ sub do_broker {
             [$client, $list]
             if $list = BOM::Platform::Client::Sanctions->new({
                 client     => $client,
-                brand      => Brands->new(name => 'binary'),
+                brand      => $brand,
                 skip_email => 1,
             })->check();
     }
     return \@matched;
 }
 
-sub check_last_update {
-
-}
