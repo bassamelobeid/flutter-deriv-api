@@ -2,10 +2,10 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use Test::More qw(no_plan);
+use Test::More;
 use Test::Exception;
 use Test::MockModule;
-use Test::FailWarnings;
+use Test::Warnings;
 
 use Client::Account;
 
@@ -16,49 +16,49 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_jpy, $mlt_client, $mf_client, $mx_client, $jp_client) = ('CashierForwardError');
 
 subtest prepare => sub {
-    lives_ok {
-        $new_email = 'test' . rand . '@binary.com';
-        $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $new_email,
-        });
+    $new_email = 'test' . rand . '@binary.com';
+    $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $new_email,
+    });
 
-        $new_email = 'test' . rand . '@binary.com';
-        $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            email       => $new_email,
-        });
+    $new_email = 'test' . rand . '@binary.com';
+    $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $new_email,
+    });
 
-        $new_email     = 'test' . rand . '@binary.com';
-        $cr_client_jpy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            email       => $new_email,
-        });
+    $new_email     = 'test' . rand . '@binary.com';
+    $cr_client_jpy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $new_email,
+    });
 
-        $new_email  = 'test' . rand . '@binary.com';
-        $mlt_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MLT',
-            email       => $new_email,
-        });
+    $new_email  = 'test' . rand . '@binary.com';
+    $mlt_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+        email       => $new_email,
+    });
 
-        $new_email = 'test' . rand . '@binary.com';
-        $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MF',
-            email       => $new_email,
-        });
+    $new_email = 'test' . rand . '@binary.com';
+    $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+        email       => $new_email,
+    });
 
-        $new_email = 'test' . rand . '@binary.com';
-        $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-            email       => $new_email,
-        });
+    $new_email = 'test' . rand . '@binary.com';
+    $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MX',
+        email       => $new_email,
+    });
 
-        $new_email = 'test' . rand . '@binary.com';
-        $jp_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'JP',
-            email       => $new_email,
-        });
-    };
+    $new_email = 'test' . rand . '@binary.com';
+    $jp_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'JP',
+        email       => $new_email,
+    });
+
+    pass "Prepration successful";
 };
 
 subtest 'Check cashier suspended' => sub {

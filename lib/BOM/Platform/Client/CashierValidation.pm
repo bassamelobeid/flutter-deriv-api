@@ -176,7 +176,7 @@ sub _withdrawal_validation_period {
     my $lc = shift;
 
     return {
-        start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * 30),
+        start_time => Date::Utility->new(time - 86400 * 30),
         exclude    => ['currency_conversion_transfer'],
     } if $lc eq 'iom';
 
