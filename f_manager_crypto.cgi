@@ -6,6 +6,7 @@ use HTML::Entities;
 
 use Bitcoin::RPC::Client;
 use Data::Dumper;
+use Date::Utility;
 use YAML::XS;
 use Client::Account;
 use Text::CSV;
@@ -38,15 +39,25 @@ if (length($broker) < 2) {
 
 my $page = request()->param('view_action') // '';
 my $tt = BOM::Backoffice::Request::template;
-$tt->process('backoffice/crypto_cashier/main.tt2') || die $tt->error();
+{
+    my $cmd = request()->param('command');
+    $tt->process('backoffice/crypto_cashier/main.tt2', {rpc_command => $cmd}) || die $tt->error();
+}
 
 ## CTC
 Bar("Actions");
 
+use POSIX ();
+my $now = Date::Utility->new;
+my $start_date = request()->param('start_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 0, $now->month, $now->year);
+$start_date = Date::Utility->new($start_date) unless ref $start_date;
+my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, -1, $now->month + 1, $now->year);
+$end_date = Date::Utility->new($end_date) unless ref $end_date;
+
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
-print '<input type="text" name="start_date" required class="datepick">';
-print '<input type="text" name="end_date" required class="datepick">';
+print '<input type="text" name="start_date" required class="datepick" value="' . $start_date->date_yyyymmdd . '">';
+print '<input type="text" name="end_date" required class="datepick" value="' . $end_date->date_yyyymmdd . '">';
 print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
 print '<INPUT type="submit" value="Recon" name="view_action"/>';
 print '</FORM>';
@@ -71,16 +82,33 @@ print '<h3>Tools</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
 print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
-print '<select name="command">'
-    . '<option value="getbalance">Get balance</option>'
-    . '<option value="listaccounts">List accounts</option>'
-    . '<option value="listtransactions">List transactions</option>'
-    . '<option value="listaddressgroupings">List address groupings</option>'
-    . '<option value="..." disabled="disabled">---</option>'
-    . '<option value="getinfo">Get info</option>'
-    . '<option value="getpeerinfo">Get peer info</option>'
-    . '<option value="getnetworkinfo">Get network info</option>'
-    . '</select>';
+{
+    my $cmd = request()->param('command') // '';
+    print '<select name="command">'
+        . '<option '
+        . ($cmd eq 'getbalance' ? 'selected="selected" ' : '')
+        . ' value="getbalance">Get balance</option>'
+        . '<option '
+        . ($cmd eq 'listaccounts' ? 'selected="selected" ' : '')
+        . ' value="listaccounts">List accounts</option>'
+        . '<option '
+        . ($cmd eq 'listtransactions' ? 'selected="selected" ' : '')
+        . ' value="listtransactions">List transactions</option>'
+        . '<option '
+        . ($cmd eq 'listaddressgroupings' ? 'selected="selected" ' : '')
+        . ' value="listaddressgroupings">List address groupings</option>'
+        . '<option value="..." disabled="disabled">---</option>'
+        . '<option '
+        . ($cmd eq 'getinfo' ? 'selected="selected" ' : '')
+        . ' value="getinfo">Get info</option>'
+        . '<option '
+        . ($cmd eq 'getpeerinfo' ? 'selected="selected" ' : '')
+        . ' value="getpeerinfo">Get peer info</option>'
+        . '<option '
+        . ($cmd eq 'getnetworkinfo' ? 'selected="selected" ' : '')
+        . ' value="getnetworkinfo">Get network info</option>'
+        . '</select>';
+}
 print '<INPUT type="submit" value="Run tool" name="view_action"/>';
 print '</FORM>';
 
@@ -196,10 +224,6 @@ if ($page eq 'Withdrawal Transactions') {
     Bar('BTC Reconciliation');
 
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-    my $start_date = request()->param('start_date') || do { my $date = Date::Uility->new; $date->day_of_month(0); $date };
-    $start_date = Date::Utility->new($start_date) unless ref $start_date;
-    my $end_date = request()->param('end_date') || do { my $date = $start_date; $date->month($date->month + 1); $date->day_of_month(0); $date };
-    $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
     my %db_by_address;
     {    # First, we get a mapping from address to database transaction information
@@ -210,6 +234,7 @@ if ($page eq 'Withdrawal Transactions') {
         ) or die 'failed to run ctc_bo_transactions_for_reconciliation';
 
         for my $db_tran (@$db_transactions) {
+            $db_tran->{type} = delete $db_tran->{transaction_type};
             push @{$db_tran->{comments}}, 'Duplicate entries found in DB' if exists $db_by_address{$db_tran->{address}};
             push @{$db_tran->{comments}}, 'Invalid entry - no amount in database'
                 unless length($db_tran->{amount} // '')
@@ -229,13 +254,14 @@ if ($page eq 'Withdrawal Transactions') {
                 # TODO This should filter by prefix, not just ignore when we have a prefix!
                 $db_by_address{$address} = {
                     address             => $address,
+                    type                => 'deposit',
                     found_in_blockchain => 1,
                     comments            => ['Deposit not found in database']};
                 next;
             };
             $db_tran->{found_in_blockchain} = 1;
-            if ($db_tran->{transaction_type} ne 'deposit') {
-                push @{$db_tran->{comments}}, 'Expected deposit, found ' . $db_tran->{transaction_type};
+            if ($db_tran->{type} ne 'deposit') {
+                push @{$db_tran->{comments}}, 'Expected deposit, found ' . $db_tran->{type};
             }
 
             if (
@@ -272,13 +298,15 @@ if ($page eq 'Withdrawal Transactions') {
                 # TODO This should filter by prefix, not just ignore when we have a prefix!
                 $db_by_address{$address} = {
                     address             => $address,
+                    type                => 'withdrawal',
                     found_in_blockchain => 1,
                     comments            => ['Withdrawal not found in database']};
                 next;
             };
+            $db_tran->{type}                = 'withdrawal';
             $db_tran->{found_in_blockchain} = 1;
-            if ($db_tran->{transaction_type} ne 'withdrawal') {
-                push @{$db_tran->{comments}}, 'Expected withdrawal, found ' . $db_tran->{transaction_type};
+            if ($db_tran->{type} ne 'withdrawal') {
+                push @{$db_tran->{comments}}, 'Expected withdrawal, found ' . $db_tran->{type};
             }
             if (
                 financialrounding(
@@ -296,17 +324,17 @@ if ($page eq 'Withdrawal Transactions') {
         push @{$db_tran->{comments}}, 'Database entry not found in blockchain' unless $db_tran->{status} eq 'NEW';
     }
 
-    my @hdr = ('Client ID', 'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations', 'Transaction ID', 'Errors');
+    my @hdr = ('Client ID', 'Type', 'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations', 'Transaction ID', 'Errors');
     print '<table style="width:100%;" border="1"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
+    my $blockchain_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/' : 'https://blockchain.info/tx/');
     for my $db_tran (sort_by { $_->{address} } values %db_by_address) {
         print '<tr>';
-        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid address amount status date)};
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type address amount status date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
-        print '<td><a href="https://www.blocktrail.com/tBTC/tx/' . $_ . '">' . encode_entities(substr $_, 0, 6) . '</td>'
-            for @{$db_tran}{qw(transaction_id)};
+        print '<td><a href="' . ($blockchain_uri . $_) . '">' . encode_entities(substr $_, 0, 6) . '</td>' for @{$db_tran}{qw(transaction_id)};
         print '<td style="color:red;">' . (join '<br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
     }
