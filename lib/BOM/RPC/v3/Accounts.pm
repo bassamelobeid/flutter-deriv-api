@@ -65,7 +65,7 @@ sub payout_currencies {
         return $lc->legal_allowed_currencies;
     }
 
-    return [grep { $_ !~ /^(?:BTC|LTC|ETH)$/ } @{$lc->legal_allowed_currencies}];
+    return [grep { $_ !~ /^(?:BTC|LTC|ETH|ETC)$/ } @{$lc->legal_allowed_currencies}];
 }
 
 sub landing_company {
@@ -119,7 +119,7 @@ sub __build_landing_company {
         address                           => $lc->address,
         country                           => $lc->country,
         legal_default_currency            => $lc->legal_default_currency,
-        legal_allowed_currencies          => [grep { $_ !~ /^(?:BTC|LTC|ETH)$/ } @{$lc->legal_allowed_currencies}],
+        legal_allowed_currencies          => [grep { $_ !~ /^(?:BTC|LTC|ETH|ETC)$/ } @{$lc->legal_allowed_currencies}],
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0
@@ -747,6 +747,9 @@ sub set_settings {
     my $phone           = ($args->{'phone'} // $client->phone) // '';
     my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
 
+    # filter out irrelevant spaces and commas
+    foreach ($address1, $address2, $addressTown) { $_ =~ s/(?:,?\s*,)+\s*/, /g }
+
     my $cil_message;
     if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
@@ -812,11 +815,12 @@ sub set_settings {
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
     my $residence_country = Locale::Country::code2country($client->residence);
+    my $full_address = join(', ', (map { $client->$_ } qw(address_1 address_2 city state postcode)), $residence_country);
 
     my @updated_fields = (
         [localize('Email address'),        $client->email],
         [localize('Country of Residence'), $residence_country],
-        [localize('Address'),              join(', ', (map { $client->$_ } qw(address_1 address_2 city state postcode)), $residence_country)],
+        [localize('Address'),              $full_address],
         [localize('Telephone'),            $client->phone]);
 
     my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($client->tax_residence || '');
@@ -1237,7 +1241,7 @@ sub set_account_currency {
 
     # only allow crypto currencies when its omnibus account or sub account
     # TODO: remove once we make crypto currencies live
-    return {status => 0} if ($currency =~ /^(?:BTC|LTC|ETH)$/ and not($client->allow_omnibus or $client->sub_account_of));
+    return {status => 0} if ($currency =~ /^(?:BTC|LTC|ETH|ETC)$/ and not($client->allow_omnibus or $client->sub_account_of));
 
     # no change in default account currency if default account is already set
     return {status => 1} if (not $client->default_account and $client->set_default_account($currency));
