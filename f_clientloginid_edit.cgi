@@ -204,15 +204,16 @@ if ($input{whattodo} eq 'uploadID') {
 
         }
 
-        if ($doctype =~ /passport|proofid/) {
+        if ($doctype =~ /passport|proofid/) {    # citizenship may only be changed when uploading passport or proofid
             if ($docnationality && $docnationality =~ /[a-z]{2}/) {
                 $client->citizen($docnationality);
             } else {
                 $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality</p><br />";
                 next;
             }
-        } elsif ($docnationality eq '') {    # nationality presents in uploaded docs for all broker codes
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Nationality is mandatory when uploading documents.</p><br />";
+        } elsif ($client->citizen eq '') {       # client citizenship presents when uploading docs (for all broker codes)
+            $result .=
+                "<br /><p style=\"color:red; font-weight:bold;\">Error: Client's citizenship is unspecified. Hence, uploading documents into the system is restricted for this client.</p><br />";
             next;
         }
 
