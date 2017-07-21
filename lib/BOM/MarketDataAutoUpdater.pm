@@ -53,7 +53,7 @@ sub run {
     my $number_failures = scalar @failures - 1;
     my $number_errors   = scalar @errors - 1;
 
-    if ($failures > 0 or $number_errors > 0) {
+    if ($number_failures > 0 or $number_errors > 0) {
         Cache::RedisDB->set_nw(@keys_in_redis, time);
 
         my $body = join "\n", (@successes, "\n\n", @failures, "\n\n", @errors);
