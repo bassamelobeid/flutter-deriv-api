@@ -1,29 +1,76 @@
 <p><b>Update economic event manually with the tool below: </b></p>
 
-<FORM NAME="currency" ACTION="[% ee_upload_url | none %]" METHOD="POST" ENCTYPE="multipart/form-data">
-    <table>
-        <tr><td>Economic event ID</td><td> : <INPUT type="text" name="event_id"></td><td>(Economic event ID to delete the event )</td></tr>
-        <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
-        <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The time given on forexfactory is GMT-4)</td></tr>
-        <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
-        <tr><td>Source</td><td> : <INPUT type="text" name="source" value="forexfactory"></td></tr>
-        <tr><td>Custom Magnitude</td><td>: <INPUT type="text" name="custom_magnitude"></td><td>( *This will override the magnitude set in yaml for this event.)</td></tr>
-        <tr><td>Impact</td>
-            <td> : <select name=impact>
-                    <option value=1>1</option>
-                    <option value=3>3</option>
-                    <option value=5>5</option>
-                  </select>
-            </td></tr>
-        <tr>
-            <td>Tentative</td>
-            <td> : <input type="checkbox" name="is_tentative" value="1"\> </td>
+<table>
+    <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
+    <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The time given on forexfactory is GMT-4)</td></tr>
+    <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
+    <tr><td>Source</td><td> : <INPUT type="text" name="source" value="forexfactory"></td></tr>
+    <tr><td>Custom Magnitude</td><td>: <INPUT type="text" name="custom_magnitude"></td><td>( *This will override the magnitude set in yaml for this event.)</td></tr>
+    <tr><td>Impact</td>
+        <td> : <select name=impact>
+                <option value=1>1</option>
+                <option value=3>3</option>
+                <option value=5>5</option>
+              </select>
+        </td></tr>
+    <tr>
+        <td>Tentative</td>
+        <td> : <input type="checkbox" name="is_tentative" value="1"\> </td>
+    </tr>
+    <tr><td>Estimated Announcement Date</td><td> : <INPUT type="text" name="estimated_release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The tentative date given on forexfactory is GMT-4)</td></tr>
+        <tr><INPUT type="hidden" name="save_economic_event" value="1"></tr>
+    <tr><td></td><td><INPUT type="submit" name="save_eco" value="Save"></td></tr>
+    <tr><td>Delete with ID</td><td> : <INPUT type="text" name="event_id"></td></tr>
+    <tr><td></td><td><button onclick="deleteEvent()">Delete</button></td><td class='delete_result'></td></tr>
+</table>
+
+<p><b>List of Economic Events today</b></p>
+
+<table border='1'>
+    <tr>
+        <td><b>Event ID</b></td>
+        <td><b>Event Name</b></td>
+        <td><b>Release Date</b></td>
+        <td><b>ForexFactory Impact</b></td>
+        <td><b>Symbol</b></td>
+        <td><b>Binary's Category</b></td>
+    </tr>
+    [% FOREACH row IN events %]
+        <tr id="[% row.id %]">
+            <td>[% row.id %]</td>
+            <td>[% row.event_name %]</td>
+            <td>[% row.release_date %]</td>
+            <td>[% row.impact %]</td>
+            <td>[% row.symbol %]</td>
+            <td>
+                [% FOREACH item IN row.info %]
+                    <p>[% item %]</p>
+                [% END %]
+            </td>
         </tr>
-        <tr><td>Estimated Announcement Date</td><td> : <INPUT type="text" name="estimated_release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The tentative date given on forexfactory is GMT-4)</td></tr>
-            <tr><INPUT type="hidden" name="save_economic_event" value="1"></tr>
-        <tr><td></td><td><INPUT type="submit" name="save_eco" value="Save"></td></tr>
-        <tr><td></td><td><INPUT type="submit" name="delete_eco" value="Delete"></td></tr>
-    </table>
-</FORM>
+    [% END %]
+</table>
 
-
+<script>
+    function deleteEvent() {
+        var id = \$("input[name='event_id']").val();
+        if (id) {
+            \$.ajax({
+                    url: "[% ee_upload_url | none %]",
+                    data: {
+                        event_id: id,
+                        delete_event: "1"
+                    },
+                    success: function(data){
+                        var result = \$("td.delete_result");
+                        if(data != 0) {
+                           \$('tr#'+ data).hide();
+                            result.text('Economic event deleted.').css('color','green');
+                        } else{
+                            result.text('Failed to delete event. Please check your event ID.').css('color','red');
+                        }
+                    }
+            });
+        }
+    };
+</script>
