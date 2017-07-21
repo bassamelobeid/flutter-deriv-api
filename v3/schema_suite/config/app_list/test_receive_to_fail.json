@@ -34,7 +34,7 @@
               "type": "string",
               "required": "1"
             },
-            "signup_uri": {
+            "verification_uri": {
               "type": "string",
               "required": "1"
             },
