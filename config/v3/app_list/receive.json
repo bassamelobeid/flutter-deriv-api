@@ -30,9 +30,9 @@
             "description":"Application redirect_uri",
             "required": 1
           },
-          "signup_uri": {
+          "verification_uri": {
             "type": ["string", "null"],
-            "description":"Application signup_uri",
+            "description":"Application verification_uri",
             "required": 1
           },
           "homepage": {
