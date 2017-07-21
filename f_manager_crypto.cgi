@@ -312,7 +312,7 @@ if ($page eq 'Withdrawal Transactions') {
                 financialrounding(
                     price => $currency,
                     $blockchain_tran->{amount}
-                ) != $db_tran->{amount})
+                ) != -$db_tran->{amount})
             {
                 push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
             }
