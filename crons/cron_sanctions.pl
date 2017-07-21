@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 
+use Date::Utility;
 use Path::Tiny;
 
 use Brands;
@@ -19,7 +20,7 @@ use BOM::Platform::Email qw(send_email);
 =cut
 
 my $file_flag    = '/tmp/last_cron_sanctions_check_run';
-my $reports_path = '/home/nobody/compliance-sanctions-lists';
+my $reports_path = shift or die "Provide path for storing files as an argument";
 my @brokers      = qw/CR MF MLT MX/;
 
 my $brand = Brands->new(name => 'binary');
@@ -34,8 +35,9 @@ do_report($matched);
 
 sub do_report {
     my $matched = shift;
-    my $headers = 'List Name,Database,LoginID,First Name,Last Name,Email,Phone,Gender,DateOfBirth,DateJoined,Residence,Citizen,Status,Reason';
-    my $r       = '';
+    my $headers =
+        'List Name,List Updated,Database,LoginID,First Name,Last Name,Email,Phone,Gender,DateOfBirth,DateJoined,Residence,Citizen,Status,Reason';
+    my $r = '';
     foreach my $k (sort keys %$matched) {
         $r .= make_client_csv_line($_) . "\n" for sort { $a->[0]->loginid cmp $b->[0]->loginid } @{$matched->{$k}};
     }
@@ -60,6 +62,7 @@ sub make_client_csv_line {
     my ($c, $list) = @{+shift};
     my @fields = (
         $list,
+        Date::Utility->new($BOM::Platform::Client::Sanctions::sanctions->last_updated($list))->date,
         (map { $c->$_ // '' } qw(broker loginid first_name last_name email phone gender date_of_birth date_joined residence citizen)),
         (map { $_->status_code, $_->reason } ($c->client_status->[0])),    #use only last status
     );
