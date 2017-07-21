@@ -340,9 +340,9 @@ sub get_bid {
         if ($is_sold) {
             # if sold before expiry time
             if ($response->{sell_time} < $response->{date_expiry}) {
-                $record->{status} = 'sold';
+                $response->{status} = 'sold';
             } else {
-                $record->{status} = $record->{buy_price} <= $record->{sell_price} ? 'won' : 'lost';
+                $response->{status} = $buy_price <= $sell_price ? 'won' : 'lost';
             }
         }
 
