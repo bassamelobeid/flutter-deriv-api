@@ -93,7 +93,7 @@ print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</s
         . ' value="listaccounts">List accounts</option>'
         . '<option '
         . ($cmd eq 'listtransactions' ? 'selected="selected" ' : '')
-        . ' value="listtransactions">List transactions</option>'
+        . ' value="listtransactions">List withdrawal transactions</option>'
         . '<option '
         . ($cmd eq 'listaddressgroupings' ? 'selected="selected" ' : '')
         . ' value="listaddressgroupings">List address groupings</option>'
