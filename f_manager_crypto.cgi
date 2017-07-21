@@ -322,7 +322,7 @@ if ($page eq 'Withdrawal Transactions') {
 
     # Find out what's left over in the database
     for my $db_tran (grep { !$_->{found_in_blockchain} } values %db_by_address) {
-        push @{$db_tran->{comments}}, 'Database entry not found in blockchain' unless $db_tran->{status} eq 'NEW' or $db_tran->{status} eq 'REJECTED';
+        push @{$db_tran->{comments}}, 'Database entry not found in blockchain' unless grep { $db_tran->{status} eq $_ } qw(NEW REJECTED LOCKED);
     }
 
     my @hdr = ('Client ID', 'Type', 'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations', 'Transaction ID', 'Errors');
