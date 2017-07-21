@@ -25,9 +25,9 @@
       "pattern": "^https:\/\/test\\.example\\.com\/redirect$",
       "required": "1"
     },
-    "signup_uri": {
+    "verification_uri": {
       "type": "string",
-      "pattern": "^https:\/\/test\\.example\\.com\/signup",
+      "pattern": "^https:\/\/test\\.example\\.com\/verify",
       "required": "1"
     },
     "homepage": {

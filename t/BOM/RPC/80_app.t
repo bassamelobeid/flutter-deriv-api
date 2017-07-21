@@ -54,35 +54,35 @@ my $app1 = $c->call_ok(
     {
         token => $token,
         args  => {
-            name         => 'App 1',
-            scopes       => ['read', 'trade'],
-            redirect_uri => 'https://www.example.com/',
-            signup_uri => 'https://www.example.com/signup',
-            homepage     => 'https://www.homepage.com/',
+            name             => 'App 1',
+            scopes           => ['read', 'trade'],
+            redirect_uri     => 'https://www.example.com/',
+            verification_uri => 'https://www.example.com/verify',
+            homepage         => 'https://www.homepage.com/',
         },
     })->has_no_system_error->has_no_error->result;
 is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
-is $app1->{redirect_uri}, 'https://www.example.com/',  'redirect_uri is right';
-is $app1->{signup_uri}, 'https://www.example.com/signup',  'signup_uri is right';
-is $app1->{homepage},     'https://www.homepage.com/', 'homepage is right';
+is $app1->{redirect_uri},     'https://www.example.com/',       'redirect_uri is right';
+is $app1->{verification_uri}, 'https://www.example.com/verify', 'verification_uri is right';
+is $app1->{homepage},         'https://www.homepage.com/',      'homepage is right';
 
 $app1 = $c->call_ok(
     'app_update',
     {
         token => $token,
         args  => {
-            app_update   => $app1->{app_id},
-            name         => 'App 1',
-            scopes       => ['read', 'trade', 'admin'],
-            redirect_uri => 'https://www.example.com/callback',
-            signup_uri => 'https://www.example.com/signup_updated',
-            homepage     => 'https://www.homepage2.com/'
+            app_update       => $app1->{app_id},
+            name             => 'App 1',
+            scopes           => ['read', 'trade', 'admin'],
+            redirect_uri     => 'https://www.example.com/callback',
+            verification_uri => 'https://www.example.com/verify_updated',
+            homepage         => 'https://www.homepage2.com/'
         },
     })->has_no_system_error->has_no_error->result;
 is_deeply([sort @{$app1->{scopes}}], ['admin', 'read', 'trade'], 'scopes are updated');
-is $app1->{redirect_uri}, 'https://www.example.com/callback', 'redirect_uri is updated';
-is $app1->{signup_uri}, 'https://www.example.com/signup_updated', 'redirect_uri is updated';
-is $app1->{homepage},     'https://www.homepage2.com/',       'homepage is updated';
+is $app1->{redirect_uri},     'https://www.example.com/callback',       'redirect_uri is updated';
+is $app1->{verification_uri}, 'https://www.example.com/verify_updated', 'redirect_uri is updated';
+is $app1->{homepage},         'https://www.homepage2.com/',             'homepage is updated';
 
 my $get_app = $c->call_ok(
     'app_get',

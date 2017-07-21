@@ -150,16 +150,16 @@ sub verify_email {
             });
     } elsif ($type eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $email})) {
-            my $app_id       = $params->{source};
-            my $oauth        = BOM::Database::Model::OAuth->new;
-            my $signup_uri   = $oauth->get_signup_uri_by_app_id($app_id);
-            my $website_name = $params->{website_name};
+            my $app_id           = $params->{source};
+            my $oauth            = BOM::Database::Model::OAuth->new;
+            my $verification_uri = $oauth->get_verification_uri_by_app_id($app_id);
+            my $website_name     = $params->{website_name};
 
             my $message =
-                $signup_uri
+                $verification_uri
                 ? BOM::Platform::Context::localize(
                 '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Click the following link to verify your account:</p><p> <a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                "$signup_uri?verification_code=$code",
+                "$verification_uri?verification_code=$code",
                 $website_name
                 )
                 : BOM::Platform::Context::localize(
