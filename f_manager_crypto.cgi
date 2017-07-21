@@ -37,6 +37,7 @@ if (length($broker) < 2) {
     code_exit_BO();
 }
 
+my $blockchain_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/' : 'https://blockchain.info/tx/');
 my $page = request()->param('view_action') // '';
 my $tt = BOM::Backoffice::Request::template;
 {
@@ -49,9 +50,9 @@ Bar("Actions");
 
 use POSIX ();
 my $now = Date::Utility->new;
-my $start_date = request()->param('start_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 0, $now->month, $now->year);
+my $start_date = request()->param('start_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 1, $now->month - 1, $now->year - 1900);
 $start_date = Date::Utility->new($start_date) unless ref $start_date;
-my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, -1, $now->month + 1, $now->year);
+my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 0, $now->month, $now->year - 1900);
 $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
@@ -93,7 +94,7 @@ print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</s
         . ' value="listaccounts">List accounts</option>'
         . '<option '
         . ($cmd eq 'listtransactions' ? 'selected="selected" ' : '')
-        . ' value="listtransactions">List transactions</option>'
+        . ' value="listtransactions">List withdrawal transactions</option>'
         . '<option '
         . ($cmd eq 'listaddressgroupings' ? 'selected="selected" ' : '')
         . ' value="listaddressgroupings">List address groupings</option>'
@@ -312,7 +313,7 @@ if ($page eq 'Withdrawal Transactions') {
                 financialrounding(
                     price => $currency,
                     $blockchain_tran->{amount}
-                ) != $db_tran->{amount})
+                ) != -$db_tran->{amount})
             {
                 push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
             }
@@ -321,20 +322,32 @@ if ($page eq 'Withdrawal Transactions') {
 
     # Find out what's left over in the database
     for my $db_tran (grep { !$_->{found_in_blockchain} } values %db_by_address) {
-        push @{$db_tran->{comments}}, 'Database entry not found in blockchain' unless $db_tran->{status} eq 'NEW';
+        push @{$db_tran->{comments}}, 'Database entry not found in blockchain' unless grep { $db_tran->{status} eq $_ } qw(NEW REJECTED LOCKED);
     }
 
-    my @hdr = ('Client ID', 'Type', 'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations', 'Transaction ID', 'Errors');
-    print '<table style="width:100%;" border="1"><thead><tr>';
+    my @hdr = (
+        'Client ID',     'Type',                $currency . ' Address', 'Amount',
+        'Status',        'DB Transaction date', 'Confirmations',        'Blockchain transaction ID',
+        'DB Payment ID', 'Errors'
+    );
+    my $filename = join '-', $start_date->date_yyyymmdd, $end_date->date_yyyymmdd, $currency;
+    print <<"EOF";
+<div>
+<a download="${filename}.xls" href="#" onclick="return ExcellentExport.excel(this, 'recon_table', '$filename');">Export to Excel</a>
+<a download="${filename}.csv" href="#" onclick="return ExcellentExport.csv(this, 'recon_table');">Export to CSV</a>
+</div>
+EOF
+    print '<table id="recon_table" style="width:100%;" border="1" class="sortable"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
-    my $blockchain_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/' : 'https://blockchain.info/tx/');
     for my $db_tran (sort_by { $_->{address} } values %db_by_address) {
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type address amount status date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
-        print '<td><a href="' . ($blockchain_uri . $_) . '">' . encode_entities(substr $_, 0, 6) . '</td>' for @{$db_tran}{qw(transaction_id)};
+        print '<td><a target="_blank" href="' . ($blockchain_uri . $_) . '">' . encode_entities(substr $_, 0, 6) . '</td>'
+            for @{$db_tran}{qw(transaction_id)};
+        print '<td>' . encode_entities($db_tran->{payment_id}) . '</td>';
         print '<td style="color:red;">' . (join '<br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
     }
@@ -372,7 +385,7 @@ if ($page eq 'Withdrawal Transactions') {
                 my @fields = @{$tran}{qw(account txid amount time confirmations address)};
                 $_ = Date::Utility->new($_)->datetime_yyyymmdd_hhmmss for $fields[3];
                 @fields = map { encode_entities($_) } @fields;
-                $_ = '<a href="https://www.blocktrail.com/tBTC/tx/' . $_ . '">' . $_ . '</a>' for $fields[1];
+                $_ = '<a target="_blank" href="' . $blockchain_uri . $_ . '">' . $_ . '</a>' for $fields[1];
                 print '<tr>';
                 print '<td>' . $_ . '</td>' for @fields;
                 print "</tr>\n";
