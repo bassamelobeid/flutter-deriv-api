@@ -23,8 +23,8 @@ sub run {
 
     return 1 if ($self->is_a_weekend);    # don't do anything on weekend
 
-    my $market              = ref $self;
-    my @keys_in_redis       = ('QUANT_EMAIL', 'vol_' . $market);
+    my $market = (split /::/, ref $self)[-1];
+    my @keys_in_redis = ('QUANT_EMAIL', 'vol_' . $market);
     my $vol_email_frequency = Cache::RedisDB->get(@keys_in_redis);
 
     if (not $vol_email_frequency) {
