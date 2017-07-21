@@ -337,6 +337,15 @@ sub get_bid {
             contract_type       => $contract->code
         };
 
+        if ($is_sold) {
+            # if sold before expiry time
+            if ($response->{sell_time} < $response->{date_expiry}) {
+                $record->{status} = 'sold';
+            } else {
+                $record->{status} = $record->{buy_price} <= $record->{sell_price} ? 'won' : 'lost';
+            }
+        }
+
         if (not $contract->may_settle_automatically
             and $contract->missing_market_data)
         {
@@ -658,7 +667,7 @@ sub asset_index {
             },
             name => sub {
                 localize($_->display_name);
-            }
+                }
         },
         underlyings => {
             code => sub {
@@ -666,7 +675,7 @@ sub asset_index {
             },
             name => sub {
                 localize($_->display_name);
-            }
+                }
         },
         contract_categories => {
             code => sub {
