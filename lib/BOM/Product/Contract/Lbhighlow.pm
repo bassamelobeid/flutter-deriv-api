@@ -15,7 +15,7 @@ sub localizable_description {
 sub check_expiry_conditions {
     my $self = shift;
 
-    my ($high, $low, $close);
+    my ($high, $low);
 
     my $start_epoch = $self->date_start->epoch + 1;    # excluding tick at contract start time
 
