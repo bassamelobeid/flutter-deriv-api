@@ -342,6 +342,12 @@ IF client.landing_company.short == "iom"
         </td>
     </tr>
     <tr>
+        <td class="label">Account Opening Reason</td>
+        <td>:
+            [% client.account_opening_reason %]
+        </td>
+    </tr>
+    <tr>
         <td class="small_header" colspan="2">#Custom Limits </td>
     </tr>
     [% IF self_exclusion_enabled == 'yes' %]
