@@ -15,7 +15,7 @@ sub localizable_description {
 sub check_expiry_conditions {
     my $self = shift;
 
-    my ($high, $low, $close);
+    my ($high);
 
     my $start_epoch = $self->date_start->epoch + 1;    # excluding tick at contract start time
 
@@ -27,11 +27,11 @@ sub check_expiry_conditions {
         $end_epoch = $self->date_pricing->epoch;
     }
 
-    ($high, $low, $close) = @{
+    ($high) = @{
         $self->underlying->get_high_low_for_period({
                 start => $start_epoch,
                 end   => $end_epoch,
-            })}{'high', 'low', 'close'};
+            })}{'high'};
 
     if ($self->exit_tick) {
         my $value = $high - $self->barrier;
