@@ -13,12 +13,11 @@ use Try::Tiny;
 sub callback {
     my $c = shift;
 
-    my $redirect_uri = $c->req->url->path('/oauth2/authorize')->to_abs;
+    my $connection_token = $c->param('connection_token');
+    my $redirect_uri     = $c->req->url->path('/oauth2/authorize')->to_abs;
 
-    my $connection_token = $c->param('connection_token') // '';
-    unless ($connection_token) {
-        return $c->redirect_to($redirect_uri);
-    }
+    # redirect client to auth page if there is no connection token
+    return $c->redirect_to($redirect_uri) unless $connection_token;
 
     my $oneall = WWW::OneAll->new(
         subdomain   => 'binary',
@@ -26,31 +25,34 @@ sub callback {
         private_key => BOM::Platform::Config::third_party->{oneall}->{private_key},
     );
     my $data = $oneall->connection($connection_token) or die $oneall->errstr;
-
-    if ($data->{response}->{request}->{status}->{code} != 200) {
+    # redirect client to auth page when recieving bad status code from oneall
+    # wrong pub/private keys might be a reason of bad status code
+    my $status_code = $data->{response}->{request}->{status}->{code};
+    if ($status_code != 200) {
         $c->session(_oneall_error => localize('Failed to get user identity.'));
         return $c->redirect_to($redirect_uri);
     }
 
+    # retrieve user identity from provider data
     my $provider_data = $data->{response}->{result}->{data};
     my $user_connect  = BOM::Database::Model::UserConnect->new;
     my $user_id       = $user_connect->get_user_id_by_connect($provider_data);
 
+    # create virtual client if user not found
+    # consequently initialize user_id
     unless ($user_id) {
         my $email = _get_email($provider_data);
         my $user  = try {
             BOM::Platform::User->new({email => $email})
         };
-        unless ($user) {
-            # create user based on email by fly
-            $user = $c->__create_virtual_user($email);
-        }
-        # connect it
+        # create user based on email by fly unless already exists
+        $user = $c->__create_virtual_user($email) unless $user;
+        # connect oneall provider data to user identity
         $user_connect->insert_connect($user->id, $provider_data);
         $user_id = $user->id;
     }
 
-    ## login him in
+    # login client to the system
     $c->session(_oneall_user_id => $user_id);
     return $c->redirect_to($redirect_uri);
 }
@@ -77,11 +79,11 @@ sub __create_virtual_user {
     my ($c, $email) = @_;
 
     my $acc = BOM::Platform::Account::Virtual::create_account({
-        details => {
-            email => $email,
-            client_password => rand(999999), # random password so you can't login without password
-        },
-    });
+            details => {
+                email           => $email,
+                client_password => rand(999999),    # random password so you can't login without password
+            },
+        });
     die $acc->{error} if $acc->{error};
 
     ## set social_signup flag

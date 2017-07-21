@@ -19,6 +19,8 @@ use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 
+use Data::Dumper;
+
 sub _oauth_model {
     return BOM::Database::Model::OAuth->new;
 }
@@ -26,31 +28,17 @@ sub _oauth_model {
 sub authorize {
     my $c = shift;
 
+    ## APP_ID verification logic
     my ($app_id, $state, $response_type) = map { defang($c->param($_)) // undef } qw/ app_id state response_type /;
-
     # $response_type ||= 'code';    # default to Authorization Code
-    $response_type = 'token';    # only support token
-
-    $app_id or return $c->_bad_request('the request was missing app_id');
-
+    $response_type = 'token';    # only support token FIXME: remove response_type arg from function
+    return $c->_bad_request('the request was missing app_id') unless $app_id;
     return $c->_bad_request('the request was missing valid app_id') if ($app_id !~ /^\d+$/);
-
     my $oauth_model = _oauth_model();
     my $app         = $oauth_model->verify_app($app_id);
-    unless ($app) {
-        return $c->_bad_request('the request was missing valid app_id');
-    }
+    return $c->_bad_request('the request was missing valid app_id') unless $app;
 
-    my @scopes          = @{$app->{scopes}};
-    my $redirect_uri    = $app->{redirect_uri};
-    my $redirect_handle = sub {
-        my ($response_type, $error, $state) = @_;
-
-        my $uri = Mojo::URL->new($redirect_uri);
-        $uri .= '#error=' . $error;
-        $uri .= '&state=' . $state if defined $state;
-        return $uri;
-    };
+    my $redirect_uri = $app->{redirect_uri};
 
     ## setup oneall callback url
     my $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
@@ -74,7 +62,6 @@ sub authorize {
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
     }
-
     my $brand_name = $c->stash('brand')->name;
     ## check user is logined
     unless ($client) {
@@ -98,17 +85,14 @@ sub authorize {
     my $loginid = $client->loginid;
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
 
-    my $lc = $client->landing_company;
-    if (grep { $brand_name ne $_ } @{$lc->allowed_for_brands}) {
-        return $c->render(
-            template  => _get_login_template_name($brand_name),
-            layout    => $brand_name,
-            app       => $app,
-            error     => localize('This account is unavailable. For any questions please contact Customer Support.'),
-            r         => $c->stash('request'),
-            csrftoken => $c->csrf_token,
-        );
-    }
+    return $c->render(
+        template  => _get_login_template_name($brand_name),
+        layout    => $brand_name,
+        app       => $app,
+        error     => localize('This account is unavailable. For any questions please contact Customer Support.'),
+        r         => $c->stash('request'),
+        csrftoken => $c->csrf_token,
+    ) if (grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands});
 
     ## confirm scopes
     my $is_all_approved = 0;
@@ -122,21 +106,23 @@ sub authorize {
                 $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
             }
         } elsif ($c->param('cancel_scopes')) {
-            my $uri = $redirect_handle->($response_type, 'scope_denied', $state);
+            my $uri = Mojo::URL->new($redirect_uri);
+            $uri .= '#error=scope_denied';
+            $uri .= '&state=' . $state if defined $state;
             ## clear session for oneall login when scope is canceled
             delete $c->session->{_oneall_user_id};
             return $c->redirect_to($uri);
         }
     }
 
-    ## if app_id=1 we do not show the scope confirm screen
-    if ($app_id eq '1') {
-        $is_all_approved = 1;
-    }
+    ## when APP_ID is 1 we do not show the scope confirm screen
+    $is_all_approved = 1 if $app_id eq '1';
 
     ## check if it's confirmed
     $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid);
     unless ($is_all_approved) {
+        ## Getting permission scope of APP ID
+        my @scopes = @{$app->{scopes}};
         ## show scope confirms
         return $c->render(
             template  => $brand_name . '/scope_confirms',
@@ -149,6 +135,7 @@ sub authorize {
         );
     }
 
+    ## setting up client ip
     my $client_ip = $c->client_ip;
     if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
         $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
@@ -176,7 +163,7 @@ sub authorize {
     my $uri = Mojo::URL->new($redirect_uri);
     $uri->query(\@params);
 
-    ## clear session
+    ## clear login session
     delete $c->session->{_is_logined};
     delete $c->session->{_loginid};
     delete $c->session->{_oneall_user_id};
