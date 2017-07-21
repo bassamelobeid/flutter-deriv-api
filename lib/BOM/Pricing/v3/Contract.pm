@@ -334,17 +334,9 @@ sub get_bid {
             longcode            => localize($contract->longcode),
             shortcode           => $contract->shortcode,
             payout              => $contract->payout,
-            contract_type       => $contract->code
+            contract_type       => $contract->code,
+            defined($contract->status) ? (status => $contract->status) : (),
         };
-
-        if ($is_sold) {
-            # if sold before expiry time
-            if ($response->{sell_time} < $response->{date_expiry}) {
-                $response->{status} = 'sold';
-            } else {
-                $response->{status} = $buy_price <= $sell_price ? 'won' : 'lost';
-            }
-        }
 
         if (not $contract->may_settle_automatically
             and $contract->missing_market_data)
