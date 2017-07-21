@@ -325,7 +325,11 @@ if ($page eq 'Withdrawal Transactions') {
         push @{$db_tran->{comments}}, 'Database entry not found in blockchain' unless grep { $db_tran->{status} eq $_ } qw(NEW REJECTED LOCKED);
     }
 
-    my @hdr = ('Client ID', 'Type', $currency . ' Address', 'Amount', 'Status', 'DB Transaction date', 'Confirmations', 'Blockchain transaction ID', 'DB Payment ID', 'Errors');
+    my @hdr = (
+        'Client ID',     'Type',                $currency . ' Address', 'Amount',
+        'Status',        'DB Transaction date', 'Confirmations',        'Blockchain transaction ID',
+        'DB Payment ID', 'Errors'
+    );
     my $filename = join '-', $start_date->date_yyyymmdd, $end_date->date_yyyymmdd, $currency;
     print <<"EOF";
 <div>
