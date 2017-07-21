@@ -37,6 +37,7 @@ if (length($broker) < 2) {
     code_exit_BO();
 }
 
+my $blockchain_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/' : 'https://blockchain.info/tx/');
 my $page = request()->param('view_action') // '';
 my $tt = BOM::Backoffice::Request::template;
 {
@@ -335,7 +336,6 @@ EOF
     print '<table id="recon_table" style="width:100%;" border="1" class="sortable"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
-    my $blockchain_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/' : 'https://blockchain.info/tx/');
     for my $db_tran (sort_by { $_->{address} } values %db_by_address) {
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type address amount status date)};
@@ -379,7 +379,7 @@ EOF
                 my @fields = @{$tran}{qw(account txid amount time confirmations address)};
                 $_ = Date::Utility->new($_)->datetime_yyyymmdd_hhmmss for $fields[3];
                 @fields = map { encode_entities($_) } @fields;
-                $_ = '<a href="https://www.blocktrail.com/tBTC/tx/' . $_ . '">' . $_ . '</a>' for $fields[1];
+                $_ = '<a href="$blockchain_uri' . $_ . '">' . $_ . '</a>' for $fields[1];
                 print '<tr>';
                 print '<td>' . $_ . '</td>' for @fields;
                 print "</tr>\n";
