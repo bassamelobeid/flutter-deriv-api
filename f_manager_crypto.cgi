@@ -380,7 +380,7 @@ EOF
                 my @fields = @{$tran}{qw(account txid amount time confirmations address)};
                 $_ = Date::Utility->new($_)->datetime_yyyymmdd_hhmmss for $fields[3];
                 @fields = map { encode_entities($_) } @fields;
-                $_ = '<a href="$blockchain_uri' . $_ . '">' . $_ . '</a>' for $fields[1];
+                $_ = '<a target="_blank" href="' . $blockchain_uri . $_ . '">' . $_ . '</a>' for $fields[1];
                 print '<tr>';
                 print '<td>' . $_ . '</td>' for @fields;
                 print "</tr>\n";
