@@ -19,6 +19,7 @@ use warnings;
 use BOM::Platform::Config;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use LandingCompany::Registry;
+use Format::Util::Numbers qw/financialrounding/;
 
 local $\ = undef;    # Sigh.
 
@@ -61,7 +62,7 @@ has _usd_rates => (
 );
 
 sub _build__usd_rates {
-    return {map { $_ => in_USD(1, $_) } grep { $_ !~ /^(?:BTC|LTC|ETH)$/ } LandingCompany::Registry->new()->all_currencies};
+    return {map { $_ => in_USD(1, $_) } grep { $_ !~ /^ETC$/ } LandingCompany::Registry->new()->all_currencies};
 }
 
 sub amount_in_usd {
@@ -107,6 +108,25 @@ has live_open_bets => (
 sub _build_live_open_bets {
     my $self = shift;
     return $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id');
+}
+
+has live_open_ico => (
+    isa        => 'HashRef',
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_live_open_ico {
+    my $self = shift;
+    my $live_open_ico = $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id');
+
+    foreach my $c (keys %$live_open_ico) {
+        $live_open_ico->{$c}->{per_token_bid_price_USD} =
+            financialrounding('price', 'USD', in_USD($live_open_ico->{$c}->{per_token_bid_price}, $live_open_ico->{$c}->{currency_code}));
+
+    }
+    return $live_open_ico;
+
 }
 
 sub generate {
