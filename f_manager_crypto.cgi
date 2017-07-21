@@ -325,7 +325,7 @@ if ($page eq 'Withdrawal Transactions') {
     }
 
     my @hdr = ('Client ID', 'Type', 'Address', 'Amount', 'Status', 'Transaction date', 'Confirmations', 'Transaction ID', 'Errors');
-    print '<table style="width:100%;" border="1"><thead><tr>';
+    print '<table style="width:100%;" border="1" class="sortable"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
     my $blockchain_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/' : 'https://blockchain.info/tx/');
