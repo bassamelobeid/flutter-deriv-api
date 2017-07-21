@@ -88,9 +88,8 @@ sub get_matched_clients_by_broker {
     foreach my $c (@$clients) {
         my $client = Client::Account->new({loginid => $c});
         my $list = BOM::Platform::Client::Sanctions->new({
-                client     => $client,
-                brand      => $brand,
-                skip_email => 1,
+                client => $client,
+                brand  => $brand,
             })->check();
         push @matched, [$client, $list] if $list;
     }
