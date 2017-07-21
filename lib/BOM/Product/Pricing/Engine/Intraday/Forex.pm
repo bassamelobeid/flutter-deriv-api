@@ -399,17 +399,22 @@ sub economic_events_spot_risk_markup {
 sub vol_spread_markup {
     my $self = shift;
 
-    my $bet               = $self->bet;
-    my $two_hour_vol      = 0.07;                                                    # fixed 7% volatility
-    my $twenty_minute_vol = $bet->empirical_volsurface->get_historical_volatility({
+    my $bet                   = $self->bet;
+    my $long_term_average_vol = 0.07;                                                    # fixed 7% volatility
+    my $twenty_minute_vol     = $bet->empirical_volsurface->get_historical_volatility({
         from  => $bet->effective_start,
         to    => $bet->date_expiry,
         ticks => $bet->ticks_for_volatility_calculation,
     });
 
-    my $vol_spread = $two_hour_vol - $twenty_minute_vol;
+    my $vega = do {
+        local $bet->atm_vols->{fordom} = $long_term_average_vol;
+        $bet->greek_engine->get_greek('vega');
+    };
+
+    my $vol_spread = $long_term_average_vol - $twenty_minute_vol;
     return Pricing::Engine::Markup::VolSpread->new(
-        bet_vega   => $bet->vega,
+        bet_vega   => $vega,
         vol_spread => $vol_spread,
     )->markup;
 }
