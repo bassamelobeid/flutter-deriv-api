@@ -63,7 +63,10 @@ sub check {
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
 
-    my $message = "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list found in [$found_in_list].";
+    my $message =
+          "UN Sanctions: $client_loginid suspected ($client_name)\n"
+        . "Check possible match in UN sanctions list found in [$found_in_list, "
+        . Date::Utility->new($sanctions->last_updated($found_in_list))->date . "].";
 
     # do not add another note & block if client is already disabled
     if (!$client->get_status('disabled')) {
