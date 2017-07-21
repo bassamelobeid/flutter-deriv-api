@@ -50,9 +50,9 @@ Bar("Actions");
 
 use POSIX ();
 my $now = Date::Utility->new;
-my $start_date = request()->param('start_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 0, $now->month, $now->year);
+my $start_date = request()->param('start_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 1, $now->month - 1, $now->year - 1900);
 $start_date = Date::Utility->new($start_date) unless ref $start_date;
-my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, -1, $now->month + 1, $now->year);
+my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 0, $now->month, $now->year - 1900);
 $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
