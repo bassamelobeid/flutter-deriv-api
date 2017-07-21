@@ -31,9 +31,15 @@ sub validate_trx_sell {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
+    my @client_validation_method = qw/ check_trade_status _validate_available_currency _validate_currency /;
+    push @client_validation_method, '_validate_iom_withdrawal_limit' unless $self->transaction->contract->is_binaryico;
+
+    my @contract_validation_method = qw/_is_valid_to_sell/;
+    push @contract_validation_method, qw(_validate_sell_pricing_adjustment _validate_date_pricing) unless $self->transaction->contract->is_binaryico;
+
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
-        for (qw/ check_trade_status _validate_iom_withdrawal_limit _validate_available_currency _validate_currency /) {
+        foreach my $method (@client_validation_method) {
             my $res = $self->$_($c->{client});
             next unless $res;
             if ($self->transaction && $self->transaction->multiple) {
@@ -44,17 +50,12 @@ sub validate_trx_sell {
             return $res;
         }
     }
-    for (qw/ _is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing /) {
-        my $res = $self->$_();
+
+    foreach my $c_method (@contract_validation_method) {
+        my $res = $self->$c_method();
         return $res if $res;
     }
     return;
-}
-
-sub validate_trx_sell_ico {
-    my $self = shift;
-
-    return $self->_is_valid_to_sell();
 }
 
 sub validate_trx_buy {
