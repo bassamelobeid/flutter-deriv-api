@@ -27,11 +27,11 @@ sub check_expiry_conditions {
         $end_epoch = $self->date_pricing->epoch;
     }
 
-    ($high, $low, $close) = @{
+    ($high, $low) = @{
         $self->underlying->get_high_low_for_period({
                 start => $start_epoch,
                 end   => $end_epoch,
-            })}{'high', 'low', 'close'};
+            })}{'high', 'low'};
 
     if ($self->exit_tick) {
         my $value = $high - $low;
