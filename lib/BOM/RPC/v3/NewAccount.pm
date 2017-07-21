@@ -127,7 +127,8 @@ sub email_generator {
                 message => '<div style="line-height:200%;color:#333333;font-size:15px;">'
                     . BOM::Platform::Context::localize(
                     '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_1]</p>',
-                    $params->{website_name})
+                    $website_name
+                    )
                     . '</div>'
             );
         },
@@ -139,20 +140,24 @@ sub email_generator {
                 ? BOM::Platform::Context::localize(
                 '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the below link:</p>[_1]<p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
                 $gen_verify_button->('payment_withdraw'),
-                $params->{website_name})
+                $website_name
+                )
                 : BOM::Platform::Context::localize(
                 '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                $code, $params->{website_name});
+                $code, $website_name
+                );
 
             my $payment_withdraw_agent =
                 $verification_uri
                 ? BOM::Platform::Context::localize(
                 '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the below link:</p>[_1]<p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
                 $gen_verify_button->('payment_agent_withdraw'),
-                $params->{website_name})
+                $website_name
+                )
                 : BOM::Platform::Context::localize(
                 '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                $code, $params->{website_name});
+                $code, $website_name
+                );
 
             return (
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $website_name),
@@ -166,12 +171,13 @@ sub email_generator {
                 ? BOM::Platform::Context::localize(
                     '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by clicking the below link:</p>[_1]<p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
                     $gen_verify_button->('reset_password'),
-                    $params->{website_name}
-                ),
+                    $website_name
+                    )
                 : BOM::Platform::Context::localize(
                     '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                    $code, $params->{website_name})
-
+                    $code,
+                    $website_name
+                ),
             );
         });
 }
