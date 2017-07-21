@@ -20,7 +20,7 @@ use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Account::Real::subaccount;
-use BOM::Platform::Email;
+use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::Platform::Config;
 use BOM::Platform::Context::Request;
@@ -104,9 +104,9 @@ sub email_generator {
         return "<p><a href=\"$uri\">$uri</a></p>";
     };
 
-    return (
+    return {
         account_opening_new => sub {
-            return (
+            return {
                 subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $website_name),
                 message => $verification_uri
                 ? BOM::Platform::Context::localize(
@@ -119,10 +119,10 @@ sub email_generator {
                     $code,
                     $website_name
                 ),
-            );
+            };
         },
         account_opening_existing => sub {
-            return (
+            return {
                 subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $website_name),
                 message => '<div style="line-height:200%;color:#333333;font-size:15px;">'
                     . BOM::Platform::Context::localize(
@@ -130,7 +130,7 @@ sub email_generator {
                     $website_name
                     )
                     . '</div>'
-            );
+            };
         },
         payment_withdraw => sub {
             my $type_call = shift;
@@ -159,13 +159,13 @@ sub email_generator {
                 $code, $website_name
                 );
 
-            return (
+            return {
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $website_name),
                 message => $type_call eq 'payment_withdraw' ? $payment_withdraw : $payment_withdraw_agent,
-            );
+            };
         },
         reset_password => sub {
-            return (
+            return {
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $website_name),
                 message => $verification_uri
                 ? BOM::Platform::Context::localize(
@@ -178,16 +178,19 @@ sub email_generator {
                     $code,
                     $website_name
                 ),
-            );
-        });
+            };
+        }
+    };
 }
 
-sub send_email {
+sub request_email {
     my ($email, $args) = @_;
+    use Data::Dumper;
+
     my $subject = $args->{subject};
     my $message = $args->{message};
 
-    return BOM::Platform::Email->send_email({
+    return send_email({
         from                  => Brands->new(name => request()->brand)->emails('support'),
         to                    => $email,
         subject               => $subject,
@@ -235,16 +238,16 @@ sub verify_email {
             $skip_email = 1 unless BOM::Platform::User->new({email => $email});
         }
 
-        send_email($email, $email_contents->{payment_withdraw}->($type_call)) unless $skip_email;
+        request_email($email, $email_contents->{payment_withdraw}->($type_call)) unless $skip_email;
     };
 
     if (BOM::Platform::User->new({email => $email}) && $type eq 'reset_password') {
-        send_email($email, $email_contents->{reset_password}->());
+        request_email($email, $email_contents->{reset_password}->());
     } elsif ($type eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $email})) {
-            send_email($email, $email_contents->{account_opening_new}->());
+            request_email($email, $email_contents->{account_opening_new}->());
         } else {
-            send_email($email, $email_contents->{account_opening_existing}->());
+            request_email($email, $email_contents->{account_opening_existing}->());
         }
     } elsif ($type eq 'paymentagent_withdraw') {
         $payment_sub->($type);
