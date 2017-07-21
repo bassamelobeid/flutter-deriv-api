@@ -285,7 +285,7 @@ sub _get_tick_windows {
     # remove duplicate release epoch
     my %similar = ();
     foreach my $event (@$categorized_events) {
-        my $duration = max($event->{duration}, 900);
+        my $duration = min($event->{duration}, 900);
         $similar{$event->{release_epoch}} = $duration unless $similar{$event->{release_epoch}};
         $similar{$event->{release_epoch}} = max($similar{$event->{release_epoch}}, $duration);
     }
@@ -321,6 +321,12 @@ sub _get_tick_windows {
                 last if $seconds_left <= 0;
                 $end_of_period = $period->[0];
             }
+        }
+
+        # if we don't have 20 minutes worth of ticks after looping through the events,
+        # add it here.
+        if ($seconds_left > 0) {
+            push @tick_windows, [$end_of_period - $seconds_left, $end_of_period];
         }
     }
 
