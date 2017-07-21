@@ -213,7 +213,7 @@ if ($input{whattodo} eq 'uploadID') {
             }
         } elsif (!$client->citizen) {            # client citizenship presents when uploading docs (for all broker codes)
             $result .=
-                "<br /><p style=\"color:red; font-weight:bold;\">Error: Client's citizenship is unspecified. Hence, uploading documents into the system is restricted for this client.</p><br />";
+                "<br /><p style=\"color:red; font-weight:bold;\">Error: Please update client citizenship before uploading documents.</p><br />";
             next;
         }
 
