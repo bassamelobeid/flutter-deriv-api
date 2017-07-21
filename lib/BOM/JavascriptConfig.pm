@@ -31,6 +31,8 @@ sub bo_js_files_for {
         push @js_files, 'external/syntaxhighlighter/shCore.js',
             'external/syntaxhighlighter/shAutoloader.js', 'external/syntaxhighlighter/shBrushYaml.js'
             if /view_192_raw_response/;
+        push @js_files, 'external/excellentexport.min.js'
+            if /f_manager_crypto/;
     }
 
     my $base_dir = Mojo::URL->new(BOM::Platform::Runtime->instance->app_config->cgi->backoffice->static_url);
