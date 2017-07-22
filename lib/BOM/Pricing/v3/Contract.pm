@@ -335,8 +335,14 @@ sub get_bid {
             shortcode           => $contract->shortcode,
             payout              => $contract->payout,
             contract_type       => $contract->code,
-            defined($contract->status) ? (status => $contract->status) : (),
+            #defined($contract->status) ? (status => $contract->status) : (),
         };
+
+        if ($contract->status) {
+            $response->{status} = $contract->status;
+        } elsif ($sell_time < $response->{date_expiry}) {
+            $response->{status} = 'sold';
+        }
 
         if (not $contract->may_settle_automatically
             and $contract->missing_market_data)
