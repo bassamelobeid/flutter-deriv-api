@@ -664,7 +664,7 @@ sub asset_index {
             },
             name => sub {
                 localize($_->display_name);
-                }
+            }
         },
         underlyings => {
             code => sub {
@@ -672,7 +672,7 @@ sub asset_index {
             },
             name => sub {
                 localize($_->display_name);
-                }
+            }
         },
         contract_categories => {
             code => sub {
