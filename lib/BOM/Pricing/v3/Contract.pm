@@ -335,12 +335,11 @@ sub get_bid {
             shortcode           => $contract->shortcode,
             payout              => $contract->payout,
             contract_type       => $contract->code,
-            #defined($contract->status) ? (status => $contract->status) : (),
         };
 
         if ($contract->status) {
             $response->{status} = $contract->status;
-        } elsif ($is_sold) { # && $sell_time < $response->{date_expiry}
+        } elsif ($is_sold) {    # no $contract->status but $is_sold means this contract is sold by hand earlier
             $response->{status} = 'sold';
         }
 
