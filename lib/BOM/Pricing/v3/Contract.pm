@@ -340,7 +340,7 @@ sub get_bid {
 
         if ($contract->status) {
             $response->{status} = $contract->status;
-        } elsif ($sell_time < $response->{date_expiry}) {
+        } elsif ($is_sold) { # && $sell_time < $response->{date_expiry}
             $response->{status} = 'sold';
         }
 
