@@ -12,7 +12,7 @@
     },
     "payout_currencies": {
       "type": "array",
-      "minItems": 4,
+      "minItems": 5,
       "required": "1",
       "items": {
         "type": "string",
