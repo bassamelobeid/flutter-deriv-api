@@ -62,8 +62,10 @@ sub website_status {
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,
         clients_country          => $params->{country_code},
         supported_languages      => BOM::Platform::Runtime->instance->app_config->cgi->supported_languages,
-        currencies_config =>
-            {map { $_ => {fractional_digits => $amt_precision->{$_}, type => ($_ =~ /^BTC$/ ? "crypto" : "fiat")} } keys %$amt_precision},
+        currencies_config        => {
+            map { $_ => {fractional_digits => $amt_precision->{$_}, type => ($_ =~ /^BTC$/ ? "crypto" : "fiat")} }
+            grep { $_ !~ /^(?:LTC|ETH|ETC)$/ } keys %$amt_precision
+        },
         ico_status => BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_ended == 1 ? 'closed' : 'open',
     };
 }
