@@ -208,7 +208,6 @@ subtest 'subscriptions' => sub {
 
     $response = $t->await::forget_all({forget_all => "proposal_array"});
     is($t->app->pricing_subscriptions()->{$channel}, undef, "Forgotten");
-                  
 };
 
 
