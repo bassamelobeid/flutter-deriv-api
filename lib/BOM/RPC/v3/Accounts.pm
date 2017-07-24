@@ -693,11 +693,18 @@ sub set_settings {
                 });
         }
 
-        if ($client->account_opening_reason) {
+        if (    $client->account_opening_reason
+            and $args->{account_opening_reason}
+            and $args->{account_opening_reason} ne $client->account_opening_reason)
+        {
             # cannot set account_opening_reason with a different value
-            $err = BOM::RPC::v3::Utility::permission_error()
-                if $args->{account_opening_reason} and $args->{account_opening_reason} ne $client->account_opening_reason;
-        } elsif (not $args->{account_opening_reason}) {
+            $err = BOM::RPC::v3::Utility::create_error({
+                code              => 'PermissionDenied',
+                message_to_client => localize("Value of account_opening_reason cannot be changed."),
+            });
+        } elsif (not $client->account_opening_reason
+            and (not $args->{account_opening_reason} or $args->{account_opening_reason} !~ /^[A-Za-z]+(?:\ [A-Za-z]+)*$/))
+        {
             # required to set account_opening_reason if empty
             $err = BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
@@ -748,15 +755,14 @@ sub set_settings {
                 localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')}
     ) if ($client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
 
-    my $now                    = Date::Utility->new;
-    my $address1               = $args->{'address_line_1'} // $client->address_1;
-    my $address2               = ($args->{'address_line_2'} // $client->address_2) // '';
-    my $addressTown            = $args->{'address_city'} // $client->city;
-    my $addressState           = ($args->{'address_state'} // $client->state) // '';
-    my $addressPostcode        = $args->{'address_postcode'} // $client->postcode;
-    my $phone                  = ($args->{'phone'} // $client->phone) // '';
-    my $birth_place            = $args->{place_of_birth} // $client->place_of_birth;
-    my $account_opening_reason = $client->account_opening_reason // $args->{account_opening_reason};
+    my $now             = Date::Utility->new;
+    my $address1        = $args->{'address_line_1'} // $client->address_1;
+    my $address2        = ($args->{'address_line_2'} // $client->address_2) // '';
+    my $addressTown     = $args->{'address_city'} // $client->city;
+    my $addressState    = ($args->{'address_state'} // $client->state) // '';
+    my $addressPostcode = $args->{'address_postcode'} // $client->postcode;
+    my $phone           = ($args->{'phone'} // $client->phone) // '';
+    my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
 
     # filter out irrelevant spaces and commas
     foreach ($address1, $address2, $addressTown) { $_ =~ s/(?:,?\s*,)+\s*/, /g }
@@ -784,7 +790,7 @@ sub set_settings {
     $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
     $client->phone($phone);
     $client->place_of_birth($birth_place);
-    $client->account_opening_reason($account_opening_reason);
+    $client->account_opening_reason($args->{account_opening_reason}) unless $client->account_opening_reason;
 
     $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 

@@ -1223,7 +1223,11 @@ subtest $method => sub {
 
     $full_args{account_opening_reason} = 'Hedging';
     $params->{args} = {%full_args};
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'cannot send account_opening_reason with a different value');
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Value of account_opening_reason cannot be changed.',
+        'cannot send account_opening_reason with a different value'
+    );
     delete $full_args{account_opening_reason};
 
     $params->{args} = {%full_args};
