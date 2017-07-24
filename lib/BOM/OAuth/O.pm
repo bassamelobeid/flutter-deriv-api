@@ -42,7 +42,6 @@ sub authorize {
 
     my $client;
     ## try to retrieve client from session
-    ## we are not able to retrieve client from edge session due to its not saved
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
         and defang($c->param('login')))
