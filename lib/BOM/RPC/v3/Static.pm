@@ -56,7 +56,7 @@ sub states_list {
 sub website_status {
     my $params = shift;
 
-    my $amt_precision = Format::Util::Numbers::get_precision_config()->{amount};
+    my $amt_precision = Format::Util::Numbers::get_precision_config()->{price};
     my $currencies_config =
         {map { $_ => {fractional_digits => $amt_precision->{$_}, type => "fiat"} } grep { $_ !~ /^(?:BTC|LTC|ETH|ETC)$/ } keys %$amt_precision};
 
