@@ -112,6 +112,13 @@ print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</s
 }
 print '<INPUT type="submit" value="Run tool" name="view_action"/>';
 print '</FORM>';
+print '<h3>Manual wallet functions</h3>';
+print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
+print '<INPUT type="hidden" name="command" value="getnewaddress">';
+print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
+print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
+print '<INPUT type="submit" value="Get new deposit address" name="view_action"/>';
+print '</FORM>';
 
 unless ($page) {
     code_exit_BO();
@@ -409,5 +416,8 @@ EOF
     } else {
         die 'Invalid BTC command: ' . $cmd;
     }
+} elsif ($page eq 'Get new deposit address') {
+    my $rslt = $rpc_client->getnewaddress('manual');
+    print '<p>New BTC address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
 }
 code_exit_BO();
