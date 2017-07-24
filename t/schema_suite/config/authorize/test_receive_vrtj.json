@@ -14,7 +14,7 @@
         },
         "balance": {
             "type": "number",
-            "pattern": "^1000000.00$",
+            "pattern": "^1000000$",
             "required": "1"
         },
         "loginid": {
