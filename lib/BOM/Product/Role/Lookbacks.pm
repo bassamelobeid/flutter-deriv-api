@@ -125,8 +125,8 @@ override shortcode => sub {
 override allowed_slippage => sub {
     my $self = shift;
 
-    #This is just a dummy value just for testing and development.
-    return 0.05;
+    #We will use same value as binary for now.
+    return 0.01;
 };
 
 1;
