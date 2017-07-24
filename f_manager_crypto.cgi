@@ -418,6 +418,6 @@ EOF
     }
 } elsif($page eq 'Get new deposit address') {
     my $rslt = $rpc_client->getnewaddress('manual');
-            print encode_entities(Dumper $rslt);
+    print '<p>New BTC address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
 }
 code_exit_BO();
