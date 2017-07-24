@@ -99,4 +99,8 @@ sub _build_priced_with_intraday_model {
     return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
 }
 
+sub is_binary {
+    return 1;
+}
+
 1;

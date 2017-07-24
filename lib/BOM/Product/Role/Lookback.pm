@@ -93,9 +93,9 @@ override _validate_price => sub {
     return @err;
 };
 
-override is_binary => sub {
+sub is_binary {
     return 0;
-};
+}
 
 override shortcode => sub {
     my $self = shift;

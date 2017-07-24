@@ -927,10 +927,6 @@ sub extra_info {
     return \@extra;
 }
 
-sub is_binary {
-    return 1;
-}
-
 sub pricing_details {
     my ($self, $action) = @_;
     # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
