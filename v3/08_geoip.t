@@ -30,7 +30,7 @@ subtest 'country code Malaysia' => sub {
         });
     $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
     my $res = decode_json($t->message->[1]);
-    cmp_deeply($res->{payout_currencies}, bag(qw(USD EUR GBP AUD)), 'payout currencies are correct') or note explain $res;
+    cmp_deeply($res->{payout_currencies}, bag(qw(USD EUR GBP AUD BTC)), 'payout currencies are correct') or note explain $res;
     $t->finish_ok;
     done_testing;
 };
