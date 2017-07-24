@@ -9,14 +9,20 @@ use BOM::Database::Model::UserConnect;
 use BOM::Platform::User;
 use BOM::Platform::Account::Virtual;
 use Try::Tiny;
+use URI::QueryParam;
 
 sub callback {
     my $c = shift;
 
-    my $connection_token = $c->param('connection_token');
-    my $redirect_uri     = $c->req->url->path('/oauth2/authorize')->to_abs;
+    # Microsoft Edge and Internet Exporer browsers implementation has a drawback
+    # in carrying parameters through responses. Hence, we are retrieving the token
+    # from the stash
+    my $referer_url               = $c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0];
+    my $provider_connection_token = URI->new($referer_url)->query_param('provider_connection_token');
+    my $connection_token          = $c->param('connection_token') // $provider_connection_token // '';
 
-    # redirect client to auth page if there is no connection token
+    my $redirect_uri = $c->req->url->path('/oauth2/authorize')->to_abs;
+    # redirect client to authorize subroutine if there is no connection token provided
     return $c->redirect_to($redirect_uri) unless $connection_token;
 
     my $oneall = WWW::OneAll->new(
@@ -59,9 +65,8 @@ sub callback {
 
 # simple redirect since .html does not support POST from oneall
 sub redirect {
-    my $c = shift;
-
-    my $dir = $c->param('dir') // '';
+    my $c                = shift;
+    my $dir              = $c->param('dir') // '';
     my $connection_token = $c->param('connection_token') // '';
 
     return $c->redirect_to($dir . '?connection_token=' . $connection_token);

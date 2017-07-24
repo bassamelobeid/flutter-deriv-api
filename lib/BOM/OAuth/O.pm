@@ -19,8 +19,6 @@ use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 
-use Data::Dumper;
-
 sub _oauth_model {
     return BOM::Database::Model::OAuth->new;
 }
@@ -38,13 +36,13 @@ sub authorize {
     my $app         = $oauth_model->verify_app($app_id);
     return $c->_bad_request('the request was missing valid app_id') unless $app;
 
-    my $redirect_uri = $app->{redirect_uri};
-
     ## setup oneall callback url
     my $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
     $c->stash('oneall_callback' => $oneall_callback);
 
     my $client;
+    ## try to retrieve client from session
+    ## we are not able to retrieve client from edge session due to its not saved
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
         and defang($c->param('login')))
@@ -53,7 +51,7 @@ sub authorize {
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
     } elsif ($c->req->method eq 'POST' and $c->session('_is_logined')) {
-        # get loginid from Mojo Session
+        ## get loginid from Mojo Session
         $client = $c->_get_client;
     } elsif ($c->session('_oneall_user_id')) {
         ## from Oneall Social Login
@@ -62,8 +60,10 @@ sub authorize {
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
     }
+
     my $brand_name = $c->stash('brand')->name;
-    ## check user is logined
+
+    ## show error when no client found in session
     unless ($client) {
         ## taken error from oneall
         my $error = '';
@@ -82,9 +82,10 @@ sub authorize {
         );
     }
 
-    my $loginid = $client->loginid;
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
 
+    ## show error if stash brand name is not in the list
+    ## of allowed brands for landing company
     return $c->render(
         template  => _get_login_template_name($brand_name),
         layout    => $brand_name,
@@ -93,6 +94,8 @@ sub authorize {
         r         => $c->stash('request'),
         csrftoken => $c->csrf_token,
     ) if (grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands});
+
+    my $redirect_uri = $app->{redirect_uri};
 
     ## confirm scopes
     my $is_all_approved = 0;
@@ -115,25 +118,20 @@ sub authorize {
         }
     }
 
-    ## when APP_ID is 1 we do not show the scope confirm screen
+    my $loginid = $client->loginid;
     $is_all_approved = 1 if $app_id eq '1';
-
-    ## check if it's confirmed
     $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid);
-    unless ($is_all_approved) {
-        ## Getting permission scope of APP ID
-        my @scopes = @{$app->{scopes}};
-        ## show scope confirms
-        return $c->render(
-            template  => $brand_name . '/scope_confirms',
-            layout    => $brand_name,
-            app       => $app,
-            client    => $client,
-            scopes    => \@scopes,
-            r         => $c->stash('request'),
-            csrftoken => $c->csrf_token,
-        );
-    }
+    ## show scope confirms if not yet approved
+    ## do not show the scope confirm screen if APP ID is 1
+    return $c->render(
+        template  => $brand_name . '/scope_confirms',
+        layout    => $brand_name,
+        app       => $app,
+        client    => $client,
+        scopes    => \@{$app->{scopes}},
+        r         => $c->stash('request'),
+        csrftoken => $c->csrf_token,
+    ) unless $is_all_approved;
 
     ## setting up client ip
     my $client_ip = $c->client_ip;
@@ -148,7 +146,6 @@ sub authorize {
     my @params;
     foreach my $c1 ($user->clients) {
         my ($access_token) = $oauth_model->store_access_token_only($app_id, $c1->loginid, $ua_fingerprint);
-
         push @params,
             (
             'acct' . $i  => $c1->loginid,
