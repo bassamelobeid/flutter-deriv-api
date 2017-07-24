@@ -26,7 +26,7 @@ sub _oauth_model {
 sub authorize {
     my $c = shift;
 
-    ## APP_ID verification logic
+    # APP_ID verification logic
     my ($app_id, $state, $response_type) = map { defang($c->param($_)) // undef } qw/ app_id state response_type /;
     # $response_type ||= 'code';    # default to Authorization Code
     $response_type = 'token';    # only support token FIXME: remove response_type arg from function
@@ -36,12 +36,12 @@ sub authorize {
     my $app         = $oauth_model->verify_app($app_id);
     return $c->_bad_request('the request was missing valid app_id') unless $app;
 
-    ## setup oneall callback url
+    # setup oneall callback url
     my $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
     $c->stash('oneall_callback' => $oneall_callback);
 
     my $client;
-    ## try to retrieve client from session
+    # try to retrieve client from session
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
         and defang($c->param('login')))
@@ -50,10 +50,10 @@ sub authorize {
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
     } elsif ($c->req->method eq 'POST' and $c->session('_is_logined')) {
-        ## get loginid from Mojo Session
+        # get loginid from Mojo Session
         $client = $c->_get_client;
     } elsif ($c->session('_oneall_user_id')) {
-        ## from Oneall Social Login
+        # from Oneall Social Login
         my $oneall_user_id = $c->session('_oneall_user_id');
         $client = $c->_login($app, $oneall_user_id) or return;
         $c->session('_is_logined', 1);
@@ -62,15 +62,15 @@ sub authorize {
 
     my $brand_name = $c->stash('brand')->name;
 
-    ## show error when no client found in session
+    # show error when no client found in session
     unless ($client) {
-        ## taken error from oneall
+        # taken error from oneall
         my $error = '';
         if ($error = $c->session('_oneall_error')) {
             delete $c->session->{_oneall_error};
         }
 
-        ## show login form
+        # show login form
         return $c->render(
             template  => _get_login_template_name($brand_name),
             layout    => $brand_name,
@@ -83,8 +83,8 @@ sub authorize {
 
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
 
-    ## show error if stash brand name is not in the list
-    ## of allowed brands for landing company
+    # show error if stash brand name is not in the list
+    # of allowed brands for landing company
     return $c->render(
         template  => _get_login_template_name($brand_name),
         layout    => $brand_name,
@@ -96,14 +96,14 @@ sub authorize {
 
     my $redirect_uri = $app->{redirect_uri};
 
-    ## confirm scopes
+    # confirm scopes
     my $is_all_approved = 0;
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
         and (defang($c->param('cancel_scopes')) || defang($c->param('confirm_scopes'))))
     {
         if (defang($c->param('confirm_scopes'))) {
-            ## approval on all loginids
+            # approval on all loginids
             foreach my $c1 ($user->clients) {
                 $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
             }
@@ -111,7 +111,7 @@ sub authorize {
             my $uri = Mojo::URL->new($redirect_uri);
             $uri .= '#error=scope_denied';
             $uri .= '&state=' . $state if defined $state;
-            ## clear session for oneall login when scope is canceled
+            # clear session for oneall login when scope is canceled
             delete $c->session->{_oneall_user_id};
             return $c->redirect_to($uri);
         }
@@ -120,8 +120,8 @@ sub authorize {
     my $loginid = $client->loginid;
     $is_all_approved = 1 if $app_id eq '1';
     $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid);
-    ## show scope confirms if not yet approved
-    ## do not show the scope confirm screen if APP ID is 1
+    # show scope confirms if not yet approved
+    # do not show the scope confirm screen if APP ID is 1
     return $c->render(
         template  => $brand_name . '/scope_confirms',
         layout    => $brand_name,
@@ -132,7 +132,7 @@ sub authorize {
         csrftoken => $c->csrf_token,
     ) unless $is_all_approved;
 
-    ## setting up client ip
+    # setting up client ip
     my $client_ip = $c->client_ip;
     if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
         $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
@@ -140,7 +140,7 @@ sub authorize {
 
     my $ua_fingerprint = md5_hex($app_id . ($client_ip // '') . ($c->req->headers->header('User-Agent') // ''));
 
-    ## create tokens for all loginids
+    # create tokens for all loginids
     my $i = 1;
     my @params;
     foreach my $c1 ($user->clients) {
@@ -159,7 +159,7 @@ sub authorize {
     my $uri = Mojo::URL->new($redirect_uri);
     $uri->query(\@params);
 
-    ## clear login session
+    # clear login session
     delete $c->session->{_is_logined};
     delete $c->session->{_loginid};
     delete $c->session->{_oneall_user_id};

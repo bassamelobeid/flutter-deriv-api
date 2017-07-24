@@ -93,7 +93,7 @@ sub __create_virtual_user {
         });
     die $acc->{error} if $acc->{error};
 
-    ## set social_signup flag
+    # set social_signup flag
     $acc->{client}->set_status('social_signup', 'system', '1');
     $acc->{client}->save;
 
