@@ -295,9 +295,15 @@ sub _get_tick_windows {
     my @combined;
     for (my $i = 0; $i <= $#event_periods; $i++) {
         my $curr = $event_periods[$i];
-        my $next = $event_periods[$i + 1];
-        if (defined $next and $next->[1] >= $curr->[0]) {
-            push @combined, [$next->[0], $curr->[1]];
+        unless (@combined) {
+            push @combined, $curr;
+            next;
+        }
+
+        if ($curr->[1] >= $combined[-1][0]) {
+            $combined[-1][0] = $curr->[0];
+            $combined[-1][1] = $curr->[1] if $curr->[1] > $combined[-1][1];    # duration of current event spans across previously added event
+            next;
         } else {
             push @combined, $curr;
         }
