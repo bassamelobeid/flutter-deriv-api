@@ -1,6 +1,6 @@
 <p><b>Update economic event manually with the tool below: </b></p>
 
-<table>
+<table id='economic_event_form'>
     <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
     <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The time given on forexfactory is GMT-4)</td></tr>
     <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
@@ -18,15 +18,15 @@
         <td> : <input type="checkbox" name="is_tentative" value="1"\> </td>
     </tr>
     <tr><td>Estimated Announcement Date</td><td> : <INPUT type="text" name="estimated_release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The tentative date given on forexfactory is GMT-4)</td></tr>
-        <tr><INPUT type="hidden" name="save_economic_event" value="1"></tr>
-    <tr><td></td><td><INPUT type="submit" name="save_eco" value="Save"></td></tr>
+    <tr><td></td><td><button onclick="saveEvent()">Save</td><td class='save_result'></td></tr>
+
     <tr><td>Delete with ID</td><td> : <INPUT type="text" name="event_id"></td></tr>
     <tr><td></td><td><button onclick="deleteEvent()">Delete</button></td><td class='delete_result'></td></tr>
 </table>
 
 <p><b>List of Economic Events today</b></p>
 
-<table border='1'>
+<table id='economic_event_list' border='1'>
     <tr>
         <td><b>Event ID</b></td>
         <td><b>Event Name</b></td>
@@ -52,6 +52,52 @@
 </table>
 
 <script>
+    function saveEvent() {
+        var el = \$('table#economic_event_form');
+        if (el) {
+            var name = el.find('input[name="event_name"]').val();
+            var release_date = el.find('input[name="release_date"]').val();
+            var symbol = el.find('input[name="symbol"]').val();
+            var impact = el.find('select[name="impact"]').val();
+            var custom_impact = el.find('input[name="custom_magnitude"]').val();
+            var is_tentative = el.find('input[name="is_tentative"]:checked').val();
+            var estimated_release_date = el.find('input[name="estimated_release_date"]').val();
+            var event_source = el.find('input[name="source"]').val();
+            \$.ajax({
+                    url: "[% ee_upload_url | none %]",
+                    data: {
+                        save_event: "1",
+                        event_name: name,
+                        symbol: symbol,
+                        release_date: release_date,
+                        impact: impact,
+                        source: event_source,
+                        custom_magnitude: custom_impact,
+                        is_tentative: is_tentative,
+                        estimated_release_date: estimated_release_date
+                    },
+                    success: function(data){
+                        var result = \$("td.save_result");
+                        var obj = \$.parseJSON(data);
+                        if (obj.id) {
+                            var list_el = \$('table#economic_event_list');
+                            var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td>';
+                            if (obj.info) {
+                                \$.each(obj.info, function(i, item) {
+                                    to_append += '<p>'+item+'</p>';
+                                });
+                            }
+                            to_append += '</td></tr>';
+                            list_el.append(to_append);
+                            list_el.find('tr#'+obj.id).css('color', 'green');
+                            result.text('Economic event saved. ID ' + obj.id).css('color', 'green');
+                        } else {
+                            result.text('Fail to save economic event. ERR - ' + obj.error).css('color', 'red');
+                        }
+                    }
+            });
+        }
+    }
     function deleteEvent() {
         var id = \$("input[name='event_id']").val();
         if (id) {
@@ -72,5 +118,5 @@
                     }
             });
         }
-    };
+    }
 </script>

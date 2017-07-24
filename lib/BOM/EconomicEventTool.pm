@@ -17,30 +17,40 @@ sub _get_economic_events {
     return $eec->list_economic_events_for_date() // [];
 }
 
+my @symbols;
+
+sub get_affected_underlying_symbols {
+    return @symbols if @symbols;
+
+    my $fb = get_offerings_flyby();
+    @symbols = $fb->query({submarket => 'major_pairs'}, ['underlying_symbol']);
+    return @symbols;
+}
+
 sub generate_economic_event_tool {
     my $url = shift;
 
-    my $events    = _get_economic_events();
-    my $fb        = get_offerings_flyby();
-    my @u_symbols = $fb->query({submarket => 'major_pairs'}, ['underlying_symbol']);
-    my %affected_symbol_by_event;
-
-    foreach my $event (@$events) {
-        my @by_symbols = grep { $_ } map {
-            my $cat = Volatility::Seasonality::categorize_events($_, [$event]);
-            (@$cat) ? to_json({$_ => $cat}) : '';
-        } @u_symbols;
-        $event->{info}         = \@by_symbols;
-        $event->{release_date} = Date::Utility->new($event->{release_date})->datetime;
-    }
+    my @events = map { get_info($_) } @{_get_economic_events()};
 
     return BOM::Backoffice::Request::template->process(
         'backoffice/economic_event_forms.html.tt',
         {
             ee_upload_url => $url,
-            events        => $events,
+            events        => \@events,
         },
     ) || die BOM::Backoffice::Request::template->error;
+}
+
+sub get_info {
+    my $event = shift;
+    my @by_symbols = grep { $_ } map {
+        my $cat = Volatility::Seasonality::categorize_events($_, [$event]);
+        (@$cat) ? to_json({$_ => $cat}) : '';
+    } get_affected_underlying_symbols();
+    $event->{info}         = \@by_symbols;
+    $event->{release_date} = Date::Utility->new($event->{release_date})->datetime;
+
+    return $event;
 }
 
 1;
