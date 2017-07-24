@@ -808,13 +808,11 @@ sub set_settings {
         map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($client->salutation),
         $client->first_name, $client->last_name
     ) . "\n\n";
-    my $state_text;
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
     # state lookup by id
-    my $state_value = $client->state;
     my ($state_text) =
-        sort map { $_->{text} } grep { $_->{value} eq $state_value } @{BOM::Platform::Locale::get_state_option($client->residence) || []};
+        sort map { $_->{text} } grep { $_->{value} eq $client->state } @{BOM::Platform::Locale::get_state_option($client->residence) || []};
     my $residence_country = Locale::Country::code2country($client->residence);
     my $full_address = join(', ', grep { /\S/ } (map { $client->$_ } qw(address_1 address_2 city)), $state_text, $client->postcode);
 
