@@ -416,7 +416,7 @@ EOF
     } else {
         die 'Invalid BTC command: ' . $cmd;
     }
-} elsif($page eq 'Get new deposit address') {
+} elsif ($page eq 'Get new deposit address') {
     my $rslt = $rpc_client->getnewaddress('manual');
     print '<p>New BTC address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
 }
