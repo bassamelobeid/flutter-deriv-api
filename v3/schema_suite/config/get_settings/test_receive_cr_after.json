@@ -96,6 +96,11 @@
                 },
                 "tax_identification_number": {
                     "type": ""
+                },
+                "account_opening_reason": {
+                    "type": "string",
+                    "pattern": "^Speculative",
+                    "required": "1"
                 }
             },
             "required": "1"
