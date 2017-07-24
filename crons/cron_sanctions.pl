@@ -90,6 +90,7 @@ sub get_matched_clients_by_broker {
         my $list = BOM::Platform::Client::Sanctions->new({
                 client => $client,
                 brand  => $brand,
+                type   => 'C',
             })->check();
         push @matched, [$client, $list] if $list;
     }
