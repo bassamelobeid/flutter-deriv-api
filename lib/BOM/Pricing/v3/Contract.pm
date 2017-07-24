@@ -337,10 +337,10 @@ sub get_bid {
             contract_type       => $contract->code,
         };
 
-        if ($contract->status) {
-            $response->{status} = $contract->status;
-        } elsif ($is_sold) {    # no $contract->status but $is_sold means this contract is sold by hand earlier
+        if ($sell_time && $sell_time < $contract->is_expired) {
             $response->{status} = 'sold';
+        } elsif ($contract->status) {
+            $response->{status} = $contract->status;
         }
 
         if (not $contract->may_settle_automatically
@@ -664,7 +664,7 @@ sub asset_index {
             },
             name => sub {
                 localize($_->display_name);
-            }
+                }
         },
         underlyings => {
             code => sub {
@@ -672,7 +672,7 @@ sub asset_index {
             },
             name => sub {
                 localize($_->display_name);
-            }
+                }
         },
         contract_categories => {
             code => sub {
