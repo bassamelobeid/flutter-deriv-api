@@ -19,7 +19,7 @@
         },
         "balance": {
             "type": "number",
-            "pattern": "^1000000$",
+            "pattern": "^1000000.00$",
             "required": "1"
         },
         "oauth_token": {
