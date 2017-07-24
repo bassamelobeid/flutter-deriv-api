@@ -52,10 +52,12 @@ sub check {
     return if $client->is_virtual;
 
     my $found_in_list = $sanctions->is_sanctioned($client->first_name, $client->last_name);
+
     $client->add_sanctions_check({
         type   => $self->type,
         result => $found_in_list
     });
+    $client->save;
 
     # we don't mark or log fully_authenticated clients
     return unless $found_in_list or $client->client_fully_authenticated;
