@@ -1,4 +1,4 @@
-package BOM::Product::Role::Lookbacks;
+package BOM::Product::Role::Lookback;
 
 use Moose::Role;
 use Time::Duration::Concise;
