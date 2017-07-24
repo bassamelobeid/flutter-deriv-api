@@ -314,6 +314,7 @@ sub _get_tick_windows {
         foreach my $period (@combined) {
             if (@combined == 1 and $period->[1] >= $end_of_period) {
                 push @tick_windows, [$period->[0] - $seconds_left, $period->[0]];
+                $seconds_left = 0;
             } else {
                 my $start_of_period = max($period->[1], $end_of_period - $seconds_left);
                 push @tick_windows, [$start_of_period, $end_of_period];
