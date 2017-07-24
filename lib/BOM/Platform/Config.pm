@@ -41,7 +41,7 @@ sub quants {
 }
 
 sub sanction_file {
-    return "/var/lib/binary/sanctions.json";
+    return "/var/lib/binary/sanctions.yml";
 }
 
 {
