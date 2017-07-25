@@ -104,10 +104,19 @@ sub _forget_transaction_subscription {
     my $removed_ids = [];
     my $channel     = $c->stash('transaction_channel');
     if ($channel) {
-        foreach my $type (keys %{$channel}) {
-            if ($typeoruuid eq $type or $typeoruuid eq $channel->{$type}->{uuid}) {
-                push @$removed_ids, $channel->{$type}->{uuid};
-                Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
+        # special case: proposal_open_contract as $typeoruuid passed only when forget_all is performed
+        #               transaction subscriptions of proposal_open_contract are defined as uuids
+        if ($typeoruuid eq 'proposal_open_contract') {
+            foreach my $uuid (grep { m/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/ } keys %{$channel}) {
+                push @$removed_ids, $channel->{$uuid}->{uuid};
+                Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'unsubscribe', $channel->{$uuid}->{account_id}, $uuid);
+            }
+        } else {
+            foreach my $type (keys %{$channel}) {
+                if ($typeoruuid eq $type or $typeoruuid eq $channel->{$type}->{uuid}) {
+                    push @$removed_ids, $channel->{$type}->{uuid};
+                    Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
+                }
             }
         }
     }
