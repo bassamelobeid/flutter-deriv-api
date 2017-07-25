@@ -159,12 +159,12 @@ test_schema('get_limits', $res);
 my $args = {
     "set_financial_assessment" => 1,
     %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}};
-
+my $val = delete $args->{estimated_worth};
 $t = $t->send_ok({json => $args})->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{error}->{code}, 'InputValidationFailed', 'Missing required field: estimated_worth');
 
-$args->{estimated_worth} = '$100,000 - $250,000';
+$args->{estimated_worth} = $val;
 $t = $t->send_ok({json => $args})->message_ok;
 $res = decode_json($t->message->[1]);
 cmp_ok($res->{set_financial_assessment}->{score}, "<", 60, "Correct score");
