@@ -23,7 +23,7 @@ Readonly our $BET_CLASS_HIGHER_LOWER_BET => 'higher_lower_bet';
 Readonly our $BET_CLASS_TOUCH_BET        => 'touch_bet';
 Readonly our $BET_CLASS_DIGIT_BET        => 'digit_bet';
 Readonly our $BET_CLASS_SPREAD_BET       => 'spread_bet';
-Readonly our $BET_CLASS_LOOKBACK_BET     => 'lookback_bet';
+Readonly our $BET_CLASS_LOOKBACK_OPTION  => 'lookback_option';
 Readonly our $BET_CLASS_COINAUCTION_BET  => 'coinauction_bet';
 
 # Constant reference to volatile hash
@@ -45,7 +45,7 @@ Readonly our $BET_CLASS_TO_TYPE_MAP => {
 
     'touch_bet' => ['ONETOUCH',   'NOTOUCH'],
     'digit_bet' => ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITODD', 'DIGITEVEN'],
-    'lookback_bet' => ['LBFIXEDCALL', 'LBFIXEDPUT', 'LBFLOATCALL', 'LBFLOATPUT', 'LBHIGHLOW'],
+    'lookback_option' => ['LBFIXEDCALL', 'LBFIXEDPUT', 'LBFLOATCALL', 'LBFLOATPUT', 'LBHIGHLOW'],
 };
 
 Readonly our $BET_TYPE_TO_CLASS_MAP => {
