@@ -104,12 +104,12 @@
         },
         "employment_status": {
           "type": "string",
-          "pattern": "^Employment Status$",
+          "pattern": "^Self Employed$",
           "required": "1"
         },
         "source_of_wealth": {
           "type": "string",
-          "description": "^Source of wealth$",
+          "description": "^Company Ownership$",
           "required": "1"
         }
       },
