@@ -41,6 +41,7 @@
   </select>
   <input type="FILE" name="FILE_[% n %]">
   Expiration date:<input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD">
+  Document ID:<input type="text" size=11 name="document_id_[% n %]" placeholder="Document ID">
   Comments:<input type="text" size=20 name="comments_[% n %]" placeholder="optional, up to 255 characters">
     <br>
   [% END %]
