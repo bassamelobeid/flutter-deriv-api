@@ -475,7 +475,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     ok(!exists $result->{validation_error}, "No barrier validation error")
         or diag "validatione error: " . ($result->{validation_error} // '<undef>');
-
+    diag("at line " . __LINE__); diag(explain($result));
     restore_time();
 };
 
@@ -548,7 +548,7 @@ subtest $method => sub {
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 1,
     };
-
+    diag("at line " . __LINE__); diag(explain($res));
     foreach my $key (keys %$expected_result) {
         cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
     }
@@ -576,6 +576,7 @@ subtest $method => sub {
         is_sold     => 0,
     };
     $res = $c->call_ok('get_bid', $params)->result;
+        diag("at line " . __LINE__); diag(explain($res));
     $expected_result = {
         'barrier'         => '0.99360',
         'bid_price'       => '0.00',
@@ -608,6 +609,7 @@ subtest $method => sub {
         is_sold     => 1,
     };
     $res = $c->call_ok('get_bid', $params)->result;
+    diag("at line " . __LINE__); diag(explain($res));
     $expected_result = {
         'barrier'         => '0.99360',
         'bid_price'       => '0.00',
@@ -680,6 +682,7 @@ subtest 'app_markup_percentage' => sub {
         app_markup_percentage => 1
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+        diag("at line " . __LINE__); diag(explain($result));
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract();
@@ -696,6 +699,7 @@ subtest 'app_markup_percentage' => sub {
         app_markup_percentage => 1
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+        diag("at line " . __LINE__); diag(explain($result));
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract();
@@ -712,6 +716,7 @@ subtest 'app_markup_percentage' => sub {
         app_markup_percentage => 1
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+        diag("at line " . __LINE__); diag(explain($result));
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract();
@@ -728,6 +733,7 @@ subtest 'app_markup_percentage' => sub {
         app_markup_percentage => 1
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+        diag("at line " . __LINE__); diag(explain($result));
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract();
