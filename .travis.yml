@@ -1,5 +1,5 @@
 sudo: required
-ist: precise
+dist: precise
 group: deprecated-2017Q1
 language: perl
 perl:
