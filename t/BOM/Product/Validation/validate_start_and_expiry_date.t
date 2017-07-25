@@ -19,7 +19,7 @@ use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
 initialize_realtime_ticks_db;
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
+$mocked->mock('get', sub {[map {{decimate_epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
 
 my $trading_calendar    = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
 my $weekday             = Date::Utility->new('2016-03-29');

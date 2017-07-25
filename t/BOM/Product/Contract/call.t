@@ -20,7 +20,7 @@ use BOM::Platform::RedisReplicated;
 use Test::MockModule;
 
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked_decimate->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
+$mocked_decimate->mock('get', sub {[map {{decimate_epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');

@@ -34,7 +34,7 @@ my $mocked_decimate  = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked_decimate->mock(
     'get',
     sub {
-        [map { {epoch => $_, quote => 100 + rand(0.1)} } (0 .. 80)];
+        [map { {decimate_epoch => $_, quote => 100 + rand(0.1)} } (0 .. 80)];
     });
 my $mocked = Test::MockModule->new('BOM::Product::Contract');
 $mocked->mock('market_is_inefficient', sub { 0 });

@@ -36,9 +36,9 @@ subtest 'monday mornings intraday' => sub {
     $args->{date_pricing} = $args->{date_start} = $dp;
     $c = produce_contract($args);
     warning_like {$c->pricing_engine->_calculate_historical_volatility} qr/Historical ticks not found/, 'warn if historical tick not found after first 20 minutes of a monday morning';
-    $mocked->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..10)]});
+    $mocked->mock('get', sub {[map {{decimate_epoch => $_, quote => 100 + rand(0.1)}} (0..10)]});
     warning_like {$c->pricing_engine->_calculate_historical_volatility} qr/Historical ticks not found/, 'warn if historical tick is not sufficient';
-    $mocked->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
+    $mocked->mock('get', sub {[map {{decimate_epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
     ok $c->pricing_engine->_calculate_historical_volatility, 'no warnings';
 };
 
