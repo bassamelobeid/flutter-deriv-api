@@ -353,35 +353,6 @@ sub economic_events_volatility_risk_markup {
         set_by      => __PACKAGE__,
         base_amount => 0,
     });
-
-    my $bet = $self->bet;
-
-    my ($high_vol, $low_vol) = map {
-        $bet->empirical_volsurface->get_volatility({
-                from                          => $bet->effective_start->epoch,
-                to                            => $bet->date_expiry->epoch,
-                ticks                         => $bet->ticks_for_volatility_calculation,
-                include_economic_event_impact => 1,
-                multiplier                    => $_,
-            })
-    } (1.5, 0.5);
-
-    my $bs_high = do {
-        $self->base_engine->{vol} = $high_vol;
-        $self->base_engine->theo_probability;
-    };
-
-    my $bs_low = do {
-        $self->base_engine->{vol} = $low_vol;
-        $self->base_engine->theo_probability;
-    };
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_volatility_risk_markup',
-        description => 'markup to account for volatility risk of economic events',
-        set_by      => __PACKAGE__,
-        base_amount => abs($bs_high - $bs_low),
-    });
 }
 
 sub economic_events_spot_risk_markup {
