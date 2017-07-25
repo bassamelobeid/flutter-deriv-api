@@ -18,7 +18,7 @@ use BOM::MarketData::Types;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helpers::FinancialAssessment;
+use BOM::Test::Helper::FinancialAssessment;
 
 my $t = build_wsapi_test({language => 'EN'});
 
@@ -158,7 +158,7 @@ test_schema('get_limits', $res);
 
 my $args = {
     "set_financial_assessment" => 1,
-    %{BOM::Test::Helpers::FinancialAssessment::get_fulfilled_hash()}};
+    %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}};
 
 $t = $t->send_ok({json => $args})->message_ok;
 $res = decode_json($t->message->[1]);
