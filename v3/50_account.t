@@ -9,14 +9,16 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 use Test::MockModule;
 
-use BOM::Database::Model::OAuth;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Transaction;
 use BOM::MarketData qw(create_underlying_db);
+use BOM::Database::Model::OAuth;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Helpers::FinancialAssessment;
 
 my $t = build_wsapi_test({language => 'EN'});
 
@@ -155,9 +157,8 @@ is $res->{get_limits}->{open_positions}, 60;
 test_schema('get_limits', $res);
 
 my $args = {
-    "set_financial_assessment"             => 1,
-    %{BOM::Test::Helpers::FinancialAssessment::get_fulfilled_hash()}},
-};
+    "set_financial_assessment" => 1,
+    %{BOM::Test::Helpers::FinancialAssessment::get_fulfilled_hash()}};
 
 $t = $t->send_ok({json => $args})->message_ok;
 $res = decode_json($t->message->[1]);

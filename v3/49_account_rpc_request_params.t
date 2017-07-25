@@ -12,6 +12,7 @@ use Test::MockModule;
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Helpers::FinancialAssessment;
 
 my $t = build_wsapi_test({language => 'EN'});
 
@@ -341,7 +342,8 @@ $t = $t->send_ok({
         json => {
             "set_financial_assessment" => 1,
             "account_opening_reason"   => "Speculative",
-            %{BOM::Test::Helpers::FinancialAssessment::get_fulfilled_hash()}},
+            %{BOM::Test::Helpers::FinancialAssessment::get_fulfilled_hash()}
+        },
     })->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'set_financial_assessment');
