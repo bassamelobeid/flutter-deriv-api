@@ -286,7 +286,7 @@ sub _get_tick_windows {
     my $twenty_minutes_in_secs      = 20 * 60;
     my $twenty_minutes_before_start = $start_epoch - $twenty_minutes_in_secs;
 
-    # just take events from two hour back
+    # just take events from two hour back and sort it in descending order
     my $categorized_events = Volatility::Seasonality::categorize_events(
         $self->underlying->symbol,
         [
@@ -295,28 +295,20 @@ sub _get_tick_windows {
 
     return [[$twenty_minutes_before_start, $start_epoch]] unless @$categorized_events;
 
-    # remove duplicate release epoch
-    my %similar = ();
-    foreach my $event (@$categorized_events) {
-        my $duration = min($event->{duration}, 900);
-        $similar{$event->{release_epoch}} = $duration unless $similar{$event->{release_epoch}};
-        $similar{$event->{release_epoch}} = max($similar{$event->{release_epoch}}, $duration);
-    }
-
-    my @event_periods = map { [$_, $_ + $similar{$_}] } sort { $b <=> $a } keys %similar;
     # combine overlapping events
     my @combined;
-    for (my $i = 0; $i <= $#event_periods; $i++) {
-        my $curr = $event_periods[$i];
-        unless (@combined) {
-            push @combined, $curr;
-            next;
-        }
+    foreach my $event (@$categorized_events) {
+        my $start_period = $event->{release_epoch};
+        my $end_period   = $start_period + min(900, $event->{duration});
+        my $curr         = [$start_period, $end_period];
 
-        if ($curr->[1] >= $combined[-1][0]) {
+        if (not @combined) {
+            push @combined, $curr;
+        } elsif ($curr->[0] == $combined[-1][0]) {
+            $combined[-1][1] = max($curr->[1], $combined[-1][1]);    # overlapping release date, just take the maximum duration impact;
+        } elsif ($curr->[1] >= $combined[-1][0]) {
             $combined[-1][0] = $curr->[0];
             $combined[-1][1] = $curr->[1] if $curr->[1] > $combined[-1][1];    # duration of current event spans across previously added event
-            next;
         } else {
             push @combined, $curr;
         }
