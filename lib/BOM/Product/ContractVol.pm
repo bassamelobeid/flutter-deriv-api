@@ -232,7 +232,9 @@ sub _build_empirical_volsurface {
 
 # should be removed once we verified that intraday vega correction is not useful
 # in our intraday FX pricing model.
-has [qw(long_term_prediction)] => (
+#
+# These are kept as attributes because it will be over-written by japan back pricing.
+has [qw(long_term_prediction historical_volatility)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -243,6 +245,16 @@ sub _build_long_term_prediction {
     # long_term_prediction is set in VolSurface::IntradayFX. For contracts with duration less than 15 minutes,
     # we are only use historical volatility model hence taking a 10% volatility for it.
     return $self->empirical_volsurface->long_term_prediction // 0.1;
+}
+
+sub _build_historical_volatility {
+    my $self = shift;
+
+    return $self->empirical_volsurface->get_historical_volatility({
+        from  => $self->effective_start->epoch,
+        to    => $self->date_expiry->epoch,
+        ticks => $self->ticks_for_volatility_calculation,
+    });
 }
 
 has ticks_for_volatility_calculation => (

@@ -371,14 +371,9 @@ sub vol_spread_markup {
     my $self = shift;
 
     my $bet                   = $self->bet;
-    my $long_term_average_vol = 0.07;                                                    # fixed 7% volatility
-    my $twenty_minute_vol     = $bet->empirical_volsurface->get_historical_volatility({
-        from  => $bet->effective_start,
-        to    => $bet->date_expiry,
-        ticks => $bet->ticks_for_volatility_calculation,
-    });
+    my $long_term_average_vol = 0.07;         # fixed 7% volatility
 
-    my $vol_spread = $long_term_average_vol - $twenty_minute_vol;
+    my $vol_spread = $long_term_average_vol - $bet->_pricing_args->{historical_volatility};
     return Pricing::Engine::Markup::VolSpread->new(
         bet_vega   => $bet->vega,
         vol_spread => $vol_spread,
