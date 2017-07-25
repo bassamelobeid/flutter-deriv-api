@@ -17,6 +17,7 @@ __PACKAGE__->meta->setup(
         authentication_method_code => { type => 'varchar', length => 50, not_null => 1 },
         expiration_date            => { type => 'date' },
         comments                   => { type => 'varchar', default => '', length => 255, not_null => 1 },
+        document_id                => { type => 'varchar', default => '', length => 30, not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],
