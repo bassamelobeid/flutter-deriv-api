@@ -1036,6 +1036,7 @@ subtest $method => sub {
             'place_of_birth'                 => undef,
             'tax_residence'                  => undef,
             'tax_identification_number'      => undef,
+            'account_opening_reason'         => undef,
         });
 
     $params->{token} = $token1;
@@ -1192,6 +1193,14 @@ subtest $method => sub {
         address_postcode => '12345',
         phone            => '2345678',
     );
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Input validation failed: account_opening_reason',
+        'real account without account opening reason has to set it'
+    );
+
+    $full_args{account_opening_reason} = 'Income Earning';
+
     $params->{args} = {%{$params->{args}}, %full_args};
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
 
@@ -1209,6 +1218,17 @@ subtest $method => sub {
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
     is($c->tcall($method, $params)->{status}, 1, 'can update without sending all required fields');
+
+    is($c->tcall($method, $params)->{status}, 1, 'can send account_opening_reason with same value');
+
+    $full_args{account_opening_reason} = 'Hedging';
+    $params->{args} = {%full_args};
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Value of account_opening_reason cannot be changed.',
+        'cannot send account_opening_reason with a different value'
+    );
+    delete $full_args{account_opening_reason};
 
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
@@ -1258,6 +1278,7 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{status}, 1, 'postcode is optional for non-MX clients and can be set to null');
 
     $params->{token} = $token_mx;
+    $params->{args}{account_opening_reason} = 'Income Earning';
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
         'Input validation failed: address_postcode',
