@@ -646,13 +646,17 @@ subtest $method => sub {
         "indices_trading_frequency"            => {"answer" => "40 transactions or more in the past 12 months"},
         "net_income"                           => {"answer" => '$25,000 - $50,000'},
         "occupation"                           => {"answer" => "Managers"},
+        "employment_status"                    => {"answer" => "Self Employed"},
+        "source_of_wealth"                     => {"answer" => "Company Ownership"},
         "other_derivatives_trading_experience" => {"answer" => "Over 3 years"},
         "other_derivatives_trading_frequency"  => {"answer" => "0-5 transactions in the past 12 months"},
         "other_instruments_trading_experience" => {"answer" => "Over 3 years"},
         "other_instruments_trading_frequency"  => {"answer" => "6-10 transactions in the past 12 months"},
         "stocks_trading_experience"            => {"answer" => "1-2 years"},
         "stocks_trading_frequency"             => {"answer" => "0-5 transactions in the past 12 months"},
-        "account_turnover"                     => {"answer" => 'Less than $25,000'}};
+        "account_turnover"                     => {"answer" => 'Less than $25,000'},
+
+    };
     # function to repeatedly test financial assessment
     sub test_financial_assessment {
         my ($data, $is_present, $msg) = @_;
@@ -1076,7 +1080,9 @@ subtest $method => sub {
         "income_source"                        => "Self-Employed",
         "net_income"                           => '$25,000 - $50,000',
         "estimated_worth"                      => '$100,000 - $250,000',
-        "occupation"                           => 'Managers'
+        "occupation"                           => 'Managers',
+        "employment_status"                    => "Self Employed",
+        "source_of_wealth"                     => "Company Ownership",
     };
 
     my $res = $c->tcall(

@@ -96,6 +96,16 @@
       "type": "string",
       "pattern": "^Managers$",
       "required": 1
+    },
+    "employment_status": {
+      "type": "string",
+      "pattern": "^Self Employed$",
+      "required": 0
+    },
+    "source_of_wealth": {
+      "type": "string",
+      "pattern": "^Company Ownership$",
+      "required": 0
     }
   }
 }
