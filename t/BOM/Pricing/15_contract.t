@@ -432,7 +432,7 @@ subtest 'get_bid' => sub {
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
     is($result->{status}, 'lost', 'get the right status');
-    $contract = _create_contract();
+    $contract = _create_contract( bet_type => 'PUT');
 
     $params = {
         short_code  => $contract->shortcode,
