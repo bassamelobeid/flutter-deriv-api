@@ -59,7 +59,9 @@ my $mf_details = {
     income_source                        => 'Investments & Dividends',
     net_income                           => '$25,000 - $50,000',
     estimated_worth                      => '$250,001 - $500,000',
-    "occupation"                         => 'Managers',
+    occupation                           => 'Managers',
+    employment_status                    => "Self Employed",
+    source_of_wealth                     => "Company Ownership",
     accept_risk                          => 1,
     account_opening_reason               => 'Speculative',
 };

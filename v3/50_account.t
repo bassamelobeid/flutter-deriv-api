@@ -173,7 +173,9 @@ my $args = {
     "education_level"                      => "Secondary",
     "income_source"                        => "Self-Employed",
     "net_income"                           => '$25,000 - $50,000',
-    "occupation"                           => 'Managers'
+    "occupation"                           => 'Managers',
+    employment_status                      => "Self Employed",
+    source_of_wealth                       => "Company Ownership",
 };
 
 $t = $t->send_ok({json => $args})->message_ok;

@@ -101,6 +101,16 @@
           "type": "string",
           "pattern": "^\\$100\\,000 \\- \\$250\\,000$",
           "required": "1"
+        },
+        "employment_status": {
+          "type": "string",
+          "pattern": "^Employment Status$",
+          "required": "1"
+        },
+        "source_of_wealth": {
+          "type": "string",
+          "description": "^Source of wealth$",
+          "required": "1"
         }
       },
       "required": "1"
