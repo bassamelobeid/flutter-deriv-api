@@ -628,6 +628,7 @@ sub get_settings {
                 place_of_birth    => $client->place_of_birth,
                 tax_residence     => $client->tax_residence,
                 tax_identification_number => $client->tax_identification_number,
+                account_opening_reason    => $client->account_opening_reason,
             )
         ),
         $jp_account_status ? (jp_account_status => $jp_account_status) : (),
@@ -678,6 +679,24 @@ sub set_settings {
         if ($client->residence eq 'jp') {
             # this may return error or {status => 1}
             $err = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
+        } elsif ($client->account_opening_reason
+            and $args->{account_opening_reason}
+            and $args->{account_opening_reason} ne $client->account_opening_reason)
+        {
+            # cannot set account_opening_reason with a different value
+            $err = BOM::RPC::v3::Utility::create_error({
+                code              => 'PermissionDenied',
+                message_to_client => localize("Value of account_opening_reason cannot be changed."),
+            });
+        } elsif (not $client->account_opening_reason and not $args->{account_opening_reason}) {
+            # required to set account_opening_reason if empty
+            $err = BOM::RPC::v3::Utility::create_error({
+                    code              => 'InputValidationFailed',
+                    message_to_client => localize("Input validation failed: account_opening_reason"),
+                    details           => {
+                        account_opening_reason => "is missing and it is required",
+                    },
+                });
         }
 
         $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
@@ -764,6 +783,7 @@ sub set_settings {
     $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
     $client->phone($phone);
     $client->place_of_birth($birth_place);
+    $client->account_opening_reason($args->{account_opening_reason}) unless $client->account_opening_reason;
 
     $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 
