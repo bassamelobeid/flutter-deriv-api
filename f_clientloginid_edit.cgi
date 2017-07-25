@@ -171,11 +171,17 @@ if ($input{whattodo} eq 'uploadID') {
         my $filetoupload    = $cgi->param('FILE_' . $i);
         my $docformat       = $cgi->param('docformat_' . $i);
         my $expiration_date = $cgi->param('expiration_date_' . $i);
+        my $document_id     = substr(encode_entities($cgi->param('document_id_' . $i)), 0, 30);
         my $comments        = substr(encode_entities($cgi->param('comments_' . $i)), 0, 255);
 
         if (not $filetoupload) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />"
                 if ($i == 1);
+            next;
+        }
+
+        if ($doctype =~ /passport|proofid|driverslicense/ && $document_id eq '') {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Missing document_id for $doctype</p><br />";
             next;
         }
 
@@ -237,6 +243,7 @@ if ($input{whattodo} eq 'uploadID') {
             document_path              => $newfilename,
             authentication_method_code => 'ID_DOCUMENT',
             expiration_date            => $expiration_date,
+            document_id                => $document_id,
             comments                   => $comments,
         };
 
