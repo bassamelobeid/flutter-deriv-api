@@ -187,4 +187,37 @@ subtest '3 events with two overlapping events - three windows' => sub {
     is $windows->[2][1], $now->minus_time_interval('25m')->epoch, 'correct end of period';
 };
 
+subtest 'indentical release date with different duration impact - two windows' => sub {
+    $mocked_seasonality->mock(
+        'categorize_events',
+        sub {
+            [{
+                    release_epoch => $now->minus_time_interval('20m')->epoch,
+                    duration      => 300,
+                    magnitude     => 10,
+                },
+                {
+                    release_epoch => $now->minus_time_interval('20m')->epoch,
+                    duration      => 1200,
+                    magnitude     => 10,
+                },
+            ];
+        });
+    my $c = produce_contract({
+        bet_type   => 'CALL',
+        underlying => 'frxUSDJPY',
+        date_start => $now,
+        duration   => '1h',
+        barrier    => 'S0P',
+        currency   => 'USD',
+        payout     => 100,
+    });
+    my $windows = $c->_get_tick_windows();
+    is scalar(@$windows), 2, 'two windows';
+    is $windows->[0][0], $now->minus_time_interval('5m')->epoch, 'correct start of period';
+    is $windows->[0][1], $now->epoch, 'correct end of period';
+    is $windows->[1][0], $now->minus_time_interval('35m')->epoch, 'correct start of period';
+    is $windows->[1][1], $now->minus_time_interval('20m')->epoch, 'correct end of period';
+};
+
 done_testing();
