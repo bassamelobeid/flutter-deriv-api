@@ -132,6 +132,7 @@ sub _build_pricing_vol {
             ticks                         => $self->ticks_for_volatility_calculation,
             include_economic_event_impact => 1,
         });
+        $volatility_error = $self->empirical_volsurface->validation_error if $self->empirical_volsurface->validation_error;
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
