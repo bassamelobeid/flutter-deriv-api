@@ -4,8 +4,28 @@ use warnings;
 use Test::More;
 use BOM::Platform::Account::Real::default;
 
-my @all_keys =
-    qw/other_derivatives_trading_frequency stocks_trading_experience other_instruments_trading_frequency stocks_trading_frequency forex_trading_frequency education_level other_derivatives_trading_experience forex_trading_experience commodities_trading_frequency employment_industry income_source indices_trading_frequency commodities_trading_experience other_instruments_trading_experience occupation indices_trading_experience estimated_worth account_turnover net_income/;
+my @all_keys = qw/
+    other_derivatives_trading_frequency
+    stocks_trading_experience
+    other_instruments_trading_frequency
+    stocks_trading_frequency
+    forex_trading_frequency
+    education_level
+    other_derivatives_trading_experience
+    forex_trading_experience
+    commodities_trading_frequency
+    employment_industry
+    income_source
+    indices_trading_frequency
+    commodities_trading_experience
+    other_instruments_trading_experience
+    occupation
+    indices_trading_experience
+    estimated_worth
+    account_turnover
+    net_income
+    employment_status
+    source_of_wealth/;
 
 my $input_mapping = BOM::Platform::Account::Real::default::get_financial_input_mapping();
 
