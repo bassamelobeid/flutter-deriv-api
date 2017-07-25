@@ -444,7 +444,7 @@ subtest 'get_bid' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
 
     cmp_bag([sort keys %{$result}], [sort @expected_keys], 'keys of result is correct');
-
+    is($result->{status}, 'lost', 'get the right status');
 };
 
 subtest 'get_bid_skip_barrier_validation' => sub {
