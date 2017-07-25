@@ -44,6 +44,7 @@ use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
 use Time::Duration::Concise;
 use Format::Util::Numbers qw/formatnumber/;
+use POSIX qw(ceil);
 
 use Quant::Framework;
 use Quant::Framework::VolSurface::Utils;
@@ -767,8 +768,23 @@ sub _build_applicable_economic_events {
     my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
     my $current_epoch     = $effective_start->epoch;
     # Go back and forward an hour to get all the tentative events.
-    my $start = $current_epoch - $seconds_to_expiry - 3600;
-    my $end   = $current_epoch + $seconds_to_expiry + 3600;
+    my $tentative_events = Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        }
+        )->get_tentative_events
+        || {};
+
+    my $max_event_length = max(
+        grep { $a->{length} }
+            map {
+            my $event = $events->{$_};
+            $event->{length} = $event->{blankkout_end} - $event->{blankout} if $event->{blankout} and $event->{blankout_end};
+            $event;
+            } keys %$tentative_events
+    );
+
+    my $start = $current_epoch - $seconds_to_expiry - ceil($max_event_length / 2);
+    my $end   = $current_epoch + $seconds_to_expiry + ceil($max_event_length / 2);
 
     return Quant::Framework::EconomicEventCalendar->new({
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
