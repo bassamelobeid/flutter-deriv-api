@@ -428,9 +428,10 @@ subtest 'get_bid' => sub {
             current_spot
             entry_spot
             barrier_count
+            status
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
-    diag(explain($result));
+    is($resuult->{status}, 'lost', 'get the right status');
     $contract = _create_contract();
 
     $params = {
