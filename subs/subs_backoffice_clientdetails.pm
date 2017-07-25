@@ -316,30 +316,32 @@ sub show_client_id_docs {
         @docs = $client->client_authentication_document;
     }
     foreach my $doc (@docs) {
-        my ($doc_id, $document_file, $file_name, $download_file, $input);
+        my ($id, $document_file, $file_name, $download_file, $input);
         if ($folder) {
-            $doc_id        = 0;
+            $id            = 0;
             $document_file = $doc;
             ($file_name) = $document_file =~ m[clientIDscans/\w+/\w+/(.+)$];
             $download_file = $client->broker . "/$folder/$file_name";
             $input         = '';
         } else {
-            $doc_id        = $doc->id;
+            $id            = $doc->id;
             $document_file = $doc->document_path;
             ($file_name) = $document_file =~ m[clientIDscans/\w+/(.+)$];
             $download_file = $client->broker . "/$file_name";
             my $date = $doc->expiration_date || '';
             $date = Date::Utility->new($date)->date_yyyymmdd if $date;
-            my $comments = $doc->comments;
-            $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$doc_id" value="$date">};
-            $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$doc_id" value="$comments">};
+            my $comments    = $doc->comments;
+            my $document_id = $doc->document_id;
+            $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date">};
+            $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments">};
+            $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id">};
         }
         my $file_size = -s $document_file || next;
         my $file_age  = int(-M $document_file);
         my $url       = request()->url_for("backoffice/download_document.cgi?path=$download_file");
         $links .= qq{<br/><a href="$url">$file_name</a>($file_size bytes, $file_age days old, $input)};
         if ($show_delete) {
-            $url .= qq{&loginid=$loginid&doc_id=$doc_id&deleteit=yes};
+            $url .= qq{&loginid=$loginid&doc_id=$id&deleteit=yes};
             my $onclick = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
             $links .= qq{[<a onclick="$onclick" href="$url">Delete</a>]};
         }
