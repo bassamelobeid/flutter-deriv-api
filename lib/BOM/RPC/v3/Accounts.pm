@@ -679,21 +679,7 @@ sub set_settings {
         if ($client->residence eq 'jp') {
             # this may return error or {status => 1}
             $err = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
-        }
-
-        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
-
-        if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
-            $err = BOM::RPC::v3::Utility::create_error({
-                    code              => 'InputValidationFailed',
-                    message_to_client => localize("Input validation failed: address_postcode"),
-                    details           => {
-                        address_postcode => "is missing and it is required",
-                    },
-                });
-        }
-
-        if (    $client->account_opening_reason
+        } elsif ($client->account_opening_reason
             and $args->{account_opening_reason}
             and $args->{account_opening_reason} ne $client->account_opening_reason)
         {
@@ -709,6 +695,18 @@ sub set_settings {
                     message_to_client => localize("Input validation failed: account_opening_reason"),
                     details           => {
                         account_opening_reason => "is missing and it is required",
+                    },
+                });
+        }
+
+        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
+
+        if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
+            $err = BOM::RPC::v3::Utility::create_error({
+                    code              => 'InputValidationFailed',
+                    message_to_client => localize("Input validation failed: address_postcode"),
+                    details           => {
+                        address_postcode => "is missing and it is required",
                     },
                 });
         }
