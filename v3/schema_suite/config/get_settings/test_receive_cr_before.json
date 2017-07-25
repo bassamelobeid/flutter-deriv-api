@@ -87,6 +87,11 @@
                     "type": "integer",
                     "pattern": "^(0|1)$",
                     "required": "1"
+                },
+                "account_opening_reason": {
+                    "type": "string",
+                    "pattern": "^Speculative",
+                    "required": "1"
                 }
             },
             "required": "1"
