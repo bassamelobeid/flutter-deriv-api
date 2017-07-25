@@ -777,7 +777,7 @@ sub _build_applicable_economic_events {
     my $max_event_length = max(
         grep { $a->{length} }
             map {
-            my $event = $events->{$_};
+            my $event = $tentative_events->{$_};
             $event->{length} = $event->{blankkout_end} - $event->{blankout} if $event->{blankout} and $event->{blankout_end};
             $event;
             } keys %$tentative_events
