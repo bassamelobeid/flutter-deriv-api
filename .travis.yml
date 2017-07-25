@@ -7,8 +7,6 @@ env:
     - TEST_SUITE=unit_test_market
 services:
     - redis-server
-addons:
-    postgresql: "9.3"
 cache: apt
 before_install:
     - git clone ssh://git@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
