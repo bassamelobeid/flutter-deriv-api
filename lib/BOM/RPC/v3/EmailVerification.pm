@@ -7,7 +7,6 @@ use Exporter;
 use vars qw(@ISA @EXPORT_OK);
 use BOM::Platform::Context qw(localize);
 
-
 sub email_verification {
     my $args = shift;
 
@@ -99,9 +98,9 @@ sub email_verification {
             };
         }
     };
-};
+}
 
-@ISA = qw(Exporter);
+@ISA       = qw(Exporter);
 @EXPORT_OK = qw(email_verification);
 
 1;
