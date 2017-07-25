@@ -431,7 +431,7 @@ subtest 'get_bid' => sub {
             status
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
-    is($resuult->{status}, 'lost', 'get the right status');
+    is($result->{status}, 'lost', 'get the right status');
     $contract = _create_contract();
 
     $params = {
