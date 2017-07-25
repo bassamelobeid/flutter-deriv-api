@@ -1,3 +1,6 @@
+sudo: required
+ist: precise
+group: deprecated-2017Q1
 language: perl
 perl:
     - "5.14.2-thr"
