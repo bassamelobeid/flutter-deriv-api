@@ -476,6 +476,11 @@ subtest 'get_bid_skip_barrier_validation' => sub {
     ok(!exists $result->{validation_error}, "No barrier validation error")
         or diag "validatione error: " . ($result->{validation_error} // '<undef>');
     ok(!$result->{status}, 'no status because it is not expired yet');
+
+    $params->{is_sold} = 1;
+    $params->{sell_time} = $now->epoch;
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    ok($result->{status}, 'sold', 'contract sold');
     restore_time();
 };
 
