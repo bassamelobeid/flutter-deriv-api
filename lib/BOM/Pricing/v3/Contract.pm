@@ -340,7 +340,7 @@ sub get_bid {
         if ($sell_time && $sell_time < $response->{date_expiry}) {
             $response->{status} = 'sold';
         } elsif ($contract->is_expired and $contract->is_settleable) {
-            $response->{status} = $contract->bid_price == $self->contract ? "won" : "lost" ;
+            $response->{status} = $contract->bid_price == $contract->payout ? "won" : "lost" ;
         }
 
         if (not $contract->may_settle_automatically
