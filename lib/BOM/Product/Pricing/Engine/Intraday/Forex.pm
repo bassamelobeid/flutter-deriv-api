@@ -407,14 +407,9 @@ sub vol_spread_markup {
         ticks => $bet->ticks_for_volatility_calculation,
     });
 
-    my $vega = do {
-        local $bet->atm_vols->{fordom} = $long_term_average_vol;
-        $bet->greek_engine->get_greek('vega');
-    };
-
     my $vol_spread = $long_term_average_vol - $twenty_minute_vol;
     return Pricing::Engine::Markup::VolSpread->new(
-        bet_vega   => $vega,
+        bet_vega   => $bet->vega,
         vol_spread => $vol_spread,
     )->markup;
 }
