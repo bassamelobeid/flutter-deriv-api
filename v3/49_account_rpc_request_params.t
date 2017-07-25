@@ -141,7 +141,11 @@ is($res->{msg_type}, 'reality_check');
 ok(ref $res->{reality_check});
 is $call_params->{token}, $token;
 
-$t = $t->send_ok({json => BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()})->message_ok;
+$t = $t->send_ok({
+        json => {
+            "set_financial_assessment" => 1,
+            %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()},
+        }})->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'set_financial_assessment');
 ok(ref $res->{set_financial_assessment});
