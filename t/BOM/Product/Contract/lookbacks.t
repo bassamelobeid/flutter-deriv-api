@@ -60,7 +60,7 @@ my $args = {
 };
 
 subtest 'lbfixedcall' => sub {
-    lives_ok {
+    
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Lbfixedcall';
         is $c->payouttime,   'end';
@@ -74,12 +74,9 @@ subtest 'lbfixedcall' => sub {
         ok !$c->is_path_dependent;
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
-    }
-    'generic';
 
-    lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('1s');
-        my $c = produce_contract($args);
+        $c = produce_contract($args);
         ok $c->entry_tick;
         cmp_ok $c->entry_tick->quote, '==', 100.000, 'correct entry tick';
         ok $c->barrier;
@@ -96,9 +93,6 @@ subtest 'lbfixedcall' => sub {
         $c                    = produce_contract($args);
         cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
         ok $c->is_expired, 'expired';
-        
-    }
-    'expiry checks';
 };
 
 subtest 'lbfixedput' => sub {
