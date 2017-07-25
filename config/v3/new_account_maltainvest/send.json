@@ -216,7 +216,7 @@
       "required": 0
     },
     "source_of_wealth" : {
-      "enum" ["Accumulation of Income/Savings", "Cash Business", "Company Ownership", "Divorce Settlement", "Inheritance", "Investment Income", "Sale of Property", "Other"],
+      "enum": ["Accumulation of Income/Savings", "Cash Business", "Company Ownership", "Divorce Settlement", "Inheritance", "Investment Income", "Sale of Property", "Other"],
       "description": "Source of wealth",
       "required": 0
     },
