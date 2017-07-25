@@ -24,14 +24,14 @@ my $now           = Date::Utility->new('2016-02-01');
 note('Pricing on ' . $now->datetime);
 
 my %skip_category = (
-    callput => 1,
+    callput      => 1,
     touchnotouch => 1,
-    endsinout  => 1,
-    staysinout => 1,
-    vanilla => 1,
-    asian   => 1,
-    digits  => 1,
-    spreads => 1,
+    endsinout    => 1,
+    staysinout   => 1,
+    vanilla      => 1,
+    asian        => 1,
+    digits       => 1,
+    spreads      => 1,
 );
 
 my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/lookback_config.yml');
@@ -49,8 +49,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
 
     my $offer_with_filter = get_offerings_with_filter($offerings_cfg, 'contract_category', {underlying_symbol => $ul->symbol});
 
-    foreach my $contract_category (qw(lookback))
-    {
+    foreach my $contract_category (qw(lookback)) {
         my $category_obj = Finance::Contract::Category->new($contract_category);
         next if $category_obj->is_path_dependent;
         my @duration = map { $_ * 86400 } (7, 14);
@@ -97,21 +96,19 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         %$barrier,
                     };
 
-                    lives_ok {
-                        my $c = produce_contract($args);
-                        my @codes = ($c->code, $c->underlying->symbol, $c->date_start->epoch, $c->date_expiry->epoch);
-                        if ($c->category->two_barriers) {
-                            push @codes, ($c->high_barrier->as_absolute, $c->low_barrier->as_absolute);
-                        } else {
-                            push @codes, $c->barrier->as_absolute;
-                        }
-                        my $code = join '_', @codes;
-                        isa_ok $c->pricing_engine_name, 'Pricing::Engine::Lookback';
-
-                        is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$code}),
-                            'theo price matches [' . $code . " - " . $c->shortcode . ']';
+                    my $c = produce_contract($args);
+                    my @codes = ($c->code, $c->underlying->symbol, $c->date_start->epoch, $c->date_expiry->epoch);
+                    if ($c->category->two_barriers) {
+                        push @codes, ($c->high_barrier->as_absolute, $c->low_barrier->as_absolute);
+                    } else {
+                        push @codes, $c->barrier->as_absolute;
                     }
-                    'survived';
+                    my $code = join '_', @codes;
+                    isa_ok $c->pricing_engine_name, 'Pricing::Engine::Lookback';
+
+                    is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$code}),
+                        'theo price matches [' . $code . " - " . $c->shortcode . ']';
+
                 }
             }
         }
