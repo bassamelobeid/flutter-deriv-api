@@ -102,23 +102,14 @@ sub _forget_transaction_subscription {
     my ($c, $typeoruuid) = @_;
 
     my $removed_ids = [];
-    my $channel     = $c->stash('transaction_channel');
-    if ($channel) {
-        # special case: proposal_open_contract as $typeoruuid passed only when forget_all is performed
-        #               transaction subscriptions of proposal_open_contract are defined as uuids
-        if ($typeoruuid eq 'proposal_open_contract') {
-            foreach my $uuid (grep { m/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/ } keys %{$channel}) {
-                # do not return removed transaction uuids - forget_all will return only proposal_open_contract subscr uuids
-                Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'unsubscribe', $channel->{$uuid}->{account_id}, $uuid);
-            }
-        } else {
-            foreach my $type (keys %{$channel}) {
-                if ($typeoruuid eq $type or $typeoruuid eq $channel->{$type}->{uuid}) {
-                    push @$removed_ids, $channel->{$type}->{uuid};
-                    Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
-                }
-            }
-        }
+    my $channel     = $c->stash('transaction_channel') // {};
+    for my $k (keys %$channel) {
+        # $k never could be 'proposal_open_contract', so we will not return any uuids related to proposal_open_contract subscriptions
+        push @$removed_ids, $channel->{$k}->{uuid} if $typeoruuid eq $k or $typeoruuid eq $channel->{$k}->{uuid};
+        # but we have to remove them as well when forget_all:proposal_open_contract is called 
+        Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'unsubscribe', $channel->{$k}->{account_id}, $k)
+            if      $typeoruuid eq $k or $typeoruuid eq $channel->{$k}->{uuid}
+                or  $typeoruuid eq 'proposal_open_contract' and $k =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/; # forget_all:proposal_open_contract case
     }
     return $removed_ids;
 }
