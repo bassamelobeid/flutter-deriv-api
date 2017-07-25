@@ -110,6 +110,12 @@ sub _forget_transaction_subscription {
         Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'unsubscribe', $channel->{$k}->{account_id}, $k)
             if $typeoruuid eq $k
             or $typeoruuid eq $channel->{$k}->{uuid}
+            # $typeoruuid could be 'proposal_open_contract' only in case when forget_all is called with 'proposal_open_contract' as an argument
+            # proposal_open_contract sunbscription in fact creates two subscription:
+            #   - for pricer - getting bids
+            #   - and for transactions - whaiting contract sell event
+            # so pricer subscription will be removed by '_forget_all_pricing_subscriptions' call (and list of uuids to return will be generated)
+            # and here we just removing apropriate transaction subscriptions - which (and only) keys are always uuids
             or $typeoruuid eq 'proposal_open_contract' and $k =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/;    # forget_all:proposal_open_contract case
     }
     return $removed_ids;
