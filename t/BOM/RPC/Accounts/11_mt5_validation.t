@@ -84,11 +84,11 @@ subtest 'new account' => sub {
 
         # testing unicode name
         $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-               broker_code => 'CR',
+            broker_code => 'CR',
         });
         $test_client->email('test.account@binary.com');
         $test_client->save;
-        my $user         = BOM::Platform::User->create(
+        my $user = BOM::Platform::User->create(
             email    => 'test.account@binary.com',
             password => 'jskjd8292922',
         );
@@ -96,19 +96,19 @@ subtest 'new account' => sub {
         $user->add_loginid({loginid => $test_client->loginid});
         $user->save;
 
-        $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-        $m = BOM::Database::Model::AccessToken->new;
+        $c     = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+        $m     = BOM::Database::Model::AccessToken->new;
         $token = $m->create_token($test_client->loginid, 'test token 2');
 
         # set the params
-        $params->{token} = $token;
-        $params->{args}->{account_type} = 'demo';
-        $params->{args}->{country} = 'mt';
-        $params->{args}->{email} = 'test.account@binary.com';
-        $params->{args}->{name} = 'J\x{c3}\x{b2}s\x{c3}\x{a9}';
+        $params->{token}                  = $token;
+        $params->{args}->{account_type}   = 'demo';
+        $params->{args}->{country}        = 'mt';
+        $params->{args}->{email}          = 'test.account@binary.com';
+        $params->{args}->{name}           = 'J\x{c3}\x{b2}s\x{c3}\x{a9}';
         $params->{args}->{investPassword} = 'Abcd1234';
-        $params->{args}->{mainPassword} = 'Efgh4567';
-        $params->{args}->{leverage} = 100;
+        $params->{args}->{mainPassword}   = 'Efgh4567';
+        $params->{args}->{leverage}       = 100;
 
         my $res = $c->call_ok($method, $params)->{response};
         like($res->{rpc_response}->{result}->{login}, qr/[0-9]+/, 'Should return MT5 ID');
