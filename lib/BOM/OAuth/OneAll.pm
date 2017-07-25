@@ -69,7 +69,9 @@ sub callback {
 sub redirect {
     my $c                = shift;
     my $dir              = $c->param('dir') // '';
-    my $connection_token = $c->param('connection_token') // '';
+    my $connection_token = $c->param('connection_token')
+        // URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0])->query_param('provider_connection_token')
+        // '';
 
     return $c->redirect_to($dir . '?connection_token=' . $connection_token);
 }
