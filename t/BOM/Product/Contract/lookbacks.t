@@ -96,7 +96,7 @@ subtest 'lbfixedcall' => sub {
 };
 
 subtest 'lbfixedput' => sub {
-    lives_ok {
+    
         $args->{bet_type}     = 'LBFIXEDPUT';
         $args->{date_pricing} = $now;
         my $c = produce_contract($args);
@@ -107,14 +107,10 @@ subtest 'lbfixedput' => sub {
         
         ok !$c->is_path_dependent;
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
-        
-    }
-    'generic';
 
-    lives_ok {
         $args->{duration} = '1d';
         $args->{barrier}  = 100.030;
-        my $c = produce_contract($args);
+        $c = produce_contract($args);
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
         is $c->expiry_type, 'daily';
@@ -132,14 +128,10 @@ subtest 'lbfixedput' => sub {
         $c                    = produce_contract($args);
         cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
         ok $c->is_expired, 'expired';
-        
-        
-    }
-    'expiry checks';
 };
 
 subtest 'lbfloatcall' => sub {
-    lives_ok {
+    
         $args->{bet_type}     = 'LBFLOATCALL';
         $args->{date_pricing} = $now;
         my $c = produce_contract($args);
@@ -150,14 +142,10 @@ subtest 'lbfloatcall' => sub {
         
         ok !$c->is_path_dependent;
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
-        
-    }
-    'generic';
 
-    lives_ok {
         $args->{duration} = '1d';
         $args->{barrier}  = 100.030;
-        my $c = produce_contract($args);
+        $c = produce_contract($args);
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
         is $c->expiry_type, 'daily';
@@ -175,14 +163,10 @@ subtest 'lbfloatcall' => sub {
         $c                    = produce_contract($args);
         cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
         ok $c->is_expired, 'expired';
-        
-        
-    }
-    'expiry checks';
 };
 
 subtest 'lbfloatput' => sub {
-    lives_ok {
+    
         $args->{bet_type}     = 'LBFLOATPUT';
         $args->{date_pricing} = $now;
         my $c = produce_contract($args);
@@ -193,14 +177,10 @@ subtest 'lbfloatput' => sub {
         
         ok !$c->is_path_dependent;
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
-        
-    }
-    'generic';
 
-    lives_ok {
         $args->{duration} = '1d';
         $args->{barrier}  = 100.030;
-        my $c = produce_contract($args);
+        $c = produce_contract($args);
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
         is $c->expiry_type, 'daily';
@@ -218,14 +198,10 @@ subtest 'lbfloatput' => sub {
         $c                    = produce_contract($args);
         cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
         ok $c->is_expired, 'expired';
-        
-        
-    }
-    'expiry checks';
 };
 
 subtest 'lbhighlow' => sub {
-    lives_ok {
+    
         $args->{bet_type}     = 'LBHIGHLOW';
         $args->{date_pricing} = $now;
         my $c = produce_contract($args);
@@ -236,14 +212,10 @@ subtest 'lbhighlow' => sub {
         
         ok !$c->is_path_dependent;
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
-        
-    }
-    'generic';
 
-    lives_ok {
         $args->{duration} = '1d';
         $args->{barrier}  = 100.030;
-        my $c = produce_contract($args);
+        $c = produce_contract($args);
         isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
         
         is $c->expiry_type, 'daily';
@@ -261,8 +233,4 @@ subtest 'lbhighlow' => sub {
         $c                    = produce_contract($args);
         cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
         ok $c->is_expired, 'expired';
-        
-        
-    }
-    'expiry checks';
 };
