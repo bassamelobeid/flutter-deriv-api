@@ -581,7 +581,6 @@ subtest $method => sub {
         is_sold     => 0,
     };
     $res = $c->call_ok('get_bid', $params)->result;
-        diag("at line " . __LINE__); diag(explain($res));
     $expected_result = {
         'barrier'         => '0.99360',
         'bid_price'       => '0.00',
@@ -614,7 +613,6 @@ subtest $method => sub {
         is_sold     => 1,
     };
     $res = $c->call_ok('get_bid', $params)->result;
-    diag("at line " . __LINE__); diag(explain($res));
     $expected_result = {
         'barrier'         => '0.99360',
         'bid_price'       => '0.00',
@@ -687,7 +685,6 @@ subtest 'app_markup_percentage' => sub {
         app_markup_percentage => 1
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-        diag("at line " . __LINE__); diag(explain($result));
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract();
@@ -704,7 +701,6 @@ subtest 'app_markup_percentage' => sub {
         app_markup_percentage => 1
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-        diag("at line " . __LINE__); diag(explain($result));
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract();
@@ -721,7 +717,6 @@ subtest 'app_markup_percentage' => sub {
         app_markup_percentage => 1
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-        diag("at line " . __LINE__); diag(explain($result));
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract();
@@ -738,7 +733,6 @@ subtest 'app_markup_percentage' => sub {
         app_markup_percentage => 1
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-        diag("at line " . __LINE__); diag(explain($result));
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract();
