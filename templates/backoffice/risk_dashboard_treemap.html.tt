@@ -30,9 +30,9 @@
 
             return { "title" : uname +': '+ virgule(Math.round(amount)) };
         };
-      \$(window).load(function(){
-    \$('#exposure_spark').sparkline(sparkline_info.mtm , line_config);
-    \$('#exposure_spark').sparkline(sparkline_info.days , {type: 'bar', barColor: '#ddd', composite: true});
+      window.onload = function() {
+        \$('#exposure_spark').sparkline(sparkline_info.mtm , line_config);
+        \$('#exposure_spark').sparkline(sparkline_info.days , {type: 'bar', barColor: '#ddd', composite: true});
         Treemap.draw("markettree", 1100, 680, data , labels, { 'box': labelToTitle, 'label': labelToTitle});
-    });
+      };
 </script>
