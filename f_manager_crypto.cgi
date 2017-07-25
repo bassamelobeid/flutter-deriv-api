@@ -64,6 +64,14 @@ print '<INPUT type="submit" value="Recon" name="view_action"/>';
 print '</FORM>';
 
 print '<br>';
+print '<h3>Search</h3>';
+print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
+print '<input type="text" name="search_field" required>';
+print '<select name="type"><option value="loginid">Loginid</option><option value="address">Address</option></select>';
+print '<input type="submit" value="Search" name="view_action"/>';
+print '</FORM>';
+
+print '<br>';
 print '<h3>Deposit</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
@@ -201,6 +209,16 @@ if ($page eq 'Withdrawal Transactions') {
             currency     => $currency,
         }) || die $tt->error();
 
+} elsif ($page eq 'Search Tool') {
+    my $trxns;
+    if ($view_type eq 'address') {
+        $trxns = $dbh->selectall_arrayref("SELECT * FORM payment.ctc_bo_get_cryptocurrency_details_by_address(?)", {Slice->{}}, $address);
+    } elsif ($view_type eq 'loginid') {
+        $trxns = $dbh->selectall_arrayref("SELECT * FORM payment.ctc_bo_get_cryptocurrency_details_by_loginid(?)", {Slice->{}}, $loginid);
+    } else {
+        print "Invalid request to view type of transactions.";
+        code_exit_BO();
+    }
 } elsif ($page eq 'Deposit Transactions') {
 
     $view_type ||= 'new';
