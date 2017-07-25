@@ -15,25 +15,8 @@ sub localizable_description {
 sub check_expiry_conditions {
     my $self = shift;
 
-    my ($low);
-
-    my $start_epoch = $self->date_start->epoch + 1;    # excluding tick at contract start time
-
-    my $end_epoch;
-
-    if ($self->date_pricing->is_after($self->date_expiry)) {
-        $end_epoch = $self->expiry_daily ? $self->date_expiry->truncate_to_day->epoch : $self->date_settlement->epoch;
-    } else {
-        $end_epoch = $self->date_pricing->epoch;
-    }
-
-    ($low) = @{
-        $self->underlying->get_high_low_for_period({
-                start => $start_epoch,
-                end   => $end_epoch,
-            })}{'low'};
-
     if ($self->exit_tick) {
+        my ($low) = @{$self->get_ohlc_for_period()}{qw(low)};
         my $value = $self->barrier - $low;
         $self->value($value);
     }
