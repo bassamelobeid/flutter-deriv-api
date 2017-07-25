@@ -547,8 +547,8 @@ subtest $method => sub {
         'shortcode'       => 'CALL_FRXAUDCAD_156.47_1127287260_1127287660_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 1,
+        'status'          => 'won',
     };
-    diag("at line " . __LINE__); diag(explain($res));
     foreach my $key (keys %$expected_result) {
         cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
     }
