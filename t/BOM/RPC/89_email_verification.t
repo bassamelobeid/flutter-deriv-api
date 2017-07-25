@@ -44,8 +44,8 @@ my $messages = {
 sub get_verification_message {
     my ($message_name, $action) = @_;
 
-    my $uri               = get_verification_uri($action);
-    my $verification_link = "<p><a href=\"$uri\">$uri</a></p>";
+    my $uri               = get_verification_uri($action) if $action;
+    my $verification_link = "<p><a href=\"$uri\">$uri</a></p>" if $action;
 
     my $verification_way = $action ? $verification_link : $code;
 
