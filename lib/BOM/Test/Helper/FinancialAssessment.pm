@@ -1,4 +1,4 @@
-package BOM::Test::Helpers::FinancialAssessment;
+package BOM::Test::Helper::FinancialAssessment;
 
 use warnings;
 use strict;
