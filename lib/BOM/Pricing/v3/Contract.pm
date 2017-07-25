@@ -340,7 +340,7 @@ sub get_bid {
         if ($sell_time && $sell_time < $response->{date_expiry}) {
             $response->{status} = 'sold';
         } elsif ($contract->is_expired and $contract->is_settleable) {
-            $response->{status} = $contract->bid_price == $contract->payout ? "won" : "lost" ;
+            $response->{status} = $contract->bid_price == $contract->payout ? "won" : "lost";
         }
 
         if (not $contract->may_settle_automatically
@@ -664,7 +664,7 @@ sub asset_index {
             },
             name => sub {
                 localize($_->display_name);
-                }
+            }
         },
         underlyings => {
             code => sub {
@@ -672,7 +672,7 @@ sub asset_index {
             },
             name => sub {
                 localize($_->display_name);
-                }
+            }
         },
         contract_categories => {
             code => sub {
