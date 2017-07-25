@@ -430,7 +430,7 @@ subtest 'get_bid' => sub {
             barrier_count
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
-
+    diag(explain($result));
     $contract = _create_contract();
 
     $params = {
