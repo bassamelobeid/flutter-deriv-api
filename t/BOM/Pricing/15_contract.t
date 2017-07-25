@@ -475,7 +475,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     ok(!exists $result->{validation_error}, "No barrier validation error")
         or diag "validatione error: " . ($result->{validation_error} // '<undef>');
-    diag("at line " . __LINE__); diag(explain($result));
+    ok(!$result->{status}, 'no status because it is not expired yet');
     restore_time();
 };
 
