@@ -16,7 +16,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helpers::FinancialAssessment;
+use BOM::Test::Helper::FinancialAssessment;
 use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Password;
@@ -634,7 +634,7 @@ subtest $method => sub {
     );
 
     # test 'financial_assessment_not_complete'
-    my $temp = BOM::Test::Helpers::FinancialAssessment::get_fulfilled_hash();
+    my $temp = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
     my $data = { map { $_ => { answer => $temp->{$_}}} keys %$temp };
 
     # function to repeatedly test financial assessment
