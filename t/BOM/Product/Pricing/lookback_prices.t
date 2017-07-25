@@ -107,11 +107,9 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         }
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine_name, 'Pricing::Engine::Lookback';
-my $prc = $c->theo_price;
 
-print $code . ': ' . $prc . "\n";
-#                        is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$code}),
-#                            'theo price matches [' . $code . " - " . $c->shortcode . ']';
+                        is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$code}),
+                            'theo price matches [' . $code . " - " . $c->shortcode . ']';
                     }
                     'survived';
                 }
