@@ -108,7 +108,7 @@ sub _forget_transaction_subscription {
         #               transaction subscriptions of proposal_open_contract are defined as uuids
         if ($typeoruuid eq 'proposal_open_contract') {
             foreach my $uuid (grep { m/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/ } keys %{$channel}) {
-                push @$removed_ids, $channel->{$uuid}->{uuid};
+                # do not return removed transaction uuids - forget_all will return only proposal_open_contract subscr uuids
                 Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'unsubscribe', $channel->{$uuid}->{account_id}, $uuid);
             }
         } else {
