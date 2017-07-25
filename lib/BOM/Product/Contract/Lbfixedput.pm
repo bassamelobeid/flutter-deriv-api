@@ -17,7 +17,7 @@ sub check_expiry_conditions {
 
     if ($self->exit_tick) {
         my ($low) = @{$self->get_ohlc_for_period()}{qw(low)};
-        my $value = $self->barrier - $low;
+        my $value = $self->barrier->as_absolute - $low;
         $self->value($value);
     }
 
