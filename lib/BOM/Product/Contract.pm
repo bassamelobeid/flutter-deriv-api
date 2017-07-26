@@ -783,8 +783,10 @@ sub _build_applicable_economic_events {
             } keys %$tentative_events
     );
 
-    my $start = $current_epoch - $seconds_to_expiry - ceil($max_event_length / 2);
-    my $end   = $current_epoch + $seconds_to_expiry + ceil($max_event_length / 2);
+    my $event_length = ceil($max_event_length / 2) || 3600;
+
+    my $start = $current_epoch - $seconds_to_expiry - $event_length;
+    my $end   = $current_epoch + $seconds_to_expiry + $event_length;
 
     return Quant::Framework::EconomicEventCalendar->new({
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
