@@ -349,19 +349,21 @@ sub calculate_limits {
         }
 
         if ($contract->timeindays->amount <= 7) {
-            $limits{max_7day_specific_open_position_payout} = {
-                name      => 'less than 7 days open position payout limit',
-                symbol    => [{n => $contract->underlying->symbol}],
-                bet_types => [map { {n => $_} } @bet_type_list],
-                limit => $static_config->{bet_limits}->{open_positions_payout_perl_symbol_limit}->{$option_type}->{less_than_seven_days}->{$currency},
-            };
+            $limits{max_7day_specific_open_position_payout} = [{
+                    name     => 'less than 7 days open position payout limit',
+                    symbols  => [{n => $contract->underlying->symbol}],
+                    bet_type => [map { {n => $_} } @bet_type_list],
+                    limit =>
+                        $static_config->{bet_limits}->{open_positions_payout_per_symbol_limit}->{$option_type}->{less_than_seven_days}->{$currency},
+                }];
         } else {
-            $limits{max_more_than_7day_specific_open_position_payout} = {
-                name      => 'more than 7 days open position payout limit',
-                symbol    => [{n => $contract->underlying->symbol}],
-                bet_types => [map { {n => $_} } @bet_type_list],
-                limit => $static_config->{bet_limits}->{open_positions_payout_perl_symbol_limit}->{$option_type}->{more_than_seven_days}->{$currency},
-            };
+            $limits{max_more_than_7day_specific_open_position_payout} = [{
+                    name     => 'more than 7 days open position payout limit',
+                    symbols  => [{n => $contract->underlying->symbol}],
+                    bet_type => [map { {n => $_} } @bet_type_list],
+                    limit =>
+                        $static_config->{bet_limits}->{open_positions_payout_perl_symbol_limit}->{$option_type}->{more_than_seven_days}->{$currency},
+                }];
         }
     }
 
