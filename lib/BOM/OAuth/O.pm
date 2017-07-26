@@ -1,5 +1,7 @@
 package BOM::OAuth::O;
 
+use strict;
+
 use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
 use Try::Tiny;
@@ -27,9 +29,7 @@ sub authorize {
     my $c = shift;
 
     # APP_ID verification logic
-    my ($app_id, $state, $response_type) = map { defang($c->param($_)) // undef } qw/ app_id state response_type /;
-    # $response_type ||= 'code';    # default to Authorization Code
-    $response_type = 'token';    # only support token FIXME: remove response_type arg from function
+    my ($app_id, $state) = map { defang($c->param($_)) // undef } qw/ app_id state /;
     return $c->_bad_request('the request was missing app_id') unless $app_id;
     return $c->_bad_request('the request was missing valid app_id') if ($app_id !~ /^\d+$/);
     my $oauth_model = _oauth_model();
