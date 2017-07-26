@@ -153,13 +153,13 @@ is pricer_sub_count(), 0, "price count checking";
 
 done_testing();
 
+use Data::Dumper;
 sub create_propsals {
     for my $s (@symbols) {
         $req->{symbol} = $s;
         $t->send_ok({json => $req})->message_ok;
         $res = decode_json($t->message->[1]);
-        use Data::Dumper;
-        warn Data::Dumper->Dumper($res);
+        note( Data::Dumper->Dumper($res));
         ok $res->{proposal}->{id}, 'Should return id';
         $sub_ids->{$s} = $res->{proposal}->{id};
     }
