@@ -5,16 +5,6 @@ use strict;
 
 use BOM::Platform::Account::Real::default;
 
-=head2 get_fulfilled_h
-
-    returns hash of all questions inside financial assesements with answers.
-    Answer selection is controlled by optional argument:
-    - first (default) - first from sorted list of names
-    - min - element with minimum weight, first from sorted list
-    - max - element with maximum weight, last in sorted list
-
-=cut
-
 sub _get_by_index {
     my $h = shift;
     return (sort { $h->{$a} <=> $h->{$b} || $a cmp $b } keys %$h)[shift];
@@ -30,6 +20,16 @@ my $types = {
     'min'   => $min,
     'max'   => $max,
 };
+
+=head2 get_fulfilled_hash
+
+    returns hash of all questions inside financial assesements with answers.
+    Answer selection is controlled by optional argument:
+    - first (default) - first from sorted list of names
+    - min - element with minimum weight, first from sorted list
+    - max - element with maximum weight, last in sorted list
+
+=cut
 
 sub get_fulfilled_hash {
     my $type = shift // 'first';
