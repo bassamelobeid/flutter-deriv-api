@@ -811,6 +811,8 @@ sub _build_tentative_events {
         grep {
                     $_->{is_tentative}
                 and $affected_currency{$_->{symbol}}
+                and exists $_->{blankout}
+                and exists $_->{blankout_end}
                 and $_->{blankout} <= $effective_start
                 and $_->{blankout_end} >= $effective_start
         } @{$self->_applicable_economic_events}];
