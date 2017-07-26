@@ -109,7 +109,7 @@
         },
         "source_of_wealth": {
           "type": "string",
-          "description": "^Company Ownership$",
+          "pattern": "^Company Ownership$",
           "required": "1"
         }
       },
