@@ -18,11 +18,9 @@
     <div id="inline">
         <% #replace lines with commented lines when releasing oneall %>
         <!--<div style="<% if (lc($r->language) eq 'ja') { %>display:none<% } %>">-->
-        <div style="display:none">
-            <div class="center-text">
+            <div class="center-text" style="display:none">
                 <div id="oa_social_login_container"></div>
             </div>
-        </div>
         <!--<div class="separators" style="<% if (lc($r->language) eq 'ja') { %>display:none<% } %>">-->
         <div class="separators" style="display:none">
             <div class="vertical-separator"></div>
