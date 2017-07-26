@@ -8,6 +8,8 @@ use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 
+use BOM::Platform::RedisReplicated;
+use Sereal::Encoder;
 use BOM::Test::Helper qw/build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
