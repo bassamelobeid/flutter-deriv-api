@@ -40,12 +40,19 @@ $redis2_module->mock(
 my $sub_ids = {};
 my @symbols = qw(frxUSDJPY frxAUDJPY frxAUDUSD);
 
-my $encoder   = Sereal::Encoder->new({
-        canonical => 1,
-    });
+my $encoder = Sereal::Encoder->new({
+    canonical => 1,
+});
 
-my $now = time;
-my @ticks = map {{epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.0001)}} for (my $i=$now - 1800;$i<=$now; $i+=15);
+my $time = time;
+my @ticks;
+for (my $i = $time - 1800; $i <= $time; $i += 15) {
+    push @ticks,
+        +{
+        epoch          => $_,
+        decimate_epoch => $_,
+        quote          => 100 + rand(0.0001)};
+}
 my $redis = BOM::Platform::RedisReplicated::redis_write();
 
 my $now = Date::Utility->new;
@@ -67,7 +74,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw(USD JPY AUD JPY-USD AUD-USD AUD-JPY);
 
 for my $s (@symbols) {
-    $redis->zadd('DECIMATE_' . $s. '_15s_DEC', $_->{epoch}, $encoder->encode($_)) for @$ticks;
+    $redis->zadd('DECIMATE_' . $s . '_15s_DEC', $_->{epoch}, $encoder->encode($_)) for @ticks;
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
@@ -164,12 +171,13 @@ is pricer_sub_count(), 0, "price count checking";
 done_testing();
 
 use Data::Dumper;
+
 sub create_propsals {
     for my $s (@symbols) {
         $req->{symbol} = $s;
         $t->send_ok({json => $req})->message_ok;
         $res = decode_json($t->message->[1]);
-        note( Data::Dumper->Dumper($res));
+        note(Data::Dumper->Dumper($res));
         ok $res->{proposal}->{id}, 'Should return id';
         $sub_ids->{$s} = $res->{proposal}->{id};
     }
