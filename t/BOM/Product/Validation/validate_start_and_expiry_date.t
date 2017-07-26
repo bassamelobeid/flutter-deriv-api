@@ -27,7 +27,7 @@ my $usdjpy_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tic
     underlying => 'frxAUDUSD',
     epoch      => $weekday->epoch
 });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $weekday});
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
