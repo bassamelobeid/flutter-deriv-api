@@ -18,7 +18,7 @@ use Try::Tiny::Except ();    # should be preloaded as early as possible
 sub init {
     $ENV{REQUEST_STARTTIME} = Time::HiRes::time;                           ## no critic (RequireLocalizedPunctuationVars)
     $^T                     = time;                                        ## no critic (RequireLocalizedPunctuationVars)
-    $ENV{PGSERVICEFILE}     = '/home/nobody/.pg_service_backprice.conf';
+    $ENV{PGSERVICEFILE}     = '/home/nobody/.pg_service_backprice.conf';   ## no critic (RequireLocalizedPunctuationVars)
     # Turn off any outstanding alarm, perhaps from a previous request in this mod_perl process,
     # while we figure out how we might want to alarm on this particular request.
     alarm(0);
