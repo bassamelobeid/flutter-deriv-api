@@ -5,7 +5,7 @@
         <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
         <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The time given on forexfactory is GMT-4)</td></tr>
         <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
-        <tr><td>Source</td><td> : <INPUT type="text" name="source" value="binary.com"></td></tr>
+        <tr><td>Source</td><td> : <INPUT type="text" name="source" value="binary.com"></td><td>(* DO NOT use forexfactory as source if creating new event manually)</td></tr>
         <tr><td>Custom Magnitude</td><td>: <INPUT type="text" name="custom_magnitude"></td><td>( *This will override the magnitude set in yaml for this event.)</td></tr>
         <tr><td>Impact</td>
             <td> : <select name=impact>
