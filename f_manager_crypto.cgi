@@ -64,6 +64,16 @@ print '<INPUT type="submit" value="Recon" name="view_action"/>';
 print '</FORM>';
 
 print '<br>';
+print '<h3>Exchange Rates</h3>';
+print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . ")" . "<ul>";
+
+foreach my $curr (qw(BTCUSD LTCUSD ETHUSD)) {
+    my $underlying = create_underlying('frx' . $curr);
+    print "<li>$curr: " . $underlying->spot . "</li>";
+}
+print "</ul>";
+
+print '<br>';
 print '<h3>Deposit</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
@@ -128,6 +138,10 @@ if (not $currency or $currency !~ /^[A-Z]{3}$/) {
     print "Invalid currency.";
     code_exit_BO();
 }
+
+# Obtain current exchange rate for the current currency
+my $underlying = create_underlying('frx' . $curr);
+my $exchange_rate = $underlying->spot;
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
 my $dbh = $clientdb->db->dbh;
@@ -199,6 +213,7 @@ if ($page eq 'Withdrawal Transactions') {
             broker       => $broker,
             view_type    => $view_type,
             currency     => $currency,
+            exchange_rate=> $exchange_rate,
         }) || die $tt->error();
 
 } elsif ($page eq 'Deposit Transactions') {
@@ -226,6 +241,7 @@ if ($page eq 'Withdrawal Transactions') {
             transaction_type => 'deposit',
             view_type        => $view_type,
             currency         => $currency,
+            exchange_rate    => $exchange_rate,
         }) || die $tt->error();
 
 } elsif ($page eq 'Recon') {
