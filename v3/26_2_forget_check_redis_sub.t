@@ -49,8 +49,8 @@ my @ticks;
 for (my $i = $time - 1800; $i <= $time; $i += 15) {
     push @ticks,
         +{
-        epoch          => $_,
-        decimate_epoch => $_,
+        epoch          => $i,
+        decimate_epoch => $i,
         quote          => 100 + rand(0.0001)};
 }
 my $redis = BOM::Platform::RedisReplicated::redis_write();
