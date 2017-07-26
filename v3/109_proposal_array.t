@@ -16,8 +16,8 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
-use BOM::Test::RPC::BomRpc;
-use BOM::Test::RPC::PricingRpc;
+#use BOM::Test::RPC::BomRpc;
+#use BOM::Test::RPC::PricingRpc;
 
 my $response;
 
