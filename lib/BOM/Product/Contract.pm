@@ -774,7 +774,10 @@ sub _build_applicable_economic_events {
         }
         )->get_latest_events_for_period({
             from => Date::Utility->new($start),
-            to   => Date::Utility->new($end)}, $self->underlying->for_date);
+            to   => Date::Utility->new($end)
+        },
+        $self->underlying->for_date
+        );
 }
 
 sub _build_tentative_events {

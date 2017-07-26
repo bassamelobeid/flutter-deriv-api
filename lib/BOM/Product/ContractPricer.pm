@@ -332,7 +332,10 @@ sub _generate_market_data {
         }
         )->get_latest_events_for_period({
             from => $date_start->minus_time_interval('10m'),
-            to   => $date_start->plus_time_interval('10m')}, $for_date);
+            to   => $date_start->plus_time_interval('10m')
+        },
+        $for_date
+        );
 
     my @applicable_news =
         sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;

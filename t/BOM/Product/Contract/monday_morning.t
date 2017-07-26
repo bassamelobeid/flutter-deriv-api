@@ -14,6 +14,7 @@ use Date::Utility;
 subtest 'monday mornings intraday' => sub {
     my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
     my $dp = Date::Utility->new('2017-06-13 00:19:59');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $dp});
     my $args = {
         bet_type => 'CALL',
         underlying => 'frxUSDJPY',

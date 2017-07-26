@@ -24,6 +24,7 @@ $mocked_decimate->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -62,7 +63,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch + 1,
     quote      => 0.9936,
 });
-
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 my $redis     = BOM::Platform::RedisReplicated::redis_write();
 my $undec_key = "DECIMATE_frxAUDCAD" . "_31m_FULL";
 my $encoder   = Sereal::Encoder->new({

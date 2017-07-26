@@ -29,6 +29,7 @@ my %custom_otm =
 BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json(\%custom_otm));
 
 my $now = Date::Utility->new('2017-03-15');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
