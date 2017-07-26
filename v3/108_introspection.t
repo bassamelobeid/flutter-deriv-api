@@ -4,6 +4,8 @@ use warnings;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 
+use BOM::Platform::RedisReplicated;
+use Sereal::Encoder;
 use Test::More;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
@@ -47,6 +49,22 @@ connect($socket, pack_sockaddr_in($intro_port, inet_aton("localhost")))
 my ($res, $ticks, $intro_stats, $intro_conn);
 
 my $now = Date::Utility->new;
+my $time = $now->epoch;
+my @ticks;
+for (my $i = $time - 1800; $i <= $time; $i += 15) {
+    push @ticks,
+        +{
+        epoch          => $i,
+        decimate_epoch => $i,
+        quote          => 100 + rand(0.0001)};
+}
+my $redis = BOM::Platform::RedisReplicated::redis_write();
+my $encoder = Sereal::Encoder->new({
+    canonical => 1,
+});
+
+$redis->zadd('DECIMATE_frxUSDJPY_15s_DEC', $_->{epoch}, $encoder->encode($_)) for @ticks;
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
     {
