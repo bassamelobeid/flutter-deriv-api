@@ -12,17 +12,19 @@ my $mocked_c           = Test::MockModule->new('BOM::Product::Contract');
 $mocked_c->mock('_applicable_economic_events', sub { [] });
 my $now = Date::Utility->new->truncate_to_day;
 
+my $c = produce_contract({
+    bet_type   => 'CALL',
+    underlying => 'frxUSDJPY',
+    date_start => $now,
+    date_pricing => $now,
+    duration   => '1h',
+    barrier    => 'S0P',
+    currency   => 'USD',
+    payout     => 100,
+});
+
 subtest 'no events' => sub {
     $mocked_seasonality->mock('categorized_events', sub { [] });
-    my $c = produce_contract({
-        bet_type   => 'CALL',
-        underlying => 'frxUSDJPY',
-        date_start => $now,
-        duration   => '1h',
-        barrier    => 'S0P',
-        currency   => 'USD',
-        payout     => 100,
-    });
     my $windows = $c->_get_tick_windows();
     is scalar(@$windows), 1, 'only one window';
     is $windows->[0][0], $now->minus_time_interval('20m')->epoch, 'correct start of period';
@@ -39,15 +41,6 @@ subtest 'event spans contract pricing time' => sub {
                     magnitude     => 10,
                 }];
         });
-    my $c = produce_contract({
-        bet_type   => 'CALL',
-        underlying => 'frxUSDJPY',
-        date_start => $now,
-        duration   => '1h',
-        barrier    => 'S0P',
-        currency   => 'USD',
-        payout     => 100,
-    });
     my $windows = $c->_get_tick_windows();
     is scalar(@$windows), 1, 'only one window';
     is $windows->[0][0], $now->minus_time_interval('25m')->epoch, 'correct start of period';
@@ -64,15 +57,6 @@ subtest 'one event which does not span the contract pricing time - so two window
                     magnitude     => 10,
                 }];
         });
-    my $c = produce_contract({
-        bet_type   => 'CALL',
-        underlying => 'frxUSDJPY',
-        date_start => $now,
-        duration   => '1h',
-        barrier    => 'S0P',
-        currency   => 'USD',
-        payout     => 100,
-    });
     my $windows = $c->_get_tick_windows();
     is scalar(@$windows), 2, 'two windows';
     is $windows->[0][0], $now->minus_time_interval('5m')->epoch, 'correct start of period';
@@ -97,15 +81,6 @@ subtest 'two overlapping events - two windows' => sub {
                 },
             ];
         });
-    my $c = produce_contract({
-        bet_type   => 'CALL',
-        underlying => 'frxUSDJPY',
-        date_start => $now,
-        duration   => '1h',
-        barrier    => 'S0P',
-        currency   => 'USD',
-        payout     => 100,
-    });
     my $windows = $c->_get_tick_windows();
     is scalar(@$windows), 2, 'two windows';
     is $windows->[0][0], $now->minus_time_interval('5m')->epoch, 'correct start of period';
@@ -130,15 +105,6 @@ subtest 'two overlapping events, second event\'s duration cross first event - tw
                 },
             ];
         });
-    my $c = produce_contract({
-        bet_type   => 'CALL',
-        underlying => 'frxUSDJPY',
-        date_start => $now,
-        duration   => '1h',
-        barrier    => 'S0P',
-        currency   => 'USD',
-        payout     => 100,
-    });
     my $windows = $c->_get_tick_windows();
     is scalar(@$windows), 2, 'two windows';
     is $windows->[0][0], $now->minus_time_interval('4m')->epoch, 'correct start of period';
@@ -168,15 +134,6 @@ subtest '3 events with two overlapping events - three windows' => sub {
                 },
             ];
         });
-    my $c = produce_contract({
-        bet_type   => 'CALL',
-        underlying => 'frxUSDJPY',
-        date_start => $now,
-        duration   => '1h',
-        barrier    => 'S0P',
-        currency   => 'USD',
-        payout     => 100,
-    });
     my $windows = $c->_get_tick_windows();
     is scalar(@$windows), 3, 'three windows';
     is $windows->[0][0], $now->minus_time_interval('5m')->epoch, 'correct start of period';
@@ -203,15 +160,6 @@ subtest 'indentical release date with different duration impact - two windows' =
                 },
             ];
         });
-    my $c = produce_contract({
-        bet_type   => 'CALL',
-        underlying => 'frxUSDJPY',
-        date_start => $now,
-        duration   => '1h',
-        barrier    => 'S0P',
-        currency   => 'USD',
-        payout     => 100,
-    });
     my $windows = $c->_get_tick_windows();
     is scalar(@$windows), 2, 'two windows';
     is $windows->[0][0], $now->minus_time_interval('5m')->epoch, 'correct start of period';
