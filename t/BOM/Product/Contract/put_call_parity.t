@@ -144,6 +144,8 @@ subtest 'put_call_parity_IH_non_japan' => sub {
             my $c1 = produce_contract($shortcode, $currency);
             my $p = $c1->build_parameters;
             $p->{date_pricing} = $c1->date_start;
+            # test was done with the assumption of 10% pricing vol
+            $p->{pricing_vol} = 0.1;
             my $c = produce_contract($p);
             isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
             my $call_theo_prob = $c->pricing_engine->base_probability->amount;
@@ -170,6 +172,8 @@ subtest 'put_call_parity_IH_japan' => sub {
         my $p = $c1->build_parameters;
         $p->{date_pricing}    = $c1->date_start;
         $p->{landing_company} = 'japan';
+        # test was done with the assumption of 10% pricing vol
+        $p->{pricing_vol} = 0.1;
         my $c = produce_contract($p);
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         my $call_theo_prob = $c->pricing_engine->base_probability->amount;
