@@ -146,7 +146,7 @@ if ($page eq 'Withdrawal Transactions') {
         code_exit_BO();
     }
 
-    if (not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|sent|error)$/) {
+    if (not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|performing_blockchain_txn|sent|error)$/) {
         print "Invalid selection to view type of transactions.";
         code_exit_BO();
     }
@@ -180,6 +180,9 @@ if ($page eq 'Withdrawal Transactions') {
             {Slice => {}}, $currency);
     } elsif ($view_type eq 'processing') {
         $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'PROCESSING'::payment.CTC_STATUS, NULL, NULL)",
+            {Slice => {}}, $currency);
+    } elsif ($view_type eq 'performing_blockchain_txn') {
+        $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'PERFORMING_BLOCKCHAIN_TXN'::payment.CTC_STATUS, NULL, NULL)",
             {Slice => {}}, $currency);
     } elsif ($view_type eq 'error') {
         $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'ERROR'::payment.CTC_STATUS, NULL, NULL)",

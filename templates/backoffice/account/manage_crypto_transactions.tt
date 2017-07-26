@@ -35,6 +35,10 @@
             <td>List withdrawal requests where client account is debited but blockchain transaction is not yet confirmed</td>
         </tr>
         <tr>
+            <td>Performing Blockchain Transaction</td>
+            <td>List withdrawal requests where we initiated blockain transaction. Please note that this is intermediate status and transaction should not be here for long. This status is set just before we make blockchain transaction. If you see transaction in this for long then we need to investigate it.</td>
+        </tr>
+        <tr>
             <td>Sent</td>
             <td>List withdrawal requests finally processed i.e debit and both blockchain completed</td>
         </tr>
@@ -111,6 +115,9 @@
                         <td>Processing: [% trx.processing_date %]</td>
                     </tr>
                     <tr>
+                        <td>Performing Blockchain: [% trx.performing_blockchain_txn_date %]</td>
+                    </tr>
+                    <tr>
                         <td>Sent:[% trx.sent_date %]</td>
                     </tr>
                     </tr>
@@ -183,6 +190,10 @@
     <td>|</td>
     <td>
         <a [% IF view_type == 'processing' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=processing">View transactions under processing</a>
+    </td>
+    <td>|</td>
+    <td>
+        <a [% IF view_type == 'performing_blockchain_txn' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=performing_blockchain_txn">View transactions listed as performed blockchain</a>
     </td>
     <td>|</td>
     <td>
