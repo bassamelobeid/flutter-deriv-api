@@ -159,7 +159,7 @@ sub create_propsals {
         $t->send_ok({json => $req})->message_ok;
         $res = decode_json($t->message->[1]);
         use Data::Dumper;
-        Data::Dumper->Dumper($res);
+        warn Data::Dumper->Dumper($res);
         ok $res->{proposal}->{id}, 'Should return id';
         $sub_ids->{$s} = $res->{proposal}->{id};
     }
