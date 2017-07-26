@@ -778,7 +778,7 @@ sub _build_applicable_economic_events {
         grep { $a->{length} }
             map {
             my $event = $tentative_events->{$_};
-            $event->{length} = $event->{blankkout_end} - $event->{blankout} if $event->{blankout} and $event->{blankout_end};
+            $event->{length} = $event->{blankout_end} - $event->{blankout} if (exists $event->{blankout} and exists $event->{blankout_end});
             $event;
             } keys %$tentative_events
     ) || 7200;
