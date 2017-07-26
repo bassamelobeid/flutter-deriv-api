@@ -57,9 +57,8 @@
     <tr>
         <th>BlockchainInfo</th>
         <th>PaymentInfo</th>
-[% IF transaction_type == 'deposit' -%]
-[% ELSE -%]
         <th>Date</th>
+[% IF transaction_type != 'deposit' -%]
         [% IF view_type == 'pending' %]
             <th>Verify</th>
             <th>|</th>
@@ -97,14 +96,20 @@
                 </tbody>
             </table>
         </td>
-[% IF transaction_type == 'deposit' -%]
-[% ELSE -%]
         <td>
             <table>
                 <tbody>
                     <tr>
                         <td>Creation: [% trx.creation_date %]</td>
                     </tr>
+[% IF transaction_type == 'deposit' -%]
+                    <tr>
+                        <td>Pending: [% trx.pending_date %]</td>
+                    </tr>
+                    <tr>
+                        <td>Confirmed: [% trx.confirmed_date %]</td>
+                    </tr>
+[% ELSE -%]
                     <tr>
                         <td>Verified: [% trx.verified_date %]</td>
                     </tr>
@@ -120,19 +125,18 @@
                     <tr>
                         <td>Sent:[% trx.sent_date %]</td>
                     </tr>
-                    </tr>
+[% END %]
                 </tbody>
             </table>
         </td>
-        [% IF view_type == 'pending' %]
-            <td>
-                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Verify transaction</a>
-            </td>
-            <td>|</td>
-            <td>
-                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Reject transaction</a>
-            </td>
-        [% END %]
+[% IF transaction_type != 'deposit' && view_type == 'pending' -%]
+        <td>
+            <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Verify transaction</a>
+        </td>
+        <td>|</td>
+        <td>
+            <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Reject transaction</a>
+        </td>
 [% END -%]
         <td>
             <table>
