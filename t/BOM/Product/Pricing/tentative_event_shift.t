@@ -18,15 +18,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
-my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
-$mocked->mock('historical_vol_markup', sub {
-    return Math::Util::CalculatedValue::Validatable->new({
-               name => 'historical_vol_markup',
-               set_by => 'test',
-               base_amount => 0,
-               description => 'test'
-           });
-    });
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
