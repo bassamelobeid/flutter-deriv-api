@@ -781,9 +781,9 @@ sub _build_applicable_economic_events {
             $event->{length} = $event->{blankkout_end} - $event->{blankout} if $event->{blankout} and $event->{blankout_end};
             $event;
             } keys %$tentative_events
-    );
+    ) || 7200;
 
-    my $event_length = ceil($max_event_length / 2) || 3600;
+    my $event_length = ceil($max_event_length / 2);
 
     my $start = $current_epoch - $seconds_to_expiry - $event_length;
     my $end   = $current_epoch + $seconds_to_expiry + $event_length;
