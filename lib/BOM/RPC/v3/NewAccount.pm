@@ -93,7 +93,6 @@ sub new_account_virtual {
 
 sub request_email {
     my ($email, $args) = @_;
-    use Data::Dumper;
 
     my $subject = $args->{subject};
     my $message = $args->{message};
