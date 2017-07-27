@@ -35,6 +35,10 @@
             <td>List withdrawal requests where client account is debited but blockchain transaction is not yet confirmed</td>
         </tr>
         <tr>
+            <td>Performing Blockchain Transaction</td>
+            <td>List withdrawal requests where we initiated blockain transaction. Please note that this is intermediate status and transaction should not be here for long. This status is set just before we make blockchain transaction. If you see transaction in this for long then we need to investigate it.</td>
+        </tr>
+        <tr>
             <td>Sent</td>
             <td>List withdrawal requests finally processed i.e debit and both blockchain completed</td>
         </tr>
@@ -53,9 +57,8 @@
     <tr>
         <th>BlockchainInfo</th>
         <th>PaymentInfo</th>
-[% IF transaction_type == 'deposit' -%]
-[% ELSE -%]
         <th>Date</th>
+[% IF transaction_type != 'deposit' -%]
         [% IF view_type == 'pending' %]
             <th>Verify</th>
             <th>|</th>
@@ -96,14 +99,20 @@
                 </tbody>
             </table>
         </td>
-[% IF transaction_type == 'deposit' -%]
-[% ELSE -%]
         <td>
             <table>
                 <tbody>
                     <tr>
                         <td>Creation: [% trx.creation_date %]</td>
                     </tr>
+[% IF transaction_type == 'deposit' -%]
+                    <tr>
+                        <td>Pending: [% trx.pending_date %]</td>
+                    </tr>
+                    <tr>
+                        <td>Confirmed: [% trx.confirmed_date %]</td>
+                    </tr>
+[% ELSE -%]
                     <tr>
                         <td>Verified: [% trx.verified_date %]</td>
                     </tr>
@@ -114,21 +123,23 @@
                         <td>Processing: [% trx.processing_date %]</td>
                     </tr>
                     <tr>
+                        <td>Performing Blockchain: [% trx.performing_blockchain_txn_date %]</td>
+                    </tr>
+                    <tr>
                         <td>Sent:[% trx.sent_date %]</td>
                     </tr>
-                    </tr>
+[% END %]
                 </tbody>
             </table>
         </td>
-        [% IF view_type == 'pending' %]
-            <td>
-                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Verify transaction</a>
-            </td>
-            <td>|</td>
-            <td>
-                <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Reject transaction</a>
-            </td>
-        [% END %]
+[% IF transaction_type != 'deposit' && view_type == 'pending' -%]
+        <td>
+            <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Verify transaction</a>
+        </td>
+        <td>|</td>
+        <td>
+            <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Reject transaction</a>
+        </td>
 [% END -%]
         <td>
             <table>
@@ -186,6 +197,10 @@
     <td>|</td>
     <td>
         <a [% IF view_type == 'processing' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=processing">View transactions under processing</a>
+    </td>
+    <td>|</td>
+    <td>
+        <a [% IF view_type == 'performing_blockchain_txn' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=performing_blockchain_txn">View transactions listed as performed blockchain</a>
     </td>
     <td>|</td>
     <td>
