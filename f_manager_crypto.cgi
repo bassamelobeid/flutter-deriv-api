@@ -11,7 +11,7 @@ use YAML::XS;
 use Client::Account;
 use Text::CSV;
 use List::UtilsBy qw(rev_nsort_by sort_by);
-use Format::Util::Numbers qw/financialrounding/;
+use Format::Util::Numbers qw/financialrounding formatnumber/;
 
 use BOM::Database::ClientDB;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
@@ -206,17 +206,18 @@ if ($page eq 'Withdrawal Transactions') {
             {Slice => {}}, $currency);
     }
 
+    $_->{usd_amount} = formatnumber($_->{amount} * $rate) for @$trxns;
+
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
         'backoffice/account/manage_crypto_transactions.tt',
         {
-            transactions  => $trxns,
-            broker        => $broker,
-            view_type     => $view_type,
-            currency      => $currency,
-            exchange_rate => $exchange_rate,
+            transactions => $trxns,
+            broker       => $broker,
+            view_type    => $view_type,
+            currency     => $currency,
         }) || die $tt->error();
 
 } elsif ($page eq 'Deposit Transactions') {
@@ -233,6 +234,8 @@ if ($page eq 'Withdrawal Transactions') {
         $currency, uc $view_type
     );
 
+    $_->{usd_amount} = formatnumber($_->{amount} * $exchange_rate) for @$trxns;
+
     Bar("LIST OF TRANSACTIONS - DEPOSITS");
 
     my $tt = BOM::Backoffice::Request::template;
@@ -244,7 +247,6 @@ if ($page eq 'Withdrawal Transactions') {
             transaction_type => 'deposit',
             view_type        => $view_type,
             currency         => $currency,
-            exchange_rate    => $exchange_rate,
         }) || die $tt->error();
 
 } elsif ($page eq 'Recon') {
