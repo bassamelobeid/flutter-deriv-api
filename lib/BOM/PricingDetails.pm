@@ -99,6 +99,7 @@ sub debug_link {
     Volatility::Seasonality::generate_economic_event_seasonality({
         underlying_symbols => [$bet->underlying->symbol],
         economic_events    => $events,
+        date               => $bet->date_start,
         chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
     });
 
