@@ -211,7 +211,7 @@
       "required": "1"
     },
     "employment_status" : {
-      "enum": ["Employed", "Pensioner", "Self Employed", "Student", "Unemployed"],
+      "enum": ["Employed", "Pensioner", "Self-Employed", "Student", "Unemployed"],
       "description": "Employment Status",
       "required": 0
     },
