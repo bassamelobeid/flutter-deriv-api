@@ -334,7 +334,7 @@ sub get_financial_input_mapping {
             possible_answer => {
                 'Employed'      => 0,
                 'Pensioner'     => 0,
-                'Self Employed' => 0,
+                'Self-Employed' => 0,
                 'Student'       => 0,
                 'Unemployed'    => 0,
             },

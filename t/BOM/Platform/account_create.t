@@ -99,7 +99,7 @@ my %financial_data = (
     net_income                           => '$50,001 - $100,000',
     estimated_worth                      => '$250,001 - $500,000',
     occupation                           => 'Managers',
-    employment_status                    => "Self Employed",
+    employment_status                    => "Self-Employed",
     source_of_wealth                     => "Company Ownership",
 );
 
