@@ -66,9 +66,11 @@ print '</FORM>';
 print '<br>';
 print '<h3>Search</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
-print '<input type="text" name="search_field" required>';
-print '<select name="type"><option value="loginid">Loginid</option><option value="address">Address</option></select>';
-print '<input type="submit" value="Search" name="view_action"/>';
+print '<select name="currency"><option value="BTC">Bitcoin</option></select>';
+print '<input type="text" name="search_query" required>';
+print '<select name="search_type"><option value="loginid">Loginid</option><option value="address">Address</option></select>';
+print '<input type=hidden name="broker" value="' . $encoded_broker . '">';
+print '<input type="submit" value="search" name="view_action"/>';
 print '</FORM>';
 
 print '<br>';
@@ -209,16 +211,34 @@ if ($page eq 'Withdrawal Transactions') {
             currency     => $currency,
         }) || die $tt->error();
 
-} elsif ($page eq 'Search Tool') {
+} elsif ($page eq 'search') {
+    Bar("SEARCH RESULT");
     my $trxns;
-    if ($view_type eq 'address') {
-        $trxns = $dbh->selectall_arrayref("SELECT * FORM payment.ctc_bo_get_cryptocurrency_details_by_address(?)", {Slice->{}}, $address);
-    } elsif ($view_type eq 'loginid') {
-        $trxns = $dbh->selectall_arrayref("SELECT * FORM payment.ctc_bo_get_cryptocurrency_details_by_loginid(?)", {Slice->{}}, $loginid);
+    my $search_type  = request()->param('search_type');
+    my $search_query = request()->param('search_query');
+    if ($search_type eq 'address') {
+        $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_cryptocurrency_details_by_address(?)", {Slice => {}}, $search_query);
+    } elsif ($search_type eq 'loginid') {
+        $trxns = $dbh->selectall_arrayref(
+            "SELECT * FROM payment.ctc_bo_get_cryptocurrency_details_by_loginid(?, NULL, NULL)",
+            {Slice => {}},
+            $search_query
+        );
     } else {
-        print "Invalid request to view type of transactions.";
+        print "Invalid type of search request.";
         code_exit_BO();
     }
+
+    my $tt = BOM::Backoffice::Request::template;
+    $tt->process(
+        'backoffice/account/manage_crypto_transactions.tt',
+        {
+            transactions => $trxns,
+            broker       => $broker,
+            view_type    => $view_type,
+            currency     => $currency,
+        }) || die $tt->error();
+
 } elsif ($page eq 'Deposit Transactions') {
 
     $view_type ||= 'new';
