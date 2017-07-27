@@ -211,7 +211,7 @@ if ($page eq 'Withdrawal Transactions') {
 
     my $underlying = create_underlying('frx' . $currency . 'USD');
     $exchange_rate = $underlying->spot;
-    $_->{usd_amount} = formatnumber($_->{amount} * $exchange_rate) for @$trxns;
+    $_->{usd_amount} = formatnumber('amount', $_->{address}, $_->{amount} * $exchange_rate) for @$trxns;
 
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
@@ -241,8 +241,8 @@ if ($page eq 'Withdrawal Transactions') {
 
     my $underlying = create_underlying('frx' . $currency . 'USD');
     $exchange_rate = $underlying->spot;
-    $_->{usd_amount} = formatnumber($_->{amount} * $exchange_rate) for @$trxns;
-
+    $_->{usd_amount} = formatnumber('amount', $_->{address}, $_->{amount} * $exchange_rate) for @$trxns;
+    
     Bar("LIST OF TRANSACTIONS - DEPOSITS");
 
     my $tt = BOM::Backoffice::Request::template;
