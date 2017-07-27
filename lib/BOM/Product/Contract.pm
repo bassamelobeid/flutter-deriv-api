@@ -806,16 +806,7 @@ sub _build_tentative_events {
         $self->underlying->quoted_currency_symbol => 1,
     );
 
-    #Add check for blankout and blankout_end.
-    return [
-        grep {
-                    $_->{is_tentative}
-                and $affected_currency{$_->{symbol}}
-                and exists $_->{blankout}
-                and exists $_->{blankout_end}
-                and $_->{blankout} <= $effective_start
-                and $_->{blankout_end} >= $effective_start
-        } @{$self->_applicable_economic_events}];
+    return [grep { $_->{is_tentative} and $affected_currency{$_->{symbol}} } @{$self->_applicable_economic_events}];
 }
 
 sub _build_pricing_spot {
