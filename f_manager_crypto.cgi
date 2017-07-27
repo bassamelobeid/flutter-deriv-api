@@ -139,10 +139,6 @@ if (not $currency or $currency !~ /^[A-Z]{3}$/) {
     code_exit_BO();
 }
 
-# Obtain current exchange rate for the current currency
-my $underlying = create_underlying('frx' . $currency);
-my $exchange_rate = $underlying->spot;
-
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
 my $dbh = $clientdb->db->dbh;
 
@@ -206,6 +202,11 @@ if ($page eq 'Withdrawal Transactions') {
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
     my $tt = BOM::Backoffice::Request::template;
+
+    # Obtain current exchange rate for the current currency
+    my $underlying = create_underlying('frx' . $currency);
+    my $exchange_rate = $underlying->spot;
+
     $tt->process(
         'backoffice/account/manage_crypto_transactions.tt',
         {
@@ -231,6 +232,9 @@ if ($page eq 'Withdrawal Transactions') {
     );
 
     Bar("LIST OF TRANSACTIONS - DEPOSITS");
+    # Obtain current exchange rate for the current currency
+    my $underlying = create_underlying('frx' . $currency);
+    my $exchange_rate = $underlying->spot;    
 
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
