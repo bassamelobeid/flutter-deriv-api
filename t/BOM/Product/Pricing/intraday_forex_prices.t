@@ -89,7 +89,7 @@ my %equal = (
     CALLE => 1,
     PUTE  => 1,
 );
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {events => $news});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {events => $news, recorded_date => $date_pricing});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
     {
