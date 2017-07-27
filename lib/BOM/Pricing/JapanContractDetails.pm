@@ -15,6 +15,7 @@ use LandingCompany::Registry;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Platform::Runtime;
+use BOM::Platform::Chronicle;
 
 sub parse_file {
     my ($file, $landing_company) = @_;
@@ -144,6 +145,27 @@ sub verify_with_shortcode {
     }
 
     my $contract = produce_contract($pricing_args);
+
+    my $seasonality_prefix = 'bo_' . time . '_';
+
+    Volatility::Seasonality::set_prefix($seasonality_prefix);
+    my $EEC = Quant::Framework::EconomicEventCalendar->new({
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
+    my $events = $EEC->get_latest_events_for_period({
+            from => $contract->date_start,
+            to   => $contract->date_start->plus_time_interval('6d'),
+        },
+        $contract->underlying->for_date
+    );
+    Volatility::Seasonality::generate_economic_event_seasonality({
+        underlying_symbols => [$contract->underlying->symbol],
+        economic_events    => $events,
+        date               => $contract->date_start,
+        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
+
     # due to complexity in $action_type, this is a hacky fix.
     my @contracts = (
         [$contract, $verify_ask],
