@@ -88,9 +88,6 @@
                         <td>In USD: [% trx.amount * exchange_rate%]</td>                    
                     <tr>
                     <tr>
-                        <td>Exchange rate: [% exchange_rate %]</td>
-                    <tr>
-                    <tr>
                         <td>[% trx.client_loginid %]<td>
                     </tr>
                     <tr>
