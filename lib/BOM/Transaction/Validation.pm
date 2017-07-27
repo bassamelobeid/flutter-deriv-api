@@ -69,22 +69,16 @@ sub validate_trx_buy {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
+    my @client_validation_method = qw/ check_trade_status _validate_available_currency _validate_currency /;
+    push @client_validation_method,
+        qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_status _validate_client_self_exclusion)
+        unless $self->transaction->contract->is_binaryico;
+    push @client_validation_method, '_validate_ico_jurisdictional_restrictions' if $self->transaction->contract->is_binaryico;
+    push @client_validation_method, '_is_valid_to_buy';    # do this is as last of the validation
+
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
-        for (
-            qw/
-            check_trade_status
-            validate_tnc
-            _validate_iom_withdrawal_limit
-            _validate_available_currency
-            _validate_currency
-            _validate_jurisdictional_restrictions
-            _validate_client_status
-            _validate_client_self_exclusion
-            _is_valid_to_buy
-            /
-            )
-        {
+        foreach my $method (@client_validation_method) {
             $res = $self->$_($c->{client});
             next unless $res;
 
