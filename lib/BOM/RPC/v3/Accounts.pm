@@ -330,15 +330,21 @@ sub get_account_status {
         keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     my $prompt_client_to_authenticate = 0;
-    if (!$client->client_fully_authenticated) {
-        if ($client->landing_company->short eq 'costarica') {
+    my $shortcode = $client->landing_company->short;
+    if ($client->client_fully_authenticated) {
+        # Authenticated clients still need to go through age verification checks for IOM/MF/MLT
+        if (any { $shortcode eq $_ } qw(iom malta maltainvest)) {
+            $prompt_client_to_authenticate = 1 unless $client->get_status('age_verification');
+        }
+    } else {
+        if ($shortcode eq 'costarica') {
             # Our threshold is 4000 USD, but we want to include total across all the user's currencies
             my $total = sum0(map { in_USD($_->default_account->balance, $_->currency) }
                     grep { $_->landing_company->short eq $client->landing_company->short } $user->clients);
             if ($total > 4000) {
                 $prompt_client_to_authenticate = 1;
             }
-        } elsif ($client->landing_company->short eq 'virtual') {
+        } elsif ($shortcode eq 'virtual') {
             # No authentication for virtual accounts - set this explicitly in case we change the default above
             $prompt_client_to_authenticate = 0;
         } else {
