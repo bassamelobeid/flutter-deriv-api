@@ -89,7 +89,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 # prepare client
-my $email  = 'test-binary@binary.com';
+my $email  = 'test-binary-introspection@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
