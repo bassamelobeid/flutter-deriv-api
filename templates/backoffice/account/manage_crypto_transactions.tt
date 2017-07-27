@@ -91,6 +91,9 @@
                         <td>In USD: [% trx.usd_amount %]</td>                    
                     <tr>
                     <tr>
+                        <td>Balance: [% trx.balance %]</td>
+                    </tr>
+                    <tr>
                         <td>[% trx.client_loginid %]<td>
                     </tr>
                     <tr>
