@@ -140,7 +140,7 @@ if (not $currency or $currency !~ /^[A-Z]{3}$/) {
 }
 
 # Obtain current exchange rate for the current currency
-my $underlying = create_underlying('frx' . $curr);
+my $underlying = create_underlying('frx' . $currency);
 my $exchange_rate = $underlying->spot;
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
