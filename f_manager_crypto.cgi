@@ -67,6 +67,15 @@ print '<br>';
 print '<h3>Exchange Rates</h3>';
 print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . ")" . "<ul>";
 
+# Obtain current exchange rate for the current currency
+my $exchange_rate;
+foreach my $curr (qw(BTCUSD LTCUSD ETHUSD)) {
+    my $underlying = create_underlying('frx' . $curr);
+    $exchange_rate = $underlying->spot if $curr =~ qr/^$currency/;
+    print "<li>$curr: " . $underlying->spot . "</li>";
+}
+print "</ul>";
+
 print '<br>';
 print '<h3>Deposit</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
@@ -159,7 +168,7 @@ if ($page eq 'Withdrawal Transactions') {
         code_exit_BO();
     }
 
-    if (not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|performing_blockchain_txn|sent|error)$/) {
+    if (not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|performing_blockchain_txn|performing_blockchain_txn|sent|error)$/) {
         print "Invalid selection to view type of transactions.";
         code_exit_BO();
     }
@@ -198,6 +207,10 @@ if ($page eq 'Withdrawal Transactions') {
         $trxns =
             $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'PERFORMING_BLOCKCHAIN_TXN'::payment.CTC_STATUS, NULL, NULL)",
             {Slice => {}}, $currency);
+    } elsif ($view_type eq 'performing_blockchain_txn') {
+        $trxns =
+            $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'PERFORMING_BLOCKCHAIN_TXN'::payment.CTC_STATUS, NULL, NULL)",
+            {Slice => {}}, $currency);
     } elsif ($view_type eq 'error') {
         $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'ERROR'::payment.CTC_STATUS, NULL, NULL)",
             {Slice => {}}, $currency);
@@ -214,10 +227,10 @@ if ($page eq 'Withdrawal Transactions') {
     $tt->process(
         'backoffice/account/manage_crypto_transactions.tt',
         {
-            transactions => $trxns,
-            broker       => $broker,
-            view_type    => $view_type,
-            currency     => $currency,
+            transactions  => $trxns,
+            broker        => $broker,
+            view_type     => $view_type,
+            currency      => $currency,
         }) || die $tt->error();
 
 } elsif ($page eq 'Deposit Transactions') {
