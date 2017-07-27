@@ -71,7 +71,6 @@ print "The following exchange rates are from our live data feed. They are live r
 my $exchange_rate;
 foreach my $curr (qw(BTCUSD LTCUSD ETHUSD)) {
     my $underlying = create_underlying('frx' . $curr);
-    $exchange_rate = $underlying->spot if $curr =~ qr/^$currency/;
     print "<li>$curr: " . $underlying->spot . "</li>";
 }
 print "</ul>";
@@ -142,15 +141,6 @@ if (not $currency or $currency !~ /^[A-Z]{3}$/) {
     code_exit_BO();
 }
 
-# Obtain current exchange rate for the current currency
-my $exchange_rate;
-foreach my $curr (qw(BTCUSD LTCUSD ETHUSD)) {
-    my $underlying = create_underlying('frx' . $curr);
-    $exchange_rate = $underlying->spot if $curr =~ qr/^$currency/;
-    print "<li>$curr: " . $underlying->spot . "</li>";
-}
-print "</ul>";
-
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
 my $dbh = $clientdb->db->dbh;
 
@@ -219,6 +209,7 @@ if ($page eq 'Withdrawal Transactions') {
             {Slice => {}}, $currency);
     }
 
+    $exchange_rate = $underlying->spot if $curr =~ qr/^$currency/;
     $_->{usd_amount} = formatnumber($_->{amount} * $exchange_rate) for @$trxns;
 
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
@@ -247,6 +238,7 @@ if ($page eq 'Withdrawal Transactions') {
         $currency, uc $view_type
     );
 
+    $exchange_rate = $underlying->spot if $curr =~ qr/^$currency/;
     $_->{usd_amount} = formatnumber($_->{amount} * $exchange_rate) for @$trxns;
 
     Bar("LIST OF TRANSACTIONS - DEPOSITS");
