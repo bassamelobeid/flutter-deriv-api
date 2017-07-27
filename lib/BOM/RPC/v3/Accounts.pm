@@ -10,7 +10,7 @@ use WWW::OneAll;
 use Date::Utility;
 use Data::Password::Meter;
 use HTML::Entities qw(encode_entities);
-use List::Util qw(any);
+use List::Util qw(any sum0);
 
 use Brands;
 use Client::Account;
@@ -329,15 +329,11 @@ sub get_account_status {
         any { !length $financial_assessment->{$_}->{answer} }
         keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
-    # * or: CR and sum(balance in USD) is > 4000 USD
     my $prompt_client_to_authenticate = 0;
     if (!$client->client_fully_authenticated) {
         if ($client->landing_company->short eq 'costarica') {
-            my $total = 0;
-            for my $client ($user->clients) {
-                my $acc = $client->default_account;
-                $total += in_USD($acc->balance, $client->currency);
-            }
+            # Our threshold is 4000 USD, but we want to include total across all the user's currencies
+            my $total = sum0(map { in_USD($_->default_acccount->balance, $_->currency) } $user->clients);
             if ($total > 4000) {
                 $prompt_client_to_authenticate = 1;
             }
