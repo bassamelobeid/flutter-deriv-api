@@ -16,6 +16,7 @@ use Brands;
 use Client::Account;
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber/;
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
@@ -328,9 +329,30 @@ sub get_account_status {
         any { !length $financial_assessment->{$_}->{answer} }
         keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
+    # * or: CR and sum(balance in USD) is > 4000 USD
+    my $prompt_client_to_authenticate = 0;
+    if(!$client->client_fully_authenticated) {
+        if($client->landing_company->shortcode eq 'costarica') {
+            my $total = 0;
+            for my $client ($user->clients) {
+                $total += in_USD($client->balance, $client->currency);
+            }
+            if($total > 4000) {
+                $prompt_client_to_authenticate = 1;
+            }
+        } elsif($client->landing_company->shortcode eq 'virtual') {
+            # No authentication for virtual accounts - set this explicitly in case we change the default above
+            $prompt_client_to_authenticate = 0;
+        } else {
+            # Authentication required for all regulated companies, including JP - we'll handle this on the frontend
+            $prompt_client_to_authenticate = 1;
+        }
+    }
+
     return {
-        status              => \@status,
-        risk_classification => $risk_classification
+        status                        => \@status,
+        prompt_client_to_authenticate => $prompt_client_to_authenticate,
+        risk_classification           => $risk_classification
     };
 }
 
