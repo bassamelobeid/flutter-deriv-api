@@ -7,7 +7,9 @@
         [% cc = countries.code_from_country(c) %]
         <option value="[% cc %]">[% c %]</option>
     [% END %]
-    <option value="Unknown"[% IF broker == 'JP' %] selected="selected"[% END %]>Unknown</option>
+[% IF broker == 'JP' -%]
+    <option value="Unknown" selected="selected">Unknown</option>
+[% END -%]
   </select>
   <br>
 [% FOR n IN [1..4] %]

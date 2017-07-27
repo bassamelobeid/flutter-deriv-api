@@ -211,7 +211,7 @@ if ($input{whattodo} eq 'uploadID') {
         }
 
         if ($doctype =~ /passport|proofid/) {    # citizenship may only be changed when uploading passport or proofid
-            if ($docnationality && ($docnationality =~ /^[a-z]{2}$/i or $docnationality eq 'Unknown')) {
+            if ($docnationality && ($docnationality =~ /^[a-z]{2}$/i or ($broker eq 'JP' and $docnationality eq 'Unknown'))) {
                 $client->citizen($docnationality);
             } else {
                 $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality</p><br />";
