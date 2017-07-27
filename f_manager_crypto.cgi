@@ -206,7 +206,7 @@ if ($page eq 'Withdrawal Transactions') {
             {Slice => {}}, $currency);
     }
 
-    $_->{usd_amount} = formatnumber($_->{amount} * $rate) for @$trxns;
+    $_->{usd_amount} = formatnumber($_->{amount} * $exchange_rate) for @$trxns;
 
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
