@@ -333,7 +333,7 @@ sub get_account_status {
     if (!$client->client_fully_authenticated) {
         if ($client->landing_company->short eq 'costarica') {
             # Our threshold is 4000 USD, but we want to include total across all the user's currencies
-            my $total = sum0(map { in_USD($_->default_acccount->balance, $_->currency) } $user->clients);
+            my $total = sum0(map { in_USD($_->default_account->balance, $_->currency) } $user->clients);
             if ($total > 4000) {
                 $prompt_client_to_authenticate = 1;
             }
