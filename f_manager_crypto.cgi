@@ -67,8 +67,11 @@ print '<br>';
 print '<h3>Exchange Rates</h3>';
 print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . ")" . "<ul>";
 
+# Obtain current exchange rate for the current currency
+my $exchange_rate;
 foreach my $curr (qw(BTCUSD LTCUSD ETHUSD)) {
     my $underlying = create_underlying('frx' . $curr);
+    $exchange_rate = $underlying->spot if $curr =~ qr/^$currency/;
     print "<li>$curr: " . $underlying->spot . "</li>";
 }
 print "</ul>";
@@ -138,10 +141,6 @@ if (not $currency or $currency !~ /^[A-Z]{3}$/) {
     print "Invalid currency.";
     code_exit_BO();
 }
-
-# Obtain current exchange rate for the current currency
-my $underlying    = create_underlying('frx' . $currency . 'USD');
-my $exchange_rate = $underlying->spot;
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
 my $dbh = $clientdb->db->dbh;
