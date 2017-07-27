@@ -88,6 +88,9 @@
                         <td>[% trx.currency_code %] [% trx.amount %]</td>
                     </tr>
                     <tr>
+                        <td>In USD: [% trx.usd_amount %]</td>                    
+                    <tr>
+                    <tr>
                         <td>[% trx.client_loginid %]<td>
                     </tr>
                     <tr>

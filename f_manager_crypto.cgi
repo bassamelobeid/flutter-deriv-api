@@ -11,7 +11,7 @@ use YAML::XS;
 use Client::Account;
 use Text::CSV;
 use List::UtilsBy qw(rev_nsort_by sort_by);
-use Format::Util::Numbers qw/financialrounding/;
+use Format::Util::Numbers qw/financialrounding formatnumber/;
 
 use BOM::Database::ClientDB;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
@@ -72,6 +72,18 @@ print '<select name="search_type"><option value="loginid">Loginid</option><optio
 print '<input type=hidden name="broker" value="' . $encoded_broker . '">';
 print '<input type="submit" value="search" name="view_action"/>';
 print '</FORM>';
+
+print '<h3>Exchange Rates</h3>';
+print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . ")";
+print "<ul>";
+# Obtain current exchange rate for the current currency
+my $exchange_rate;
+foreach my $curr (qw(BTCUSD LTCUSD ETHUSD)) {
+    my $underlying = create_underlying('frx' . $curr);
+    $exchange_rate = $underlying->spot if $curr =~ qr/^$currency/;
+    print "<li>$curr: " . $underlying->spot . "</li>";
+}
+print "</ul>";
 
 print '<br>';
 print '<h3>Deposit</h3>';
@@ -203,6 +215,8 @@ if ($page eq 'Withdrawal Transactions') {
             {Slice => {}}, $currency);
     }
 
+    ($_->{usd_amount} = formatnumber('amount', 'USD', $_->{amount} * $exchange_rate)) foreach @$trxns;
+
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
     my $tt = BOM::Backoffice::Request::template;
@@ -233,6 +247,8 @@ if ($page eq 'Withdrawal Transactions') {
         code_exit_BO();
     }
 
+    $_->{usd_amount} = formatnumber('amount', 'USD', $_->{amount} * $exchange_rate) for @$trxns;
+
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
         'backoffice/account/manage_crypto_transactions.tt',
@@ -256,6 +272,8 @@ if ($page eq 'Withdrawal Transactions') {
         {Slice => {}},
         $currency, uc $view_type
     );
+
+    $_->{usd_amount} = formatnumber('amount', 'USD', $_->{amount} * $exchange_rate) for @$trxns;
 
     Bar("LIST OF TRANSACTIONS - DEPOSITS");
 

@@ -80,7 +80,12 @@ foreach my $single_data (@$decimate_data) {
 
 sub prepare_market_data {
     my $date = shift;
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {events => $news->{$date->epoch}});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'economic_events',
+        {
+            events        => $news->{$date->epoch},
+            recorded_date => $date
+        });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'holiday',
         {
@@ -488,7 +493,7 @@ subtest '2017_with_extra_data' => sub {
         is $ask->{commission_markup},         0.035,               'matched commission markup';
         is $ask->{intraday_delta_correction}, 0,                   'matched intraday delta correction';
         is $ask->{intraday_vega_correction},  -0.0235434604443186, 'matched intraday vega correction';
-        is $ask->{risk_markup},               0.0452924547340695,  'matched risk markup';
+        is $ask->{risk_markup},               0.0552924547340695,  'matched risk markup';
         $mocked->unmock_all();
     };
 
