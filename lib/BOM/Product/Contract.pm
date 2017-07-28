@@ -762,13 +762,15 @@ sub _build_applicable_economic_events {
     # Go back and forward an hour to get all the tentative events.
     my $start = $current_epoch - $seconds_to_expiry - 3600;
     my $end   = $current_epoch + $seconds_to_expiry + 3600;
-
     return Quant::Framework::EconomicEventCalendar->new({
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
         }
         )->get_latest_events_for_period({
             from => Date::Utility->new($start),
-            to   => Date::Utility->new($end)});
+            to   => Date::Utility->new($end)
+        },
+        $self->underlying->for_date
+        );
 }
 
 sub _build_tentative_events {

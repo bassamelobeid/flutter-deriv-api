@@ -44,7 +44,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 source       => 'forexfactory',
                 impact       => 1,
                 event_name   => 'FOMC',
-            }]});
+            }], recorded_date => $start_time});
 
 for my $type (qw(CALL PUT)) {
     for my $underlying (qw(R_100 R_25 frxEURUSD frxUSDJPY AEX frxBROUSD WLDEUR)) {
