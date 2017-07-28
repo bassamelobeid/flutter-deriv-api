@@ -14,11 +14,9 @@ sub email_verification {
     my $website_name     = $args->{website_name};
     my $verification_uri = $args->{verification_uri};
 
-    my $gen_verify_button = sub {
+    my $gen_verify_link = sub {
         my $action = shift;
-        my $uri    = "$verification_uri?action=$action&code=$code";
-
-        return "<p><a href=\"$uri\">$uri</a></p>";
+        return "$verification_uri?action=$action&code=$code";
     };
 
     return {
@@ -27,8 +25,8 @@ sub email_verification {
                 subject => localize('Verify your email address - [_1]', $website_name),
                 message => $verification_uri
                 ? localize(
-                    '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Click the following link to verify your account:</p>[_1]<p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                    $gen_verify_button->('signup'),
+                    '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Click the following link to verify your account:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                    $gen_verify_link->('signup'),
                     $website_name
                     )
                 : localize(
@@ -55,8 +53,8 @@ sub email_verification {
             my $payment_withdraw =
                 $verification_uri
                 ? localize(
-                '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the below link:</p>[_1]<p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                $gen_verify_button->('payment_withdraw'),
+                '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the below link:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                $gen_verify_link->('payment_withdraw'),
                 $website_name
                 )
                 : localize(
@@ -67,8 +65,8 @@ sub email_verification {
             my $payment_withdraw_agent =
                 $verification_uri
                 ? localize(
-                '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the below link:</p>[_1]<p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                $gen_verify_button->('payment_agent_withdraw'),
+                '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the below link:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                $gen_verify_link->('payment_agent_withdraw'),
                 $website_name
                 )
                 : localize(
@@ -86,8 +84,8 @@ sub email_verification {
                 subject => localize('[_1] New Password Request', $website_name),
                 message => $verification_uri
                 ? localize(
-                    '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by clicking the below link:</p>[_1]<p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                    $gen_verify_button->('reset_password'),
+                    '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by clicking the below link:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                    $gen_verify_link->('reset_password'),
                     $website_name
                     )
                 : localize(

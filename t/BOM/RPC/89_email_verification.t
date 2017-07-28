@@ -44,7 +44,7 @@ my $messages = {
 sub get_verification_message {
     my ($message_name, $action) = @_;
 
-    my $uri               = get_verification_uri($action) if $action;
+    my $uri               = get_verification_uri($action)      if $action;
     my $verification_link = "<p><a href=\"$uri\">$uri</a></p>" if $action;
 
     my $verification_way = $action ? $verification_link : $code;
@@ -60,16 +60,11 @@ sub get_verification_message {
 sub get_verification {
     my $with_link = shift;
 
-    return $with_link
-        ? email_verification({
-            code             => $code,
-            website_name     => $website_name,
-            verification_uri => $verification_uri,
-        })
-        : email_verification({
-            code         => $code,
-            website_name => $website_name,
-        });
+    return email_verification({
+        code         => $code,
+        website_name => $website_name,
+        ($with_link ? (verification_uri => $verification_uri) : ()),
+    });
 }
 
 subtest 'Account Opening (new) Verification' => sub {
