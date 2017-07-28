@@ -81,6 +81,11 @@
             "type": "integer",
             "pattern": "^(0|1)$",
             "required": "1"
+        },
+        "account_opening_reason": {
+            "type": "string",
+            "pattern": "^Hedging$",
+            "required": "1"
         }
     }
 }
