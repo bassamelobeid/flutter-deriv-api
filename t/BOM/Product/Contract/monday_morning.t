@@ -14,6 +14,7 @@ use Date::Utility;
 subtest 'monday mornings intraday' => sub {
     my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
     my $dp = Date::Utility->new('2017-06-13 00:19:59');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $dp});
     my $args = {
         bet_type => 'CALL',
         underlying => 'frxUSDJPY',
@@ -29,6 +30,7 @@ subtest 'monday mornings intraday' => sub {
     my $vol;
     warning_like { $vol = $c->pricing_engine->_calculate_historical_volatility} qr/Historical ticks not found/, 'warn if historical tick not found after first 20 minutes of a tuesday';
     $dp = Date::Utility->new('2017-06-12 00:19:59');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $dp});
     $args->{date_pricing} = $args->{date_start} = $dp;
     $c = produce_contract($args);
     is $c->pricing_engine->_calculate_historical_volatility, 0.1, '10% vol on monday morning before first 20 minutes';

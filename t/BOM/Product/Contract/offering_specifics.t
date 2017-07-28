@@ -23,6 +23,7 @@ use Cache::RedisDB;
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $now = Date::Utility->new('2016-09-22');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
