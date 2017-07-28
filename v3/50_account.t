@@ -184,6 +184,7 @@ $args->{estimated_worth} = '$100,000 - $250,000';
 $t = $t->send_ok({json => $args})->message_ok;
 $res = decode_json($t->message->[1]);
 cmp_ok($res->{set_financial_assessment}->{score}, "<", 60, "Correct score");
+note("set_financial_assessment json :: " . encode_json($res));
 is($res->{set_financial_assessment}->{is_professional}, 0, "is_professional flag is set correctly");
 
 $t->finish_ok;
