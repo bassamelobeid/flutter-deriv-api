@@ -205,7 +205,7 @@ sub get_contract_details_with_transaction_ids {
     my $contract_id = shift;
 
     my $sql = q{
-        SELECT fmb.*, t.id as transaction_id, t.action_type, t.app_markup
+        SELECT fmb.*, t.id as transaction_id, t.action_type, t.app_markup, t.source
         FROM
             bet.financial_market_bet fmb
             JOIN transaction.transaction t on t.financial_market_bet_id=fmb.id
