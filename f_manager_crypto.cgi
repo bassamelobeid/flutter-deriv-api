@@ -215,7 +215,9 @@ if ($page eq 'Withdrawal Transactions') {
             {Slice => {}}, $currency);
     }
 
-    ($_->{usd_amount} = formatnumber('amount', 'USD', $_->{amount} * $exchange_rate)) foreach @$trxns;
+    my $underlying = create_underlying('frx' . $currency . 'USD');
+    $exchange_rate = $underlying->spot;
+    $_->{usd_amount} = formatnumber('amount', 'USD', $_->{amount} * $exchange_rate) for @$trxns;
 
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
@@ -273,7 +275,9 @@ if ($page eq 'Withdrawal Transactions') {
         $currency, uc $view_type
     );
 
-    $_->{usd_amount} = formatnumber('amount', 'USD', $_->{amount} * $exchange_rate) for @$trxns;
+    my $underlying = create_underlying('frx' . $currency . 'USD');
+    $exchange_rate = $underlying->spot;
+    $_->{usd_amount} = formatnumber('amount', 'USD', ($_->{amount} * $exchange_rate)) foreach @$trxns;
 
     Bar("LIST OF TRANSACTIONS - DEPOSITS");
 
