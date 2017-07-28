@@ -953,6 +953,19 @@ sub set_self_exclusion {
 
     my %args = %{$params->{args}};
 
+    my $decimals = $client->currency =~ /(ETH|BTC|LTC)/ ? 8 : 2;
+    foreach my $field (qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover/) {
+        if ($args{$field} and $args{$field} !~ /^\d{0,20}(\.\d{0,$decimals})?$/) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InputValidationFailed',
+                    message_to_client => localize("Input validation failed: $field"),
+                    details           => {
+                        $field => "Please input a valid number.",
+                    },
+                });
+        }
+    }
+
     # at least one setting should present in request
     my $args_count = 0;
     foreach my $field (
