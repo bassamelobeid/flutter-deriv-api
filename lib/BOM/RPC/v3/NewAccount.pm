@@ -109,7 +109,7 @@ sub request_email {
 }
 
 sub get_verification_uri {
-    my $app_id = shift or return;
+    my $app_id = shift or return undef;
     return BOM::Database::Model::OAuth->new->get_verification_uri_by_app_id($app_id);
 }
 
