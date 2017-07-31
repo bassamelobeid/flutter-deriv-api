@@ -13,6 +13,7 @@ use Text::CSV;
 use List::UtilsBy qw(rev_nsort_by sort_by);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Database::ClientDB;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
 use f_brokerincludeall;
@@ -77,11 +78,10 @@ print '<h3>Exchange Rates</h3>';
 print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . ")";
 print "<ul>";
 # Obtain current exchange rate for the current currency
-my $exchange_rate;
-foreach my $curr (qw(BTCUSD LTCUSD ETHUSD)) {
-    my $underlying = create_underlying('frx' . $curr);
-    $exchange_rate = $underlying->spot if $curr =~ qr/^$currency/;
-    print "<li>$curr: " . $underlying->spot . "</li>";
+my %exchange_rates;
+for my $curr (qw(BTC LTC ETH)) {
+    $exchange_rates{$curr} = in_USD(1.0, $curr);
+    print "<li>$curr" . "USD: " . $exchange_rates{$curr} . "</li>";
 }
 print "</ul>";
 
@@ -215,9 +215,7 @@ if ($page eq 'Withdrawal Transactions') {
             {Slice => {}}, $currency);
     }
 
-    my $underlying = create_underlying('frx' . $currency . 'USD');
-    $exchange_rate = $underlying->spot;
-    $_->{usd_amount} = formatnumber('amount', 'USD', $_->{amount} * $exchange_rate) for @$trxns;
+    $_->{usd_amount} = formatnumber('amount', 'USD', $_->{amount} * $exchange_rates{$currency}) for @$trxns;
 
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
@@ -232,7 +230,6 @@ if ($page eq 'Withdrawal Transactions') {
         }) || die $tt->error();
 
 } elsif ($page eq 'search') {
-    Bar("SEARCH RESULT");
     my $trxns;
     my $search_type  = request()->param('search_type');
     my $search_query = request()->param('search_query');
@@ -249,8 +246,9 @@ if ($page eq 'Withdrawal Transactions') {
         code_exit_BO();
     }
 
-    $_->{usd_amount} = formatnumber('amount', 'USD', $_->{amount} * $exchange_rate) for @$trxns;
+    $_->{usd_amount} = formatnumber('amount', 'USD', $_->{amount} * $exchange_rates{$currency}) for @$trxns;
 
+    Bar("SEARCH RESULT FOR $search_query");
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
         'backoffice/account/manage_crypto_transactions.tt',
@@ -275,9 +273,7 @@ if ($page eq 'Withdrawal Transactions') {
         $currency, uc $view_type
     );
 
-    my $underlying = create_underlying('frx' . $currency . 'USD');
-    $exchange_rate = $underlying->spot;
-    $_->{usd_amount} = formatnumber('amount', 'USD', ($_->{amount} * $exchange_rate)) foreach @$trxns;
+    $_->{usd_amount} = formatnumber('amount', 'USD', ($_->{amount} * $exchange_rates{$currency})) foreach @$trxns;
 
     Bar("LIST OF TRANSACTIONS - DEPOSITS");
 
