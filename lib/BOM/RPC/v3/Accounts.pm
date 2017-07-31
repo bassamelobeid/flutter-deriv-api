@@ -141,7 +141,7 @@ sub statement {
             transaction_id => $txn->{id},
             reference_id   => $txn->{buy_tr_id},
             amount         => $txn->{amount},
-            action_type    => localize($txn->{action_type}),
+            action_type    => $txn->{action_type},
             balance_after  => formatnumber('amount', $account->currency_code, $txn->{balance_after}),
             contract_id    => $txn->{financial_market_bet_id},
             payout         => $txn->{payout_price}};
@@ -186,7 +186,7 @@ sub statement {
             }
             $struct->{longcode} //= localize($txn->{payment_remark}) // '';
         }
-
+        $struct->{action_type} //= localize($txn->{action_type}) // '';
         push @txns, $struct;
     }
 
