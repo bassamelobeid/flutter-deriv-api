@@ -3,9 +3,11 @@ package BOM::EconomicEventTool;
 use strict;
 use warnings;
 
+use Date::Utility;
 use Quant::Framework::EconomicEventCalendar;
 use Volatility::Seasonality;
 use BOM::Platform::Chronicle;
+use BOM::MarketData qw(create_underlying_db);
 use LandingCompany::Offerings qw(get_offerings_flyby);
 use JSON qw(to_json);
 use List::Util qw(first);
@@ -80,6 +82,48 @@ sub update_by_id {
     } else {
         return _err('Did not find event with id: ' . $args->{id});
     }
+}
+
+sub save_new_event {
+    my $args = shift;
+    if ($args->{is_tentative} and not $args->{estimated_release_date}) {
+        return _err('Must specify estimated announcement date for tentative events');
+    } elsif (not $args->{release_date}) {
+        return _err('Must specify announcement date for economic events');
+    }
+
+    $args->{release_date} = Date::Utility->new($args->{release_date})->epoch if $args->{release_date};
+    $args->{estimated_release_date} = Date::Utility->new($args->{estimated_release_date})->truncate_to_day->epoch
+        if $args->{estimated_release_date};
+
+    my $ref          = BOM::Platform::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
+    my @events       = @{$ref->{events}};
+    my $new_event_id = Quant::Framework::EconomicEventCalendar::_generate_id($args);
+    my @duplicate    = grep { $_->{id} eq $new_event_id } @events;
+
+    if (@duplicate) {
+        return _err('Identical event exists. Economic event not saved');
+    } else {
+        push @{$ref->{events}}, $args;
+        Quant::Framework::EconomicEventCalendar->new({
+                events           => $ref->{events},
+                recorded_date    => Date::Utility->new,
+                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            })->save;
+
+        # update economic events impact curve with the newly added economic event
+        Volatility::Seasonality::generate_economic_event_seasonality({
+            underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
+            economic_events    => $ref->{events},
+            chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+        });
+
+        # refresh intradayfx cache to to use new economic events impact curve
+        BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
+    }
+
+    return BOM::EconomicEventTool::get_info($args);
 }
 
 sub _err {

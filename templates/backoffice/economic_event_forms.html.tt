@@ -71,7 +71,6 @@
                         if (r.error) {
                             result.text(r.error).css('color','red').show();
                         } else {
-                        console.log(r);
                             result.text("ok").css('color','green').show();
                             var text = '';
                             for (i=0;i < r.new_info.length; i++) {
@@ -118,12 +117,14 @@
                                     to_append += '<p>'+item+'</p>';
                                 });
                             }
+
+                            to_append += '<td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="result"></td>';
                             to_append += '</td></tr>';
                             list_el.append(to_append);
                             list_el.find('tr#'+obj.id).css('color', 'green');
                             result.text('Economic event saved. ID ' + obj.id).css('color', 'green');
                         } else {
-                            result.text('Fail to save economic event. ERR - ' + obj.error).css('color', 'red');
+                            result.text(obj.error).css('color', 'red');
                         }
                     }
             });
