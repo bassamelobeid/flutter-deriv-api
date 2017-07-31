@@ -13,11 +13,12 @@ use Date::Utility;
 
 subtest 'monday mornings intraday' => sub {
     my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
-    my $dp     = Date::Utility->new('2017-06-13 00:19:59');
-    my $args   = {
-        bet_type     => 'CALL',
-        underlying   => 'frxUSDJPY',
-        date_start   => $dp,
+    my $dp = Date::Utility->new('2017-06-13 00:19:59');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $dp});
+    my $args = {
+        bet_type => 'CALL',
+        underlying => 'frxUSDJPY',
+        date_start => $dp,
         date_pricing => $dp,
         duration     => '1h',
         barrier      => 'S0P',
@@ -31,6 +32,7 @@ subtest 'monday mornings intraday' => sub {
     is $c->empirical_volsurface->validation_error, 'Insufficient ticks to calculate historical volatility.',
         'error at first 20 minutes on a tuesday morning';
     $dp = Date::Utility->new('2017-06-12 00:19:59');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $dp});
     $args->{date_pricing} = $args->{date_start} = $dp;
     $c = produce_contract($args);
     is $c->historical_volatility, 0.1, '10% vol on monday morning before first 20 minutes';

@@ -61,7 +61,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 source       => 'forexfactory',
                 impact       => 1,
                 event_name   => 'FOMC',
-            }]});
+            }], recorded_date => Date::Utility->new('2013-03-27')});
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',

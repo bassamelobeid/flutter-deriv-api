@@ -19,7 +19,7 @@ use BOM::Platform::RedisReplicated;
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('1-Mar-2017');
-
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {

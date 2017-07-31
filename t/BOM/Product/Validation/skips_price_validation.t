@@ -32,6 +32,7 @@ $mocked->mock(
 
 note('sets time to 21:59:59, which has a payout cap at 200 for forex.');
 my $now = Date::Utility->new('2016-09-19 21:59:59');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {

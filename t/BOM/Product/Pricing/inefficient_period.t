@@ -24,6 +24,7 @@ my $inefficient_time = Date::Utility->new('2016-10-06 20:00:00');
 my $efficient_time   = $inefficient_time->minus_time_interval('1s');
 note("America is in DST on " . $inefficient_time->date);
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $efficient_time});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
