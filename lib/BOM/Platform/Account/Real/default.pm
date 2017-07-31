@@ -270,6 +270,7 @@ sub get_financial_input_mapping {
                 'Tertiary'  => 3
             }
         },
+
         income_source => {
             'label'           => 'Income Source',
             'possible_answer' => {
@@ -326,7 +327,32 @@ sub get_financial_input_mapping {
                 'Armed Forces'                                              => 0,
                 'Government Officers'                                       => 0,
                 'Others'                                                    => 0
-            }}};
+            }
+        },
+        employment_status => {
+            label           => 'Employment Status',
+            possible_answer => {
+                'Employed'      => 0,
+                'Pensioner'     => 0,
+                'Self-Employed' => 0,
+                'Student'       => 0,
+                'Unemployed'    => 0,
+            },
+        },
+        source_of_wealth => {
+            'label'           => 'Source of wealth',
+            'possible_answer' => {
+                'Accumulation of Income/Savings' => 0,
+                'Cash Business'                  => 0,
+                'Company Ownership'              => 0,
+                'Divorce Settlement'             => 0,
+                'Inheritance'                    => 0,
+                'Investment Income'              => 0,
+                'Sale of Property'               => 0,
+                'Other'                          => 0,
+            },
+        },
+    };
     return $financial_mapping;
 }
 
