@@ -48,8 +48,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 for my $type (qw(CALL PUT)) {
     for my $underlying (qw(R_100 R_25 frxEURUSD frxUSDJPY AEX frxBROUSD WLDEUR)) {
-        for my $duration (qw(2m 5m 10m 2h 6h)) {
-            for my $back_time (qw(1m)) {
+        for my $duration (qw(3m 5m 10m 2h 6h)) {
+            for my $back_time (qw(3m)) {
                 my $expiry_time = $start_time->plus_time_interval($duration);
                 my $times       = $start_time->epoch . '_' . $expiry_time->epoch;
                 my $shortcode   = $type . '_' . $underlying . '_10_' . $times . '_S0P_0';
