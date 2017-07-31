@@ -521,9 +521,6 @@ sub _validate_jurisdictional_restrictions {
 
     my $contract = $self->transaction->contract;
 
-    #TO DO: we need to set the jurisdictional check for ICO.
-    # The following check include check of market name which is not something we want , so I skip for here first.
-    return if $contract->is_binaryico;
     my $residence   = $client->residence;
     my $loginid     = $client->loginid;
     my $market_name = $contract->market->name;
@@ -583,6 +580,54 @@ sub _validate_jurisdictional_restrictions {
             -type              => 'NotLegalUnderlying',
             -mesg              => 'Clients are not allowed to trade on this underlying as its restricted for this landing company',
             -message_to_client => localize('Please switch accounts to trade this underlying.'),
+        );
+    }
+
+    return;
+}
+
+=head2 $self->_validate_ico_jurisdictional_restrictions
+
+Validates whether a client fullfill ICO jurisdicrtional restrictions
+
+=cut
+
+sub _validate_ico_jurisdictional_restrictions {
+    my ($self, $client) = (shift, shift);
+
+    my $contract    = $self->transaction->contract;
+    my $residence   = $client->residence;
+    my $loginid     = $client->loginid;
+    my $market_name = $contract->market->name;
+
+    if (!$residence && $loginid !~ /^VR/) {
+        return Error::Base->cuss(
+            -type              => 'NoResidenceCountry',
+            -mesg              => 'Client cannot place ico as we do not know their residence.',
+            -message_to_client => localize('In order for you to place ico, we need to know your Residence (Country). Please update your settings.'),
+        );
+    }
+
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    if ($residence && $countries_instance->ico_restricted_country($residence)) {
+        return Error::Base->cuss(
+            -type              => 'IcoRestrictedCountry',
+            -mesg              => 'Clients are not allowed to bid for ICO  as their country is restricted.',
+            -message_to_client => localize('Sorry, the placement of bid for tocken are not available in your country of residence'),
+        );
+    }
+
+    # For certain country, only professional investor is allow to place ico
+    if (   $residence
+        && $countries_instance->ico_restricted_professional_only_country($residence)
+        && $client->is_professional)
+    {
+        return Error::Base->cuss(
+            -type              => 'IcoProfessionalRestrictedCountry',
+            -mesg              => 'Clients are not allowed to place ICO  as it is restricted to offer only to professional in the relevant country.',
+            -message_to_client => localize(
+                'Placement of bid for token are only allow for professional investor. Please contact our custometer support to authenticate your account.'
+            ),
         );
     }
 
