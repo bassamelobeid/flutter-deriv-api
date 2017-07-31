@@ -525,6 +525,14 @@ sub _validate_start_and_expiry_date {
                 if (    $start_epoch >= $effective_sod->plus_time_interval($_->{start})->epoch
                     and $end_epoch <= $effective_sod->plus_time_interval($_->{end})->epoch)
                 {
+                    my @args  = ();
+                    my $start = Date::Utility->new($effective_sod->plus_time_interval($_->{start})->epoch);
+                    my $end   = Date::Utility->new($effective_sod->plus_time_interval($_->{end})->epoch);
+                    if ($start->day_of_year == $end->day_of_year) {
+                        push @args, ($start->time_hhmmss, $end->time_hhmmss);
+                    } else {
+                        push @args, ($start->date, $end->date);
+                    }
                     return {
                         message => 'forward starting contract blackout period '
                             . "[symbol: "
