@@ -1,11 +1,10 @@
-<p><b>Update economic event manually with the tool below: </b></p>
+<p><b>Add new economic event or tentative event manually with the tool below: </b></p>
 
 <table id='economic_event_form'>
     <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
-    <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The time given on forexfactory is GMT-4)</td></tr>
+    <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z)</td></tr>
     <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
     <tr><td>Source</td><td> : <INPUT type="text" name="source" value="forexfactory"></td></tr>
-    <tr><td>Custom Magnitude</td><td>: <INPUT type="text" name="custom_magnitude"></td><td>( *This will override the magnitude set in yaml for this event.)</td></tr>
     <tr><td>Impact</td>
         <td> : <select name=impact>
                 <option value=1>1</option>
@@ -24,14 +23,16 @@
 
 <p><b>List of Economic Events today</b></p>
 
-<table id='economic_event_list' border='1'>
+<table class='economic_event_list'>
     <tr>
         <td><b>Event ID</b></td>
         <td><b>Event Name</b></td>
         <td><b>Release Date</b></td>
-        <td><b>ForexFactory Impact</b></td>
+        <td><b>Impact (FF)</b></td>
         <td><b>Symbol</b></td>
         <td><b>Binary's Category (numbers are rounded)</b></td>
+        <td><b>Custom Magnitude</b></td>
+        <td><b>Action</b></td>
     </tr>
     [% FOREACH row IN events %]
         <tr id="[% row.id %]">
@@ -40,17 +41,48 @@
             <td>[% row.release_date %]</td>
             <td>[% row.impact %]</td>
             <td>[% row.symbol %]</td>
-            <td>
+            <td id='binary_info'>
                 [% FOREACH item IN row.info %]
                     <p>[% item %]</p>
                 [% END %]
             </td>
-            <td><button onclick="deleteEvent( '[% row.id %]' )">Delete</button></td>
+            <td><INPUT type="text" name="custom_magnitude" size="10"></td>
+            <td><button onclick="deleteEvent( '[% row.id %]' )">Delete</button> <button onclick="update( '[% row.id %]' )">Update</button></td>
+            <td style="display:none;" class='result'></td>
         </tr>
     [% END %]
 </table>
 
 <script>
+    function update(id) {
+        if (id) {
+            var el = \$('tr#'+id);
+            var custom_magnitude = el.find('input[name="custom_magnitude"]').val();
+            \$.ajax({
+                    url: "[% ee_upload_url | none %]",
+                    data: {
+                        update_event: "1",
+                        custom_magnitude: custom_magnitude,
+                        event_id: id,
+                    },
+                    success: function(data){
+                        var r = \$.parseJSON(data);
+                        var result = el.find('td.result');
+                        if (r.error) {
+                            result.text(r.error).css('color','red').show();
+                        } else {
+                        console.log(r);
+                            result.text("ok").css('color','green').show();
+                            var text = '';
+                            for (i=0;i < r.new_info.length; i++) {
+                                text += "<p>" + r.new_info[i] + "</p>";
+                            }
+                            el.find('td#binary_info').html(text);
+                        }
+                    }
+            });
+        }
+    }
     function saveEvent() {
         var el = \$('table#economic_event_form');
         if (el) {
@@ -79,7 +111,7 @@
                         var result = \$("td.save_result");
                         var obj = \$.parseJSON(data);
                         if (obj.id) {
-                            var list_el = \$('table#economic_event_list');
+                            var list_el = \$('table.economic_event_list');
                             var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td>';
                             if (obj.info) {
                                 \$.each(obj.info, function(i, item) {
@@ -119,3 +151,14 @@
         }
     }
 </script>
+
+<style>
+    table {
+        border-collapse: collapse;
+    }
+    .economic_event_list td, .economic_event_list th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 4px;
+    }
+</style>

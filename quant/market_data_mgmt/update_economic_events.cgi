@@ -16,11 +16,16 @@ BOM::Backoffice::Sysinit::init();
 
 ## Delete economic event
 
-my $delete_event = request()->param('delete_event');
-my $event_id     = request()->param('event_id');
+if (request()->param('delete_event')) {
+    print to_json(BOM::EconomicEventTool::delete_by_id(request()->param('event_id')));
+}
 
-if ($delete_event) {
-    print to_json(BOM::EconomicEventTool::delete_by_id($event_id));
+if (request()->param('update_event')) {
+    my $args = {
+        id               => request()->param('event_id'),
+        custom_magnitude => request()->param('custom_magnitude'),
+    };
+    print to_json(BOM::EconomicEventTool::update_by_id($args));
 }
 
 my $save_event = request()->param('save_event');

@@ -8,6 +8,7 @@ use Volatility::Seasonality;
 use BOM::Platform::Chronicle;
 use LandingCompany::Offerings qw(get_offerings_flyby);
 use JSON qw(to_json);
+use List::Util qw(first);
 use BOM::Backoffice::Request;
 
 sub generate_economic_event_tool {
@@ -43,7 +44,7 @@ sub get_info {
 sub delete_by_id {
     my $id = shift;
 
-    return _err("Error: ID is not found.") unless ($id);
+    return _err("ID is not found.") unless ($id);
 
     my $deleted = Quant::Framework::EconomicEventCalendar->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
@@ -54,8 +55,35 @@ sub delete_by_id {
     return {id => $deleted};
 }
 
+sub update_by_id {
+    my $args = shift;
+
+    return _err("ID is not found.") unless $args->{id};
+    return _err("Custom magnitude is not provided.") unless exists $args->{custom_magnitude};
+
+    my $ref = BOM::Platform::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
+    my @existing = @{$ref->{events}};
+
+    if (my $to_update = first { $_->{id} eq $args->{id} } @existing) {
+        $to_update->{custom_magnitude} = $args->{custom_magnitude};
+        Quant::Framework::EconomicEventCalendar->new({
+                events           => $ref->{events},
+                recorded_date    => Date::Utility->new,
+                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            })->save;
+        my $new_info = get_info($to_update);
+        return {
+            id       => $args->{id},
+            new_info => $new_info->{info},
+        };
+    } else {
+        return _err('Did not find event with id: ' . $args->{id});
+    }
+}
+
 sub _err {
-    return {error => shift};
+    return {error => 'ERR: ' . shift};
 }
 
 sub _get_economic_events {
