@@ -362,7 +362,7 @@ sub calculate_limits {
                     symbols  => [{n => $contract->underlying->symbol}],
                     bet_type => [map { {n => $_} } @bet_type_list],
                     limit =>
-                        $static_config->{bet_limits}->{open_positions_payout_perl_symbol_limit}->{$option_type}->{more_than_seven_days}->{$currency},
+                        $static_config->{bet_limits}->{open_positions_payout_per_symbol_limit}->{$option_type}->{more_than_seven_days}->{$currency},
                 }];
         }
     }
