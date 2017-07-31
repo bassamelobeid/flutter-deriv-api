@@ -488,7 +488,7 @@ subtest '2017_with_extra_data' => sub {
         is $ask->{commission_markup},         0.035,               'matched commission markup';
         is $ask->{intraday_delta_correction}, 0,                   'matched intraday delta correction';
         is $ask->{intraday_vega_correction},  -0.0235434604443186, 'matched intraday vega correction';
-        is $ask->{risk_markup},               0.036859882954911,  'matched risk markup';
+        is $ask->{risk_markup},               0.046859882954911,  'matched risk markup';
         $mocked->unmock_all();
     };
 
