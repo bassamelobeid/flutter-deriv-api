@@ -7,6 +7,8 @@ use Dir::Self;
 use Cwd qw/abs_path/;
 use POSIX qw/setsid/;
 
+use await;
+
 =head1 NAME
 
 BOM::Test - Do things before test
