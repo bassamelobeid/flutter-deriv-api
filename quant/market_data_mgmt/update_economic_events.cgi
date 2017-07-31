@@ -11,6 +11,7 @@ use Volatility::Seasonality;
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Platform::Chronicle;
 use BOM::Backoffice::Sysinit ();
+use BOM::EconomicEventTool;
 BOM::Backoffice::Sysinit::init();
 
 ## Delete economic event
@@ -19,15 +20,7 @@ my $delete_event = request()->param('delete_event');
 my $event_id     = request()->param('event_id');
 
 if ($delete_event) {
-    unless ($event_id) {
-        print "Error: ID is not found.";
-        code_exit_BO();
-    }
-    my $deleted = Quant::Framework::EconomicEventCalendar->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    )->delete_event({id => $event_id});
-    print($deleted ? $event_id : 0);
+    print to_json(BOM::EconomicEventTool::delete_by_id($event_id));
 }
 
 my $save_event = request()->param('save_event');

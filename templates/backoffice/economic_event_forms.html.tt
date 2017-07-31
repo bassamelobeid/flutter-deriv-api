@@ -20,8 +20,6 @@
     <tr><td>Estimated Announcement Date</td><td> : <INPUT type="text" name="estimated_release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The tentative date given on forexfactory is GMT-4)</td></tr>
     <tr><td></td><td><button onclick="saveEvent()">Save</td><td class='save_result'></td></tr>
 
-    <tr><td>Delete with ID</td><td> : <INPUT type="text" name="event_id"></td></tr>
-    <tr><td></td><td><button onclick="deleteEvent()">Delete</button></td><td class='delete_result'></td></tr>
 </table>
 
 <p><b>List of Economic Events today</b></p>
@@ -33,7 +31,7 @@
         <td><b>Release Date</b></td>
         <td><b>ForexFactory Impact</b></td>
         <td><b>Symbol</b></td>
-        <td><b>Binary's Category</b></td>
+        <td><b>Binary's Category (numbers are rounded)</b></td>
     </tr>
     [% FOREACH row IN events %]
         <tr id="[% row.id %]">
@@ -47,6 +45,7 @@
                     <p>[% item %]</p>
                 [% END %]
             </td>
+            <td><button onclick="deleteEvent( '[% row.id %]' )">Delete</button></td>
         </tr>
     [% END %]
 </table>
@@ -98,8 +97,7 @@
             });
         }
     }
-    function deleteEvent() {
-        var id = \$("input[name='event_id']").val();
+    function deleteEvent(id) {
         if (id) {
             \$.ajax({
                     url: "[% ee_upload_url | none %]",
@@ -108,12 +106,13 @@
                         delete_event: "1"
                     },
                     success: function(data){
+                        var r = \$.parseJSON(data);
                         var result = \$("td.delete_result");
-                        if(data != 0) {
-                           \$('tr#'+ data).hide();
-                            result.text('Economic event deleted.').css('color','green');
+                        if(r.error) {
+                            result.text('ERR: ' + r.error).css('color','red');
                         } else{
-                            result.text('Failed to delete event. Please check your event ID.').css('color','red');
+                            \$('tr#'+ r.id).hide();
+                            result.text('Economic event deleted.').css('color','green');
                         }
                     }
             });
