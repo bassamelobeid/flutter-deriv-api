@@ -520,7 +520,7 @@ sub _validate_start_and_expiry_date {
 # A new logic to apply inefficient period for forward starting only.
     my $effective_sod = $self->effective_start->truncate_to_day;
     if ($self->is_intraday and $self->is_forward_starting) {
-        if (my @forward_inefficient_periods = @{$underlying->forward_inefficient_periods}) {
+        if (my @forward_inefficient_periods = @{$self->underlying->forward_inefficient_periods}) {
             foreach my $period (@forward_inefficient_periods) {
                 if (    $start_epoch >= $effective_sod->plus_time_interval($_->{start})->epoch
                     and $end_epoch <= $effective_sod->plus_time_interval($_->{end})->epoch)
