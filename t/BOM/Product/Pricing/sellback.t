@@ -47,7 +47,23 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }], recorded_date => $start_time});
 
 for my $type (qw(CALL PUT)) {
-    for my $underlying (qw(R_100 R_25 frxEURUSD frxUSDJPY AEX frxBROUSD WLDEUR)) {
+    for my $underlying (qw(R_100 R_25 AEX WLDEUR)) {
+        for my $duration (qw(2m 5m 10m 2h 6h)) {
+            for my $back_time (qw(1m)) {
+                my $expiry_time = $start_time->plus_time_interval($duration);
+                my $times       = $start_time->epoch . '_' . $expiry_time->epoch;
+                my $shortcode   = $type . '_' . $underlying . '_10_' . $times . '_S0P_0';
+                my $code        = $shortcode . '|' . $back_time;
+
+                note "checking price for $shortcode at $back_time before expiry...";
+
+                ok defined $expectation->{$code}, "config file contains the required data";
+                price_contract_at($type, $underlying, $duration, $back_time, $expectation->{$code});
+            }
+        }
+    }
+
+    for my $underlying (qw(frxEURUSD frxUSDJPY frxBROUSD)) {
         for my $duration (qw(3m 5m 10m 2h 6h)) {
             for my $back_time (qw(3m)) {
                 my $expiry_time = $start_time->plus_time_interval($duration);
