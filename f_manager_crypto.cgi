@@ -56,91 +56,23 @@ $start_date = Date::Utility->new($start_date) unless ref $start_date;
 my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 0, $now->month, $now->year - 1900);
 $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
-print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
-print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
-print '<input type="text" name="start_date" required class="datepick" value="' . $start_date->date_yyyymmdd . '">';
-print '<input type="text" name="end_date" required class="datepick" value="' . $end_date->date_yyyymmdd . '">';
-print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
-print '<INPUT type="submit" value="Recon" name="view_action"/>';
-print '</FORM>';
-
-print '<br>';
-print '<h3>Search</h3>';
-print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
-print '<select name="currency"><option value="BTC">Bitcoin</option></select>';
-print '<input type="text" name="search_query" required>';
-print '<select name="search_type"><option value="loginid">Loginid</option><option value="address">Address</option></select>';
-print '<input type=hidden name="broker" value="' . $encoded_broker . '">';
-print '<input type="submit" value="search" name="view_action"/>';
-print '</FORM>';
-
-print '<h3>Exchange Rates</h3>';
-print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . ")";
-print "<ul>";
-# Obtain current exchange rate for the current currency
 my %exchange_rates;
-for my $curr (qw(BTC LTC ETH)) {
-    $exchange_rates{$curr} = in_USD(1.0, $curr);
-    print "<li>$curr" . "USD: " . $exchange_rates{$curr} . "</li>";
+for (qw/BTC LTC ETH/) {
+    $exchange_rates{$_} = in_USD(1.0, $_);
 }
-print "</ul>";
 
-print '<br>';
-print '<h3>Deposit</h3>';
-print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
-print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
-print '<INPUT type="hidden" name="view_type" value="pending">';
-print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
-print '<INPUT type="submit" value="Deposit Transactions" name="view_action"/>';
-print '</FORM>';
-
-print '<h3>Withdrawal</h3>';
-print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
-print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
-print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
-print '<INPUT type="submit" value="Withdrawal Transactions" name="view_action"/>';
-print '</FORM>';
-
-print '<h3>Tools</h3>';
-print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
-print '<INPUT type=hidden name="broker" value="' . $encoded_broker . '">';
-print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
-{
-    my $cmd = request()->param('command') // '';
-    print '<select name="command">'
-        . '<option '
-        . ($cmd eq 'getbalance' ? 'selected="selected" ' : '')
-        . ' value="getbalance">Get balance</option>'
-        . '<option '
-        . ($cmd eq 'listaccounts' ? 'selected="selected" ' : '')
-        . ' value="listaccounts">List accounts</option>'
-        . '<option '
-        . ($cmd eq 'listtransactions' ? 'selected="selected" ' : '')
-        . ' value="listtransactions">List withdrawal transactions</option>'
-        . '<option '
-        . ($cmd eq 'listaddressgroupings' ? 'selected="selected" ' : '')
-        . ' value="listaddressgroupings">List address groupings</option>'
-        . '<option value="..." disabled="disabled">---</option>'
-        . '<option '
-        . ($cmd eq 'getinfo' ? 'selected="selected" ' : '')
-        . ' value="getinfo">Get info</option>'
-        . '<option '
-        . ($cmd eq 'getpeerinfo' ? 'selected="selected" ' : '')
-        . ' value="getpeerinfo">Get peer info</option>'
-        . '<option '
-        . ($cmd eq 'getnetworkinfo' ? 'selected="selected" ' : '')
-        . ' value="getnetworkinfo">Get network info</option>'
-        . '</select>';
-}
-print '<INPUT type="submit" value="Run tool" name="view_action"/>';
-print '</FORM>';
-print '<h3>Manual wallet functions</h3>';
-print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
-print '<INPUT type="hidden" name="command" value="getnewaddress">';
-print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
-print '<select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
-print '<INPUT type="submit" value="Get new deposit address" name="view_action"/>';
-print '</FORM>';
+my $tt2 = BOM::Backoffice::Request::template;
+$tt2->process(
+    'backoffice/account/crypto_control_panel.html.tt',
+    {
+        exchange_rates => \%exchange_rates,
+        controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
+        cmd            => request()->param('command') // '',
+        broker         => $encoded_broker,
+        start_date     => $start_date->date_yyyymmdd,
+        end_date       => $end_date->date_yyyymmdd,
+        now            => $now->datetime_ddmmmyy_hhmmss,
+    }) || die $tt2->error();
 
 unless ($page) {
     code_exit_BO();

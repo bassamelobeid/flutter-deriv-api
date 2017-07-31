@@ -1,0 +1,64 @@
+<form action="[% controller_url %]" method="POST">
+<input type="hidden" name="broker" value="[% broker %]">
+<input type="text" name="[% start_date %]" required class="datepick" value="[% start_date %]">
+<input type="text" name="end_date" required class="datepick" value="[% end_date %]">
+<select name="currency"><option value="BTC">bitcoin</option></select>
+<input type="submit" value="recon" name="view_action"/>
+</form>
+<br>
+<h3>Search</h3>
+<form action="[% controller_url %]" method="POST">
+<select name="currency"><option value="BTC">Bitcoin</option></select>
+<input type="text" name="search_query" required>
+<select name="search_type"><option value="loginid">Loginid</option><option value="address">Address</option></select>
+<input type=hidden name="broker" value="[% broker %]">
+<input type="submit" value="search" name="view_action"/>
+</form>
+<br>
+<h3>Exchange Rates</h3>
+The following exchange rates are from our live data feed. They are live rates as of right now [% now %]
+<ul>
+[% FOREACH rate IN exchange_rates.pairs %]
+    <li>[% rate.key %]USD: [% rate.value %]</li>
+[% END %]
+</ul>
+<br>
+<h3>Deposit</h3>
+<form action="[% controller_url %]" method="POST">
+<input type="hidden" name="broker" value="[% broker %]">
+<input type="hidden" name="view_type" value="pending">
+<select name="currency"><option value="BTC">Bitcoin</option></select>
+<input type="submit" value="Deposit Transactions" name="view_action"/>
+</form>
+<br>
+<h3>Withdrawal</h3>
+<form action="[% controller_url %]" method="POST">
+<input type=hidden name="broker" value="[% broker %]">
+<select name="currency"><option value="BTC">Bitcoin</option></select>
+<input type="submit" value="Withdrawal Transactions" name="view_action"/>
+</form>
+<br>
+<h3>Tools</h3>
+<form action="[% controller_url %]" method="POST">
+<input type=h"idden" name="broker" value="[% broker %]">
+<select name="currency"><option value="BTC">Bitcoin</option></select>
+<select name="command">
+<option value="getbalance" [% IF cmd == "getbalance" %] selected="selected" [% END %]>Get balance</option>
+<option value="listtransactions" [% IF cmd == "listtransactions" %] selected="selected" [% END %]>List withdrawal transactions</option>
+<option value="listaddressgroupings" [% IF cmd == "listaddressgroupings" %] selected="selected" [% END %]>List address groupings</option>
+<option value="..." disabled="disabled">---</option>
+<option value="getinfo" [% IF cmd == "getinfo" %] selected="selected" [% END %]>Get info</option>
+<option value="getpeerinfo" [% IF cmd == "getpeerinfo" %] selected="selected" [% END %]>Get peer info</option>
+<option  value="getnetworkinfo" [% IF cmd == "getnetworkinfo" %] selected="selected" [% END %] >Get network info</option>
+</select>
+<input type="submit" value="Run tool" name="view_action"/>
+</form>
+<br>
+<h3>Manual wallet functions</h3>
+<form action="[% controller_url %]" method="POST">
+<input type="hidden" name="command" value="getnewaddress">
+<input type="hidden" name="broker" value="[% broker %]">
+<select name="currency"><option value="BTC">Bitcoin</option></select>
+<input type="submit" value="Get new deposit address" name="view_action"/>
+</form>
+
