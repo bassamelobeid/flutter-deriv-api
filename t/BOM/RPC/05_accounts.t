@@ -635,7 +635,7 @@ subtest $method => sub {
 
     # test 'financial_assessment_not_complete'
     my $temp = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
-    my $data = { map { $_ => { answer => $temp->{$_}}} keys %$temp };
+    my $data = {map { $_ => {answer => $temp->{$_}} } keys %$temp};
 
     # function to repeatedly test financial assessment
     sub test_financial_assessment {

@@ -953,7 +953,7 @@ sub set_self_exclusion {
 
     my %args = %{$params->{args}};
 
-    my $decimals = $client->currency =~ /(ETH|BTC|LTC)/ ? 8 : 2;
+    my $decimals = $client->currency ? Format::Util::Numbers::get_precision_config()->{price}->{$client->currency} : 2;
     foreach my $field (qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover/) {
         if ($args{$field} and $args{$field} !~ /^\d{0,20}(\.\d{0,$decimals})?$/) {
             return BOM::RPC::v3::Utility::create_error({
@@ -984,7 +984,7 @@ sub set_self_exclusion {
     {
         my $val      = $args{$field};
         my $is_valid = 0;
-        if ($val and $val =~ /^\d+$/ and $val > 0) {
+        if ($val and $val > 0) {
             $is_valid = 1;
             if (    $self_exclusion->{$field}
                 and $val > $self_exclusion->{$field})
