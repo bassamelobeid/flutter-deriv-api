@@ -62,7 +62,7 @@ my $bet_params = {
     current_tick => $fake,
     date_pricing => $now,
     date_start   => $now,
-    duration     => '2m',
+    duration     => '3m',
 };
 
 subtest 'skips price validation' => sub {
