@@ -207,6 +207,146 @@ subtest 'european - < 7 days open position payout limit' => sub {
     'survived';
 };
 
+subtest 'european - > 7 days open position payout limit' => sub {
+    lives_ok {
+        my $cl = create_client();
+        top_up($cl, 'USD', 5000);
+        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        my $bal;
+        is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
+
+        note("setting european max_more_than_7day_specific_open_position_payout to 199.99");
+        BOM::Platform::Config::quants->{bet_limits}{open_positions_payout_per_symbol_limit}{european}{more_than_seven_days}{USD} = 199.99;
+        my $contract = produce_contract({
+            underlying   => 'R_100',
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '8d',
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            is $txn->buy, undef, 'bought 1st contract';
+
+            $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => $contract->date_start,
+            });
+            $txn->buy;
+        };
+        SKIP: {
+            is $error->get_type, 'more than 7 days open position payout limitExceeded',
+                'error is more than 7 days open position payout limitExceeded';
+
+            is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.',         'message_to_client';
+            is $error->{-mesg},              'Exceeds turnover limit on more than 7 days open position payout limit', 'mesg';
+
+            is $txn->contract_id,    undef, 'txn->contract_id';
+            is $txn->transaction_id, undef, 'txn->transaction_id';
+            is $txn->balance_after,  undef, 'txn->balance_after';
+        }
+
+        # now matching exactly the limit -- should succeed
+        $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            note("setting european max_more_than_7day_specific_open_position_payout to 200.00");
+            BOM::Platform::Config::quants->{bet_limits}{open_positions_payout_per_symbol_limit}{european}{more_than_seven_days}{USD} = 200.00;
+
+            $contract = make_similar_contract($contract);
+            # create a new transaction object to get pristine (undef) contract_id and the like
+            $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => $contract->date_start,
+            });
+            $txn->buy;
+
+            # less than 7 days are not affected
+            $contract = produce_contract({
+                underlying   => 'R_100',
+                bet_type     => 'CALL',
+                currency     => 'USD',
+                payout       => 100,
+                duration     => '5m',
+                current_tick => $tick,
+                barrier      => 'S0P',
+            });
+
+            $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => $contract->date_start,
+            });
+            $txn->buy;
+
+            # american contracts are not affected
+            $contract = produce_contract({
+                underlying   => 'R_100',
+                bet_type     => 'ONETOUCH',
+                currency     => 'USD',
+                payout       => 100,
+                duration     => '8d',
+                current_tick => $tick,
+                barrier      => 'S0P',
+            });
+
+            $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => $contract->date_start,
+            });
+            $txn->buy;
+        };
+        is $error, undef, 'exactly matching the limit ==> successful buy';
+    }
+    'survived';
+};
+
 subtest 'american - > 7 days open position payout limit' => sub {
     lives_ok {
         my $cl = create_client();
@@ -261,9 +401,6 @@ subtest 'american - > 7 days open position payout limit' => sub {
             $txn->buy;
         };
         SKIP: {
-            skip 'no error', 6
-                if (not defined $error or ref $error ne 'Error::Base');
-
             is $error->get_type, 'more than 7 days open position payout limitExceeded',
                 'error is less than 7 days open position payout limitExceeded';
 
