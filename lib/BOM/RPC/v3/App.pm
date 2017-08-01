@@ -25,6 +25,7 @@ sub register {
     my $appstore              = $args->{appstore} // '';
     my $googleplay            = $args->{googleplay} // '';
     my $redirect_uri          = $args->{redirect_uri} // '';
+    my $verification_uri      = $args->{verification_uri} // '';
     my $app_markup_percentage = $args->{app_markup_percentage} // 0;
 
     my $error_sub = sub {
@@ -52,6 +53,7 @@ sub register {
         appstore              => $appstore,
         googleplay            => $googleplay,
         redirect_uri          => $redirect_uri,
+        verification_uri      => $verification_uri,
         app_markup_percentage => $app_markup_percentage
     });
 
@@ -74,6 +76,7 @@ sub update {
     my $appstore              = $args->{appstore} // '';
     my $googleplay            = $args->{googleplay} // '';
     my $redirect_uri          = $args->{redirect_uri} // '';
+    my $verification_uri      = $args->{verification_uri} // '';
     my $app_markup_percentage = $args->{app_markup_percentage} // 0;
 
     ## do some validation
@@ -109,6 +112,7 @@ sub update {
             appstore              => $appstore,
             googleplay            => $googleplay,
             redirect_uri          => $redirect_uri,
+            verification_uri      => $verification_uri,
             app_markup_percentage => $app_markup_percentage
         });
 

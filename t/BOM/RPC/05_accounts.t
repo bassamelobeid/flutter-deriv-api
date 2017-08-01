@@ -1305,12 +1305,18 @@ subtest 'get and set self_exclusion' => sub {
         max_7day_losses    => 0,        # 0 is ok to pass but not saved
     };
     is($c->tcall($method, $params)->{status}, 1, "update self_exclusion ok");
+
+    $params->{args}{max_balance} = 9999.999;
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Input validation failed: max_balance', 'don\'t allow more than two decimals in max balance for this client');
+    $params->{args}{max_balance} = 9999.99;
+    is($c->tcall($method, $params)->{status}, 1, 'allow two decimals in max balance');
+
     delete $params->{args};
     is_deeply(
         $c->tcall('get_self_exclusion', $params),
         {
             'max_open_bets' => '100',
-            'max_balance'   => '10000'
+            'max_balance'   => '9999.99'
         },
         'get self_exclusion ok'
     );
@@ -1324,7 +1330,7 @@ subtest 'get and set self_exclusion' => sub {
     is_deeply(
         $c->tcall($method, $params)->{error},
         {
-            'message_to_client' => "Please enter a number between 0 and 10000.",
+            'message_to_client' => "Please enter a number between 0 and 9999.99.",
             'details'           => 'max_balance',
             'code'              => 'SetSelfExclusionError'
         });
@@ -1444,10 +1450,10 @@ subtest 'get and set self_exclusion' => sub {
     };
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     my @msgs = $mailbox->search(
-        email   => 'compliance@binary.com,support@binary.com,marketing@binary.com',
+        email   => 'compliance@binary.com,marketing@binary.com',
         subject => qr/Client $test_loginid set self-exclusion limits/
     );
-    ok(@msgs, "msg sent to support, marketing and compliance email");
+    ok(@msgs, "msg sent to marketing and compliance email");
     like($msgs[0]{body}, qr/.*Exclude from website until/s, 'email content is ok');
 
     delete $params->{args};
