@@ -955,6 +955,19 @@ sub set_self_exclusion {
 
     my %args = %{$params->{args}};
 
+    my $decimals = Format::Util::Numbers::get_precision_config()->{price}->{$client->currency};
+    foreach my $field (qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover/) {
+        if ($args{$field} and $args{$field} !~ /^\d{0,20}(?:\.\d{0,$decimals})?$/) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InputValidationFailed',
+                    message_to_client => localize("Input validation failed: $field"),
+                    details           => {
+                        $field => "Please input a valid number.",
+                    },
+                });
+        }
+    }
+
     # at least one setting should present in request
     my $args_count = 0;
     foreach my $field (
@@ -973,7 +986,7 @@ sub set_self_exclusion {
     {
         my $val      = $args{$field};
         my $is_valid = 0;
-        if ($val and $val =~ /^\d+$/ and $val > 0) {
+        if ($val and $val > 0) {
             $is_valid = 1;
             if (    $self_exclusion->{$field}
                 and $val > $self_exclusion->{$field})
