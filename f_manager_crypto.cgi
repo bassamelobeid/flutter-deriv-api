@@ -268,6 +268,8 @@ if ($page eq 'Withdrawal Transactions') {
                     address             => $address,
                     type                => 'deposit',
                     found_in_blockchain => 1,
+                    amount              => $blockchain_tran->{amount},
+                    confirmations       => $blockchain_tran->{confirmations},
                     comments            => ['Deposit not found in database']};
                 next;
             };
@@ -312,6 +314,8 @@ if ($page eq 'Withdrawal Transactions') {
                     address             => $address,
                     type                => 'withdrawal',
                     found_in_blockchain => 1,
+                    amount              => $blockchain_tran->{amount},
+                    confirmations       => $blockchain_tran->{confirmations},
                     comments            => ['Withdrawal not found in database']};
                 next;
             };
