@@ -92,7 +92,7 @@ sub validate_trx_buy {
     push @client_validation_method,
         qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_status _validate_client_self_exclusion)
         unless $self->transaction->contract->is_binaryico;
-    push @client_validation_method, qw(_validate_ico_jurisdictional_restrictions, _validate_ico_european_restrictions)
+    push @client_validation_method, qw(_validate_ico_jurisdictional_restrictions _validate_ico_european_restrictions)
         if $self->transaction->contract->is_binaryico;
     push @client_validation_method, '_is_valid_to_buy';    # do this is as last of the validation
 
