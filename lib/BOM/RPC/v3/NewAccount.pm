@@ -52,7 +52,7 @@ sub new_account_virtual {
     }
 
     my $acc = BOM::Platform::Account::Virtual::create_account({
-            ip      => $params->{client_ip} // '',
+            ip => $params->{client_ip} // '',
             country => uc($params->{country_code} // ''),
             details => {
                 email           => $email,
@@ -227,8 +227,8 @@ sub new_account_real {
     }
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
-        ip          => $params->{client_ip} // '',
-        country     => uc($params->{country_code} // ''),
+        ip => $params->{client_ip} // '',
+        country => uc($params->{country_code} // ''),
         from_client => $client,
         user        => BOM::Platform::User->new({email => $client->email}),
         details     => $details_ref->{details},
@@ -289,8 +289,8 @@ sub new_account_maltainvest {
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
-        ip          => $params->{client_ip} // '',
-        country     => uc($params->{country_code} // ''),
+        ip => $params->{client_ip} // '',
+        country => uc($params->{country_code} // ''),
         from_client    => $client,
         user           => BOM::Platform::User->new({email => $client->email}),
         details        => $details_ref->{details},
@@ -362,8 +362,8 @@ sub new_account_japan {
     my %agreement = map { $_ => $args->{$_} } (BOM::Platform::Account::Real::japan::agreement_fields());
 
     my $acc = BOM::Platform::Account::Real::japan::create_account({
-        ip             => $params->{client_ip} // '',
-        country        => uc($params->{country_code} // ''),
+        ip => $params->{client_ip} // '',
+        country => uc($params->{country_code} // ''),
         from_client    => $client,
         user           => BOM::Platform::User->new({email => $client->email}),
         details        => $details,
