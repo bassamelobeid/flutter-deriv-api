@@ -6,6 +6,8 @@ use BOM::Platform::Runtime;
 use Email::Stuffer;
 use Cache::RedisDB;
 
+use constant MIN_TIME_BETWEEN_EMAILS => 3600;
+
 has report => (
     is      => 'rw',
     default => sub { {} },
@@ -19,14 +21,19 @@ has is_a_weekend => (
 sub run {
     my $self = shift;
 
-    my $vol_email_frequency = Cache::RedisDB->get('QUANT_EMAIL', 'FOREX_VOL');
+    return 1 if ($self->is_a_weekend);    # don't do anything on weekend
+
+    my $market = (split /::/, ref $self)[-1];
+    my @keys_in_redis = ('QUANT_EMAIL', 'vol_' . $market);
+    my $vol_email_frequency = Cache::RedisDB->get(@keys_in_redis);
 
     if (not $vol_email_frequency) {
-        Cache::RedisDB->set_nw('QUANT_EMAIL', 'FOREX_VOL', time);
+        Cache::RedisDB->set_nw(@keys_in_redis, time);
         $vol_email_frequency = time;
     }
 
-    return 1 if ($self->is_a_weekend);    # don't do anything on weekend
+    return if time - $vol_email_frequency <= MIN_TIME_BETWEEN_EMAILS;    #too early to send email for this market
+
     my $report    = $self->report;
     my @successes = ('SUCCESSES');
     my @failures  = ('FAILURES');
@@ -44,17 +51,13 @@ sub run {
         }
     }
     my $number_failures = scalar @failures - 1;
-    my $error           = scalar @errors - 1;
-    push @successes, "\n\n";
-    push @failures,  "\n\n";
+    my $number_errors   = scalar @errors - 1;
 
-    my $time_from_last_email = time - $vol_email_frequency;
-    if (($number_failures > 0 or $error > 0) and $time_from_last_email > 3600) {
-        Cache::RedisDB->set_nw('QUANT_EMAIL', 'FOREX_VOL', time);
+    if ($number_failures > 0 or $number_errors > 0) {
+        Cache::RedisDB->set_nw(@keys_in_redis, time);
 
-        my $body = join "\n", (@successes, @failures, @errors);
-        my $subject_line = ref $self;
-        $subject_line .= ' failed. Number of failures is ' . $number_failures . '. Number of errors is ' . $error . '.';
+        my $body = join "\n", (@successes, "\n\n", @failures, "\n\n", @errors);
+        my $subject_line = $market . ' failed. Number of failures is ' . $number_failures . '. Number of errors is ' . $number_errors . '.';
 
         return Email::Stuffer->from('system@binary.com')->to('quants-market-data@binary.com')->subject($subject_line)->text_body($body)->send_or_die;
     }

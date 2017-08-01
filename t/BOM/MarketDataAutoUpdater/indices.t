@@ -147,12 +147,21 @@ SKIP: {
         my $tmp = File::Temp->newdir;
         # get the real deal because we check date
         `wget -O $tmp/auto_upload.xls 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?dl=1' > /dev/null 2>&1`;
+
+        my @symbols_to_update = grep { $_ !~ /^OTC_/ } create_underlying_db->get_symbols_for(
+            market            => 'indices',
+            contract_category => 'ANY',
+        );
+
         my $au = BOM::MarketDataAutoUpdater::Indices->new(
             file              => "$tmp/auto_upload.xls",
-            symbols_to_update => [qw(TOP40)],
+            symbols_to_update => \@symbols_to_update
         );
         $au->run;
-        ok $au->report->{TOP40}->{success}, 'update successful';
+
+        my @success = grep { $au->report->{$_}->{success} == 1 } keys %{$au->report};
+        cmp_ok(scalar(@success), '>=', 1), 'update success';
+
     };
 }
 

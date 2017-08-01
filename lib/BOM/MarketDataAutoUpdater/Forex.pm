@@ -195,20 +195,20 @@ sub run {
         next if $underlying->flat_smile;
         my $raw_volsurface = $surfaces_from_file->{$symbol};
 
-        unless (exists $raw_volsurface->{recorded_date}) {
+        unless (exists $raw_volsurface->{creation_date}) {
             warn "Volatility Surface data missing from provider for " . $underlying->symbol;
             next;    # skipping it here else it will die in the next line.
         }
 
         next
-            if $raw_volsurface->{recorded_date}->epoch >= $rollover_date->epoch
-            and $raw_volsurface->{recorded_date}->epoch <= $one_hour_after_rollover->epoch;
+            if $raw_volsurface->{creation_date}->epoch >= $rollover_date->epoch
+            and $raw_volsurface->{creation_date}->epoch <= $one_hour_after_rollover->epoch;
         my $volsurface = Quant::Framework::VolSurface::Delta->new({
-            underlying                 => $underlying,
-            recorded_date              => $raw_volsurface->{recorded_date},
-            surface                    => $raw_volsurface->{surface},
-            chronicle_reader           => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer           => BOM::Platform::Chronicle::get_chronicle_writer(),
+            underlying       => $underlying,
+            creation_date    => $raw_volsurface->{creation_date},
+            surface          => $raw_volsurface->{surface},
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         });
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
@@ -258,8 +258,8 @@ sub passes_additional_check {
     # but I am sitting here fixing this on Christmas, so I might be missing something.
     my $underlying         = create_underlying($volsurface->underlying->symbol);
     my $calendar           = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
-    my $recorded_date      = $volsurface->recorded_date;
-    my $friday_after_close = ($recorded_date->day_of_week == 5 and not $calendar->is_open_at($underlying->exchange, $recorded_date));
+    my $creation_date      = $volsurface->creation_date;
+    my $friday_after_close = ($creation_date->day_of_week == 5 and not $calendar->is_open_at($underlying->exchange, $creation_date));
     my $wont_open          = not $calendar->trades_on($underlying->exchange, $volsurface->effective_date);
 
     if (   $volsurface->effective_date->is_a_weekend
