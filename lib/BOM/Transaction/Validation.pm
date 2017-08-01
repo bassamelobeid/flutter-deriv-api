@@ -60,7 +60,7 @@ sub validate_trx_sell {
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
         foreach my $method (@client_validation_method) {
-            my $res = $self->$_($c->{client});
+            my $res = $self->$method($c->{client});
             next unless $res;
             if ($self->transaction && $self->transaction->multiple) {
                 $c->{code}  = $res->get_type;
@@ -100,7 +100,7 @@ sub validate_trx_buy {
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
         foreach my $method (@client_validation_method) {
-            $res = $self->$_($c->{client});
+            $res = $self->$method($c->{client});
             next unless $res;
 
             if ($self->transaction && $self->transaction->multiple) {
@@ -669,7 +669,6 @@ Validates whether a client fullfill ICO jurisdicrtional restrictions
 sub _validate_ico_jurisdictional_restrictions {
     my ($self, $client) = (shift, shift);
 
-    my $contract  = $self->transaction->contract;
     my $residence = $client->residence;
     my $loginid   = $client->loginid;
 
