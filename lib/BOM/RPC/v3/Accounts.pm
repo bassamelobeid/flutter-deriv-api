@@ -828,7 +828,7 @@ sub set_settings {
     my ($state_text) =
         sort map { $_->{text} } grep { $_->{value} eq $client->state } @{BOM::Platform::Locale::get_state_option($client->residence) || []};
     my $residence_country = Locale::Country::code2country($client->residence);
-    my $full_address = join(', ', grep { /\S/ } (map { $client->$_ } qw(address_1 address_2 city)), $state_text, $client->postcode);
+    my $full_address = join(', ', grep { defined $_ and /\S/ } (map { $client->$_ } qw(address_1 address_2 city)), $state_text, $client->postcode);
 
     my @updated_fields = (
         [localize('Email address'),        $client->email],
