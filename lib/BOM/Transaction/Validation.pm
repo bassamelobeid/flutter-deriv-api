@@ -17,7 +17,7 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Geo::Region;
 use Geo::Region::Constant qw( :all );
 use BOM::Database::ClientDB;
-use Date::Uility;
+use Date::Utility;
 
 has clients => (
     is       => 'ro',
