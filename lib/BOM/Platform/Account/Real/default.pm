@@ -150,8 +150,12 @@ sub after_register_client {
     $notemsg .= "\n\n" . join(
         "\n",
         map {
-            my ($ip, $cc) = $_->{env} =~ /IP=([0-9a-z\.:]+) IP_COUNTRY=([A-Z]{1,3}) /;
-            sprintf '%s from %s (country %s)', $_->{action}, $ip, $cc
+            if ($_->{env}) {
+                my ($ip, $cc) = $_->{env} =~ /IP=([0-9a-z\.:]+) IP_COUNTRY=([A-Z]{1,3}) /;
+                sprintf '%s from %s (country %s)', $_->{action}, $ip // 'unknown IP', $cc // 'unknown';
+            } else {
+                '';
+            }
             } @{
             $user->find_login_history(
                 sort_by => 'history_date desc',
