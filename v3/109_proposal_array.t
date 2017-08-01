@@ -168,7 +168,7 @@ subtest "one barrier, one contract_type" => sub {
 
 subtest "various results" => sub {
 
-    $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch};
+    $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch} + 120;
     $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
 
     $proposal_array_req_tpl->{barriers}                 = [{barrier => 97.2}];
