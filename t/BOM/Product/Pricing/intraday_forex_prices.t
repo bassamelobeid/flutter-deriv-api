@@ -154,7 +154,7 @@ subtest 'prices without economic events' => sub {
 
 subtest 'atm prices without economic events' => sub {
     foreach my $contract_type (qw(CALL PUT)) {
-        foreach my $duration (map { $_ * 60 } (2, 5, 10, 15)) {
+        foreach my $duration (map { $_ * 60 } (3, 5, 10, 15)) {
             lives_ok {
                 my $c = produce_contract({
                     bet_type     => $contract_type,
@@ -213,7 +213,7 @@ subtest 'prices with economic events' => sub {
 
 subtest 'atm prices with economic events' => sub {
     foreach my $contract_type (qw(CALL PUT)) {
-        foreach my $duration (map { $_ * 60 } (2, 5, 10, 15)) {
+        foreach my $duration (map { $_ * 60 } (3, 5, 10, 15)) {
             lives_ok {
                 my $c = produce_contract({
                     bet_type     => $contract_type,
