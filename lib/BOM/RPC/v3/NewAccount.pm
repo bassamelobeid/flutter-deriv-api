@@ -171,7 +171,8 @@ sub verify_email {
                     message => [
                         '<div style="line-height:200%;color:#333333;font-size:15px;">'
                             . BOM::Platform::Context::localize(
-                            '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system.  <p>You may have:</p><ul><li>Registered with us using the same email in the past, or</li><li>Registered with one of our technology or brokerage partners</li></ul><p>If you’d like to proceed, please try using a different email address to register your account.</p><p>Please contact our customer support team if you have any questions.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_1]</p>', $params->{website_name})
+                            '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system.  <p>You may have:</p><ul><li>Registered with us using the same email in the past, or</li><li>Registered with one of our technology or brokerage partners</li></ul><p>If you’d like to proceed, please try using a different email address to register your account.</p><p>Please contact our customer support team if you have any questions.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_1]</p>',
+                            $params->{website_name})
                             . '</div>'
                     ],
                     use_email_template    => 1,
