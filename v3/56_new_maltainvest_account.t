@@ -4,12 +4,14 @@ use Test::More;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 
+use BOM::Database::Model::OAuth;
+use BOM::Platform::Account::Virtual;
+
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Platform::Account::Virtual;
-use BOM::Database::Model::OAuth;
+use BOM::Test::Helper::FinancialAssessment;
 
 ## do not send email
 use Test::MockModule;
@@ -40,29 +42,10 @@ my %client_details = (
 );
 
 my $mf_details = {
-    new_account_maltainvest              => 1,
-    account_turnover                     => 'Less than $25,000',
-    forex_trading_experience             => '1-2 years',
-    forex_trading_frequency              => '0-5 transactions in the past 12 months',
-    indices_trading_experience           => '1-2 years',
-    indices_trading_frequency            => '0-5 transactions in the past 12 months',
-    commodities_trading_experience       => '1-2 years',
-    commodities_trading_frequency        => '0-5 transactions in the past 12 months',
-    stocks_trading_experience            => '1-2 years',
-    stocks_trading_frequency             => '0-5 transactions in the past 12 months',
-    other_derivatives_trading_experience => '1-2 years',
-    other_derivatives_trading_frequency  => '0-5 transactions in the past 12 months',
-    other_instruments_trading_frequency  => '0-5 transactions in the past 12 months',
-    other_instruments_trading_experience => '1-2 years',
-    employment_industry                  => 'Construction',
-    education_level                      => 'Secondary',
-    income_source                        => 'Investments & Dividends',
-    net_income                           => '$25,000 - $50,000',
-    estimated_worth                      => '$250,001 - $500,000',
-    "occupation"                         => 'Managers',
-    accept_risk                          => 1,
-    account_opening_reason               => 'Speculative',
-};
+    new_account_maltainvest => 1,
+    accept_risk             => 1,
+    account_opening_reason  => 'Speculative',
+    %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}};
 
 subtest 'MLT upgrade to MF account' => sub {
     # create VR acc, authorize
