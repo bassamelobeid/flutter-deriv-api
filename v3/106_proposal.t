@@ -35,35 +35,17 @@ my $req = {
     "duration_unit" => "m"
 };
 
-my $res;
-
 $t->send_ok({json => $req})->message_ok;
-$res = decode_json($t->message->[1]);
+my $res = decode_json($t->message->[1]);
 ok $res->{proposal}->{id}, 'Should return id';
 
-$req->{amount} = "0.00000023";
-$t->send_ok({json => $req})->message_ok;
-$res = decode_json($t->message->[1]);
-ok $res->{proposal}->{id}, 'Should return id';
-
-$req->{amount} = "10e-2";
+$req->{amount} = "70e-2";
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{proposal}->{id}, 'Should return id for exponential number';
 
-my $reqBTC = {
-    "proposal"      => 1,
-    "amount"        => "0.0000001",
-    "basis"         => "payout",
-    "currency"      => "BTC",
-    "contract_type" => "CALL",
-    "symbol"        => "R_100",
-    "duration"      => "1",
-    "duration_unit" => "m"
-};
-
 #test wrong amount value
-$req->{amount} = "100.";
+$req->{amount} = ".";
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'InputValidationFailed', 'Correct failed due to input validation';
@@ -72,20 +54,5 @@ $req->{amount} = "+100";
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'InputValidationFailed', 'Correct failed due to + sign in number, not allowed as per json schema';
-
-my $reqBTC = {
-    "proposal"      => 1,
-    "amount"        => "0.0000001",
-    "basis"         => "payout",
-    "currency"      => "BTC",
-    "contract_type" => "CALL",
-    "symbol"        => "R_100",
-    "duration"      => "1",
-    "duration_unit" => "m"
-};
-
-$t->send_ok({json => $reqBTC})->message_ok;
-$res = decode_json($t->message->[1]);
-ok $res->{proposal}->{id}, 'Should return id for BTC';
 
 done_testing;
