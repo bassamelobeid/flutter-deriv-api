@@ -35,8 +35,8 @@ sub _open_ico_for_european_country {
     my ($self, $client_residence) = @_;
 
     my $db = BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db;
-    my $number_of_unique_client_per_eu_country->{cnt} =
-        $db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet',[$client_residence]) });
+    my $number_of_unique_client_per_eu_country =
+        $db->dbh->selectall_hashref(qq{ SELECT cnt FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', ('{'|| ? ||'}')::VARCHAR[]) }, undef, $client_residence);
 
     return $number_of_unique_client_per_eu_country;
 }
