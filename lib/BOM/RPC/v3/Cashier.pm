@@ -421,18 +421,6 @@ sub paymentagent_transfer {
             ($message) ? (message => $message) : (),
         });
     };
-    my $reject_error_sub = sub {
-        my $msg = shift;
-        return $error_sub->(
-            __output_payments_error_message({
-                    client       => $client_fm,
-                    action       => "transfer - from $loginid_fm to $loginid_to",
-                    error_msg    => $msg,
-                    payment_type => 'Payment Agent transfer',
-                    currency     => $currency,
-                    amount       => $amount,
-                }));
-    };
 
     my $error_msg;
     my $payment_agent = $client_fm->payment_agent;
@@ -472,38 +460,38 @@ sub paymentagent_transfer {
 
     my $client_to = try { Client::Account->new({loginid => $loginid_to}) };
     unless ($client_to) {
-        return $reject_error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
+        return localize('Login ID ([_1] does not exist.', $loginid_to);
     }
 
     unless ($client_fm->landing_company->short eq $client_to->landing_company->short) {
-        return $reject_error_sub->(localize('Cross-company payment agent transfers are not allowed.'));
+        return localize('Cross-company payment agent transfers are not allowed.');
     }
 
     if ($loginid_to eq $loginid_fm) {
-        return $reject_error_sub->(localize('Sorry, it is not allowed.'));
+        return localize('Sorry, it is not allowed.');
     }
 
     if ($currency ne 'USD') {
-        return $reject_error_sub->(localize('Sorry, only USD is allowed.'));
+        return localize('Sorry, only USD is allowed.');
     }
 
     unless ($client_fm->currency eq $currency) {
-        return $reject_error_sub->(localize("Sorry, [_1] is not default currency for payment agent [_2]", $currency, $client_fm->loginid));
+        return localize("Sorry, [_1] is not default currency for payment agent [_2]", $currency, $client_fm->loginid);
     }
     unless ($client_to->currency eq $currency) {
-        return $reject_error_sub->(localize("Sorry, [_1] is not default currency for client [_2]", $currency, $client_to->loginid));
+        return localize("Sorry, [_1] is not default currency for client [_2]", $currency, $client_to->loginid);
     }
 
     if ($client_to->get_status('disabled')) {
-        return $reject_error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to));
+        return localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to);
     }
 
     if ($client_to->get_status('cashier_locked') || $client_to->documents_expired) {
-        return $reject_error_sub->(localize('There was an error processing the request.') . ' ' . localize('This client cashier section is locked.'));
+        return localize('There was an error processing the request.') . ' ' . localize('This client cashier section is locked.');
     }
 
     if ($client_fm->get_status('cashier_locked') || $client_fm->documents_expired) {
-        return $reject_error_sub->(localize('There was an error processing the request.') . ' ' . localize('Your cashier section is locked.'));
+        return localize('There was an error processing the request.') . ' ' . localize('Your cashier section is locked.');
     }
 
     if ($args->{dry_run}) {
@@ -565,7 +553,7 @@ sub paymentagent_transfer {
         $fm_client_db->unfreeze;
         $to_client_db->unfreeze;
 
-        return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transfer amount for today.'));
+        return localize('Sorry, you have exceeded the maximum allowable transfer amount for today.');
     }
 
     # do not allow more than 1000 transactions per day
@@ -573,13 +561,13 @@ sub paymentagent_transfer {
         $fm_client_db->unfreeze;
         $to_client_db->unfreeze;
 
-        return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
+        return localize('Sorry, you have exceeded the maximum allowable transactions for today.');
     }
 
     if ($client_to->default_account and $amount + $client_to->default_account->balance > $client_to->get_limit_for_account_balance) {
         $fm_client_db->unfreeze;
         $to_client_db->unfreeze;
-        return $reject_error_sub->(localize('Sorry, client balance will exceed limits with this payment.'));
+        return localize('Sorry, client balance will exceed limits with this payment.');
     }
 
     # execute the transfer
@@ -685,18 +673,6 @@ sub paymentagent_withdraw {
             ($message) ? (message => $message) : (),
         });
     };
-    my $reject_error_sub = sub {
-        my $msg = shift;
-        return $error_sub->(
-            __output_payments_error_message({
-                    client       => $client,
-                    action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-                    error_msg    => $msg,
-                    payment_type => 'Payment Agent Withdrawal',
-                    currency     => $currency,
-                    amount       => $amount,
-                }));
-    };
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
@@ -709,7 +685,7 @@ sub paymentagent_withdraw {
         return $error_sub->(localize('Payment Agents are not available on this site.'));
     } elsif (not BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client)) {
         # check whether allow to withdraw via payment agent
-        return $reject_error_sub->(localize('You are not authorized for withdrawal via payment agent.'));
+        return localize('You are not authorized for withdrawal via payment agent.');
     } elsif ($client->cashier_setting_password) {
         return $error_sub->(localize('Your cashier is locked as per your request.'));
     }
@@ -747,20 +723,20 @@ sub paymentagent_withdraw {
 
     # check that the amount is in correct format
     if ($amount !~ /^\d*\.?\d*$/) {
-        return $reject_error_sub->(localize('There was an error processing the request.'));
+        return localize('There was an error processing the request.');
     }
 
     # check that the additional information does not exceeded the allowed limits
     if (length($further_instruction) > 300) {
-        return $reject_error_sub->(localize('Further instructions must not exceed [_1] characters.', 300));
+        return localize('Further instructions must not exceed [_1] characters.', 300);
     }
 
     # check that both the client payment agent cashier is not locked
     if ($client->get_status('cashier_locked') || $client->get_status('withdrawal_locked') || $client->documents_expired) {
-        return $reject_error_sub->(localize('There was an error processing the request.'));
+        return localize('There was an error processing the request.');
     }
     if ($pa_client->get_status('cashier_locked') || $client->documents_expired) {
-        return $reject_error_sub->(localize('This Payment Agent cashier section is locked.'));
+        return localize('This Payment Agent cashier section is locked.');
     }
 
     if ($args->{dry_run}) {
@@ -823,8 +799,7 @@ sub paymentagent_withdraw {
         $client_db->unfreeze;
         $paymentagent_client_db->unfreeze;
 
-        return $reject_error_sub->(
-            localize('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit));
+        return localize('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit);
     }
 
     if ($amount_transferred > 1500) {
@@ -843,7 +818,7 @@ sub paymentagent_withdraw {
         $client_db->unfreeze;
         $paymentagent_client_db->unfreeze;
 
-        return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
+        return localize('Sorry, you have exceeded the maximum allowable transactions for today.');
     }
 
     my $comment =
@@ -926,48 +901,6 @@ sub paymentagent_withdraw {
         status            => 1,
         paymentagent_name => $paymentagent->payment_agent_name,
         transaction_id    => $response->{transaction_id}};
-}
-
-sub __output_payments_error_message {
-    my $args          = shift;
-    my $client        = $args->{'client'};
-    my $action        = $args->{'action'};
-    my $payment_type  = $args->{'payment_type'} || 'n/a';    # used for reporting; if not given, not applicable
-    my $currency      = $args->{'currency'};
-    my $amount        = $args->{'amount'};
-    my $error_message = $args->{'error_msg'};
-
-    my $brand          = Brands->new(name => request()->brand);
-    my $payments_email = $brand->emails('payments');
-    my $cs_email       = $brand->emails('support');
-
-    # amount is not always exist because error may happen before client submit the form
-    # or when redirected from 3rd party site to failure script where no data is returned
-    my $email_amount = $amount ? "Amount : $currency $amount" : '';
-    my $now          = Date::Utility->new;
-    my $message      = [
-        "Details of the payment error :\n",
-        "Date/Time : " . $now->datetime,
-        "Action : " . ucfirst $action . " via $payment_type",
-        "Login ID : " . $client->loginid,
-        $email_amount,
-        "Error message : $error_message",
-    ];
-
-    send_email({
-        from    => $cs_email,
-        to      => $payments_email,
-        subject => 'Payment Error: ' . $payment_type . ' [' . $client->loginid . ']',
-        message => $message,
-    });
-
-    # write error to deposit-failure.log
-    if ($action eq 'deposit') {
-        Path::Tiny::path('/var/log/fixedodds/deposit-error.log')
-            ->append($now->datetime . ' LoginID:' . $client->loginid . " Method: $payment_type Amount: $currency $amount Error: $error_message");
-    }
-
-    return $error_message;
 }
 
 sub __client_withdrawal_notes {
