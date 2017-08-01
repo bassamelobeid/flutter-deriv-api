@@ -1,4 +1,6 @@
 language: perl
+dist: precise
+group: deprecated-2017Q1
 perl:
     - "5.14.2-thr"
 matrix:
