@@ -21,7 +21,7 @@
 
 </table>
 
-<p><b>List of Economic Events today</b></p>
+<p><b>List of Economic Events: </b>  <select onchange="updateTable(this.value)">[% FOREACH date IN dates %]<option value="[% date %]">[% date %]</option>[% END %]</select></p>
 
 <table class='economic_event_list'>
     <tr>
@@ -54,6 +54,34 @@
 </table>
 
 <script>
+    function updateTable(date) {
+        if (date) {
+            \$.ajax({
+                    url: "[% ee_upload_url | none %]",
+                    data: {
+                        get_event: "1",
+                        date: date,
+                    },
+                    success: function(data){
+                        var r = \$.parseJSON(data);
+                        var content = '<tr> <td><b>Event ID</b></td> <td><b>Event Name</b></td> <td><b>Release Date</b></td> <td><b>Impact (FF)</b></td> <td><b>Symbol</b></td> <td><b>Binary\'s Category (numbers are rounded)</b></td> <td><b>Custom Magnitude</b></td> <td><b>Action</b></td> </tr>';
+
+                        for (i=0;i < r.events.length; i++) {
+                            var row = r.events[i];
+                            content += '<tr id="'+ row.id +'"> <td>'+ row.id +'</td> <td>'+ row.event_name +'</td> <td>'+ row.release_date +'</td> <td>'+ row.impact +'</td> <td>'+ row.symbol +'</td> <td id="binary_info">';
+
+                            for (j=0; j < row.info.length; j++ ) {
+                                content += '<p>'+ row.info[j] +'</p>';
+                            }
+
+                            content += '</td> <td><INPUT type="text" name="custom_magnitude" size="10"></td> <td><button onclick="deleteEvent( \''+ row.id +'\' )">Delete</button> <button onclick="update( \''+ row.id +'\' )">Update</button></td> <td style="display:none;" class="result"></td> </tr>';
+                        }
+
+                        \$('table.economic_event_list tbody').html(content);
+                    }
+            });
+        }
+    }
     function update(id) {
         if (id) {
             var el = \$('tr#'+id);

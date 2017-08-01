@@ -11,6 +11,12 @@ use BOM::Backoffice::Sysinit ();
 use BOM::EconomicEventTool;
 BOM::Backoffice::Sysinit::init();
 
+## Updates economic event list
+
+if (request()->param('get_event')) {
+    print to_json(BOM::EconomicEventTool::get_economic_events_for_date(request()->param('date')));
+}
+
 ## Delete economic event
 if (request()->param('delete_event')) {
     print to_json(BOM::EconomicEventTool::delete_by_id(request()->param('event_id')));

@@ -13,16 +13,28 @@ use JSON qw(to_json);
 use List::Util qw(first);
 use BOM::Backoffice::Request;
 
+sub get_economic_events_for_date {
+    my $date = shift;
+
+    return _err('Date is undefined') unless $date;
+    my @events = map { get_info($_) } @{_get_economic_events(Date::Utility->new($date))};
+
+    return {events => \@events};
+}
+
 sub generate_economic_event_tool {
     my $url = shift;
 
     my @events = map { get_info($_) } @{_get_economic_events()};
+    my $today  = Date::Utility->new->truncate_to_day;
+    my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 6);
 
     return BOM::Backoffice::Request::template->process(
         'backoffice/economic_event_forms.html.tt',
         {
             ee_upload_url => $url,
             events        => \@events,
+            dates         => \@dates,
         },
     ) || die BOM::Backoffice::Request::template->error;
 }
@@ -86,6 +98,7 @@ sub update_by_id {
 
 sub save_new_event {
     my $args = shift;
+
     if ($args->{is_tentative} and not $args->{estimated_release_date}) {
         return _err('Must specify estimated announcement date for tentative events');
     } elsif (not $args->{release_date}) {
@@ -126,15 +139,17 @@ sub save_new_event {
     return BOM::EconomicEventTool::get_info($args);
 }
 
-sub _err {
-    return {error => 'ERR: ' . shift};
-}
-
 sub _get_economic_events {
+    my $date = shift;
+
     my $eec = Quant::Framework::EconomicEventCalendar->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
     );
-    return $eec->list_economic_events_for_date() // [];
+    return $eec->list_economic_events_for_date($date) // [];
+}
+
+sub _err {
+    return {error => 'ERR: ' . shift};
 }
 
 my @symbols;
