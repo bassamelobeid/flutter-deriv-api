@@ -7,11 +7,12 @@ use Test::Most;
 my $code             = 'RANDOM_CODE';
 my $website_name     = 'My website name';
 my $verification_uri = 'https://www.example.com/verify';
+my $language         = 'EN';
 
 sub get_verification_uri {
     my $action = shift;
 
-    return "$verification_uri?action=$action&code=$code";
+    return "$verification_uri?action=$action&lang=EN&code=$code";
 }
 
 my $messages = {
@@ -63,6 +64,7 @@ sub get_verification {
     return email_verification({
         code         => $code,
         website_name => $website_name,
+        language     => $language,
         ($with_link ? (verification_uri => $verification_uri) : ()),
     });
 }
