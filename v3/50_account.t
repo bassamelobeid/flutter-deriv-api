@@ -9,14 +9,16 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 use Test::MockModule;
 
-use BOM::Database::Model::OAuth;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Transaction;
 use BOM::MarketData qw(create_underlying_db);
+use BOM::Database::Model::OAuth;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Helper::FinancialAssessment;
 
 my $t = build_wsapi_test({language => 'EN'});
 
@@ -155,32 +157,14 @@ is $res->{get_limits}->{open_positions}, 60;
 test_schema('get_limits', $res);
 
 my $args = {
-    "set_financial_assessment"             => 1,
-    "account_turnover"                     => 'Less than $25,000',
-    "forex_trading_experience"             => "Over 3 years",
-    "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
-    "indices_trading_experience"           => "1-2 years",
-    "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
-    "commodities_trading_experience"       => "1-2 years",
-    "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
-    "stocks_trading_experience"            => "1-2 years",
-    "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
-    "other_derivatives_trading_experience" => "Over 3 years",
-    "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
-    "other_instruments_trading_experience" => "Over 3 years",
-    "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
-    "employment_industry"                  => "Finance",
-    "education_level"                      => "Secondary",
-    "income_source"                        => "Self-Employed",
-    "net_income"                           => '$25,000 - $50,000',
-    "occupation"                           => 'Managers'
-};
-
+    "set_financial_assessment" => 1,
+    %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}};
+my $val = delete $args->{estimated_worth};
 $t = $t->send_ok({json => $args})->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{error}->{code}, 'InputValidationFailed', 'Missing required field: estimated_worth');
 
-$args->{estimated_worth} = '$100,000 - $250,000';
+$args->{estimated_worth} = $val;
 $t = $t->send_ok({json => $args})->message_ok;
 $res = decode_json($t->message->[1]);
 cmp_ok($res->{set_financial_assessment}->{score}, "<", 60, "Correct score");
