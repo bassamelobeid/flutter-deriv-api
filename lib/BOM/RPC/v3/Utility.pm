@@ -268,4 +268,24 @@ sub paymentagent_default_min_max {
     };
 }
 
+# FIXME: remove this sub when move of client details to user db is done
+sub should_update_account_details {
+    my $args = shift;
+
+    my $allow_omnibus = $args->{allow_omnibus};
+    if (!$allow_omnibus) {
+        my $client = Client::Account->new({loginid => $args->{loginid}});
+        my $sub_account_of = $client->sub_account_of;
+        if ($sub_account_of) {
+            $client = Client::Account->new({loginid => $sub_account_of});
+            $allow_omnibus = $client->allow_omnibus;
+        }
+    }
+
+    if ($args->{landing_company} ne $args->{cli_landing_company} or ($allow_omnibus and $args->{cli_loginid} ne $args->{loginid})) {
+        return 0;
+    }
+    return 1;
+}
+
 1;

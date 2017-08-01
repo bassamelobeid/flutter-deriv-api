@@ -778,9 +778,16 @@ sub set_settings {
     }
 
     my $user = BOM::Platform::User->new({email => $client->email});
-    my $landing_company = $client->landing_company;
     foreach my $cli ($user->clients) {
-        next if ($landing_company ne $cli->landing_company or ($client->allow_omnibus and $cli->loginid ne $client->loginid));
+        next
+            if (
+            !BOM::RPC::v3::Utility::should_update_account_details({
+                    allow_omnibus       => $client->allow_omnibus,
+                    loginid             => $client->loginid,
+                    landing_company     => $client->landing_company,
+                    cli_landing_company => $cli->landing_company,
+                    cli_loginid         => $cli->loginid
+                }));
 
         $cli->address_1($address1);
         $cli->address_2($address2);
@@ -1303,9 +1310,16 @@ sub set_financial_assessment {
         my $is_professional = $financial_evaluation->{total_score} < 60 ? 0 : 1;
 
         my $user = BOM::Platform::User->new({email => $client->email});
-        my $landing_company = $client->landing_company;
         foreach my $cli ($user->clients) {
-            next if ($landing_company ne $cli->landing_company or ($client->allow_omnibus and $cli->loginid ne $client->loginid));
+            next
+                if (
+                !BOM::RPC::v3::Utility::should_update_account_details({
+                        allow_omnibus       => $client->allow_omnibus,
+                        loginid             => $client->loginid,
+                        landing_company     => $client->landing_company,
+                        cli_landing_company => $cli->landing_company,
+                        cli_loginid         => $cli->loginid
+                    }));
             $cli->financial_assessment({
                 data            => encode_json $financial_evaluation->{user_data},
                 is_professional => $is_professional
