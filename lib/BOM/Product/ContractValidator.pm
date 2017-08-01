@@ -522,12 +522,12 @@ sub _validate_start_and_expiry_date {
     if ($self->is_intraday and $self->is_forward_starting) {
         if (my @forward_inefficient_periods = @{$self->underlying->forward_inefficient_periods}) {
             foreach my $period (@forward_inefficient_periods) {
-                if (    $start_epoch >= $effective_sod->plus_time_interval($_->{start})->epoch
-                    and $end_epoch <= $effective_sod->plus_time_interval($_->{end})->epoch)
+                if (    $start_epoch >= $effective_sod->plus_time_interval($period->{start})->epoch
+                    and $end_epoch <= $effective_sod->plus_time_interval($period->{end})->epoch)
                 {
                     my @args  = ();
-                    my $start = Date::Utility->new($effective_sod->plus_time_interval($_->{start})->epoch);
-                    my $end   = Date::Utility->new($effective_sod->plus_time_interval($_->{end})->epoch);
+                    my $start = Date::Utility->new($effective_sod->plus_time_interval($period->{start})->epoch);
+                    my $end   = Date::Utility->new($effective_sod->plus_time_interval($period->{end})->epoch);
                     if ($start->day_of_year == $end->day_of_year) {
                         push @args, ($start->time_hhmmss, $end->time_hhmmss);
                     } else {
