@@ -68,9 +68,9 @@ my $events         = [{
     {
         symbol                => 'EUR',
         release_date          => $now->epoch,
-        blankout              => $blackout_start_4h->epoch,
+        blankout              => $blackout_start_2h->epoch,
         estimated_release_date => $now->epoch,
-        blankout_end          => $blackout_end_4h->epoch,
+        blankout_end          => $blackout_end_2h->epoch,
         is_tentative          => 1,
         tentative_event_shift => 0.01,
         event_name            => 'Test tentative',
