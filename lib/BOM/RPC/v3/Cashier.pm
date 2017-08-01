@@ -460,7 +460,7 @@ sub paymentagent_transfer {
 
     my $client_to = try { Client::Account->new({loginid => $loginid_to}) };
     unless ($client_to) {
-        return $error_sub->(localize('Login ID ([_1] does not exist.', $loginid_to));
+        return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
     }
 
     unless ($client_fm->landing_company->short eq $client_to->landing_company->short) {
