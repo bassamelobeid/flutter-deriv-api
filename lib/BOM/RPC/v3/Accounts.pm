@@ -829,7 +829,7 @@ sub set_settings {
     # lookup state name by id
     my $state_text =
         $client->state and $client->residence
-        ? (Locale::get_state_by_id($client->state, $client->residence) // '')
+        ? (BOM::Platform::Locale::get_state_by_id($client->state, $client->residence) // '')
         : '';
     my $residence_country = Locale::Country::code2country($client->residence);
     my @address_fields = (map { $client->$_ } qw/address_1 address_2 city/, $state_text, $client->postcode);
