@@ -798,8 +798,10 @@ sub set_settings {
         or $addressState ne $client->state
         or $addressPostcode ne $client->postcode)
     {
+        my $authenticated = $client->client_fully_authenticated;
         $cil_message =
-              'Client ['
+              ($authenticated ? 'Authenticated' : 'Non-authenticated')
+            . ' client ['
             . $client->loginid
             . '] updated his/her address from ['
             . join(' ', $client->address_1, $client->address_2, $client->city, $client->state, $client->postcode)
