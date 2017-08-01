@@ -12,6 +12,7 @@ use Test::MockModule;
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Helper::FinancialAssessment;
 
 my $t = build_wsapi_test({language => 'EN'});
 
@@ -142,26 +143,8 @@ is $call_params->{token}, $token;
 
 $t = $t->send_ok({
         json => {
-            "set_financial_assessment"             => 1,
-            "forex_trading_experience"             => "Over 3 years",
-            "account_turnover"                     => 'Less than $25,000',
-            "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
-            "indices_trading_experience"           => "1-2 years",
-            "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
-            "commodities_trading_experience"       => "1-2 years",
-            "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
-            "stocks_trading_experience"            => "1-2 years",
-            "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
-            "other_derivatives_trading_experience" => "Over 3 years",
-            "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
-            "other_instruments_trading_experience" => "Over 3 years",
-            "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
-            "employment_industry"                  => "Finance",
-            "education_level"                      => "Secondary",
-            "income_source"                        => "Self-Employed",
-            "net_income"                           => '$25,000 - $50,000',
-            "estimated_worth"                      => '$100,000 - $250,000',
-            "occupation"                           => 'Managers'
+            "set_financial_assessment" => 1,
+            %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()},
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'set_financial_assessment');
@@ -361,28 +344,11 @@ is($res->{msg_type}, 'reality_check');
 
 $t = $t->send_ok({
         json => {
-            "set_financial_assessment"             => 1,
-            "account_opening_reason"               => "Speculative",
-            "account_turnover"                     => 'Less than $25,000',
-            "forex_trading_experience"             => "Over 3 years",
-            "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
-            "indices_trading_experience"           => "1-2 years",
-            "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
-            "commodities_trading_experience"       => "1-2 years",
-            "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
-            "stocks_trading_experience"            => "1-2 years",
-            "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
-            "other_derivatives_trading_experience" => "Over 3 years",
-            "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
-            "other_instruments_trading_experience" => "Over 3 years",
-            "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
-            "employment_industry"                  => "Finance",
-            "education_level"                      => "Secondary",
-            "income_source"                        => "Self-Employed",
-            "net_income"                           => '$25,000 - $100,000',
-            "estimated_worth"                      => '$100,000 - $250,000',
-            "occupation"                           => 'Managers'
-        }})->message_ok;
+            "set_financial_assessment" => 1,
+            "account_opening_reason"   => "Speculative",
+            %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}
+        },
+    })->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'set_financial_assessment');
 
