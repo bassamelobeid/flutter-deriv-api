@@ -146,6 +146,21 @@ sub after_register_client {
     my $notemsg = "$client_loginid - Name and Address\n\n\n\t\t $client_name \n\t\t";
     my @address = map { $client->$_ } qw(address_1 address_2 city state postcode);
     $notemsg .= join("\n\t\t", @address, Locale::Country::code2country($client->residence));
+    # Include last 10 lines of login history because CS needs to check the country looks sensible
+    $notemsg .= "\n\n" . join(
+        "\n",
+        map {
+            if ($_->{env}) {
+                my ($ip, $cc) = $_->{env} =~ /IP=([0-9a-z\.:]+) IP_COUNTRY=([A-Z]{1,3}) /;
+                sprintf '%s from %s (country %s)', $_->{action}, $ip // 'unknown IP', $cc // 'unknown';
+            } else {
+                '';
+            }
+            } @{
+            $user->find_login_history(
+                sort_by => 'history_date desc',
+                limit   => 10,
+            )});
     $client->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$notemsg\n");
 
     if ($client->landing_company->short eq 'iom'
