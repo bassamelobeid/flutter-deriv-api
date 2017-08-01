@@ -778,7 +778,10 @@ sub set_settings {
     }
 
     my $user = BOM::Platform::User->new({email => $client->email});
+    my $landing_company = $client->landing_company;
     foreach my $cli ($user->clients) {
+        next if ($landing_company ne $cli->landing_company or ($client->allow_omnibus and $cli->loginid ne $client->loginid));
+
         $cli->address_1($address1);
         $cli->address_2($address2);
         $cli->city($addressTown);
@@ -1289,7 +1292,9 @@ sub set_financial_assessment {
 
         my $user = BOM::Platform::User->new({email => $client->email});
         if ($user and $user->clients) {
+            my $landing_company = $client->landing_company;
             foreach my $cli ($user->clients) {
+                next if ($landing_company ne $cli->landing_company or ($client->allow_omnibus and $cli->loginid ne $client->loginid));
                 $cli->financial_assessment({
                     data            => encode_json $financial_evaluation->{user_data},
                     is_professional => $is_professional
