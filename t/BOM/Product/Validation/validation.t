@@ -500,7 +500,7 @@ subtest 'volsurfaces become old and invalid' => sub {
         payout       => 100,
         date_start   => $starting,
         date_pricing => $starting,
-        duration     => '2m',
+        duration     => '3m',
         barrier      => 'S0P',
         current_tick => $tick,
     };
