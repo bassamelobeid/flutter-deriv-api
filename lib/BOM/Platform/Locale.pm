@@ -104,8 +104,9 @@ sub get_state_option {
 =head get_state_by_id
 
 Lookup full state name by state id and residence
+Returns undef when state is not found
 
-Usage: get_state_by_id(BA, Indonesia) => Bali
+Usage: get_state_by_id('BA', 'id') => Bali
 
 =cut
 
