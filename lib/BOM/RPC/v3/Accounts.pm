@@ -341,7 +341,7 @@ sub get_account_status {
             # Our threshold is 4000 USD, but we want to include total across all the user's currencies
             my $total = sum0(
                 map { in_USD($_->default_account->balance, $_->currency) }
-                grep { $_->landing_company->short eq $shortcode } $user->clients
+                grep { $_->default_account && $_->landing_company->short eq $shortcode } $user->clients
             );
             if ($total > 4000) {
                 $prompt_client_to_authenticate = 1;
