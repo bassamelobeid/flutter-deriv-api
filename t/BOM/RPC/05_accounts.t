@@ -3,6 +3,7 @@ use warnings;
 
 use utf8;
 use Test::Most;
+use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
 use MojoX::JSON::RPC::Client;
@@ -674,13 +675,25 @@ subtest $method => sub {
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;
-    is_deeply(
+    # We are authenticated, but MF still has flag set until age_verification has been completed
+    cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => ['authenticated', 'has_password'],
-            risk_classification => 'low'
+            status                        => bag(qw(authenticated has_password)),
+            risk_classification           => 'low'
+            prompt_client_to_authenticate => '1',
         },
         'ok, authenticated'
+    );
+    $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+    cmp_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status                        => bag(qw(age_verification authenticated has_password)),
+            risk_classification           => 'low'
+            prompt_client_to_authenticate => '0',
+        },
+        'ok, authenticated and age verified'
     );
 };
 
