@@ -12,6 +12,7 @@
     "appstore": "https://itunes.apple.com/test_app",
     "googleplay": "https://play.google.com/test_app",
     "redirect_uri": "https://test.example.com/redirect",
+    "verification_uri": "https://test.example.com/verify",
     "app_markup_percentage": "1.5"
   }
 }
