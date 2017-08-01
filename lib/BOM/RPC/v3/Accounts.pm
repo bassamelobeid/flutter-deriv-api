@@ -23,7 +23,7 @@ use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Locale;
+use BOM::Platform::Locale qw/get_state_by_id/;
 use BOM::Platform::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
@@ -832,7 +832,7 @@ sub set_settings {
         ? (get_state_by_id($client->state, $client->residence) // '')
         : '';
     my $residence_country = Locale::Country::code2country($client->residence);
-    my @address_fields = map { $client->$_ } qw/address_1 address_2 city/, $state_text, $client->postcode;
+    my @address_fields = (map { $client->$_ } qw/address_1 address_2 city/, $state_text, $client->postcode);
     # filter out empty fields
     my $full_address = join ', ', grep { defined $_ and /\S/ } @address_fields;
 

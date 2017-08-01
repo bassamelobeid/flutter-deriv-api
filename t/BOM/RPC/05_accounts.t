@@ -1307,7 +1307,11 @@ subtest 'get and set self_exclusion' => sub {
     is($c->tcall($method, $params)->{status}, 1, "update self_exclusion ok");
 
     $params->{args}{max_balance} = 9999.999;
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Input validation failed: max_balance', 'don\'t allow more than two decimals in max balance for this client');
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Input validation failed: max_balance',
+        'don\'t allow more than two decimals in max balance for this client'
+    );
     $params->{args}{max_balance} = 9999.99;
     is($c->tcall($method, $params)->{status}, 1, 'allow two decimals in max balance');
 
