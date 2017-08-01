@@ -17,6 +17,7 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Geo::Region;
 use Geo::Region::Constant qw( :all );
 use BOM::Database::ClientDB;
+use Date::Uility;
 
 has clients => (
     is       => 'ro',
@@ -52,7 +53,8 @@ sub validate_trx_sell {
     push @client_validation_method, '_validate_iom_withdrawal_limit' unless $self->transaction->contract->is_binaryico;
 
     my @contract_validation_method = qw/_is_valid_to_sell/;
-    push @contract_validation_method, qw(_validate_sell_pricing_adjustment _validate_date_pricing) unless $self->transaction->contract->is_binaryico;
+    push @contract_validation_method, qw(_validate_sell_pricing_adjustment _validate_date_pricing _validate_ico_token_claimable)
+        unless $self->transaction->contract->is_binaryico;
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
@@ -599,6 +601,30 @@ sub _validate_jurisdictional_restrictions {
             -mesg              => 'Clients are not allowed to trade on this underlying as its restricted for this landing company',
             -message_to_client => localize('Please switch accounts to trade this underlying.'),
         );
+    }
+
+    return;
+}
+
+=head2 $self->_validate_ico_token_claimable
+
+For US investors, who will be unable to claim their tokens for 1 year
+
+=cut
+
+sub _validate_ico_token_claimable {
+
+    my ($self, $client) = (shift, shift);
+
+    my $residence = $client->residence;
+
+    if ($residence eq 'us' and Date::Utility->new->is_before(Date::Utility->new('2018-09-30'))) {
+        return Error::Base->cuss(
+            -type              => 'IcoNotClaimable',
+            -mesg              => 'US investors are not to claim the token within a year ',
+            -message_to_client => localize('Sorry, due to US regulation, you are not allow to claim the token within a year.'),
+        );
+
     }
 
     return;
