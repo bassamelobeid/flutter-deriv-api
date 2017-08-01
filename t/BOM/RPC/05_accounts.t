@@ -680,17 +680,17 @@ subtest $method => sub {
         $c->tcall($method, {token => $token1}),
         {
             status                        => bag(qw(authenticated has_password)),
-            risk_classification           => 'low'
+            risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
         'ok, authenticated'
     );
-    $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+    $test_client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
             status                        => bag(qw(age_verification authenticated has_password)),
-            risk_classification           => 'low'
+            risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
         },
         'ok, authenticated and age verified'
