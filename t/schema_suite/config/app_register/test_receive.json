@@ -25,6 +25,11 @@
       "pattern": "^https:\/\/test\\.example\\.com\/redirect$",
       "required": "1"
     },
+    "verification_uri": {
+      "type": "string",
+      "pattern": "^https:\/\/test\\.example\\.com\/verify",
+      "required": "1"
+    },
     "homepage": {
       "type": "string",
       "pattern": "^https:\/\/test\\.example\\.com\/$",
