@@ -738,10 +738,9 @@ sub prepare_sell {
     my $error_status = BOM::Transaction::Validation->new({
             transaction => $self,
             clients     => \@clients,
-        }
-        )->validate_trx_sell()
+        })->validate_trx_sell();
 
-        return $error_status if $error_status;
+    return $error_status if $error_status;
 
     $self->comment(
         _build_pricing_comment({
