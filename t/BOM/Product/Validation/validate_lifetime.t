@@ -71,11 +71,11 @@ $mocked2->mock(
 subtest 'inefficient period' => sub {
     note('price at 2016-09-19 19:59:59');
     my $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'valid to buy';
+    ok !$c->is_valid_to_buy, 'valid to buy';
     $bet_params->{date_start} = $bet_params->{date_pricing} = $now->plus_time_interval('1s');
     note('price at 2016-09-19 20:00:00');
     $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy,       'valid to buy';
+    ok !$c->is_valid_to_buy,       'valid to buy';
     ok $c->market_is_inefficient, 'market inefficient flag triggered';
     $bet_params->{underlying} = 'R_100';
     note('set underlying to R_100. Makes sure only forex is affected.');
@@ -134,11 +134,11 @@ subtest 'non dst' => sub {
     $bet_params->{duration} = '2m';
     my $c = produce_contract($bet_params);
     ok !$c->date_pricing->is_dst_in_zone('America/New_York'), 'date pricing is at non dst';
-    ok $c->is_valid_to_buy, 'valid to buy';
+    ok !$c->is_valid_to_buy, 'valid to buy';
     $bet_params->{date_start} = $bet_params->{date_pricing} = $non_dst->plus_time_interval('1s');
     $bet_params->{disable_trading_at_quiet_period} = 0;
     $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy,       'valid to buy';
+    ok !$c->is_valid_to_buy,       'valid to buy';
     ok $c->market_is_inefficient, 'correctly triggered for non dst';
 };
 
