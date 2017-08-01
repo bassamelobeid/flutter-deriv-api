@@ -76,12 +76,12 @@ my $events         = [{
         event_name            => 'Test tentative',
         impact                => 5,
     }];
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'economic_events',
-    {
-        recorded_date => $now,
-        events        => $events,
-    });
+#BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+#    'economic_events',
+#    {
+#        recorded_date => $now,
+#        events        => $events,
+#    });
 
 Volatility::Seasonality::generate_economic_event_seasonality({
     underlying_symbols => ['frxEURUSD'],
