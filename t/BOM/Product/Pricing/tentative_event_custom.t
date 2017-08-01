@@ -48,11 +48,11 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 set_absolute_time($now->epoch);
 
-my $blackout_start_15m = $now->minus_time_interval('15m');
-my $blackout_end_15m   = $now->plus_time_interval('15m');
+my $blackout_start_15m = $now->minus_time_interval('30m');
+my $blackout_end_15m   = $now->minus_time_interval('15m');
 
-my $blackout_start_4h = $now->minus_time_interval('2h');
-my $blackout_end_4h   = $now->plus_time_interval('2h');
+my $blackout_start_2h = $now->minus_time_interval('3h');
+my $blackout_end_2h   = $now->minus_time_interval('1h');
 
 my $events         = [{
         symbol                => 'USD',
@@ -75,13 +75,14 @@ my $events         = [{
         tentative_event_shift => 0.01,
         event_name            => 'Test tentative',
         impact                => 5,
-    }];
-#BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-#    'economic_events',
-#    {
-#        recorded_date => $now,
-#        events        => $events,
-#    });
+    }
+    ];
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
+    {
+        recorded_date => $now,
+        events        => $events,
+    });
 
 Volatility::Seasonality::generate_economic_event_seasonality({
     underlying_symbols => ['frxEURUSD'],
@@ -130,6 +131,7 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
     cmp_ok $c->ask_price, '==', $expected->{$key}, "correct ask price for $key";
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', "correct engine for $key";
 }
+
 
 done_testing();
 
