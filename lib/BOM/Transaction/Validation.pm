@@ -54,8 +54,10 @@ sub validate_trx_sell {
     push @client_validation_method, '_validate_iom_withdrawal_limit' unless $self->transaction->contract->is_binaryico;
 
     my @contract_validation_method = qw/_is_valid_to_sell/;
-    push @contract_validation_method, qw(_validate_sell_pricing_adjustment _validate_date_pricing _validate_ico_token_claimable)
+    push @contract_validation_method, qw(_validate_sell_pricing_adjustment _validate_date_pricing)
         unless $self->transaction->contract->is_binaryico;
+
+    push @contract_validation_method, '_validate_ico_token_claimable' if $self->transaction->contract->is_binaryico;
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
