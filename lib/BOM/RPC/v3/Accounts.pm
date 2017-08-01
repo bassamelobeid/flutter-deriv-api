@@ -1304,22 +1304,14 @@ sub set_financial_assessment {
         my $is_professional = $financial_evaluation->{total_score} < 60 ? 0 : 1;
 
         my $user = BOM::Platform::User->new({email => $client->email});
-        if ($user and $user->clients) {
-            my $landing_company = $client->landing_company;
-            foreach my $cli ($user->clients) {
-                next if ($landing_company ne $cli->landing_company or ($client->allow_omnibus and $cli->loginid ne $client->loginid));
-                $cli->financial_assessment({
-                    data            => encode_json $financial_evaluation->{user_data},
-                    is_professional => $is_professional
-                });
-                $cli->save;
-            }
-        } else {
-            $client->financial_assessment({
+        my $landing_company = $client->landing_company;
+        foreach my $cli ($user->clients) {
+            next if ($landing_company ne $cli->landing_company or ($client->allow_omnibus and $cli->loginid ne $client->loginid));
+            $cli->financial_assessment({
                 data            => encode_json $financial_evaluation->{user_data},
                 is_professional => $is_professional
             });
-            $client->save;
+            $cli->save;
         }
 
         $response = {
