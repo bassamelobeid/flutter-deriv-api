@@ -831,7 +831,7 @@ sub set_settings {
         $client->state and $client->residence
         ? (BOM::Platform::Locale::get_state_by_id($client->state, $client->residence) // '')
         : '';
-    my @address_fields = (map { $client->$_ } qw/address_1 address_2 city/), $state_text, $client->postcode;
+    my @address_fields = ((map { $client->$_ } qw/address_1 address_2 city/), $state_text, $client->postcode);
     # filter out empty fields
     my $full_address = join ', ', grep { defined $_ and /\S/ } @address_fields;
 

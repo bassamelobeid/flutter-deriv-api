@@ -26,9 +26,6 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-package MojoX::JSON::RPC::Client;
-use Test::Most;
-
 sub tcall {
     my $self   = shift;
     my $method = shift;
@@ -1171,12 +1168,11 @@ subtest $method => sub {
     # test real account
     $params->{token} = $token1;
     my %full_args = (
-        address_line_1   => 'address line 1',
-        address_line_2   => 'address line 2',
-        address_city     => 'address city',
-        address_state    => 'BA',
-        address_postcode => '12345',
-        phone            => '2345678',
+        address_line_1 => 'address line 1',
+        address_line_2 => 'address line 2',
+        address_city   => 'address city',
+        address_state  => 'BA',
+        phone          => '2345678',
     );
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
@@ -1245,7 +1241,7 @@ subtest $method => sub {
         subject => qr/\Q$subject\E/
     );
     ok(@msgs, 'send a email to client');
-    like($msgs[0]{body}, qr/>address line 1, address line 2, address city, Bali, 12345/s, 'email content correct');
+    like($msgs[0]{body}, qr/>address line 1, address line 2, address city, Bali/s, 'email content correct');
 
     is($c->tcall('get_settings', {token => $token1})->{email_consent}, 1, "Was able to set email consent correctly");
 
