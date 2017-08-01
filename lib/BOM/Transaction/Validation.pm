@@ -11,16 +11,33 @@ use YAML::XS qw(LoadFile);
 
 use Format::Util::Numbers qw/formatnumber/;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
-
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Context qw(localize request);
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use Geo::Region;
+use Geo::Region::Constant qw( :all );
+use BOM::Database::ClientDB;
 
 has clients => (
     is       => 'ro',
     required => 1
 );
 has transaction => (is => 'ro');
+
+=head2 $self->_open_ico_for_european_country
+
+This is to get the number of unique users that have place ICO in a European Union country
+
+=cut
+
+sub _open_ico_for_european_country {
+    my ($self, $client_residence) = @_;
+
+    my $db = BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db
+
+        return $self->_db->dbh->selectall_hashref(
+        qq{ SELECT * FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', $client_residence) });
+}
 
 ################ Client and transaction validation ########################
 
@@ -73,7 +90,8 @@ sub validate_trx_buy {
     push @client_validation_method,
         qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_status _validate_client_self_exclusion)
         unless $self->transaction->contract->is_binaryico;
-    push @client_validation_method, '_validate_ico_jurisdictional_restrictions' if $self->transaction->contract->is_binaryico;
+    push @client_validation_method, qw(_validate_ico_jurisdictional_restrictions, _validate_ico_european_restrictions)
+        if $self->transaction->contract->is_binaryico;
     push @client_validation_method, '_is_valid_to_buy';    # do this is as last of the validation
 
     CLI: for my $c (@$clients) {
@@ -586,6 +604,35 @@ sub _validate_jurisdictional_restrictions {
     return;
 }
 
+=head2 $self->_validate_ico_european_restrictions
+
+Note that under the EU Prospectus Directive we can only offer the token to up to 150 persons per European Union country.
+Therefore, we need to count the bids placed by persons in EU countries and not accept any more bids if there are already 150 outstanding bids
+
+=cut
+
+sub _validate_ico_european_restrictions {
+    my ($self, $client) = (shift, shift);
+
+    my $residence      = $client->residence;
+    my $european_union = Geo::Region->new(EUROPEAN_UNION);
+
+    if ($eu->contains($residence)) {
+
+        if ($self->_open_ico_for_european_country($residence) > 149) {
+            return Error::Base->cuss(
+                -type              => 'ExceedEuIcoLimit',
+                -mesg              => 'We are exceeding the limit that EU imposed on ICO ',
+                -message_to_client => localize('Sorry, the placement of bid for token are no longer available on your country.'),
+            );
+
+        }
+
+    }
+    return;
+
+}
+
 =head2 $self->_validate_ico_jurisdictional_restrictions
 
 Validates whether a client fullfill ICO jurisdicrtional restrictions
@@ -595,10 +642,9 @@ Validates whether a client fullfill ICO jurisdicrtional restrictions
 sub _validate_ico_jurisdictional_restrictions {
     my ($self, $client) = (shift, shift);
 
-    my $contract    = $self->transaction->contract;
-    my $residence   = $client->residence;
-    my $loginid     = $client->loginid;
-    my $market_name = $contract->market->name;
+    my $contract  = $self->transaction->contract;
+    my $residence = $client->residence;
+    my $loginid   = $client->loginid;
 
     if (!$residence && $loginid !~ /^VR/) {
         return Error::Base->cuss(
@@ -613,7 +659,7 @@ sub _validate_ico_jurisdictional_restrictions {
         return Error::Base->cuss(
             -type              => 'IcoRestrictedCountry',
             -mesg              => 'Clients are not allowed to bid for ICO  as their country is restricted.',
-            -message_to_client => localize('Sorry, the placement of bid for tocken are not available in your country of residence'),
+            -message_to_client => localize('Sorry, the placement of bid for tocken are not available in your country of residence.'),
         );
     }
 
