@@ -1117,11 +1117,10 @@ sub set_self_exclusion {
         my $brand            = Brands->new(name => request()->brand);
         my $marketing_email  = $brand->emails('marketing');
         my $compliance_email = $brand->emails('compliance');
-        my $support_email    = $brand->emails('support');
 
         my $message = "Client $client_title set the following self-exclusion limits:\n\n- Exclude from website until: $ret\n";
 
-        my $to_email = $compliance_email . ',' . $support_email . ',' . $marketing_email;
+        my $to_email = $compliance_email . ',' . $marketing_email;
         send_email({
             from    => $compliance_email,
             to      => $to_email,

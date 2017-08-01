@@ -14,6 +14,7 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 use Brands;
 
 use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::EmailVerification qw(email_verification);
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
@@ -25,7 +26,7 @@ use BOM::Platform::User;
 use BOM::Platform::Config;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Context qw (request);
 use BOM::Database::Model::OAuth;
 
 sub _create_oauth_token {
@@ -90,6 +91,28 @@ sub new_account_virtual {
     };
 }
 
+sub request_email {
+    my ($email, $args) = @_;
+
+    my $subject = $args->{subject};
+    my $message = $args->{message};
+
+    return send_email({
+        from                  => Brands->new(name => request()->brand)->emails('support'),
+        to                    => $email,
+        subject               => $subject,
+        message               => [$message],
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        skip_text2html        => 1,
+    });
+}
+
+sub get_verification_uri {
+    my $app_id = shift or return undef;
+    return BOM::Database::Model::OAuth->new->get_verification_uri_by_app_id($app_id);
+}
+
 sub verify_email {
     my $params = shift;
 
@@ -102,6 +125,13 @@ sub verify_email {
         })->token;
 
     my $loginid = $params->{token_details} ? $params->{token_details}->{loginid} : undef;
+
+    my $verification = email_verification({
+        code             => $code,
+        website_name     => $params->{website_name},
+        verification_uri => get_verification_uri($params->{source}),
+    });
+
     my $payment_sub = sub {
         my $type_call = shift;
 
@@ -114,70 +144,16 @@ sub verify_email {
             $skip_email = 1 unless BOM::Platform::User->new({email => $email});
         }
 
-        my $message =
-            $type_call eq 'payment_withdraw'
-            ? BOM::Platform::Context::localize(
-            '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-            $code,
-            $params->{website_name})
-            : BOM::Platform::Context::localize(
-            '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-            $code, $params->{website_name});
-
-        send_email({
-                from => Brands->new(name => request()->brand)->emails('support'),
-                to   => $email,
-                subject               => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
-                message               => [$message],
-                use_email_template    => 1,
-                email_content_is_html => 1,
-            }) unless $skip_email;
+        request_email($email, $verification->{payment_withdraw}->($type_call)) unless $skip_email;
     };
 
     if (BOM::Platform::User->new({email => $email}) && $type eq 'reset_password') {
-        send_email({
-                from => Brands->new(name => request()->brand)->emails('support'),
-                to   => $email,
-                subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
-                message => [
-                    BOM::Platform::Context::localize(
-                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                        $code,
-                        $params->{website_name})
-                ],
-                use_email_template    => 1,
-                email_content_is_html => 1,
-            });
+        request_email($email, $verification->{reset_password}->());
     } elsif ($type eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $email})) {
-            send_email({
-                    from => Brands->new(name => request()->brand)->emails('support'),
-                    to   => $email,
-                    subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-                    message => [
-                        BOM::Platform::Context::localize(
-                            '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                            $code,
-                            $params->{website_name})
-                    ],
-                    use_email_template    => 1,
-                    email_content_is_html => 1,
-                });
+            request_email($email, $verification->{account_opening_new}->());
         } else {
-            send_email({
-                    from => Brands->new(name => request()->brand)->emails('support'),
-                    to   => $email,
-                    subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
-                    message => [
-                        '<div style="line-height:200%;color:#333333;font-size:15px;">'
-                            . BOM::Platform::Context::localize(
-                            '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_1]</p>',
-                            $params->{website_name})
-                            . '</div>'
-                    ],
-                    use_email_template    => 1,
-                    email_content_is_html => 1,
-                });
+            request_email($email, $verification->{account_opening_existing}->());
         }
     } elsif ($type eq 'paymentagent_withdraw') {
         $payment_sub->($type);
