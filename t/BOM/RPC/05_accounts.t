@@ -3,6 +3,7 @@ use warnings;
 
 use utf8;
 use Test::Most;
+use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
 use MojoX::JSON::RPC::Client;
@@ -713,13 +714,26 @@ subtest $method => sub {
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;
-    is_deeply(
+    # We are authenticated, but MF still has flag set until age_verification has been completed
+    cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => ['authenticated', 'has_password'],
-            risk_classification => 'low'
+            status                        => bag(qw(authenticated has_password)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '1',
         },
         'ok, authenticated'
+    );
+    $test_client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+    $test_client->save;
+    cmp_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status                        => bag(qw(age_verification authenticated has_password)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '0',
+        },
+        'ok, authenticated and age verified'
     );
 };
 
@@ -1246,12 +1260,11 @@ subtest $method => sub {
     # test real account
     $params->{token} = $token1;
     my %full_args = (
-        address_line_1   => 'address line 1, ,,, ,,, a,b,, ,,c, ,d',
-        address_line_2   => 'address line 2, ,a, ,b',
-        address_city     => 'address city, ,a,, b',
-        address_state    => 'address state',
-        address_postcode => '12345',
-        phone            => '2345678',
+        address_line_1 => 'address line 1',
+        address_line_2 => 'address line 2',
+        address_city   => 'address city',
+        address_state  => 'BA',
+        phone          => '2345678',
     );
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
@@ -1311,9 +1324,6 @@ subtest $method => sub {
     my $res = $c->tcall('get_settings', {token => $token1});
     is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");
     is($res->{tax_residence},             $params->{args}{tax_residence},             "Check tax information");
-    is('address line 1, a, b, c, d',      $res->{address_line_1},                     "Address line 1 is valid after formatting");
-    is('address line 2, a, b',            $res->{address_line_2},                     "Address line 2 is valid after formatting");
-    is('address city, a, b',              $res->{address_city},                       "Address city is valid after formatting");
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
     $test_client->load();
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
@@ -1323,11 +1333,7 @@ subtest $method => sub {
         subject => qr/\Q$subject\E/
     );
     ok(@msgs, 'send a email to client');
-    like(
-        $msgs[0]{body},
-        qr/>address line 1, a, b, c, d, address line 2, a, b, address city, a, b, address state, 12345, Indonesia/s,
-        'email content correct'
-    );
+    like($msgs[0]{body}, qr/>address line 1, address line 2, address city, Bali/s, 'email content correct');
 
     is($c->tcall('get_settings', {token => $token1})->{email_consent}, 1, "Was able to set email consent correctly");
 
@@ -1348,22 +1354,14 @@ subtest $method => sub {
     # setting account settings for one client also updates for clients that have a different landing company
     $params->{token} = $token_mlt;
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
-    is($c->tcall('get_settings', {token => $token_mlt})->{address_line_1}, "address line 1, a, b, c, d", "Was able to set settings for MLT client");
-    is($c->tcall('get_settings', {token => $token_mf})->{address_line_1},  "address line 1, a, b, c, d", "Was able to set settings for MF client");
+    is($c->tcall('get_settings', {token => $token_mlt})->{address_line_1}, "address line 1", "Was able to set settings for MLT client");
+    is($c->tcall('get_settings', {token => $token_mf})->{address_line_1},  "address line 1", "Was able to set settings for MF client");
 
     # setting account settings for one client updates for all clients with the same landing company
     $params->{token} = $token_cr_2;
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
-    is(
-        $c->tcall('get_settings', {token => $token_21})->{address_line_1},
-        "address line 1, a, b, c, d",
-        "Was able to set settings correctly for CR client"
-    );
-    is(
-        $c->tcall('get_settings', {token => $token_cr_2})->{address_line_1},
-        "address line 1, a, b, c, d",
-        "Was able to set settings correctly for second CR client"
-    );
+    is($c->tcall('get_settings', {token => $token_21})->{address_line_1},   "address line 1", "Was able to set settings correctly for CR client");
+    is($c->tcall('get_settings', {token => $token_cr_2})->{address_line_1}, "address line 1", "Was able to set settings correctly for second CR client");
 };
 
 # set_self_exclusion && get_self_exclusion

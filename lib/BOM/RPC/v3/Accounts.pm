@@ -10,12 +10,13 @@ use WWW::OneAll;
 use Date::Utility;
 use Data::Password::Meter;
 use HTML::Entities qw(encode_entities);
-use List::Util qw(any);
+use List::Util qw(any sum0);
 
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber/;
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
@@ -23,7 +24,7 @@ use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Locale;
+use BOM::Platform::Locale qw/get_state_by_id/;
 use BOM::Platform::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
@@ -328,9 +329,36 @@ sub get_account_status {
         any { !length $financial_assessment->{$_}->{answer} }
         keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
+    my $prompt_client_to_authenticate = 0;
+    my $shortcode                     = $client->landing_company->short;
+    if ($client->client_fully_authenticated) {
+        # Authenticated clients still need to go through age verification checks for IOM/MF/MLT
+        if (any { $shortcode eq $_ } qw(iom malta maltainvest)) {
+            $prompt_client_to_authenticate = 1 unless $client->get_status('age_verification');
+        }
+    } else {
+        if ($shortcode eq 'costarica' or $shortcode eq 'champion') {
+            # Our threshold is 4000 USD, but we want to include total across all the user's currencies
+            my $total = sum0(
+                map { in_USD($_->default_account->balance, $_->currency) }
+                grep { $_->default_account && $_->landing_company->short eq $shortcode } $user->clients
+            );
+            if ($total > 4000) {
+                $prompt_client_to_authenticate = 1;
+            }
+        } elsif ($shortcode eq 'virtual') {
+            # No authentication for virtual accounts - set this explicitly in case we change the default above
+            $prompt_client_to_authenticate = 0;
+        } else {
+            # Authentication required for all regulated companies, including JP - we'll handle this on the frontend
+            $prompt_client_to_authenticate = 1;
+        }
+    }
+
     return {
-        status              => \@status,
-        risk_classification => $risk_classification
+        status                        => \@status,
+        prompt_client_to_authenticate => $prompt_client_to_authenticate,
+        risk_classification           => $risk_classification
     };
 }
 
@@ -756,9 +784,6 @@ sub set_settings {
     my $phone           = ($args->{'phone'} // $client->phone) // '';
     my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
 
-    # filter out irrelevant spaces and commas
-    foreach ($address1, $address2, $addressTown) { $_ =~ s/(?:,?\s*,)+\s*/, /g }
-
     my $cil_message;
     if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
@@ -846,13 +871,19 @@ sub set_settings {
         map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($client->salutation),
         $client->first_name, $client->last_name
     ) . "\n\n";
-
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
-    my $residence_country = Locale::Country::code2country($client->residence);
-    my $full_address = join(', ', (map { $client->$_ } qw(address_1 address_2 city state postcode)), $residence_country);
+    # lookup state name by id
+    my $lookup_state =
+        ($client->state and $client->residence)
+        ? BOM::Platform::Locale::get_state_by_id($client->state, $client->residence) // ''
+        : '';
+    my @address_fields = ((map { $client->$_ } qw/address_1 address_2 city/), $lookup_state, $client->postcode);
+    # filter out empty fields
+    my $full_address = join ', ', grep { defined $_ and /\S/ } @address_fields;
 
-    my @updated_fields = (
+    my $residence_country = Locale::Country::code2country($client->residence);
+    my @updated_fields    = (
         [localize('Email address'),        $client->email],
         [localize('Country of Residence'), $residence_country],
         [localize('Address'),              $full_address],

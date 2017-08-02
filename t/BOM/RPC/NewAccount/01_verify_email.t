@@ -95,7 +95,7 @@ subtest 'Account opening request with email exists' => sub {
 
     my @msgs = $mailbox->search(
         email   => $params[1]->{args}->{verify_email},
-        subject => qr/A Duplicate Email Address Has Been Submitted/
+        subject => qr/Duplicate email address submitted/
     );
     ok @msgs, 'Email sent successfully';
 };
