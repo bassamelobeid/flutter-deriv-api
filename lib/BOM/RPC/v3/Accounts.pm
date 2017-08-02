@@ -337,7 +337,7 @@ sub get_account_status {
             $prompt_client_to_authenticate = 1 unless $client->get_status('age_verification');
         }
     } else {
-        if ($shortcode eq 'costarica') {
+        if ($shortcode eq 'costarica' or $shortcode eq 'champion') {
             # Our threshold is 4000 USD, but we want to include total across all the user's currencies
             my $total = sum0(
                 map { in_USD($_->default_account->balance, $_->currency) }
