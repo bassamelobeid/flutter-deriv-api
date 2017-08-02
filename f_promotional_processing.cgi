@@ -69,7 +69,6 @@ foreach my $loginid (@approved, @rejected) {
                 name          => $client_name,
                 currency      => $currency,
                 amount        => $amount,
-                support_email => Brands->new(name => request()->brand)->emails('support'),
                 tac_url       => $tac_url,
                 website_name  => 'Binary.com',
             },
