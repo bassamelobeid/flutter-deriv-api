@@ -59,14 +59,11 @@ print '<h3>Make dual control code</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
 print 'Amount: <select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
-print ' <input type="text" name="amount" size=15/>';
+print ' <input type="text" name="amount_dcc" size=15/>';
 print '<br>';
 print '<br>';
 print ' Loginid of the client: <input type="text" size="12" name="loginid_dcc" />';
-print ' Blockchain address: <input type="text" size="50" name="address" />';
-print '<br>';
-print '<br>';
-print 'Input a comment/reminder about this DCC: <input type="text" size="50" name="reminder_dcc">';
+print ' Blockchain address: <input type="text" size="50" name="address_dcc" />';
 print '<br>';
 print '<br>';
 print '<INPUT type="submit" value="Make Dual Control Code" name="view_action"/>';
@@ -445,5 +442,50 @@ EOF
 } elsif ($page eq 'Get new deposit address') {
     my $rslt = $rpc_client->getnewaddress('manual');
     print '<p>New BTC address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
+} elsif ($page eq 'Make Dual Control Code') {
+    my $amount_dcc  = request()->param('amount_dcc')  // 0;
+    my $loginid_dcc = request()->param('loginid_dcc') // '';
+    my $transtype   = request()->param('address_dcc') // '';
+
+    Bar('Dual control code');
+    if (not $transtype) {
+        print "No address provided";
+        code_exit_BO();
+    }
+
+    if (not $amount_dcc or $amount_dcc !~ /^\d*\.?\d*$/) {
+        print "ERROR in amount: " . encode_entities($amount_dcc);
+        code_exit_BO();
+    }
+
+    if (not $loginid_dcc) {
+        print 'Invalid loginid';
+        code_exit_BO();
+    }
+
+    my $client_dcc = Client::Account::get_instance({'loginid' => uc($loginid_dcc)});
+    if (not $client_dcc) {
+        print "ERROR: " . encode_entities($loginid_dcc) . " does not exist! Perhaps you made a typo?";
+        code_exit_BO();
+    }
+
+    my $code = BOM::DualControl->new({
+            staff           => $staff,
+            transactiontype => $transtype
+        })->payment_control_code($loginid_dcc, $currency, $amount_dcc);
+
+    my $message =
+          "The dual control code created by $staff for an amount of "
+        . $currency
+        . $amount_dcc
+        . " (for a "
+        . $transtype
+        . ") for "
+        . $loginid_dcc
+        . " is: <b> $code </b>This code is valid for 1 hour (from "
+        . $now->datetime_ddmmmyy_hhmmss
+        . ") only.";
+
+    print $message;
 }
 code_exit_BO();
