@@ -89,7 +89,7 @@ sub authorize {
         template  => _get_login_template_name($brand_name),
         layout    => $brand_name,
         app       => $app,
-        error     => localize('This account is unavailable. For any questions please contact Customer Support.'),
+        error     => localize('This account is unavailable.'),
         r         => $c->stash('request'),
         csrftoken => $c->csrf_token,
     ) if (grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands});
@@ -224,7 +224,7 @@ sub _login {
 
         my $lc = $client->landing_company;
         if (grep { $brand->name ne $_ } @{$lc->allowed_for_brands}) {
-            $err = localize('This account is unavailable. For any questions please contact Customer Support.');
+            $err = localize('This account is unavailable.');
         } elsif (
             grep {
                 $client->loginid =~ /^$_/
@@ -232,7 +232,7 @@ sub _login {
         {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         } elsif ($client->get_status('disabled')) {
-            $err = localize('This account is unavailable. For any questions please contact Customer Support.');
+            $err = localize('This account has been disabled.');
         } elsif (my $self_exclusion_dt = $client->get_self_exclusion_until_dt) {
             $err = localize('Sorry, you have excluded yourself until [_1].', $self_exclusion_dt);
         }
@@ -295,14 +295,14 @@ sub _login {
                     my $message;
                     if ($app->{id} eq '1') {
                         $message = localize(
-                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
+                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, please contact our Customer Support team.',
                             $client->email,
                             $r->client_ip,
                             $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
                             encode_entities($user_agent));
                     } else {
                         $message = localize(
-                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
+                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, please contact our Customer Support team.',
                             $client->email, $r->client_ip, $country_code, encode_entities($user_agent), $app->{name});
                     }
 
