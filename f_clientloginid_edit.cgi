@@ -538,7 +538,14 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->tax_identification_number($input{$key});
         }
 
-        $client->mifir_id($input{mifir_id}) if ($input{mifir_id} and $client->mifir_id eq '' and $broker eq 'MF');
+        if ($input{mifir_id} and $client->mifir_id eq '' and $broker eq 'MF') {
+            if (length($input{mifir_id}) > 35) {
+                print
+                    "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p></p>";
+                code_exit_BO();
+            }
+            $client->mifir_id($input{mifir_id});
+        }
 
         $client->allow_omnibus($input{allow_omnibus});
     }
