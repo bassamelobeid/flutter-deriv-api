@@ -26,6 +26,8 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
+package MojoX::JSON::RPC::Client;
+
 sub tcall {
     my $self   = shift;
     my $method = shift;
