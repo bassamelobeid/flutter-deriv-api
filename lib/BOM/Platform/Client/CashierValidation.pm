@@ -66,7 +66,7 @@ sub validate {
     return _create_error(localize('Your account is restricted to withdrawals only.'))
         if ($action eq 'deposit' and $client->get_status('unwelcome'));
 
-    return _create_error(localize('Your account is locked for withdrawals. Please contact customer service.'))
+    return _create_error(localize('Your account is locked for withdrawals.'))
         if ($action eq 'withdraw' and $client->get_status('withdrawal_locked'));
 
     # landing company or country specific validations
