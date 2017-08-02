@@ -83,7 +83,7 @@ sub login {
         $error = localize('Incorrect email or password.');
         BOM::Platform::AuditLog::log('incorrect email or password', $self->email);
     } elsif (not @clients = $self->clients) {
-        $error = localize('This account is unavailable. For any questions please contact Customer Support.');
+        $error = localize('This account is unavailable.');
         BOM::Platform::AuditLog::log('Account disabled', $self->email);
     } elsif (
         @self_excluded = grep {
