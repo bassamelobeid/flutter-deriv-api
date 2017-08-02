@@ -17,6 +17,7 @@ use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
 use BOM::BloombergCalendar;
 use BOM::TentativeEvents;
+use BOM::EconomicEventTool;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
@@ -127,13 +128,7 @@ print generate_correlations_upload_form({
 });
 
 Bar("Update the news events database");
-
-BOM::Backoffice::Request::template->process(
-    'backoffice/economic_event_forms.html.tt',
-    {
-        ee_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
-    },
-) || die BOM::Backoffice::Request::template->error;
+print BOM::EconomicEventTool::generate_economic_event_tool(request()->url_for('backoffice/quant/market_data_mgmt/update_economic_events.cgi'));
 
 Bar("Update the tentative events");
 print BOM::TentativeEvents::generate_tentative_events_form({
