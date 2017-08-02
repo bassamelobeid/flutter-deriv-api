@@ -282,7 +282,7 @@ sub should_update_account_details {
         }
     }
 
-    if ($args->{landing_company} ne $args->{cli_landing_company} or ($allow_omnibus and $args->{cli_loginid} ne $args->{loginid})) {
+    if ($allow_omnibus and $args->{cli_loginid} ne $args->{loginid}) {
         return 0;
     }
     return 1;

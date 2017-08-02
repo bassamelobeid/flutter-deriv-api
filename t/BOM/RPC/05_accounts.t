@@ -1130,7 +1130,7 @@ subtest $method => sub {
     cmp_ok($res->{score}, "<", 60, "Got correct score");
     is($res->{is_professional}, 0, "As score is less than 60 so its marked as not professional");
 
-    # test that setting this for one client doesn't set it for client with different landing company
+    # test that setting this for one client also sets it for client with different landing company
     is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
     is($c->tcall('get_financial_assessment', {token => $token_mf})->{source_of_wealth},  undef, "Financial assessment not set for MF clinet");
     $c->tcall(
@@ -1141,11 +1141,15 @@ subtest $method => sub {
         });
     is($c->tcall('get_financial_assessment', {token => $token_mf})->{source_of_wealth}, "Company Ownership",
         "Financial assessment set for MF client");
-    is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
+    is(
+        $c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth},
+        "Company Ownership",
+        "Financial assessment set for MLT client"
+    );
 
     # test that setting this for one client sets it for clients with same landing company
-    is($c->tcall('get_financial_assessment', {token => $token_21})->{source_of_wealth},   undef, "Financial assessment not set for MLT client");
-    is($c->tcall('get_financial_assessment', {token => $token_cr_2})->{source_of_wealth}, undef, "Financial assessment not set for MF clinet");
+    is($c->tcall('get_financial_assessment', {token => $token_21})->{source_of_wealth},   undef, "Financial assessment not set for CR client");
+    is($c->tcall('get_financial_assessment', {token => $token_cr_2})->{source_of_wealth}, undef, "Financial assessment not set for second CR clinet");
     $c->tcall(
         $method,
         {
@@ -1341,11 +1345,11 @@ subtest $method => sub {
         'postcode is required for MX clients and cannot be set to null'
     );
 
-    # setting account settings for one client doesn't update for clients that have a different landing company
+    # setting account settings for one client also updates for clients that have a different landing company
     $params->{token} = $token_mlt;
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     is($c->tcall('get_settings', {token => $token_mlt})->{address_line_1}, "address line 1, a, b, c, d", "Was able to set settings for MLT client");
-    is($c->tcall('get_settings', {token => $token_mf})->{address_line_1}, "Civic Center", "did not update for MF client");
+    is($c->tcall('get_settings', {token => $token_mf})->{address_line_1},  "address line 1, a, b, c, d", "Was able to set settings for MF client");
 
     # setting account settings for one client updates for all clients with the same landing company
     $params->{token} = $token_cr_2;
