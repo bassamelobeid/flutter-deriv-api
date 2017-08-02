@@ -827,7 +827,9 @@ sub set_settings {
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
     # lookup state name by id
-    my $lookup_state = BOM::Platform::Locale::get_state_by_id($client->state, $client->residence) // '';
+    my $lookup_state = ($client->state and $client->residence)
+        ? BOM::Platform::Locale::get_state_by_id($client->state, $client->residence) // ''
+        : '';
     my @address_fields = ((map { $client->$_ } qw/address_1 address_2 city/), $lookup_state, $client->postcode);
     # filter out empty fields
     my $full_address = join ', ', grep { defined $_ and /\S/ } @address_fields;
