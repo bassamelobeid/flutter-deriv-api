@@ -258,9 +258,8 @@ sub _initialize_contract_parameters {
         }
     }
 
-    $pp->{date_start} //= 1;    # Error conditions if it's not legacy or run, I guess.
-    $pp->{date_expiry} //=
-        $pp->{date_start};      # If no duration or date_expiry is pass in as input, set it to $pp->{date_start} and let validation do its job.
+    $pp->{date_start}  //= 1;    # Error conditions if it's not legacy or run, I guess.
+    $pp->{date_expiry} //= 1;    # If no duration or date_expiry is pass in as input, set it to 1 and let validation do its job.
 
     # For Ico, the date_start , date_expiry and ask price will be determined in the Coinauction object
     if (defined $pp->{bet_type} and $pp->{bet_type} eq 'BINARYICO') {
