@@ -4,7 +4,7 @@ use Moose;
 with 'App::Base::Script';
 
 use BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents;
-use Quant::Framework::EconomicEventCalendar;
+use Digest::MD5 qw(md5_hex);
 use ForexFactory;
 use Email::Stuffer;
 use Date::Utility;
@@ -39,17 +39,13 @@ sub script_run {
         my $body = join "\n", map { $_->{event_name} . ' release at ' . Date::Utility->new($_->{release_date})->datetime } @alert;
         Email::Stuffer->from('system@binary.com')->to('x-quants@binary.com')->subject($subject_line)->text_body($body)->send_or_die;
 
-        my $counter = 0;
-        for (@alert) {
-            my $key = Quant::Framework::EconomicEventCalendar::generate_id($_);
-            my $cache = Cache::RedisDB->get(NAMESPACE, $key);
-            unless ($cache) {
-                Cache::RedisDB->set(NAMESPACE, $key, 1, 86400);
-                $counter++;
-            }
-        }
+        my $key = md5_hex($body);
+        my $cache = Cache::RedisDB->get(NAMESPACE, $key);
         # run the cron again to update
-        BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents->new->run() if $counter > 0;
+        unless ($cache) {
+            Cache::RedisDB->set(NAMESPACE, $key, 1, 86400);
+            BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents->new->run();
+        }
     }
 
     return 0;
