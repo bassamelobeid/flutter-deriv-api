@@ -124,7 +124,7 @@ print "<form action=\""
     . "\" method=post>"
     . "<input type=hidden name=broker value=$encoded_broker>"
     . "List of accounts: <input type=text size=60 name=listaccounts value='CBET1020,CBET1021'> (separate with commas)"
-    . "<br />Message: <input type=text size=65 name=message value='Account closed. Please contact customer support for assistance.'> "
+    . "<br />Message: <input type=text size=65 name=message value='Account closed.'> "
     . "<br /><select name=whattodo><option>Simulate<option>Do it for real !</select>"
     . " <input type=submit value='Rescind these accounts!'>"
     . "</form>";

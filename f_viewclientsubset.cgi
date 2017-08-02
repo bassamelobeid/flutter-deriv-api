@@ -473,7 +473,7 @@ sub RecoverFromClientAccount {
     $client->payment_legacy_payment(
         currency     => $client->currency,
         amount       => -$bal,
-        remark       => 'Inactive Account closed. Please contact customer support for assistance.',
+        remark       => 'Inactive Account closed.',
         payment_type => 'closed_account',
         staff        => $clerk,
     );
