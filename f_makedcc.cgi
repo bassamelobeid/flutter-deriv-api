@@ -40,14 +40,12 @@ if ($input->{'dcctype'} ne 'file_content') {
         code_exit_BO();
     }
 
-    if ($input->{'dcctype'} ne 'cs') {
-        if ($input->{'amount'} =~ /^\d\d?\,\d\d\d\.?\d?\d?$/) {
-            $input->{'amount'} =~ s/\,//;
-        }
-        if ($input->{'amount'} !~ /^\d*\.?\d*$/) {
-            print "ERROR in amount: " . $input->{'amount'};
-            code_exit_BO();
-        }
+    if ($input->{'amount'} =~ /^\d\d?\,\d\d\d\.?\d?\d?$/) {
+        $input->{'amount'} =~ s/\,//;
+    }
+    if ($input->{'amount'} !~ /^\d*\.?\d*$/) {
+        print "ERROR in amount: " . $input->{'amount'};
+        code_exit_BO();
     }
 }
 
