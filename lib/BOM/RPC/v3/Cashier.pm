@@ -602,8 +602,7 @@ sub paymentagent_transfer {
             return $error_sub->(localize('Request too frequent. Please try again later.'), $error);
         } else {
             warn "Error in paymentagent_transfer for transfer - $error\n";
-            return $error_sub->(localize('An error occurred while processing your payment agent transfer.'),
-                $error);
+            return $error_sub->(localize('An error occurred while processing your payment agent transfer.'), $error);
         }
     }
 
@@ -860,8 +859,7 @@ sub paymentagent_withdraw {
             return $error_sub->(localize('Request too frequent. Please try again later.'), $error);
         } else {
             warn "Error in paymentagent_transfer for withdrawal - $error\n";
-            return $error_sub->(localize('An error occurred while processing your payment agent withdrawal.'),
-                $error);
+            return $error_sub->(localize('An error occurred while processing your payment agent withdrawal.'), $error);
         }
     }
 

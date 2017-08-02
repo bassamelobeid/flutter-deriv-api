@@ -413,8 +413,7 @@ sub mt5_deposit {
         client_loginid => $fm_loginid,
     });
     if (not $fm_client_db->freeze) {
-        return $error_sub->(localize('Please try again after one minute.'),
-            "Account stuck in previous transaction $fm_loginid");
+        return $error_sub->(localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid");
     }
     scope_guard {
         $fm_client_db->unfreeze;
@@ -555,8 +554,7 @@ sub mt5_withdrawal {
         client_loginid => $to_loginid,
     });
     if (not $to_client_db->freeze) {
-        return $error_sub->(localize('Please try again after one minute.'),
-            "Account stuck in previous transaction $to_loginid");
+        return $error_sub->(localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid");
     }
     scope_guard {
         $to_client_db->unfreeze;
