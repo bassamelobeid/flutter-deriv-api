@@ -780,8 +780,8 @@ sub set_settings {
     my $user = BOM::Platform::User->new({email => $client->email});
     foreach my $cli ($user->clients) {
         next
-            if (
-            !BOM::RPC::v3::Utility::should_update_account_details({
+            unless (
+            BOM::RPC::v3::Utility::should_update_account_details({
                     allow_omnibus => $client->allow_omnibus,
                     loginid       => $client->loginid,
                     cli_loginid   => $cli->loginid
@@ -1310,8 +1310,8 @@ sub set_financial_assessment {
         my $user = BOM::Platform::User->new({email => $client->email});
         foreach my $cli ($user->clients) {
             next
-                if (
-                !BOM::RPC::v3::Utility::should_update_account_details({
+                unless (
+                BOM::RPC::v3::Utility::should_update_account_details({
                         allow_omnibus => $client->allow_omnibus,
                         loginid       => $client->loginid,
                         cli_loginid   => $cli->loginid
