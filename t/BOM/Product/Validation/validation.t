@@ -638,7 +638,7 @@ subtest 'invalid start times' => sub {
 
     $expected_reasons         = [qr/blackout period/];
     $bet                      = produce_contract($bet_params);
-    ok $c->_validate_start_and_expiry_date;
+    ok $bet->_validate_start_and_expiry_date;
 
     $fwd_date   = Date::Utility->new('2013-03-29 22:00:34');
     $bet_params->{date_pricing} = $fwd_date->epoch;
@@ -649,7 +649,7 @@ subtest 'invalid start times' => sub {
 
     $expected_reasons         = [qr/blackout period/];
     $bet                      = produce_contract($bet_params);
-    ok $c->_validate_start_and_expiry_date;
+    ok $bet->_validate_start_and_expiry_date;
 
     $fwd_date   = Date::Utility->new('2013-03-29 21:00:34');
     $bet_params->{date_pricing} = $fwd_date->epoch;
@@ -660,7 +660,7 @@ subtest 'invalid start times' => sub {
 
     $expected_reasons         = [qr/blackout period/];
     $bet                      = produce_contract($bet_params);
-    ok $c->_validate_start_and_expiry_date;
+    ok $bet->_validate_start_and_expiry_date;
 
     $fwd_date   = Date::Utility->new('2013-03-29 20:00:34');
     $bet_params->{date_pricing} = $fwd_date->epoch;
@@ -671,7 +671,7 @@ subtest 'invalid start times' => sub {
 
     $expected_reasons         = [qr/blackout period/];
     $bet                      = produce_contract($bet_params);
-    ok $c->_validate_start_and_expiry_date;
+    ok $bet->_validate_start_and_expiry_date;
     delete $bet_params->{starts_as_forward_starting};
 
     $bet_params->{date_start}   = $starting;
