@@ -553,7 +553,7 @@ sub reset_password {
     # do not allow social based clients to reset password
     return BOM::RPC::v3::Utility::create_error({
             code              => "SocialBased",
-            message_to_client => localize("Sorry, your account does not allow passwords. Please contact customer support for more information.")}
+            message_to_client => localize("Sorry, your account does not allow passwords because you use social media to log in.")}
     ) unless $user->password;
 
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
