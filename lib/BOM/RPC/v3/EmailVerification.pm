@@ -13,10 +13,11 @@ sub email_verification {
     my $code             = $args->{code};
     my $website_name     = $args->{website_name};
     my $verification_uri = $args->{verification_uri};
+    my $language         = $args->{language};
 
     my $gen_verify_link = sub {
         my $action = shift;
-        return "$verification_uri?action=$action&code=$code";
+        return "$verification_uri?action=$action&lang=$language&code=$code";
     };
 
     return {
