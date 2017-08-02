@@ -10,7 +10,6 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use SuperDerivatives::Correlation qw( upload_and_process_correlations );
 use subs::subs_dividend_from_excel_file;
 use BOM::Backoffice::Sysinit ();
-use Quant::Framework::EconomicEventCalendar;
 use BOM::Platform::Chronicle;
 use Try::Tiny;
 BOM::Backoffice::Sysinit::init();
@@ -73,66 +72,4 @@ if (request()->param('whattodo') and request()->param('whattodo') eq 'process_su
     print join "<p> ", @to_print;
 }
 
-Bar("Update the news events database");
-
-# Input fields
-my $symbol                 = request()->param('symbol');
-my $impact                 = request()->param('impact');
-my $event_name             = request()->param('event_name');
-my $release_date           = request()->param('release_date');
-my $source                 = request()->param('source');
-my $is_tentative           = request()->param('is_tentative');
-my $estimated_release_date = request()->param('estimated_release_date');
-my $custom_magnitude       = request()->param('custom_magnitude') // 0;
-my $save_event             = request()->param('save_eco');
-my $delete_event           = request()->param('delete_eco');
-
-my $event_param = {
-    event_name => $event_name,
-    source     => $source,
-    impact     => $impact,
-    symbol     => $symbol,
-    $custom_magnitude ? (custom_magnitude => $custom_magnitude) : (),
-};
-
-try {
-    if ($is_tentative) {
-        $event_param->{is_tentative} = $is_tentative;
-        die 'Must specify estimated announcement date for tentative events' if (not $estimated_release_date);
-        $event_param->{estimated_release_date} = Date::Utility->new($estimated_release_date)->truncate_to_day->epoch;
-    } else {
-        die 'Must specify announcement date for economic events' if (not $release_date);
-        $event_param->{release_date} = Date::Utility->new($release_date)->epoch;
-    }
-
-    if ($save_event) {
-        my $ref = BOM::Platform::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
-        my @events = @{$ref->{events}};
-
-        push @{$ref->{events}}, $event_param;
-        Quant::Framework::EconomicEventCalendar->new({
-                events           => $ref->{events},
-                recorded_date    => Date::Utility->new,
-                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-            })->save;
-        Volatility::Seasonality::generate_economic_event_seasonality({
-            underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
-            economic_events    => $ref->{events},
-            chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
-        });
-        BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
-
-        print 'Econmic Announcement saved!</br></br>';
-    } elsif ($delete_event) {
-        Quant::Framework::EconomicEventCalendar->new(
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-        )->delete_event($event_param);
-        print 'Economic Announcement deleted';
-    }
-}
-catch {
-    print 'Error: ' . encode_entities($_);
-};
 code_exit_BO();
