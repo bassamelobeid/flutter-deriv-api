@@ -10,7 +10,10 @@ use Email::Stuffer;
 use Date::Utility;
 use Cache::RedisDB;
 
-use constant NAMESPACE => 'FOREX_FACTORY_ALERT';
+use constant {
+    NAMESPACE => 'FOREX_FACTORY_ALERT',
+    REDIS_KEY => 'RERUN_ECONOMIC_EVENT_UPDATE',
+};
 
 sub documentation { return 'This script checks for forex factory alert on economic events every hour.'; }
 
@@ -39,11 +42,11 @@ sub script_run {
         my $body = join "\n", map { $_->{event_name} . ' release at ' . Date::Utility->new($_->{release_date})->datetime } @alert;
         Email::Stuffer->from('system@binary.com')->to('x-quants@binary.com')->subject($subject_line)->text_body($body)->send_or_die;
 
-        my $key = md5_hex($body);
-        my $cache = Cache::RedisDB->get(NAMESPACE, $key);
+        my $val = md5_hex($body);
+        my $cache_val = Cache::RedisDB->get(NAMESPACE, REDIS_KEY);
         # run the cron again to update
-        unless ($cache) {
-            Cache::RedisDB->set(NAMESPACE, $key, 1, 86400);
+        if (not defined $cache_val or $cache_val ne $val) {
+            Cache::RedisDB->set(NAMESPACE, REDIS_KEY, $val, 86400);
             BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents->new->run();
         }
     }
