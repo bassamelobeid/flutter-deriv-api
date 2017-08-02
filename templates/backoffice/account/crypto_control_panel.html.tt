@@ -28,14 +28,14 @@ The following exchange rates are from our live data feed. They are live rates as
     <input type="hidden" name="broker" value="[% broker %]">
     <input type="hidden" name="view_type" value="pending">
     <select name="currency"><option value="BTC">Bitcoin</option></select>
-    <input type="submit" value="Deposit Transactions" name="view_action"/>
+    <input type="submit" value="deposit" name="view_action"/>
 </form>
 <br>
 <h3>Withdrawal</h3>
 <form action="[% controller_url %]" method="POST">
     <input type=hidden name="broker" value="[% broker %]">
     <select name="currency"><option value="BTC">Bitcoin</option></select>
-    <input type="submit" value="Withdrawal Transactions" name="view_action"/>
+    <input type="submit" value="withdrawal" name="view_action"/>
 </form>
 <br>
 <h3>Tools</h3>
