@@ -82,7 +82,9 @@ sub get_matched_clients_by_broker {
             loginid
         FROM
             betonmarkets.client
-    }
+        WHERE
+            loginid like ?
+        }, undef, $broker . '%'
         );
 
     foreach my $c (@$clients) {
