@@ -274,7 +274,7 @@ sub should_update_account_details {
 
     my $allow_omnibus = $args->{allow_omnibus};
     if (!$allow_omnibus) {
-        my $client = Client::Account->new({loginid => $args->{loginid}});
+        my $client = Client::Account->new({loginid => $args->{current_loginid}});
         my $sub_account_of = $client->sub_account_of;
         if ($sub_account_of) {
             $client = Client::Account->new({loginid => $sub_account_of});
@@ -282,7 +282,7 @@ sub should_update_account_details {
         }
     }
 
-    if ($allow_omnibus and $args->{cli_loginid} ne $args->{loginid}) {
+    if ($allow_omnibus and $args->{sibling_loginid} ne $args->{current_loginid}) {
         return 0;
     }
     return 1;

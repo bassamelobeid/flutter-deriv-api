@@ -782,9 +782,9 @@ sub set_settings {
         next
             unless (
             BOM::RPC::v3::Utility::should_update_account_details({
-                    allow_omnibus => $client->allow_omnibus,
-                    loginid       => $client->loginid,
-                    cli_loginid   => $cli->loginid
+                    allow_omnibus   => $client->allow_omnibus,
+                    current_loginid => $client->loginid,
+                    sibling_loginid => $cli->loginid
                 }));
 
         $cli->address_1($address1);
@@ -1312,9 +1312,9 @@ sub set_financial_assessment {
             next
                 unless (
                 BOM::RPC::v3::Utility::should_update_account_details({
-                        allow_omnibus => $client->allow_omnibus,
-                        loginid       => $client->loginid,
-                        cli_loginid   => $cli->loginid
+                        allow_omnibus   => $client->allow_omnibus,
+                        current_loginid => $client->loginid,
+                        sibling_loginid => $cli->loginid
                     }));
             $cli->financial_assessment({
                 data            => encode_json $financial_evaluation->{user_data},
