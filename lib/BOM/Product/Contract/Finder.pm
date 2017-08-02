@@ -87,7 +87,7 @@ sub available_contracts_for_symbol {
                         date      => Date::Utility->new($_->{open})->truncate_to_day->epoch,
                         open      => $_->{open},
                         close     => $_->{close},
-                        blackouts => @blackouts
+                        blackouts => @blackout_periods
                     }
                     }
                     map {
