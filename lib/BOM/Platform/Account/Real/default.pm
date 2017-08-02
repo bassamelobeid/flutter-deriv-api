@@ -22,7 +22,6 @@ use BOM::Platform::Client::Sanctions;
 sub validate {
     my $args = shift;
     my ($from_client, $user) = @{$args}{'from_client', 'user'};
-    my $country = $args->{country} || '';
 
     my $details;
     my ($broker, $residence) = ('', '');
@@ -30,14 +29,10 @@ sub validate {
         ($broker, $residence) = @{$details}{'broker_code', 'residence'};
     }
 
-    my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], country[$country], residence[$residence], error: ";
+    my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], residence[$residence], error: ";
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         warn($msg . 'new account opening suspended');
-        return {error => 'invalid'};
-    }
-    if ($country and Brands->new(name => request()->brand)->countries_instance->restricted_country($country)) {
-        warn($msg . "restricted IP country [$country]");
         return {error => 'invalid'};
     }
     unless ($user->email_verified) {
