@@ -24,11 +24,19 @@ use Finance::Contract::Category;
 use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying);
 use Finance::Contract::Category;
+use BOM::Product::Static qw(get_error_mapping);
+
+my $ERROR_MAPPING = get_error_mapping();
 
 has parameters => (
     is       => 'ro',
     isa      => 'HashRef',
     required => 1,
+);
+
+has input_validation_error => (
+    is      => 'ro',
+    default => sub { [] },
 );
 
 sub BUILD {
@@ -75,7 +83,7 @@ sub _build_contract_types {
     } elsif ($p->{bet_type}) {
         $c_types = [$p->{bet_type}];
     } else {
-        die 'bet_type is required';
+        $self->_add_error([$ERROR_MAPPING->{MissingRequiredInput}, 'bet_type']);
     }
 
     return [map { $self->_initialize_contract_config($_) } @$c_types];
@@ -144,8 +152,8 @@ sub _initialize_contract_parameters {
     # always build shortcode
     delete $pp->{shortcode};
 
-    die 'currency is required'   unless $pp->{currency};
-    die 'underlying is required' unless $pp->{underlying};
+    $self->_add_error([$ERROR_MAPPING->{MissingRequiredInput}, 'currency'])   unless $pp->{currency};
+    $self->_add_error([$ERROR_MAPPING->{MissingRequiredInput}, 'underlying']) unless $pp->{underlying};
 
     # set date start if not given. If we want to price a contract starting now, date_start should never be provided!
     unless ($pp->{date_start}) {
@@ -258,10 +266,10 @@ sub _initialize_contract_parameters {
         }
     }
 
-    $pp->{date_start}  //= 1;    # Error conditions if it's not legacy or run, I guess.
+    $pp->{date_start} //= 1;    # Error conditions if it's not legacy or run, I guess.
 
     if ($pp->{bet_type} and $pp->{bet_type} ne 'BINARYICO' and not $pp->{date_expiry}) {
-        die 'date expiry is required';
+        $self->_add_error([$ERROR_MAPPING->{MissingRequiredInput}, 'date_expiry']);
     }
 
     # For Ico, the date_start , date_expiry and ask price will be determined in the Coinauction object
@@ -275,7 +283,7 @@ sub _initialize_contract_parameters {
 sub _initialize_contract_config {
     my ($self, $c_type) = @_;
 
-    die 'contract type is required' unless $c_type;
+    $self->_add_error([$ERROR_MAPPING->{MissingRequiredInput}, 'contract_type']) unless $c_type;
 
     my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
 
@@ -307,6 +315,12 @@ sub _initialize_barrier {
     }
 
     return $barrier_info;
+}
+
+sub _add_error {
+    my ($self, $error) = @_;
+
+    push @{$self->input_validation_error}, $error;
 }
 
 no Moose;

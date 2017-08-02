@@ -81,7 +81,9 @@ sub produce_contract {
 
     unless ($params_ref->{processed}) {
         # Categorizer's process always returns ARRAYREF, and here we will have and need only one element in this array
-        $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process()->[0];
+        my $cat = BOM::Product::Categorizer->new(parameters => $params_ref);
+        $params_ref = $cat->process()->[0];
+        return $cat->input_validation_error if @{$cat->input_validation_error};
     }
 
     my $landing_company = $params_ref->{landing_company};
@@ -114,7 +116,10 @@ sub produce_batch_contract {
     my $build_args = shift;
 
     $build_args->{_produce_contract_ref} = \&produce_contract;
-    return BOM::Product::Contract::Batch->new(parameters => $build_args);
+    my $batch = BOM::Product::Contract::Batch->new(parameters => $build_args);
+
+    return $batch->input_validation_error if @{$batch->input_validation_error};
+    return $batch;
 }
 
 sub _args_to_ref {

@@ -33,28 +33,22 @@ has parameters => (
     required => 1,
 );
 
+has input_validation_error => (
+    is      => 'rw',
+    default => sub { [] },
+);
+
 has _contracts => (
-    is         => 'ro',
-    lazy_build => 1,
+    is => 'rw',
 );
 
-has underlying => (
-    is         => 'ro',
-    lazy_build => 1,
-    handles    => [qw(market pip_size)],
-);
-
-sub _build_underlying {
-    my ($self) = @_;
-    return $self->_contracts->[0]->underlying;
-}
-
-sub _build__contracts {
+sub BUILD {
     my $self = shift;
 
     my $method_ref = delete $self->parameters->{_produce_contract_ref};
     # Categorizer's process always returns ARRAYREF
-    my $params = BOM::Product::Categorizer->new(parameters => $self->parameters)->process();
+    my $cat = BOM::Product::Categorizer->new(parameters => $self->parameters);
+    my $params = $cat->process();
 
     my $first_param = shift @$params;
     $first_param->{processed} = 1;
@@ -80,7 +74,21 @@ sub _build__contracts {
         push @contracts, $method_ref->(+{%$param, %similar_market_data, processed => 1});
     }
 
-    return \@contracts;
+    $self->_contracts(\@contracts);
+    $self->input_validation_error($cat->input_validation_error) if @{$self->input_validation_error};
+
+    return;
+}
+
+has underlying => (
+    is         => 'ro',
+    lazy_build => 1,
+    handles    => [qw(market pip_size)],
+);
+
+sub _build_underlying {
+    my ($self) = @_;
+    return $self->_contracts->[0]->underlying;
 }
 
 =head2 ask_prices
