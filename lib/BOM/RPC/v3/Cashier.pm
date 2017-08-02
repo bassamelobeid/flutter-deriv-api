@@ -136,7 +136,7 @@ sub cashier {
 
             return $error_sub->(
                 localize(
-                    'Sorry, there was a problem validating your personal information with our payment processor. Please contact our Customer Service.'
+                    'Sorry, there was a problem validating your personal information with our payment processor. Please check your details and try again.'
                 ),
                 'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']'
             );
@@ -168,7 +168,7 @@ sub cashier {
 
             return $error_sub->(
                 localize(
-                    'Sorry, there was a problem validating your personal information with our payment processor. Please contact our Customer Service team.'
+                    'Sorry, there was a problem validating your personal information with our payment processor. Please verify that your date of birth was input correctly in your account settings.'
                 ),
                 'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']'
             );
@@ -508,7 +508,7 @@ sub paymentagent_transfer {
     });
     if (not $fm_client_db->freeze) {
         return $error_sub->(
-            localize('An error occurred while processing request. If this error persists, please contact customer support'),
+            localize('An error occurred while processing request. Please try again in one minute.'),
             "Account stuck in previous transaction $loginid_fm"
         );
     }
@@ -520,7 +520,7 @@ sub paymentagent_transfer {
     if (not $to_client_db->freeze) {
         $fm_client_db->unfreeze;
         return $error_sub->(
-            localize('An error occurred while processing request. If this error persists, please contact customer support'),
+            localize('An error occurred while processing request. Please try again in one minute.'),
             "Account stuck in previous transaction $loginid_to"
         );
     }
@@ -529,7 +529,7 @@ sub paymentagent_transfer {
     try {
         $client_fm->validate_payment(
             currency => $currency,
-            amount   => -$amount,    #withdraw action use negtive amount
+            amount   => -$amount,    # withdraw action use negative amount
         );
     }
     catch {
@@ -601,7 +601,8 @@ sub paymentagent_transfer {
         if ($error =~ /BI102/) {
             return $error_sub->(localize('Request too frequent. Please try again later.'), $error);
         } else {
-            return $error_sub->(localize('An error occurred while processing request. If this error persists, please contact customer support'),
+            warn "Error in paymentagent_transfer for transfer - $error\n";
+            return $error_sub->(localize('An error occurred while processing your payment agent transfer.'),
                 $error);
         }
     }
@@ -753,7 +754,7 @@ sub paymentagent_withdraw {
     # freeze loginID to avoid a race condition
     if (not $client_db->freeze) {
         return $error_sub->(
-            localize('An error occurred while processing request. If this error persists, please contact customer support'),
+            localize('An error occurred while processing request. Please try again in one minute.'),
             "Account stuck in previous transaction $client_loginid"
         );
     }
@@ -764,7 +765,7 @@ sub paymentagent_withdraw {
     if (not $paymentagent_client_db->freeze) {
         $client_db->unfreeze;
         return $error_sub->(
-            localize('An error occurred while processing request. If this error persists, please contact customer support'),
+            localize('An error occurred while processing request. Please try again in one minute.'),
             "Account stuck in previous transaction $paymentagent_loginid"
         );
     }
@@ -858,7 +859,8 @@ sub paymentagent_withdraw {
         if ($error =~ /BI102/) {
             return $error_sub->(localize('Request too frequent. Please try again later.'), $error);
         } else {
-            return $error_sub->(localize('An error occurred while processing request. If this error persists, please contact customer support'),
+            warn "Error in paymentagent_transfer for withdrawal - $error\n";
+            return $error_sub->(localize('An error occurred while processing your payment agent withdrawal.'),
                 $error);
         }
     }
@@ -1065,7 +1067,7 @@ sub transfer_between_accounts {
 
         BOM::Platform::AuditLog::log("Account Transfer FAILED, $err");
 
-        $client_message ||= localize('An error occurred while processing request. If this error persists, please contact customer support');
+        $client_message ||= localize('An error occurred while processing request. Please try again after one minute.');
         return $error_sub->($client_message);
     };
     my $error_unfreeze_sub = sub {
