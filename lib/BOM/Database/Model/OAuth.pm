@@ -88,6 +88,16 @@ SQL
     return $details;
 }
 
+sub get_verification_uri_by_app_id {
+    my ($self, $app_id) = @_;
+
+    my ($verification_uri) = $self->dbh->selectrow_array("
+        SELECT verification_uri FROM oauth.apps WHERE id = ? AND active
+    ", undef, $app_id);
+
+    return $verification_uri;
+}
+
 sub get_scopes_by_access_token {
     my ($self, $access_token) = @_;
 
@@ -113,9 +123,9 @@ sub create_app {
 
     my $sth = $self->dbh->prepare("
         INSERT INTO oauth.apps
-            (name, scopes, homepage, github, appstore, googleplay, redirect_uri, app_markup_percentage, binary_user_id)
+            (name, scopes, homepage, github, appstore, googleplay, redirect_uri, verification_uri, app_markup_percentage, binary_user_id)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
     ");
     $sth->execute(
@@ -126,6 +136,7 @@ sub create_app {
         $app->{appstore}              || '',
         $app->{googleplay}            || '',
         $app->{redirect_uri}          || '',
+        $app->{verification_uri}      || '',
         $app->{app_markup_percentage} || 0,
         $app->{user_id});
 
@@ -136,6 +147,7 @@ sub create_app {
         name                  => $app->{name},
         scopes                => $app->{scopes},
         redirect_uri          => $app->{redirect_uri},
+        verification_uri      => $app->{verification_uri} || '',
         homepage              => $app->{homepage} || '',
         github                => $app->{github} || '',
         appstore              => $app->{appstore} || '',
@@ -158,7 +170,7 @@ sub update_app {
     $sth = $self->dbh->prepare("
         UPDATE oauth.apps SET
             name = ?, scopes = ?, homepage = ?, github = ?,
-            appstore = ?, googleplay = ?, redirect_uri = ?, app_markup_percentage = ?
+            appstore = ?, googleplay = ?, redirect_uri = ?, verification_uri = ?, app_markup_percentage = ?
         WHERE id = ?
     ");
     $sth->execute(
@@ -169,6 +181,7 @@ sub update_app {
         $app->{appstore}              || '',
         $app->{googleplay}            || '',
         $app->{redirect_uri}          || '',
+        $app->{verification_uri}      || '',
         $app->{app_markup_percentage} || 0,
         $app_id
     );
@@ -187,6 +200,7 @@ sub update_app {
         name                  => $app->{name},
         scopes                => $app->{scopes},
         redirect_uri          => $app->{redirect_uri},
+        verification_uri      => $app->{verification_uri} || '',
         homepage              => $app->{homepage} || '',
         github                => $app->{github} || '',
         appstore              => $app->{appstore} || '',
@@ -200,7 +214,7 @@ sub get_app {
 
     my $app = $self->dbh->selectrow_hashref("
         SELECT
-            id as app_id, name, redirect_uri, scopes,
+            id as app_id, name, redirect_uri, verification_uri, scopes,
             homepage, github, appstore, googleplay, app_markup_percentage
         FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active", undef, $app_id, $user_id);
     return unless $app;
@@ -214,7 +228,7 @@ sub get_apps_by_user_id {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            id as app_id, name, redirect_uri, scopes,
+            id as app_id, name, redirect_uri, verification_uri, scopes,
             homepage, github, appstore, googleplay, app_markup_percentage
         FROM oauth.apps WHERE binary_user_id = ? AND active ORDER BY name", {Slice => {}}, $user_id);
     return [] unless $apps;
