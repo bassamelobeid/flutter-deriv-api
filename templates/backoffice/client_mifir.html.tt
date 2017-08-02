@@ -16,7 +16,7 @@ END;
 END;
 %]
 
-[% IF client.broker == 'MF' or 1==1 %]
+[% IF client.broker == 'MF' %]
     <tr>
         <td class="small_header" colspan="2">#MIFIR ID Number</td>
     </tr>
