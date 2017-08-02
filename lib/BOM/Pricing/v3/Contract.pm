@@ -131,7 +131,7 @@ sub _get_ask {
             warn __PACKAGE__ . " _get_ask produce_contract failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($args_copy);
             $response = BOM::Pricing::v3::Utility::create_error({
                     code              => 'ContractCreationFailure',
-                    message_to_client => localize($contract)});
+                    message_to_client => join(',' map { localize($_) } @$contract)});
         }
     }
     catch {
