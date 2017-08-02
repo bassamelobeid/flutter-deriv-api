@@ -21,7 +21,7 @@ BOM::Backoffice::Auth0::can_access(['Payments']);
 my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my $listaccounts = request()->param('listaccounts');
-my $message = request()->param('message') || 'Account closed. Please contact customer support for assistance.';
+my $message = request()->param('message') || 'Account closed.';
 $listaccounts =~ s/ //g;
 
 my $grandtotal = 0;
