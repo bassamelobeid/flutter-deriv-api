@@ -220,6 +220,9 @@ subtest 'save identical' => sub {
 
     set_absolute_time($fake_date->epoch + MAX_ALLOWED_AGE + 2);
 
+    # next check will try to send an email, if we don't have tstmp of last email sent
+    Cache::RedisDB->set_nw('QUANT_EMAIL', 'vol_Forex', time);
+
     $au = BOM::MarketDataAutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
