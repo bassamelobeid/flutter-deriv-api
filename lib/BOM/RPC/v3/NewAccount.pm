@@ -132,6 +132,7 @@ sub verify_email {
         code             => $code,
         website_name     => $params->{website_name},
         verification_uri => get_verification_uri($params->{source}),
+        language         => $params->{language},
     });
 
     my $payment_sub = sub {
