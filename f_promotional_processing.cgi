@@ -66,12 +66,11 @@ foreach my $loginid (@approved, @rejected) {
         BOM::Backoffice::Request::template->process(
             'email/bonus_approve.html.tt',
             {
-                name          => $client_name,
-                currency      => $currency,
-                amount        => $amount,
-                support_email => Brands->new(name => request()->brand)->emails('support'),
-                tac_url       => $tac_url,
-                website_name  => 'Binary.com',
+                name         => $client_name,
+                currency     => $currency,
+                amount       => $amount,
+                tac_url      => $tac_url,
+                website_name => 'Binary.com',
             },
             \$email_content
             )
