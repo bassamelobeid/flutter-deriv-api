@@ -89,7 +89,7 @@ my $dbh = $clientdb->db->dbh;
 my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
 my $rpc_client = Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5));
 
-if ($page eq qw/withdrawal deposit search/) {
+if (grep { $page eq $_ } qw/withdrawal deposit search/) {
     my $trxns;
     if ($page eq 'withdrawal') {
         Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
