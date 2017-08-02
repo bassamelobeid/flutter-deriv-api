@@ -640,7 +640,7 @@ subtest 'invalid start times' => sub {
     $bet                      = produce_contract($bet_params);
     test_error_list('buy', $bet, $expected_reasons);
 
-    my $fwd_date   = Date::Utility->new('2013-03-29 22:00:34');
+    $fwd_date   = Date::Utility->new('2013-03-29 22:00:34');
     $bet_params->{date_pricing} = $fwd_date->epoch;
     $bet_params->{date_start}   = $fwd_date->epoch;
     $bet_params->{bet_type}     = 'CALL';
@@ -651,7 +651,7 @@ subtest 'invalid start times' => sub {
     $bet                      = produce_contract($bet_params);
     test_error_list('buy', $bet, $expected_reasons);
 
-    my $fwd_date   = Date::Utility->new('2013-03-29 21:00:34');
+    $fwd_date   = Date::Utility->new('2013-03-29 21:00:34');
     $bet_params->{date_pricing} = $fwd_date->epoch;
     $bet_params->{date_start}   = $fwd_date->epoch;
     $bet_params->{bet_type}     = 'CALL';
@@ -662,7 +662,7 @@ subtest 'invalid start times' => sub {
     $bet                      = produce_contract($bet_params);
     test_error_list('buy', $bet, $expected_reasons);
 
-    my $fwd_date   = Date::Utility->new('2013-03-29 20:00:34');
+    $fwd_date   = Date::Utility->new('2013-03-29 20:00:34');
     $bet_params->{date_pricing} = $fwd_date->epoch;
     $bet_params->{date_start}   = $fwd_date->epoch;
     $bet_params->{bet_type}     = 'CALL';
