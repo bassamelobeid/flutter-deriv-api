@@ -24,7 +24,7 @@ use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Locale;
+use BOM::Platform::Locale qw/get_state_by_id/;
 use BOM::Platform::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
@@ -788,9 +788,6 @@ sub set_settings {
     my $phone           = ($args->{'phone'} // $client->phone) // '';
     my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
 
-    # filter out irrelevant spaces and commas
-    foreach ($address1, $address2, $addressTown) { $_ =~ s/(?:,?\s*,)+\s*/, /g }
-
     my $cil_message;
     if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
@@ -855,13 +852,19 @@ sub set_settings {
         map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($client->salutation),
         $client->first_name, $client->last_name
     ) . "\n\n";
-
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
-    my $residence_country = Locale::Country::code2country($client->residence);
-    my $full_address = join(', ', (map { $client->$_ } qw(address_1 address_2 city state postcode)), $residence_country);
+    # lookup state name by id
+    my $lookup_state =
+        ($client->state and $client->residence)
+        ? BOM::Platform::Locale::get_state_by_id($client->state, $client->residence) // ''
+        : '';
+    my @address_fields = ((map { $client->$_ } qw/address_1 address_2 city/), $lookup_state, $client->postcode);
+    # filter out empty fields
+    my $full_address = join ', ', grep { defined $_ and /\S/ } @address_fields;
 
-    my @updated_fields = (
+    my $residence_country = Locale::Country::code2country($client->residence);
+    my @updated_fields    = (
         [localize('Email address'),        $client->email],
         [localize('Country of Residence'), $residence_country],
         [localize('Address'),              $full_address],
