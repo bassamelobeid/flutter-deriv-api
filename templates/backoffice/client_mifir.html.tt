@@ -28,12 +28,12 @@ END;
             <input type="submit" name="mifir_reset" value="DELETE">
         [% ELSE %]
             <input type="text" name="mifir_id" value=""><br>
-            upto 35 alphanumeric symbols
+            up to 35 alphanumerical characters
         [% END %]
         </td>
         <td style="padding-top: 0px; padding-left: 10px">
-        [% c = client.residence.upper;%]
-        [% documents_info(data => mifir_config.countries.$c)%]
+        [% c = client.residence.upper %]
+        [% documents_info(data => mifir_config.countries.$c) %]
         </td>
         </tr>
         </table>
