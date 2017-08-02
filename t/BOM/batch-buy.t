@@ -277,17 +277,20 @@ subtest 'batch-buy success + multisell', sub {
         });
 
         subtest 'check limits' => sub {
-            my $mock_client = Test::MockModule->new('Client::Account');
+            my $mock_client  = Test::MockModule->new('Client::Account');
             my $mocked_limit = 100;
-            $mock_client->mock(get_limit_for_account_balance => sub {
-                                   my $c = shift; return ( $c->loginid ); });
+            $mock_client->mock(
+                get_limit_for_account_balance => sub {
+                    my $c = shift;
+                    return ($c->loginid);
+                });
 
             $txn->prepare_buy(1);
-            foreach my $m ( @{$txn->multiple} ) {
+            foreach my $m (@{$txn->multiple}) {
                 next if $m->{code} && $m->{code} eq 'ignore';
-                ok( !$m->{code}, 'no error' );
-                ok( $m->{client} && ref $m->{client} eq 'Client::Account', 'check client' );
-                is( $m->{limits}{max_balance}, $m->{client}->loginid, 'check_limit' );
+                ok(!$m->{code}, 'no error');
+                ok($m->{client} && ref $m->{client} eq 'Client::Account', 'check client');
+                is($m->{limits}{max_balance}, $m->{client}->loginid, 'check_limit');
             }
         };
 
