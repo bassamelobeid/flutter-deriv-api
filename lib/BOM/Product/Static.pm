@@ -23,7 +23,7 @@ my $config = {
         # kept camel case because RPC/WS/Pricing follow this convention
         # it will be consistent in case in future we want to send
         # these as error codes to RPC/Pricing
-        MissingRequiredInput          => 'Missing required contract parameters. ([_1])';
+        MissingRequiredInput          => 'Missing required contract parameters. ([_1])',
         AlreadyExpired                => 'This contract has already expired.',
         BarrierNotInRange             => 'Barrier is not an integer in range of [_1] to [_2].',
         BarrierOutOfRange             => 'Barrier is out of acceptable range.',
