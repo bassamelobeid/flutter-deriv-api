@@ -324,7 +324,7 @@ sub sell_contract_for_multiple_accounts {
                 transaction_id => $row->{tnx}{id},
                 reference_id   => $row->{buy_tr_id},
                 balance_after  => formatnumber('amount', $client->currency, $row->{tnx}{balance_after}),
-                sell_price     => abs($row->{fmb}{sell_price}),
+                sell_price     => formatnumber('price', $client->currency, $row->{fmb}{sell_price}),
                 contract_id    => $row->{tnx}{financial_market_bet_id},
                 sell_time      => $row->{fmb}{sell_time},
             };
@@ -398,7 +398,7 @@ sub sell {
         reference_id   => $trx->reference_id,                                                   ### buy transaction ID
         contract_id    => $id,
         balance_after  => formatnumber('amount', $client->currency, $trx_rec->balance_after),
-        sold_for       => abs($trx_rec->amount),
+        sold_for       => formatnumber('price', $client->currency, $trx_rec->amount),
     };
 }
 
