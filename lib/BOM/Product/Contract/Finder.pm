@@ -75,9 +75,24 @@ sub available_contracts_for_symbol {
                 $date = $calendar->trade_date_after($exchange, $date) unless $calendar->trades_on($exchange, $date);
                 push @trade_dates, $date;
             }
+
+            my @blackout_periods;
+
+            if (my @inefficient_periods = @{$underlying->forward_inefficient_periods}) {
+                push @blackout_periods, [$_->{start}, $_->{end}] for @inefficient_periods;
+            }
+
             $o->{forward_starting_options} = [
-                map { {date => Date::Utility->new($_->{open})->truncate_to_day->epoch, open => $_->{open}, close => $_->{close}} }
-                map { @{$calendar->trading_period($exchange, $_)} } @trade_dates
+                map { {
+                        date      => Date::Utility->new($_->{open})->truncate_to_day->epoch,
+                        open      => $_->{open},
+                        close     => $_->{close},
+                        blackouts => @blackouts
+                    }
+                    }
+                    map {
+                    @{$calendar->trading_period($exchange, $_)}
+                    } @trade_dates
             ];
         }
 
