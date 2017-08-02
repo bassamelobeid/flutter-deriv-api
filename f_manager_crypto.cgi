@@ -55,6 +55,24 @@ $start_date = Date::Utility->new($start_date) unless ref $start_date;
 my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 0, $now->month, $now->year - 1900);
 $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
+print '<h3>Make dual control code</h3>';
+print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
+print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
+print 'Amount: <select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
+print ' <input type="text" name="amount" size=15/>';
+print '<br>';
+print '<br>';
+print ' Loginid of the client: <input type="text" size="12" name="loginid_dcc" />';
+print ' Blockchain address: <input type="text" size="50" name="address" />';
+print '<br>';
+print '<br>';
+print 'Input a comment/reminder about this DCC: <input type="text" size="50" name="reminder_dcc">';
+print '<br>';
+print '<br>';
+print '<INPUT type="submit" value="Make Dual Control Code" name="view_action"/>';
+print '</FORM>';
+
+print '<h3>Recon</h3>';
 print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
 print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
 print '<input type="text" name="start_date" required class="datepick" value="' . $start_date->date_yyyymmdd . '">';
