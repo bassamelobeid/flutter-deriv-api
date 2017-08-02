@@ -459,6 +459,39 @@ sub _validate_trading_times {
     return;
 }
 
+=head2 forward_blackouts
+
+Periods of which we decide to stay out of the market due to high uncertainty for forward contracts ONLY.
+
+=cut
+
+has forward_blackouts => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_forward_blackouts {
+    my $self = shift;
+
+    my $forward_starting_contract = ($self->starts_as_forward_starting or $self->is_forward_starting);
+
+    return [] if not $forward_starting_contract;
+
+    my @blackout_periods;
+    my $effective_sod = $self->effective_start->truncate_to_day;
+    my $underlying    = $self->underlying;
+
+    if ($self->is_intraday) {
+        if (my @inefficient_periods = @{$underlying->forward_inefficient_periods}) {
+            push @blackout_periods, [$effective_sod->plus_time_interval($_->{start})->epoch, $effective_sod->plus_time_interval($_->{end})->epoch]
+                for @inefficient_periods;
+        }
+    }
+
+    return \@blackout_periods;
+
+}
+
 sub _validate_start_and_expiry_date {
     my $self = shift;
 
@@ -470,6 +503,7 @@ sub _validate_start_and_expiry_date {
         [[$start_epoch], $self->date_start_blackouts,  $ERROR_MAPPING->{TradingNotAvailable}],
         [[$end_epoch],   $self->date_expiry_blackouts, $ERROR_MAPPING->{ContractExpiryNotAllowed}],
         [[$start_epoch, $end_epoch], $self->market_risk_blackouts, $ERROR_MAPPING->{TradingNotAvailable}],
+        [[$start_epoch, $end_epoch], $self->forward_blackouts,     $ERROR_MAPPING->{TradingNotAvailable}],
     );
 
     # disable contracts with duration < 5 hours at 21:00 to 23:00GMT due to quiet period.
@@ -513,37 +547,6 @@ sub _validate_start_and_expiry_date {
                         . $period->[1] . "]",
                     message_to_client => [$message_to_client, @args],
                 };
-            }
-        }
-    }
-
-# A new logic to apply inefficient period for forward starting only.
-    my $effective_sod = $self->effective_start->truncate_to_day;
-    my $forward_starting_contract = ($self->starts_as_forward_starting or $self->is_forward_starting);
-    if ($self->is_intraday and $forward_starting_contract) {
-        if (my @forward_inefficient_periods = @{$self->underlying->forward_inefficient_periods}) {
-            foreach my $period (@forward_inefficient_periods) {
-                if (    $start_epoch >= $effective_sod->plus_time_interval($period->{start})->epoch
-                    and $end_epoch <= $effective_sod->plus_time_interval($period->{end})->epoch)
-                {
-                    my @args  = ();
-                    my $start = Date::Utility->new($effective_sod->plus_time_interval($period->{start})->epoch);
-                    my $end   = Date::Utility->new($effective_sod->plus_time_interval($period->{end})->epoch);
-                    if ($start->day_of_year == $end->day_of_year) {
-                        push @args, ($start->time_hhmmss, $end->time_hhmmss);
-                    } else {
-                        push @args, ($start->date, $end->date);
-                    }
-                    return {
-                        message => 'forward starting contract blackout period '
-                            . "[symbol: "
-                            . $self->underlying->symbol . "] "
-                            . "[from: "
-                            . $period->{start} . "] " . "[to: "
-                            . $period->{end} . "]",
-                        message_to_client => [$ERROR_MAPPING->{TradingNotAvailable}, @args],
-                    };
-                }
             }
         }
     }
