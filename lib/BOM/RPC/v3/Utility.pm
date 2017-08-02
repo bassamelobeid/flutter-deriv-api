@@ -8,6 +8,9 @@ use YAML::XS qw(LoadFile);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use List::MoreUtils qw(any);
 use Brands;
+use URI;
+use Domain::PublicSuffix;
+
 
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
@@ -266,6 +269,35 @@ sub paymentagent_default_min_max {
         minimum => 10,
         maximum => 2000
     };
+}
+
+sub validate_uri {
+	my $originalUrl = shift;
+	my $url = URI->new($originalUrl);
+	if (!$url->isa('URI::http') || !($url->scheme =~ /^https?$/)) {
+		die 'The given URL is not http(s)';
+	}
+	if ($url->userinfo) {
+		die 'URL should not have user info';
+	}
+	if ($url->port != 80 && $url->port != 443) {
+		die 'Only ports 80 and 443 are allowed';
+	}
+	if ($url->fragment) {
+		die 'URL should not have fragment';
+	}
+	if ($url->query) {
+		die 'URL should not have query';
+	}
+	if (!$url->host || $originalUrl =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
+		warn $originalUrl;
+		die 'Invalid URL';
+	}
+	my $suffix = Domain::PublicSuffix->new();
+	if (!$suffix->get_root_domain($url->host)) {
+		die 'Unknown TLD';
+	}
+	return $url;
 }
 
 1;
