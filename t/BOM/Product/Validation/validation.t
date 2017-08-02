@@ -565,7 +565,7 @@ subtest 'volsurfaces become old and invalid' => sub {
 };
 
 subtest 'invalid start times' => sub {
-    plan tests => 10;
+    plan tests => 13;
 
     my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
