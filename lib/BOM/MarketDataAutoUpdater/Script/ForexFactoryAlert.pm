@@ -4,10 +4,12 @@ use Moose;
 with 'App::Base::Script';
 
 use BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents;
-
 use ForexFactory;
 use Email::Stuffer;
 use Date::Utility;
+use Cache::RedisDB;
+
+use constant NAMESPACE => 'FOREX_FACTORY_ALERT';
 
 sub documentation { return 'This script checks for forex factory alert on economic events every hour.'; }
 
@@ -35,8 +37,13 @@ sub script_run {
         my $subject_line = 'Forex Factory Alert';
         my $body = join "\n", map { $_->{event_name} . ' release at ' . Date::Utility->new($_->{release_date})->datetime } @alert;
         Email::Stuffer->from('system@binary.com')->to('x-quants@binary.com')->subject($subject_line)->text_body($body)->send_or_die;
+
         # run the cron again to update
-        BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents->new->run();
+        my $cache = Cache::RedisDB->get(NAMESPACE, $body);
+        unless ($cache) {
+            BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents->new->run();
+            Cache::RedisDB->set(NAMESPACE, $body, 1, 86400);
+        }
     }
 
     return 0;
