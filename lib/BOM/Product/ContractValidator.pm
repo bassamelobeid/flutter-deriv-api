@@ -459,6 +459,39 @@ sub _validate_trading_times {
     return;
 }
 
+=head2 forward_blackouts
+
+Periods of which we decide to stay out of the market due to high uncertainty for forward contracts ONLY.
+
+=cut
+
+has forward_blackouts => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_forward_blackouts {
+    my $self = shift;
+
+    my $forward_starting_contract = ($self->starts_as_forward_starting or $self->is_forward_starting);
+
+    return [] if not $forward_starting_contract;
+
+    my @blackout_periods;
+    my $effective_sod = $self->effective_start->truncate_to_day;
+    my $underlying    = $self->underlying;
+
+    if ($self->is_intraday) {
+        if (my @inefficient_periods = @{$underlying->forward_inefficient_periods}) {
+            push @blackout_periods, [$effective_sod->plus_time_interval($_->{start})->epoch, $effective_sod->plus_time_interval($_->{end})->epoch]
+                for @inefficient_periods;
+        }
+    }
+
+    return \@blackout_periods;
+
+}
+
 sub _validate_start_and_expiry_date {
     my $self = shift;
 
@@ -470,6 +503,7 @@ sub _validate_start_and_expiry_date {
         [[$start_epoch], $self->date_start_blackouts,  $ERROR_MAPPING->{TradingNotAvailable}],
         [[$end_epoch],   $self->date_expiry_blackouts, $ERROR_MAPPING->{ContractExpiryNotAllowed}],
         [[$start_epoch, $end_epoch], $self->market_risk_blackouts, $ERROR_MAPPING->{TradingNotAvailable}],
+        [[$start_epoch, $end_epoch], $self->forward_blackouts,     $ERROR_MAPPING->{TradingNotAvailable}],
     );
 
     # disable contracts with duration < 5 hours at 21:00 to 23:00GMT due to quiet period.
