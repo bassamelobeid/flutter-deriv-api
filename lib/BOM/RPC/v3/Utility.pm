@@ -289,11 +289,15 @@ sub validate_uri {
     if ($url->query) {
         return localize('URL should not have query');
     }
-    if (!$url->host || $originalUrl =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
+    my $host = $url->host;
+    if (!$host || $originalUrl =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
         return localize('Invalid URL');
     }
+    if (!($originalUrl =~ /$host/)) {
+        return localize('IDN URL is not allowed');
+    }
     my $suffix = Domain::PublicSuffix->new();
-    if (!$suffix->get_root_domain($url->host)) {
+    if (!$suffix->get_root_domain($host)) {
         return localize('Unknown domain name');
     }
 
