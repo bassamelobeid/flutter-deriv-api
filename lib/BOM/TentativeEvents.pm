@@ -82,7 +82,7 @@ sub update_event {
     $existing->{tentative_event_shift} = $shift;
 
     my $diff = $existing->{blankout_end} - $existing->{blankout};
-    return "Blackout start and Blackout end must be 2 hours apart. E.g. 5pm - 7pm" if ($diff != 7200);
+    return "Blackout start must be before  Blackout end" if ($diff <= 0);
 
     my $eec = Quant::Framework::EconomicEventCalendar->new({
         recorded_date    => Date::Utility->new(),
