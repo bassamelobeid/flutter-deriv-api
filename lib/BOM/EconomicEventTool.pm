@@ -86,6 +86,7 @@ sub update_by_id {
                 chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
             })->save;
+        _regenerate($ref->{events});
         my $new_info = get_info($to_update);
         return {
             id       => $args->{id},
@@ -124,19 +125,25 @@ sub save_new_event {
                 chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
             })->save;
+        _regenerate($ref->{events});
 
-        # update economic events impact curve with the newly added economic event
-        Volatility::Seasonality::generate_economic_event_seasonality({
-            underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
-            economic_events    => $ref->{events},
-            chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
-        });
-
-        # refresh intradayfx cache to to use new economic events impact curve
-        BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
     }
 
     return BOM::EconomicEventTool::get_info($args);
+}
+
+sub _regenerate {
+    my $events = shift;
+
+    # update economic events impact curve with the newly added economic event
+    Volatility::Seasonality::generate_economic_event_seasonality({
+        underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
+        economic_events    => $events,
+        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
+
+    # refresh intradayfx cache to to use new economic events impact curve
+    BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
 }
 
 sub _get_economic_events {
