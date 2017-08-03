@@ -565,7 +565,7 @@ subtest 'volsurfaces become old and invalid' => sub {
 };
 
 subtest 'invalid start times' => sub {
-    plan tests => 9;
+    plan tests => 13;
 
     my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -628,6 +628,53 @@ subtest 'invalid start times' => sub {
     $expected_reasons         = [qr/forward-starting.*blackout/];
     test_error_list('buy', $bet, $expected_reasons);
 
+# Test forward starting inefficient period
+    my $fwd_date   = Date::Utility->new('2013-03-29 23:00:34');
+    $bet_params->{date_pricing} = $fwd_date->epoch;
+    $bet_params->{date_start}   = $fwd_date->epoch;
+    $bet_params->{bet_type}     = 'CALL';
+    $bet_params->{duration}     = '30m';
+    $bet_params->{starts_as_forward_starting} = 1;
+
+    $expected_reasons         = [qr/blackout period/];
+    $bet                      = produce_contract($bet_params);
+    ok $bet->_validate_start_and_expiry_date;
+
+    $fwd_date   = Date::Utility->new('2013-03-29 22:00:34');
+    $bet_params->{date_pricing} = $fwd_date->epoch;
+    $bet_params->{date_start}   = $fwd_date->epoch;
+    $bet_params->{bet_type}     = 'CALL';
+    $bet_params->{duration}     = '30m';
+    $bet_params->{starts_as_forward_starting} = 1;
+
+    $expected_reasons         = [qr/blackout period/];
+    $bet                      = produce_contract($bet_params);
+    ok $bet->_validate_start_and_expiry_date;
+
+    $fwd_date   = Date::Utility->new('2013-03-29 21:00:34');
+    $bet_params->{date_pricing} = $fwd_date->epoch;
+    $bet_params->{date_start}   = $fwd_date->epoch;
+    $bet_params->{bet_type}     = 'CALL';
+    $bet_params->{duration}     = '30m';
+    $bet_params->{starts_as_forward_starting} = 1;
+
+    $expected_reasons         = [qr/blackout period/];
+    $bet                      = produce_contract($bet_params);
+    ok $bet->_validate_start_and_expiry_date;
+
+    $fwd_date   = Date::Utility->new('2013-03-29 20:00:34');
+    $bet_params->{date_pricing} = $fwd_date->epoch;
+    $bet_params->{date_start}   = $fwd_date->epoch;
+    $bet_params->{bet_type}     = 'CALL';
+    $bet_params->{duration}     = '30m';
+    $bet_params->{starts_as_forward_starting} = 1;
+
+    $expected_reasons         = [qr/blackout period/];
+    $bet                      = produce_contract($bet_params);
+    ok $bet->_validate_start_and_expiry_date;
+    delete $bet_params->{starts_as_forward_starting};
+
+    $bet_params->{date_start}   = $starting;
     $bet_params->{date_pricing} = $starting + 45;
     $bet_params->{bet_type}     = 'CALL';
     $bet_params->{duration}     = '3d';
