@@ -20,6 +20,9 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
 
+use BOM::Platform::Password;
+use BOM::Platform::User;
+
 my $t = build_wsapi_test({language => 'EN'});
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -33,6 +36,15 @@ $test_client->payment_free_gift(
     amount   => 1000,
     remark   => 'free gift',
 );
+
+my $hash_pwd = BOM::Platform::Password::hashpw('jskjd8292922');
+my $user     = BOM::Platform::User->create(
+    email    => $test_client->email,
+    password => $hash_pwd
+);
+$user->save;
+$user->add_loginid({loginid => $test_client->loginid});
+$user->save;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -168,6 +180,7 @@ $args->{estimated_worth} = $val;
 $t = $t->send_ok({json => $args})->message_ok;
 $res = decode_json($t->message->[1]);
 cmp_ok($res->{set_financial_assessment}->{score}, "<", 60, "Correct score");
+note("set_financial_assessment json :: " . encode_json($res));
 is($res->{set_financial_assessment}->{is_professional}, 0, "is_professional flag is set correctly");
 
 $t->finish_ok;
