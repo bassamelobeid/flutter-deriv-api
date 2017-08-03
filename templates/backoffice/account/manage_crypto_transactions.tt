@@ -4,9 +4,9 @@
         <th>Description</th>
     </thead>
     <tbody>
-        [% IF page_type == 'deposit' || page_type == 'search' %]
+        [% IF view_action == 'deposit' || view_action == 'search' %]
             <tr>
-            [% IF page_type == 'search' %]
+            [% IF view_action == 'search' %]
                 <tr><td><b>Deposit:</b></td></tr>
             [% END %]
                 <td>New</td>
@@ -21,8 +21,8 @@
                 <td>List transactions that are confirmed on blockchain and client account should be credited</td>
             </tr>
         [% END %]
-        [% IF page_type == 'withdrawal' || page_type == 'search' %]
-            [% IF page_type == 'search' %]
+        [% IF view_action == 'withdrawal' || view_action == 'search' %]
+            [% IF view_action == 'search' %]
                 <tr><td><b>Withdrawal:</b></td></tr>
             [% END %]
             <tr>
@@ -65,7 +65,7 @@
             <th>BlockchainInfo</th>
             <th>PaymentInfo</th>
             <th>Date</th>
-            [% IF page_type == 'withdrawal' || page_type == 'search' %]
+            [% IF view_action == 'withdrawal' || view_action == 'search' %]
                 [% IF view_type == 'pending' %]
                     <th>Verification</th>
             [% END %]
@@ -109,14 +109,14 @@
                             <tr>
                                 <td>Creation: [% trx.creation_date %]</td>
                             </tr>
-                            [% IF trx.transaction_type == 'deposit' %]
+                            [% IF trx.transaction_type == 'deposit' || (trx.transaction_type == 'deposit' && view_action == 'search') %]
                                 <tr>
                                     <td>Pending: [% trx.pending_date %]</td>
                                 </tr>
                                 <tr>
                                     <td>Confirmed: [% trx.confirmed_date %]</td>
                                 </tr>
-                            [% ELSIF trx.transaction_type == 'withdrawal' %]
+                            [% ELSIF trx.transaction_type == 'withdrawal' || trx.transaction_type == 'withdrawal' && view_action == 'search' %]
                                 <tr>
                                     <td>Verified: [% trx.verified_date %]</td>
                                 </tr>
@@ -136,7 +136,7 @@
                         </tbody>
                     </table>
                 </td>
-                [% IF trx.transaction_type == 'withdrawal' && view_type == 'pending' %]
+                [% IF trx.transaction_type == 'withdrawal' && view_type == 'pending' ||  %]
                     <td>
                         <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Verify transaction</a> 
                         <b>OR</b> 
@@ -165,7 +165,7 @@
 [% END %]
 <br/>
 <table>
-[% IF page_type == 'deposit' %]
+[% IF view_action == 'deposit' %]
     <tr>
         <td>
             <a [% IF view_type == 'new' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=new">View new addresses</a>
@@ -183,7 +183,7 @@
             <a [% IF view_type == 'error' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Deposit%20Transactions&view_type=error">View errored transactions</a>
         </td>
     </tr>
-[% ELSIF page_type == 'withdrawal' %]
+[% ELSIF view_action == 'withdrawal' %]
     <tr>
         <td>
             <a [% IF view_type == 'pending' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=Withdrawal%20Transactions&view_type=pending">View Pending Transactions</a>
