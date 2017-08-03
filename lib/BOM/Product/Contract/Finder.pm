@@ -89,7 +89,7 @@ sub available_contracts_for_symbol {
                         date  => Date::Utility->new($_->{open})->truncate_to_day->epoch,
                         open  => $_->{open},
                         close => $_->{close},
-                        scalar(@blackout_periods) ? (blackouts => \@blackout_periods) : ()}
+                        @blackout_periods ? (blackouts => \@blackout_periods) : ()}
                     }
                     map {
                     @{$calendar->trading_period($exchange, $_)}
