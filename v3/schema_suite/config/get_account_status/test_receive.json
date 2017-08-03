@@ -16,6 +16,11 @@
                     "type": ["string", "null"],
                     "pattern": "^(low|standard|high)?$",
                     "required": "1"
+                },
+                "prompt_client_to_authenticate": {
+                    "type": "string",
+                    "pattern": "^(1|0)$",
+                    "required": "1"
                 }
             },
             "required": "1"
