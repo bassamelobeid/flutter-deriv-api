@@ -192,6 +192,7 @@ table#client_edit td{
             </select>
         </td>
     </tr>
+    [% PROCESS backoffice/client_mifir.html.tt %]
     <tr>
         <td class="small_header" colspan="2">#TAX INFORMATION</td>
     </tr>

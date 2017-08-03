@@ -1,0 +1,42 @@
+[%
+MACRO documents_info BLOCK;
+'Possible documents for ' _ data.country _ '<br>'  | none;
+FOREACH i IN data.keys;
+    NEXT IF i == 'country';
+    IF i == 'CONCAT';
+            '<input type="submit" name="mifir_set_concat" value="CONCAT"><br>' | none;
+            NEXT;
+    END;
+    '<b>' _ i _ '</b>, can be obtained from:<ul>' | none;
+    FOREACH j IN data.$i;
+        '<li>' _ j _ '</li>' | none;
+    END;
+    '</ul>' | none;
+END;
+END;
+%]
+
+[% IF client.broker == 'MF' %]
+    <tr>
+        <td class="small_header" colspan="2">#MIFIR ID Number</td>
+    </tr>
+    <tr>
+        <td class="label">MIFIR ID</td>
+        <td><table><tr><td valign="top" style="padding-top: 0px; border-right: 1px solid #888888; padding-right: 10px">:
+        [% IF client.mifir_id %]
+            <span>[% client.mifir_id %]</span>
+            <input type="submit" name="mifir_reset" value="DELETE">
+        [% ELSE %]
+            <input type="text" name="mifir_id" value=""><br>
+            up to 35 alphanumerical characters
+        [% END %]
+        </td>
+        <td style="padding-top: 0px; padding-left: 10px">
+        [% c = client.residence.upper %]
+        [% documents_info(data => mifir_config.countries.$c) %]
+        </td>
+        </tr>
+        </table>
+        </td>
+    </tr>
+[% END %]
