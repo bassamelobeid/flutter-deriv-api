@@ -5,61 +5,61 @@ use Test::Most;
 use BOM::RPC::v3::Utility;
 
 subtest 'URI scheme should be valid' => sub {
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http:://localhost.com') } 'Bad URL ::';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http:///localhost.com') } 'Bad URL //';
+    isnt BOM::RPC::v3::Utility::validate_uri('http:://localhost.com'), undef, 'Bad URL ::';
+    isnt BOM::RPC::v3::Utility::validate_uri('http:///localhost.com'), undef, 'Bad URL //';
     # dies_ok {BOM::RPC::v3::Utility::validate_uri('http://bla∂.com')} 'Bad URL';
 };
 
 subtest 'URI scheme should be http(s)' => sub {
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('//localhost.com') } 'URL without scheme';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('localhost.com') } 'URL without slash';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('ftp://localhost.com') } 'URL with ftp scheme';
+    isnt BOM::RPC::v3::Utility::validate_uri('//localhost.com'),     undef, 'URL without scheme';
+    isnt BOM::RPC::v3::Utility::validate_uri('localhost.com'),       undef, 'URL without slash';
+    isnt BOM::RPC::v3::Utility::validate_uri('ftp://localhost.com'), undef, 'URL with ftp scheme';
 };
 
 subtest 'URI should not have port' => sub {
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com:8080') } 'URL with port';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com:8080/example') } 'URL with port and sub dir';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com:') } 'URL with missing port';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost.com:8080'),         undef, 'URL with port';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost.com:8080/example'), undef, 'URL with port and sub dir';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost.com:'),             undef, 'URL with missing port';
 };
 
 subtest 'URI should not have query' => sub {
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com?') } 'URL with missing query';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com?test=') } 'URL with empty query';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com?test=val1&test2=val2') } 'URL with query';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost.com?'),                     undef, 'URL with missing query';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost.com?test='),                undef, 'URL with empty query';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost.com?test=val1&test2=val2'), undef, 'URL with query';
 };
 
 subtest 'URI should not have user info' => sub {
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://@localhost.com') } 'URL with missing userinfo';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://username@localhost.com') } 'URL with username';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://username:password@localhost.com') } 'URL with password';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://username:passwordlocalhost.com') } 'URL with password without @';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://@localhost.com'),                  undef, 'URL with missing userinfo';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://username@localhost.com'),          undef, 'URL with username';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://username:password@localhost.com'), undef, 'URL with password';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://username:passwordlocalhost.com'),  undef, 'URL with password without @';
 };
 
 subtest 'URI should not have fragments' => sub {
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com#') } 'URL with missing fragment without slash';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com/#') } 'URL with missing fragment';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com/#hello') } 'URL with fragment';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost.com#'),       undef, 'URL with missing fragment without slash';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost.com/#'),      undef, 'URL with missing fragment';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost.com/#hello'), undef, 'URL with fragment';
 };
 
 subtest 'URI should not have IP' => sub {
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://127.0.0.1') } 'URL with IPv4';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://::') } 'URL with IPv6';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://127.0.0.1'), undef, 'URL with IPv4';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://::'),        undef, 'URL with IPv6';
 };
 
 subtest 'URI should have known TLDs' => sub {
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost') } 'URL without TLD';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.local') } 'URL with invalid TLD';
-    dies_ok { BOM::RPC::v3::Utility::validate_uri('http://username.com.local') } 'URL with .com.invalid TLD';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost'),          undef, 'URL without TLD';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost.local'),    undef, 'URL with invalid TLD';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://username.com.local'), undef, 'URL with .com.invalid TLD';
 };
 
 subtest 'Healthy URL' => sub {
-    lives_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com') } 'Healthy http URL';
-    lives_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com.org') } 'Healthy http URL com.org';
-    lives_ok { BOM::RPC::v3::Utility::validate_uri('https://localhost.com') } 'Healthy https URL';
-    lives_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com/example') } 'Healthy http URL with subdir';
-    lives_ok { BOM::RPC::v3::Utility::validate_uri('http://localhost.com/example/subdir') } 'Healthy http URL with two subdir';
-    lives_ok { BOM::RPC::v3::Utility::validate_uri('http://نامه.com/example/subdir') } 'Healthy http URL with unicode host';
-    lives_ok { BOM::RPC::v3::Utility::validate_uri('http://example.com/نامه/subdir') } 'Healthy http URL with unicode subdir';
+    is BOM::RPC::v3::Utility::validate_uri('http://localhost.com'),                undef, 'Healthy http URL';
+    is BOM::RPC::v3::Utility::validate_uri('http://localhost.com.org'),            undef, 'Healthy http URL com.org';
+    is BOM::RPC::v3::Utility::validate_uri('https://localhost.com'),               undef, 'Healthy https URL';
+    is BOM::RPC::v3::Utility::validate_uri('http://localhost.com/example'),        undef, 'Healthy http URL with subdir';
+    is BOM::RPC::v3::Utility::validate_uri('http://localhost.com/example/subdir'), undef, 'Healthy http URL with two subdir';
+    is BOM::RPC::v3::Utility::validate_uri('http://نامه.com/example/subdir'),  undef, 'Healthy http URL with unicode host';
+    is BOM::RPC::v3::Utility::validate_uri('http://example.com/نامه/subdir'),  undef, 'Healthy http URL with unicode subdir';
 };
 
 done_testing();
