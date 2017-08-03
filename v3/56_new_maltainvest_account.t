@@ -45,6 +45,7 @@ my $mf_details = {
     new_account_maltainvest => 1,
     accept_risk             => 1,
     account_opening_reason  => 'Speculative',
+    address_line_1          => 'Test',
     %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}};
 
 subtest 'MLT upgrade to MF account' => sub {
@@ -58,17 +59,26 @@ subtest 'MLT upgrade to MF account' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
+    my $mlt_loginid;
     subtest 'create MLT account, authorize' => sub {
         $t = $t->send_ok({json => \%client_details})->message_ok;
         my $res = decode_json($t->message->[1]);
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);
 
-        my $loginid = $res->{new_account_real}->{client_id};
-        like($loginid, qr/^MLT\d+$/, "got MLT client $loginid");
+        $mlt_loginid = $res->{new_account_real}->{client_id};
+        like($mlt_loginid, qr/^MLT\d+$/, "got MLT client $mlt_loginid");
 
-        ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
+        ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mlt_loginid);
         $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+
+        my $mlt_client = Client::Account->new({loginid => $mlt_loginid});
+        is($mlt_client->financial_assessment, undef, 'doesn\'t have financial assessment');
+
+        $t = $t->send_ok({json => { get_settings => 1 }})->message_ok;
+        $res = decode_json($t->message->[1]);
+        ok($res->{get_settings});
+        is($res->{get_settings}->{address_line_1}, 'Jalan Usahawan', 'address line 1 set as expexted');
     };
 
     subtest 'upgrade to MF' => sub {
@@ -87,6 +97,16 @@ subtest 'MLT upgrade to MF account' => sub {
 
         my $client = Client::Account->new({loginid => $loginid});
         isnt($client->financial_assessment->data, undef, 'has financial assessment');
+    };
+
+    subtest 'MLT details should be updated as per MF' => sub {
+        my $mlt_client = Client::Account->new({loginid => $mlt_loginid});
+        isnt($mlt_client->financial_assessment->data, undef, 'has financial assessment after MF account creation');
+
+        $t = $t->send_ok({json => { get_settings => 1 }})->message_ok;
+        my $res = decode_json($t->message->[1]);
+        ok($res->{get_settings});
+        is($res->{get_settings}->{address_line_1}, 'Test', 'address line 1 has been updated after MF account creation');
     };
 };
 
