@@ -2,17 +2,19 @@
 package main;
 use strict;
 use warnings;
-use HTML::Entities;
 
-use Bitcoin::RPC::Client;
+use YAML::XS;
+use Text::CSV;
 use Data::Dumper;
 use Date::Utility;
-use YAML::XS;
-use Client::Account;
-use Text::CSV;
+use HTML::Entities;
+use Bitcoin::RPC::Client;
 use List::UtilsBy qw(rev_nsort_by sort_by);
 use Format::Util::Numbers qw/financialrounding/;
 
+use Client::Account;
+
+use BOM::DualControl;
 use BOM::Database::ClientDB;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
 use f_brokerincludeall;
@@ -151,6 +153,8 @@ my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
 my $rpc_client = Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5));
 
 if ($page eq 'Withdrawal Transactions') {
+    Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
+
     if ($address and $address !~ /^\w+$/) {
         print "Invalid address.";
         code_exit_BO();
@@ -164,6 +168,26 @@ if ($page eq 'Withdrawal Transactions') {
     if (not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|performing_blockchain_txn|sent|error)$/) {
         print "Invalid selection to view type of transactions.";
         code_exit_BO();
+    }
+
+    if ($action and $action =~ /^(?:verify|reject)$/) {
+        my $dcc_code = request()->param('dual_control_code');
+        unless ($dcc_code) {
+            print "ERROR: Please provide valid dual control code";
+            code_exit_BO();
+        }
+
+        my $amount  = request()->param('amount');
+        my $loginid = request()->param('loginid');
+
+        my $error = BOM::DualControl->new({
+                staff           => $staff,
+                transactiontype => $address
+            })->validate_payment_control_code($dcc_code, $loginid, $currency, $amount);
+        if ($error) {
+            print $error->get_mesg();
+            code_exit_BO();
+        }
     }
 
     my $found;
@@ -208,8 +232,6 @@ if ($page eq 'Withdrawal Transactions') {
             {Slice => {}}, $currency);
     }
 
-    Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
-
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
         'backoffice/account/manage_crypto_transactions.tt',
@@ -221,6 +243,7 @@ if ($page eq 'Withdrawal Transactions') {
         }) || die $tt->error();
 
 } elsif ($page eq 'Deposit Transactions') {
+    Bar("LIST OF TRANSACTIONS - DEPOSITS");
 
     $view_type ||= 'new';
     if (not $view_type or $view_type !~ /^(?:new|pending|confirmed|error)$/) {
@@ -233,8 +256,6 @@ if ($page eq 'Withdrawal Transactions') {
         {Slice => {}},
         $currency, uc $view_type
     );
-
-    Bar("LIST OF TRANSACTIONS - DEPOSITS");
 
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
