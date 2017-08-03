@@ -31,6 +31,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
+use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 BOM::Backoffice::Sysinit::init();
 
@@ -66,6 +67,28 @@ my $broker         = $client->broker;
 my $encoded_broker = encode_entities($broker);
 my $staff          = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+
+if ($broker eq 'MF') {
+    if ($input{mifir_reset}) {
+        $client->mifir_id('');
+        $client->save;
+    }
+    if ($input{mifir_set_concat}) {
+        use POSIX qw(locale_h);
+        use locale;
+        my $old_locale = setlocale(LC_CTYPE);
+        setlocale(LC_CTYPE, 'C.UTF-8');
+        $client->mifir_id(
+            mifir_concat({
+                    cc         => $client->residence,
+                    date       => $client->date_of_birth,
+                    first_name => $client->first_name,
+                    last_name  => $client->last_name,
+                }));
+        $client->save;
+        setlocale(LC_CTYPE, $old_locale);
+    }
+}
 
 # sync authentication status to Doughflow
 if ($input{whattodo} eq 'sync_to_DF') {
@@ -161,7 +184,6 @@ if ($input{whattodo} eq 'uploadID') {
     local $CGI::DISABLE_UPLOADS = 0;              # enable uploads
 
     my $cgi            = CGI->new;
-    my $broker_code    = $cgi->param('broker');
     my $docnationality = $cgi->param('docnationality');
     my $result         = "";
     my $used_doctypes  = {};                              #we need to keep list of used doctypes to provide for them uniq filenames
@@ -523,6 +545,15 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->tax_identification_number($input{$key});
         }
 
+        if ($input{mifir_id} and $client->mifir_id eq '' and $broker eq 'MF') {
+            if (length($input{mifir_id}) > 35) {
+                print
+                    "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p></p>";
+                code_exit_BO();
+            }
+            $client->mifir_id($input{mifir_id});
+        }
+
         $client->allow_omnibus($input{allow_omnibus});
     }
 
@@ -824,7 +855,6 @@ BOM::Backoffice::Request::template->process(
         history => $login_history,
         limit   => $limit
     });
-
 code_exit_BO();
 
 1;
