@@ -139,29 +139,32 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
                 code_exit_BO();
             }
         }
-        # Populate transactions according to filter option
+        # Fetch transactions according to filter option
         if ($view_type eq 'sent') {
-            $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'SENT'::payment.CTC_STATUS, NULL, NULL)",
+            $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'SENT'::payment.CTC_STATUS, NULL, NULL)",
                 {Slice => {}}, $currency);
         } elsif ($view_type eq 'verified') {
-            $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'VERIFIED'::payment.CTC_STATUS, NULL, NULL)",
+            $trxns =
+                $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'VERIFIED'::payment.CTC_STATUS, NULL, NULL)",
                 {Slice => {}}, $currency);
         } elsif ($view_type eq 'rejected') {
-            $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'REJECTED'::payment.CTC_STATUS, NULL, NULL)",
+            $trxns =
+                $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'REJECTED'::payment.CTC_STATUS, NULL, NULL)",
                 {Slice => {}}, $currency);
         } elsif ($view_type eq 'processing') {
-            $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'PROCESSING'::payment.CTC_STATUS, NULL, NULL)",
+            $trxns =
+                $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'PROCESSING'::payment.CTC_STATUS, NULL, NULL)",
                 {Slice => {}}, $currency);
         } elsif ($view_type eq 'performing_blockchain_txn') {
             $trxns =
                 $dbh->selectall_arrayref(
-                "SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'PERFORMING_BLOCKCHAIN_TXN'::payment.CTC_STATUS, NULL, NULL)",
+                "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'PERFORMING_BLOCKCHAIN_TXN'::payment.CTC_STATUS, NULL, NULL)",
                 {Slice => {}}, $currency);
         } elsif ($view_type eq 'error') {
-            $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'ERROR'::payment.CTC_STATUS, NULL, NULL)",
+            $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'ERROR'::payment.CTC_STATUS, NULL, NULL)",
                 {Slice => {}}, $currency);
         } else {
-            $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, 'LOCKED'::payment.CTC_STATUS, NULL, NULL)",
+            $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'LOCKED'::payment.CTC_STATUS, NULL, NULL)",
                 {Slice => {}}, $currency);
         }
     } elsif ($view_action eq $va_cmds{deposits}) {
@@ -175,8 +178,9 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
             print "Invalid selection to view type of transactions.";
             code_exit_BO();
         }
+        # Fetch all deposit transactions matching specified currency and status
         $trxns = $dbh->selectall_arrayref(
-            "SELECT * FROM payment.ctc_bo_get_deposit(?, ?::payment.CTC_STATUS, NULL, NULL)",
+            "SELECT * FROM payment.ctc_bo_get_deposit(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
             {Slice => {}},
             $currency, uc $view_type
         );
@@ -185,13 +189,17 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
         my $search_query = request()->param('search_query');
         Bar("SEARCH RESULT FOR $search_query");
 
-        $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_cryptocurrency_details_by_address(?)", {Slice => {}}, $search_query)
-            if ($search_type eq 'address');
-        $trxns = $dbh->selectall_arrayref(
-            "SELECT * FROM payment.ctc_bo_get_cryptocurrency_details_by_loginid(?, NULL, NULL)",
-            {Slice => {}},
-            $search_query
+        # Fetch all transactions matching specified searching details
+        $trxns = (
+            $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, NULL, NULL, NULL, NULL)",    {Slice => {}}, $search_query),
+            $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query)
+        ) if ($search_type eq 'address');
+
+        $trxns = (
+            $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, NULL, NULL, NULL, NULL)",    {Slice => {}}, $search_query),
+            $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query)
         ) if ($search_type eq 'loginid');
+
         unless (grep { $search_type eq $_ } qw/loginid address/) {
             print "Invalid type of search request.";
             code_exit_BO();
@@ -331,6 +339,8 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
         'DB Payment ID', 'Errors'
     );
     my $filename = join '-', $start_date->date_yyyymmdd, $end_date->date_yyyymmdd, $currency;
+
+    # TODO: move representation logic to template
     print <<"EOF";
 <div>
 <a download="${filename}.xls" href="#" onclick="return ExcellentExport.excel(this, 'recon_table', '$filename');">Export to Excel</a>
