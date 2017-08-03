@@ -209,6 +209,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
             view_type    => $view_type,
             currency     => $currency,
             view_action  => $view_action,
+            va_cmds      => \%va_cmds,
         }) || die $tt->error();
 } elsif ($view_action eq $va_cmds{reconcil}) {
     Bar('BTC Reconciliation');
