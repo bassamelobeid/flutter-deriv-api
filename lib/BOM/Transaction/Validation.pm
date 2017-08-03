@@ -853,14 +853,17 @@ Don't allow to trade for unwelcome_clients and for MLT and MX without confirmed 
 sub not_allow_trade {
     my ($self, $client) = (shift, shift);
 
-    if (   (($client->landing_company->short =~ /^(?:malta|iom)$/) and not $client->get_status('age_verification') and $client->has_deposits)
-        or $client->get_status('unwelcome')
-        or $client->get_status('disabled'))
-    {
+    if (($client->landing_company->short =~ /^(?:malta|iom)$/) and not $client->get_status('age_verification') and $client->has_deposits) {
         return Error::Base->cuss(
-            -type              => 'PleaseContactSupport',
-            -mesg              => 'Please contact customer support for more information.',
-            -message_to_client => localize('Please contact customer support for more information.'),
+            -type              => 'PleaseAuthenticate',
+            -mesg              => 'Please authenticate your account to continue',
+            -message_to_client => localize('Please authenticate your account to continue.'),
+        );
+    } elsif ($client->get_status('unwelcome') or $client->get_status('disabled')) {
+        return Error::Base->cuss(
+            -type              => 'AccountUnavailable',
+            -mesg              => 'This acccount is unavailable.',
+            -message_to_client => localize('This acccount is unavailable.'),
         );
     }
     return;
