@@ -61,6 +61,14 @@ sub available_contracts_for_symbol {
     my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company);
     my @offerings = grep { $supported_contract_types{$_->{contract_type}} } $flyby->query({underlying_symbol => $symbol});
 
+    my @blackout_periods;
+    my $sod = $now->truncate_to_day->epoch;
+
+    if (my @inefficient_periods = @{$underlying->forward_inefficient_periods}) {
+        push @blackout_periods, [Date::Utility->new($sod + $_->{start})->time_hhmmss, Date::Utility->new($sod + $_->{end})->time_hhmmss]
+            for @inefficient_periods;
+    }
+
     for my $o (@offerings) {
         my $cc = $o->{contract_category};
         my $bc = $o->{barrier_category};
@@ -74,14 +82,6 @@ sub available_contracts_for_symbol {
             for (my $date = $now; @trade_dates < 3; $date = $date->plus_time_interval('1d')) {
                 $date = $calendar->trade_date_after($exchange, $date) unless $calendar->trades_on($exchange, $date);
                 push @trade_dates, $date;
-            }
-
-            my @blackout_periods;
-            my $sod = $now->truncate_to_day->epoch;
-
-            if (my @inefficient_periods = @{$underlying->forward_inefficient_periods}) {
-                push @blackout_periods, [Date::Utility->new($sod + $_->{start})->time_hhmmss, Date::Utility->new($sod + $_->{end})->time_hhmmss]
-                    for @inefficient_periods;
             }
 
             $o->{forward_starting_options} = [
