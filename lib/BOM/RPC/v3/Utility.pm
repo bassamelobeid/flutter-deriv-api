@@ -11,7 +11,6 @@ use Brands;
 use URI;
 use Domain::PublicSuffix;
 
-
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize request);
@@ -272,31 +271,33 @@ sub paymentagent_default_min_max {
 }
 
 sub validate_uri {
-	my $originalUrl = shift;
-	my $url = URI->new($originalUrl);
-	if (!$url->isa('URI::http') || !($url->scheme =~ /^https?$/)) {
-		die 'The given URL is not http(s)';
-	}
-	if ($url->userinfo) {
-		die 'URL should not have user info';
-	}
-	if ($url->port != 80 && $url->port != 443) {
-		die 'Only ports 80 and 443 are allowed';
-	}
-	if ($url->fragment) {
-		die 'URL should not have fragment';
-	}
-	if ($url->query) {
-		die 'URL should not have query';
-	}
-	if (!$url->host || $originalUrl =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
-		die 'Invalid URL';
-	}
-	my $suffix = Domain::PublicSuffix->new();
-	if (!$suffix->get_root_domain($url->host)) {
-		die 'Unknown TLD';
-	}
-	return $url;
+    my $originalUrl = shift;
+    my $url         = URI->new($originalUrl);
+
+    if (!$url->isa('URI::http') || !($url->scheme =~ /^https?$/)) {
+        die localize('The given URL is not http(s)');
+    }
+    if ($url->userinfo) {
+        die localize('URL should not have user info');
+    }
+    if ($url->port != 80 && $url->port != 443) {
+        die localize('Only ports 80 and 443 are allowed');
+    }
+    if ($url->fragment) {
+        die localize('URL should not have fragment');
+    }
+    if ($url->query) {
+        die localize('URL should not have query');
+    }
+    if (!$url->host || $originalUrl =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
+        die localize('Invalid URL');
+    }
+    my $suffix = Domain::PublicSuffix->new();
+    if (!$suffix->get_root_domain($url->host)) {
+        die localize('Unknown TLD');
+    }
+
+    return $url;
 }
 
 1;

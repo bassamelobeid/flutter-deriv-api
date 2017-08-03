@@ -8,6 +8,7 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
 use BOM::Database::Model::OAuth;
 
+use Try::Tiny;
 use DataDog::DogStatsd::Helper;
 
 sub register {
@@ -36,7 +37,7 @@ sub register {
         });
     };
 
-    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay)) {
+    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay, $redirect_uri, $verification_uri)) {
         return $error_sub->($err);
     }
 
@@ -93,7 +94,7 @@ sub update {
     my $app = $oauth->get_app($user_id, $app_id);
     return $error_sub->(localize('Not Found')) unless $app;
 
-    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay)) {
+    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay, $redirect_uri, $verification_uri)) {
         return $error_sub->($err);
     }
 
@@ -121,6 +122,15 @@ sub update {
 
 sub __validate_app_links {
     my ($homepage, $github, $appstore, $googleplay) = @_;
+
+    try {
+        while (my $url = shift) {
+            BOM::RPC::v3::Utility::validate_uri($_) if length($_);
+        }
+    }
+    catch {
+        return $_;
+    }
 
     return localize('Invalid URI for homepage.')
         if length($homepage)
