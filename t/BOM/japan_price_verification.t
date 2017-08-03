@@ -80,7 +80,12 @@ foreach my $single_data (@$decimate_data) {
 
 sub prepare_market_data {
     my $date = shift;
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {events => $news->{$date->epoch}, recorded_date => $date});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'economic_events',
+        {
+            events        => $news->{$date->epoch},
+            recorded_date => $date
+        });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'holiday',
         {
