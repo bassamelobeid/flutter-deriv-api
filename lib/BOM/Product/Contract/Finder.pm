@@ -77,9 +77,11 @@ sub available_contracts_for_symbol {
             }
 
             my @blackout_periods;
+            my $sod = $now->truncate_to_day->epoch;
 
             if (my @inefficient_periods = @{$underlying->forward_inefficient_periods}) {
-                push @blackout_periods, [$_->{start}, $_->{end}] for @inefficient_periods;
+                push @blackout_periods, [Date::Utility->new($sod + $_->{start})->time_hhmmss, Date::Utility->new($sod + $_->{end})->time_hhmmss]
+                    for @inefficient_periods;
             }
 
             $o->{forward_starting_options} = [
