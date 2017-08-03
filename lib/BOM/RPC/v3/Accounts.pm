@@ -804,13 +804,7 @@ sub set_settings {
 
     my $user = BOM::Platform::User->new({email => $client->email});
     foreach my $cli ($user->clients) {
-        next
-            unless (
-            BOM::RPC::v3::Utility::should_update_account_details({
-                    allow_omnibus   => $client->allow_omnibus,
-                    current_loginid => $client->loginid,
-                    sibling_loginid => $cli->loginid
-                }));
+        next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
         $cli->address_1($address1);
         $cli->address_2($address2);
@@ -1340,13 +1334,8 @@ sub set_financial_assessment {
 
         my $user = BOM::Platform::User->new({email => $client->email});
         foreach my $cli ($user->clients) {
-            next
-                unless (
-                BOM::RPC::v3::Utility::should_update_account_details({
-                        allow_omnibus   => $client->allow_omnibus,
-                        current_loginid => $client->loginid,
-                        sibling_loginid => $cli->loginid
-                    }));
+            next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
+
             $cli->financial_assessment({
                 data            => encode_json $financial_evaluation->{user_data},
                 is_professional => $is_professional
