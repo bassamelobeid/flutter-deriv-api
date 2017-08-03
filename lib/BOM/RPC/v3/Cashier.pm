@@ -802,17 +802,6 @@ sub paymentagent_withdraw {
         return $error_sub->(localize('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit));
     }
 
-    if ($amount_transferred > 1500) {
-        my $message = "Client $client_loginid transferred \$$amount_transferred to payment agent today";
-        my $brand = Brands->new(name => request()->brand);
-        send_email({
-            from    => $brand->emails('support'),
-            to      => $brand->emails('support'),
-            subject => $message,
-            message => [$message],
-        });
-    }
-
     # do not allowed more than 20 transactions per day
     if ($count > 20) {
         $client_db->unfreeze;
