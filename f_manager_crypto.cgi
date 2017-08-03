@@ -362,7 +362,7 @@ EOF
         print '</tr>';
     }
     print '</tbody></table>';
-} elsif ($view_action eq 'run_tool') {
+} elsif ($view_action eq $va_cmds{run}) {
     my $cmd               = request()->param('command');
     my %valid_rpc_command = (
         getbalance           => 1,
@@ -419,7 +419,7 @@ EOF
     } else {
         die 'Invalid BTC command: ' . $cmd;
     }
-} elsif ($view_action eq 'new_deposit_address') {
+} elsif ($view_action eq $va_cmds{new_deposit_address}) {
     my $rslt = $rpc_client->getnewaddress('manual');
     print '<p>New BTC address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
 }
