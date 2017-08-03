@@ -763,10 +763,6 @@ sub set_settings {
         $user->save;
     }
 
-    if (defined $allow_copiers) {
-        $client->allow_copiers($allow_copiers);
-    }
-
     # need to handle for $err->{status} as that come from japan settings
     return {status => 1} if ($client->is_virtual || $err->{status});
 
@@ -806,37 +802,54 @@ sub set_settings {
             . join(' ', ($address1 // ''), $address2, $addressTown, $addressState, $addressPostcode) . ']';
     }
 
-    $client->address_1($address1);
-    $client->address_2($address2);
-    $client->city($addressTown);
-    $client->state($addressState) if defined $addressState;                       # FIXME validate
-    $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
-    $client->phone($phone);
-    $client->place_of_birth($birth_place);
-    $client->account_opening_reason($args->{account_opening_reason}) unless $client->account_opening_reason;
+    my $user = BOM::Platform::User->new({email => $client->email});
+    foreach my $cli ($user->clients) {
+        next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
-    $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
+        $cli->address_1($address1);
+        $cli->address_2($address2);
+        $cli->city($addressTown);
+        $cli->state($addressState) if defined $addressState;                       # FIXME validate
+        $cli->postcode($addressPostcode) if defined $args->{'address_postcode'};
+        $cli->phone($phone);
+        $cli->place_of_birth($birth_place);
+        $cli->account_opening_reason($args->{account_opening_reason}) unless $cli->account_opening_reason;
 
-    # As per CRS/FATCA regulatory requirement we need to save this information as client status
-    # maintaining previous updates as well
-    if ((
-               $tax_residence
-            or $tax_identification_number
-        )
-        and (  ($client->tax_residence // '') ne $tax_residence
-            or ($client->tax_identification_number // '') ne $tax_identification_number))
-    {
-        $client->tax_residence($tax_residence)                         if $tax_residence;
-        $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
+        $cli->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 
-        BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($client);
+        # As per CRS/FATCA regulatory requirement we need to save this information as client status
+        # maintaining previous updates as well
+        if ((
+                   $tax_residence
+                or $tax_identification_number
+            )
+            and (  ($cli->tax_residence // '') ne $tax_residence
+                or ($cli->tax_identification_number // '') ne $tax_identification_number))
+        {
+            $cli->tax_residence($tax_residence)                         if $tax_residence;
+            $cli->tax_identification_number($tax_identification_number) if $tax_identification_number;
+
+            BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($cli);
+        }
+        if ((!$tax_residence || !$tax_identification_number) && $cli->landing_company->short ne 'maltainvest') {
+            ### Allow to clean tax info for Non-MF
+            $cli->tax_residence('')             unless $tax_residence;
+            $cli->tax_identification_number('') unless $tax_identification_number;
+        }
+
+        if (not $cli->save()) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize('Sorry, an error occurred while processing your account.')});
+        }
     }
-    if ((!$tax_residence || !$tax_identification_number) && $client->landing_company->short ne 'maltainvest') {
-        ### Allow to clean tax info for Non-MF
-        $client->tax_residence('')             unless $tax_residence;
-        $client->tax_identification_number('') unless $tax_identification_number;
-    }
+    # update client value after latest changes
+    $client = Client::Account->new({loginid => $client->loginid});
 
+    # only allow current client to set allow_copiers
+    if (defined $allow_copiers) {
+        $client->allow_copiers($allow_copiers);
+    }
     if (not $client->save()) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InternalServerError',
@@ -1318,11 +1331,18 @@ sub set_financial_assessment {
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
         my $is_professional = $financial_evaluation->{total_score} < 60 ? 0 : 1;
-        $client->financial_assessment({
-            data            => encode_json $financial_evaluation->{user_data},
-            is_professional => $is_professional
-        });
-        $client->save;
+
+        my $user = BOM::Platform::User->new({email => $client->email});
+        foreach my $cli ($user->clients) {
+            next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
+
+            $cli->financial_assessment({
+                data            => encode_json $financial_evaluation->{user_data},
+                is_professional => $is_professional
+            });
+            $cli->save;
+        }
+
         $response = {
             score           => $financial_evaluation->{total_score},
             is_professional => $is_professional

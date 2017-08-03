@@ -95,12 +95,19 @@ $test_client_cr->email('sample@binary.com');
 $test_client_cr->set_default_account('USD');
 $test_client_cr->save;
 
+my $test_client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$test_client_cr_2->email('sample@binary.com');
+$test_client_cr_2->save;
+
 my $user_cr = BOM::Platform::User->create(
     email    => 'sample@binary.com',
     password => $hash_pwd
 );
 $user_cr->save;
 $user_cr->add_loginid({loginid => $test_client_cr->loginid});
+$user_cr->add_loginid({loginid => $test_client_cr_2->loginid});
 $user_cr->save;
 
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -124,14 +131,46 @@ my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client_mx->email($email);
 
+my $test_client_vr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+});
+$test_client_vr_2->email($email);
+$test_client_vr_2->save;
+
+my $email_mlt_mf    = 'mltmf@binary.com';
+my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MLT',
+});
+$test_client_mlt->email($email_mlt_mf);
+$test_client_mlt->save;
+
+my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+$test_client_mf->email($email_mlt_mf);
+$test_client_mf->save;
+
+my $user_mlt_mf = BOM::Platform::User->create(
+    email    => $email_mlt_mf,
+    password => $hash_pwd
+);
+$user_mlt_mf->save;
+$user_mlt_mf->add_loginid({loginid => $test_client_vr_2->loginid});
+$user_mlt_mf->add_loginid({loginid => $test_client_mlt->loginid});
+$user_mlt_mf->add_loginid({loginid => $test_client_mf->loginid});
+$user_mlt_mf->save;
+
 my $m              = BOM::Database::Model::AccessToken->new;
 my $token1         = $m->create_token($test_loginid, 'test token');
 my $token_21       = $m->create_token($test_client_cr->loginid, 'test token');
+my $token_cr_2     = $m->create_token($test_client_cr_2->loginid, 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
 my $token_japan    = $m->create_token($japan_client->loginid, 'test token');
 my $token_mx       = $m->create_token($test_client_mx->loginid, 'test token');
+my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
+my $token_mf       = $m->create_token($test_client_mf->loginid, 'test token');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -1104,6 +1143,41 @@ subtest $method => sub {
         });
     cmp_ok($res->{score}, "<", 60, "Got correct score");
     is($res->{is_professional}, 0, "As score is less than 60 so its marked as not professional");
+
+    # test that setting this for one client also sets it for client with different landing company
+    is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
+    is($c->tcall('get_financial_assessment', {token => $token_mf})->{source_of_wealth},  undef, "Financial assessment not set for MF clinet");
+    $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token_mf
+        });
+    is($c->tcall('get_financial_assessment', {token => $token_mf})->{source_of_wealth}, "Company Ownership",
+        "Financial assessment set for MF client");
+    is(
+        $c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth},
+        "Company Ownership",
+        "Financial assessment set for MLT client"
+    );
+
+    # test that setting this for one client sets it for clients with same landing company
+    is($c->tcall('get_financial_assessment', {token => $token_21})->{source_of_wealth},   undef, "Financial assessment not set for CR client");
+    is($c->tcall('get_financial_assessment', {token => $token_cr_2})->{source_of_wealth}, undef, "Financial assessment not set for second CR clinet");
+    $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token_cr_2
+        });
+    is($c->tcall('get_financial_assessment', {token => $token_21})->{source_of_wealth}, "Company Ownership",
+        "Financial assessment set for CR client");
+    is(
+        $c->tcall('get_financial_assessment', {token => $token_cr_2})->{source_of_wealth},
+        "Company Ownership",
+        "Financial assessment set for second CR client"
+    );
+
 };
 
 $method = 'get_financial_assessment';
@@ -1276,6 +1350,18 @@ subtest $method => sub {
         'Input validation failed: address_postcode',
         'postcode is required for MX clients and cannot be set to null'
     );
+
+    # setting account settings for one client also updates for clients that have a different landing company
+    $params->{token} = $token_mlt;
+    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    is($c->tcall('get_settings', {token => $token_mlt})->{address_line_1}, "address line 1", "Was able to set settings for MLT client");
+    is($c->tcall('get_settings', {token => $token_mf})->{address_line_1},  "address line 1", "Was able to set settings for MF client");
+
+    # setting account settings for one client updates for all clients with the same landing company
+    $params->{token} = $token_cr_2;
+    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    is($c->tcall('get_settings', {token => $token_21})->{address_line_1},   "address line 1", "Was able to set settings correctly for CR client");
+    is($c->tcall('get_settings', {token => $token_cr_2})->{address_line_1}, "address line 1", "Was able to set settings correctly for second CR client");
 };
 
 # set_self_exclusion && get_self_exclusion
