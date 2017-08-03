@@ -69,7 +69,7 @@ print ' <input type="text" name="amount_dcc" size=15/>';
 print '<br>';
 print '<br>';
 print ' Loginid of the client: <input type="text" size="12" name="loginid_dcc" />';
-print ' Blockchain address: <input type="text" size="50" name="address_dcc" />';
+print ' Blockchain address: <input type="text" size="50" name="address_dcc" placeholder="Will be considered as transaction type"/>';
 print '<br>';
 print '<br>';
 print '<INPUT type="submit" value="Make Dual Control Code" name="view_action"/>';
