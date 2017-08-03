@@ -8,7 +8,6 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
 use BOM::Database::Model::OAuth;
 
-use Try::Tiny;
 use DataDog::DogStatsd::Helper;
 
 sub register {
@@ -123,13 +122,12 @@ sub update {
 sub __validate_app_links {
     my ($homepage, $github, $appstore, $googleplay) = @_;
 
-    try {
-        while (my $url = shift) {
-            BOM::RPC::v3::Utility::validate_uri($_) if length($_);
-        }
-    }
-    catch {
-        return $_;
+    my @args = @_;
+    my $validation_error;
+
+    for (@args) {
+        $validation_error = BOM::RPC::v3::Utility::validate_uri($_) if length($_);
+        return $validation_error if $validation_error;
     }
 
     return localize('Invalid URI for homepage.')

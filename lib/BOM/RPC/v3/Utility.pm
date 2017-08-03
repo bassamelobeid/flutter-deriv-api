@@ -275,29 +275,29 @@ sub validate_uri {
     my $url         = URI->new($originalUrl);
 
     if (!$url->isa('URI::http') || !($url->scheme =~ /^https?$/)) {
-        die localize('The given URL is not http(s)');
+        return localize('The given URL is not http(s)');
     }
     if ($url->userinfo) {
-        die localize('URL should not have user info');
+        return localize('URL should not have user info');
     }
     if ($url->port != 80 && $url->port != 443) {
-        die localize('Only ports 80 and 443 are allowed');
+        return localize('Only ports 80 and 443 are allowed');
     }
     if ($url->fragment) {
-        die localize('URL should not have fragment');
+        return localize('URL should not have fragment');
     }
     if ($url->query) {
-        die localize('URL should not have query');
+        return localize('URL should not have query');
     }
     if (!$url->host || $originalUrl =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
-        die localize('Invalid URL');
+        return localize('Invalid URL');
     }
     my $suffix = Domain::PublicSuffix->new();
     if (!$suffix->get_root_domain($url->host)) {
-        die localize('Unknown TLD');
+        return localize('Unknown domain name');
     }
 
-    return $url;
+    return undef;
 }
 
 1;
