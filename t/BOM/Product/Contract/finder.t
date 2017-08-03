@@ -105,7 +105,11 @@ subtest "available contracts for symbol" => sub {
             });
             my $f = available_contracts_for_symbol({symbol => $u});
 
-            cmp_deeply $f->{'available'}[10]{'forward_starting_options'}[0]{'blackouts'}, $expected_blackouts, "expected blackouts" if $u eq 'frxEURUSD';
+            if($u eq 'frxEURUSD') {
+            	foreach my $contract (@{$f->{'available'}}) {
+			cmp_deeply $contract->{'forward_starting_options'}[0]{'blackouts'}, $expected_blackouts, "expected blackouts" if $contract->{start_type} eq 'forward';
+                }
+            }
 
             ok $f->{feed_license}, 'has feed license key available';
             is($f->{feed_license}, 'realtime', 'correct feed license key available') if ($market eq 'volidx');
