@@ -16,6 +16,7 @@ use Client::Account;
 
 use BOM::DualControl;
 use BOM::Database::ClientDB;
+use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
@@ -25,13 +26,16 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
+BOM::Backoffice::Auth0::can_access(['Payments']);
+
 my $broker         = request()->broker_code;
 my $encoded_broker = encode_entities($broker);
-my $staff          = BOM::Backoffice::Auth0::can_access(['Payments']);
-my $currency       = request()->param('currency');
-my $action         = request()->param('action');
-my $address        = request()->param('address');
-my $view_type      = request()->param('view_type') // 'pending';
+my $staff          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+
+my $currency  = request()->param('currency');
+my $action    = request()->param('action');
+my $address   = request()->param('address');
+my $view_type = request()->param('view_type') // 'pending';
 
 if (length($broker) < 2) {
     print
@@ -69,6 +73,7 @@ print ' Blockchain address: <input type="text" size="50" name="address_dcc" />';
 print '<br>';
 print '<br>';
 print '<INPUT type="submit" value="Make Dual Control Code" name="view_action"/>';
+print " ($staff) ";
 print '</FORM>';
 
 print '<h3>Recon</h3>';
