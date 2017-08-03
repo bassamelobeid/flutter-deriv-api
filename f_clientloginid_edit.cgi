@@ -74,6 +74,10 @@ if ($broker eq 'MF') {
         $client->save;
     }
     if ($input{mifir_set_concat}) {
+        use POSIX qw(locale_h);
+        use locale;
+        my $old_locale = setlocale(LC_CTYPE);
+        setlocale(LC_CTYPE, 'C.UTF-8');
         $client->mifir_id(
             mifir_concat({
                     cc         => $client->residence,
@@ -82,6 +86,7 @@ if ($broker eq 'MF') {
                     last_name  => $client->last_name,
                 }));
         $client->save;
+        setlocale(LC_CTYPE, $old_locale);
     }
 }
 
