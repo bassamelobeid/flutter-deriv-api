@@ -62,18 +62,28 @@ bet_limits:
       LTC: 0.25
       ETC: 0.25
   open_positions_payout_per_symbol_limit:
-    european:
-      less_than_seven_days: &less_than_seven_days
-        USD: 10000
-        EUR: 10000
-        AUD: 10000
-        GBP: 10000
+    atm:
+      USD: 10000
+      EUR: 10000
+      AUD: 10000
+      GBP: 10000
+      JPY: 300000 # 300 lots for JPY on < 7 days
+      BTC: 1
+      ETH: 10
+      LTC: 50
+      ETC: 50
+    non_atm:
+      less_than_seven_days:
+        USD: 3000
+        EUR: 3000
+        AUD: 3000
+        GBP: 3000
         JPY: 300000 # 300 lots for JPY on < 7 days
         BTC: 1
         ETH: 10
         LTC: 50
         ETC: 50
-      more_than_seven_days: &more_than_seven_days
+      more_than_seven_days:
         USD: 10000
         EUR: 10000
         AUD: 10000
@@ -83,9 +93,6 @@ bet_limits:
         ETH: 10
         LTC: 50
         ETC: 50
-    american:
-      less_than_seven_days: *less_than_seven_days
-      more_than_seven_days: *more_than_seven_days
   min_commission_amount:
     USD: 0.02 # 0.02 dollar
     EUR: 0.02
