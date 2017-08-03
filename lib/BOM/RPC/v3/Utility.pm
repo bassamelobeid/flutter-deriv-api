@@ -290,7 +290,6 @@ sub validate_uri {
 		die 'URL should not have query';
 	}
 	if (!$url->host || $originalUrl =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
-		warn $originalUrl;
 		die 'Invalid URL';
 	}
 	my $suffix = Domain::PublicSuffix->new();
