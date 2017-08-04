@@ -15,6 +15,20 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Platform::RedisReplicated;
+use Sereal::Encoder;
+
+my $encoder   = Sereal::Encoder->new({
+    canonical => 1,
+});
+
+my $redis = BOM::Platform::RedisReplicated::redis_write();
+my @tick_data;
+for (my $epoch=time - 80*15; $epoch <= time; $epoch+=15) {
+    push @tick_data, +{symbol => 'frxUSDJPY', epoch => $epoch, decimate_epoch => $epoch, quote => 100 + rand(0.0001)};
+}
+
+$redis->zadd('DECIMATE_frxUSDJPY_15s_DEC', $_->{epoch}, $encoder->encode($_)) for @tick_data;
 
 #use BOM::Test::RPC::BomRpc;
 #use BOM::Test::RPC::PricingRpc;
