@@ -52,13 +52,13 @@ sub validate_trx_sell {
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
     my @client_validation_method = qw/ check_trade_status _validate_available_currency _validate_currency /;
+    # For ico, there is no need to be restricted by with the withdrawal limit imposed on IOM region
     push @client_validation_method, '_validate_iom_withdrawal_limit' unless $self->transaction->contract->is_binaryico;
 
     my @contract_validation_method = qw/_is_valid_to_sell/;
+    # For ICO, there is no need to have slippage, date pricing validation
     push @contract_validation_method, qw(_validate_sell_pricing_adjustment _validate_date_pricing)
         unless $self->transaction->contract->is_binaryico;
-
-    push @contract_validation_method, '_validate_ico_token_claimable' if $self->transaction->contract->is_binaryico;
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
@@ -92,9 +92,9 @@ sub validate_trx_buy {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
-    my @client_validation_method = qw/ check_trade_status _validate_available_currency _validate_currency /;
+    my @client_validation_method = qw/ check_trade_status _validate_client_status _validate_available_currency _validate_currency /;
     push @client_validation_method,
-        qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_status _validate_client_self_exclusion)
+        qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_self_exclusion)
         unless $self->transaction->contract->is_binaryico;
     push @client_validation_method, qw(_validate_ico_jurisdictional_restrictions _validate_ico_european_restrictions)
         if $self->transaction->contract->is_binaryico;
@@ -610,30 +610,6 @@ sub _validate_jurisdictional_restrictions {
     return;
 }
 
-=head2 $self->_validate_ico_token_claimable
-
-For US investors, who will be unable to claim their tokens for 1 year
-
-=cut
-
-sub _validate_ico_token_claimable {
-
-    my ($self, $client) = (shift, shift);
-
-    my $residence = $client->residence;
-
-    if ($residence eq 'us' and Date::Utility->new->is_before(Date::Utility->new('2018-09-30'))) {
-        return Error::Base->cuss(
-            -type              => 'IcoNotClaimable',
-            -mesg              => 'US investors are not to claim the token within a year ',
-            -message_to_client => localize('Sorry, due to US regulation, you are not allow to claim the token within a year.'),
-        );
-
-    }
-
-    return;
-}
-
 =head2 $self->_validate_ico_european_restrictions
 
 Note that under the EU Prospectus Directive we can only offer the token to up to 150 persons per European Union country.
@@ -675,7 +651,7 @@ sub _validate_ico_jurisdictional_restrictions {
     my $residence = $client->residence;
     my $loginid   = $client->loginid;
 
-    if (!$residence && $loginid !~ /^VR/) {
+    if (!$residence || $loginid !~ /^VR/) {
         return Error::Base->cuss(
             -type              => 'NoResidenceCountry',
             -mesg              => 'Client cannot place ico as we do not know their residence.',
@@ -684,7 +660,7 @@ sub _validate_ico_jurisdictional_restrictions {
     }
 
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-    if ($residence && $countries_instance->ico_restricted_country($residence)) {
+    if ($countries_instance->ico_restricted_country($residence)) {
         return Error::Base->cuss(
             -type              => 'IcoRestrictedCountry',
             -mesg              => 'Clients are not allowed to bid for ICO  as their country is restricted.',
@@ -693,8 +669,7 @@ sub _validate_ico_jurisdictional_restrictions {
     }
 
     # For certain country, only professional investor is allow to place ico
-    if (   $residence
-        && $countries_instance->ico_restricted_professional_only_country($residence)
+    if ($countries_instance->ico_restricted_professional_only_country($residence)
         && !$client->financial_assessment->is_professional)
     {
         return Error::Base->cuss(
