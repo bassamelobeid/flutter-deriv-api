@@ -116,14 +116,11 @@ sub cashier {
 
     # since subaccount has dummy name (loginid of master account plus timestamp),
     # we want to pass name of master account if current client is a subaccount
-    my $sub_account_of = $client->sub_account_of;
-    my $name           = undef;
-    if ($sub_account_of) {
-        my $main_client = Client::Account->new({loginid => $sub_account_of});
-        # if client's first name is saved as a human name instead of loginid don't override it
-        if ($client->first_name =~ $main_client->loginid) {
-            $name = $main_client->first_name . ' ' . $main_client->last_name;
-        }
+    # but if client's first name is saved as a human name instead of loginid don't override it
+    my $name;
+    if ($client->sub_account_of && $client->first_name =~ $client->sub_account_of) {
+        my $main_client = Client::Account->new({loginid => $client->sub_account_of});
+        $name = $main_client->first_name . ' ' . $main_client->last_name;
     }
 
     my $result = $ua->post(
@@ -133,7 +130,7 @@ sub cashier {
                 Sportsbook     => $sportsbook,
                 IP_Address     => '127.0.0.1',
                 Password       => $handoff_token_key,
-                CustName       => $name,
+                $name ? (CustName => $name) : (),
             }));
 
     if ($result->{'_content'} ne 'OK') {
