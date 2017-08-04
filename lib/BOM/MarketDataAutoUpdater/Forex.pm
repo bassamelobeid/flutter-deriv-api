@@ -231,7 +231,18 @@ sub run {
             $volsurface->save;
             $self->report->{$symbol}->{success} = 1;
         } else {
-            if ($quanto_only eq 'NO') {
+            # don't produce noise in logs, when VS is identical to existing one, and recorded_date of existing is < 60 mins
+            if (
+                $quanto_only eq 'NO' && !(
+                    $volsurface->validation_error =~ /identical to existing one/
+                    && time - Quant::Framework::VolSurface::Delta->new({
+                            underlying       => $underlying,
+                            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+                        }
+                    )->creation_date->epoch < 60 * 60
+
+                ))
+            {
                 $self->report->{$symbol} = {
                     success => 0,
                     reason  => $volsurface->validation_error,
