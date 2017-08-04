@@ -6,6 +6,7 @@ use warnings;
 use Test::More tests => 3;
 use Test::Warnings;
 use Test::Exception;
+use Test::Deep qw( cmp_deeply );
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
@@ -21,7 +22,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(frxUSDJPY frxAUDCAD frxXAUUSD frxXPDUSD);
+    }) for qw(frxUSDJPY frxAUDCAD frxXAUUSD frxXPDUSD frxEURUSD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
@@ -31,7 +32,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 subtest "available contracts for symbol" => sub {
     my %input = (
         random  => ['R_100',     'RDBEAR'],
-        forex   => ['frxUSDJPY', 'frxAUDCAD', 'WLDUSD'],
+        forex   => ['frxUSDJPY', 'frxAUDCAD', 'frxEURUSD', 'WLDUSD'],
         indices => ['AEX',       'SYNAEX'],
         stocks      => ['USAAPL'],
         commodities => ['frxXAUUSD', 'frxXPDUSD'],
@@ -83,6 +84,18 @@ subtest "available contracts for symbol" => sub {
             callput => 4,
         },
     );
+
+    my $expected_blackouts = [
+          [
+            '11:00:00',
+            '13:00:00'
+          ],
+          [
+            '20:00:00',
+            '23:59:59'
+          ]
+        ];
+
     foreach my $market (keys %input) {
         foreach my $u (@{$input{$market}}) {
             BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -91,6 +104,13 @@ subtest "available contracts for symbol" => sub {
                 quote      => 100
             });
             my $f = available_contracts_for_symbol({symbol => $u});
+
+            if($u eq 'frxEURUSD') {
+            	foreach my $contract (@{$f->{'available'}}) {
+			cmp_deeply $contract->{'forward_starting_options'}[0]{'blackouts'}, $expected_blackouts, "expected blackouts" if $contract->{start_type} eq 'forward';
+                }
+            }
+
             ok $f->{feed_license}, 'has feed license key available';
             is($f->{feed_license}, 'realtime', 'correct feed license key available') if ($market eq 'volidx');
             my %got;
