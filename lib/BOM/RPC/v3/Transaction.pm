@@ -191,7 +191,9 @@ sub buy_contract_for_multiple_accounts {
         }
     }
     catch {
-        warn __PACKAGE__ . " buy_contract_for_multiple_accounts failed, parameters: " . encode_json($contract_parameters);
+        warn __PACKAGE__
+            . " buy_contract_for_multiple_accounts failed with error [$_], parameters: "
+            . (eval { encode_json($contract_parameters) } // 'could not encode, ' . $@);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
@@ -324,7 +326,7 @@ sub sell_contract_for_multiple_accounts {
                 transaction_id => $row->{tnx}{id},
                 reference_id   => $row->{buy_tr_id},
                 balance_after  => formatnumber('amount', $client->currency, $row->{tnx}{balance_after}),
-                sell_price     => abs($row->{fmb}{sell_price}),
+                sell_price     => formatnumber('price', $client->currency, $row->{fmb}{sell_price}),
                 contract_id    => $row->{tnx}{financial_market_bet_id},
                 sell_time      => $row->{fmb}{sell_time},
             };
@@ -398,7 +400,7 @@ sub sell {
         reference_id   => $trx->reference_id,                                                   ### buy transaction ID
         contract_id    => $id,
         balance_after  => formatnumber('amount', $client->currency, $trx_rec->balance_after),
-        sold_for       => abs($trx_rec->amount),
+        sold_for       => formatnumber('price', $client->currency, $trx_rec->amount),
     };
 }
 
