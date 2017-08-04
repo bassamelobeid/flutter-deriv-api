@@ -275,7 +275,7 @@ sub validate_uri {
     my $url         = URI->new($originalUrl);
 
     if ($originalUrl =~ /[^[:ascii:]]/) {
-        return localize('Invalid URL');
+        return localize('Unicode is not allowed in URL');
     }
     if (not defined $url->scheme or ($url->scheme ne 'http' and $url->scheme ne 'https')) {
         return localize('The given URL is not http(s)');
