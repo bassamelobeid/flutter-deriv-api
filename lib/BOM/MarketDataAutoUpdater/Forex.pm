@@ -205,9 +205,12 @@ sub run {
             next;    # skipping it here else it will die in the next line.
         }
 
+        my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+        my $is_next_day_holiday = $calendar->is_holiday($underlying->exchange, time + 86000);         
+
         if (grep { $_ eq $symbol } (@{$non_atm_symbol})) {
             #skip this symbol if it is non atm and rr , bb are undef.
-            next if exists $raw_volsurface->{rr_bf_undef} and $raw_volsurface->{rr_bf_undef};
+            next if exists $raw_volsurface->{rr_bf_undef} and $raw_volsurface->{rr_bf_undef} and not $is_next_day_holiday;
         }
 
         #Delete the flag since we do not need to save it into our system.
