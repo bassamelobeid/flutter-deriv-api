@@ -175,8 +175,9 @@ ok(ref $res->{login_history});
 is $call_params->{token}, $token;
 
 %$rpc_response = (
-    status              => [],
-    risk_classification => 1
+    status                        => [],
+    risk_classification           => 1,
+    prompt_client_to_authenticate => '1',
 );
 $t = $t->send_ok({
         json => {
