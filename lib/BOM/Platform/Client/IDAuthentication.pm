@@ -59,7 +59,7 @@ sub _do_proveid {
 
     my $set_status = sub {
         my ($status, $reason, $description) = @_;
-        $self->_notify($reason, $description);
+        $self->_notify($reason, $description) if $status ne 'age_verification';
         $client->set_status($status, 'system', $reason);
         $client->save;
     };
