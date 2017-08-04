@@ -18,15 +18,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
-my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
-$mocked->mock('historical_vol_markup', sub {
-    return Math::Util::CalculatedValue::Validatable->new({
-               name => 'historical_vol_markup',
-               set_by => 'test',
-               base_amount => 0,
-               description => 'test'
-           });
-    });
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
@@ -103,11 +94,11 @@ my $contract_args = {
 #key is "contract type_pip diff" and value is expected barrier(s)
 my $expected = {
     'CALL_0'        => 55.45,
-    'CALL_1000'     => 57.54,
+    'CALL_1000'     => 57.72,
     'NOTOUCH_0'     => 5.53,
-    'NOTOUCH_1000'  => 17.95,
+    'NOTOUCH_1000'  => 19.32,
     'ONETOUCH_2000' => 100,
-    'PUT_1000'      => 60.71,
+    'PUT_1000'      => 61.39,
     'PUT_0'         => 55.55
 };
 
@@ -122,6 +113,7 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
     $contract_args->{barrier}             = 'S' . $pip_diff . 'P';
     $contract_args->{pricing_engine_name} = 'BOM::Product::Pricing::Engine::Intraday::Forex';
     $contract_args->{landing_company}     = 'japan';
+    $contract_args->{pricing_vol}     = 0.21754833949871;
     my $c = produce_contract($contract_args);
     cmp_ok $c->ask_price, '==', $expected->{$key}, "correct ask price for $key";
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', "correct engine for $key";
