@@ -53,8 +53,12 @@ sub client_control_code {
     my $self  = shift;
     my $email = shift;
 
-    return Crypt::NamedKeys->new(keyname => 'password_counter')
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
         ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $email . '_##_' . $self->_environment);
+
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    return $code;
 }
 
 sub payment_control_code {
@@ -63,7 +67,8 @@ sub payment_control_code {
     my $currency = shift;
     my $amount   = shift;
 
-    return Crypt::NamedKeys->new(keyname => 'password_counter')
+    my $code =
+        Crypt::NamedKeys->new(keyname => 'password_counter')
         ->encrypt_payload(data => time . '_##_'
             . $self->staff . '_##_'
             . $self->transactiontype . '_##_'
@@ -71,14 +76,22 @@ sub payment_control_code {
             . $currency . '_##_'
             . $amount . '_##_'
             . $self->_environment);
+
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    return $code;
 }
 
 sub batch_payment_control_code {
     my $self  = shift;
     my $lines = shift;
 
-    return Crypt::NamedKeys->new(keyname => 'password_counter')
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
         ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $lines . '_##_' . $self->_environment);
+
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    return $code;
 }
 
 sub validate_client_control_code {
