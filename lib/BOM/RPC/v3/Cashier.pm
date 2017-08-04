@@ -114,6 +114,18 @@ sub cashier {
     my $sportsbook        = get_sportsbook($df_client->broker, $currency);
     my $handoff_token_key = _get_handoff_token_key($df_client->loginid);
 
+    # since subaccount has dummy name (loginid of master account plus timestamp),
+    # we want to pass name of master account if current client is a subaccount
+    my $sub_account_of = $client->sub_account_of;
+    my $name           = undef;
+    if ($sub_account_of) {
+        my $main_client = Client::Account->new({loginid => $sub_account_of});
+        # if client's first name is saved as a human name instead of loginid don't override it
+        if ($client->first_name =~ $main_client->loginid) {
+            $name = $main_client->first_name . ' ' . $main_client->last_name;
+        }
+    }
+
     my $result = $ua->post(
         $url,
         $df_client->create_customer_property_bag({
@@ -121,6 +133,7 @@ sub cashier {
                 Sportsbook     => $sportsbook,
                 IP_Address     => '127.0.0.1',
                 Password       => $handoff_token_key,
+                CustName       => $name,
             }));
 
     if ($result->{'_content'} ne 'OK') {
