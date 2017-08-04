@@ -122,11 +122,11 @@ sub update {
 sub __validate_app_links {
     my ($homepage, $github, $appstore, $googleplay) = @_;
 
-    my @args = @_;
+    my @sites = @_;
     my $validation_error;
 
-    for (@args) {
-        $validation_error = BOM::RPC::v3::Utility::validate_uri($_) if length($_);
+    for (grep { length($_) } @sites) {
+        $validation_error = BOM::RPC::v3::Utility::validate_uri($_);
         return $validation_error if $validation_error;
     }
 
