@@ -70,8 +70,7 @@
             <th>PaymentInfo</th>
             <th>Date</th>
             [% IF view_action == 'withdrawals' || view_action == 'search' %]
-                [% IF view_type == 'pending' %]
-                    <th>Verification</th>
+                <th>Verification</th>
             [% END %]
             <th>Details</th>
         </tr>
@@ -142,9 +141,19 @@
                 </td>
                 [% IF trx.transaction_type == 'withdrawal' && trx.status == 'pending' %]
                     <td>
-                        <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=withdrawals class="confirm_crypto_action">Verify transaction</a> 
-                        <b>OR</b> 
-                        <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject&view_action=withdrawals class="confirm_crypto_action">Reject transaction</a>
+                        <form action="[% request.url_for('backoffice/f_manager_crypto.cgi') | none %]" onsubmit="return confirm('Do you really want to continue?');" method="post">
+                            <input type="hidden" name="broker" value="[% broker %]"/>
+                            <input type="hidden" name="address" value="[% trx.address %]"/>
+                            <input type="hidden" name="currency" value="[% trx.currency_code %]"/>
+                            <input type="hidden" name="amount" value="[% trx.amount %]"/>
+                            <input type="hidden" name="loginid" value="[% trx.client_loginid %]"/>
+                            <input type="hidden" name="view_action" value="Withdrawal Transactions"/>
+                            <label for="dual_control_code">Dual Code:</label>
+                            <input type="text"   name="dual_control_code"/>
+                            <br/>
+                            <input type="submit" name="action" value="verify"/>
+                            <input type="submit" name="action" value="reject"/>
+                        </form>
                     </td>
                 [% END %]
                 <td>
@@ -162,10 +171,9 @@
                         </tbody>
                     </table>
                 </td>
-                </tr>
-            [% END %]
-        </table>
-    [% END %]
+            </tr>
+        [% END %]
+    </table>
 [% END %]
 <br/>
 <table>
@@ -213,6 +221,7 @@
             <a [% IF view_type == 'sent' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=withdrawals&view_type=sent">View Sent Transactions</a>
         </td>
         <td>|</td>
+[% END -%]
         <td>
             <a [% IF view_type == 'error' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=withdrawals&view_type=error">View Errored Out Transactions</a>
         </td>

@@ -2,19 +2,22 @@
 package main;
 use strict;
 use warnings;
-use HTML::Entities;
 
-use Bitcoin::RPC::Client;
+use YAML::XS;
+use Text::CSV;
 use Data::Dumper;
 use Date::Utility;
-use YAML::XS;
-use Client::Account;
-use Text::CSV;
+use HTML::Entities;
+use Bitcoin::RPC::Client;
 use List::UtilsBy qw(rev_nsort_by sort_by);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use Client::Account;
+
+use BOM::DualControl;
 use BOM::Database::ClientDB;
+use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
@@ -24,9 +27,11 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
+BOM::Backoffice::Auth0::can_access(['Payments']);
+
 my $broker         = request()->broker_code;
 my $encoded_broker = encode_entities($broker);
-my $staff          = BOM::Backoffice::Auth0::can_access(['Payments']);
+my $staff          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 # Currency is utilised in Deposit and Withdrawal views accordingly
 # to distinguish information among supported cryptocurrencies.
 my $currency = request()->param('currency');
@@ -48,6 +53,7 @@ my %va_cmds = (
     run                 => 'Run',
     new_deposit_address => 'Get New Deposit Address',
     reconcil            => 'Reconciliation',
+    make_dcc            => 'Make Dual Control Code',
 );
 # Currently, the controller renders page according to Deposit,
 # Withdrawal and Search actions.
@@ -84,6 +90,20 @@ my %exchange_rates;
 for (qw/BTC LTC ETH/) {
     $exchange_rates{$_} = in_USD(1.0, $_);
 }
+print '<h3>Make dual control code</h3>';
+print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
+print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
+print 'Amount: <select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
+print ' <input type="text" name="amount_dcc" size=15/>';
+print '<br>';
+print '<br>';
+print ' Loginid of the client: <input type="text" size="12" name="loginid_dcc" />';
+print ' Blockchain address: <input type="text" size="50" name="address_dcc" placeholder="Will be considered as transaction type"/>';
+print '<br>';
+print '<br>';
+print '<INPUT type="submit" value="Make Dual Control Code" name="view_action"/>';
+print " ($staff) ";
+print '</FORM>';
 
 my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
@@ -111,6 +131,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     my $trxns;
     if ($view_action eq $va_cmds{withdrawals}) {
         Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
+
         if (not $currency or $currency !~ /^[A-Z]{3}$/) {
             print "Invalid currency.";
             code_exit_BO();
@@ -127,21 +148,43 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
             print "Invalid selection to view type of transactions.";
             code_exit_BO();
         }
+
         my $found;
-        if ($action and $action eq 'verify') {
-            ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency);
-            unless ($found) {
-                print "ERROR: No record found. Please check with someone from IT team before proceeding.";
+        if ($action and $action =~ /^(?:verify|reject)$/) {
+            my $dcc_code = request()->param('dual_control_code');
+            unless ($dcc_code) {
+                print "ERROR: Please provide valid dual control code";
                 code_exit_BO();
             }
-        }
-        if ($action and $action eq 'reject') {
-            ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency);
-            unless ($found) {
-                print "ERROR: No record found. Please check with someone from IT team before proceeding.";
+
+            my $amount  = request()->param('amount');
+            my $loginid = request()->param('loginid');
+
+            my $error = BOM::DualControl->new({
+                    staff           => $staff,
+                    transactiontype => $address
+                })->validate_payment_control_code($dcc_code, $loginid, $currency, $amount);
+            if ($error) {
+                print $error->get_mesg();
                 code_exit_BO();
             }
+
+            if ($action eq 'verify') {
+                ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency);
+                unless ($found) {
+                    print "ERROR: No record found. Please check with someone from IT team before proceeding.";
+                    code_exit_BO();
+                }
+            }
+            if ($action eq 'reject') {
+                ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency);
+                unless ($found) {
+                    print "ERROR: No record found. Please check with someone from IT team before proceeding.";
+                    code_exit_BO();
+                }
+            }
         }
+
         # Fetch transactions according to filter option
         if ($view_type eq 'sent') {
             $trxns = $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'SENT'::payment.CTC_STATUS, NULL, NULL)",
@@ -428,5 +471,50 @@ EOF
 } elsif ($view_action eq $va_cmds{new_deposit_address}) {
     my $rslt = $rpc_client->getnewaddress('manual');
     print '<p>New BTC address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
+} elsif ($view_action eq $va_cmds{make_dcc}) {
+    my $amount_dcc  = request()->param('amount_dcc')  // 0;
+    my $loginid_dcc = request()->param('loginid_dcc') // '';
+    my $transtype   = request()->param('address_dcc') // '';
+
+    Bar('Dual control code');
+    if (not $transtype) {
+        print "No address provided";
+        code_exit_BO();
+    }
+
+    if (not $amount_dcc or $amount_dcc !~ /^\d*\.?\d*$/) {
+        print "ERROR in amount: " . encode_entities($amount_dcc);
+        code_exit_BO();
+    }
+
+    if (not $loginid_dcc) {
+        print 'Invalid loginid';
+        code_exit_BO();
+    }
+
+    my $client_dcc = Client::Account::get_instance({'loginid' => uc($loginid_dcc)});
+    if (not $client_dcc) {
+        print "ERROR: " . encode_entities($loginid_dcc) . " does not exist! Perhaps you made a typo?";
+        code_exit_BO();
+    }
+
+    my $code = BOM::DualControl->new({
+            staff           => $staff,
+            transactiontype => $transtype
+        })->payment_control_code($loginid_dcc, $currency, $amount_dcc);
+
+    my $message =
+          "The dual control code created by $staff for an amount of "
+        . $currency
+        . $amount_dcc
+        . " (for a "
+        . $transtype
+        . ") for "
+        . $loginid_dcc
+        . " is: <b> $code </b>This code is valid for 1 hour (from "
+        . $now->datetime_ddmmmyy_hhmmss
+        . ") only.";
+
+    print $message;
 }
 code_exit_BO();
