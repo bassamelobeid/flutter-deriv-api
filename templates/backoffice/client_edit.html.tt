@@ -54,6 +54,17 @@ table#client_edit td{
         <td>: <b>[% client.broker %]</b> <input type="hidden" name="edit_client_loginid" value="[% client.loginid %]"></td>
     </tr>
     <tr>
+[%-
+        last_check = client.sanctions_check;
+        #last_check is either scalar or array. If it's array - get last element
+        IF last_check.tstmp == "" ;
+        last_check = last_check.0;
+        END;
+-%]
+        <td class="label">Last sanctions check run</td>
+        <td>: <b>[% last_check.result %]</b> [% last_check.tstmp %]</td>
+    </tr>
+    <tr>
         <td class="small_header" colspan="2">#AFFILIATE INFO</td>
     </tr>
     <tr>
