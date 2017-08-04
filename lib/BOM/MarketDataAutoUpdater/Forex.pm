@@ -206,7 +206,7 @@ sub run {
         }
 
         my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
-        my $is_next_day_holiday = $calendar->is_holiday_for($underlying->exchange, Date::Utility->new(time+86400));
+        my $is_next_day_holiday = $calendar->is_holiday_for($underlying->exchange, Date::Utility->new(time + 86400));
 
         if (grep { $_ eq $symbol } (@{$non_atm_symbol})) {
             #skip this symbol if it is non atm and rr , bb are undef.
