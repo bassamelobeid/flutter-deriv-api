@@ -34,7 +34,7 @@ my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked->mock(
     'get',
     sub {
-        [map { {epoch => $_, quote => 100 + rand(0.1)} } (0 .. 80)];
+        [map { {decimate_epoch => $_, epoch => $_, quote => 100 + rand(0.1)} } (0 .. 80)];
     });
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
