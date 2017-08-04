@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Deep qw( cmp_deeply );
 use JSON;
 use Data::Dumper;
 use Date::Utility;
@@ -28,6 +29,19 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
+    epoch      => $now->epoch,
+    quote      => 100,
+});
+
+generate_trading_periods('frxEURUSD');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxEURUSD',
+        recorded_date => $now
+    });
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxEURUSD',
     epoch      => $now->epoch,
     quote      => 100,
 });
@@ -76,7 +90,36 @@ if (not $now->is_a_weekend) {
     ok($contracts_for_japan->{contracts_for}->{available});
     is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
     test_schema('contracts_for', $contracts_for_japan);
+
+# test contracts_for EURUSD for forward_starting_options
+    my $expected_blackouts = [
+          [
+            '11:00:00',
+            '13:00:00'
+          ],
+          [
+            '20:00:00',
+            '23:59:59'
+          ]
+        ];
+
+    $t = $t->send_ok({
+            json => {
+                contracts_for => 'frxEURUSD',
+            }})->message_ok;
+    my $contracts_for_eurusd = decode_json($t->message->[1]);
+    ok($contracts_for_eurusd->{contracts_for});
+    ok($contracts_for_eurusd->{contracts_for}->{available});
+    is($contracts_for_eurusd->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
+
+    foreach my $contract (@{$contracts_for_eurusd->{contracts_for}->{'available'}}){
+      next if $contract->{'start_type'} ne 'forward';
+      cmp_deeply $contract->{'forward_starting_options'}[0]{'blackouts'}, $expected_blackouts, "expected blackouts";
+    }
+
+    test_schema('contracts_for', $contracts_for_eurusd);
 }
+
 $t = $t->send_ok({json => {trading_times => Date::Utility->new->date_yyyymmdd}})->message_ok;
 my $trading_times = decode_json($t->message->[1]);
 ok($trading_times->{msg_type}, 'trading_times');
