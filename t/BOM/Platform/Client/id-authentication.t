@@ -173,7 +173,7 @@ subtest 'proveid' => sub {
                 };
             });
         $v->run_authentication;
-        is $v->notified, undef, 0, 'sent zero notification';
+        is $v->notified, undef, 'sent zero notification';
         ok $v->client->get_status('age_verification'), 'client is age verified';
         ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
     };
