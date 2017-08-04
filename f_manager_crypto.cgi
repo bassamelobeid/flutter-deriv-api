@@ -40,10 +40,7 @@ my $address = request()->param('address');
 # Accessable on Withdrawal action only. By defaullt Withdrawal page
 # shows `pending` transactions.
 my $view_type = request()->param('view_type') // 'pending';
-# Currently, the controller renders page according to Deposit,
-# Withdrawal and Search actions.
-my $view_action = request()->param('view_action') // '';
-# Shortcuts for view action commands
+# Shortcuts for view action commands to prevent descriptive submit text in template
 my %va_cmds = (
     withdrawals         => 'Withdrawal Transactions',
     deposits            => 'Deposit Transactions',
@@ -52,6 +49,12 @@ my %va_cmds = (
     new_deposit_address => 'Get New Deposit Address',
     reconcil            => 'Reconciliation',
 );
+# Currently, the controller renders page according to Deposit,
+# Withdrawal and Search actions.
+my $view_action = request()->param('view_action');
+# Assign descriptive message if comes from view_type filtering or
+# unless it is already.
+$view_action = $va_cmds{$view_action} // '' unless grep { $va_cmds{$_} eq $view_action } keys %va_cmds;
 
 if (length($broker) < 2) {
     print
@@ -207,6 +210,9 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     }
     # Assign USD equivalent value
     $_->{usd_amount} = formatnumber('amount', 'USD', $_->{amount} * $exchange_rates{$_->{currency_code}}) for @$trxns;
+
+    my %reversed = reverse %va_cmds;
+
     # Render template page with transactions
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
@@ -214,9 +220,9 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
         {
             transactions => $trxns,
             broker       => $broker,
-            view_type    => $view_type,
             currency     => $currency,
-            view_action  => $view_action,
+            view_action  => $reversed{$view_action},
+            view_type    => $view_type,
             va_cmds      => \%va_cmds,
         }) || die $tt->error();
 } elsif ($view_action eq $va_cmds{reconcil}) {
