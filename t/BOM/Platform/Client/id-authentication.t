@@ -227,9 +227,7 @@ subtest 'proveid' => sub {
         Test::MockObject::Extends->new($v);
         $v->mock(-_fetch_proveid, sub { return {age_verified => 1} });
         $v->run_authentication;
-        my @notif = @{$v->notified};
-        is @notif, 1, 'sent one notification';
-        like $notif[0][0], qr/PASSED AGE VERIFICATION/, 'notification is correct';
+        is $v->notified, undef, 'sent zero notification';
         ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
         ok $v->client->get_status('age_verification'), 'client is age verified';
         ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
