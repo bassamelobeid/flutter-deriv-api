@@ -154,6 +154,8 @@ sub _regenerate {
 
     # refresh intradayfx cache to to use new economic events impact curve
     BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
+
+    return;
 }
 
 sub _get_economic_events {
