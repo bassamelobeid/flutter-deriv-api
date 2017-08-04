@@ -8,6 +8,8 @@ use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 
+use BOM::Platform::RedisReplicated;
+use Sereal::Encoder;
 use BOM::Test::Helper qw/build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
@@ -38,6 +40,21 @@ $redis2_module->mock(
 my $sub_ids = {};
 my @symbols = qw(frxUSDJPY frxAUDJPY frxAUDUSD);
 
+my $encoder = Sereal::Encoder->new({
+    canonical => 1,
+});
+
+my $time = time;
+my @ticks;
+for (my $i = $time - 1800; $i <= $time; $i += 15) {
+    push @ticks,
+        +{
+        epoch          => $i,
+        decimate_epoch => $i,
+        quote          => 100 + rand(0.0001)};
+}
+my $redis = BOM::Platform::RedisReplicated::redis_write();
+
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -57,6 +74,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw(USD JPY AUD JPY-USD AUD-USD AUD-JPY);
 
 for my $s (@symbols) {
+    $redis->zadd('DECIMATE_' . $s . '_15s_DEC', $_->{epoch}, $encoder->encode($_)) for @ticks;
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
