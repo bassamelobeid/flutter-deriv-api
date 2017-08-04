@@ -14,14 +14,22 @@ use Format::Util::Numbers qw/roundcommon/;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
-my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
-$mocked->mock('historical_vol_markup', sub {
-    return Math::Util::CalculatedValue::Validatable->new({
-               name => 'historical_vol_markup',
-               set_by => 'test',
-               base_amount => 0,
-               description => 'test'
-           });
+my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
+$mocked_decimate->mock(
+    'get',
+    sub {
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.0001)} } (0 .. 80)];
+    });
+my $mocked_forex = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
+$mocked_forex->mock(
+    'risk_markup',
+    sub {
+        Math::Util::CalculatedValue::Validatable->new({
+            name        => 'risk_markup',
+            description => 'test',
+            set_by      => 'test',
+            base_amount => 0,
+        });
     });
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine

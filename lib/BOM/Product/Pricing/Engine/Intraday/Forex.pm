@@ -17,12 +17,6 @@ use Finance::Exchange;
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
 use Pricing::Engine::Markup::TentativeEvents;
-use Pricing::Engine::Markup::HistoricalVol;
-use Volatility::Seasonality;
-use BOM::Platform::Chronicle;
-
-# we use 20-minute fixed period and not more so that we capture the short-term volatility movement.
-use constant HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES => 20;
 
 =head2 tick_source
 
@@ -77,7 +71,12 @@ has [qw(base_probability probability long_term_prediction intraday_vanilla_delta
     lazy_build => 1,
 );
 
-sub _build_base_probability {
+has base_engine => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_base_engine {
     my $self = shift;
 
     my $bet          = $self->bet;
@@ -95,8 +94,13 @@ sub _build_base_probability {
         mu                   => 0,
         (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
 
-    my $engine = Pricing::Engine::Intraday::Forex::Base->new(%args,);
-    return $engine->base_probability;
+    return Pricing::Engine::Intraday::Forex::Base->new(%args,);
+}
+
+sub _build_base_probability {
+    my $self = shift;
+
+    return $self->base_engine->base_probability;
 }
 
 =head1 probability
@@ -265,9 +269,7 @@ sub _build_risk_markup {
         name        => 'risk_markup',
         description => 'A set of markups added to accommodate for pricing risk',
         set_by      => __PACKAGE__,
-        # We do not want to add historical_vol_markup on top of existing risk_markup.
-        # We just want to take the max of the two markups.
-        minimum     => $self->historical_vol_markup->amount,
+        minimum     => 0,                                                          # no discounting
         base_amount => 0,
     });
 
@@ -334,9 +336,6 @@ sub _build_risk_markup {
                 })) if $bet->remaining_time->minutes <= 15;
     }
 
-    # adding historical_vol_markup as an info for verification purposes.
-    $risk_markup->include_adjustment('info', $self->historical_vol_markup);
-
     return $risk_markup;
 }
 
@@ -347,7 +346,7 @@ sub economic_events_volatility_risk_markup {
     if ((my $tentative_events_markup = $self->_tentative_events_markup)->amount) {
         return $tentative_events_markup;
     }
-    #dummy value maintain for japan documentation purposes. Set to zero.
+
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_volatility_risk_markup',
         description => 'markup to account for volatility risk of economic events',
@@ -368,25 +367,17 @@ sub economic_events_spot_risk_markup {
     )->markup;
 }
 
-has vol_spread => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_vol_spread',
-);
-
-sub _build_vol_spread {
+sub vol_spread_markup {
     my $self = shift;
 
-    my $vol_spread = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'vol_spread',
-        set_by      => __PACKAGE__,
-        description => 'markup added to account for variable ticks interval for volatility calculation.',
-        minimum     => 0,
-        maximum     => 0.1,
-        base_amount => 0,
-    });
+    my $bet                   = $self->bet;
+    my $long_term_average_vol = 0.07;         # fixed 7% volatility
 
-    return $vol_spread;
+    my $vol_spread = $long_term_average_vol - $bet->_pricing_args->{historical_volatility};
+    return Pricing::Engine::Markup::VolSpread->new(
+        bet_vega   => $bet->vega,
+        vol_spread => $vol_spread,
+    )->markup;
 }
 
 =head2 is_in_quiet_period
@@ -431,93 +422,6 @@ sub is_in_quiet_period {
     }
 
     return $quiet;
-}
-
-has historical_vol_markup => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_historical_vol_markup {
-    my $self = shift;
-
-    my $bet = $self->bet;
-    # base vol is calculated from overnight vol
-    my $base_vol     = $bet->_pricing_args->{iv};
-    my $pricing_args = $bet->_pricing_args;
-    my $hist_vol     = $self->_calculate_historical_volatility;
-
-    my %args = (
-        strikes           => [$pricing_args->{barrier1}],
-        contract_type     => $bet->pricing_code,
-        payout_type       => 'binary',
-        underlying_symbol => $bet->underlying->symbol,
-        discount_rate     => 0,
-        mu                => 0,
-        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
-
-    return Pricing::Engine::Markup::HistoricalVol->new(
-        historical_vol => $hist_vol,
-        pricing_vol    => $base_vol,
-        pricing_args   => \%args,
-    )->markup;
-}
-
-sub _calculate_historical_volatility {
-    my $self = shift;
-
-    my $bet        = $self->bet;
-    my $dp         = $bet->date_pricing;
-    my $hist_ticks = $self->tick_source->get({
-        underlying  => $bet->underlying,
-        start_epoch => $dp->epoch - HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES * 60,
-        end_epoch   => $dp->epoch,
-        backprice   => ($bet->underlying->for_date ? 1 : 0),
-    });
-
-    # On monday mornings, we will not have ticks to calculation historical vol in the first 20 minutes.
-    # returns 10% volatility on monday mornings.
-    return 0.1 if ($dp->day_of_week == 1 && $dp->hour == 0 && $dp->minute < HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES);
-
-    # Skips on non trading day
-    return 0.1 unless $bet->trading_calendar->trades_on($bet->underlying->exchange, $dp);
-
-    my @returns_squared;
-    my $returns_sep = 4;
-    for (my $i = $returns_sep; $i <= $#$hist_ticks; $i++) {
-        my $dt = $hist_ticks->[$i]->{epoch} - $hist_ticks->[$i - $returns_sep]->{epoch};
-
-        # $dt can be 0 during a quiet period with very few ticks. This usually is the case for frxAUDPLN and frxXAGUSD based on observation.
-        next if $dt == 0;
-        if ($dt < 0) {
-            # this suggests that we still have bug in data decimate since the decimated ticks have the same epoch
-            warn 'invalid decimated ticks\' interval. [' . $dt . '] for symbol ' . $bet->underlying->symbol;
-            next;
-        }
-        # 252 is the number of trading days.
-        push @returns_squared, ((log($hist_ticks->[$i]->{quote} / $hist_ticks->[$i - $returns_sep]->{quote})**2) * 252 * 86400 / $dt);
-    }
-
-    my $seasonality_obj = Volatility::Seasonality->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($bet->underlying->for_date),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    );
-    my ($seasonality_past, $seasonality_fut) =
-        map { $seasonality_obj->get_seasonality({underlying_symbol => $bet->underlying->symbol, from => $_->[0], to => $_->[1],}) }
-        ([$dp->minus_time_interval(HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES . 'm'), $dp], [$dp, $bet->date_expiry]);
-    my $past_mean = sum(map { $_ * $_ } @$seasonality_past) / @$seasonality_past;
-    my $fut_mean  = sum(map { $_ * $_ } @$seasonality_fut) / @$seasonality_fut;
-    my $k         = $fut_mean / $past_mean;
-
-    # warns if ticks used to calculate historical vol is less than 80% of the expected ticks.
-    # Ticks are in 15-second interval. Each minute has 4 intervals.
-    my $expected_interval = HISTORICAL_LOOKBACK_INTERVAL_IN_MINUTES * 4 - $returns_sep;
-    if (scalar(@returns_squared) < 0.8 * $expected_interval) {
-        warn "Historical ticks not found in Intraday::Forex pricing";
-        return 0.1;
-    }
-
-    return sqrt(sum(@returns_squared) / @returns_squared * $k);
 }
 
 no Moose;

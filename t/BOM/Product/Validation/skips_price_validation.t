@@ -23,11 +23,11 @@ initialize_realtime_ticks_db();
 
 note('mocking ticks to prevent warnings.');
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked->mock('get', sub {[map {{epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
+$mocked->mock('get', sub {[map {{epoch => $_,decimate_epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
 $mocked->mock(
     'decimate_cache_get',
     sub {
-        [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_} } (0 .. 10)];
+        [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_, decimate_epoch => $_} } (0 .. 10)];
     });
 
 note('sets time to 21:59:59, which has a payout cap at 200 for forex.');

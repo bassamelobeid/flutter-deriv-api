@@ -18,15 +18,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
-my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
-$mocked->mock('historical_vol_markup', sub {
-    return Math::Util::CalculatedValue::Validatable->new({
-               name => 'historical_vol_markup',
-               set_by => 'test',
-               base_amount => 0,
-               description => 'test'
-           });
-    });
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
@@ -107,13 +98,13 @@ my $contract_args = {
 
 #key is "contract type_pip diff" and value is expected barrier(s)
 my $expected = {
-    'CALL_0'        => 55.45,
-    'CALL_1000'     => 53.9,
-    'NOTOUCH_0'     => 5.53,
-    'NOTOUCH_1000'  => 9.71,
-    'ONETOUCH_2000' => 100,
-    'PUT_1000'      => 57.1,
-    'PUT_0'         => 55.55
+    'CALL_0'        => 55.48,
+    'CALL_1000'     => 52.12,
+    'NOTOUCH_0'     => 5.51,
+    'NOTOUCH_1000'  => 15.34,
+    'ONETOUCH_2000' => 97.05,
+    'PUT_1000'      => 59.2,
+    'PUT_0'         => 55.52
 };
 
 my $underlying = create_underlying('frxEURUSD');
@@ -129,6 +120,7 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
     $contract_args->{barrier}             = 'S' . $pip_diff . 'P';
     $contract_args->{pricing_engine_name} = 'BOM::Product::Pricing::Engine::Intraday::Forex';
     $contract_args->{landing_company}     = 'japan';
+    $contract_args->{pricing_vol} = 0.1; # not testing vol here
     my $c = produce_contract($contract_args);
     cmp_ok $c->ask_price, '==', $expected->{$key}, "correct ask price for $key";
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', "correct engine for $key";
@@ -174,13 +166,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 my $expected_with_event = {
-    'CALL_0'        => 55.45,
-    'CALL_1000'     => 57.54,
-    'NOTOUCH_0'     => 5.53,
-    'NOTOUCH_1000'  => 17.95,
+    'CALL_0'        => 55.48,
+    'CALL_1000'     => 61.17,
+    'NOTOUCH_0'     => 5.51,
+    'NOTOUCH_1000'  => 34.04,
     'ONETOUCH_2000' => 100,
-    'PUT_1000'      => 60.71,
-    'PUT_0'         => 55.55
+    'PUT_1000'      => 68.04,
+    'PUT_0'         => 55.52
 };
 
 foreach my $key (sort { $a cmp $b } keys %{$expected_with_event}) {
@@ -190,6 +182,7 @@ foreach my $key (sort { $a cmp $b } keys %{$expected_with_event}) {
     $contract_args->{barrier}             = 'S' . $pip_diff . 'P';
     $contract_args->{pricing_engine_name} = 'BOM::Product::Pricing::Engine::Intraday::Forex';
     $contract_args->{landing_company}     = 'japan';
+    $contract_args->{pricing_vol} = 0.1; # not testing vol here
     my $c = produce_contract($contract_args);
     cmp_ok $c->ask_price, '==', $expected_with_event->{$key}, "correct ask price for $key";
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', "correct engine for $key";
