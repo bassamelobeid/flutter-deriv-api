@@ -28,7 +28,7 @@ sub script_run {
 
     #read economic events for one week (7-days) starting from 4 days back, so in case of a Monday which
     #has its last Friday as a holiday, we will still have some events in the cache.
-    my $events_received = $parser->extract_economic_events(2, Date::Utility->new()->minus_time_interval('4d'));
+    my $events_received = $parser->extract_economic_events(1, Date::Utility->new()->minus_time_interval('4d'));
 
     stats_gauge('economic_events_updates', scalar(@$events_received));
 
