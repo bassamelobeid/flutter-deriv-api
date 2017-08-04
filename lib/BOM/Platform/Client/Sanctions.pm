@@ -60,7 +60,7 @@ sub check {
     $client->save;
 
     # we don't mark or log fully_authenticated clients
-    return unless $found_in_list or $client->client_fully_authenticated;
+    return if (not $found_in_list or $client->client_fully_authenticated);
 
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);

@@ -185,7 +185,7 @@ subtest 'Cashier validation withdraw' => sub {
 
     my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for withdrawal locked';
-    is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals. Please contact customer service.',
+    is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals.',
         'Correct error message for withdrawal locked';
 
     $cr_client->clr_status('withdrawal_locked');
