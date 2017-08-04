@@ -3,9 +3,17 @@ package BOM::MarketDataAutoUpdater::Script::ForexFactoryAlert;
 use Moose;
 with 'App::Base::Script';
 
+use BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents;
+use Digest::MD5 qw(md5_hex);
 use ForexFactory;
 use Email::Stuffer;
 use Date::Utility;
+use Cache::RedisDB;
+
+use constant {
+    NAMESPACE => 'FOREX_FACTORY_ALERT',
+    REDIS_KEY => 'RERUN_ECONOMIC_EVENT_UPDATE',
+};
 
 sub documentation { return 'This script checks for forex factory alert on economic events every hour.'; }
 
@@ -33,6 +41,14 @@ sub script_run {
         my $subject_line = 'Forex Factory Alert';
         my $body = join "\n", map { $_->{event_name} . ' release at ' . Date::Utility->new($_->{release_date})->datetime } @alert;
         Email::Stuffer->from('system@binary.com')->to('x-quants@binary.com')->subject($subject_line)->text_body($body)->send_or_die;
+
+        my $val = md5_hex($body);
+        my $cache_val = Cache::RedisDB->get(NAMESPACE, REDIS_KEY);
+        # run the cron again to update
+        if (not defined $cache_val or $cache_val ne $val) {
+            Cache::RedisDB->set(NAMESPACE, REDIS_KEY, $val, 86400);
+            BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents->new->run();
+        }
     }
 
     return 0;
