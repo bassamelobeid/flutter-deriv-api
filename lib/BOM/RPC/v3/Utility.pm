@@ -274,7 +274,10 @@ sub validate_uri {
     my $originalUrl = shift;
     my $url         = URI->new($originalUrl);
 
-    if (!$url->isa('URI::http') || !($url->scheme =~ /^https?$/)) {
+    if ($originalUrl =~ /[^[:ascii:]]/) {
+        return localize('Invalid URL');
+    }
+    if (not defined $url->scheme or ($url->scheme ne 'http' and $url->scheme ne 'https')) {
         return localize('The given URL is not http(s)');
     }
     if ($url->userinfo) {
@@ -292,9 +295,6 @@ sub validate_uri {
     my $host = $url->host;
     if (!$host || $originalUrl =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
         return localize('Invalid URL');
-    }
-    if (!($originalUrl =~ /$host/)) {
-        return localize('IDN URL is not allowed');
     }
     my $suffix = Domain::PublicSuffix->new();
     if (!$suffix->get_root_domain($host)) {
