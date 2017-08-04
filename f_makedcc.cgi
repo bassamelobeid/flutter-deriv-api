@@ -6,7 +6,6 @@ no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix the
 
 use Format::Util::Strings qw( defang );
 use Path::Tiny;
-use Cache::RedisDB;
 use HTML::Entities;
 
 use Client::Account;
@@ -40,14 +39,12 @@ if ($input->{'dcctype'} ne 'file_content') {
         code_exit_BO();
     }
 
-    if ($input->{'dcctype'} ne 'cs') {
-        if ($input->{'amount'} =~ /^\d\d?\,\d\d\d\.?\d?\d?$/) {
-            $input->{'amount'} =~ s/\,//;
-        }
-        if ($input->{'amount'} !~ /^\d*\.?\d*$/) {
-            print "ERROR in amount: " . $input->{'amount'};
-            code_exit_BO();
-        }
+    if ($input->{'amount'} =~ /^\d\d?\,\d\d\d\.?\d?\d?$/) {
+        $input->{'amount'} =~ s/\,//;
+    }
+    if ($input->{'amount'} !~ /^\d*\.?\d*$/) {
+        print "ERROR in amount: " . $input->{'amount'};
+        code_exit_BO();
     }
 }
 
@@ -72,8 +69,6 @@ if ($input->{'dcctype'} eq 'file_content') {
     $code = BOM::DualControl->new({
             staff           => $staff,
             transactiontype => $input->{'transtype'}})->batch_payment_control_code(scalar @lines);
-
-    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
     $message =
           "The dual control code created by $staff for "
@@ -100,8 +95,6 @@ if ($input->{'dcctype'} eq 'file_content') {
     $code = BOM::DualControl->new({
             staff           => $staff,
             transactiontype => $input->{'transtype'}})->payment_control_code($input->{'clientloginid'}, $input->{'currency'}, $input->{'amount'});
-
-    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
     $message =
           "The dual control code created by $staff for an amount of "

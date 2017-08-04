@@ -60,9 +60,7 @@
         <th>Date</th>
 [% IF transaction_type != 'deposit' -%]
         [% IF view_type == 'pending' %]
-            <th>Verify</th>
-            <th>|</th>
-            <th>Reject</th>
+            <th>Action</th>
         [% END %]
 [% END -%]
         <th>Details</th>
@@ -131,12 +129,19 @@
         </td>
 [% IF transaction_type != 'deposit' && view_type == 'pending' -%]
         <td>
-            <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=verify&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Verify transaction</a>
-        </td>
-        <td>|</td>
-        <td>
-            <a href="?broker=[% broker %]&address=[% trx.address %]&currency=[% trx.currency_code %]&action=reject&view_action=Withdrawal%20Transactions" class="confirm_crypto_action">Reject transaction</a>
-        </td>
+            <form action="[% request.url_for('backoffice/f_manager_crypto.cgi') | none %]" onsubmit="return confirm('Do you really want to continue?');" method="post">
+                <input type="hidden" name="broker" value="[% broker %]"/>
+                <input type="hidden" name="address" value="[% trx.address %]"/>
+                <input type="hidden" name="currency" value="[% trx.currency_code %]"/>
+                <input type="hidden" name="amount" value="[% trx.amount %]"/>
+                <input type="hidden" name="loginid" value="[% trx.client_loginid %]"/>
+                <input type="hidden" name="view_action" value="Withdrawal Transactions"/>
+                <label for="dual_control_code">Dual Code:</label>
+                <input type="text"   name="dual_control_code"/>
+                <br/>
+                <input type="submit" name="action" value="verify"/>
+                <input type="submit" name="action" value="reject"/>
+            </form>
 [% END -%]
         <td>
             <table>
