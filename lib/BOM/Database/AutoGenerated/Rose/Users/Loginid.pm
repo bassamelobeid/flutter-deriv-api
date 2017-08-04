@@ -11,9 +11,12 @@ __PACKAGE__->meta->setup(
     columns => [
         loginid        => { type => 'varchar', length => 12, not_null => 1 },
         binary_user_id => { type => 'bigint', not_null => 1 },
+        creation_stamp => { type => 'timestamp', default => 'now()', remarks => 'The timestamp of when this record was created. NULL values here mean the record was created prior to this column`s creation.' },
     ],
 
     primary_key_columns => [ 'loginid' ],
+
+    allow_inline_column_values => 1,
 
     foreign_keys => [
         binary_user => {

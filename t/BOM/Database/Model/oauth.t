@@ -18,15 +18,20 @@ $m->dbh->do("DELETE FROM oauth.user_scope_confirm");
 $m->dbh->do("DELETE FROM oauth.apps");
 
 my $app1 = $m->create_app({
-    name         => 'App 1',
-    scopes       => ['read', 'payments', 'trade'],
-    homepage     => 'http://www.example.com/',
-    github       => 'https://github.com/binary-com/binary-static',
-    user_id      => $test_user_id,
-    redirect_uri => 'https://www.example.com',
+    name             => 'App 1',
+    scopes           => ['read', 'payments', 'trade'],
+    homepage         => 'http://www.example.com/',
+    github           => 'https://github.com/binary-com/binary-static',
+    user_id          => $test_user_id,
+    redirect_uri     => 'https://www.example.com',
+    verification_uri => 'https://www.example.com/verify',
 });
 my $test_appid = $app1->{app_id};
-is $app1->{homepage}, 'http://www.example.com/', 'homepage is correct';
+is $app1->{homepage},         'http://www.example.com/',        'homepage is correct';
+is $app1->{verification_uri}, 'https://www.example.com/verify', 'verification_uri is correct';
+
+my $verification_uri = $m->get_verification_uri_by_app_id($test_appid);
+is $app1->{verification_uri}, $verification_uri, 'get_verification_uri_by_app_id';
 
 ## it's in test db
 my $app = $m->verify_app($test_appid);
@@ -52,13 +57,15 @@ is_deeply([sort @scopes], ['payments', 'read', 'trade'], 'scopes are right');
 $app1 = $m->update_app(
     $test_appid,
     {
-        name         => 'App 1',
-        scopes       => ['read', 'payments', 'trade'],
-        redirect_uri => 'https://www.example.com/callback',
-        homepage     => 'http://www.example2.com/',
+        name             => 'App 1',
+        scopes           => ['read', 'payments', 'trade'],
+        redirect_uri     => 'https://www.example.com/callback',
+        verification_uri => 'https://www.example.com/verify_updated',
+        homepage         => 'http://www.example2.com/',
     });
-is $app1->{redirect_uri}, 'https://www.example.com/callback', 'redirect_uri is updated';
-is $app1->{homepage},     'http://www.example2.com/',         'homepage is updated';
+is $app1->{redirect_uri},     'https://www.example.com/callback',       'redirect_uri is updated';
+is $app1->{verification_uri}, 'https://www.example.com/verify_updated', 'verification_uri is updated';
+is $app1->{homepage},         'http://www.example2.com/',               'homepage is updated';
 
 ### get app_register/app_list/app_get
 my $get_app = $m->get_app($test_user_id, $app1->{app_id});

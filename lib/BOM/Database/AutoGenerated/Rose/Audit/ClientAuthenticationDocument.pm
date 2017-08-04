@@ -23,6 +23,7 @@ __PACKAGE__->meta->setup(
         expiration_date            => { type => 'date' },
         remote_addr                => { type => 'scalar' },
         comments                   => { type => 'varchar', default => '', length => 255, not_null => 1 },
+        document_id                => { type => 'varchar', default => '', length => 30, not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],
