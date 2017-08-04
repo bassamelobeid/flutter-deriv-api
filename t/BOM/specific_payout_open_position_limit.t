@@ -156,7 +156,7 @@ subtest 'atm' => sub {
             $txn->buy;
         };
         SKIP: {
-            is $error->get_type, 'ATM open position payout limit limitExceeded', 'error is less ATM open position payout limit limitExceeded';
+            is $error->get_type, 'ATM open position payout limitExceeded', 'error is ATM open position payout limitExceeded';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
             is $error->{-mesg},              'Exceeds turnover limit on ATM open position payout limit',      'mesg';
@@ -312,8 +312,8 @@ subtest 'non ATM - > 7 days open position payout limit' => sub {
             $txn->buy;
         };
         SKIP: {
-            is $error->get_type, 'max_more_than_7day_specific_open_position_payout limitExceeded',
-                'error is max_more_than_7day_specific_open_position_payout limitExceeded';
+            is $error->get_type, 'max_more_than_7day_specific_open_position_payoutExceeded',
+                'error is max_more_than_7day_specific_open_position_payoutExceeded';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
             is $error->{-mesg}, 'Exceeds turnover limit on max_more_than_7day_specific_open_position_payout', 'mesg';
@@ -469,11 +469,11 @@ subtest 'non ATM - < 7 days open position payout limit' => sub {
             $txn->buy;
         };
         SKIP: {
-            is $error->get_type, 'max_more_than_7day_specific_open_position_payout limitExceeded',
-                'error is max_more_than_7day_specific_open_position_payout limitExceeded';
+            is $error->get_type, 'max_7day_specific_open_position_payoutExceeded',
+                'error is max_7day_specific_open_position_payoutExceeded';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg}, 'Exceeds turnover limit on max_more_than_7day_specific_open_position_payout', 'mesg';
+            is $error->{-mesg}, 'Exceeds turnover limit on max_7day_specific_open_position_payout', 'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
