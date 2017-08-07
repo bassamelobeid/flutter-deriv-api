@@ -68,11 +68,17 @@ if (length($broker) < 2) {
     code_exit_BO();
 }
 
-my $blockchain_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/' : 'https://blockchain.info/tx/');
-my $tt = BOM::Backoffice::Request::template;
+my $transaction_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/'      : 'https://blockchain.info/tx/');
+my $address_uri     = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/' : 'https://blockchain.info/address/');
+my $tt              = BOM::Backoffice::Request::template;
 {
     my $cmd = request()->param('command');
-    $tt->process('backoffice/crypto_cashier/main.tt2', {rpc_command => $cmd}) || die $tt->error();
+    $tt->process(
+        'backoffice/crypto_cashier/main.tt2',
+        {
+            rpc_command => $cmd,
+            testnet     => BOM::Platform::Config::on_qa() ? 1 : 0
+        }) || die $tt->error();
 }
 
 ## CTC
@@ -254,6 +260,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
             view_type      => $view_type,
             va_cmds        => \%va_cmds,
             controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
+            testnet        => BOM::Platform::Config::on_qa() ? 1 : 0,
         }) || die $tt->error();
 } elsif ($view_action eq $va_cmds{reconcil}) {
     Bar('BTC Reconciliation');
@@ -315,7 +322,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
                 push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
             }
             $db_tran->{confirmations} = $blockchain_tran->{confirmations};
-            if (Date::Utility->new($db_tran->{date})->epoch < time - 2 * 120) {
+            if (Date::Utility->new($db_tran->{date})->epoch < time - 4 * 60) {
                 if ($blockchain_tran->{confirmations} < 3 and not($db_tran->{status} eq 'PENDING' or $db_tran->{status} eq 'NEW')) {
                     push @{$db_tran->{comments}}, 'Invalid status - should be new or pending';
                 } elsif ($blockchain_tran->{confirmations} >= 3 and not($db_tran->{status} eq 'CONFIRMED')) {
@@ -360,6 +367,15 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
             {
                 push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
             }
+            if (Date::Utility->new($db_tran->{date})->epoch < time - 4 * 60) {
+                if ($blockchain_tran->{confirmations} < 3
+                    and not($db_tran->{status} eq 'LOCKED' or $db_tran->{status} eq 'VERIFIED' or $db_tran->{status} eq 'PROCESSING'))
+                {
+                    push @{$db_tran->{comments}}, 'Invalid status - should be locked/verified/processing';
+                } elsif ($blockchain_tran->{confirmations} >= 3 and not($db_tran->{status} eq 'SENT')) {
+                    push @{$db_tran->{comments}}, 'Invalid status - should be SENT';
+                }
+            }
         }
     }
 
@@ -388,10 +404,12 @@ EOF
     print '</thead><tbody>';
     for my $db_tran (sort_by { $_->{address} } values %db_by_address) {
         print '<tr>';
-        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type address amount status date)};
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type)};
+        print '<td><a href="$address_uri$_">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(amount status date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
-        print '<td><a target="_blank" href="' . ($blockchain_uri . $_) . '">' . encode_entities(substr $_, 0, 6) . '</td>'
+        print '<td><a target="_blank" href="' . ($transaction_uri . $_) . '">' . encode_entities(substr $_, 0, 6) . '</td>'
             for @{$db_tran}{qw(transaction_id)};
         print '<td>' . encode_entities($db_tran->{payment_id}) . '</td>';
         print '<td style="color:red;">' . (join '<br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
@@ -431,7 +449,7 @@ EOF
                 my @fields = @{$tran}{qw(account txid amount time confirmations address)};
                 $_ = Date::Utility->new($_)->datetime_yyyymmdd_hhmmss for $fields[3];
                 @fields = map { encode_entities($_) } @fields;
-                $_ = '<a target="_blank" href="' . $blockchain_uri . $_ . '">' . $_ . '</a>' for $fields[1];
+                $_ = '<a target="_blank" href="' . $transaction_uri . $_ . '">' . $_ . '</a>' for $fields[1];
                 print '<tr>';
                 print '<td>' . $_ . '</td>' for @fields;
                 print "</tr>\n";
