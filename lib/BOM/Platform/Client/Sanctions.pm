@@ -2,10 +2,11 @@ package BOM::Platform::Client::Sanctions;
 
 use Moose;
 
-use Data::Validate::Sanctions;
 use BOM::Platform::Config;
 use BOM::Platform::Email qw(send_email);
 use Client::Account;
+use Data::Validate::Sanctions;
+use Locale::Country::Extra;
 
 has client => (
     is       => 'ro',
@@ -52,7 +53,7 @@ sub check {
     return if $client->is_virtual;
 
     my $found_in_list = $sanctions->is_sanctioned_hash({
-        country => $from_client->residence // '-',
+        country => Locale::Country::Extra->new()->country_from_code($client->residence) // '-',
         names => [$client->first_name, $client->last_name],
     });
 
