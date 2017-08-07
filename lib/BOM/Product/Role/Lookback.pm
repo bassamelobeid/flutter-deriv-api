@@ -114,6 +114,10 @@ sub is_binary {
     return 0;
 }
 
+sub _build_pricing_engine_name {
+    return 'Pricing::Engine::Lookback';
+}
+
 override shortcode => sub {
     my $self = shift;
 

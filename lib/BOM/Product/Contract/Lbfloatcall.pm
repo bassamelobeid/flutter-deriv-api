@@ -24,10 +24,6 @@ sub check_expiry_conditions {
     return;
 }
 
-sub _build_pricing_engine_name {
-    return 'Pricing::Engine::Lookback';
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
