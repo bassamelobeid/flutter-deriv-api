@@ -13,9 +13,8 @@ has [qw(ticks_for_lookbacks spot_min spot_max)] => (
 );
 
 has unit => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
+    is  => 'ro',
+    isa => 'Num',
 );
 
 sub _build_ticks_for_lookbacks {
