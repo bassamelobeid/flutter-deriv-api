@@ -40,7 +40,7 @@ sub shortcode_to_parameters {
 
     my ($bet_type, $underlying_symbol, $payout, $date_start, $date_expiry, $barrier, $barrier2, $prediction, $fixed_expiry, $tick_expiry,
         $how_many_ticks, $forward_start, $binaryico_per_token_bid_price,
-        $binaryico_number_of_tokens, $unit);
+        $binaryico_number_of_tokens);
 
     my ($initial_bet_type) = split /_/, $shortcode;
 
