@@ -48,7 +48,7 @@ sub _build_priced_with_intraday_model {
 sub get_ohlc_for_period {
     my $self = shift;
 
-    my $start_epoch = $self->date_start->epoch + 1;    # excluding tick at contract start time
+    my $start_epoch = $self->date_start->epoch;
     my $end_epoch;
     if ($self->date_pricing->is_after($self->date_expiry)) {
         $end_epoch = $self->expiry_daily ? $self->date_expiry->truncate_to_day->epoch : $self->date_settlement->epoch;
@@ -108,14 +108,8 @@ sub _build_pricing_engine_name {
 override shortcode => sub {
     my $self = shift;
 
-    my $shortcode_date_start = (
-               $self->is_forward_starting
-            or $self->starts_as_forward_starting
-    ) ? $self->date_start->epoch . 'F' : $self->date_start->epoch;
-    my $shortcode_date_expiry =
-          ($self->tick_expiry)  ? $self->tick_count . 'T'
-        : ($self->fixed_expiry) ? $self->date_expiry->epoch . 'F'
-        :                         $self->date_expiry->epoch;
+    my $shortcode_date_start  = $self->date_start->epoch;
+    my $shortcode_date_expiry = $self->date_expiry->epoch;
 
     # TODO We expect to have a valid bet_type, but there may be codepaths which don't set this correctly yet.
     my $contract_type = $self->bet_type // $self->code;
