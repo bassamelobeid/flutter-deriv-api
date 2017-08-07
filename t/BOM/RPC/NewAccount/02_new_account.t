@@ -373,7 +373,7 @@ subtest $method => sub {
         $rpc_ct->call_ok('get_settings', {token => $auth_token});
         is($rpc_ct->result->{tax_residence}, undef, 'MLT client doesn\'t have tax residence set');
         $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token});
-        is(keys $rpc_ct->result, 0, 'MLT client has financial assessment set');
+        is(keys $rpc_ct->result, 0, 'MLT client doesn\'t have financial assessment set');
 
         $params->{args}->{accept_risk} = 1;
         $params->{token}               = $auth_token;
