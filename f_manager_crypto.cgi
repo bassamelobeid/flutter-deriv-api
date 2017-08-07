@@ -72,7 +72,7 @@ my $blockchain_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.bloc
 my $tt = BOM::Backoffice::Request::template;
 {
     my $cmd = request()->param('command');
-    $tt->process('backoffice/crypto_cashier/main.tt2', {rpc_command => $cmd}) || die $tt->error();
+    $tt->process('backoffice/crypto_cashier/main.tt2', {rpc_command => $cmd, testnet => BOM::Platform::Config::on_qa() ? 1 : 0 }) || die $tt->error();
 }
 
 ## CTC
@@ -254,6 +254,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
             view_type      => $view_type,
             va_cmds        => \%va_cmds,
             controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
+            testnet        => BOM::Platform::Config::on_qa() ? 1 : 0,
         }) || die $tt->error();
 } elsif ($view_action eq $va_cmds{reconcil}) {
     Bar('BTC Reconciliation');

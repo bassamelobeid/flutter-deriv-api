@@ -1,3 +1,9 @@
+[% MACRO blockchain_link(addr) BLOCK %]
+<a href="[% IF testnet %]https://www.blocktrail.com/tBTC/address/[% ELSE %]https://blockchain.info/address/[% END %][% addr %]">[% addr %]</a>
+[% END %]
+[% MACRO transaction_link(tx) BLOCK %]
+<a href="[% IF testnet %]https://www.blocktrail.com/tBTC/address/[% ELSE %]https://blockchain.info/address/[% END %][% tx %]">[% tx %]</a>
+[% END %]
 <table>
     <thead>
         <th>Status</th>
@@ -77,8 +83,9 @@
         [% FOREACH trx IN transactions %]
             <tr>
                 <td><table><tbody>
-                    <tr><td><b>Address</b>: [% trx.address %]</td></tr>
-                    <tr><td><b>Blockchain ID</b>: [% trx.blockchain_txn %]</td></tr>
+                    <tr><td><b>Address</b>: [% IF trx.address; blockchain_link(trx.address); END %]</td></tr>
+                    <tr><td><b>Blockchain ID</b>: [% IF trx.blockchain_txn; transaction_link(trx.blockchain_txn); END %]</td></tr>
+                    </tr>
                 </tbody></table></td>
                 <td><table><tbody>
                     <tr><td>Amount: [% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</td></tr>
