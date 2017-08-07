@@ -248,7 +248,7 @@ sub set_details {
 
     # special cases.. force empty string if necessary in these not-nullable cols.  They oughta be nullable in the db!
     for (qw(citizen address_2 state postcode salutation)) {
-        $client->$_ || $client->$_('');
+        $client->$_('') unless defined $client->$_;
     }
 
     return $client;
@@ -307,6 +307,8 @@ sub new_account_maltainvest {
         # no need to update current client since already updated above upon creation
         next if (($cli->loginid eq $new_client->loginid) or not BOM::RPC::v3::Utility::should_update_account_details($new_client, $cli->loginid));
 
+        # 60 is the max score to achive in financial assessment to be marked as professional
+        # as decided by compliance
         $cli->financial_assessment({
             data            => encode_json($financial_assessment->{user_data}),
             is_professional => $financial_assessment->{total_score} < 60 ? 0 : 1,
