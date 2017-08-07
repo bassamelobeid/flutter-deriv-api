@@ -61,9 +61,9 @@ ok $res->{residence_list};
 is_deeply $res->{residence_list}->[0],
     {
     disabled  => 'DISABLED',
-    value     => 'af',
-    text      => 'Afghanistan',
-    phone_idd => '93',
+    value     => 'ir',
+    text      => 'Iran, Islamic Republic of',
+    phone_idd => '98',
     disabled  => 'DISABLED'
     };
 test_schema('residence_list', $res);
