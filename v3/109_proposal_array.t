@@ -74,23 +74,16 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             symbol        => $symbol,
             recorded_date => $now
         });
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => $symbol,
-        epoch      => $now->epoch,
-        quote      => 100,
-        });
 
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+#Add extra tick for 2 minutes, this is because for USDJPY the minimum duration
+#was increase from 1 to 3 minutes
+for (my $cnt=0; $cnt < 3; $cnt+=1) {
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => $symbol,
-        epoch      => $now->epoch + 60,
+        epoch      => $now->epoch + 60 * $cnt,
         quote      => 100,
         });
-
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => $symbol,
-        epoch      => $now->epoch + 120,
-        quote      => 100,
-        });
+}
 
 my $t = build_wsapi_test();
 
@@ -193,8 +186,10 @@ subtest "one barrier, one contract_type" => sub {
 
 subtest "various results" => sub {
 
+# We add 120 here because we want to increase the duration from 1 to 3 minutes.
     $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch} + 120;
     $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
+# And this line is to fix the minimum stake validation failure.
     $proposal_array_req_tpl->{amount}                   = 200;
     $proposal_array_req_tpl->{barriers}                 = [{barrier => 97.2}];
     $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
