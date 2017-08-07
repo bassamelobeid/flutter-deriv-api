@@ -8,6 +8,7 @@ use Try::Tiny;
 use List::MoreUtils qw(any);
 use Data::Password::Meter;
 use Format::Util::Numbers qw/formatnumber/;
+use JSON qw/encode_json/;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -238,6 +239,21 @@ sub new_account_real {
     };
 }
 
+sub set_details {
+    my ($client, $args) = @_;
+
+    # don't update client's brokercode with wrong value
+    delete $args->{broker_code};
+    $client->$_($args->{$_}) for keys %$args;
+
+    # special cases.. force empty string if necessary in these not-nullable cols.  They oughta be nullable in the db!
+    for (qw(citizen address_2 state postcode salutation)) {
+        $client->$_('') unless defined $client->$_;
+    }
+
+    return $client;
+}
+
 sub new_account_maltainvest {
     my $params = shift;
 
@@ -285,6 +301,21 @@ sub new_account_maltainvest {
         successful  => 't'
     });
     $user->save;
+
+    my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
+    foreach my $cli ($user->clients) {
+        # no need to update current client since already updated above upon creation
+        next if (($cli->loginid eq $new_client->loginid) or not BOM::RPC::v3::Utility::should_update_account_details($new_client, $cli->loginid));
+
+        # 60 is the max score to achive in financial assessment to be marked as professional
+        # as decided by compliance
+        $cli->financial_assessment({
+            data            => encode_json($financial_assessment->{user_data}),
+            is_professional => $financial_assessment->{total_score} < 60 ? 0 : 1,
+        });
+        set_details($cli, $details_ref->{details});
+        $cli->save;
+    }
 
     BOM::Platform::AuditLog::log("successful login", "$client->email");
     return {

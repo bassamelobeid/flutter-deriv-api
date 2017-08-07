@@ -1360,8 +1360,12 @@ subtest $method => sub {
     # setting account settings for one client updates for all clients with the same landing company
     $params->{token} = $token_cr_2;
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
-    is($c->tcall('get_settings', {token => $token_21})->{address_line_1},   "address line 1", "Was able to set settings correctly for CR client");
-    is($c->tcall('get_settings', {token => $token_cr_2})->{address_line_1}, "address line 1", "Was able to set settings correctly for second CR client");
+    is($c->tcall('get_settings', {token => $token_21})->{address_line_1}, "address line 1", "Was able to set settings correctly for CR client");
+    is(
+        $c->tcall('get_settings', {token => $token_cr_2})->{address_line_1},
+        "address line 1",
+        "Was able to set settings correctly for second CR client"
+    );
 };
 
 # set_self_exclusion && get_self_exclusion
