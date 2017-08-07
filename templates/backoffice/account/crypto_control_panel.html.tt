@@ -12,6 +12,7 @@ Amount: <select name="currency"><option value="BTC">Bitcoin</option></select>
 <input type="submit" value="Make Dual Control Code" name="view_action"/>
 ([% staff %])
 </form>
+<h3>Reconciliation</h3>
 <form action="[% controller_url %]" method="POST">
     <input type="hidden" name="broker" value="[% broker %]">
     <input type="text" name="[% start_date %]" required class="datepick" value="[% start_date %]">
