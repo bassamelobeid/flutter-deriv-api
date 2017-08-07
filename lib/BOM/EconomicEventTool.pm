@@ -12,10 +12,6 @@ use LandingCompany::Offerings qw(get_offerings_flyby);
 use JSON qw(to_json);
 use List::Util qw(first);
 use BOM::Backoffice::Request;
-use Parallel::ForkManager;
-use Sys::Info;
-
-use constant WORKERS => int(Sys::Info->new->device("CPU")->count / 2) || 1;
 
 sub get_economic_events_for_date {
     my $date = shift;
@@ -140,17 +136,11 @@ sub _regenerate {
     my $events = shift;
 
     # update economic events impact curve with the newly added economic event
-    my $fm = Parallel::ForkManager->new(WORKERS);
-    foreach my $symbol (create_underlying_db->symbols_for_intraday_fx) {
-        $fm->start and next;
-        Volatility::Seasonality::generate_economic_event_seasonality({
-            underlying_symbols => [$symbol],
-            economic_events    => $events,
-            chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
-        });
-        $fm->finish;
-    }
-    $fm->wait_all_children;
+    Volatility::Seasonality::generate_economic_event_seasonality({
+        underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
+        economic_events    => $events,
+        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
 
     # refresh intradayfx cache to to use new economic events impact curve
     BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
