@@ -371,12 +371,7 @@ sub vol_spread_markup {
     my $self = shift;
 
     my $bet      = $self->bet;
-    my $vol_args = {
-        from => $bet->effective_start->epoch,
-        to   => $bet->date_expiry->epoch,
-    };
     my $two_hour_vol = $bet->empirical_volsurface->get_historical_volatility({
-            %$vol_args,
             ticks => $bet->_get_ticks_for_volatility_calculation({
                     from => $bet->effective_start->minus_time_interval('2h')->epoch,
                     to   => $bet->effective_start->epoch,
@@ -385,7 +380,6 @@ sub vol_spread_markup {
         });
 
     my $twenty_minute_vol = $bet->empirical_volsurface->get_historical_volatility({
-            %$vol_args,
             ticks => $bet->_get_ticks_for_volatility_calculation({
                     from => $bet->effective_start->minus_time_interval('20m')->epoch,
                     to   => $bet->effective_start->epoch,
