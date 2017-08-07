@@ -80,6 +80,17 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         quote      => 100,
         });
 
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => $symbol,
+        epoch      => $now->epoch + 60,
+        quote      => 100,
+        });
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => $symbol,
+        epoch      => $now->epoch + 120,
+        quote      => 100,
+        });
 
 my $t = build_wsapi_test();
 
