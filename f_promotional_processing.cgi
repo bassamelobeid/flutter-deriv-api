@@ -106,7 +106,6 @@ foreach my $loginid (@approved, @rejected) {
             email_content_is_html => 1,
             use_email_template    => 1,
         });
-        $client->add_note($email_subject, $email_content);
     }
 }
 
