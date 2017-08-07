@@ -72,7 +72,12 @@ my $blockchain_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.bloc
 my $tt = BOM::Backoffice::Request::template;
 {
     my $cmd = request()->param('command');
-    $tt->process('backoffice/crypto_cashier/main.tt2', {rpc_command => $cmd, testnet => BOM::Platform::Config::on_qa() ? 1 : 0 }) || die $tt->error();
+    $tt->process(
+        'backoffice/crypto_cashier/main.tt2',
+        {
+            rpc_command => $cmd,
+            testnet     => BOM::Platform::Config::on_qa() ? 1 : 0
+        }) || die $tt->error();
 }
 
 ## CTC
@@ -362,7 +367,9 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
                 push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
             }
             if (Date::Utility->new($db_tran->{date})->epoch < time - 4 * 60) {
-                if ($blockchain_tran->{confirmations} < 3 and not($db_tran->{status} eq 'LOCKED' or $db_tran->{status} eq 'VERIFIED' or $db_tran->{status} eq 'PROCESSING')) {
+                if ($blockchain_tran->{confirmations} < 3
+                    and not($db_tran->{status} eq 'LOCKED' or $db_tran->{status} eq 'VERIFIED' or $db_tran->{status} eq 'PROCESSING'))
+                {
                     push @{$db_tran->{comments}}, 'Invalid status - should be locked/verified/processing';
                 } elsif ($blockchain_tran->{confirmations} >= 3 and not($db_tran->{status} eq 'SENT')) {
                     push @{$db_tran->{comments}}, 'Invalid status - should be SENT';
