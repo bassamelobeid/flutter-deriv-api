@@ -34,8 +34,8 @@ This is to get the number of unique users that have place ICO in a European Unio
 sub _open_ico_for_european_country {
     my ($self, $client_residence) = @_;
 
-    my $db = BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db;
-    my $number_of_unique_client_per_eu_country = $db->dbh->selectall_hashref('SELECT cnt FROM get_uniq_users_per_country_for_ico('coinauction_bet', ARRAY[?]::VARCHAR[])', undef, $client_residence)->[0];
+    my $db = BOM::Database::ClientDB->new({broker_code => 'FOG', operation => 'collector'})->db;
+    my $number_of_unique_client_per_eu_country = $db->dbh->selectcol_arrayref(q{ SELECT cnt FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', ARRAY[?]::VARCHAR[]) }, undef, $client_residence)->[0];
 
     return $number_of_unique_client_per_eu_country;
 }
@@ -649,7 +649,7 @@ sub _validate_ico_jurisdictional_restrictions {
     my $residence = $client->residence;
     my $loginid   = $client->loginid;
 
-    if (!$residence || $loginid !~ /^VR/) {
+    if (!$residence || $loginid =~ /^VR/) {
         return Error::Base->cuss(
             -type              => 'NoResidenceCountry',
             -mesg              => 'Client cannot place ico as we do not know their residence.',
