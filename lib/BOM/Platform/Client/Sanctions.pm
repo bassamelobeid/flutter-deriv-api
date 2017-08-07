@@ -74,10 +74,9 @@ sub check {
     if (!$client->get_status('disabled')) {
         $client->set_status('disabled', 'system', 'client disabled as marked as UNTERR');
         $client->save;
-        $client->add_note('UNTERR', $message);
     }
     send_email({
-            from    => $self->brand->emails('support'),
+            from    => $self->brand->emails('compliance'),
             to      => $self->brand->emails('compliance'),
             subject => $client->loginid . ' marked as UNTERR',
             message => [$message],
