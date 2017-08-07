@@ -90,21 +90,6 @@ my %exchange_rates;
 for (qw/BTC LTC ETH/) {
     $exchange_rates{$_} = in_USD(1.0, $_);
 }
-print '<h3>Make dual control code</h3>';
-print '<FORM ACTION="' . request()->url_for('backoffice/f_manager_crypto.cgi') . '" METHOD="POST">';
-print '<INPUT type="hidden" name="broker" value="' . $encoded_broker . '">';
-print 'Amount: <select name="currency">' . '<option value="BTC">Bitcoin</option>' . '</select>';
-print ' <input type="text" name="amount_dcc" size=15/>';
-print '<br>';
-print '<br>';
-print ' Loginid of the client: <input type="text" size="12" name="loginid_dcc" />';
-print ' Blockchain address: <input type="text" size="50" name="address_dcc" placeholder="Will be considered as transaction type"/>';
-print '<br>';
-print '<br>';
-print '<INPUT type="submit" value="Make Dual Control Code" name="view_action"/>';
-print " ($staff) ";
-print '</FORM>';
-
 my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
     'backoffice/account/crypto_control_panel.html.tt',
@@ -116,6 +101,7 @@ $tt2->process(
         start_date     => $start_date->date_yyyymmdd,
         end_date       => $end_date->date_yyyymmdd,
         now            => $now->datetime_ddmmmyy_hhmmss,
+        staff          => $staff,
     }) || die $tt2->error();
 
 code_exit_BO() unless ($view_action);
@@ -261,12 +247,13 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     $tt->process(
         'backoffice/account/manage_crypto_transactions.tt',
         {
-            transactions => $trxns,
-            broker       => $broker,
-            currency     => $currency,
-            view_action  => $reversed{$view_action},
-            view_type    => $view_type,
-            va_cmds      => \%va_cmds,
+            transactions   => $trxns,
+            broker         => $broker,
+            currency       => $currency,
+            view_action    => $reversed{$view_action},
+            view_type      => $view_type,
+            va_cmds        => \%va_cmds,
+            controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
         }) || die $tt->error();
 } elsif ($view_action eq $va_cmds{reconcil}) {
     Bar('BTC Reconciliation');

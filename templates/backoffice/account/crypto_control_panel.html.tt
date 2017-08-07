@@ -1,3 +1,17 @@
+<h3>Make dual control code</h3>
+<form action="[% controller_url %]" method="POST"> 
+<input type="hidden" name="broker" value="[% encoded_broker %]">
+Amount: <select name="currency"><option value="BTC">Bitcoin</option></select>
+ <input type="text" name="amount_dcc" size=15/>
+<br>
+<br>
+ Loginid of the client: <input type="text" size="12" name="loginid_dcc" />
+ Blockchain address: <input type="text" size="50" name="address_dcc" placeholder="Will be considered as transaction type"/>
+<br>
+<br>
+<input type="submit" value="Make Dual Control Code" name="view_action"/>
+([% staff %])
+</form>
 <form action="[% controller_url %]" method="POST">
     <input type="hidden" name="broker" value="[% broker %]">
     <input type="text" name="[% start_date %]" required class="datepick" value="[% start_date %]">
