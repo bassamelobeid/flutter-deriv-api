@@ -360,6 +360,13 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
             {
                 push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
             }
+            if (Date::Utility->new($db_tran->{date})->epoch < time - 2 * 120) {
+                if ($blockchain_tran->{confirmations} < 3 and not($db_tran->{status} eq 'LOCKED' or $db_tran->{status} eq 'VERIFIED' or $db_tran->{status} eq 'PROCESSING')) {
+                    push @{$db_tran->{comments}}, 'Invalid status - should be locked/verified/processing';
+                } elsif ($blockchain_tran->{confirmations} >= 3 and not($db_tran->{status} eq 'SENT')) {
+                    push @{$db_tran->{comments}}, 'Invalid status - should be SENT';
+                }
+            }
         }
     }
 
