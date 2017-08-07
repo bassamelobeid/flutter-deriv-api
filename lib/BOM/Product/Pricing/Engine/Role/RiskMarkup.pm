@@ -49,7 +49,7 @@ sub vol_spread_markup {
 
     my $bet = $self->bet;
     return Pricing::Engine::Markup::VolSpread->new(
-        bet_vega   => $bet->vega,
+        bet_vega   => abs($bet->vega),
         vol_spread => $bet->volsurface->get_spread({
                 sought_point => 'max',
                 day          => $bet->timeindays->amount

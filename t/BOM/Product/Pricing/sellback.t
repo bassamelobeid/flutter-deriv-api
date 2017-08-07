@@ -18,23 +18,9 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Test::MockModule;
 
-my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
-$mocked->mock('historical_vol_markup', sub {
-    return Math::Util::CalculatedValue::Validatable->new({
-               name => 'historical_vol_markup',
-               set_by => 'test',
-               base_amount => 0,
-               description => 'test'
-           });
-    });
 my $expectation = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/sellback_config.yml');
 my $start_time  = Date::Utility->new(1474860428);
 
-# for my $code (keys $expectation) {
-#     my ($shortcode, $mins_time_pricing) = split(/\|/, $code);
-
-#     price_contract_at($shortcode, $mins_time_pricing, $expectation->{$code});
-# }
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
     {
@@ -96,6 +82,7 @@ sub price_contract_at {
         duration     => $duration,
         date_start   => $start_time,
         date_pricing => $date_pricing,
+        pricing_vol  => 0.1
     };
 
     Test::BOM::UnitTestPrice::create_pricing_data($underlying, 'USD', $date_pricing);

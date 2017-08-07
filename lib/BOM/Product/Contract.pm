@@ -44,6 +44,7 @@ use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
 use Time::Duration::Concise;
 use Format::Util::Numbers qw/formatnumber/;
+use POSIX qw(ceil);
 
 use Quant::Framework;
 use Quant::Framework::VolSurface::Utils;
@@ -594,7 +595,8 @@ sub _build__pricing_args {
     };
 
     if ($self->priced_with_intraday_model) {
-        $args->{long_term_prediction} = $self->long_term_prediction;
+        $args->{long_term_prediction}  = $self->long_term_prediction;
+        $args->{historical_volatility} = $self->historical_volatility;
     }
 
     return $args;
@@ -760,8 +762,27 @@ sub _build_applicable_economic_events {
     my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
     my $current_epoch     = $effective_start->epoch;
     # Go back and forward an hour to get all the tentative events.
-    my $start = $current_epoch - $seconds_to_expiry - 3600;
-    my $end   = $current_epoch + $seconds_to_expiry + 3600;
+
+    my $tentative_events = Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        }
+        )->get_tentative_events
+        || {};
+
+    my $max_event_length = max(
+        grep { $a->{length} }
+            map {
+            my $event = $tentative_events->{$_};
+            $event->{length} = $event->{blankout_end} - $event->{blankout} if (exists $event->{blankout} and exists $event->{blankout_end});
+            $event;
+            } keys %$tentative_events
+    ) || 7200;
+
+    my $event_length = ceil($max_event_length / 2);
+
+    my $start = $current_epoch - $seconds_to_expiry - $event_length;
+    my $end   = $current_epoch + $seconds_to_expiry + $event_length;
+
     return Quant::Framework::EconomicEventCalendar->new({
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
         }
@@ -793,6 +814,7 @@ sub _build_tentative_events {
                 and $_->{blankout} <= $effective_start
                 and $_->{blankout_end} >= $effective_start
         } @{$self->_applicable_economic_events}];
+
 }
 
 sub _build_pricing_spot {

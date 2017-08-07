@@ -4,12 +4,14 @@ use strict;
 use warnings;
 
 use List::MoreUtils qw(none all);
-use VolSurface::IntradayFX;
-use BOM::Market::DataDecimate;
+use VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Static;
 use Quant::Framework::VolSurface;
 use Quant::Framework::VolSurface::Utils qw(effective_date_for);
+use Volatility::Seasonality;
+use BOM::Market::DataDecimate;
+use BOM::Platform::Chronicle;
 
 ## ATTRIBUTES  #######################
 
@@ -36,12 +38,6 @@ has atm_vols => (
     is         => 'ro',
     isa        => 'HashRef',
     lazy_build => 1
-);
-
-has intradayfx_volsurface => (
-    is         => 'ro',
-    isa        => 'Maybe[VolSurface::IntradayFX]',
-    lazy_build => 1,
 );
 
 has volsurface => (
@@ -130,11 +126,13 @@ sub _build_pricing_vol {
     my $vol;
     my $volatility_error;
     if ($self->priced_with_intraday_model) {
-        $vol = $self->intradayfx_volsurface->get_volatility({
+        $vol = $self->empirical_volsurface->get_volatility({
             from                          => $self->effective_start->epoch,
             to                            => $self->date_expiry->epoch,
+            ticks                         => $self->ticks_for_volatility_calculation,
             include_economic_event_impact => 1,
         });
+        $volatility_error = $self->empirical_volsurface->validation_error if $self->empirical_volsurface->validation_error;
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
@@ -218,24 +216,133 @@ sub _build_volsurface {
     });
 }
 
-sub _build_intradayfx_volsurface {
+has empirical_volsurface => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_empirical_volsurface {
     my $self = shift;
-    return VolSurface::IntradayFX->new(
+
+    return VolSurface::Empirical->new(
         underlying       => $self->underlying,
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-        backprice        => ($self->underlying->for_date) ? 1 : 0,
     );
 }
 
-has [qw(long_term_prediction)] => (
+# should be removed once we verified that intraday vega correction is not useful
+# in our intraday FX pricing model.
+#
+# These are kept as attributes because it will be over-written by japan back pricing.
+has [qw(long_term_prediction historical_volatility)] => (
     is         => 'ro',
     lazy_build => 1,
 );
 
 sub _build_long_term_prediction {
     my $self = shift;
-    return $self->intradayfx_volsurface->long_term_prediction;
+
+    # long_term_prediction is set in VolSurface::IntradayFX. For contracts with duration less than 15 minutes,
+    # we are only use historical volatility model hence taking a 10% volatility for it.
+    return $self->empirical_volsurface->long_term_prediction // 0.1;
+}
+
+sub _build_historical_volatility {
+    my $self = shift;
+
+    return $self->empirical_volsurface->get_historical_volatility({
+        from  => $self->effective_start->epoch,
+        to    => $self->date_expiry->epoch,
+        ticks => $self->ticks_for_volatility_calculation,
+    });
+}
+
+has ticks_for_volatility_calculation => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_ticks_for_volatility_calculation {
+    my $self = shift;
+
+    my $decimate = BOM::Market::DataDecimate->new;
+    my @ticks    = map {
+        $decimate->get({
+                underlying  => $self->underlying,
+                start_epoch => $_->[0],
+                end_epoch   => $_->[1],
+                backprice   => $self->underlying->for_date,
+            })
+    } @{$self->_get_tick_windows};
+
+    return \@ticks;
+}
+
+sub _get_tick_windows {
+    my $self = shift;
+
+    my $start_epoch                 = $self->effective_start->epoch;
+    my $twenty_minutes_in_secs      = 20 * 60;
+    my $twenty_minutes_before_start = $start_epoch - $twenty_minutes_in_secs;
+
+    # just take events from two hour back and sort it in descending order
+    my $categorized_events = Volatility::Seasonality::categorize_events(
+        $self->underlying->symbol,
+        [
+            sort { $b->{release_date} <=> $a->{release_date} }
+            grep { $_->{release_date} > $start_epoch - 2 * 3600 && $_->{release_date} < $start_epoch } @{$self->_applicable_economic_events}]);
+
+    return [[$twenty_minutes_before_start, $start_epoch]] unless @$categorized_events;
+
+    # combine overlapping events
+    my @combined;
+    foreach my $event (@$categorized_events) {
+        my $start_period = $event->{release_epoch};
+        my $end_period   = $start_period + min(900, $event->{duration});
+        my $curr         = [$start_period, $end_period];
+
+        if (not @combined) {
+            push @combined, $curr;
+        } elsif ($curr->[0] == $combined[-1][0]) {
+            $combined[-1][1] = max($curr->[1], $combined[-1][1]);    # overlapping release date, just take the maximum duration impact;
+        } elsif ($curr->[1] >= $combined[-1][0]) {
+            $combined[-1][0] = $curr->[0];
+            $combined[-1][1] = $curr->[1] if $curr->[1] > $combined[-1][1];    # duration of current event spans across previously added event
+        } else {
+            push @combined, $curr;
+        }
+    }
+
+    my $seconds_left = $twenty_minutes_in_secs;
+    my @tick_windows;
+
+    if ($combined[0][1] < $twenty_minutes_before_start) {
+        push @tick_windows, [$twenty_minutes_before_start, $start_epoch];
+    } else {
+        my $end_of_period = $start_epoch;
+        my $seconds_left  = $twenty_minutes_in_secs;
+        foreach my $period (@combined) {
+            if (@combined == 1 and $period->[1] >= $end_of_period) {
+                push @tick_windows, [$period->[0] - $seconds_left, $period->[0]];
+                $seconds_left = 0;
+            } else {
+                my $start_of_period = max($period->[1], $end_of_period - $seconds_left);
+                push @tick_windows, [$start_of_period, $end_of_period];
+                $seconds_left -= ($end_of_period - $start_of_period);
+                last if $seconds_left <= 0;
+                $end_of_period = $period->[0];
+            }
+        }
+
+        # if we don't have 20 minutes worth of ticks after looping through the events,
+        # add it here.
+        if ($seconds_left > 0) {
+            push @tick_windows, [$end_of_period - $seconds_left, $end_of_period];
+        }
+    }
+
+    return \@tick_windows;
 }
 
 1;

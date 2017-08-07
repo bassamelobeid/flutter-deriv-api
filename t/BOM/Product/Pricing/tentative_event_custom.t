@@ -39,14 +39,18 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 set_absolute_time($now->epoch);
 
-my $blackout_start = $now->minus_time_interval('1h');
-my $blackout_end   = $now->plus_time_interval('1h');
+my $blackout_start_15m = $now->minus_time_interval('30m');
+my $blackout_end_15m   = $now->minus_time_interval('15m');
+
+my $blackout_start_2h = $now->minus_time_interval('3h');
+my $blackout_end_2h   = $now->minus_time_interval('1h');
+
 my $events         = [{
         symbol                => 'USD',
         release_date          => $now->epoch,
-        blankout              => $blackout_start->epoch,
+        blankout              => $blackout_start_15m->epoch,
         estimated_release_date => $now->epoch,
-        blankout_end          => $blackout_end->epoch,
+        blankout_end          => $blackout_end_15m->epoch,
         is_tentative          => 1,
         tentative_event_shift => 0.02,
         event_name            => 'Test tentative',
@@ -55,14 +59,15 @@ my $events         = [{
     {
         symbol                => 'EUR',
         release_date          => $now->epoch,
-        blankout              => $blackout_start->epoch,
+        blankout              => $blackout_start_2h->epoch,
         estimated_release_date => $now->epoch,
-        blankout_end          => $blackout_end->epoch,
+        blankout_end          => $blackout_end_2h->epoch,
         is_tentative          => 1,
         tentative_event_shift => 0.01,
         event_name            => 'Test tentative',
         impact                => 5,
-    }];
+    }
+    ];
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
     {
@@ -93,18 +98,20 @@ my $contract_args = {
 
 #key is "contract type_pip diff" and value is expected barrier(s)
 my $expected = {
-    'CALL_0'        => 55.45,
-    'CALL_1000'     => 57.72,
-    'NOTOUCH_0'     => 5.53,
-    'NOTOUCH_1000'  => 19.32,
-    'ONETOUCH_2000' => 100,
-    'PUT_1000'      => 61.39,
-    'PUT_0'         => 55.55
+    'CALL_0'        => 55.48,
+    'CALL_1000'     => 52.12,
+    'NOTOUCH_0'     => 5.51,
+    'NOTOUCH_1000'  => 15.34,
+    'ONETOUCH_2000' => 97.05,
+    'PUT_1000'      => 59.2,
+    'PUT_0'         => 55.52
 };
 
 my $underlying = create_underlying('frxEURUSD');
 my $module     = Test::MockModule->new('Quant::Framework::Underlying');
 $module->mock('spot_tick', sub { $contract_args->{current_tick} });
+
+# First we test contract which is outside the event.
 
 foreach my $key (sort { $a cmp $b } keys %{$expected}) {
     my ($bet_type, $pip_diff) = split '_', $key;
@@ -113,9 +120,71 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
     $contract_args->{barrier}             = 'S' . $pip_diff . 'P';
     $contract_args->{pricing_engine_name} = 'BOM::Product::Pricing::Engine::Intraday::Forex';
     $contract_args->{landing_company}     = 'japan';
-    $contract_args->{pricing_vol}     = 0.21754833949871;
+    $contract_args->{pricing_vol} = 0.1; # not testing vol here
     my $c = produce_contract($contract_args);
     cmp_ok $c->ask_price, '==', $expected->{$key}, "correct ask price for $key";
+    is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', "correct engine for $key";
+}
+
+# Now test pricing for contracts within the tentative events
+$blackout_start_15m = $now->minus_time_interval('15m');
+$blackout_end_15m   = $now->plus_time_interval('15m');
+
+my $blackout_start_4h = $now->minus_time_interval('2h');
+my $blackout_end_4h   = $now->plus_time_interval('2h');
+
+my $another_events         = [{
+        symbol                => 'USD',
+        release_date          => $now->epoch,
+        blankout              => $blackout_start_15m->epoch,
+        estimated_release_date => $now->epoch,
+        blankout_end          => $blackout_end_15m->epoch,
+        is_tentative          => 1,
+        tentative_event_shift => 0.02,
+        event_name            => 'Another Test tentative',
+        impact                => 5,
+    },
+    {
+        symbol                => 'EUR',
+        release_date          => $now->epoch,
+        blankout              => $blackout_start_4h->epoch,
+        estimated_release_date => $now->epoch,
+        blankout_end          => $blackout_end_4h->epoch,
+        is_tentative          => 1,
+        tentative_event_shift => 0.01,
+        event_name            => 'Another Test tentative',
+        impact                => 5,
+    }
+    ];
+
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
+    {
+        recorded_date => $now,
+        events        => $another_events,
+    });
+
+my $expected_with_event = {
+    'CALL_0'        => 55.48,
+    'CALL_1000'     => 61.17,
+    'NOTOUCH_0'     => 5.51,
+    'NOTOUCH_1000'  => 34.04,
+    'ONETOUCH_2000' => 100,
+    'PUT_1000'      => 68.04,
+    'PUT_0'         => 55.52
+};
+
+foreach my $key (sort { $a cmp $b } keys %{$expected_with_event}) {
+    my ($bet_type, $pip_diff) = split '_', $key;
+
+    $contract_args->{bet_type}            = $bet_type;
+    $contract_args->{barrier}             = 'S' . $pip_diff . 'P';
+    $contract_args->{pricing_engine_name} = 'BOM::Product::Pricing::Engine::Intraday::Forex';
+    $contract_args->{landing_company}     = 'japan';
+    $contract_args->{pricing_vol} = 0.1; # not testing vol here
+    my $c = produce_contract($contract_args);
+    cmp_ok $c->ask_price, '==', $expected_with_event->{$key}, "correct ask price for $key";
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', "correct engine for $key";
 }
 

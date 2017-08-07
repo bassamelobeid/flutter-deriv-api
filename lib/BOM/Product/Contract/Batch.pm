@@ -68,9 +68,9 @@ sub _build__contracts {
 
     if ($first_contract->priced_with_intraday_model) {
         # intraday model uses intradayfx volatility which is the same across barriers
-        $similar_market_data{pricing_vol}           = $first_contract->pricing_vol;
-        $similar_market_data{intradayfx_volsurface} = $first_contract->intradayfx_volsurface;
-        $similar_market_data{long_term_prediction}  = $first_contract->long_term_prediction;
+        $similar_market_data{pricing_vol}          = $first_contract->pricing_vol;
+        $similar_market_data{empirical_volsurface} = $first_contract->empirical_volsurface;
+        $similar_market_data{long_term_prediction} = $first_contract->long_term_prediction;
     } else {
         $similar_market_data{volsurface} = $first_contract->volsurface;
     }

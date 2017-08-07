@@ -20,15 +20,6 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
-my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
-$mocked->mock('historical_vol_markup', sub {
-    return Math::Util::CalculatedValue::Validatable->new({
-        name => 'historical_vol_markup',
-        set_by => 'test',
-        base_amount => 0,
-        description => 'test'
-    });
-    });
 my $inefficient_time = Date::Utility->new('2016-10-06 20:00:00');
 my $efficient_time   = $inefficient_time->minus_time_interval('1s');
 note("America is in DST on " . $inefficient_time->date);
@@ -111,6 +102,7 @@ subtest 'payout limit' => sub {
         currency     => 'USD',
         payout       => 200,
         current_tick => $tick,
+        pricing_vol  => 0.1
     };
     my $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy at 200';
