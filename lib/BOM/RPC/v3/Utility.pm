@@ -272,7 +272,7 @@ sub paymentagent_default_min_max {
 
 sub validate_uri {
     my $original_url = shift;
-    my $url         = URI->new($original_url);
+    my $url          = URI->new($original_url);
 
     if ($original_url =~ /[^[:ascii:]]/) {
         return localize('Unicode is not allowed in URL');
