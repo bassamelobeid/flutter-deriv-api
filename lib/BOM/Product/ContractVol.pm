@@ -309,7 +309,7 @@ sub _get_tick_windows {
         push @tick_windows, [$from, $to];
     } else {
         my $end_of_period = $to;
-        my $seconds_left  = $$diff;
+        my $seconds_left  = $diff;
         foreach my $period (@combined) {
             if (@combined == 1 and $period->[1] >= $end_of_period) {
                 push @tick_windows, [$period->[0] - $seconds_left, $period->[0]];
