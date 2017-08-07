@@ -301,7 +301,6 @@ sub new_account_maltainvest {
         successful  => 't'
     });
     $user->save;
-    $user->load;
 
     my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
     foreach my $cli ($user->clients) {
