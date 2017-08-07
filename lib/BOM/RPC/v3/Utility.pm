@@ -271,10 +271,10 @@ sub paymentagent_default_min_max {
 }
 
 sub validate_uri {
-    my $originalUrl = shift;
-    my $url         = URI->new($originalUrl);
+    my $original_url = shift;
+    my $url         = URI->new($original_url);
 
-    if ($originalUrl =~ /[^[:ascii:]]/) {
+    if ($original_url =~ /[^[:ascii:]]/) {
         return localize('Unicode is not allowed in URL');
     }
     if (not defined $url->scheme or ($url->scheme ne 'http' and $url->scheme ne 'https')) {
@@ -293,7 +293,7 @@ sub validate_uri {
         return localize('URL should not have query');
     }
     my $host = $url->host;
-    if (!$host || $originalUrl =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
+    if (!$host || $original_url =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
         return localize('Invalid URL');
     }
     my $suffix = Domain::PublicSuffix->new();
