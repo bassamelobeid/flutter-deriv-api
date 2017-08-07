@@ -7,7 +7,7 @@ use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::Product::Static;
 
-has [qw(ticks_for_lookbacks spot_min spot_max)] => (
+has [qw(spot_min spot_max)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -16,20 +16,6 @@ has unit => (
     is  => 'ro',
     isa => 'Num',
 );
-
-sub _build_ticks_for_lookbacks {
-
-    my $self      = shift;
-    my $end_epoch = $self->date_expiry->epoch;
-
-    my @ticks_since_start = @{
-        $self->underlying->ticks_in_between_start_end({
-                start_time => $self->date_start->epoch,
-                end_time   => $end_epoch,
-            })};
-
-    return \@ticks_since_start;
-}
 
 sub _build_spot_min {
     my $self = shift;
