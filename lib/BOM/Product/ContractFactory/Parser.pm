@@ -52,11 +52,8 @@ sub shortcode_to_parameters {
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
-    # Non binary parser
+    # List of lookbacks
     my $nonbinary_list = 'LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW';
-    if ($shortcode =~ /^($nonbinary_list)_(\w+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
-        $unit = $3;
-    }
 
     if ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
 
@@ -121,7 +118,7 @@ sub shortcode_to_parameters {
         underlying  => $underlying,
         amount_type => $bet_type eq 'BINARYICO' ? 'stake' : 'payout',
         amount      => $bet_type eq 'BINARYICO' ? $binaryico_per_token_bid_price : $payout,
-        (defined $unit) ? (unit => $unit) : (),
+        ($bet_type =~ /$nonbinary_list/) ? (unit => $payout) : (),
 
         date_start   => $date_start,
         date_expiry  => $date_expiry,
