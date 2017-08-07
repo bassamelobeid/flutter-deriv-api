@@ -118,7 +118,7 @@ sub cashier {
     # we want to pass name of master account if current client is a subaccount
     # but if client's first name is saved as a human name instead of loginid don't override it
     my $name;
-    if ($client->sub_account_of && $client->first_name =~ $client->sub_account_of) {
+    if ($client->sub_account_of && $client->first_name =~ qr/^$client->sub_account_of/) {
         my $main_client = Client::Account->new({loginid => $client->sub_account_of});
         $name = $main_client->first_name . ' ' . $main_client->last_name;
     }
