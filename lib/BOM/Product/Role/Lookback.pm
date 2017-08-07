@@ -52,7 +52,7 @@ sub _build_spot_max {
                 end   => $self->date_expiry->epoch,
             })}{'high'};
 
-    return $max;
+    return $spot_max;
 }
 
 sub _build_priced_with_intraday_model {
