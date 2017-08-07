@@ -46,10 +46,11 @@ sub _build_spot_min {
 sub _build_spot_max {
     my $self = shift;
 
-    my @ticks_since_start = @{$self->ticks_for_lookbacks};
-
-    my @quote = map { $_->{quote} } @ticks_since_start;
-    my $max = max(@quote);
+    my $spot_max = @{
+        $self->underlying->get_high_low_for_period({
+                start => $self->date_start->epoch,
+                end   => $self->date_expiry->epoch,
+            })}{'high'};
 
     return $max;
 }
