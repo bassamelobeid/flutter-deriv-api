@@ -51,7 +51,10 @@ sub check {
 
     return if $client->is_virtual;
 
-    my $found_in_list = $sanctions->is_sanctioned($client->first_name, $client->last_name);
+    my $found_in_list = $sanctions->is_sanctioned_hash({
+        country => $from_client->residence // '-',
+        names => [$client->first_name, $client->last_name],
+    });
 
     $client->add_sanctions_check({
         type   => $self->type,
