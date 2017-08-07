@@ -629,7 +629,7 @@ sub _validate_ico_european_restrictions {
             return Error::Base->cuss(
                 -type              => 'ExceedEuIcoLimit',
                 -mesg              => 'We are exceeding the limit that EU imposed on ICO ',
-                -message_to_client => localize('Sorry, the placement of bid for token are no longer available on your country.'),
+                -message_to_client => localize('Sorry, due to regulatory restrictions, no more bids for tokens may be placed for residents of your country.'),
             );
 
         }
@@ -655,7 +655,7 @@ sub _validate_ico_jurisdictional_restrictions {
         return Error::Base->cuss(
             -type              => 'NoResidenceCountry',
             -mesg              => 'Client cannot place ico as we do not know their residence.',
-            -message_to_client => localize('In order for you to place ico, we need to know your Residence (Country). Please update your settings.'),
+            -message_to_client => localize('In order to participate in the ICO, we need to know your country of residence. Please update your account settings accordingly.'),
         );
     }
 
@@ -664,7 +664,7 @@ sub _validate_ico_jurisdictional_restrictions {
         return Error::Base->cuss(
             -type              => 'IcoRestrictedCountry',
             -mesg              => 'Clients are not allowed to bid for ICO  as their country is restricted.',
-            -message_to_client => localize('Sorry, the placement of bid for tocken are not available in your country of residence.'),
+            -message_to_client => localize('Sorry, bidding for tokens is restricted in your country of residence.'),
         );
     }
 
@@ -676,7 +676,7 @@ sub _validate_ico_jurisdictional_restrictions {
             -type              => 'IcoProfessionalRestrictedCountry',
             -mesg              => 'Clients are not allowed to place ICO  as it is restricted to offer only to professional in the relevant country.',
             -message_to_client => localize(
-                'Placement of bid for token are only allow for professional investor. Please contact our custometer support to authenticate your account.'
+                'Bidding for tokens in your country of residence is restricted to professional investors only. If you are a professional investor, please contact our Customer Support to certify your account as such.'
             ),
         );
     }
