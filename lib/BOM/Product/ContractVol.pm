@@ -130,8 +130,8 @@ sub _build_pricing_vol {
                 from  => $self->effective_start,
                 to    => $self->date_expiry,
                 ticks => $self->_get_ticks_for_volatility_calculation({
-                        from => $self->effective_start->minus_time_interval('20m')->epoch,
-                        to   => $self->effective_start->epoch,
+                        from => $self->effective_start->minus_time_interval('20m'),
+                        to   => $self->effective_start,
                     }
                 ),
                 include_economic_event_impact => 1,
@@ -271,8 +271,8 @@ sub _get_ticks_for_volatility_calculation {
 sub _get_tick_windows {
     my ($self, $period) = @_;
 
-    my $from = $period->{from};
-    my $to   = $period->{to};
+    my $from = $period->{from}->epoch;
+    my $to   = $period->{to}->epoch;
     my $diff = $to - $from;
 
     # just take events from two hour back and sort it in descending order

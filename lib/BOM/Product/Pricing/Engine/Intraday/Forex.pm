@@ -370,22 +370,18 @@ sub economic_events_spot_risk_markup {
 sub vol_spread_markup {
     my $self = shift;
 
-    my $bet          = $self->bet;
-    my $two_hour_vol = $bet->empirical_volsurface->get_historical_volatility({
-            ticks => $bet->_get_ticks_for_volatility_calculation({
-                    from => $bet->effective_start->minus_time_interval('2h')->epoch,
-                    to   => $bet->effective_start->epoch,
-                }
-            ),
-        });
+    my $bet = $self->bet;
 
-    my $twenty_minute_vol = $bet->empirical_volsurface->get_historical_volatility({
-            ticks => $bet->_get_ticks_for_volatility_calculation({
-                    from => $bet->effective_start->minus_time_interval('20m')->epoch,
-                    to   => $bet->effective_start->epoch,
-                }
-            ),
+    my ($two_hour_vol, $twenty_minute_vol) = map {
+        my $period = {
+            from => $bet->effective_start->minus_time_interval($_),
+            to   => $bet->effective_start,
+        };
+        $bet->empirical_volsurface->get_historical_volatility({
+            %$period,
+            ticks => $bet->_get_ticks_for_volatility_calculation($period),
         });
+    } ('2h', '20m');
 
     my $vol_spread = max(-0.05, $two_hour_vol - $twenty_minute_vol);
 
