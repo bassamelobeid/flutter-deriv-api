@@ -58,7 +58,7 @@ SKIP: {
 $t = $t->send_ok({json => {residence_list => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{residence_list};
-is_deeply $res->{residence_list}->[0],
+is_deeply $res->{residence_list}->[102],
     {
     disabled  => 'DISABLED',
     value     => 'ir',
