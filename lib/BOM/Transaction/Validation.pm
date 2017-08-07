@@ -34,8 +34,13 @@ This is to get the number of unique users that have place ICO in a European Unio
 sub _open_ico_for_european_country {
     my ($self, $client_residence) = @_;
 
-    my $db = BOM::Database::ClientDB->new({broker_code => 'FOG', operation => 'collector'})->db;
-    my $number_of_unique_client_per_eu_country = $db->dbh->selectcol_arrayref(q{ SELECT cnt FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', ARRAY[?]::VARCHAR[]) }, undef, $client_residence)->[0];
+    my $db = BOM::Database::ClientDB->new({
+            broker_code => 'FOG',
+            operation   => 'collector'
+        })->db;
+    my $number_of_unique_client_per_eu_country =
+        $db->dbh->selectcol_arrayref(q{ SELECT cnt FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', ARRAY[?]::VARCHAR[]) },
+        undef, $client_residence)->[0];
 
     return $number_of_unique_client_per_eu_country // 0;
 }
@@ -625,9 +630,10 @@ sub _validate_ico_european_restrictions {
 
         if ($self->_open_ico_for_european_country($residence) > 149) {
             return Error::Base->cuss(
-                -type              => 'ExceedEuIcoLimit',
-                -mesg              => 'We are exceeding the limit that EU imposed on ICO ',
-                -message_to_client => localize('Sorry, due to regulatory restrictions, no more bids for tokens may be placed for residents of your country.'),
+                -type => 'ExceedEuIcoLimit',
+                -mesg => 'We are exceeding the limit that EU imposed on ICO ',
+                -message_to_client =>
+                    localize('Sorry, due to regulatory restrictions, no more bids for tokens may be placed for residents of your country.'),
             );
 
         }
@@ -653,7 +659,8 @@ sub _validate_ico_jurisdictional_restrictions {
         return Error::Base->cuss(
             -type              => 'NoResidenceCountry',
             -mesg              => 'Client cannot place ico as we do not know their residence.',
-            -message_to_client => localize('In order to participate in the ICO, we need to know your country of residence. Please update your account settings accordingly.'),
+            -message_to_client => localize(
+                'In order to participate in the ICO, we need to know your country of residence. Please update your account settings accordingly.'),
         );
     }
 
