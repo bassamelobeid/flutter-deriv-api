@@ -306,7 +306,7 @@ sub new_account_maltainvest {
     my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
     foreach my $cli ($user->clients) {
         # no need to update current client since already updated above upon creation
-        next unless (($cli->loginid ne $new_client->loginid) and BOM::RPC::v3::Utility::should_update_account_details($new_client, $cli->loginid));
+        next if (($cli->loginid eq $new_client->loginid) or not BOM::RPC::v3::Utility::should_update_account_details($new_client, $cli->loginid));
 
         $cli->financial_assessment({
             data            => encode_json($financial_assessment->{user_data}),
