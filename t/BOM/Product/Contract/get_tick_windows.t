@@ -24,8 +24,8 @@ my $c = produce_contract({
 });
 
 my $period = {
-    from => $c->effective_start->minus_time_interval('20m')->epoch,
-    to => $c->effective_start->epoch
+    from => $c->effective_start->minus_time_interval('20m'),
+    to => $c->effective_start
 };
 
 subtest 'no events' => sub {
