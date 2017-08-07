@@ -76,15 +76,13 @@ sub check {
 
     # do not add another note & block if client is already disabled
     if (!$client->get_status('disabled')) {
-        $client->set_status('disabled', 'system', 'client disabled as marked as UNTERR');
-        $client->save;
+        send_email({
+                from    => $self->brand->emails('compliance'),
+                to      => $self->brand->emails('compliance'),
+                subject => $client->loginid . ' marked as UNTERR',
+                message => [$message],
+            }) unless $self->skip_email;
     }
-    send_email({
-            from    => $self->brand->emails('compliance'),
-            to      => $self->brand->emails('compliance'),
-            subject => $client->loginid . ' marked as UNTERR',
-            message => [$message],
-        }) unless $self->skip_email;
     return $found_in_list;
 }
 
