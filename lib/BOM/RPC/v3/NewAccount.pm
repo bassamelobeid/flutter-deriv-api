@@ -244,9 +244,7 @@ sub set_details {
 
     # don't update client's brokercode with wrong value
     delete $args->{broker_code};
-    while (my ($key, $val) = each %$args) {
-        $client->$key($val);
-    }
+    $client->$_($args->{$_}) for keys %$args;
 
     # special cases.. force empty string if necessary in these not-nullable cols.  They oughta be nullable in the db!
     for (qw(citizen address_2 state postcode salutation)) {
