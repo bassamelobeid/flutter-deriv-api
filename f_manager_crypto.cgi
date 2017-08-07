@@ -68,9 +68,9 @@ if (length($broker) < 2) {
     code_exit_BO();
 }
 
-my $transaction_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/' : 'https://blockchain.info/tx/');
-my $address_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/' : 'https://blockchain.info/address/');
-my $tt = BOM::Backoffice::Request::template;
+my $transaction_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/'      : 'https://blockchain.info/tx/');
+my $address_uri     = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/' : 'https://blockchain.info/address/');
+my $tt              = BOM::Backoffice::Request::template;
 {
     my $cmd = request()->param('command');
     $tt->process(
