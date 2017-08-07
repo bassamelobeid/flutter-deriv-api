@@ -370,7 +370,7 @@ sub economic_events_spot_risk_markup {
 sub vol_spread_markup {
     my $self = shift;
 
-    my $bet      = $self->bet;
+    my $bet          = $self->bet;
     my $two_hour_vol = $bet->empirical_volsurface->get_historical_volatility({
             ticks => $bet->_get_ticks_for_volatility_calculation({
                     from => $bet->effective_start->minus_time_interval('2h')->epoch,

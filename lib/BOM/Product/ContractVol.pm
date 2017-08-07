@@ -127,15 +127,15 @@ sub _build_pricing_vol {
     my $volatility_error;
     if ($self->priced_with_intraday_model) {
         $vol = $self->empirical_volsurface->get_volatility({
-            from                          => $self->effective_start,
-            to                            => $self->date_expiry,
-            ticks => $self->_get_ticks_for_volatility_calculation({
-                    from => $self->effective_start->minus_time_interval('20m')->epoch,
-                    to   => $self->effective_start->epoch,
-                }
-            ),
-            include_economic_event_impact => 1,
-        });
+                from  => $self->effective_start,
+                to    => $self->date_expiry,
+                ticks => $self->_get_ticks_for_volatility_calculation({
+                        from => $self->effective_start->minus_time_interval('20m')->epoch,
+                        to   => $self->effective_start->epoch,
+                    }
+                ),
+                include_economic_event_impact => 1,
+            });
         $volatility_error = $self->empirical_volsurface->validation_error if $self->empirical_volsurface->validation_error;
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
