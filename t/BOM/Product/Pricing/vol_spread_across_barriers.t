@@ -15,6 +15,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw(produce_contract);
+use Test::MockModule;
 
 # setup ticks
 my $now        = Date::Utility->new('2017-08-07 08:03:27');
@@ -26,6 +27,15 @@ foreach my $single_data (@$ticks) {
     $decimator->_update($decimator->redis_write, $key, $single_data->{decimate_epoch}, $decimator->encoder->encode($single_data));
 }
 
+my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
+$mocked->mock(
+    'decimate_cache_get',
+    sub {
+        $decimator->_get_decimate_from_cache({
+                symbol      => $_[1]->{underlying}->symbol,
+                start_epoch => $_[1]->{start_epoch},
+                end_epoch   => $_[1]->{end_epoch}});
+    });
 # test time
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -75,7 +85,7 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 subtest 'test prices across barriers' => sub {
-    foreach my $d ([130.581, 883], [130.485, 912], [130.381, 933], [130.301, 954], [130.221, 977]) {
+    foreach my $d ([130.581, 883], [130.485, 912], [130.381, 933], [130.301, 954], [130.221, 976]) {
         my $c = produce_contract({
             bet_type     => 'CALLE',
             currency     => 'JPY',
@@ -86,7 +96,6 @@ subtest 'test prices across barriers' => sub {
             payout       => 1000,
             underlying   => $underlying,
             current_tick => $current_tick,
-            backprice    => 0
         });
         is $c->ask_price, $d->[1], "price is $d->[1] for barrier $d->[0]";
     }
