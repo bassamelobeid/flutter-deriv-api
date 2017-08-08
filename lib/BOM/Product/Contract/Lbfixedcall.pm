@@ -1,6 +1,7 @@
 package BOM::Product::Contract::Lbfixedcall;
 
 use Moose;
+use List::Util qw(max);
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Lookback', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
@@ -18,7 +19,7 @@ sub check_expiry_conditions {
     if ($self->exit_tick) {
         my ($high) = @{$self->get_ohlc_for_period()}{qw(high)};
         die "High is not available for symbol: " . $self->underlying->symbol if not defined $high;
-        my $value = $high - $self->barrier->as_absolute;
+        my $value = max(0, $high - $self->barrier->as_absolute);
         $self->value($value);
     }
 
