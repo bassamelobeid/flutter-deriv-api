@@ -337,6 +337,62 @@ subtest $method => sub {
             @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
         is $resp_loginid, $new_loginid, 'correct oauth token';
     };
+
+    my $client_mlt;
+    subtest 'Init MLT MF' => sub {
+        lives_ok {
+            my $password = 'jskjd8292922';
+            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            $email = 'new_email' . rand(999) . '@binary.com';
+            $user  = BOM::Platform::User->create(
+                email    => $email,
+                password => $hash_pwd
+            );
+            $user->save;
+            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'VRTC',
+                email       => $email,
+                residence   => 'cz',
+            });
+            $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'MLT',
+                email       => $email,
+                residence   => 'cz',
+            });
+            $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
+
+            $user->add_loginid({loginid => $client->loginid});
+            $user->add_loginid({loginid => $client_mlt->loginid});
+            $user->email_verified(1);
+            $user->save;
+        }
+        'Initial users and clients';
+    };
+
+    subtest 'Create new account maltainvest from MLT' => sub {
+        $rpc_ct->call_ok('get_settings', {token => $auth_token});
+        is($rpc_ct->result->{tax_residence}, undef, 'MLT client doesn\'t have tax residence set');
+        $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token});
+        is(keys $rpc_ct->result, 0, 'MLT client doesn\'t have financial assessment set');
+
+        $params->{args}->{accept_risk} = 1;
+        $params->{token}               = $auth_token;
+        $params->{args}->{residence}   = 'cz';
+        $params->{args}->{first_name}  = 'random';
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error;
+        my $new_loginid = $rpc_ct->result->{client_id};
+        my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
+        $rpc_ct->call_ok('get_settings', {token => $auth_token_mf});
+        is($rpc_ct->result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
+        $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf});
+        isnt(keys $rpc_ct->result, 0, 'MF client has financial assessment set');
+
+        $rpc_ct->call_ok('get_settings', {token => $auth_token});
+        is($rpc_ct->result->{tax_residence}, 'de,nl', 'MLT client has tax residence set after MF creation');
+        $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token});
+        isnt(keys $rpc_ct->result, 0, 'MLT client has financial assessment set');
+    };
 };
 
 $method = 'new_account_japan';
