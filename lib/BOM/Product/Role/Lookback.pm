@@ -24,7 +24,7 @@ sub _build_spot_min {
         $self->underlying->get_high_low_for_period({
                 start => $self->date_start->epoch,
                 end   => $self->date_expiry->epoch,
-            })}{'low'} // $self->entry_tick;
+            })}{'low'} // $self->pricing_spot;
 
     return $spot_min;
 }
@@ -36,7 +36,7 @@ sub _build_spot_max {
         $self->underlying->get_high_low_for_period({
                 start => $self->date_start->epoch,
                 end   => $self->date_expiry->epoch,
-            })}{'high'} // $self->entry_tick;
+            })}{'high'} // $self->pricing_spot;
 
     return $spot_max;
 }
