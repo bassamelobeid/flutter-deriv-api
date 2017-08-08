@@ -145,6 +145,8 @@ subtest 'allcombinations' => sub {
     }
 };
 
+# Regenerate trading periods here to try avoid below bail out.
+generate_trading_periods($symbol);
 
 my $put = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration} eq '2h15m'} @{$contracts_for->{contracts_for}{available}}]->[0];
 
@@ -190,10 +192,10 @@ subtest "various results" => sub {
     $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch};
     $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
 use Data::Dumper;
-print "###### $now" . Dumper($put);
+print "###### $now->epoch" . Dumper($put);
 
 # And this line is to fix the minimum stake validation failure.
-    $proposal_array_req_tpl->{amount}                   = 200;
+    $proposal_array_req_tpl->{amount}                   = 1000;
     $proposal_array_req_tpl->{barriers}                 = [{barrier => 97.2}];
     $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
 
@@ -206,6 +208,7 @@ print "<<< " . Dumper($response);
     ok $response->{proposal_array}{proposals}{CALLE}[0]{ask_price}, "proposal is ok, price presented";
 
     $proposal_array_req_tpl->{barriers}                 = [{barrier => 99}];
+    $proposal_array_req_tpl->{amount}                   = 100;
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
     ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : Minimum stake of 35 and maximum payout of 100000.";
