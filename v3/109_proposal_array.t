@@ -197,6 +197,8 @@ subtest "various results" => sub {
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
 
+    use Data::Dumper;
+    note(Data::Dumper->Dumper($response));
     ok $response->{proposal_array}{proposals}{CALLE}[0]{ask_price}, "proposal is ok, price presented";
 
     $proposal_array_req_tpl->{barriers}                 = [{barrier => 99}];
