@@ -93,9 +93,6 @@ sub create_account {
     my $args = shift;
     my ($user, $details, $from_client) = @{$args}{'user', 'details', 'from_client'};
 
-    use Data::Dumper; 
-    warn '[FROM_CLI] ', Dumper($from_client);
-
     if (my $error = validate($args)) {
         return $error;
     }
@@ -103,9 +100,9 @@ sub create_account {
     return $register if ($register->{error});
 
     my $response = after_register_client({
-        client  => $register->{client},
-        user    => $user,
-        details => $details,
+        client      => $register->{client},
+        user        => $user,
+        details     => $details,
         from_client => $from_client,
     });
 
@@ -137,7 +134,7 @@ sub after_register_client {
         $client->save;
     }
     # will bring social signup status to new client
-    #  when virtual client had created account with social login 
+    #  when virtual client had created account with social login
     if ($from_client->get_status('social_signup')) {
         $client->set_status('social_signup', 'system', '1');
     }
