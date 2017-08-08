@@ -84,6 +84,7 @@ subtest 'buy n check' => sub {
             buy   => $proposal->{proposal}->{id},
             price => $proposal->{proposal}->{ask_price}});
 
+    note explain $data;
     ok($contract_id = $data->{buy}->{contract_id}, "got contract_id");
 
     $data = $t->await::proposal_open_contract({
@@ -109,6 +110,8 @@ subtest 'passthrough' => sub {
     });
     is($data->{proposal_open_contract}->{id}, undef, 'passthrough should not allow multiple proposal_open_contract subscription');
 };
+
+my $account_id;
 
 subtest 'selling contract message' => sub {
     # It is hack to emulate contract selling and test subcribtion
@@ -138,8 +141,10 @@ subtest 'selling contract message' => sub {
         short_code              => $contract_details->[0]->{short_code},
         currency_code           => 'USD',
     };
-    my $json = JSON::to_json($msg);
-    BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
+    $account_id = $contract_details->[0]->{account_id};
+
+    BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json $msg);
+
     my $data = $t->await::proposal_open_contract();
     is($data->{msg_type}, 'proposal_open_contract', 'Got message about selling contract');
 
@@ -149,15 +154,6 @@ subtest 'selling contract message' => sub {
 subtest 'forget' => sub {
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
     is(scalar @{$data->{forget_all}}, 0, 'Forget all returns empty as contracts are already sold');
-
-    my (undef, $call_params) = call_mocked_client(
-        $t,
-        {
-            proposal_open_contract => 1,
-            contract_id            => 1
-        });
-    is $call_params->{token}, $token;
-    is $call_params->{args}->{contract_id}, 1;
 };
 
 subtest 'check two contracts subscription' => sub {
@@ -172,22 +168,27 @@ subtest 'check two contracts subscription' => sub {
         "duration"      => "2",
         "duration_unit" => "m"
     });
-    BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 
     my $ids = {};
 
-    $t->await::proposal_open_contract({
+    sleep 1;
+
+    my $res = $t->await::proposal_open_contract({
         proposal_open_contract => 1,
         subscribe              => 1
     });
-    $t->await::buy({
+
+    my $buy_res = $t->await::buy({
             buy   => $proposal->{proposal}->{id},
             price => $proposal->{proposal}->{ask_price}});
 
-    $t->await::balance({balance=>1});
+    ok($contract_id = $buy_res->{buy}->{contract_id}, "got contract_id");
+
+    $t->await::balance({balance => 1});
+
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
 
-    is(scalar @{$data->{forget_all}}, 2, 'Correct number of subscription forget');
+    is(scalar @{$data->{forget_all}}, 1, 'Correct number of subscription forget');
 };
 
 $t->finish_ok;
