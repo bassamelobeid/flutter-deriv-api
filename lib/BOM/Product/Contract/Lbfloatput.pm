@@ -17,6 +17,7 @@ sub check_expiry_conditions {
 
     if ($self->exit_tick) {
         my ($high, $close) = @{$self->get_ohlc_for_period()}{qw(high close)};
+        die "High/Close is not available for symbol: " . $self->underlying->symbol if (not defined $high or not defined close);
         my $value = $high - $close;
         $self->value($value);
     }

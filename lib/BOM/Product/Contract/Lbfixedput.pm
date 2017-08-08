@@ -17,6 +17,7 @@ sub check_expiry_conditions {
 
     if ($self->exit_tick) {
         my ($low) = @{$self->get_ohlc_for_period()}{qw(low)};
+        die "Low is not defined for symbol: " . $self->underlying->symbol if not defined $low;
         my $value = $self->barrier->as_absolute - $low;
         $self->value($value);
     }
