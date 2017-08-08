@@ -24,9 +24,6 @@ sub residence_list {
         next if $country_code eq '';
         my $country_name = $country_selection->{translated_name};
         my $phone_idd    = $countries->idd_from_code($country_code);
-        if (length $country_name > 26) {
-            $country_name = substr($country_name, 0, 26) . '...';
-        }
 
         my $option = {
             value => $country_code,
