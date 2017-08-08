@@ -191,7 +191,7 @@ subtest "various results" => sub {
     $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
 # And this line is to fix the minimum stake validation failure.
     $proposal_array_req_tpl->{amount}                   = 200;
-    $proposal_array_req_tpl->{barriers}                 = [{barrier => 97}];
+    $proposal_array_req_tpl->{barriers}                 = [{barrier => 97.1}];
     $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
 
     $response = $t->await::proposal_array($proposal_array_req_tpl);
