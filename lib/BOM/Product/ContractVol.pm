@@ -256,16 +256,20 @@ sub _get_ticks_for_volatility_calculation {
     my ($self, $period) = @_;
 
     my $decimate = BOM::Market::DataDecimate->new;
-    my @ticks    = map {
-        $decimate->get({
-                underlying  => $self->underlying,
-                start_epoch => $_->[0],
-                end_epoch   => $_->[1],
-                backprice   => $self->underlying->for_date,
-            })
-    } @{$self->_get_tick_windows($period)};
+    my @ticks =
+        map { $decimate->get({underlying => $self->underlying, start_epoch => $_->[0], end_epoch => $_->[1], backprice => $self->backprice,}) }
+        @{$self->_get_tick_windows($period)};
 
     return \@ticks;
+}
+
+has backprice => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_backprice {
+    return shift->underlying->for_date;
 }
 
 sub _get_tick_windows {
