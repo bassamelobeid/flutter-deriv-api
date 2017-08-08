@@ -127,15 +127,11 @@ sub _build_pricing_vol {
     my $volatility_error;
     if ($self->priced_with_intraday_model) {
         $vol = $self->empirical_volsurface->get_volatility({
-                from  => $self->effective_start,
-                to    => $self->date_expiry,
-                ticks => $self->_get_ticks_for_volatility_calculation({
-                        from => $self->effective_start->minus_time_interval('20m'),
-                        to   => $self->effective_start,
-                    }
-                ),
-                include_economic_event_impact => 1,
-            });
+            from                          => $self->effective_start,
+            to                            => $self->date_expiry,
+            ticks                         => $self->ticks_for_short_term_volatility_calculation,
+            include_economic_event_impact => 1,
+        });
         $volatility_error = $self->empirical_volsurface->validation_error if $self->empirical_volsurface->validation_error;
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
@@ -250,6 +246,22 @@ sub _build_long_term_prediction {
     # long_term_prediction is set in VolSurface::IntradayFX. For contracts with duration less than 15 minutes,
     # we are only use historical volatility model hence taking a 10% volatility for it.
     return $self->empirical_volsurface->long_term_prediction // 0.1;
+}
+
+sub ticks_for_short_term_volatility_calculation {
+    my $self = shift;
+    return $self->_get_ticks_for_volatility_calculation({
+        from => $self->effective_start->minus_time_interval('20m'),
+        to   => $self->effective_start,
+    });
+}
+
+sub ticks_for_long_term_volatility_calculation {
+    my $self = shift;
+    return $self->_get_ticks_for_volatility_calculation({
+        from => $self->effective_start->minus_time_interval('2h'),
+        to   => $self->effective_start,
+    });
 }
 
 sub _get_ticks_for_volatility_calculation {
