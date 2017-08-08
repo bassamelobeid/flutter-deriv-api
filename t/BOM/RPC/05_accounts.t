@@ -718,7 +718,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status                        => bag(qw(authenticated has_password)),
+            status                        => bag(qw(authenticated)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
