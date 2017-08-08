@@ -22,7 +22,6 @@ use BOM::Platform::Client::Sanctions;
 sub validate {
     my $args = shift;
     my ($from_client, $user) = @{$args}{'from_client', 'user'};
-    my $country = $args->{country} || '';
 
     my $details;
     my ($broker, $residence) = ('', '');
@@ -30,14 +29,10 @@ sub validate {
         ($broker, $residence) = @{$details}{'broker_code', 'residence'};
     }
 
-    my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], country[$country], residence[$residence], error: ";
+    my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], residence[$residence], error: ";
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         warn($msg . 'new account opening suspended');
-        return {error => 'invalid'};
-    }
-    if ($country and Brands->new(name => request()->brand)->countries_instance->restricted_country($country)) {
-        warn($msg . "restricted IP country [$country]");
         return {error => 'invalid'};
     }
     unless ($user->email_verified) {
@@ -127,7 +122,7 @@ sub register_client {
 
 sub after_register_client {
     my $args = shift;
-    my ($client, $user, $details) = @{$args}{'client', 'user', 'details'};
+    my ($client, $user, $details, $ip, $country) = @{$args}{qw(client user details ip country)};
 
     if (not $client->is_virtual) {
         $client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
@@ -146,21 +141,7 @@ sub after_register_client {
     my $notemsg = "$client_loginid - Name and Address\n\n\n\t\t $client_name \n\t\t";
     my @address = map { $client->$_ } qw(address_1 address_2 city state postcode);
     $notemsg .= join("\n\t\t", @address, Locale::Country::code2country($client->residence));
-    # Include last 10 lines of login history because CS needs to check the country looks sensible
-    $notemsg .= "\n\n" . join(
-        "\n",
-        map {
-            if ($_->{env}) {
-                my ($ip, $cc) = $_->{env} =~ /IP=([0-9a-z\.:]+) IP_COUNTRY=([A-Z]{1,3}) /;
-                sprintf '%s from %s (country %s)', $_->{action}, $ip // 'unknown IP', $cc // 'unknown';
-            } else {
-                '';
-            }
-            } @{
-            $user->find_login_history(
-                sort_by => 'history_date desc',
-                limit   => 10,
-            )});
+    $notemsg .= sprintf "\n\nIP was %s (country %s)", $ip // 'unknown', $country // 'unknown';
     $client->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$notemsg\n");
 
     if ($client->landing_company->short eq 'iom'
