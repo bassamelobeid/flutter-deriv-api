@@ -384,7 +384,8 @@ sub vol_spread_markup {
             });
     } ('2h', '20m');
 
-    my $vol_spread = max(-0.05, $two_hour_vol - $twenty_minute_vol);
+    # We cap vol spread at +/-5%
+    my $vol_spread = min(0.05, max(-0.05, $two_hour_vol - $twenty_minute_vol));
 
     return Pricing::Engine::Markup::VolSpread->new(
         bet_vega   => $bet->vega,
