@@ -6,7 +6,6 @@ use BOM::Platform::Config;
 use BOM::Platform::Email qw(send_email);
 use Client::Account;
 use Data::Validate::Sanctions;
-use Locale::Country::Extra;
 
 has client => (
     is       => 'ro',
@@ -52,10 +51,7 @@ sub check {
 
     return if $client->is_virtual;
 
-    my $found_in_list = $sanctions->is_sanctioned_hash({
-        country => Locale::Country::Extra->new()->country_from_code($client->residence) // '-',
-        names => [$client->first_name, $client->last_name],
-    });
+    my $found_in_list = $sanctions->is_sanctioned($client->first_name, $client->last_name);
 
     $client->add_sanctions_check({
         type   => $self->type,
@@ -74,7 +70,7 @@ sub check {
         . "Check possible match in UN sanctions list found in [$found_in_list, "
         . Date::Utility->new($sanctions->last_updated($found_in_list))->date . "].";
 
-    # do not add another note & block if client is already disabled
+    # do not send notification if client is already disabled
     if (!$client->get_status('disabled')) {
         send_email({
                 from    => $self->brand->emails('compliance'),
