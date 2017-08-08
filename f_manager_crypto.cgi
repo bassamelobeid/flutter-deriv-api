@@ -112,6 +112,11 @@ $tt2->process(
 
 code_exit_BO() unless ($view_action);
 
+if (not $currency or $currency !~ /^[A-Z]{3}$/) {
+    print "Invalid currency.";
+    code_exit_BO();
+}
+
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
 my $dbh = $clientdb->db->dbh;
 
@@ -124,10 +129,6 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     if ($view_action eq $va_cmds{withdrawals}) {
         Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
-        if (not $currency or $currency !~ /^[A-Z]{3}$/) {
-            print "Invalid currency.";
-            code_exit_BO();
-        }
         if ($address and $address !~ /^\w+$/) {
             print "Invalid address.";
             code_exit_BO();
