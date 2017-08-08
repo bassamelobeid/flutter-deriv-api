@@ -126,14 +126,12 @@ sub _validate_available_currency {
     my ($self, $client) = (shift, shift);
 
     my $currency = $self->transaction->contract->currency;
+    return Error::Base->cuss(
+        -type              => 'InvalidCurrency',
+        -mesg              => "Invalid $currency",
+        -message_to_client => localize("The provided currency [_1] is invalid.", $currency),
+    ) unless (exists $client->landing_company->legal_allowed_currencies->{$currency});
 
-    if (not grep { $currency eq $_ } keys %{$client->landing_company->legal_allowed_currencies}) {
-        return Error::Base->cuss(
-            -type              => 'InvalidCurrency',
-            -mesg              => "Invalid $currency",
-            -message_to_client => localize("The provided currency [_1] is invalid.", $currency),
-        );
-    }
     return;
 }
 
