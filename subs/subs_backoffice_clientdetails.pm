@@ -104,13 +104,13 @@ sub print_client_details {
     }
 
     my $template_param = {
-        client               => $client,
-        client_phone_country => $client_phone_country,
-        client_tnc_version   => $tnc_status ? $tnc_status->reason : '',
-        countries            => \@countries,
-        country_codes        => $country_codes,
-        csr_tin_information  => \@crs_tin_array,
-            dob_day_options  => $dob_day_options,
+        client                 => $client,
+        client_phone_country   => $client_phone_country,
+        client_tnc_version     => $tnc_status ? $tnc_status->reason : '',
+        countries              => \@countries,
+        country_codes          => $country_codes,
+        csr_tin_information    => \@crs_tin_array,
+        dob_day_options        => $dob_day_options,
         dob_month_options      => $dob_month_options,
         dob_year_options       => $dob_year_options,
         financial_risk_status  => $client->get_status('financial_risk_approval'),
