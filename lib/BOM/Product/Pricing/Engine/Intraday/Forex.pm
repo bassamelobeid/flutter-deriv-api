@@ -377,10 +377,11 @@ sub vol_spread_markup {
             from => $bet->effective_start->minus_time_interval($_),
             to   => $bet->effective_start,
         };
-        $bet->empirical_volsurface->get_historical_volatility({
-            %$period,
-            ticks => $bet->_get_ticks_for_volatility_calculation($period),
-        });
+        $bet->empirical_volsurface->get_historical_volatility(
+            +{
+                %$period,
+                ticks => $bet->_get_ticks_for_volatility_calculation($period),
+            });
     } ('2h', '20m');
 
     my $vol_spread = max(-0.05, $two_hour_vol - $twenty_minute_vol);
