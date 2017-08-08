@@ -227,7 +227,7 @@ subtest 'Test not allowed for non Japanese Client' => sub {
             phone                  => '+603 34567890',
             secret_question        => 'Favourite dish',
             secret_answer          => 'nasi lemak,teh tarik',
-            account_opening_reason => 'Assets Saving',
+            account_opening_reason => 'Hedging',
         );
 
         $res = BOM::RPC::v3::NewAccount::new_account_real({
