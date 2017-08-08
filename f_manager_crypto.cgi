@@ -117,7 +117,7 @@ if (not $currency or $currency !~ /^[A-Z]{3}$/) {
     code_exit_BO();
 }
 
-my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
+my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbh = $clientdb->db->dbh;
 
 my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
