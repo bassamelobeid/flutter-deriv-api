@@ -25,7 +25,7 @@ my $encoder   = Sereal::Encoder->new({
 my $redis = BOM::Platform::RedisReplicated::redis_write();
 my @tick_data;
 for (my $epoch=time - 80*15; $epoch <= time; $epoch+=15) {
-    push @tick_data, +{symbol => 'frxUSDJPY', epoch => $epoch, decimate_epoch => $epoch, quote => 100 + rand(0.0001)};
+    push @tick_data, +{symbol => 'frxUSDJPY', epoch => $epoch, decimate_epoch => $epoch, quote => 100 + 1/$epoch};
 }
 
 $redis->zadd('DECIMATE_frxUSDJPY_15s_DEC', $_->{epoch}, $encoder->encode($_)) for @tick_data;
