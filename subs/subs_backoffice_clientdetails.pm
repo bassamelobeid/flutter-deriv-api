@@ -102,10 +102,10 @@ sub print_client_details {
             push @crs_tin_array, "Client submitted the TIN information Version " . ($i + 1) . " on " . $dates[$i];
         }
     }
+
     my $template_param = {
         mifir_config            => $Finance::MIFIR::CONCAT::config,
         client                  => $client,
-        has_social_signup       => $client->get_status('social_signup'),
         self_exclusion_enabled  => $self_exclusion_enabled,
         lang                    => request()->language,
         mrms_options            => \@mrms_options,

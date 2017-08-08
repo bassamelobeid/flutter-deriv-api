@@ -50,10 +50,6 @@ table#client_edit td{
         <td>: <b>[% client.email %]</b> (To edit client's email, <a href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | none %]">click here</a>)</td>
     </tr>
     <tr>
-        <td class="label">Social Signup</td>
-        <td>: <b>[% IF has_social_signup  %]YES[% ELSE %]NO[% END %]</b></td>
-    </tr>
-    <tr>
         <td class="label">BROKER</td>
         <td>: <b>[% client.broker %]</b> <input type="hidden" name="edit_client_loginid" value="[% client.loginid %]"></td>
     </tr>
