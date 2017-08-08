@@ -64,6 +64,7 @@ sub create_account {
         client  => $client,
         user    => $user,
         details => $details,
+        from_client => $from_client,
     });
 
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
