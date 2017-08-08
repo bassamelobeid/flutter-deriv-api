@@ -91,10 +91,7 @@ my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 
 $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
 # Exchange rate should be populated according to supported cryptocurrencies.
-my %exchange_rates;
-for (qw/BTC LTC ETH/) {
-    $exchange_rates{$_} = in_USD(1.0, $_);
-}
+my %exchange_rates = map { $_ => in_USD(1.0, $_) } qw/BTC LTC ETH/;
 my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
     'backoffice/account/crypto_control_panel.html.tt',
