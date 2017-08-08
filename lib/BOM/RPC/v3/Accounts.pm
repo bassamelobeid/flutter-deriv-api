@@ -1347,11 +1347,8 @@ sub set_financial_assessment {
             score           => $financial_evaluation->{total_score},
             is_professional => $is_professional
         };
-        #only send email for MF-client
-        if ($cli->landing_company->short eq 'maltainvest') {
-            $subject = $client_loginid . ' assessment test details have been updated';
-            $message = ["$client_loginid score is " . $financial_evaluation->{total_score}];
-        }
+        $subject = $client_loginid . ' assessment test details have been updated';
+        $message = ["$client_loginid score is " . $financial_evaluation->{total_score}];
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
@@ -1362,12 +1359,13 @@ sub set_financial_assessment {
     };
 
     my $brand = Brands->new(name => request()->brand);
+    #only send email for MF-client
     send_email({
             from    => $brand->emails('support'),
             to      => $brand->emails('compliance'),
             subject => $subject,
             message => $message,
-        }) if $subject;
+        }) if $client->landing_company->short eq 'maltainvest';
 
     return $response;
 }
