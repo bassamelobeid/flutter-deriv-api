@@ -34,7 +34,7 @@ my $encoded_broker = encode_entities($broker);
 my $staff          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 # Currency is utilised in Deposit and Withdrawal views accordingly
 # to distinguish information among supported cryptocurrencies.
-my $currency = request()->param('currency');
+my $currency = request()->param('currency') // 'BTC';
 # Action is used for transaction verification purposes.
 my $action = request()->param('action');
 # Address is retrieved from Search view for `Address` option.
