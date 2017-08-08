@@ -35,16 +35,24 @@ my $req = {
     "duration_unit" => "m"
 };
 
-my $res;
-
 $t->send_ok({json => $req})->message_ok;
-$res = decode_json($t->message->[1]);
+my $res = decode_json($t->message->[1]);
 ok $res->{proposal}->{id}, 'Should return id';
 
+$req->{amount} = "70e-2";
+$t->send_ok({json => $req})->message_ok;
+$res = decode_json($t->message->[1]);
+ok $res->{proposal}->{id}, 'Should return id for exponential number';
+
 #test wrong amount value
-$req->{amount} = "100.";
+$req->{amount} = ".";
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'InputValidationFailed', 'Correct failed due to input validation';
+
+$req->{amount} = "+100";
+$t->send_ok({json => $req})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'InputValidationFailed', 'Correct failed due to + sign in number, not allowed as per json schema';
 
 done_testing;
