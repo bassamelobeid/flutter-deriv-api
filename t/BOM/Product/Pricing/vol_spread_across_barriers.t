@@ -32,7 +32,35 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $underlying->symbol,
-        recorded_date => $now
+        recorded_date => Date::Utility->new('2017-08-07 07:46:11'),
+        surface       => {
+            1 => {
+                'expiry_date' => '08-Aug-17',
+                'smile'       => {
+                    25 => 0.0942375,
+                    50 => 0.09335,
+                    75 => 0.0963125
+                },
+                'tenor'      => 'ON',
+                'vol_spread' => {
+                    25 => 0.0392857142857143,
+                    50 => 0.0275,
+                    75 => 0.0392857142857143
+                },
+            },
+            7 => {
+                'smile' => {
+                    25 => 0.0760375,
+                    50 => 0.0752,
+                    75 => 0.0781125,
+                },
+                'tenor'      => '1W',
+                'vol_spread' => {
+                    25 => 0.0178571428571429,
+                    50 => 0.0125,
+                    75 => 0.0178571428571429,
+                }}
+        },
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -47,7 +75,7 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 subtest 'test prices across barriers' => sub {
-    foreach my $d ([130.581, 777], [130.485, 851], [130.381, 912], [130.301, 946], [130.221, 970]) {
+    foreach my $d ([130.581, 883], [130.485, 912], [130.381, 933], [130.301, 954], [130.221, 977]) {
         my $c = produce_contract({
             bet_type     => 'CALLE',
             currency     => 'JPY',
