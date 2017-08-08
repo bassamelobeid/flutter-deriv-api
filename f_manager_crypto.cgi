@@ -30,7 +30,6 @@ BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 BOM::Backoffice::Auth0::can_access(['Payments']);
 
 my $broker         = request()->broker_code;
-my $encoded_broker = encode_entities($broker);
 my $staff          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 # Currency is utilised in Deposit and Withdrawal views accordingly
 # to distinguish information among supported cryptocurrencies.
@@ -103,7 +102,7 @@ $tt2->process(
         exchange_rates => \%exchange_rates,
         controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
         cmd            => request()->param('command') // '',
-        broker         => $encoded_broker,
+        broker         => $broker,
         start_date     => $start_date->date_yyyymmdd,
         end_date       => $end_date->date_yyyymmdd,
         now            => $now->datetime_ddmmmyy_hhmmss,
