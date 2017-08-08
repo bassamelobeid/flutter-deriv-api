@@ -301,7 +301,6 @@ sub get_account_status {
     my $already_unwelcomed;
     my @status;
     foreach my $s (sort keys %{$client->client_status_types}) {
-        push @status, $s if ($s eq 'social_signup' and $client->get_status($s));
         next if $s eq 'tnc_approval';    # the useful part for tnc_approval is reason
         if ($client->get_status($s)) {
             push @status, $s;
