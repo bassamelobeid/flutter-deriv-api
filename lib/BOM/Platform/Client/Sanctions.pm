@@ -75,7 +75,8 @@ sub check {
         send_email({
                 from    => $self->brand->emails('compliance'),
                 to      => $self->brand->emails('compliance'),
-                subject => $client->loginid . ' marked as UNTERR',
+                cc      => $self->brand->emails('support'),
+                subject => $client->loginid . ' possible match in sanctions list',
                 message => [$message],
             }) unless $self->skip_email;
     }
