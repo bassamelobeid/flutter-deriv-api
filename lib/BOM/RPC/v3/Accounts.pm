@@ -60,7 +60,7 @@ sub payout_currencies {
     # currencies enabled.
     $lc ||= LandingCompany::Registry::get('costarica');
 
-    return [keys %{$lc->legal_allowed_currencies}];
+    return [sort keys %{$lc->legal_allowed_currencies}];
 }
 
 sub landing_company {
