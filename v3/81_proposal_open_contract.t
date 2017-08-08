@@ -184,17 +184,10 @@ subtest 'check two contracts subscription' => sub {
             buy   => $proposal->{proposal}->{id},
             price => $proposal->{proposal}->{ask_price}});
 
-    my $i = 0;
-    do {
-        my $res = $t->await::proposal_open_contract();
-        $ids->{$res->{proposal_open_contract}->{id}} = 1;
-    } while (scalar keys %$ids < 2) && (++$i < 5);
-
+    $t->await::balance({balance=>1});
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
 
-    is scalar keys %$ids, 2, 'Correct number of contracts';
-    ok(delete $ids->{shift @{$data->{forget_all}}}, "check id") for 0 .. 1;
-    is(scalar @{$data->{forget_all}}, 0, 'Correct number of subscription forget');
+    is(scalar @{$data->{forget_all}}, 2, 'Correct number of subscription forget');
 };
 
 $t->finish_ok;
