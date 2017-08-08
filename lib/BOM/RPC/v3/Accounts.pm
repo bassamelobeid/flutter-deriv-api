@@ -299,9 +299,9 @@ sub get_account_status {
 
     my $client = $params->{client};
     my $already_unwelcomed;
-
     my @status;
     foreach my $s (sort keys %{$client->client_status_types}) {
+        push @status, $s if ($s eq 'social_signup' and $client->get_status($s));
         next if $s eq 'tnc_approval';    # the useful part for tnc_approval is reason
         if ($client->get_status($s)) {
             push @status, $s;
@@ -317,7 +317,6 @@ sub get_account_status {
 
     # differentiate between social and password based accounts
     my $user = BOM::Platform::User->new({email => $client->email});
-    push @status, 'has_password' if $user->password;
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->not_allow_trade($client);
 
     # check whether the user need to perform financial assessment
