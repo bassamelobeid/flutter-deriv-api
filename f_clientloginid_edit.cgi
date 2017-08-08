@@ -410,6 +410,21 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->place_of_birth($input{$key});
             next CLIENT_KEY;
         }
+        if (my ($id) = $key =~ /^document_id_([0-9]+)$/) {
+            my $val = $input{$key};
+            my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
+            my $docid = substr(encode_entities($val), 0, 255);
+            next CLIENT_KEY unless $doc;
+            next CLIENT_KEY if $docid eq $doc->document_id();
+            unless (eval { $doc->document_id($docid); 1 }) {
+                my $err = $@;
+                print qq{<p style="color:red">ERROR: Could not set document_id for doc $id: $err</p>};
+                code_exit_BO();
+            }
+            $doc->db($client->set_db('write'));
+            $doc->save;
+            next CLIENT_KEY;
+        }
         if (my ($id) = $key =~ /^comments_([0-9]+)$/) {
             my $val = $input{$key};
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
