@@ -146,7 +146,7 @@ sub run {
                     my $is_open = $calendar->trades_on($underlying->exchange, $now);
 
                     if (
-                        $is_open and !(
+                        $is_open && !(
                             $volsurface->validation_error =~ /identical to existing one/
                             && time - Quant::Framework::VolSurface::Moneyness->new({
                                     underlying       => $underlying,
