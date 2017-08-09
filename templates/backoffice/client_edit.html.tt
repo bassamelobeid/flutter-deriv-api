@@ -58,7 +58,7 @@ table#client_edit td{
         last_check = client.sanctions_check;
 -%]
         <td class="label">Last sanctions check run</td>
-        <td>: <b>[% last_check.result %]</b> [% last_check.tstmp %]</td>
+        <td>: <b>[% last_check.result %]</b> [% last_check.tstmp %] [% last_check.type == 'R' ? 'Registration' : 'Cron'%]</td>
     </tr>
     <tr>
         <td class="small_header" colspan="2">#AFFILIATE INFO</td>
