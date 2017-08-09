@@ -265,13 +265,18 @@ sub get_real_acc_opening_type {
 sub get_siblings_information {
     my $client = shift;
 
-    # siblings filter disabled account
+    # we don't need to consider disabled client that have reason
+    # as 'migration to single email login', because we moved to single
+    # currency per account in past and mark duplicate client as disabled
+    # with that reason itself
     return map {
         $_->loginid => {
             is_virtual => $_->is_virtual             ? 1                                    : 0,
             currency   => $_->default_account        ? ($_->default_account->currency_code) : (undef),
             disabled   => $_->get_status('disabled') ? ($_->get_status('disabled')->reason) : (undef)}
-    } BOM::Platform::User->new({email => $client->email})->clients(disabled => 1);
+        } grep {
+        not($_->get_status('disabled') and $_->get_status('disabled')->reason =~ /^migration to single email login$/)
+        } BOM::Platform::User->new({email => $client->email})->clients(disabled => 1);
 }
 
 sub paymentagent_default_min_max {
