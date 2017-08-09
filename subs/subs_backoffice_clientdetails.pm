@@ -316,9 +316,9 @@ sub show_client_id_docs {
             s/\&/%26/g;
         }
     } else {
-        @docs = $client->client_authentication_document;
+        @docs = $client->client_authentication_document();
     }
-    foreach my $doc (@docs) {
+    foreach my $doc (sort { $a->id <=> $b->id } @docs) {
         my ($id, $document_file, $file_name, $download_file, $input);
         if ($folder) {
             $id            = 0;
