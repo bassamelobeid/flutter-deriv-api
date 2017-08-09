@@ -148,7 +148,17 @@ subtest 'allcombinations' => sub {
 # Regenerate trading periods here to try avoid below bail out.
 generate_trading_periods($symbol);
 
-my $put = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration} eq '2h15m'} @{$contracts_for->{contracts_for}{available}}]->[0];
+$contracts_for = $t->await::contracts_for( {
+        "contracts_for"     => $symbol,
+        "currency"          => $currency,
+        "landing_company"   => $lc,
+        "product_type"      => $pt,
+});
+use Data::Dumper;
+print Dumper($contracts_for);
+my $put_array = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration} eq '2h15m'} @{$contracts_for->{contracts_for}{available}}];
+#use latest trading window to avaoid bail out.
+my $put = $put_array->[scalar(@{$put_array})-1];
 
 my $barriers = $put->{available_barriers};
 my $fixed_bars= [map {{barrier=>$_}} @$barriers];
@@ -191,7 +201,7 @@ subtest "various results" => sub {
 # We add 120 here because we want to increase the duration from 1 to 3 minutes.
     $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch};
     $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
-use Data::Dumper;
+
 print "###### $now->epoch" . Dumper($put);
 
 # And this line is to fix the minimum stake validation failure.
