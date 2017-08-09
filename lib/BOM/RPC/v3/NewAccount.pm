@@ -173,8 +173,8 @@ sub new_account_real {
 
     my ($client, $error_map) = ($params->{client}, BOM::RPC::v3::Utility::error_map());
 
-    my $response = is_valid_to_make_new_account_real($client);
-    return $response if $response;
+    my $error = is_valid_to_make_new_account_real($client);
+    return $error if $error;
 
     my $args = $params->{args};
 

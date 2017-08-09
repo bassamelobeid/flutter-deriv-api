@@ -11,6 +11,7 @@ use URI;
 use Domain::PublicSuffix;
 
 use Brands;
+use LandingCompany::Registry;
 
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
@@ -295,6 +296,8 @@ sub is_valid_to_make_new_account_real {
             return $error if (any { $_ eq $financial_company } qw(maltainvest japan));
         }
 
+        # some countries don't have gaming company like Singapore
+        # but we do allow them to open only financial account
         return;
     }
 
@@ -313,8 +316,21 @@ sub is_valid_to_make_new_account_real {
     # if client has one type of fiat currency don't allow them to open another
     # if client has all of allowed cryptocurrency
     my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
+    my $types = {map { $_ => 1 } keys %{$legal_allowed_currencies}};
 
-    my $types = {map { $= > 1 } keys %{$legal_allowed_currencies}};
+    # check if client has fiat currency, if not then return as we
+    # allow them to open new account
+    return unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
+
+    my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
+    # check if landing company supports crypto currency
+    # else return error as client exhausted fiat currency
+    return $error unless $lc_num_crypto;
+
+    # send error if number of crypto account of client is same
+    # as number of crypto account supported by landing company
+    my $client_num_crypto = (grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'crypto' } keys %$siblings // 0);
+    return $error if ($lc_num_crypto eq $client_num_crypto);
 
     return;
 }
