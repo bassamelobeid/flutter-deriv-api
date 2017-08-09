@@ -342,13 +342,15 @@ sub show_client_id_docs {
         my $file_size = -s $document_file || next;
         my $file_age  = int(-M $document_file);
         my $url       = request()->url_for("backoffice/download_document.cgi?path=$download_file");
-        $links .= qq{<br/><a href="$url">$file_name</a>($file_size bytes, $file_age days old, $input)};
+        $links .= qq{<tr><td><a href="$url">$file_name</a> $file_size bytes, $file_age days old</td><td>$input};
         if ($show_delete) {
             $url .= qq{&loginid=$loginid&doc_id=$id&deleteit=yes};
             my $onclick = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
             $links .= qq{[<a onclick="$onclick" href="$url">Delete</a>]};
         }
+        $links .= "</td></tr>";
     }
+    $links = "<table>$links</table>" if $links;
     return $links;
 }
 
