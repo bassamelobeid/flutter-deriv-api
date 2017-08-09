@@ -53,7 +53,7 @@ sub wsapi_wait_for {
     }
 
     $f = $ioloop->await($f);
-    return wsapi_wait_for($t, $wait_for, sub { note "Cancelled. Try again" }, $params, ++$messages_without_accidens)
+    return wsapi_wait_for($t, $wait_for, sub { note "Cancelled. Trying again" }, $params, ++$messages_without_accidens)
         if $f->is_cancelled;
 
     return $f->get;
