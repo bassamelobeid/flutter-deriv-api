@@ -262,12 +262,35 @@ sub get_real_acc_opening_type {
     return;
 }
 
+sub is_valid_to_open_new_real_account {
+    my $client = shift;
+
+    my %siblings = get_siblings_information($client);
+
+    # if only one entry it means client has only virtual account
+    # so we allow them to open real account
+    return if (scalar(keys %siblings) == 1);
+
+    # return if any one real client has not set account currency
+    if (my ($loginid_no_curr) = grep { not $siblings->{$_}->{currency} } keys %siblings) {
+        return create_error({
+                code              => 'NoCurrency',
+                message_to_client => localize('Please set the currency for [_1].', $loginid_no_curr)});
+    }
+
+    # check if all currencies are exhausted i.e.
+    # if client has one type of fiat currency don't allow them to open another
+    # if client has all of allowed cryptocurrency
+
+    return;
+}
+
 sub get_siblings_information {
     my $client = shift;
 
     # we don't need to consider disabled client that have reason
     # as 'migration to single email login', because we moved to single
-    # currency per account in past and mark duplicate client as disabled
+    # currency per account in past and mark duplicate clients as disabled
     # with that reason itself
     return map {
         $_->loginid => {
