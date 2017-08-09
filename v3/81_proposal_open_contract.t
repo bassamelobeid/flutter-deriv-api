@@ -60,8 +60,6 @@ my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $logi
 $t->await::authorize({authorize => $token});
 my $account_id =  $client->default_account->id;
 
-BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
-
 subtest 'empty POC response' => sub {
     my $data = $t->await::proposal_open_contract({proposal_open_contract => 1});
     ok($data->{proposal_open_contract} && !keys %{$data->{proposal_open_contract}}, "got proposal");
