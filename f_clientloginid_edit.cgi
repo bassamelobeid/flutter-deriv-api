@@ -347,21 +347,25 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
     $client->payment_agent_withdrawal_expiration_date($input{payment_agent_withdrawal_expiration_date} || undef);
 
+    my @simple_updates = qw/last_name
+        first_name
+        phone
+        secret_questionis_vip
+        tax_residence
+        tax_identification_number
+        allow_omnibus
+        citizen
+        address_1
+        address_2
+        city
+        state
+        postcode
+        residence
+        place_of_birth/;
+    exists $input{$_} && $client->$_($input{$key}) for @simple_updates;
+
     CLIENT_KEY:
     foreach my $key (keys %input) {
-
-        if ($key eq 'mrms') {
-            $client->salutation($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'first_name') {
-            $client->first_name($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'last_name') {
-            $client->last_name($input{$key});
-            next CLIENT_KEY;
-        }
         if ($key eq 'dob_day') {
             my $date_of_birth;
             if (    $input{'dob_day'}
@@ -378,38 +382,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->date_of_birth($date_of_birth);
             next CLIENT_KEY;
         }
-        if ($key eq 'citizen') {
-            $client->citizen($input{$key});
+
+        if ($key eq 'mrms') {
+            $client->salutation($input{$key});
             next CLIENT_KEY;
         }
-        if ($key eq 'address_1') {
-            $client->address_1($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'address_2') {
-            $client->address_2($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'city') {
-            $client->city($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'state') {
-            $client->state($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'postcode') {
-            $client->postcode($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'residence') {
-            $client->residence($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'place_of_birth') {
-            $client->place_of_birth($input{$key});
-            next CLIENT_KEY;
-        }
+
         if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
             my $val = encode_entities($input{$key} // '') || next CLIENT_KEY;
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
@@ -468,14 +446,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 code_exit_BO();
             }
         }
-        if ($key eq 'phone') {
-            $client->phone($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'secret_question') {
-            $client->secret_question($input{$key});
-            next CLIENT_KEY;
-        }
         if ($key eq 'secret_answer') {
             # algorithm provide different encrypted string from the same text based on some randomness
             # so we update this encrypted field only on value change - we don't want our trigger log trash
@@ -499,10 +469,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
         if ($key eq 'last_environment') {
             $client->latest_environment($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'is_vip') {
-            $client->is_vip($input{$key});
             next CLIENT_KEY;
         }
 
@@ -534,14 +500,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->myaffiliates_token($input{$key}) if $input{$key};
         }
 
-        if ($key eq 'tax_residence') {
-            $client->tax_residence($input{$key});
-        }
-
-        if ($key eq 'tax_identification_number') {
-            $client->tax_identification_number($input{$key});
-        }
-
         if ($input{mifir_id} and $client->mifir_id eq '' and $broker eq 'MF') {
             if (length($input{mifir_id}) > 35) {
                 print
@@ -551,7 +509,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->mifir_id($input{mifir_id});
         }
 
-        $client->allow_omnibus($input{allow_omnibus});
     }
 
     if (not $client->save) {
