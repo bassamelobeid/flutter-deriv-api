@@ -313,11 +313,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! FNAME field appears incorrect or empty.</p></p>";
             code_exit_BO();
         }
-        if (length($input{'mrms'}) < 1) {
+        if (length($input{'salutation'}) < 1) {
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field appears to be empty.</p></p>";
             code_exit_BO();
         }
-        if (!grep(/^$input{'mrms'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) {    ## no critic (RequireBlockGrep)
+        if (!grep(/^$input{'salutation'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) {    ## no critic (RequireBlockGrep)
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field is invalid.</p></p>";
             code_exit_BO();
         }
@@ -361,7 +361,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         state
         postcode
         residence
-        place_of_birth/;
+        place_of_birth
+        restricted_ip_address
+        cashier_setting_password
+        salutation
+        /;
     exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
 
     CLIENT_KEY:
@@ -372,11 +376,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 if $input{'dob_day'} && $input{'dob_month'} && $input{'dob_year'};
 
             $client->date_of_birth($date_of_birth);
-            next CLIENT_KEY;
-        }
-
-        if ($key eq 'mrms') {
-            $client->salutation($input{$key});
             next CLIENT_KEY;
         }
 
@@ -449,18 +448,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer($input{$key}))
                 if ($input{$key} ne $secret_answer);
 
-            next CLIENT_KEY;
-        }
-        if ($key eq 'ip_security') {
-            $client->restricted_ip_address($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'cashier_lock_password') {
-            $client->cashier_setting_password($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'last_environment') {
-            $client->latest_environment($input{$key});
             next CLIENT_KEY;
         }
 

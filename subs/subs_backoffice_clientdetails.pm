@@ -28,7 +28,7 @@ sub print_client_details {
     my ($client, $staff) = @_;
 
     # IDENTITY sECTION
-    my @mrms_options = BOM::Backoffice::FormAccounts::GetSalutations();
+    my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
 
     # Extract year/month/day if we have them
     my ($dob_year, $dob_month, $dob_day) = ($client->date_of_birth // '') =~ /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
@@ -108,7 +108,7 @@ sub print_client_details {
         client                  => $client,
         self_exclusion_enabled  => $self_exclusion_enabled,
         lang                    => request()->language,
-        mrms_options            => \@mrms_options,
+        salutation_options      => \@salutation_options,
         dob_day_options         => $dob_day_options,
         dob_month_options       => $dob_month_options,
         dob_year_options        => $dob_year_options,
