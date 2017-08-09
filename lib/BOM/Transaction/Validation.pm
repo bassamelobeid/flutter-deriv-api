@@ -130,7 +130,7 @@ sub _validate_available_currency {
         -type              => 'InvalidCurrency',
         -mesg              => "Invalid $currency",
         -message_to_client => localize("The provided currency [_1] is invalid.", $currency),
-    ) unless (exists $client->landing_company->is_currency_legal($currency));
+    ) unless $client->landing_company->is_currency_legal($currency);
 
     return;
 }
