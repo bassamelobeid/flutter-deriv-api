@@ -1,0 +1,51 @@
+<p>
+[% FOREACH rate IN exchange_rates.pairs %]
+[% rate.key %]/USD: <strong>[% rate.value %]</strong>[% UNLESS loop.last %],&nbsp;[% END %]
+[% END %]
+</p>
+<form action="[% controller_url %]" method="POST">
+    <select name="currency">
+      <option value="BTC" selected="selected">Bitcoin</option>
+      <option value="LTC">Litecoin</option>
+      <option value="ETH">Ethereum</option>
+    </select>
+    <br>
+    <br>
+    <br>
+    <input type="hidden" name="broker" value="[% broker %]">
+<!-- Recon -->
+        <input type="submit" value="Reconciliation" name="view_action"/>
+        <input type="text" name="[% start_date %]" class="datepick" value="[% start_date %]">
+        <input type="text" name="end_date" class="datepick" value="[% end_date %]">
+    <br>
+<!-- Search -->
+        <input type="submit" value="Search" name="view_action"/>
+        <select name="search_type">
+            <option value="loginid">Loginid</option>
+            <option value="address">Address</option>
+        </select>
+        <input type="text" name="search_query">
+    <br>
+<!-- Deposit -->
+    <input type="submit" value="Deposit Transactions" name="view_action"/>
+    <br>
+<!-- Withdrawal -->
+    <input type="submit" value="Withdrawal Transactions" name="view_action"/>
+    <br>
+    <br>
+<!-- Tools -->
+        <input type="submit" value="Run" name="view_action"/>
+        <select name="command">
+        <option value="getbalance" [% IF cmd == "getbalance" %] selected="selected" [% END %]>Get balance</option>
+        <option value="listtransactions" [% IF cmd == "listtransactions" %] selected="selected" [% END %]>List withdrawal transactions</option>
+        <option value="listaddressgroupings" [% IF cmd == "listaddressgroupings" %] selected="selected" [% END %]>List address groupings</option>
+        <option value="..." disabled="disabled">---</option>
+        <option value="getinfo" [% IF cmd == "getinfo" %] selected="selected" [% END %]>Get info</option>
+        <option value="getpeerinfo" [% IF cmd == "getpeerinfo" %] selected="selected" [% END %]>Get peer info</option>
+        <option  value="getnetworkinfo" [% IF cmd == "getnetworkinfo" %] selected="selected" [% END %] >Get network info</option>
+        </select>
+    <br>
+<!-- Manual wallet functions -->
+        <input type="hidden" name="wallet_command" value="getnewaddress">
+        <input type="submit" value="Get New Deposit Address" name="view_action"/>
+</form>

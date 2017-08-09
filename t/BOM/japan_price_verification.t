@@ -121,50 +121,50 @@ prepare_market_data($now);
 subtest 'verify_with_shortcode_IH' => sub {
     my $expected_parameters = {
         'intraday_vega_correction' => {
-            'intraday_vega'                 => '0.0235803981973953',
+            'intraday_vega'                 => '0.00539175374031617',
             'historical_vol_mean_reversion' => '0.10',
-            'long_term_prediction'          => '0.2709902056121'
+            'long_term_prediction'          => '0.1'
         },
         'opposite_contract' => {
             'opposite_contract_intraday_eod_markup'                    => 0,
-            'opposite_contract_vol_spread_markup'                      => '0.000133358249061675',
-            'opposite_contract_long_term_prediction'                   => '0.2709902056121',
+            'opposite_contract_vol_spread_markup'                      => '0.212508872250682',
+            'opposite_contract_long_term_prediction'                   => '0.1',
             'opposite_contract_t'                                      => '2.85388127853881e-05',
             'opposite_contract_intraday_historical_iv_risk'            => 0,
             'opposite_contract_short_term_kurtosis_risk_markup'        => 0,
-            'opposite_contract_intraday_delta_correction'              => '-0.00719611038213643',
-            'opposite_contract_intraday_vega'                          => '-0.0235803981973953',
+            'opposite_contract_intraday_delta_correction'              => '-0.00689128727051409',
+            'opposite_contract_intraday_vega'                          => '-0.00539175374031617',
             'opposite_contract_discount_rate'                          => 0,
-            'opposite_contract_vol'                                    => '0.337429046858048',
+            'opposite_contract_vol'                                    => '0.659269959705979',
             'opposite_contract_mu'                                     => 0,
             'opposite_contract_short_term_delta_correction'            => '-0.0131432219167099',
             'opposite_contract_commission_multiplier'                  => '1',
             'opposite_contract_payout'                                 => '1000',
-            'opposite_contract_intraday_vega_correction'               => '-0.000639005695592735',
+            'opposite_contract_intraday_vega_correction'               => '-5.39175374031617e-05',
             'opposite_contract_quiet_period_markup'                    => 0,
             'opposite_contract_economic_events_markup'                 => 0.01,
             'opposite_contract_economic_events_volatility_risk_markup' => 0,
             'opposite_contract_economic_events_spot_risk_markup'       => 0.01,
             'opposite_contract_historical_vol_markup'                  => 0,
             'opposite_contract_S'                                      => '79.817',
-            'opposite_contract_bs_probability'                         => '0.508677044681252',
-            'opposite_contract_risk_markup'                            => '0.0101333582490617',
-            'opposite_contract_long_term_delta_correction'             => '-0.00124899884756291',
+            'opposite_contract_bs_probability'                         => '0.504959816692975',
+            'opposite_contract_risk_markup'                            => '0.222508872250682',
+            'opposite_contract_long_term_delta_correction'             => '-0.000639352624318246',
             'opposite_contract_historical_vol_mean_reversion'          => '0.10',
             'opposite_contract_base_commission'                        => '0.035',
             'opposite_contract_commission_markup'                      => '0.035',
             'opposite_contract_K'                                      => '79.820'
         },
         'ask_probability' => {
-            'intraday_vega_correction'  => '0.000639005695592735',
-            'risk_markup'               => '0.0101333582490617',
-            'bs_probability'            => '0.491322955318748',
-            'intraday_delta_correction' => '0.0071961103821364',
+            'intraday_vega_correction'  => '5.39175374031617e-05',
+            'risk_markup'               => '0.01',
+            'bs_probability'            => '0.495040183307025',
+            'intraday_delta_correction' => '0.00689128727051412',
             'commission_markup'         => '0.035'
         },
         'bs_probability' => {
             'S'             => '79.817',
-            'vol'           => '0.337429046858048',
+            'vol'           => '0.659269959705979',
             'K'             => '79.820',
             'mu'            => 0,
             'discount_rate' => 0,
@@ -174,17 +174,17 @@ subtest 'verify_with_shortcode_IH' => sub {
         'risk_markup' => {
             'quiet_period_markup'                    => 0,
             'short_term_kurtosis_risk_markup'        => 0,
-            'vol_spread_markup'                      => 0.000133358249061675,
+            'vol_spread_markup'                      => 0,
             'intraday_eod_markup'                    => 0,
             'economic_events_markup'                 => 0.01,
             'economic_events_spot_risk_markup'       => 0.01,
             'economic_events_volatility_risk_markup' => 0,
             'intraday_historical_iv_risk'            => 0,
-            'historical_vol_markup'                  => 0.00336449766333402,
+            'historical_vol_markup'                  => 0,
         },
         'intraday_delta_correction' => {
             'short_term_delta_correction' => '0.0131432219167099',
-            'long_term_delta_correction'  => '0.00124899884756285'
+            'long_term_delta_correction'  => '0.000639352624318301'
         },
         'commission_markup' => {
             'base_commission'       => '0.035',
@@ -232,7 +232,7 @@ subtest 'verify_with_shortcode_IH' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundcommon(1, $ask_prob * 1000), 544, 'Ask price is matching');
+    is(roundcommon(1, $ask_prob * 1000), 547, 'Ask price is matching');
 
     check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
@@ -493,7 +493,7 @@ subtest '2017_with_extra_data' => sub {
         is $ask->{commission_markup},         0.035,               'matched commission markup';
         is $ask->{intraday_delta_correction}, 0,                   'matched intraday delta correction';
         is $ask->{intraday_vega_correction},  -0.0235434604443186, 'matched intraday vega correction';
-        is $ask->{risk_markup},               0.0552924547340695,  'matched risk markup';
+        is $ask->{risk_markup},               0.046859882954911,   'matched risk markup';
         $mocked->unmock_all();
     };
 

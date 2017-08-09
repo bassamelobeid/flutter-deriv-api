@@ -13,6 +13,7 @@ use BOM::Platform::Client::Utility ();
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::Backoffice::FormAccounts;
+use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 sub get_currency_options {
     my $currency_options;
@@ -56,14 +57,17 @@ sub print_client_details {
         $country_codes->{$country_name} = $countries_instance->code_from_country($country_name);
     }
 
-    my ($proveID, $show_uploaded_documents);
+    my ($proveID, $show_uploaded_documents) = ('', '');
     unless ($client->is_virtual) {
         # KYC/IDENTITY VERIFICATION SECTION
         $proveID = BOM::Platform::ProveID->new(
             client        => $client,
             search_option => 'ProveID_KYC'
         );
-        $show_uploaded_documents = show_client_id_docs($client, show_delete => 1);
+        my $user = BOM::Platform::User->new({email => $client->email});
+        my @siblings = $user->clients(disabled_ok => 1);
+
+        $show_uploaded_documents .= show_client_id_docs($_, show_delete => 1) for @siblings;
     }
 
     # COMMUNICATION ADDRESSES
@@ -100,6 +104,7 @@ sub print_client_details {
     }
 
     my $template_param = {
+        mifir_config            => $Finance::MIFIR::CONCAT::config,
         client                  => $client,
         self_exclusion_enabled  => $self_exclusion_enabled,
         lang                    => request()->language,
