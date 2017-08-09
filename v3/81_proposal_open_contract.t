@@ -58,12 +58,16 @@ $client->smart_payment(
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $t->await::authorize({authorize => $token});
+my $account_id =  $client->default_account->id;
+
+BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 
 subtest 'empty POC response' => sub {
     my $data = $t->await::proposal_open_contract({proposal_open_contract => 1});
     ok($data->{proposal_open_contract} && !keys %{$data->{proposal_open_contract}}, "got proposal");
 };
-my ($contract_id);
+
+my $contract_id;
 
 subtest 'buy n check' => sub {
 
@@ -78,14 +82,12 @@ subtest 'buy n check' => sub {
         "duration"      => "2",
         "duration_unit" => "m"
     });
-    BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 
     my $data = $t->await::buy({
             buy   => $proposal->{proposal}->{id},
             price => $proposal->{proposal}->{ask_price}});
 
-    note explain $data;
-    ok($contract_id = $data->{buy}->{contract_id}, "got contract_id");
+    diag explain $data unless ok($contract_id = $data->{buy}->{contract_id}, "got contract_id");
 
     $data = $t->await::proposal_open_contract({
         proposal_open_contract => 1,
@@ -156,6 +158,7 @@ subtest 'forget' => sub {
     is(scalar @{$data->{forget_all}}, 0, 'Forget all returns empty as contracts are already sold');
 };
 
+
 subtest 'check two contracts subscription' => sub {
     my $proposal = $t->await::proposal({
         "proposal"      => 1,
@@ -171,8 +174,6 @@ subtest 'check two contracts subscription' => sub {
 
     my $ids = {};
 
-    sleep 1;
-
     my $res = $t->await::proposal_open_contract({
         proposal_open_contract => 1,
         subscribe              => 1
@@ -184,11 +185,25 @@ subtest 'check two contracts subscription' => sub {
 
     ok($contract_id = $buy_res->{buy}->{contract_id}, "got contract_id");
 
+    my $msg = {
+        %$buy_res,
+        action_type             => 'buy',
+        account_id              => $account_id,
+        financial_market_bet_id => $buy_res->{buy}{contract_id},
+        amount                  => $buy_res->{buy}{buy_price},
+        short_code              => $buy_res->{buy}{shortcode},
+        currency_code           => 'USD',
+
+    };
+
+    BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json $msg);
     $t->await::balance({balance => 1});
+
+    sleep 3; ### we must wait for pricing rpc response
 
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
 
-    is(scalar @{$data->{forget_all}}, 1, 'Correct number of subscription forget');
+    diag explain $buy_res if not is(scalar @{$data->{forget_all}}, 2, 'Correct number of subscription forget');
 };
 
 $t->finish_ok;
