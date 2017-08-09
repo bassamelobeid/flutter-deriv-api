@@ -132,6 +132,7 @@ sub after_register_client {
     #  when virtual client had created account with social login
     if ($from_client and $from_client->get_status('social_signup')) {
         $client->set_status('social_signup', 'system', '1');
+        $client->save;
     }
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
