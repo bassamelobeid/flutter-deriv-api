@@ -173,6 +173,10 @@ sub new_account_real {
 
     my $client = $params->{client};
 
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'NoResidence',
+            message_to_client => localize('Please set your country of residence.')}) unless $client->residence;
+
     my $error_map = BOM::RPC::v3::Utility::error_map();
 
     if (not $client->is_virtual or (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') ne 'real') {
@@ -193,7 +197,7 @@ sub new_account_real {
     if (not $company) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'NoLandingCompany',
-                message_to_client => $error_map->{'No landing company for this country'}});
+                message_to_client => $error_map->{'No landing company for this country.'}});
     }
     my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 

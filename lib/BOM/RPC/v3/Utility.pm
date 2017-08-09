@@ -241,7 +241,6 @@ sub get_real_acc_opening_type {
     my $args        = shift;
     my $from_client = $args->{from_client};
 
-    return unless ($from_client->residence);
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
     my $gaming_company     = $countries_instance->gaming_company_for_country($from_client->residence);
     my $financial_company  = $countries_instance->financial_company_for_country($from_client->residence);
