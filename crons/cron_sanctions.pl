@@ -106,7 +106,7 @@ sub get_matched_clients_by_broker {
             SET result=input.result
             FROM input
             WHERE s.client_loginid=input.client_loginid
-            }, undef, map { $_->[1], $_->[0]->loginid } @matched
+            }, undef, map { $_->[1] => $_->[0]->loginid } @matched
     ) or warn $DBI::errstr;
 
     return \@matched;
