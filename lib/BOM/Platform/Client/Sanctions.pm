@@ -74,8 +74,7 @@ sub check {
     if (!$client->get_status('disabled')) {
         send_email({
                 from    => $self->brand->emails('compliance'),
-                to      => $self->brand->emails('compliance'),
-                cc      => $self->brand->emails('support'),
+                to      => join(',', $self->brand->emails('compliance'), $self->brand->emails('support')),
                 subject => $client->loginid . ' possible match in sanctions list',
                 message => [$message],
             }) unless $self->skip_email;
