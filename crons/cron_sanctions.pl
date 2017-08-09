@@ -49,8 +49,7 @@ sub do_report {
 
     send_email({
         from       => $brand->emails('support'),
-        to         => $brand->emails('compliance'),
-        cc         => 'sysadmin@binary.com',
+        to         => join(',', $brand->emails('compliance'), 'sysadmin@binary.com'),
         subject    => 'Sanction list checked',
         message    => ["Here is a list of clients against sanctions:\n$r"],
         attachment => $csv_file->canonpath,
