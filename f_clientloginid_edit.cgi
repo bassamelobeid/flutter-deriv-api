@@ -807,6 +807,26 @@ if ($financial_assessment) {
         <tr><td>Is professional</td><td>$is_professional</td></tr>
         </table>
     };
+
+    print qq{
+   <form action="$self_post" method="post">
+            <input type="hidden" name="whattodo" value="update_professional_status">
+                <select name="professional_status">
+                <option value="yes" [% IF $is_professional == 'yes' %]selected="selected"[% END %]>YES</option>
+                <option value="no" [% IF $is_professional == 'no' %]selected="selected"[% END %]>NO</option>
+             </select>
+             <input type="submit" value="Update professional status">
+    <input type="hidden" name="broker" value="$encoded_broker">
+    <input type="hidden" name="loginID" value="$encoded_loginid">];
+        </form>
+   }
+
+}
+
+if ($input{whattodo} eq 'update_professional_status') {
+    $client->financial_assessment({is_professional => $input{professional_status}});
+    $client->save;
+
 }
 
 Bar($user->email . " Login history");
