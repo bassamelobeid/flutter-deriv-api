@@ -1357,12 +1357,13 @@ sub set_financial_assessment {
     };
 
     my $brand = Brands->new(name => request()->brand);
+    #only send email for MF-client
     send_email({
-        from    => $brand->emails('support'),
-        to      => $brand->emails('compliance'),
-        subject => $subject,
-        message => $message,
-    });
+            from    => $brand->emails('support'),
+            to      => $brand->emails('compliance'),
+            subject => $subject,
+            message => $message,
+        }) if $client->landing_company->short eq 'maltainvest';
 
     return $response;
 }
