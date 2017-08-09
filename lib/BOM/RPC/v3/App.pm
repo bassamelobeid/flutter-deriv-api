@@ -36,7 +36,7 @@ sub register {
         });
     };
 
-    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay)) {
+    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay, $redirect_uri, $verification_uri)) {
         return $error_sub->($err);
     }
 
@@ -93,7 +93,7 @@ sub update {
     my $app = $oauth->get_app($user_id, $app_id);
     return $error_sub->(localize('Not Found')) unless $app;
 
-    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay)) {
+    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay, $redirect_uri, $verification_uri)) {
         return $error_sub->($err);
     }
 
@@ -121,6 +121,14 @@ sub update {
 
 sub __validate_app_links {
     my ($homepage, $github, $appstore, $googleplay) = @_;
+
+    my @sites = @_;
+    my $validation_error;
+
+    for (grep { length($_) } @sites) {
+        $validation_error = BOM::RPC::v3::Utility::validate_uri($_);
+        return $validation_error if $validation_error;
+    }
 
     return localize('Invalid URI for homepage.')
         if length($homepage)

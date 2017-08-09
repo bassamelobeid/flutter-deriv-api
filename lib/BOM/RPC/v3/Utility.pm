@@ -8,6 +8,8 @@ use YAML::XS qw(LoadFile);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use List::MoreUtils qw(any);
 use Brands;
+use URI;
+use Domain::PublicSuffix;
 
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
@@ -266,6 +268,40 @@ sub paymentagent_default_min_max {
         minimum => 10,
         maximum => 2000
     };
+}
+
+sub validate_uri {
+    my $original_url = shift;
+    my $url          = URI->new($original_url);
+
+    if ($original_url =~ /[^[:ascii:]]/) {
+        return localize('Unicode is not allowed in URL');
+    }
+    if (not defined $url->scheme or ($url->scheme ne 'http' and $url->scheme ne 'https')) {
+        return localize('The given URL is not http(s)');
+    }
+    if ($url->userinfo) {
+        return localize('URL should not have user info');
+    }
+    if ($url->port != 80 && $url->port != 443) {
+        return localize('Only ports 80 and 443 are allowed');
+    }
+    if ($url->fragment) {
+        return localize('URL should not have fragment');
+    }
+    if ($url->query) {
+        return localize('URL should not have query');
+    }
+    my $host = $url->host;
+    if (!$host || $original_url =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
+        return localize('Invalid URL');
+    }
+    my $suffix = Domain::PublicSuffix->new();
+    if (!$suffix->get_root_domain($host)) {
+        return localize('Unknown domain name');
+    }
+
+    return undef;
 }
 
 # FIXME: remove this sub when move of client details to user db is done
