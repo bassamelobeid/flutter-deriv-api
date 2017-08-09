@@ -154,10 +154,10 @@ $contracts_for = $t->await::contracts_for( {
         "landing_company"   => $lc,
         "product_type"      => $pt,
 });
-use Data::Dumper;
-print Dumper($contracts_for);
+
+
 my $put_array = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration} eq '2h15m'} @{$contracts_for->{contracts_for}{available}}];
-#use latest trading window to avaoid bail out.
+# Try avoid bail out below by using the latest window available for 2h15m.
 my $put = $put_array->[scalar(@{$put_array})-1];
 
 my $barriers = $put->{available_barriers};
@@ -199,25 +199,22 @@ subtest "one barrier, one contract_type" => sub {
 subtest "various results" => sub {
 
 # We add 120 here because we want to increase the duration from 1 to 3 minutes.
-    $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch};
+    $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch} + 120;
     $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
 
-print "###### $now->epoch" . Dumper($put);
-
-# And this line is to fix the minimum stake validation failure.
+# And this line set amount to higher value to fix the minimum stake validation failure that seems to happen based
+# on the timing this test runs.
     $proposal_array_req_tpl->{amount}                   = 1000;
     $proposal_array_req_tpl->{barriers}                 = [{barrier => 97.2}];
     $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
 
-print ">>>>> " . Dumper($proposal_array_req_tpl);
-
     $response = $t->await::proposal_array($proposal_array_req_tpl);
-print "<<< " . Dumper($response);
     test_schema('proposal_array', $response);
 
     ok $response->{proposal_array}{proposals}{CALLE}[0]{ask_price}, "proposal is ok, price presented";
 
     $proposal_array_req_tpl->{barriers}                 = [{barrier => 99}];
+# Here we reset the amount back to 100 to ensure we get the minimum stake error for the next test.
     $proposal_array_req_tpl->{amount}                   = 100;
     $response = $t->await::proposal_array($proposal_array_req_tpl);
     test_schema('proposal_array', $response);
