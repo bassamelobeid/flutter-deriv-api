@@ -240,6 +240,19 @@ sub get_apps_by_user_id {
     return $apps;
 }
 
+sub get_app_ids_by_user_id {
+    my ($self, $user_id) = @_;
+
+    my $ids = $self->dbh->selectall_arrayref("
+        SELECT id
+        FROM oauth.apps WHERE binary_user_id = ?", {Slice => {}}, $user_id);
+    return [] unless $apps;
+
+    my @rv = map {$_->[0]} @$ids;
+
+    return \@rv;
+}
+
 sub delete_app {
     my ($self, $user_id, $app_id) = @_;
 
