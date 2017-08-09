@@ -262,6 +262,18 @@ sub get_real_acc_opening_type {
     return;
 }
 
+sub get_siblings_information {
+    my $client = shift;
+
+    # siblings filter disabled account
+    return map {
+        $_->loginid => {
+            is_virtual => $_->is_virtual             ? 1                                    : 0,
+            currency   => $_->default_account        ? ($_->default_account->currency_code) : (undef),
+            disabled   => $_->get_status('disabled') ? ($_->get_status('disabled')->reason) : (undef)}
+    } BOM::Platform::User->new({email => $client->email})->clients(disabled => 1);
+}
+
 sub paymentagent_default_min_max {
     return {
         minimum => 10,
