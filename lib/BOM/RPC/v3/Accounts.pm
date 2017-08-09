@@ -1308,7 +1308,7 @@ sub set_account_currency {
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidCurrency',
             message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)}
-    ) unless (exists $client->landing_company->is_currency_legal($currency));
+    ) unless $client->landing_company->is_currency_legal($currency);
 
     # no change in default account currency if default account is already set
     return {status => 1} if (not $client->default_account and $client->set_default_account($currency));
