@@ -5,7 +5,6 @@ use warnings;
 
 use Moo;
 use Error::Base;
-use LandingCompany::Registry;
 use List::Util qw(min max first);
 use YAML::XS qw(LoadFile);
 
@@ -149,14 +148,12 @@ sub _validate_available_currency {
     my ($self, $client) = (shift, shift);
 
     my $currency = $self->transaction->contract->currency;
+    return Error::Base->cuss(
+        -type              => 'InvalidCurrency',
+        -mesg              => "Invalid $currency",
+        -message_to_client => localize("The provided currency [_1] is invalid.", $currency),
+    ) unless $client->landing_company->is_currency_legal($currency);
 
-    if (not grep { $currency eq $_ } @{LandingCompany::Registry::get_by_broker($client->broker_code)->legal_allowed_currencies}) {
-        return Error::Base->cuss(
-            -type              => 'InvalidCurrency',
-            -mesg              => "Invalid $currency",
-            -message_to_client => localize("The provided currency [_1] is invalid.", $currency),
-        );
-    }
     return;
 }
 
@@ -174,7 +171,7 @@ sub _validate_currency {
         );
     }
 
-    if (not LandingCompany::Registry::get_by_broker($broker)->is_currency_legal($currency)) {
+    if (not $client->landing_company->is_currency_legal($currency)) {
         return Error::Base->cuss(
             -type              => 'IllegalCurrency',
             -mesg              => "Illegal $currency for $broker",
@@ -422,16 +419,15 @@ sub _validate_iom_withdrawal_limit {
 
     return if $client->is_virtual;
 
-    my $landing_company = LandingCompany::Registry::get_by_broker($client->broker_code);
-    return if ($landing_company->country ne 'Isle of Man');
+    my $landing_company_short = $client->landing_company->short;
+    return if ($landing_company_short ne 'iom');
 
     my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 
-    my $landing_company_short = $landing_company->short;
-    my $withdrawal_limits     = $payment_limits->{withdrawal_limits};
-    my $numdays               = $withdrawal_limits->{$landing_company_short}->{for_days};
-    my $numdayslimit          = $withdrawal_limits->{$landing_company_short}->{limit_for_days};
-    my $lifetimelimit         = $withdrawal_limits->{$landing_company_short}->{lifetime_limit};
+    my $withdrawal_limits = $payment_limits->{withdrawal_limits};
+    my $numdays           = $withdrawal_limits->{$landing_company_short}->{for_days};
+    my $numdayslimit      = $withdrawal_limits->{$landing_company_short}->{limit_for_days};
+    my $lifetimelimit     = $withdrawal_limits->{$landing_company_short}->{lifetime_limit};
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;
@@ -549,10 +545,9 @@ sub _validate_jurisdictional_restrictions {
     my $contract = $self->transaction->contract;
 
     my $residence   = $client->residence;
-    my $loginid     = $client->loginid;
     my $market_name = $contract->market->name;
 
-    if (!$residence && $loginid !~ /^VR/) {
+    if (not $residence and not $client->is_virtual) {
         return Error::Base->cuss(
             -type => 'NoResidenceCountry',
             -mesg => 'Client cannot place contract as we do not know their residence.',
@@ -561,7 +556,7 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    my $lc = LandingCompany::Registry::get_by_broker($loginid);
+    my $lc = $client->landing_company;
 
     my %legal_allowed_ct = map { $_ => 1 } @{$lc->legal_allowed_contract_types};
     if (not $legal_allowed_ct{$contract->code}) {
