@@ -175,7 +175,7 @@ sub new_account_real {
 
     my $error_map = BOM::RPC::v3::Utility::error_map();
 
-    unless ($client->is_virtual and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
+    if (not $client->is_virtual or (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') ne 'real') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccount',
                 message_to_client => $error_map->{'invalid'}});
