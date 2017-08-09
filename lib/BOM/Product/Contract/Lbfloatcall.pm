@@ -17,9 +17,10 @@ sub check_expiry_conditions {
 
     if ($self->exit_tick) {
         my ($low, $close) = @{$self->get_ohlc_for_period()}{qw(low close)};
-        die "Low/Close is not available for symbol: " . $self->underlying->symbol if (not defined $low or not defined $close);
-        my $value = $close - $low;
-        $self->value($value);
+        if (defined $low and defined $close) {
+            my $value = $close - $low;
+            $self->value($value);
+        }
     }
 
     return;

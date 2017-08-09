@@ -18,9 +18,10 @@ sub check_expiry_conditions {
 
     if ($self->exit_tick) {
         my ($high) = @{$self->get_ohlc_for_period()}{qw(high)};
-        die "High is not available for symbol: " . $self->underlying->symbol if not defined $high;
-        my $value = max(0, $high - $self->barrier->as_absolute);
-        $self->value($value);
+        if (defined $high) {
+            my $value = max(0, $high - $self->barrier->as_absolute);
+            $self->value($value);
+        }
     }
 
     return;
