@@ -138,10 +138,23 @@ sub run {
                     $volsurface->save;
                     $self->report->{$symbol}->{success} = 1;
                 } else {
-                    $self->report->{$symbol} = {
-                        success => 0,
-                        reason  => 'Term 7 is missing from datasource for ' . $symbol,
-                    };
+
+                    if (
+                        !(
+                            $volsurface->validation_error =~ /identical to existing one/
+                            && time - Quant::Framework::VolSurface::Moneyness->new({
+                                    underlying       => $underlying,
+                                    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+                                }
+                            )->creation_date->epoch < 60 * 60
+
+                        ))
+                    {
+                        $self->report->{$symbol} = {
+                            success => 0,
+                            reason  => 'Term 7 is missing from datasource for ' . $symbol,
+                        };
+                    }
                 }
             } else {
                 $self->report->{$symbol} = {
