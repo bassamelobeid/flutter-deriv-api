@@ -5,6 +5,7 @@ use warnings;
 
 use JSON::XS qw| decode_json |;
 use IO::Async::Loop;
+use Test::More;
 
 =head2 <wsapi_wait_for>
 
@@ -29,7 +30,7 @@ sub wsapi_wait_for {
             my ($tx, $msg) = @_;
             return $tx unless $wait_for;
             my $data = decode_json($msg);
-
+            diag "Got >>" . $data->{msg_type} ."<< instead >>$wait_for<<" unless ($wait_for && $data->{msg_type} eq $wait_for);
             return $tx unless ($wait_for && $data->{msg_type} eq $wait_for);
             $wait_for = '';
             $f->done($data) if !$f->is_ready;
@@ -39,6 +40,7 @@ sub wsapi_wait_for {
         after => ($params->{timeout} || 2),
         code => sub {
             if ($messages_without_accidens == ($params->{wait_max} || 10)) {
+                ok(0, 'Timeout');
                 return $f->fail("timeout");
             }
             $f->cancel();
