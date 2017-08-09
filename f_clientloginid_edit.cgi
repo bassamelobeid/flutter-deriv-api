@@ -410,51 +410,33 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->place_of_birth($input{$key});
             next CLIENT_KEY;
         }
-        if (my ($id) = $key =~ /^document_id_([0-9]+)$/) {
-            my $val = $input{$key};
-            my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
-            my $docid = substr(encode_entities($val), 0, 255);
-            next CLIENT_KEY unless $doc;
-            next CLIENT_KEY if $docid eq $doc->document_id();
-            unless (eval { $doc->document_id($docid); 1 }) {
-                my $err = $@;
-                print qq{<p style="color:red">ERROR: Could not set document_id for doc $id: $err</p>};
-                code_exit_BO();
-            }
-            $doc->db($client->set_db('write'));
-            $doc->save;
-            next CLIENT_KEY;
-        }
-        if (my ($id) = $key =~ /^comments_([0-9]+)$/) {
-            my $val = $input{$key};
-            my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
-            my $comments = substr(encode_entities($val), 0, 255);
-            next CLIENT_KEY unless $doc;
-            next CLIENT_KEY if $comments eq $doc->comments();
-            unless (eval { $doc->comments($comments); 1 }) {
-                my $err = $@;
-                print qq{<p style="color:red">ERROR: Could not set comments for doc $id: $err</p>};
-                code_exit_BO();
-            }
-            $doc->db($client->set_db('write'));
-            $doc->save;
-            next CLIENT_KEY;
-        }
-        if (my ($id) = $key =~ /^expiration_date_([0-9]+)$/) {
-            my $val = $input{$key} || next CLIENT_KEY;
+        if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
+            my $val = encode_entities($input{$key} // '') || next CLIENT_KEY;
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
             next CLIENT_KEY unless $doc;
-            my $date;
-            if ($val ne 'clear') {
-                $date = Date::Utility->new($val);
-                next CLIENT_KEY if $date->is_same_as(Date::Utility->new($doc->expiration_date));
-                $date = $date->date_yyyymmdd;
+            my $new_value;
+            if ($document_field eq 'expiration_date') {
+                try {
+                    $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
+                }
+                catch {
+                    $_ = (split "\n", $_)[0];                                              #handle Date::Utility's confess() call
+                    print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $_</p>};
+                    next CLIENT_KEY;
+                };
+            } elsif ($document_field eq 'comments') {
+                $new_value = substr($val, 0, 255);
+            } elsif ($document_field eq 'document_id') {
+                $new_value = substr($val, 0, 30);
             }
-            unless (eval { $doc->expiration_date($date); 1 }) {
-                my $err = $@;
-                print qq{<p style="color:red">ERROR: Could not set expiry date for doc $id: $err</p>};
-                code_exit_BO();
+            next CLIENT_KEY if $new_value eq $doc->$document_field();
+            try {
+                $doc->$document_field($new_value);
             }
+            catch {
+                print qq{<p style="color:red">ERROR: Could not set $document_field for doc $id with $val: $_</p>};
+                next CLIENT_KEY;
+            };
             $doc->db($client->set_db('write'));
             $doc->save;
             next CLIENT_KEY;
