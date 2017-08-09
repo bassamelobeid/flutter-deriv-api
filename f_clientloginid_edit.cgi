@@ -362,22 +362,14 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         postcode
         residence
         place_of_birth/;
-    exists $input{$_} && $client->$_($input{$key}) for @simple_updates;
+    exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
 
     CLIENT_KEY:
     foreach my $key (keys %input) {
         if ($key eq 'dob_day') {
             my $date_of_birth;
-            if (    $input{'dob_day'}
-                and $input{'dob_month'}
-                and $input{'dob_year'})
-            {
-                my $day_number =
-                    ($input{'dob_day'} < 10)
-                    ? "0$input{'dob_day'}"
-                    : $input{'dob_day'};
-                $date_of_birth = $input{'dob_year'} . '-' . $input{'dob_month'} . '-' . $day_number;
-            }
+            $date_of_birth = sprintf "%04d-%02d-%02d", $input{'dob_year'}, $input{'dob_month'}, $input{'dob_day'}
+                if $input{'dob_day'} && $input{'dob_month'} && $input{'dob_year'};
 
             $client->date_of_birth($date_of_birth);
             next CLIENT_KEY;
