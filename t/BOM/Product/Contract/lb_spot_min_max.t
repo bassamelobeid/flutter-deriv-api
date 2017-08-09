@@ -74,7 +74,7 @@ subtest 'spot min max' => sub {
     $c                          = produce_contract($bet_params);
 
     is $c->pricing_spot, 103, 'pricing spot is available';
-    is $c->spot_min,     103, 'spot min is available';
+    is $c->spot_min,     101, 'spot min is available';
     is $c->spot_max,     103, 'spot max is available';
     ok $c->bid_price,    'can price';
 };
