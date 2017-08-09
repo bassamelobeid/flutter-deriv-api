@@ -247,8 +247,10 @@ my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
 my $method = 'payout_currencies';
 subtest $method => sub {
-    is_deeply($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD BTC)], 'invalid token will get all currencies');
-    is_deeply(
+    # we shouldn't care about order of currencies
+    # we just need to send array back
+    cmp_bag($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD BTC)], 'invalid token will get all currencies');
+    cmp_bag(
         $c->tcall(
             $method,
             {
@@ -259,8 +261,8 @@ subtest $method => sub {
         'undefined token will get all currencies'
     );
 
-    is_deeply($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
-    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD BTC)], "will return legal currencies if no token");
+    cmp_bag($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
+    cmp_bag($c->tcall($method, {}), [qw(USD EUR GBP AUD BTC)], "will return legal currencies if no token");
 };
 
 $method = 'landing_company';
