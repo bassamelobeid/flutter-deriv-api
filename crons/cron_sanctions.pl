@@ -28,9 +28,9 @@ my $brand = Brands->new(name => 'binary');
 my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Platform::Config::sanction_file);
 
 my $last_run = (stat $file_flag)[9] // 0;
-$sanctions->update_data();
-{ open my $fh, '>', $file_flag; close $fh };
-exit if $last_run > $sanctions->last_updated();
+#$sanctions->update_data();
+#{ open my $fh, '>', $file_flag; close $fh };
+#exit if $last_run > $sanctions->last_updated();
 
 my $matched = {map { $_ => get_matched_clients_by_broker($_) } @brokers};
 do_report($matched);
@@ -87,7 +87,7 @@ sub get_matched_clients_by_broker {
             loginid ~ ('^' || ? || '\\d')
         }, undef, $broker
     );
-    #XXX: can we rely on rows? New rows are added on client's registratio
+    #XXX: can we rely on rows? New rows are added on client's registration
     # WHERE condition we need only for QA
     $dbh->do("UPDATE betonmarkets.sanctions_check SET result='0',type='C',tstmp=? WHERE client_loginid ~ ('^' || ? || '\\d')",
         undef, Date::Utility->new->datetime, $broker);
@@ -96,12 +96,19 @@ sub get_matched_clients_by_broker {
         my $list = $sanctions->is_sanctioned($client->first_name, $client->last_name);
         push @matched, [$client, $list] if $list;
     }
-    my $sth = $dbh->prepare("UPDATE betonmarkets.sanctions_check SET result=? WHERE client_loginid=?") or die $DBI::errstr;
-    foreach (@matched) {
-        warn $_->[1], $_->[0]->loginid;
-        $sth->execute($_->[1], $_->[0]->loginid) or die $DBI::errstr;
-    }
-    $sth->finish();
+    return [] unless @matched;
+    my $values = join ",", ('(?,?)') x scalar @matched;
+    $dbh->do(
+        qq{
+            WITH input(result, client_loginid)
+                AS(VALUES $values)
+            UPDATE betonmarkets.sanctions_check s
+            SET result=input.result
+            FROM input
+            WHERE s.client_loginid=input.client_loginid
+            }, undef, map { $_->[1], $_->[0]->loginid } @matched
+    ) or warn $DBI::errstr;
+
     return \@matched;
 }
 
