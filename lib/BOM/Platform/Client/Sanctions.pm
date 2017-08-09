@@ -2,10 +2,10 @@ package BOM::Platform::Client::Sanctions;
 
 use Moose;
 
-use Data::Validate::Sanctions;
 use BOM::Platform::Config;
 use BOM::Platform::Email qw(send_email);
 use Client::Account;
+use Data::Validate::Sanctions;
 
 has client => (
     is       => 'ro',
@@ -70,17 +70,15 @@ sub check {
         . "Check possible match in UN sanctions list found in [$found_in_list, "
         . Date::Utility->new($sanctions->last_updated($found_in_list))->date . "].";
 
-    # do not add another note & block if client is already disabled
+    # do not send notification if client is already disabled
     if (!$client->get_status('disabled')) {
-        $client->set_status('disabled', 'system', 'client disabled as marked as UNTERR');
-        $client->save;
+        send_email({
+                from    => $self->brand->emails('compliance'),
+                to      => join(',', $self->brand->emails('compliance'), $self->brand->emails('support')),
+                subject => $client->loginid . ' possible match in sanctions list',
+                message => [$message],
+            }) unless $self->skip_email;
     }
-    send_email({
-            from    => $self->brand->emails('compliance'),
-            to      => $self->brand->emails('compliance'),
-            subject => $client->loginid . ' marked as UNTERR',
-            message => [$message],
-        }) unless $self->skip_email;
     return $found_in_list;
 }
 
