@@ -196,7 +196,7 @@ subtest 'check two contracts subscription' => sub {
     BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json $msg);
     $t->await::balance({balance => 1});
 
-    sleep 3; ### we must wait for pricing rpc response
+    sleep 5; ### we must wait for pricing rpc response
 
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
 
