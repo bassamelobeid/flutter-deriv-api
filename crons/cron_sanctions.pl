@@ -75,7 +75,6 @@ sub get_matched_clients_by_broker {
     my @matched;
     my $dbh = BOM::Database::ClientDB->new({
             broker_code => $broker,
-            operation   => 'backoffice_replica',
         })->db->dbh;
     my $clients = $dbh->selectcol_arrayref(
         q{
