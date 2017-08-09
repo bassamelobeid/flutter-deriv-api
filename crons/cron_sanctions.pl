@@ -3,12 +3,13 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use Data::Validate::Sanctions;
 use Path::Tiny;
 
 use Brands;
 use Client::Account;
 use BOM::Database::ClientDB;
-use BOM::Platform::Client::Sanctions;
+use BOM::Platform::Config;
 use BOM::Platform::Email qw(send_email);
 
 =head2
@@ -24,11 +25,12 @@ my $reports_path = shift or die "Provide path for storing files as an argument";
 my @brokers      = qw/CR MF MLT MX/;
 
 my $brand = Brands->new(name => 'binary');
+my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Platform::Config::sanction_file);
 
 my $last_run = (stat $file_flag)[9] // 0;
-$BOM::Platform::Client::Sanctions::sanctions->update_data();
+$sanctions->update_data();
 { open my $fh, '>', $file_flag; close $fh };
-exit if $last_run > $BOM::Platform::Client::Sanctions::sanctions->last_updated();
+exit if $last_run > $sanctions->last_updated();
 
 my $matched = {map { $_ => get_matched_clients_by_broker($_) } @brokers};
 do_report($matched);
@@ -61,7 +63,7 @@ sub make_client_csv_line {
     my ($c, $list) = @{+shift};
     my @fields = (
         $list,
-        Date::Utility->new($BOM::Platform::Client::Sanctions::sanctions->last_updated($list))->date,
+        Date::Utility->new($sanctions->last_updated($list))->date,
         (map { $c->$_ // '' } qw(broker loginid first_name last_name email phone gender date_of_birth date_joined residence citizen)),
         (map { $_->status_code, $_->reason } ($c->client_status->[0])),    #use only last status
     );
@@ -71,11 +73,11 @@ sub make_client_csv_line {
 sub get_matched_clients_by_broker {
     my $broker = shift;
     my @matched;
-    my $clients = BOM::Database::ClientDB->new({
+    my $dbh = BOM::Database::ClientDB->new({
             broker_code => $broker,
             operation   => 'backoffice_replica',
-        }
-        )->db->dbh->selectcol_arrayref(
+        })->db->dbh;
+    my $clients = $dbh->selectcol_arrayref(
         q{
         SELECT
             loginid
@@ -84,17 +86,22 @@ sub get_matched_clients_by_broker {
         WHERE
             loginid ~ ('^' || ? || '\\d')
         }, undef, $broker
-        );
-
+    );
+    #XXX: can we rely on rows? New rows are added on client's registratio
+    # WHERE condition we need only for QA
+    $dbh->do("UPDATE betonmarkets.sanctions_check SET result='0',type='C',tstmp=? WHERE client_loginid ~ ('^' || ? || '\\d')",
+        undef, Date::Utility->new->datetime, $broker);
     foreach my $c (@$clients) {
         my $client = Client::Account->new({loginid => $c});
-        my $list = BOM::Platform::Client::Sanctions->new({
-                client => $client,
-                brand  => $brand,
-                type   => 'C',
-            })->check();
+        my $list = $sanctions->is_sanctioned($client->first_name, $client->last_name);
         push @matched, [$client, $list] if $list;
     }
+    my $sth = $dbh->prepare("UPDATE betonmarkets.sanctions_check SET result=? WHERE client_loginid=?") or die $DBI::errstr;
+    foreach (@matched) {
+        warn $_->[1], $_->[0]->loginid;
+        $sth->execute($_->[1], $_->[0]->loginid) or die $DBI::errstr;
+    }
+    $sth->finish();
     return \@matched;
 }
 
