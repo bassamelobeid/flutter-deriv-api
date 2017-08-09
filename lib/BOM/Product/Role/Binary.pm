@@ -5,9 +5,9 @@ use Moose::Role;
 use BOM::Platform::Config;
 use BOM::Product::Static;
 
-use List::Util qw(min max first);
+use List::Util qw(min);
 use Scalar::Util qw(looks_like_number);
-use Format::Util::Numbers qw(to_monetary_number_format roundnear formatnumber);
+use Format::Util::Numbers qw(formatnumber);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
