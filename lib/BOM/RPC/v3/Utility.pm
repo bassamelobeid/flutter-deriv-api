@@ -6,10 +6,11 @@ use warnings;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use List::MoreUtils qw(any);
-use Brands;
+use List::Util qw(any);
 use URI;
 use Domain::PublicSuffix;
+
+use Brands;
 
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
@@ -262,8 +263,12 @@ sub get_real_acc_opening_type {
     return;
 }
 
-sub is_valid_to_open_new_real_account {
+sub is_valid_to_make_new_account_real {
     my $client = shift;
+
+    # send error if maltaivest and japan client tried to make this call
+    return permission_error()
+        if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
 
     my $residence = $client->residence;
     return BOM::RPC::v3::Utility::create_error({
@@ -278,30 +283,27 @@ sub is_valid_to_open_new_real_account {
             code              => 'InvalidAccount',
             message_to_client => error_map()->{'invalid'}});
 
-    my %siblings = get_real_account_siblings_information($client);
+    # get all real account siblings
+    my $siblings = get_real_account_siblings_information($client);
+
     # if no real sibling is present then its virtual
-    if (scalar(keys %siblings) == 0) {
-        # allow them to open real account if gaming account is there
-        # for residence
+    if (scalar(keys %$siblings) == 0) {
         return if $gaming_company;
 
-        # as account opening for maltainvest and japan has separate call
-        # so throw error
         if ($financial_company) {
+            # send error as account opening for maltainvest and japan has separate call
             return $error if (any { $_ eq $financial_company } qw(maltainvest japan));
-
-            # Eg: Singapore has no gaming_company but we allow them
-            # to open real account
-            return;
         }
+
+        return;
     }
 
     # we don't allow virtual client to make this again and
     # for maltainest and japan account opening there are separate calls
-    return permission_error() if ($client->is_virtual or $client->landing_company->short =~ /^(?:maltainvest|japan)$/);
+    return permission_error() if $client->is_virtual;
 
     # return if any one real client has not set account currency
-    if (my ($loginid_no_curr) = grep { not $siblings->{$_}->{currency} } keys %siblings) {
+    if (my ($loginid_no_curr) = grep { not $siblings->{$_}->{currency} } keys %$siblings) {
         return create_error({
                 code              => 'NoCurrency',
                 message_to_client => localize('Please set the currency for [_1].', $loginid_no_curr)});
@@ -311,6 +313,8 @@ sub is_valid_to_open_new_real_account {
     # if client has one type of fiat currency don't allow them to open another
     # if client has all of allowed cryptocurrency
     my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
+
+    my $types = {map { $= > 1 } keys %{$legal_allowed_currencies}};
 
     return;
 }
@@ -322,16 +326,17 @@ sub get_real_account_siblings_information {
     # as 'migration to single email login', because we moved to single
     # currency per account in past and mark duplicate clients as disabled
     # with that reason itself
-    return map {
-        $_->loginid => {
-            currency => $_->default_account        ? ($_->default_account->currency_code) : (undef),
-            disabled => $_->get_status('disabled') ? ($_->get_status('disabled')->reason) : (undef),
-            landing_company_name => $_->landing_company->short
-            }
-        } grep {
-        not($_->get_status('disabled') and $_->get_status('disabled')->reason =~ /^migration to single email login$/)
-            and not $_->is_virtual
-        } BOM::Platform::User->new({email => $client->email})->clients(disabled => 1);
+    return {
+        map {
+            $_->loginid => {
+                currency => $_->default_account        ? ($_->default_account->currency_code) : (undef),
+                disabled => $_->get_status('disabled') ? ($_->get_status('disabled')->reason) : (undef),
+                landing_company_name => $_->landing_company->short
+                }
+            } grep {
+            not($_->get_status('disabled') and $_->get_status('disabled')->reason =~ /^migration to single email login$/)
+                and not $_->is_virtual
+            } BOM::Platform::User->new({email => $client->email})->clients(disabled => 1)};
 }
 
 sub paymentagent_default_min_max {
