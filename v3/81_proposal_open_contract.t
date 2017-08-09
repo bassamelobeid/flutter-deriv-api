@@ -113,8 +113,6 @@ subtest 'passthrough' => sub {
     is($data->{proposal_open_contract}->{id}, undef, 'passthrough should not allow multiple proposal_open_contract subscription');
 };
 
-my $account_id;
-
 subtest 'selling contract message' => sub {
     # It is hack to emulate contract selling and test subcribtion
     my ($url, $call_params);
@@ -143,7 +141,6 @@ subtest 'selling contract message' => sub {
         short_code              => $contract_details->[0]->{short_code},
         currency_code           => 'USD',
     };
-    $account_id = $contract_details->[0]->{account_id};
 
     BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json $msg);
 
