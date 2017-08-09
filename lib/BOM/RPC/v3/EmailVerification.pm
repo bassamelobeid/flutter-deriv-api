@@ -42,7 +42,7 @@ sub email_verification {
                 subject => localize('Duplicate email address submitted - [_1]', $website_name),
                 message => '<div style="line-height:200%;color:#333333;font-size:15px;">'
                     . localize(
-                    '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system.  <p>You may have:</p><ul><li>Registered with us using the same email in the past, or</li><li>Registered with one of our technology or brokerage partners</li></ul><p>If you’d like to proceed, please try using a different email address to register your account.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_1]</p>',
+                    '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system.  <p>You may have:</p><ul><li>Registered with us using the same email in the past, or</li><li>Registered with one of our technology or brokerage partners</li></ul><p>If you\'d like to proceed, please try using a different email address to register your account.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_1]</p>',
                     $website_name
                     )
                     . '</div>'
