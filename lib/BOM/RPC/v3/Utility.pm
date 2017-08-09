@@ -265,11 +265,40 @@ sub get_real_acc_opening_type {
 sub is_valid_to_open_new_real_account {
     my $client = shift;
 
-    my %siblings = get_siblings_information($client);
+    my $residence = $client->residence;
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'NoResidence',
+            message_to_client => localize('Please set your country of residence.')}) unless $residence;
 
-    # if only one entry it means client has only virtual account
-    # so we allow them to open real account
-    return if (scalar(keys %siblings) == 1);
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    my ($gaming_company, $financial_company, $error) =
+        ($countries_instance->gaming_company_for_country($residence), $countries_instance->financial_company_for_country($residence));
+
+    my $error = BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidAccount',
+            message_to_client => error_map()->{'invalid'}});
+
+    my %siblings = get_real_account_siblings_information($client);
+    # if no real sibling is present then its virtual
+    if (scalar(keys %siblings) == 0) {
+        # allow them to open real account if gaming account is there
+        # for residence
+        return if $gaming_company;
+
+        # as account opening for maltainvest and japan has separate call
+        # so throw error
+        if ($financial_company) {
+            return $error if (any { $_ eq $financial_company } qw(maltainvest japan));
+
+            # Eg: Singapore has no gaming_company but we allow them
+            # to open real account
+            return;
+        }
+    }
+
+    # we don't allow virtual client to make this again and
+    # for maltainest and japan account opening there are separate calls
+    return permission_error() if ($client->is_virtual or $client->landing_company->short =~ /^(?:maltainvest|japan)$/);
 
     # return if any one real client has not set account currency
     if (my ($loginid_no_curr) = grep { not $siblings->{$_}->{currency} } keys %siblings) {
@@ -281,11 +310,12 @@ sub is_valid_to_open_new_real_account {
     # check if all currencies are exhausted i.e.
     # if client has one type of fiat currency don't allow them to open another
     # if client has all of allowed cryptocurrency
+    my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
 
     return;
 }
 
-sub get_siblings_information {
+sub get_real_account_siblings_information {
     my $client = shift;
 
     # we don't need to consider disabled client that have reason
@@ -294,11 +324,13 @@ sub get_siblings_information {
     # with that reason itself
     return map {
         $_->loginid => {
-            is_virtual => $_->is_virtual             ? 1                                    : 0,
-            currency   => $_->default_account        ? ($_->default_account->currency_code) : (undef),
-            disabled   => $_->get_status('disabled') ? ($_->get_status('disabled')->reason) : (undef)}
+            currency => $_->default_account        ? ($_->default_account->currency_code) : (undef),
+            disabled => $_->get_status('disabled') ? ($_->get_status('disabled')->reason) : (undef),
+            landing_company_name => $_->landing_company->short
+            }
         } grep {
         not($_->get_status('disabled') and $_->get_status('disabled')->reason =~ /^migration to single email login$/)
+            and not $_->is_virtual
         } BOM::Platform::User->new({email => $client->email})->clients(disabled => 1);
 }
 

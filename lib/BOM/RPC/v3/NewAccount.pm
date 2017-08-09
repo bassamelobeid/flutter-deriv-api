@@ -171,13 +171,7 @@ sub verify_email {
 sub new_account_real {
     my $params = shift;
 
-    my $client = $params->{client};
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'NoResidence',
-            message_to_client => localize('Please set your country of residence.')}) unless $client->residence;
-
-    my $error_map = BOM::RPC::v3::Utility::error_map();
+    my ($client, $error_map) = ($params->{client}, BOM::RPC::v3::Utility::error_map());
 
     if (not $client->is_virtual or (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') ne 'real') {
         return BOM::RPC::v3::Utility::create_error({
