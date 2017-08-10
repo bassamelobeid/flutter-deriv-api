@@ -1310,6 +1310,20 @@ sub set_account_currency {
             message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)}
     ) unless $client->landing_company->is_currency_legal($currency);
 
+    # bail out if default account is already set
+    return {status => 0} if $client->default_account;
+
+    # for real client check if we are allowed to set currency
+    # i.e if we have exhausted available options
+    # - client can have single flat currency
+    # - client can have multiple crypto currency
+    #   but only with single type of crypto currency
+    #   for example BTC, ETH is allowed but BTC BTC is not
+    unless ($client->is_virtual) {
+        my $error = BOM::RPC::v3::Utility::is_valid_to_set_currency($client, $currency);
+        return $error if $error;
+    }
+
     # no change in default account currency if default account is already set
     return {status => 1} if (not $client->default_account and $client->set_default_account($currency));
 

@@ -264,6 +264,31 @@ sub get_real_acc_opening_type {
     return;
 }
 
+sub filter_siblings_by_landing_company {
+    my ($client, $siblings) = @_;
+    return {map { $_ => $siblings->{$_} } grep { $siblings->{$_}->{landing_company_name} eq $client->landing_company->short } keys %$siblings};
+}
+
+sub get_real_account_siblings_information {
+    my $client = shift;
+
+    # we don't need to consider disabled client that have reason
+    # as 'migration to single email login', because we moved to single
+    # currency per account in past and mark duplicate clients as disabled
+    # with that reason itself
+    return {
+        map {
+            $_->loginid => {
+                currency => $_->default_account        ? ($_->default_account->currency_code) : (undef),
+                disabled => $_->get_status('disabled') ? ($_->get_status('disabled')->reason) : (undef),
+                landing_company_name => $_->landing_company->short
+                }
+            } grep {
+            not($_->get_status('disabled') and $_->get_status('disabled')->reason =~ /^migration to single email login$/)
+                and not $_->is_virtual
+            } BOM::Platform::User->new({email => $client->email})->clients(disabled => 1)};
+}
+
 sub is_valid_to_make_new_account {
     my ($client, $type) = @_;
 
@@ -307,16 +332,22 @@ sub is_valid_to_make_new_account {
     # we don't allow virtual client to make this again and
     return permission_error() if $client->is_virtual;
 
+    # filter siblings by landing company as we don't want to check cross
+    # landing company siblings, for example MF should check only its
+    # corresponding siblings not MLT one
+    $siblings = filter_siblings_by_landing_company($client, $siblings);
+
     # return if any one real client has not set account currency
     if (my ($loginid_no_curr) = grep { not $siblings->{$_}->{currency} } keys %$siblings) {
         return create_error({
-                code              => 'NoCurrency',
-                message_to_client => localize('Please set the currency for [_1].', $loginid_no_curr)});
+                code => 'SetExistingAccountCurrency',
+                message_to_client =>
+                    localize('Please set the currency for your existing account [_1], in order to create more accounts.', $loginid_no_curr)});
     }
 
     # check if all currencies are exhausted i.e.
-    # if client has one type of fiat currency don't allow them to open another
-    # if client has all of allowed cryptocurrency
+    # - if client has one type of fiat currency don't allow them to open another
+    # - if client has all of allowed cryptocurrency
     my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
     my $types = {map { $_ => 1 } keys %{$legal_allowed_currencies}};
 
@@ -341,24 +372,31 @@ sub is_valid_to_make_new_account {
     return;
 }
 
-sub get_real_account_siblings_information {
-    my $client = shift;
+sub is_valid_to_set_currency {
+    my ($client, $currency) = @_;
 
-    # we don't need to consider disabled client that have reason
-    # as 'migration to single email login', because we moved to single
-    # currency per account in past and mark duplicate clients as disabled
-    # with that reason itself
-    return {
-        map {
-            $_->loginid => {
-                currency => $_->default_account        ? ($_->default_account->currency_code) : (undef),
-                disabled => $_->get_status('disabled') ? ($_->get_status('disabled')->reason) : (undef),
-                landing_company_name => $_->landing_company->short
-                }
-            } grep {
-            not($_->get_status('disabled') and $_->get_status('disabled')->reason =~ /^migration to single email login$/)
-                and not $_->is_virtual
-            } BOM::Platform::User->new({email => $client->email})->clients(disabled => 1)};
+    my $siblings = get_real_account_siblings_information($client);
+
+    # is virtual check is already done in set account currency
+    # but better to have it here as well so that this sub can
+    # be pluggable
+    return if (scalar(keys %$siblings) == 0);
+
+    $siblings = filter_siblings_by_landing_company($client, $siblings);
+
+    # check if currency is fiat or crypto
+    my ($type, $error) = (
+        LandingCompany::Registry::get_currency_type($currency),
+        create_error({
+                code              => 'CurrencyTypeNotAllowed',
+                message_to_client => localize('Please note that you are limited to one account per currency type.')}));
+    # if fiat then check if client has already any fiat, if yes then don't allow
+    return $error
+        if ($type eq 'fiat' and grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings);
+    # if crypto check if client has same crypto, if yes then don't allow
+    return $error if ($type eq 'crypto' and grep { $currency eq $siblings->{$_}->{currency} } keys %$siblings);
+
+    return;
 }
 
 sub paymentagent_default_min_max {
