@@ -173,7 +173,11 @@ sub new_account_real {
 
     my ($client, $error_map) = ($params->{client}, BOM::RPC::v3::Utility::error_map());
 
-    my $error = BOM::RPC::v3::Utility::is_valid_to_make_new_account_real($client);
+    # send error if maltaivest and japan client tried to make this call
+    return BOM::RPC::v3::Utility::permission_error()
+        if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
+
+    my $error = BOM::RPC::v3::Utility::is_valid_to_make_new_account($client, 'real');
     return $error if $error;
 
     my $args = $params->{args};

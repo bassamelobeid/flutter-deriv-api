@@ -264,12 +264,8 @@ sub get_real_acc_opening_type {
     return;
 }
 
-sub is_valid_to_make_new_account_real {
-    my $client = shift;
-
-    # send error if maltaivest and japan client tried to make this call
-    return permission_error()
-        if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
+sub is_valid_to_make_new_account {
+    my ($client, $type) = @_;
 
     my $residence = $client->residence;
     return create_error({
@@ -285,12 +281,23 @@ sub is_valid_to_make_new_account_real {
 
     # if no real sibling is present then its virtual
     if (scalar(keys %$siblings) == 0) {
-        return if $gaming_company;
 
-        # send error as account opening for maltainvest and japan has separate call
-        return create_error({
-                code              => 'InvalidAccount',
-                message_to_client => error_map()->{'invalid'}}) if ($financial_company and any { $_ eq $financial_company } qw(maltainvest japan));
+        if ($type eq 'real') {
+            return if $gaming_company;
+            # send error as account opening for maltainvest and japan has separate call
+            return create_error({
+                    code              => 'InvalidAccount',
+                    message_to_client => error_map()->{'invalid'}}
+            ) if ($financial_company and any { $_ eq $financial_company } qw(maltainvest japan));
+        } elsif ($type eq 'financial' and $financial_company and $financial_company ne 'maltainvest') {
+            return create_error({
+                    code              => 'InvalidAccount',
+                    message_to_client => error_map()->{'invalid'}});
+        } elsif ($type eq 'japan' and $financial_company and $financial_company ne 'japan') {
+            return create_error({
+                    code              => 'InvalidAccount',
+                    message_to_client => error_map()->{'invalid'}});
+        }
 
         # some countries don't have gaming company like Singapore
         # but we do allow them to open only financial account
@@ -298,7 +305,6 @@ sub is_valid_to_make_new_account_real {
     }
 
     # we don't allow virtual client to make this again and
-    # for maltainest and japan account opening there are separate calls
     return permission_error() if $client->is_virtual;
 
     # return if any one real client has not set account currency
