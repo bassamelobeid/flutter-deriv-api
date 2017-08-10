@@ -35,6 +35,15 @@ use YAML::XS qw(LoadFile);
 # FIXME This needs to come from config, requires chef changes
 use constant INTROSPECTION_PORT => 8801;
 
+sub uploader {
+    my $id = shift;
+    return sub {
+        open(my $fh, '>>', "/tmp/documents/$id") or die 'Cannot open the file /tmp/documents/$id';
+        print $fh shift;
+        close($fh);
+        }
+}
+
 sub apply_usergroup {
     my ($cf, $log) = @_;
 
@@ -485,12 +494,49 @@ sub startup {
                 my ($c, $frame) = @_;
                 my ($type, $id, $size, $data) = unpack "N N N a*", $frame;
 
+                if ($type != 1) {
+                    $c->send({
+                            json => {
+                                msg_type => 'upload_file',
+                                error    => 'Unknown request type',
+                            }});
+                    $c->finish;
+                    return;
+                }
+
+                if ($size != (length $data)) {
+                    $c->send({
+                            json => {
+                                msg_type => 'upload_file',
+                                error    => 'Chunk size does not match',
+                            }});
+                    $c->finish;
+                    return;
+
+                }
+
+                if (!$c->stash->{document_uploads}->{$id}) {
+                    $c->stash->{document_uploads}->{$id} = uploader($id);
+                }
+
+                my $uploader = $c->stash->{document_uploads}->{$id};
+
                 if ($size == 0) {
-                    # finish upload
+                    $c->send({
+                            json => {
+                                msg_type    => 'upload_file',
+                                upload_file => {
+                                    status => 'Success!',
+                                    id     => $id,
+                                },
+                            }});
+                    delete $c->stash->{document_uploads}->{$id};
                     return;
                 }
 
                 # upload file
+
+                $uploader->($data);
             },
 
             # action hooks
