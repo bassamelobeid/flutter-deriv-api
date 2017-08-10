@@ -31,7 +31,8 @@ sub print_client_details {
     my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
 
     # Extract year/month/day if we have them
-    my ($dob_year, $dob_month, $dob_day) = ($client->date_of_birth // '') =~ /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
+    # after client->save we have T00:00:00 in date_of_birth, so handle this
+    my ($dob_year, $dob_month, $dob_day) = ($client->date_of_birth // '') =~ /^(\d\d\d\d)-(\d\d)-(\d\d)/;
     # make dob_day as numeric values because there is no prefix '0' in dob_daylist
     $dob_day += 0;
 
