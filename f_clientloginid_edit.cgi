@@ -852,9 +852,9 @@ print qq{
     <input type="hidden" name="broker" value="$encoded_broker">
     <input type="hidden" name="loginID" value="$encoded_loginid">
         </form>
-   }
+   };
 
-    if ($input{whattodo} eq 'update_professional_status') {
+if ($input{whattodo} eq 'update_professional_status') {
     $client->financial_assessment({is_professional => $input{professional_status}});
     $client->save;
 
