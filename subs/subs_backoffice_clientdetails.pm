@@ -28,10 +28,11 @@ sub print_client_details {
     my ($client, $staff) = @_;
 
     # IDENTITY sECTION
-    my @mrms_options = BOM::Backoffice::FormAccounts::GetSalutations();
+    my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
 
     # Extract year/month/day if we have them
-    my ($dob_year, $dob_month, $dob_day) = ($client->date_of_birth // '') =~ /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
+    # after client->save we have T00:00:00 in date_of_birth, so handle this
+    my ($dob_year, $dob_month, $dob_day) = ($client->date_of_birth // '') =~ /^(\d\d\d\d)-(\d\d)-(\d\d)/;
     # make dob_day as numeric values because there is no prefix '0' in dob_daylist
     $dob_day += 0;
 
@@ -108,7 +109,7 @@ sub print_client_details {
         client                  => $client,
         self_exclusion_enabled  => $self_exclusion_enabled,
         lang                    => request()->language,
-        mrms_options            => \@mrms_options,
+        salutation_options      => \@salutation_options,
         dob_day_options         => $dob_day_options,
         dob_month_options       => $dob_month_options,
         dob_year_options        => $dob_year_options,
@@ -318,7 +319,7 @@ sub show_client_id_docs {
     } else {
         @docs = $client->client_authentication_document;
     }
-    foreach my $doc (@docs) {
+    foreach my $doc (sort { $a->id <=> $b->id } @docs) {
         my ($id, $document_file, $file_name, $download_file, $input);
         if ($folder) {
             $id            = 0;
@@ -342,13 +343,15 @@ sub show_client_id_docs {
         my $file_size = -s $document_file || next;
         my $file_age  = int(-M $document_file);
         my $url       = request()->url_for("backoffice/download_document.cgi?path=$download_file");
-        $links .= qq{<br/><a href="$url">$file_name</a>($file_size bytes, $file_age days old, $input)};
+        $links .= qq{<tr><td><a href="$url">$file_name</a> $file_size bytes, $file_age days old</td><td>$input};
         if ($show_delete) {
             $url .= qq{&loginid=$loginid&doc_id=$id&deleteit=yes};
             my $onclick = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
             $links .= qq{[<a onclick="$onclick" href="$url">Delete</a>]};
         }
+        $links .= "</td></tr>";
     }
+    $links = "<table>$links</table>" if $links;
     return $links;
 }
 
