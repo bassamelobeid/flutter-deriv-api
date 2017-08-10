@@ -25,7 +25,7 @@ my $encoder   = Sereal::Encoder->new({
 my $redis = BOM::Platform::RedisReplicated::redis_write();
 my @tick_data;
 for (my $epoch=time - 80*15; $epoch <= time; $epoch+=15) {
-    push @tick_data, +{symbol => 'frxUSDJPY', epoch => $epoch, decimate_epoch => $epoch, quote => 100 + rand(0.0001)};
+    push @tick_data, +{symbol => 'frxUSDJPY', epoch => $epoch, decimate_epoch => $epoch, quote => 100 + 1/$epoch};
 }
 
 $redis->zadd('DECIMATE_frxUSDJPY_15s_DEC', $_->{epoch}, $encoder->encode($_)) for @tick_data;
@@ -205,7 +205,7 @@ subtest "various results" => sub {
 # And this line set amount to higher value to fix the minimum stake validation failure that seems to happen based
 # on the timing this test runs.
     $proposal_array_req_tpl->{amount}                   = 1000;
-    $proposal_array_req_tpl->{barriers}                 = [{barrier => 97.2}];
+    $proposal_array_req_tpl->{barriers}                 = [{barrier => 97.1}];
     $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
 
     $response = $t->await::proposal_array($proposal_array_req_tpl);
