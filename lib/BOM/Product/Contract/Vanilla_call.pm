@@ -2,7 +2,7 @@ package BOM::Product::Contract::Vanilla_call;
 
 use Moose;
 extends 'BOM::Product::Contract';
-with 'BOM::Product::Role::SingleBarrier';
+with 'BOM::Product::Role::Vanilla', 'BOM::Product::Role::SingleBarrier';
 
 use BOM::Product::Pricing::Engine::BlackScholes;
 

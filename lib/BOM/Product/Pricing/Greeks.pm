@@ -22,6 +22,8 @@ use Math::Business::BlackScholes::Binaries::Greeks::Vanna;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use Math::Business::BlackScholes::Binaries::Greeks::Volga;
 
+use Math::Business::Lookback::Greeks::Delta;
+
 has bet => (
     is       => 'ro',
     isa      => 'BOM::Product::Contract',
@@ -163,6 +165,8 @@ sub get_greek {
     push @barrier_args, $args->{barrier2} if ($bet->two_barriers);
 
     my $vol_to_use = ($bet->category_code eq 'vanilla') ? $bet->vol_at_strike : $bet->atm_vols->{fordom};
+
+    return 0.0 if not $self->bet->is_binary;
 
     return $self->formulae->{$greek}
         ->($args->{spot}, @barrier_args, $args->{t}, $bet->discount_rate, $bet->mu, $vol_to_use, $args->{payouttime_code});
