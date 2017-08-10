@@ -395,7 +395,7 @@ subtest 'buy a bet', sub {
             like $report, qr/^\s*Purchase Date: \Q${\$txn->purchase_date->datetime_yyyymmdd_hhmmss}\E$/m, 'purchase date';
         };
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_bet => $txn->transaction_id;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
         # note explain $trx;
 
@@ -422,7 +422,7 @@ subtest 'buy a bet', sub {
             plan tests => 20;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class}, 'lookback_bet', 'bet_class';
+            is $fmb->{bet_class}, 'lookback_option', 'bet_class';
             is $fmb->{bet_type},  'LBFIXEDCALL',             'bet_type';
             is $fmb->{buy_price} + 0, 230.05, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
@@ -505,7 +505,7 @@ subtest 'sell a bet', sub {
         };
         is $error, undef, 'no error';
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_bet => $txn->transaction_id;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
         # note explain $trx;
 
@@ -532,7 +532,7 @@ subtest 'sell a bet', sub {
             plan tests => 20;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class}, 'lookback_bet', 'bet_class';
+            is $fmb->{bet_class}, 'lookback_option', 'bet_class';
             is $fmb->{bet_type},  'LBFIXEDCALL',             'bet_type';
             is $fmb->{buy_price} + 0, 230.05, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
