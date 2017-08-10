@@ -369,6 +369,20 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         /;
     exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
 
+    my @number_updates = qw/
+        custom_max_acbal
+        custom_max_daily_turnover
+        custom_max_payout
+        /;
+    foreach my $key (@number_updates) {
+        if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
+            $client->$key($input{$key});
+        } else {
+            print qq{<p style="color:red">ERROR: Invalid $key, minimum value is 1 and it can be integer only</p>};
+            code_exit_BO();
+        }
+    }
+
     CLIENT_KEY:
     foreach my $key (keys %input) {
         if ($key eq 'dob_day') {
@@ -410,33 +424,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $doc->db($client->set_db('write'));
             $doc->save;
             next CLIENT_KEY;
-        }
-        if ($key eq 'custom_max_acbal') {
-            if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
-                $client->custom_max_acbal($input{$key});
-                next CLIENT_KEY;
-            } else {
-                print qq{<p style="color:red">ERROR: Invalid max account balance, minimum value is 1 and it can be integer only</p>};
-                code_exit_BO();
-            }
-        }
-        if ($key eq 'custom_max_daily_turnover') {
-            if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
-                $client->custom_max_daily_turnover($input{$key});
-                next CLIENT_KEY;
-            } else {
-                print qq{<p style="color:red">ERROR: Invalid daily turnover limit, minimum value is 1 and it can be integer only</p>};
-                code_exit_BO();
-            }
-        }
-        if ($key eq 'custom_max_payout') {
-            if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
-                $client->custom_max_payout($input{$key});
-                next CLIENT_KEY;
-            } else {
-                print qq{<p style="color:red">ERROR: Invalid max payout, minimum value is 1 and it can be integer only</p>};
-                code_exit_BO();
-            }
         }
         if ($key eq 'secret_answer') {
             # algorithm provide different encrypted string from the same text based on some randomness
