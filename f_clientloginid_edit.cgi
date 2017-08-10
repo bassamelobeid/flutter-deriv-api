@@ -313,11 +313,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! FNAME field appears incorrect or empty.</p></p>";
             code_exit_BO();
         }
-        if (length($input{'mrms'}) < 1) {
+        if (length($input{'salutation'}) < 1) {
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field appears to be empty.</p></p>";
             code_exit_BO();
         }
-        if (!grep(/^$input{'mrms'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) {    ## no critic (RequireBlockGrep)
+        if (!grep(/^$input{'salutation'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) {    ## no critic (RequireBlockGrep)
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field is invalid.</p></p>";
             code_exit_BO();
         }
@@ -347,136 +347,82 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
     $client->payment_agent_withdrawal_expiration_date($input{payment_agent_withdrawal_expiration_date} || undef);
 
+    my @simple_updates = qw/last_name
+        first_name
+        phone
+        secret_question
+        is_vip
+        tax_residence
+        tax_identification_number
+        allow_omnibus
+        citizen
+        address_1
+        address_2
+        city
+        state
+        postcode
+        residence
+        place_of_birth
+        restricted_ip_address
+        cashier_setting_password
+        salutation
+        /;
+    exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
+
+    my @number_updates = qw/
+        custom_max_acbal
+        custom_max_daily_turnover
+        custom_max_payout
+        /;
+    foreach my $key (@number_updates) {
+        if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
+            $client->$key($input{$key});
+        } else {
+            print qq{<p style="color:red">ERROR: Invalid $key, minimum value is 1 and it can be integer only</p>};
+            code_exit_BO();
+        }
+    }
+
     CLIENT_KEY:
     foreach my $key (keys %input) {
-
-        if ($key eq 'mrms') {
-            $client->salutation($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'first_name') {
-            $client->first_name($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'last_name') {
-            $client->last_name($input{$key});
-            next CLIENT_KEY;
-        }
         if ($key eq 'dob_day') {
             my $date_of_birth;
-            if (    $input{'dob_day'}
-                and $input{'dob_month'}
-                and $input{'dob_year'})
-            {
-                my $day_number =
-                    ($input{'dob_day'} < 10)
-                    ? "0$input{'dob_day'}"
-                    : $input{'dob_day'};
-                $date_of_birth = $input{'dob_year'} . '-' . $input{'dob_month'} . '-' . $day_number;
-            }
+            $date_of_birth = sprintf "%04d-%02d-%02d", $input{'dob_year'}, $input{'dob_month'}, $input{'dob_day'}
+                if $input{'dob_day'} && $input{'dob_month'} && $input{'dob_year'};
 
             $client->date_of_birth($date_of_birth);
             next CLIENT_KEY;
         }
-        if ($key eq 'citizen') {
-            $client->citizen($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'address_1') {
-            $client->address_1($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'address_2') {
-            $client->address_2($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'city') {
-            $client->city($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'state') {
-            $client->state($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'postcode') {
-            $client->postcode($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'residence') {
-            $client->residence($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'place_of_birth') {
-            $client->place_of_birth($input{$key});
-            next CLIENT_KEY;
-        }
-        if (my ($id) = $key =~ /^comments_([0-9]+)$/) {
-            my $val = $input{$key};
-            my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
-            my $comments = substr(encode_entities($val), 0, 255);
-            next CLIENT_KEY unless $doc;
-            next CLIENT_KEY if $comments eq $doc->comments();
-            unless (eval { $doc->comments($comments); 1 }) {
-                my $err = $@;
-                print qq{<p style="color:red">ERROR: Could not set comments for doc $id: $err</p>};
-                code_exit_BO();
-            }
-            $doc->db($client->set_db('write'));
-            $doc->save;
-            next CLIENT_KEY;
-        }
-        if (my ($id) = $key =~ /^expiration_date_([0-9]+)$/) {
-            my $val = $input{$key} || next CLIENT_KEY;
+
+        if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
+            my $val = encode_entities($input{$key} // '') || next CLIENT_KEY;
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
             next CLIENT_KEY unless $doc;
-            my $date;
-            if ($val ne 'clear') {
-                $date = Date::Utility->new($val);
-                next CLIENT_KEY if $date->is_same_as(Date::Utility->new($doc->expiration_date));
-                $date = $date->date_yyyymmdd;
+            my $new_value;
+            if ($document_field eq 'expiration_date') {
+                try {
+                    $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
+                }
+                catch {
+                    $_ = (split "\n", $_)[0];                                              #handle Date::Utility's confess() call
+                    print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $_</p>};
+                    next CLIENT_KEY;
+                };
+            } elsif ($document_field eq 'comments') {
+                $new_value = substr($val, 0, 255);
+            } elsif ($document_field eq 'document_id') {
+                $new_value = substr($val, 0, 30);
             }
-            unless (eval { $doc->expiration_date($date); 1 }) {
-                my $err = $@;
-                print qq{<p style="color:red">ERROR: Could not set expiry date for doc $id: $err</p>};
-                code_exit_BO();
+            next CLIENT_KEY if $new_value eq $doc->$document_field();
+            try {
+                $doc->$document_field($new_value);
             }
+            catch {
+                print qq{<p style="color:red">ERROR: Could not set $document_field for doc $id with $val: $_</p>};
+                next CLIENT_KEY;
+            };
             $doc->db($client->set_db('write'));
             $doc->save;
-            next CLIENT_KEY;
-        }
-        if ($key eq 'custom_max_acbal') {
-            if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
-                $client->custom_max_acbal($input{$key});
-                next CLIENT_KEY;
-            } else {
-                print qq{<p style="color:red">ERROR: Invalid max account balance, minimum value is 1 and it can be integer only</p>};
-                code_exit_BO();
-            }
-        }
-        if ($key eq 'custom_max_daily_turnover') {
-            if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
-                $client->custom_max_daily_turnover($input{$key});
-                next CLIENT_KEY;
-            } else {
-                print qq{<p style="color:red">ERROR: Invalid daily turnover limit, minimum value is 1 and it can be integer only</p>};
-                code_exit_BO();
-            }
-        }
-        if ($key eq 'custom_max_payout') {
-            if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
-                $client->custom_max_payout($input{$key});
-                next CLIENT_KEY;
-            } else {
-                print qq{<p style="color:red">ERROR: Invalid max payout, minimum value is 1 and it can be integer only</p>};
-                code_exit_BO();
-            }
-        }
-        if ($key eq 'phone') {
-            $client->phone($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'secret_question') {
-            $client->secret_question($input{$key});
             next CLIENT_KEY;
         }
         if ($key eq 'secret_answer') {
@@ -490,22 +436,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer($input{$key}))
                 if ($input{$key} ne $secret_answer);
 
-            next CLIENT_KEY;
-        }
-        if ($key eq 'ip_security') {
-            $client->restricted_ip_address($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'cashier_lock_password') {
-            $client->cashier_setting_password($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'last_environment') {
-            $client->latest_environment($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'is_vip') {
-            $client->is_vip($input{$key});
             next CLIENT_KEY;
         }
 
@@ -537,14 +467,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->myaffiliates_token($input{$key}) if $input{$key};
         }
 
-        if ($key eq 'tax_residence') {
-            $client->tax_residence($input{$key});
-        }
-
-        if ($key eq 'tax_identification_number') {
-            $client->tax_identification_number($input{$key});
-        }
-
         if ($input{mifir_id} and $client->mifir_id eq '' and $broker eq 'MF') {
             if (length($input{mifir_id}) > 35) {
                 print
@@ -554,7 +476,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->mifir_id($input{mifir_id});
         }
 
-        $client->allow_omnibus($input{allow_omnibus});
     }
 
     if (not $client->save) {
