@@ -38,7 +38,7 @@ exit if $last_run > $sanctions->last_updated();
 do_report();
 
 sub do_report {
-    my $pm = new Parallel::ForkManager($childs);
+    my $pm = Parallel::ForkManager->new($childs);
     my $r  = '';
     $pm->run_on_finish(
         sub {
