@@ -277,7 +277,7 @@ sub is_valid_to_make_new_account_real {
             message_to_client => localize('Please set your country of residence.')}) unless $residence;
 
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-    my ($gaming_company, $financial_company, $error) =
+    my ($gaming_company, $financial_company) =
         ($countries_instance->gaming_company_for_country($residence), $countries_instance->financial_company_for_country($residence));
 
     # get all real account siblings
@@ -329,7 +329,7 @@ sub is_valid_to_make_new_account_real {
 
     # send error if number of crypto account of client is same
     # as number of crypto account supported by landing company
-    my $client_num_crypto = (grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'crypto' } keys %$siblings // 0);
+    my $client_num_crypto = (grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'crypto' } keys %$siblings) // 0;
     return $error if ($lc_num_crypto eq $client_num_crypto);
 
     return;
