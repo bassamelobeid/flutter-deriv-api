@@ -127,9 +127,9 @@ sub _build_pricing_vol {
     my $volatility_error;
     if ($self->priced_with_intraday_model) {
         $vol = $self->empirical_volsurface->get_volatility({
-            from                          => $self->effective_start->epoch,
-            to                            => $self->date_expiry->epoch,
-            ticks                         => $self->ticks_for_volatility_calculation,
+            from                          => $self->effective_start,
+            to                            => $self->date_expiry,
+            ticks                         => $self->ticks_for_short_term_volatility_calculation,
             include_economic_event_impact => 1,
         });
         $volatility_error = $self->empirical_volsurface->validation_error if $self->empirical_volsurface->validation_error;
@@ -235,7 +235,7 @@ sub _build_empirical_volsurface {
 # in our intraday FX pricing model.
 #
 # These are kept as attributes because it will be over-written by japan back pricing.
-has [qw(long_term_prediction historical_volatility)] => (
+has [qw(long_term_prediction)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -248,52 +248,46 @@ sub _build_long_term_prediction {
     return $self->empirical_volsurface->long_term_prediction // 0.1;
 }
 
-sub _build_historical_volatility {
+sub ticks_for_short_term_volatility_calculation {
     my $self = shift;
-
-    return $self->empirical_volsurface->get_historical_volatility({
-        from  => $self->effective_start->epoch,
-        to    => $self->date_expiry->epoch,
-        ticks => $self->ticks_for_volatility_calculation,
+    return $self->_get_ticks_for_volatility_calculation({
+        from => $self->effective_start->minus_time_interval('20m'),
+        to   => $self->effective_start,
     });
 }
 
-has ticks_for_volatility_calculation => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_ticks_for_volatility_calculation {
-    my $self = shift;
+sub _get_ticks_for_volatility_calculation {
+    my ($self, $period) = @_;
 
     my $decimate = BOM::Market::DataDecimate->new;
-    my @ticks    = map {
+    my @ticks =
+        map {
         $decimate->get({
                 underlying  => $self->underlying,
                 start_epoch => $_->[0],
                 end_epoch   => $_->[1],
                 backprice   => $self->underlying->for_date,
             })
-    } @{$self->_get_tick_windows};
+        } @{$self->_get_tick_windows($period)};
 
     return \@ticks;
 }
 
 sub _get_tick_windows {
-    my $self = shift;
+    my ($self, $period) = @_;
 
-    my $start_epoch                 = $self->effective_start->epoch;
-    my $twenty_minutes_in_secs      = 20 * 60;
-    my $twenty_minutes_before_start = $start_epoch - $twenty_minutes_in_secs;
+    my $from = $period->{from}->epoch;
+    my $to   = $period->{to}->epoch;
+    my $diff = $to - $from;
 
     # just take events from two hour back and sort it in descending order
     my $categorized_events = Volatility::Seasonality::categorize_events(
         $self->underlying->symbol,
         [
             sort { $b->{release_date} <=> $a->{release_date} }
-            grep { $_->{release_date} > $start_epoch - 2 * 3600 && $_->{release_date} < $start_epoch } @{$self->_applicable_economic_events}]);
+            grep { $_->{release_date} > $to - 2 * 3600 && $_->{release_date} < $to } @{$self->_applicable_economic_events}]);
 
-    return [[$twenty_minutes_before_start, $start_epoch]] unless @$categorized_events;
+    return [[$from, $to]] unless @$categorized_events;
 
     # combine overlapping events
     my @combined;
@@ -314,14 +308,13 @@ sub _get_tick_windows {
         }
     }
 
-    my $seconds_left = $twenty_minutes_in_secs;
     my @tick_windows;
 
-    if ($combined[0][1] < $twenty_minutes_before_start) {
-        push @tick_windows, [$twenty_minutes_before_start, $start_epoch];
+    if ($combined[0][1] < $from) {
+        push @tick_windows, [$from, $to];
     } else {
-        my $end_of_period = $start_epoch;
-        my $seconds_left  = $twenty_minutes_in_secs;
+        my $end_of_period = $to;
+        my $seconds_left  = $diff;
         foreach my $period (@combined) {
             if (@combined == 1 and $period->[1] >= $end_of_period) {
                 push @tick_windows, [$period->[0] - $seconds_left, $period->[0]];

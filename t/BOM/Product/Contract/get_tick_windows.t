@@ -23,9 +23,14 @@ my $c = produce_contract({
     payout     => 100,
 });
 
+my $period = {
+    from => $c->effective_start->minus_time_interval('20m'),
+    to => $c->effective_start
+};
+
 subtest 'no events' => sub {
     $mocked_seasonality->mock('categorized_events', sub { [] });
-    my $windows = $c->_get_tick_windows();
+    my $windows = $c->_get_tick_windows($period);
     is scalar(@$windows), 1, 'only one window';
     is $windows->[0][0], $now->minus_time_interval('20m')->epoch, 'correct start of period';
     is $windows->[0][1], $now->epoch, 'correct end of period';
@@ -41,7 +46,7 @@ subtest 'event spans contract pricing time' => sub {
                     magnitude     => 10,
                 }];
         });
-    my $windows = $c->_get_tick_windows();
+    my $windows = $c->_get_tick_windows($period);
     is scalar(@$windows), 1, 'only one window';
     is $windows->[0][0], $now->minus_time_interval('25m')->epoch, 'correct start of period';
     is $windows->[0][1], $now->minus_time_interval('5m')->epoch,  'correct end of period';
@@ -57,7 +62,7 @@ subtest 'one event which does not span the contract pricing time - so two window
                     magnitude     => 10,
                 }];
         });
-    my $windows = $c->_get_tick_windows();
+    my $windows = $c->_get_tick_windows($period);
     is scalar(@$windows), 2, 'two windows';
     is $windows->[0][0], $now->minus_time_interval('5m')->epoch, 'correct start of period';
     is $windows->[0][1], $now->epoch, 'correct end of period';
@@ -81,7 +86,7 @@ subtest 'two overlapping events - two windows' => sub {
                 },
             ];
         });
-    my $windows = $c->_get_tick_windows();
+    my $windows = $c->_get_tick_windows($period);
     is scalar(@$windows), 2, 'two windows';
     is $windows->[0][0], $now->minus_time_interval('5m')->epoch, 'correct start of period';
     is $windows->[0][1], $now->epoch, 'correct end of period';
@@ -105,7 +110,7 @@ subtest 'two overlapping events, second event\'s duration cross first event - tw
                 },
             ];
         });
-    my $windows = $c->_get_tick_windows();
+    my $windows = $c->_get_tick_windows($period);
     is scalar(@$windows), 2, 'two windows';
     is $windows->[0][0], $now->minus_time_interval('4m')->epoch, 'correct start of period';
     is $windows->[0][1], $now->epoch, 'correct end of period';
@@ -134,7 +139,7 @@ subtest '3 events with two overlapping events - three windows' => sub {
                 },
             ];
         });
-    my $windows = $c->_get_tick_windows();
+    my $windows = $c->_get_tick_windows($period);
     is scalar(@$windows), 3, 'three windows';
     is $windows->[0][0], $now->minus_time_interval('5m')->epoch, 'correct start of period';
     is $windows->[0][1], $now->epoch, 'correct end of period';
@@ -160,7 +165,7 @@ subtest 'indentical release date with different duration impact - two windows' =
                 },
             ];
         });
-    my $windows = $c->_get_tick_windows();
+    my $windows = $c->_get_tick_windows($period);
     is scalar(@$windows), 2, 'two windows';
     is $windows->[0][0], $now->minus_time_interval('5m')->epoch, 'correct start of period';
     is $windows->[0][1], $now->epoch, 'correct end of period';

@@ -595,8 +595,7 @@ sub _build__pricing_args {
     };
 
     if ($self->priced_with_intraday_model) {
-        $args->{long_term_prediction}  = $self->long_term_prediction;
-        $args->{historical_volatility} = $self->historical_volatility;
+        $args->{long_term_prediction} = $self->long_term_prediction;
     }
 
     return $args;
