@@ -65,7 +65,7 @@ sub make_client_csv_line {
         $list,
         Date::Utility->new($sanctions->last_updated($list))->date,
         (map { $c->$_ // '' } qw(broker loginid first_name last_name email phone gender date_of_birth date_joined residence citizen)),
-        (map { $_->status_code, $_->reason } ($c->client_status->[0])),    #use only last status
+        (map { $_ ? ($_->status_code, $_->reason) : ('', '') } ($c->client_status->[0])),    #use only last status
     );
     return join(',', @fields);
 }
