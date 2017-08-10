@@ -3,8 +3,11 @@ package BOM::RPC::v3::Static;
 use strict;
 use warnings;
 
-use Brands;
 use Format::Util::Numbers;
+
+use Brands;
+use LandingCompany::Registry;
+
 use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
 use BOM::Platform::Context qw (request);
@@ -61,7 +64,7 @@ sub website_status {
         clients_country          => $params->{country_code},
         supported_languages      => BOM::Platform::Runtime->instance->app_config->cgi->supported_languages,
         currencies_config        => {
-            map { $_ => {fractional_digits => $amt_precision->{$_}, type => ($_ =~ /^BTC$/ ? "crypto" : "fiat")} }
+            map { $_ => {fractional_digits => $amt_precision->{$_}, type => LandingCompany::Registry::get_currency_type($_)} }
             grep { $_ !~ /^(?:LTC|ETH|ETC)$/ } keys %$amt_precision
         },
         ico_status => BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_ended == 1 ? 'closed' : 'open',
