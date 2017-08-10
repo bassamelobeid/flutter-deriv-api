@@ -60,10 +60,6 @@ table#client_edit td{
     <tr>
 [%-
         last_check = client.sanctions_check;
-        #last_check is either scalar or array. If it's array - get last element
-        IF last_check.tstmp == "" ;
-        last_check = last_check.0;
-        END;
 -%]
         <td class="label">Last sanctions check run</td>
         <td>: <b>[% last_check.result %]</b> [% last_check.tstmp %] [% last_check.type == 'R' ? 'Registration' : 'Cron'%]</td>
