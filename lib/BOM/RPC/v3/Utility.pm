@@ -239,31 +239,6 @@ sub error_map {
         'InsufficientAccountDetails' => localize('Please provide complete details for account opening.')};
 }
 
-sub get_real_acc_opening_type {
-    my $args        = shift;
-    my $from_client = $args->{from_client};
-
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-    my $gaming_company     = $countries_instance->gaming_company_for_country($from_client->residence);
-    my $financial_company  = $countries_instance->financial_company_for_country($from_client->residence);
-
-    if ($from_client->is_virtual) {
-        return 'real' if ($gaming_company);
-
-        if ($financial_company) {
-            # Eg: Germany, Japan
-            return $financial_company if (any { $_ eq $financial_company } qw(maltainvest japan));
-
-            # Eg: Singapore has no gaming_company
-            return 'real';
-        }
-    } else {
-        # MLT upgrade to MF
-        return $financial_company if ($financial_company eq 'maltainvest');
-    }
-    return;
-}
-
 sub filter_siblings_by_landing_company {
     my ($client, $siblings) = @_;
     return {map { $_ => $siblings->{$_} } grep { $siblings->{$_}->{landing_company_name} eq $client->landing_company->short } keys %$siblings};
@@ -314,11 +289,11 @@ sub is_valid_to_make_new_account {
                     code              => 'InvalidAccount',
                     message_to_client => error_map()->{'invalid'}}
             ) if ($financial_company and any { $_ eq $financial_company } qw(maltainvest japan));
-        } elsif ($type eq 'financial' and $financial_company and $financial_company ne 'maltainvest') {
+        } elsif ($type eq 'financial' and ($financial_company and $financial_company ne 'maltainvest')) {
             return create_error({
                     code              => 'InvalidAccount',
                     message_to_client => error_map()->{'invalid'}});
-        } elsif ($type eq 'japan' and $financial_company and $financial_company ne 'japan') {
+        } elsif ($type eq 'japan' and ($financial_company and $financial_company ne 'japan')) {
             return create_error({
                     code              => 'InvalidAccount',
                     message_to_client => error_map()->{'invalid'}});
@@ -348,8 +323,6 @@ sub is_valid_to_make_new_account {
     # check if all currencies are exhausted i.e.
     # - if client has one type of fiat currency don't allow them to open another
     # - if client has all of allowed cryptocurrency
-    my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
-    my $types = {map { $_ => 1 } keys %{$legal_allowed_currencies}};
 
     # check if client has fiat currency, if not then return as we
     # allow them to open new account
@@ -359,6 +332,7 @@ sub is_valid_to_make_new_account {
             code              => 'NewAccountLimitReached',
             message_to_client => localize('You have created all accounts available to you.')});
 
+    my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
     my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
     # check if landing company supports crypto currency
     # else return error as client exhausted fiat currency
@@ -392,9 +366,9 @@ sub is_valid_to_set_currency {
                 message_to_client => localize('Please note that you are limited to one account per currency type.')}));
     # if fiat then check if client has already any fiat, if yes then don't allow
     return $error
-        if ($type eq 'fiat' and grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings);
+        if ($type eq 'fiat' and grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings);
     # if crypto check if client has same crypto, if yes then don't allow
-    return $error if ($type eq 'crypto' and grep { $currency eq $siblings->{$_}->{currency} } keys %$siblings);
+    return $error if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
 
     return;
 }

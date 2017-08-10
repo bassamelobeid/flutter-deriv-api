@@ -262,14 +262,14 @@ sub new_account_maltainvest {
 
     my $client = $params->{client};
 
-    my $args      = $params->{args};
-    my $error_map = BOM::RPC::v3::Utility::error_map();
+    # send error if anyone other than maltainvest, virtual, malta
+    return BOM::RPC::v3::Utility::permission_error()
+        if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest)$/);
 
-    unless ($client and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidAccount',
-                message_to_client => $error_map->{'invalid'}});
-    }
+    my $error = BOM::RPC::v3::Utility::is_valid_to_make_new_account($client, 'maltainvest');
+    return $error if $error;
+
+    my ($args, $error_map) = ($params->{args}, BOM::RPC::v3::Utility::error_map());
 
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, 'MF', $params->{source});
     if (my $err = $details_ref->{error}) {
@@ -337,11 +337,12 @@ sub new_account_japan {
     my $client    = $params->{client};
     my $error_map = BOM::RPC::v3::Utility::error_map();
 
-    unless ($client->is_virtual and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidAccount',
-                message_to_client => $error_map->{'invalid'}});
-    }
+    # send error if anyone other than japan, virtual
+    return BOM::RPC::v3::Utility::permission_error()
+        if ($client->landing_company->short !~ /^(?:virtual|japan)$/);
+
+    my $error = BOM::RPC::v3::Utility::is_valid_to_make_new_account($client, 'japan');
+    return $error if $error;
 
     my $company = Brands->new(name => request()->brand)->countries_instance->countries_list->{'jp'}->{financial_company};
 
