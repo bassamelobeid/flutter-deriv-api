@@ -302,8 +302,4 @@ sub __arrayref_to_db_array {
     return "{" . join(',', @{(shift)}) . "}";
 }
 
-sub __app_id_not_valid {
-    return $_[0] !~ /^(?!0)[0-9]{1,19}$/;
-}
-
 1;
