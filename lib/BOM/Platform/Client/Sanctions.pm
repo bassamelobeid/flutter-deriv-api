@@ -53,7 +53,7 @@ sub check {
 
     my $found_in_list = $sanctions->is_sanctioned($client->first_name, $client->last_name);
 
-    $client->add_sanctions_check({
+    $client->sanctions_check({
         type   => $self->type,
         result => $found_in_list
     });
