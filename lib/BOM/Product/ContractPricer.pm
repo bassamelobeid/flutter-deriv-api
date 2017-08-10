@@ -16,6 +16,7 @@ use Quant::Framework::CorrelationMatrix;
 use Pricing::Engine::EuropeanDigitalSlope;
 use Pricing::Engine::TickExpiry;
 use Pricing::Engine::BlackScholes;
+use Pricing::Engine::Lookback;
 use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use BOM::MarketData qw(create_underlying_db);
@@ -297,6 +298,20 @@ sub _create_new_interface_engine {
             mu            => $self->mu,
             vol           => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
         );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Lookback') {
+        %pricing_parameters = (
+            strikes         => [grep { $_ } values %{$self->barriers_for_pricing}],
+            spot            => $self->pricing_spot,
+            discount_rate   => $self->discount_rate,
+            t               => $self->timeinyears->amount,
+            mu              => $self->mu,
+            vol             => $self->pricing_vol,
+            payouttime_code => $payouttime_code,
+            payout_type     => 'non-binary',
+            contract_type   => $self->pricing_code,
+            spot_max        => $self->spot_max,
+            spot_min        => $self->spot_min,
+        );
     } else {
         die "Unknown pricing engine: " . $self->pricing_engine_name;
     }
@@ -496,13 +511,6 @@ sub _build_commission_from_stake {
     return $self->price_calculator->commission_from_stake;
 }
 
-sub _build_theo_probability {
-    my $self = shift;
-
-    $self->_set_price_calculator_params('theo_probability');
-    return $self->price_calculator->theo_probability;
-}
-
 sub _build_theo_price {
     my $self = shift;
 
@@ -517,6 +525,7 @@ sub _build_new_interface_engine {
         'Pricing::Engine::Digits'               => 1,
         'Pricing::Engine::TickExpiry'           => 1,
         'Pricing::Engine::EuropeanDigitalSlope' => 1,
+        'Pricing::Engine::Lookback'             => 1,
     );
 
     return $engines{$self->pricing_engine_name} // 0;
@@ -642,35 +651,10 @@ sub _build_price_calculator {
     });
 }
 
-sub _build_bid_probability {
-    my $self = shift;
-
-    $self->_set_price_calculator_params('bid_probability');
-    return $self->price_calculator->bid_probability;
-}
-
 sub _build_bid_price {
     my $self = shift;
 
     return $self->_price_from_prob('bid_probability');
-}
-
-sub _build_ask_probability {
-    my $self = shift;
-
-    $self->_set_price_calculator_params('ask_probability');
-    return $self->price_calculator->ask_probability;
-}
-
-sub _price_from_prob {
-    my ($self, $prob) = @_;
-    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
-        $self->price_calculator->value($self->value);
-    } else {
-
-        $self->_set_price_calculator_params($prob);
-    }
-    return $self->price_calculator->price_from_prob($prob);
 }
 
 sub _build_ask_price {
@@ -763,20 +747,6 @@ sub _build_pricing_new {
     my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
     return 0 if $time > $self->date_start->epoch;
     return 1;
-}
-
-sub _build_priced_with_intraday_model {
-    my $self = shift;
-
-    # Intraday::Index is just a flat price + commission, so it is not considered as a model.
-    return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
-}
-
-sub _build_discounted_probability {
-    my $self = shift;
-
-    $self->_set_price_calculator_params('discounted_probability');
-    return $self->price_calculator->discounted_probability;
 }
 
 sub _match_symbol {

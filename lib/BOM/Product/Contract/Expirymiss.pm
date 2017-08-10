@@ -2,7 +2,7 @@ package BOM::Product::Contract::Expirymiss;
 
 use Moose;
 extends 'BOM::Product::Contract';
-with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
+with 'BOM::Product::Role::Binary', 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 use BOM::Product::Static qw/get_longcodes/;
 

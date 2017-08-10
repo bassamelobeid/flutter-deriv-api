@@ -105,13 +105,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 my %skip_type = (
-     LBFIXEDCALL => 1,
-     LBFIXEDPUT  => 1,
-     LBFLOATCALL => 1,
-     LBFLOATPUT  => 1,
-     LBHIGHLOW   => 1,
+    LBFIXEDCALL => 1,
+    LBFIXEDPUT  => 1,
+    LBFLOATCALL => 1,
+    LBFLOATPUT  => 1,
+    LBHIGHLOW   => 1,
 );
- 
+
 my @ct = grep { not $skip_type{$_} } grep { !$equal{$_} } get_offerings_with_filter(
     $offerings_cfg,
     'contract_type',
