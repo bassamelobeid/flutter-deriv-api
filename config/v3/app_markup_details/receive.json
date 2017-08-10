@@ -9,7 +9,8 @@
       "description":"Echo of the request made",
       "required": 1
     },
-    "app_markup_table":{
+    "app_markup_details":{
+        "type":"object",
         "title":"App Markup Details",
         "description":"App Markup transaction details",
         "properties":{

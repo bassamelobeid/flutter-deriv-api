@@ -9,7 +9,8 @@
       "description":"Echo of the request made",
       "required": 1
     },
-    "app_markup_table":{
+    "app_markup_aggregates":{
+        "type":"object",
         "title":"App Markup Aggregates",
         "description":"App Markup Aggregate details",
         "properties":{
@@ -24,7 +25,7 @@
                   },
                   "client_currcode": {
                     "type": "string",
-                    "description": "Currency code of the client"
+                    "description": "Currency code of the clients"
                   },
                   "transaction_count":{
                     "type":"integer",
