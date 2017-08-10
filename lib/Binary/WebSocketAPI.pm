@@ -481,6 +481,18 @@ sub startup {
         'web_socket_proxy' => {
             actions => $actions,
 
+            binary_frame => sub {
+                my ($c, $frame) = @_;
+                my ($type, $id, $size, $data) = unpack "N N N a*", $frame;
+
+                if ($size == 0) {
+                    # finish upload
+                    return;
+                }
+
+                # upload file
+            },
+
             # action hooks
             before_forward => [
                 \&Binary::WebSocketAPI::Hooks::check_app_id, \&Binary::WebSocketAPI::Hooks::before_forward,
