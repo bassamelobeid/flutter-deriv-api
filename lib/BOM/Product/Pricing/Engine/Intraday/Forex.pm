@@ -372,19 +372,15 @@ sub vol_spread_markup {
 
     my $bet = $self->bet;
 
-    my $two_hour_vol = $bet->empirical_volsurface->get_historical_volatility({
-        from  => $bet->effective_start->minus_time_interval('2h'),
-        to    => $bet->effective_start,
-        ticks => $bet->ticks_for_long_term_volatility_calculation
-    });
-    my $twenty_minute_vol = $bet->empirical_volsurface->get_historical_volatility({
+    my $long_term_average_vol = 0.07;
+    my $twenty_minute_vol     = $bet->empirical_volsurface->get_historical_volatility({
         from  => $bet->effective_start->minus_time_interval('20m'),
         to    => $bet->effective_start,
         ticks => $bet->ticks_for_short_term_volatility_calculation
     });
 
     # We cap vol spread at +/-5%
-    my $vol_spread = min(0.05, max(-0.05, $two_hour_vol - $twenty_minute_vol));
+    my $vol_spread = min(0.05, max(-0.05, $long_term_average_vol - $twenty_minute_vol));
 
     return Pricing::Engine::Markup::VolSpread->new(
         bet_vega   => $bet->vega,
