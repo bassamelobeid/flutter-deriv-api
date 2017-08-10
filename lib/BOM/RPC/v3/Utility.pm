@@ -272,17 +272,13 @@ sub is_valid_to_make_new_account_real {
         if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
 
     my $residence = $client->residence;
-    return BOM::RPC::v3::Utility::create_error({
+    return create_error({
             code              => 'NoResidence',
             message_to_client => localize('Please set your country of residence.')}) unless $residence;
 
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
     my ($gaming_company, $financial_company, $error) =
         ($countries_instance->gaming_company_for_country($residence), $countries_instance->financial_company_for_country($residence));
-
-    my $error = BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidAccount',
-            message_to_client => error_map()->{'invalid'}});
 
     # get all real account siblings
     my $siblings = get_real_account_siblings_information($client);
@@ -291,10 +287,10 @@ sub is_valid_to_make_new_account_real {
     if (scalar(keys %$siblings) == 0) {
         return if $gaming_company;
 
-        if ($financial_company) {
-            # send error as account opening for maltainvest and japan has separate call
-            return $error if (any { $_ eq $financial_company } qw(maltainvest japan));
-        }
+        # send error as account opening for maltainvest and japan has separate call
+        return create_error({
+                code              => 'InvalidAccount',
+                message_to_client => error_map()->{'invalid'}}) if ($financial_company and any { $_ eq $financial_company } qw(maltainvest japan));
 
         # some countries don't have gaming company like Singapore
         # but we do allow them to open only financial account
@@ -321,6 +317,10 @@ sub is_valid_to_make_new_account_real {
     # check if client has fiat currency, if not then return as we
     # allow them to open new account
     return unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
+
+    my $error = create_error({
+            code              => 'NewAccountLimitReached',
+            message_to_client => localize('You have created all accounts available to you.')});
 
     my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
     # check if landing company supports crypto currency
