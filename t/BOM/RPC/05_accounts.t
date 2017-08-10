@@ -95,12 +95,19 @@ $test_client_cr->email('sample@binary.com');
 $test_client_cr->set_default_account('USD');
 $test_client_cr->save;
 
+my $test_client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$test_client_cr_2->email('sample@binary.com');
+$test_client_cr_2->save;
+
 my $user_cr = BOM::Platform::User->create(
     email    => 'sample@binary.com',
     password => $hash_pwd
 );
 $user_cr->save;
 $user_cr->add_loginid({loginid => $test_client_cr->loginid});
+$user_cr->add_loginid({loginid => $test_client_cr_2->loginid});
 $user_cr->save;
 
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -124,14 +131,46 @@ my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client_mx->email($email);
 
+my $test_client_vr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+});
+$test_client_vr_2->email($email);
+$test_client_vr_2->save;
+
+my $email_mlt_mf    = 'mltmf@binary.com';
+my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MLT',
+});
+$test_client_mlt->email($email_mlt_mf);
+$test_client_mlt->save;
+
+my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+$test_client_mf->email($email_mlt_mf);
+$test_client_mf->save;
+
+my $user_mlt_mf = BOM::Platform::User->create(
+    email    => $email_mlt_mf,
+    password => $hash_pwd
+);
+$user_mlt_mf->save;
+$user_mlt_mf->add_loginid({loginid => $test_client_vr_2->loginid});
+$user_mlt_mf->add_loginid({loginid => $test_client_mlt->loginid});
+$user_mlt_mf->add_loginid({loginid => $test_client_mf->loginid});
+$user_mlt_mf->save;
+
 my $m              = BOM::Database::Model::AccessToken->new;
 my $token1         = $m->create_token($test_loginid, 'test token');
 my $token_21       = $m->create_token($test_client_cr->loginid, 'test token');
+my $token_cr_2     = $m->create_token($test_client_cr_2->loginid, 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
 my $token_japan    = $m->create_token($japan_client->loginid, 'test token');
 my $token_mx       = $m->create_token($test_client_mx->loginid, 'test token');
+my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
+my $token_mf       = $m->create_token($test_client_mf->loginid, 'test token');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -208,8 +247,10 @@ my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
 my $method = 'payout_currencies';
 subtest $method => sub {
-    is_deeply($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD BTC)], 'invalid token will get all currencies');
-    is_deeply(
+    # we shouldn't care about order of currencies
+    # we just need to send array back
+    cmp_bag($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD BTC)], 'invalid token will get all currencies');
+    cmp_bag(
         $c->tcall(
             $method,
             {
@@ -220,8 +261,8 @@ subtest $method => sub {
         'undefined token will get all currencies'
     );
 
-    is_deeply($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
-    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD BTC)], "will return legal currencies if no token");
+    cmp_bag($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
+    cmp_bag($c->tcall($method, {}), [qw(USD EUR GBP AUD BTC)], "will return legal currencies if no token");
 };
 
 $method = 'landing_company';
@@ -1104,6 +1145,41 @@ subtest $method => sub {
         });
     cmp_ok($res->{score}, "<", 60, "Got correct score");
     is($res->{is_professional}, 0, "As score is less than 60 so its marked as not professional");
+
+    # test that setting this for one client also sets it for client with different landing company
+    is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
+    is($c->tcall('get_financial_assessment', {token => $token_mf})->{source_of_wealth},  undef, "Financial assessment not set for MF clinet");
+    $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token_mf
+        });
+    is($c->tcall('get_financial_assessment', {token => $token_mf})->{source_of_wealth}, "Company Ownership",
+        "Financial assessment set for MF client");
+    is(
+        $c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth},
+        "Company Ownership",
+        "Financial assessment set for MLT client"
+    );
+
+    # test that setting this for one client sets it for clients with same landing company
+    is($c->tcall('get_financial_assessment', {token => $token_21})->{source_of_wealth},   undef, "Financial assessment not set for CR client");
+    is($c->tcall('get_financial_assessment', {token => $token_cr_2})->{source_of_wealth}, undef, "Financial assessment not set for second CR clinet");
+    $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token_cr_2
+        });
+    is($c->tcall('get_financial_assessment', {token => $token_21})->{source_of_wealth}, "Company Ownership",
+        "Financial assessment set for CR client");
+    is(
+        $c->tcall('get_financial_assessment', {token => $token_cr_2})->{source_of_wealth},
+        "Company Ownership",
+        "Financial assessment set for second CR client"
+    );
+
 };
 
 $method = 'get_financial_assessment';
@@ -1186,12 +1262,11 @@ subtest $method => sub {
     # test real account
     $params->{token} = $token1;
     my %full_args = (
-        address_line_1   => 'address line 1, ,,, ,,, a,b,, ,,c, ,d',
-        address_line_2   => 'address line 2, ,a, ,b',
-        address_city     => 'address city, ,a,, b',
-        address_state    => 'address state',
-        address_postcode => '12345',
-        phone            => '2345678',
+        address_line_1 => 'address line 1',
+        address_line_2 => 'address line 2',
+        address_city   => 'address city',
+        address_state  => 'BA',
+        phone          => '2345678',
     );
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
@@ -1251,9 +1326,6 @@ subtest $method => sub {
     my $res = $c->tcall('get_settings', {token => $token1});
     is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");
     is($res->{tax_residence},             $params->{args}{tax_residence},             "Check tax information");
-    is('address line 1, a, b, c, d',      $res->{address_line_1},                     "Address line 1 is valid after formatting");
-    is('address line 2, a, b',            $res->{address_line_2},                     "Address line 2 is valid after formatting");
-    is('address city, a, b',              $res->{address_city},                       "Address city is valid after formatting");
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
     $test_client->load();
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
@@ -1263,11 +1335,7 @@ subtest $method => sub {
         subject => qr/\Q$subject\E/
     );
     ok(@msgs, 'send a email to client');
-    like(
-        $msgs[0]{body},
-        qr/>address line 1, a, b, c, d, address line 2, a, b, address city, a, b, address state, 12345, Indonesia/s,
-        'email content correct'
-    );
+    like($msgs[0]{body}, qr/>address line 1, address line 2, address city, Bali/s, 'email content correct');
 
     is($c->tcall('get_settings', {token => $token1})->{email_consent}, 1, "Was able to set email consent correctly");
 
@@ -1283,6 +1351,22 @@ subtest $method => sub {
         $c->tcall($method, $params)->{error}{message_to_client},
         'Input validation failed: address_postcode',
         'postcode is required for MX clients and cannot be set to null'
+    );
+
+    # setting account settings for one client also updates for clients that have a different landing company
+    $params->{token} = $token_mlt;
+    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    is($c->tcall('get_settings', {token => $token_mlt})->{address_line_1}, "address line 1", "Was able to set settings for MLT client");
+    is($c->tcall('get_settings', {token => $token_mf})->{address_line_1},  "address line 1", "Was able to set settings for MF client");
+
+    # setting account settings for one client updates for all clients with the same landing company
+    $params->{token} = $token_cr_2;
+    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    is($c->tcall('get_settings', {token => $token_21})->{address_line_1}, "address line 1", "Was able to set settings correctly for CR client");
+    is(
+        $c->tcall('get_settings', {token => $token_cr_2})->{address_line_1},
+        "address line 1",
+        "Was able to set settings correctly for second CR client"
     );
 };
 
@@ -1329,7 +1413,11 @@ subtest 'get and set self_exclusion' => sub {
     is($c->tcall($method, $params)->{status}, 1, "update self_exclusion ok");
 
     $params->{args}{max_balance} = 9999.999;
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Input validation failed: max_balance', 'don\'t allow more than two decimals in max balance for this client');
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Input validation failed: max_balance',
+        'don\'t allow more than two decimals in max balance for this client'
+    );
     $params->{args}{max_balance} = 9999.99;
     is($c->tcall($method, $params)->{status}, 1, 'allow two decimals in max balance');
 

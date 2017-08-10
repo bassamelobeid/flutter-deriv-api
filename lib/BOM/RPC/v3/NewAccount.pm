@@ -8,6 +8,7 @@ use Try::Tiny;
 use List::MoreUtils qw(any);
 use Data::Password::Meter;
 use Format::Util::Numbers qw/formatnumber/;
+use JSON qw/encode_json/;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -53,6 +54,8 @@ sub new_account_virtual {
     }
 
     my $acc = BOM::Platform::Account::Virtual::create_account({
+            ip => $params->{client_ip} // '',
+            country => uc($params->{country_code} // ''),
             details => {
                 email           => $email,
                 client_password => $args->{client_password},
@@ -202,6 +205,8 @@ sub new_account_real {
     }
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
+        ip => $params->{client_ip} // '',
+        country => uc($params->{country_code} // ''),
         from_client => $client,
         user        => BOM::Platform::User->new({email => $client->email}),
         details     => $details_ref->{details},
@@ -238,6 +243,21 @@ sub new_account_real {
     };
 }
 
+sub set_details {
+    my ($client, $args) = @_;
+
+    # don't update client's brokercode with wrong value
+    delete $args->{broker_code};
+    $client->$_($args->{$_}) for keys %$args;
+
+    # special cases.. force empty string if necessary in these not-nullable cols.  They oughta be nullable in the db!
+    for (qw(citizen address_2 state postcode salutation)) {
+        $client->$_('') unless defined $client->$_;
+    }
+
+    return $client;
+}
+
 sub new_account_maltainvest {
     my $params = shift;
 
@@ -262,6 +282,8 @@ sub new_account_maltainvest {
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
+        ip => $params->{client_ip} // '',
+        country => uc($params->{country_code} // ''),
         from_client    => $client,
         user           => BOM::Platform::User->new({email => $client->email}),
         details        => $details_ref->{details},
@@ -285,6 +307,21 @@ sub new_account_maltainvest {
         successful  => 't'
     });
     $user->save;
+
+    my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
+    foreach my $cli ($user->clients) {
+        # no need to update current client since already updated above upon creation
+        next if (($cli->loginid eq $new_client->loginid) or not BOM::RPC::v3::Utility::should_update_account_details($new_client, $cli->loginid));
+
+        # 60 is the max score to achive in financial assessment to be marked as professional
+        # as decided by compliance
+        $cli->financial_assessment({
+            data            => encode_json($financial_assessment->{user_data}),
+            is_professional => $financial_assessment->{total_score} < 60 ? 0 : 1,
+        });
+        set_details($cli, $details_ref->{details});
+        $cli->save;
+    }
 
     BOM::Platform::AuditLog::log("successful login", "$client->email");
     return {
@@ -333,6 +370,8 @@ sub new_account_japan {
     my %agreement = map { $_ => $args->{$_} } (BOM::Platform::Account::Real::japan::agreement_fields());
 
     my $acc = BOM::Platform::Account::Real::japan::create_account({
+        ip => $params->{client_ip} // '',
+        country => uc($params->{country_code} // ''),
         from_client    => $client,
         user           => BOM::Platform::User->new({email => $client->email}),
         details        => $details,
