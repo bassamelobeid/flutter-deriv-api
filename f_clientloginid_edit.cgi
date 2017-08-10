@@ -350,7 +350,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     my @simple_updates = qw/last_name
         first_name
         phone
-        secret_questionis_vip
+        secret_question
+        is_vip
         tax_residence
         tax_identification_number
         allow_omnibus
