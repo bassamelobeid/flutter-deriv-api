@@ -317,8 +317,6 @@ sub _construct_smile_line {
 
     my %deltas_to_use = map { $_ => 1 } @surface_vol_point;
 
-    $day = $volsurface->surface->{$day}->{tenor} || $day;
-
     my @smile_line = ($day);
 
     foreach my $point (sort { $a <=> $b } keys %{$smile_ref}) {
