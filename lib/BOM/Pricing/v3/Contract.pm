@@ -4,6 +4,7 @@ use strict;
 use warnings;
 no indirect;
 
+use Scalar::Util qw(blessed);
 use Try::Tiny;
 use List::MoreUtils qw(none);
 use JSON::XS;
@@ -127,18 +128,18 @@ sub _get_ask {
 
     try {
         $contract = $args_copy->{proposal_array} ? produce_batch_contract($args_copy) : produce_contract($args_copy);
-        if (ref($contract) eq 'ARRAY') {
-            warn __PACKAGE__ . " _get_ask produce_contract failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($args_copy);
-            $response = BOM::Pricing::v3::Utility::create_error({
-                    code              => 'ContractCreationFailure',
-                    message_to_client => join(',' map { localize($_) } @$contract)});
-        }
     }
     catch {
-        warn __PACKAGE__ . " _get_ask produce_contract failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($args_copy);
+        my $message_to_client;
+        if (blessed($_) && $_->isa('BOM::Product::Exception')) {
+            $message_to_client = $_->message_to_client;
+        } else {
+            $message_to_client = 'Cannot create contract';
+            warn __PACKAGE__ . " _get_ask produce_contract failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($args_copy);
+        }
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
-                message_to_client => localize('Cannot create contract')});
+                message_to_client => localize($message_to_client)});
     };
     return $response if $response;
 
