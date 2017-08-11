@@ -1,5 +1,7 @@
 package BOM::Product::Exception;
 
+use strict;
+use warnings;
 use Moo;
 
 use BOM::Product::Static qw(get_error_mapping);
