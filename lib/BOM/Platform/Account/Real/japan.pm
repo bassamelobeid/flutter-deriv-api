@@ -61,9 +61,10 @@ sub create_account {
     $client->save;
 
     my $response = BOM::Platform::Account::Real::default::after_register_client({
-        client  => $client,
-        user    => $user,
-        details => $details,
+        client      => $client,
+        user        => $user,
+        details     => $details,
+        from_client => $from_client,
     });
 
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
