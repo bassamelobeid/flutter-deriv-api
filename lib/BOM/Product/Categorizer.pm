@@ -272,7 +272,7 @@ sub _initialize_contract_parameters {
     if ($pp->{bet_type} and not($pp->{bet_type} eq 'BINARYICO' or $pp->{bet_type} eq 'Invalid') and not $pp->{date_expiry}) {
         BOM::Product::Exception->throw(
             error_code => 'MissingRequiredInput',
-            error_args => ['date_expiry']);
+            error_args => ['date_expiry or duration']);
     }
 
     # For Ico, the date_start , date_expiry and ask price will be determined in the Coinauction object
