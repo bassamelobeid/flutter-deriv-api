@@ -334,18 +334,17 @@ sub new_account_maltainvest {
 sub new_account_japan {
     my $params = shift;
 
-    my $client    = $params->{client};
-    my $error_map = BOM::RPC::v3::Utility::error_map();
+    my $client = $params->{client};
 
     # send error if anyone other than japan, virtual
     return BOM::RPC::v3::Utility::permission_error()
-        if ($client->landing_company->short !~ /^(?:virtual|japan)$/);
+        if ($client->landing_company->short !~ /^(?:japan-virtual|japan)$/);
 
     my $error = BOM::RPC::v3::Utility::is_valid_to_make_new_account($client, 'japan');
     return $error if $error;
 
-    my $company = Brands->new(name => request()->brand)->countries_instance->countries_list->{'jp'}->{financial_company};
-
+    my ($company, $error_map) =
+        (Brands->new(name => request()->brand)->countries_instance->countries_list->{'jp'}->{financial_company}, BOM::RPC::v3::Utility::error_map());
     if (not $company) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'NoLandingCompany',
