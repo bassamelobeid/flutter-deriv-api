@@ -24,19 +24,12 @@ use Finance::Contract::Category;
 use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying);
 use Finance::Contract::Category;
-use BOM::Product::Static qw(get_error_mapping);
-
-my $ERROR_MAPPING = get_error_mapping();
+use BOM::Product::Exception;
 
 has parameters => (
     is       => 'ro',
     isa      => 'HashRef',
     required => 1,
-);
-
-has input_validation_error => (
-    is      => 'ro',
-    default => sub { [] },
 );
 
 sub BUILD {
@@ -48,20 +41,21 @@ sub BUILD {
     my $barrier_type_count = grep { $_->{category}->two_barriers } @$c_types;
 
     if ($barrier_type_count > 0 and $barrier_type_count < scalar(@$c_types)) {
-        die 'Could not mixed single barrier and double barrier contracts in bet_types list.';
+        die BOM::Product::Exception->new(
+            error_code => 'InvalidBarrierWithReason' => error_args => ['Could not mixed single barrier and double barrier contracts']);
     }
 
     # $barrier_type_count == 0, single barrier contract
     # $barrier_type_count == @$c_types, double barrier contract
     if ($barrier_type_count == 0 and grep { ref $_ } @$barriers) {
-        die 'Invalid barrier list. Single barrier input is expected.';
+        die BOM::Product::Exception->new(error_code => 'InvalidBarrierWithReason' => error_args => ['Single barrier input is expected']);
     } elsif (
         $barrier_type_count == scalar(@$c_types) and grep {
             !ref $_
         } @$barriers
         )
     {
-        die 'Invalid barrier list. Double barrier input is expected.';
+        die BOM::Product::Exception->new(error_code => 'InvalidBarrierWithReason' => error_args => ['Double barrier input is expected']);
     }
 
     return;
@@ -83,7 +77,10 @@ sub _build_contract_types {
     } elsif ($p->{bet_type}) {
         $c_types = [$p->{bet_type}];
     } else {
-        $self->_add_error([$ERROR_MAPPING->{MissingRequiredInput}, 'bet_type']);
+        die BOM::Product::Exception->new(
+            error_code => 'MissingRequiredInput',
+            error_args => ['bet_type'],
+        );
     }
 
     return [map { $self->_initialize_contract_config($_) } @$c_types];
@@ -152,8 +149,12 @@ sub _initialize_contract_parameters {
     # always build shortcode
     delete $pp->{shortcode};
 
-    $self->_add_error([$ERROR_MAPPING->{MissingRequiredInput}, 'currency'])   unless $pp->{currency};
-    $self->_add_error([$ERROR_MAPPING->{MissingRequiredInput}, 'underlying']) unless $pp->{underlying};
+    die BOM::Product::Exception->new(
+        error_code => 'MissingRequiredInput',
+        error_args => ['currency']) unless $pp->{currency};
+    die BOM::Product::Exception->new(
+        error_code => 'MissingRequiredInput',
+        error_args => ['underlying']) unless $pp->{underlying};
 
     # set date start if not given. If we want to price a contract starting now, date_start should never be provided!
     unless ($pp->{date_start}) {
@@ -269,7 +270,9 @@ sub _initialize_contract_parameters {
     $pp->{date_start} //= 1;    # Error conditions if it's not legacy or run, I guess.
 
     if ($pp->{bet_type} and not($pp->{bet_type} eq 'BINARYICO' or $pp->{bet_type} eq 'Invalid') and not $pp->{date_expiry}) {
-        $self->_add_error([$ERROR_MAPPING->{MissingRequiredInput}, 'date_expiry']);
+        die BOM::Product::Exception->new(
+            error_code => 'MissingRequiredInput',
+            error_args => ['date_expiry']);
     }
 
     # For Ico, the date_start , date_expiry and ask price will be determined in the Coinauction object
@@ -283,7 +286,9 @@ sub _initialize_contract_parameters {
 sub _initialize_contract_config {
     my ($self, $c_type) = @_;
 
-    $self->_add_error([$ERROR_MAPPING->{MissingRequiredInput}, 'contract_type']) unless $c_type;
+    die BOM::Product::Exception->new(
+        error_code => 'MissingRequiredInput',
+        error_args => ['contract_type']) unless $c_type;
 
     my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
 
@@ -315,12 +320,6 @@ sub _initialize_barrier {
     }
 
     return $barrier_info;
-}
-
-sub _add_error {
-    my ($self, $error) = @_;
-
-    push @{$self->input_validation_error}, $error;
 }
 
 no Moose;
