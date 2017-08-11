@@ -239,6 +239,7 @@ subtest 'create account' => sub {
             $vr_ss_acc = create_vr_acc(\%t_vr_ss_details);
             ($vr_ss_client, $ss_user) = @{$vr_ss_acc}{'client', 'user'};
             $vr_ss_client->set_status('social_signup', 'system', '1');
+            $vr_ss_client->save;
         }
         'create VR acc with social signup';
 
