@@ -16,8 +16,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 my $t = build_wsapi_test();
 
 # check for authenticated call
-$t = $t->send_ok({json => {sell_expired => 1}})->message_ok;
-my $response = decode_json($t->message->[1]);
+my $response = $t->await::sell_expired({ sell_expired => 1 });
 
 is $response->{msg_type}, 'sell_expired';
 is $response->{error}->{code},    'AuthorizationRequired';
@@ -29,14 +28,12 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
+my $authorize = $t->await::authorize({ authorize => $token });
 is $authorize->{authorize}->{email},   'unit_test@binary.com';
 is $authorize->{authorize}->{loginid}, $test_client->loginid;
 
 # wrong call
-$t = $t->send_ok({json => {sell_expired => 2}})->message_ok;
-$response = decode_json($t->message->[1]);
+$response = $t->await::sell_expired({ sell_expired => 2 });
 
 is $response->{error}->{code}, 'InputValidationFailed';
 

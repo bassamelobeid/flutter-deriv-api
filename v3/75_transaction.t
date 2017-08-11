@@ -41,37 +41,23 @@ $client->smart_payment(
 );
 
 # check for authenticated call
-$t = $t->send_ok({
-        json => {
-            transaction => 1,
-            subscribe   => 1
-        }})->message_ok;
-my $response = decode_json($t->message->[1]);
-
+my $response = $t->await::transaction({ transaction => 1, subscribe => 1 });
 is $response->{error}->{code},    'AuthorizationRequired';
 is $response->{error}->{message}, 'Please log in.';
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
+my $authorize = $t->await::authorize({ authorize => $token });
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
 
 # wrong call - no subscribe
-$t = $t->send_ok({json => {transaction => 1}})->message_ok;
-$response = decode_json($t->message->[1]);
+$response = $t->await::transaction({ transaction => 1 });
 
 is $response->{error}->{code}, 'InputValidationFailed';
 
-$t = $t->send_ok({
-        json => {
-            transaction => 1,
-            subscribe   => 1
-        }})->message_ok;
-$response = decode_json($t->message->[1]);
+$response = $t->await::transaction({ transaction => 1,            subscribe   => 1         });
 
 ok $response->{transaction}->{id};
 
 done_testing();
-

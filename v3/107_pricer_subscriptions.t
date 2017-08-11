@@ -11,6 +11,8 @@ use Test::MockModule;
 use BOM::Test::Helper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
+use await;
+
 #use BOM::Test::RPC::BomRpc;
 #use BOM::Test::RPC::PricingRpc;
 
@@ -44,17 +46,16 @@ subtest "Born and die" => sub {
 
     my $t = $test_server->websocket_ok($url => {});
 
-    $t->send_ok({
-            json => {
-                "proposal"  => 1,
-                "subscribe" => 1,
-                %contractParameters
-            }})->message_ok;
+    $t->await::proposal({
+        "proposal"  => 1,
+        "subscribe" => 1,
+        %contractParameters
+    });
     is(scalar keys %{$test_server->app->pricing_subscriptions()}, 1, "Subscription created");
     $channel = [keys %{$test_server->app->pricing_subscriptions()}]->[0];
     is(refcount($test_server->app->pricing_subscriptions()->{$channel}), 1, "check refcount");
     ok(redis_pricer->get($channel), "check redis subscription");
-    $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
+    $t->await::forget_all({ forget_all => 'proposal' });
 
     is($test_server->app->pricing_subscriptions()->{$channel}, undef, "Killed");
     ### Mojo::Redis2 has not method PUBSUB
@@ -92,16 +93,15 @@ subtest "Create Subscribes" => sub {
 
         $t->tx->on(message => $callback);
 
-        $t->send_ok({
-                json => {
-                    "proposal"  => 1,
-                    "subscribe" => 1,
-                    %contractParameters
-                }})->message_ok;
+        $t->await::proposal({
+            "proposal"  => 1,
+            "subscribe" => 1,
+            %contractParameters
+        });
     }
 
     cmp_ok(keys %$user_first, '==', 3 , "3 subscription created ok");
-    $test_server->send_ok({ json => {'forget_all' => 'proposal'}})->message_ok;
+    $test_server->await::forget_all({'forget_all' => 'proposal'});
 
     $_->finish_ok for @connections;
 
@@ -126,14 +126,12 @@ subtest "Count Subscribes" => sub {
     for my $i (0 .. 2) {
         my $t = $test_server->websocket_ok($url => {});
         push @connections, $t;
-        $t->send_ok({
-                json => {
-                    "proposal"  => 1,
-                    "subscribe" => 1,
-                    %contractParameters,
-                    "contract_type"  => "CALL",
-                }})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::proposal({
+            "proposal"  => 1,
+            "subscribe" => 1,
+            %contractParameters,
+            "contract_type"  => "CALL",
+        });
         test_schema('proposal', $res);
     }
 

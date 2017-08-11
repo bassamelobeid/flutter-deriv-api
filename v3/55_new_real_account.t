@@ -45,7 +45,7 @@ subtest 'new CR real account' => sub {
     });
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+    $t->await::authorize({ authorize => $token });
 
     subtest 'create CR account' => sub {
         my ($res, $call_params) = call_mocked_client($t, \%client_details);
@@ -59,10 +59,8 @@ subtest 'new CR real account' => sub {
     };
 
     subtest 'no duplicate account - same email' => sub {
-        $t = $t->send_ok({json => \%client_details})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_real(\%client_details);
 
-        ok($res->{msg_type}, 'new_account_real');
         is($res->{error}->{code},    'duplicate email', 'no duplicate account for CR');
         is($res->{new_account_real}, undef,             'NO account created');
     };
@@ -75,11 +73,10 @@ subtest 'new CR real account' => sub {
         });
         # authorize
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-        $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+        $t->await::authorize({ authorize => $token });
 
         # create CR acc
-        $t = $t->send_ok({json => \%client_details})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_real(\%client_details);
 
         is($res->{error}->{code}, 'duplicate name DOB', 'no duplicate account: same name + DOB');
         is($res->{new_account_real}, undef, 'NO account created');
@@ -95,7 +92,7 @@ subtest 'new MX real account' => sub {
     });
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+    $t->await::authorize({ authorize => $token });
 
     # create real acc
     my %details = %client_details;
@@ -103,16 +100,14 @@ subtest 'new MX real account' => sub {
     $details{first_name} .= '-gb';
 
     subtest 'UK client - invalid postcode' => sub {
-        $t = $t->send_ok({json => {%details, address_postcode => ''}})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_real({%details, address_postcode => ''});
 
         is($res->{error}->{code}, 'invalid UK postcode', 'UK client must have postcode');
         is($res->{new_account_real}, undef, 'NO account created');
     };
 
     subtest 'new MX account' => sub {
-        $t = $t->send_ok({json => \%details})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_real(\%details);
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);
 
@@ -130,15 +125,14 @@ subtest 'new MLT real account' => sub {
     });
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+    $t->await::authorize({ authorize => $token });
 
     # create real acc
     my %details = %client_details;
     $details{residence} = 'nl';
     $details{first_name} .= '-nl';
 
-    $t = $t->send_ok({json => \%details})->message_ok;
-    my $res = decode_json($t->message->[1]);
+    my $res = $t->await::new_account_real(\%details);
     ok($res->{new_account_real});
     test_schema('new_account_real', $res);
 
@@ -155,7 +149,7 @@ subtest 'create account failed' => sub {
     });
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+    $t->await::authorize({ authorize => $token });
 
     subtest 'insufficient info' => sub {
         # create real acc
@@ -163,8 +157,7 @@ subtest 'create account failed' => sub {
         delete $details{residence};
         delete $details{first_name};
 
-        $t = $t->send_ok({json => \%details})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_real(\%details);
 
         is($res->{error}->{code}, 'InputValidationFailed', 'fail input validation');
         is($res->{new_account_real}, undef, 'NO account created');
@@ -179,8 +172,7 @@ subtest 'create account failed' => sub {
         $details{residence} = 'id';
         $details{first_name} .= '-id';
 
-        $t = $t->send_ok({json => \%details})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_real(\%details);
 
         is($res->{error}->{code}, 'email unverified', 'email unverified');
         is($res->{new_account_real}, undef, 'NO account created');
@@ -197,8 +189,7 @@ subtest 'create account failed' => sub {
         my %details = %client_details;
         $details{residence} = 'id';
 
-        $t = $t->send_ok({json => \%details})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_real(\%details);
 
         is($res->{error}->{code},    'InvalidAccount', 'cannot create real account');
         is($res->{new_account_real}, undef,            'NO account created');
@@ -211,8 +202,7 @@ subtest 'create account failed' => sub {
         my %details = %client_details;
         $details{residence} = 'au';
 
-        $t = $t->send_ok({json => \%details})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_real(\%details);
 
         is($res->{error}->{code}, 'invalid residence', 'cannot create real account');
         is($res->{new_account_real}, undef, 'NO account created');
@@ -222,8 +212,7 @@ subtest 'create account failed' => sub {
         my %details = %client_details;
         $details{residence} = 'id';
 
-        $t = $t->send_ok({json => {%details, address_line_1 => 'address 1 P.O.Box 1234'}})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_real({%details, address_line_1 => 'address 1 P.O.Box 1234'});
 
         is($res->{error}->{code},    'invalid PO Box', 'address cannot contain P.O.Box');
         is($res->{new_account_real}, undef,            'NO account created');
@@ -233,9 +222,7 @@ subtest 'create account failed' => sub {
         my %details = %client_details;
         $details{residence} = 'id';
 
-        $t = $t->send_ok({json => {%details, date_of_birth => '2008-01-01'}})->message_ok;
-        my $res = decode_json($t->message->[1]);
-
+        my $res = $t->await::new_account_real({%details, date_of_birth => '2008-01-01'});
         is($res->{error}->{code},    'too young', 'min age unmatch');
         is($res->{new_account_real}, undef,       'NO account created');
     };
@@ -248,8 +235,7 @@ subtest 'create account failed' => sub {
             my %details = %client_details;
             $details{residence} = 'us';
 
-            $t = $t->send_ok({json => \%details})->message_ok;
-            my $res = decode_json($t->message->[1]);
+            my $res = $t->await::new_account_real(\%details);
 
             is($res->{error}->{code},    'InvalidAccount', 'restricted country - US');
             is($res->{new_account_real}, undef,            'NO account created');
@@ -261,8 +247,7 @@ subtest 'create account failed' => sub {
             my %details = %client_details;
             $details{residence} = 'xx';
 
-            $t = $t->send_ok({json => \%details})->message_ok;
-            my $res = decode_json($t->message->[1]);
+            my $res = $t->await::new_account_real(\%details);
 
             is($res->{error}->{code},    'InvalidAccount', 'invalid country - xx');
             is($res->{new_account_real}, undef,            'NO account created');
@@ -277,8 +262,7 @@ subtest 'create account failed' => sub {
             my %details = %client_details;
             $details{residence} = 'de';
 
-            $t = $t->send_ok({json => \%details})->message_ok;
-            my $res = decode_json($t->message->[1]);
+            my $res = $t->await::new_account_real(\%details);
 
             is($res->{error}->{code},    'InvalidAccount', 'wrong acc opening - MF');
             is($res->{new_account_real}, undef,            'NO account created');
@@ -290,8 +274,7 @@ subtest 'create account failed' => sub {
             my %details = %client_details;
             $details{residence} = 'jp';
 
-            $t = $t->send_ok({json => \%details})->message_ok;
-            my $res = decode_json($t->message->[1]);
+            my $res = $t->await::new_account_real(\%details);
 
             is($res->{error}->{code},    'InvalidAccount', 'wrong acc opening - JP');
             is($res->{new_account_real}, undef,            'NO account created');

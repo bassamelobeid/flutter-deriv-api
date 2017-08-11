@@ -52,8 +52,7 @@ ok !$status->{success}, 'Bad password; cannot login';
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_1);
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
+my $authorize = $t->await::authorize({ authorize => $token });
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $vr_1;
 
@@ -61,46 +60,22 @@ my $new_password = 'jskjD8292923';
 my $new_hash_pwd = BOM::Platform::Password::hashpw($new_password);
 
 # change password wrongly
-$t = $t->send_ok({
-        json => {
-            change_password => 1,
-            old_password    => 'mRX1E3Mi00oS8LG',
-            new_password    => $new_password
-        }})->message_ok;
-my $change_password = decode_json($t->message->[1]);
+my $change_password = $t->await::change_password({ change_password => 1, old_password => 'mRX1E3Mi00oS8LG', new_password => $new_password });
 is $change_password->{error}->{code}, 'PasswordError';
 ok $change_password->{error}->{message} =~ /Old password is wrong/;
 test_schema('change_password', $change_password);
 
-$t = $t->send_ok({
-        json => {
-            change_password => 1,
-            old_password    => $password,
-            new_password    => 'a'
-        }})->message_ok;
-$change_password = decode_json($t->message->[1]);
+$change_password = $t->await::change_password({ change_password => 1, old_password => $password, new_password => 'a' });
 is $change_password->{error}->{code}, 'InputValidationFailed';
 test_schema('change_password', $change_password);
 
-$t = $t->send_ok({
-        json => {
-            change_password => 1,
-            old_password    => $password,
-            new_password    => $password
-        }})->message_ok;
-$change_password = decode_json($t->message->[1]);
+$change_password = $t->await::change_password({ change_password => 1, old_password => $password, new_password => $password });
 is $change_password->{error}->{code}, 'PasswordError';
 ok $change_password->{error}->{message} =~ /New password is same as old password/;
 test_schema('change_password', $change_password);
 
 # change password
-$t = $t->send_ok({
-        json => {
-            change_password => 1,
-            old_password    => $password,
-            new_password    => $new_password
-        }})->message_ok;
-$change_password = decode_json($t->message->[1]);
+$change_password = $t->await::change_password({ change_password => 1, old_password => $password, new_password => $new_password });
 ok($change_password->{change_password});
 is($change_password->{change_password}, 1);
 test_schema('change_password', $change_password);
@@ -121,17 +96,10 @@ foreach my $client ($user->clients) {
 
 ## for api token, it's not allowed to change password
 $token = BOM::Database::Model::AccessToken->new->create_token($vr_1, 'Test Token', ['read', 'admin']);
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-$authorize = decode_json($t->message->[1]);
+$authorize = $t->await::authorize({ authorize => $token });
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $vr_1;
-$t = $t->send_ok({
-        json => {
-            change_password => 1,
-            old_password    => $new_password,
-            new_password    => 'abc123456'
-        }})->message_ok;
-my $res = decode_json($t->message->[1]);
+my $res = $t->await::change_password({ change_password => 1, old_password => $new_password, new_password => 'abc123456' });
 is $res->{error}->{code}, 'PermissionDenied', 'got PermissionDenied for api token';
 
 $t->finish_ok;

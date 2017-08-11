@@ -17,11 +17,11 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::Database::DataMapper::FinancialMarketBet;
+use await;
 
 build_test_R_50_data();
 my $t = build_wsapi_test();
-$t = $t->send_ok({json => {proposal => 1}})->message_ok;
-my $empty_proposal = decode_json($t->message->[1]);
+my $empty_proposal = $t->await::proposal({ proposal => 1 });
 is($empty_proposal->{error}->{code}, 'InputValidationFailed');
 
 my $req = {
@@ -35,24 +35,20 @@ my $req = {
     "duration_unit" => "m"
 };
 
-$t->send_ok({json => $req})->message_ok;
-my $res = decode_json($t->message->[1]);
+my $res = $t->await::proposal($req);
 ok $res->{proposal}->{id}, 'Should return id';
 
 $req->{amount} = "70e-2";
-$t->send_ok({json => $req})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::proposal($req);
 ok $res->{proposal}->{id}, 'Should return id for exponential number';
 
 #test wrong amount value
 $req->{amount} = ".";
-$t->send_ok({json => $req})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::proposal($req);
 is $res->{error}->{code}, 'InputValidationFailed', 'Correct failed due to input validation';
 
 $req->{amount} = "+100";
-$t->send_ok({json => $req})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::proposal($req);
 is $res->{error}->{code}, 'InputValidationFailed', 'Correct failed due to + sign in number, not allowed as per json schema';
 
 done_testing;

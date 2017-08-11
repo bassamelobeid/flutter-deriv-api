@@ -42,8 +42,7 @@ $user->save;
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_1);
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
+my $authorize = $t->await::authorize({ authorize => $token });
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $cr_1;
 
@@ -53,77 +52,45 @@ ok exists $call_params->{token};
 is $res->{msg_type}, 'cashier';
 
 # lock cashier
-$t = $t->send_ok({json => {cashier_password => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::cashier_password({ cashier_password => 1 });
 ok $res->{cashier_password} == 0, 'password was not set';
 test_schema('cashier_password', $res);
 
 ## use same password as login is not ok
-$t = $t->send_ok({
-        json => {
-            cashier_password => 1,
-            lock_password    => $password
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::cashier_password({ cashier_password => 1, lock_password => $password  });
 ok $res->{error}->{message} =~ /Please use a different password than your login password/, 'Please use a different password than your login password';
 
 $password = 'Uplow2134445';
-$t        = $t->send_ok({
-        json => {
-            cashier_password => 1,
-            lock_password    => $password
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::cashier_password({ cashier_password => 1, lock_password => $password });
 ok $res->{cashier_password};
 test_schema('cashier_password', $res);
 
-$t = $t->send_ok({json => {cashier_password => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::cashier_password({ cashier_password => 1 });
 ok $res->{cashier_password} == 1, 'password was set';
 test_schema('cashier_password', $res);
 
-$t = $t->send_ok({
-        json => {
-            cashier_password => 1,
-            lock_password    => rand()}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::cashier_password({ cashier_password => 1, lock_password => rand() });
 ok $res->{error}->{message} =~ /Your cashier was locked/, 'Your cashier was locked';
 
 $client_cr = Client::Account->new({loginid => $client_cr->loginid});
 ok length $client_cr->cashier_setting_password, 'cashier_setting_password is set';
 
 # unlock
-$t = $t->send_ok({
-        json => {
-            cashier_password => 1,
-            unlock_password  => $password . '1'
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::cashier_password({ cashier_password => 1, unlock_password  => $password . '1' });
 ok $res->{error}->{message} =~ /you have entered an incorrect cashier password/, 'you have entered an incorrect cashier password';
 
-$t = $t->send_ok({
-        json => {
-            cashier_password => 1,
-            unlock_password  => $password
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::cashier_password({ cashier_password => 1, unlock_password  => $password });
 ok $res->{cashier_password} == 0;
 test_schema('cashier_password', $res);
 
-$t = $t->send_ok({json => {cashier_password => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::cashier_password({ cashier_password => 1 });
 ok $res->{cashier_password} == 0, 'password was clear';
 test_schema('cashier_password', $res);
 
 $client_cr = Client::Account->new({loginid => $client_cr->loginid});
 ok(length($client_cr->cashier_setting_password) == 0, 'cashier_setting_password is clear');
 
-$t = $t->send_ok({
-        json => {
-            cashier_password => 1,
-            unlock_password  => $password
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::cashier_password({ cashier_password => 1, unlock_password  => $password });
 ok $res->{error}->{message} =~ /Your cashier was not locked/, 'Your cashier was not locked';
 
 $t->finish_ok;

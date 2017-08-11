@@ -74,7 +74,7 @@ subtest 'new JP real account' => sub {
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
 
-    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+    $t->await::authorize({ authorize => $token });
 
     subtest 'create JP account' => sub {
         my ($res, $call_params) = call_mocked_client($t, \%client_details);
@@ -105,8 +105,7 @@ subtest 'new JP real account' => sub {
     };
 
     subtest 'no duplicate account - same email' => sub {
-        $t = $t->send_ok({json => \%client_details})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_japan(\%client_details);
 
         is $res->{msg_type}, 'new_account_japan';
         is($res->{error}->{code},    'duplicate email', 'no duplicate account for JP');
@@ -121,11 +120,10 @@ subtest 'new JP real account' => sub {
         });
         # authorize
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-        $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+        $t->await::authorize({ authorize => $token });
 
         # create CR acc
-        $t = $t->send_ok({json => \%client_details})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_japan(\%client_details);
 
         is($res->{error}->{code}, 'duplicate name DOB', 'no duplicate account: same name + DOB');
         is($res->{new_account_real}, undef, 'NO account created');
@@ -141,7 +139,7 @@ subtest 'Japan a/c jp residence only' => sub {
     });
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+    $t->await::authorize({ authorize => $token });
 
     # create JP real acc
     my %details = %client_details;
@@ -149,9 +147,7 @@ subtest 'Japan a/c jp residence only' => sub {
     $details{first_name} .= '-gb';
 
     subtest 'UK residence' => sub {
-        $t = $t->send_ok({json => \%details})->message_ok;
-        my $res = decode_json($t->message->[1]);
-
+        my $res = $t->await::new_account_japan(\%details);
         is($res->{error}->{code},     'InputValidationFailed',              'residence must be "jp"');
         is($res->{error}->{message},  'Input validation failed: residence', 'jp only');
         is($res->{new_account_japan}, undef,                                'NO account created');
@@ -171,15 +167,14 @@ subtest 'VR Residence check' => sub {
 
         # authorize
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-        $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+        $t->await::authorize({ authorize => $token });
 
         # create JP real acc
         my %details = %client_details;
         $details{first_name} .= '-VR-nl';
 
         subtest 'VRTJ nl residence' => sub {
-            $t = $t->send_ok({json => \%details})->message_ok;
-            my $res = decode_json($t->message->[1]);
+            my $res = $t->await::new_account_japan(\%details);
 
             is($res->{error}->{code},     'InvalidAccount',                         'NO VR nl residence');
             is($res->{error}->{message},  'Sorry, account opening is unavailable.', 'jp only');
@@ -196,15 +191,14 @@ subtest 'VR Residence check' => sub {
         });
         # authorize
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-        $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+        $t->await::authorize({ authorize => $token });
 
         # create JP real acc
         my %details = %client_details;
         $details{first_name} .= '-au';
 
         subtest 'VRTC au residence' => sub {
-            $t = $t->send_ok({json => \%details})->message_ok;
-            my $res = decode_json($t->message->[1]);
+            my $res = $t->await::new_account_japan(\%details);
 
             is($res->{error}->{code},     'InvalidAccount',                         'VR residence must be "jp"');
             is($res->{error}->{message},  'Sorry, account opening is unavailable.', 'VR jp only');
@@ -214,14 +208,7 @@ subtest 'VR Residence check' => sub {
 };
 
 subtest 'jp_knowledge_test' => sub {
-    $t = $t->send_ok({
-            json => {
-                "jp_knowledge_test" => 1,
-                "score"             => 12,
-                "status"            => "pass"
-            }})->message_ok;
-    my $res = decode_json($t->message->[1]);
-
+    my $res = $t->await::jp_knowledge_test({ jp_knowledge_test => 1, score => 12, status => "pass" });
     is $res->{msg_type}, 'jp_knowledge_test';
     is $res->{error}->{code}, 'PermissionDenied';
 };

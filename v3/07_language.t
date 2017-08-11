@@ -6,10 +6,10 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Encode;
+use await;
 
 my $t = build_wsapi_test();
-$t = $t->send_ok({json => {residence_list => 1}})->message_ok;
-my $res = decode_json($t->message->[1]);
+my $res = $t->await::residence_list({ residence_list => 1 });
 is $res->{msg_type}, 'residence_list';
 ok $res->{residence_list};
 is_deeply $res->{residence_list}->[102],
@@ -23,8 +23,7 @@ is_deeply $res->{residence_list}->[102],
 
 # test RU
 $t = build_wsapi_test({language => 'RU'});
-$t = $t->send_ok({json => {residence_list => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::residence_list({ residence_list => 1 });
 ok $res->{residence_list};
 is_deeply $res->{residence_list}->[0],
     {
@@ -35,8 +34,7 @@ is_deeply $res->{residence_list}->[0],
 
 # back to EN
 $t   = build_wsapi_test();
-$t   = $t->send_ok({json => {residence_list => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::residence_list({ residence_list => 1 });
 ok $res->{residence_list};
 is_deeply $res->{residence_list}->[102],
     {
