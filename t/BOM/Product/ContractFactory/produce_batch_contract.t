@@ -141,7 +141,7 @@ subtest 'produce_batch_contract - error check' => sub {
 
     $args->{bet_types} = ['CALL', 'RANGE'];
     $batch = produce_batch_contract($args);
-    throws_ok { $batch->ask_prices } qr/Could not mixed single barrier and double barrier contracts/, 'throws error if bet_type mismatch';
+    throws_ok { $batch->ask_prices } qr/BOM::Product::Exception/, 'throws error if bet_type mismatch';
 
     $args->{bet_types} = ['CALL', 'ONETOUCH'];
     $args->{barriers} = [
@@ -151,10 +151,10 @@ subtest 'produce_batch_contract - error check' => sub {
             barrier2 => 99.20
         }];
     $batch = produce_batch_contract($args);
-    throws_ok { $batch->ask_prices } qr/Invalid barrier list\. Single barrier input is expected\./, 'throws error if bet_type-barrier mismatch';
+    throws_ok { $batch->ask_prices } qr/BOM::Product::Exception/, 'throws error if bet_type-barrier mismatch';
     $args->{bet_types} = ['RANGE', 'EXPIRYRANGE'];
     $batch = produce_batch_contract($args);
-    throws_ok { $batch->ask_prices } qr/Invalid barrier list\. Double barrier input is expected\./, 'throws error if bet_type-barrier mismatch';
+    throws_ok { $batch->ask_prices } qr/BOM::Product::Exception/, 'throws error if bet_type-barrier mismatch';
 };
 
 done_testing();
