@@ -245,7 +245,6 @@ sub app_markup_aggregates {
     my $oauth   = BOM::Database::Model::OAuth->new;
     my $user    = BOM::Platform::User->new( { email => $client->email } );
     my $app_ids = $oauth->get_app_ids_by_user_id( $user->id );
-
     my $time_from = Date::Utility->new( $args->{date_from} )->date_yyyymmdd;
     my $time_to   = Date::Utility->new( $args->{date_to} )->date_yyyymmdd;
 
@@ -301,7 +300,7 @@ sub app_markup_details {
 
     return {
         transactions => $clientdb->dbh->selectall_arrayref(
-            'SELECT * FROM reporting.get_app_markup_details(?,?,?,?,?,?,?,?,?)',
+            'SELECT * FROM reporting.get_app_markup_details(?,?,?,?,?,?,?,?)',
             { Slice => {} },
             __arrayref_to_db_array($app_ids),
             $time_from,
