@@ -83,8 +83,8 @@ table#client_edit td{
     <tr>
         <td class="label">MrMs</td>
         <td>: 
-            <select name="mrms">
-            [% FOREACH salutation = mrms_options %]
+            <select name="salutation">
+            [% FOREACH salutation = salutation_options %]
                 [% IF salutation ==  client.salutation %]
                     <option value="[% salutation %]" selected="selected">[% salutation %]</option>
                 [% ELSE %]
@@ -414,11 +414,11 @@ IF client.landing_company.short == "iom"
     </tr>
     <tr>
         <td class="label">IP security</td>
-        <td>: <input type="text" name="ip_security" value="[% client.restricted_ip_address %]" size="50" /></td>
+        <td>: <input type="text" name="restricted_ip_address" value="[% client.restricted_ip_address %]" size="50" /></td>
     </tr>
     <tr>
         <td class="label">Cashier lock passowrd</td>
-        <td>: <input type="text" name="cashier_lock_password" value="[% client.cashier_setting_password %]" size="50" /></td>
+        <td>: <input type="text" name="cashier_setting_password" value="[% client.cashier_setting_password %]" size="50" /></td>
     </tr>
 
     <tr>

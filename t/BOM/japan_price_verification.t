@@ -127,7 +127,7 @@ subtest 'verify_with_shortcode_IH' => sub {
         },
         'opposite_contract' => {
             'opposite_contract_intraday_eod_markup'                    => 0,
-            'opposite_contract_vol_spread_markup'                      => '0.212508872250682',
+            'opposite_contract_vol_spread_markup'                      => '0.0149994058762313',
             'opposite_contract_long_term_prediction'                   => '0.1',
             'opposite_contract_t'                                      => '2.85388127853881e-05',
             'opposite_contract_intraday_historical_iv_risk'            => 0,
@@ -148,7 +148,7 @@ subtest 'verify_with_shortcode_IH' => sub {
             'opposite_contract_historical_vol_markup'                  => 0,
             'opposite_contract_S'                                      => '79.817',
             'opposite_contract_bs_probability'                         => '0.504959816692975',
-            'opposite_contract_risk_markup'                            => '0.222508872250682',
+            'opposite_contract_risk_markup'                            => '0.0249994058762313',
             'opposite_contract_long_term_delta_correction'             => '-0.000639352624318246',
             'opposite_contract_historical_vol_mean_reversion'          => '0.10',
             'opposite_contract_base_commission'                        => '0.035',
