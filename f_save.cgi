@@ -98,9 +98,13 @@ if ($filen eq 'editvol') {
             }
 
         }
+
+        # last piece is the expiry date if present
+        my $expiry_date = @pieces ? $pieces[0] : undef;
         $surface_data->{$day} = {
             smile      => \%smile,
             vol_spread => \%spread,
+            ($expiry_date ? (expiry_date => $expiry_date) : ()),
         };
     }
     my %surface_args = (
