@@ -300,6 +300,8 @@ sub rmg_text_format {
             $row .= $self->_field_separator . roundcommon(0.0001, $spread->{$spread_point});
         }
 
+        $row .= $self->_field_separator . $volsurface->surface->{$day}{expiry_date} if $volsurface->surface->{$day}{expiry_date};
+
         push @surface, $row;
     }
 
@@ -313,12 +315,8 @@ sub _construct_smile_line {
 
     my $volsurface = $self->surface;
 
-    my @surface_vol_point = @{$volsurface->smile_points};
-
-    my %deltas_to_use = map { $_ => 1 } @surface_vol_point;
-
+    my %deltas_to_use = map { $_ => 1 } @{$volsurface->smile_points};
     $day = $volsurface->surface->{$day}->{tenor} || $day;
-
     my @smile_line = ($day);
 
     foreach my $point (sort { $a <=> $b } keys %{$smile_ref}) {
