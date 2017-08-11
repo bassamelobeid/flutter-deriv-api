@@ -177,7 +177,7 @@ sub new_account_real {
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
 
-    my $error = BOM::RPC::v3::Utility::is_valid_to_make_new_account($client, 'real');
+    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'real');
     return $error if $error;
 
     my $args = $params->{args};
@@ -266,7 +266,7 @@ sub new_account_maltainvest {
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest)$/);
 
-    my $error = BOM::RPC::v3::Utility::is_valid_to_make_new_account($client, 'maltainvest');
+    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'maltainvest');
     return $error if $error;
 
     my ($args, $error_map) = ($params->{args}, BOM::RPC::v3::Utility::error_map());
@@ -340,7 +340,7 @@ sub new_account_japan {
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short !~ /^(?:japan-virtual|japan)$/);
 
-    my $error = BOM::RPC::v3::Utility::is_valid_to_make_new_account($client, 'japan');
+    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'japan');
     return $error if $error;
 
     my ($company, $error_map) =

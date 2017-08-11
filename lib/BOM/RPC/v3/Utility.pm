@@ -251,6 +251,7 @@ sub get_real_account_siblings_information {
     # as 'migration to single email login', because we moved to single
     # currency per account in past and mark duplicate clients as disabled
     # with that reason itself
+    # TODO: create new status for migrated clients
     return {
         map {
             $_->loginid => {
@@ -264,7 +265,7 @@ sub get_real_account_siblings_information {
             } BOM::Platform::User->new({email => $client->email})->clients(disabled => 1)};
 }
 
-sub is_valid_to_make_new_account {
+sub validate_make_new_account {
     my ($client, $account_type) = @_;
 
     my $residence = $client->residence;
@@ -283,7 +284,7 @@ sub is_valid_to_make_new_account {
     if (scalar(keys %$siblings) == 0) {
 
         if ($account_type eq 'real') {
-            return if $gaming_company;
+            return undef if $gaming_company;
             # send error as account opening for maltainvest and japan has separate call
             return create_error({
                     code              => 'InvalidAccount',
@@ -305,7 +306,7 @@ sub is_valid_to_make_new_account {
     }
 
     # we don't allow virtual client to make this again and
-    return permission_error() if $client->is_virtual;
+    return undef permission_error() if $client->is_virtual;
 
     my $landing_company_name = $client->landing_company->short;
 
@@ -344,7 +345,7 @@ sub is_valid_to_make_new_account {
 
     # check if client has fiat currency, if not then return as we
     # allow them to open new account
-    return unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
+    return undef unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
 
     my $error = create_error({
             code              => 'NewAccountLimitReached',
@@ -361,10 +362,10 @@ sub is_valid_to_make_new_account {
     my $client_num_crypto = (grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'crypto' } keys %$siblings) // 0;
     return $error if ($lc_num_crypto eq $client_num_crypto);
 
-    return;
+    return undef;
 }
 
-sub is_valid_to_set_currency {
+sub validate_set_currency {
     my ($client, $currency) = @_;
 
     my $siblings = get_real_account_siblings_information($client);
@@ -372,7 +373,7 @@ sub is_valid_to_set_currency {
     # is virtual check is already done in set account currency
     # but better to have it here as well so that this sub can
     # be pluggable
-    return if (scalar(keys %$siblings) == 0);
+    return undef if (scalar(keys %$siblings) == 0);
 
     $siblings = filter_siblings_by_landing_company($client->landing_company->short, $siblings);
 
@@ -388,7 +389,7 @@ sub is_valid_to_set_currency {
     # if crypto check if client has same crypto, if yes then don't allow
     return $error if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
 
-    return;
+    return undef;
 }
 
 sub paymentagent_default_min_max {
