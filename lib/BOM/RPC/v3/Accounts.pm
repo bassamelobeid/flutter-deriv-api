@@ -1314,7 +1314,7 @@ sub set_account_currency {
     # for real client and not omnibus and not sub account
     # check if we are allowed to set currency
     # i.e if we have exhausted available options
-    # - client can have single flat currency
+    # - client can have single fiat currency
     # - client can have multiple crypto currency
     #   but only with single type of crypto currency
     #   for example BTC, ETH is allowed but BTC BTC is not

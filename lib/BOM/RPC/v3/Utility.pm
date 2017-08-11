@@ -306,7 +306,7 @@ sub validate_make_new_account {
     }
 
     # we don't allow virtual client to make this again and
-    return undef permission_error() if $client->is_virtual;
+    return permission_error() if $client->is_virtual;
 
     my $landing_company_name = $client->landing_company->short;
 
