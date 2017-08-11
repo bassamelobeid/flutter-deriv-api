@@ -7,6 +7,7 @@ use Test::More;
 use Test::Exception;
 use Test::Warnings;
 use BOM::Product::ContractFactory qw(produce_batch_contract produce_contract);
+use Try::Tiny;
 
 use Test::MockModule;
 use Postgres::FeedDB::Spot::Tick;
@@ -140,8 +141,14 @@ subtest 'produce_batch_contract - error check' => sub {
     is $ask_prices->{UPORDOWN}->{'100.250-98.750'}->{ask_price}, 8.39, 'correct ask price';
 
     $args->{bet_types} = ['CALL', 'RANGE'];
-    $batch = produce_batch_contract($args);
-    throws_ok { $batch->ask_prices } qr/BOM::Product::Exception/, 'throws error if bet_type mismatch';
+    try {
+        $batch = produce_batch_contract($args);
+        $batch->ask_prices;
+    } catch {
+        isa_ok $_, 'BOM::Product::Exception';
+        is $_->message_to_client->[0], 'Invalid barrier. ([_1])';
+        like $_->message_to_client->[1], qr/Could not mixed single barrier and double barrier contracts/, 'correct error args';
+    };
 
     $args->{bet_types} = ['CALL', 'ONETOUCH'];
     $args->{barriers} = [
@@ -150,11 +157,23 @@ subtest 'produce_batch_contract - error check' => sub {
             barrier  => 100.12,
             barrier2 => 99.20
         }];
-    $batch = produce_batch_contract($args);
-    throws_ok { $batch->ask_prices } qr/BOM::Product::Exception/, 'throws error if bet_type-barrier mismatch';
+    try {
+        $batch = produce_batch_contract($args);
+        $batch->ask_prices;
+    } catch {
+        isa_ok $_, 'BOM::Product::Exception';
+        is $_->message_to_client->[0], 'Invalid barrier. ([_1])';
+        like $_->message_to_client->[1], qr/Single barrier input is expected/, 'correct error args';
+    };
     $args->{bet_types} = ['RANGE', 'EXPIRYRANGE'];
-    $batch = produce_batch_contract($args);
-    throws_ok { $batch->ask_prices } qr/BOM::Product::Exception/, 'throws error if bet_type-barrier mismatch';
+    try {
+        $batch = produce_batch_contract($args);
+        throws_ok { $batch->ask_prices } qr/BOM::Product::Exception/, 'throws error if bet_type-barrier mismatch';
+    } catch {
+        isa_ok $_, 'BOM::Product::Exception';
+        is $_->message_to_client->[0], 'Invalid barrier. ([_1])';
+        like $_->message_to_client->[1], qr/Double barrier input is expected/, 'correct error args';
+    };
 };
 
 done_testing();

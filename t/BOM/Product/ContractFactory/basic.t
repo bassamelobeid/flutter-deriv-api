@@ -7,6 +7,7 @@ use Test::Exception;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
+use Try::Tiny;
 
 use Postgres::FeedDB::Spot::Tick;
 use LandingCompany::Offerings qw(reinitialise_offerings);
@@ -86,8 +87,14 @@ subtest 'produce_contract exception' => sub {
     };
 
     foreach my $undef ({bet_type => undef}, {duration => undef}, {underlying => undef}, {currency => undef}) {
-        throws_ok { produce_contract({%$contract_params, %$undef}); } qr/BOM::Product::Exception/,
-            'throws exception object when ' . (keys %$undef) . ' is undefined';
+        try {
+            produce_contract({%$contract_params, %$undef});
+        } catch {
+            isa_ok $_, 'BOM::Product::Exception';
+            is $_->message_to_client->[0], 'Missing required contract parameters. ([_1])';
+            my $missing = (keys %$undef)[0];
+            like $_->message_to_client->[1], qr/$missing/, 'correct error args';
+        }
     }
 };
 
