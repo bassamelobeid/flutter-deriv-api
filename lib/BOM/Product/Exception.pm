@@ -6,10 +6,34 @@ use BOM::Product::Static qw(get_error_mapping);
 
 my $ERR = get_error_mapping();
 
+=head1 NAME
+
+BOM::Product::Exception - A class to handle exception.
+
+=head1 SYNOPSIS
+
+    use BOM::Product::Exception;
+
+    BOM::Product::Exception->throw(error_code => 'AlreadyExpired');
+
+=cut
+
+=head2 error_code
+
+A string representation of errors in BOM::Product::Static
+
+=cut
+
 has error_code => (
     is       => 'ro',
     required => 1,
 );
+
+=head2 error_args
+
+Arguments to the error message. Excepts an array reference.
+
+=cut
 
 has error_args => (
     is      => 'ro',
@@ -29,6 +53,24 @@ sub BUILD {
 
     return;
 }
+
+=head2 throw
+
+throw exception with BOM::Product:::Exception
+
+=cut
+
+sub throw {
+    my ($class, %args) = @_;
+
+    die $class->new(%args);
+}
+
+=head2 message_to_client
+
+Return an array reference of message to client, followed by its argument(s) if any.
+
+=cut
 
 sub message_to_client {
     my $self = shift;
