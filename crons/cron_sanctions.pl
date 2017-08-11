@@ -24,7 +24,7 @@ use BOM::Platform::Email qw(send_email);
 my $file_flag    = '/tmp/last_cron_sanctions_check_run';
 my $reports_path = shift or die "Provide path for storing files as an argument";
 my @brokers      = qw/CR MF MLT MX/;
-my $verbose      = 1;
+my $verbose      = 0;
 my $childs       = 2;
 
 my $brand = Brands->new(name => 'binary');
@@ -56,7 +56,7 @@ sub do_report {
     }
     $pm->wait_all_children;
 
-    print $r;
+    print $r if $verbose;
 
     my $headers =
         'List Name,List Updated,Database,LoginID,First Name,Last Name,Email,Phone,Gender,DateOfBirth,DateJoined,Residence,Citizen,Status,Reason';
