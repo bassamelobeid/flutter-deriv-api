@@ -82,7 +82,7 @@ sub validate {
 
 sub create_account {
     my $args = shift;
-    my ($user, $details) = @{$args}{'user', 'details'};
+    my ($user, $details, $from_client) = @{$args}{'user', 'details', 'from_client'};
 
     if (my $error = validate($args)) {
         return $error;
@@ -91,9 +91,10 @@ sub create_account {
     return $register if ($register->{error});
 
     my $response = after_register_client({
-        client  => $register->{client},
-        user    => $user,
-        details => $details,
+        client      => $register->{client},
+        user        => $user,
+        details     => $details,
+        from_client => $from_client,
     });
 
     add_details_to_desk($register->{client}, $details);
@@ -118,10 +119,15 @@ sub register_client {
 
 sub after_register_client {
     my $args = shift;
-    my ($client, $user, $details, $ip, $country) = @{$args}{qw(client user details ip country)};
-
+    my ($client, $user, $details, $ip, $country, $from_client) = @{$args}{qw(client user details ip country from_client)};
     if (not $client->is_virtual) {
         $client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
+        $client->save;
+    }
+    # will bring social signup status to new client
+    #  when virtual client had created account with social login
+    if ($from_client and $from_client->get_status('social_signup')) {
+        $client->set_status('social_signup', 'system', '1');
         $client->save;
     }
     $user->add_loginid({loginid => $client->loginid});
