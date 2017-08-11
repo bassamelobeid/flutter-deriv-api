@@ -206,22 +206,15 @@ subtest 'get_ask' => sub {
         'had warning about volsurface for invalid symbol'
     );
 
-    cmp_deeply([
-            warnings {
-                cmp_deeply(
-                    BOM::Pricing::v3::Contract::_get_ask({}),
-                    {
-                        error => {
-                            message_to_client => 'Cannot create contract',
-                            code              => "ContractCreationFailure",
-                        }
-                    },
-                    'ContractCreationFailure with empty parameters'
-                );
+    cmp_deeply(
+        BOM::Pricing::v3::Contract::_get_ask({}),
+        {
+            error => {
+                message_to_client => 'Missing required contract parameters. (bet_type)',
+                code              => "ContractCreationFailure",
             }
-        ],
-        bag(re('_get_ask produce_contract failed')),
-        'empty params for _get_ask required warning'
+        },
+        'ContractCreationFailure with empty parameters'
     );
 };
 
@@ -322,10 +315,10 @@ subtest 'send_ask' => sub {
         cmp_deeply([
                 warnings {
                     $c->call_ok('send_ask', {args => {symbol => 'R_50'}})->has_error->error_code_is('ContractCreationFailure')
-                        ->error_message_is('Cannot create contract');
+                        ->error_message_is('Missing required contract parameters. (bet_type)');
                 }
             ],
-            bag(re('Use of uninitialized value'), re('_get_ask produce_contract failed')),
+            bag(re('Use of uninitialized value')),
             'missing bet_type when checking contract_type'
         );
 
