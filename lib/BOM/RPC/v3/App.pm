@@ -283,7 +283,10 @@ sub app_markup_details {
                 message_to_client => localize('Your app_id is invalid.'),
             }
         );
+    } elsif ( $args->{app_id} ) {
+        $app_ids = [$args->{app_id}];
     }
+    
     my $time_from =
       Date::Utility->new( $args->{date_time_from} )->datetime_yyyymmdd_hhmmss;
     my $time_to =
@@ -303,7 +306,6 @@ sub app_markup_details {
             __arrayref_to_db_array($app_ids),
             $time_from,
             $time_to,
-            $args->{app_id}         || undef,
             $args->{offset}         || undef,
             $args->{limit}          || undef,
             $args->{client_loginid} || undef,
