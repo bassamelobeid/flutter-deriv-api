@@ -623,7 +623,8 @@ sub _validate_ico_european_restrictions {
 
     if ($european_union->contains($residence)) {
 
-        if ($self->_open_ico_for_european_country($residence) > 149) {
+        # We notice that the open_ico_for_european_country from db does not update realtime enough, hence we limit it at 145
+        if ($self->_open_ico_for_european_country($residence) > 145) {
             return Error::Base->cuss(
                 -type => 'ExceedEuIcoLimit',
                 -mesg => 'We are exceeding the limit that EU imposed on ICO ',
