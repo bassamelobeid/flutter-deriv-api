@@ -41,6 +41,7 @@ sub shortcode_to_parameters {
     my ($bet_type, $underlying_symbol, $payout, $date_start, $date_expiry, $barrier, $barrier2, $prediction, $fixed_expiry, $tick_expiry,
         $how_many_ticks, $forward_start, $binaryico_per_token_bid_price,
         $binaryico_number_of_tokens);
+
     my ($initial_bet_type) = split /_/, $shortcode;
 
     my $legacy_params = {
@@ -51,8 +52,13 @@ sub shortcode_to_parameters {
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
+    # List of lookbacks
+    my $nonbinary_list = 'LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW';
+
     if ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>F?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
+
         # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
+
         $bet_type          = $1;
         $underlying_symbol = $2;
         $payout            = $3;
@@ -106,11 +112,14 @@ sub shortcode_to_parameters {
         :                      ();
 
     my $bet_parameters = {
-        shortcode    => $shortcode,
-        bet_type     => $bet_type,
-        underlying   => $underlying,
-        amount_type  => $bet_type eq 'BINARYICO' ? 'stake' : 'payout',
-        amount       => $bet_type eq 'BINARYICO' ? $binaryico_per_token_bid_price : $payout,
+
+        shortcode   => $shortcode,
+        bet_type    => $bet_type,
+        underlying  => $underlying,
+        amount_type => $bet_type eq 'BINARYICO' ? 'stake' : 'payout',
+        amount      => $bet_type eq 'BINARYICO' ? $binaryico_per_token_bid_price : $payout,
+        ($bet_type =~ /$nonbinary_list/) ? (unit => $payout) : (),
+
         date_start   => $date_start,
         date_expiry  => $date_expiry,
         prediction   => $prediction,

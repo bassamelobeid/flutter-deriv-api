@@ -47,6 +47,7 @@ my $config = {
         InvalidHighBarrier            => 'High barrier must be higher than low barrier.',
         InvalidHighLowBarrrierRange   => 'High barrier is out of acceptable range. Please adjust the high barrier.',
         InvalidLowBarrrierRange       => 'Low barrier is out of acceptable range. Please adjust the low barrier.',
+        InvalidLookbacksPrice         => 'Lookbacks price cannot be zero.',
         InvalidStake                  => 'Invalid stake/payout.',
         InvalidBinaryIcoBidPrice      => 'Your bid price is too low, the minimum bid price is USD1 (or equivalent in other currency).',
         IcoClosed                     => 'The ICO auction is already closed.',
