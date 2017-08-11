@@ -39,10 +39,6 @@ sub populate_details {
                 # as we cannot decode secret answer of client so we store dummy value
                 # for secret answer, we will not need it as its managed my master account
                 $populated_params->{$key} = $params->{$key} // 'dummy';
-            } elsif ($key eq 'first_name') {
-                $populated_params->{$key} = $params->{$key} // $master_client->first_name;
-            } elsif ($key eq 'last_name') {
-                $populated_params->{$key} = $params->{$key} // $master_client->last_name;
             } else {
                 $populated_params->{$key} = $params->{$key} // $master_client->$key;
             }
