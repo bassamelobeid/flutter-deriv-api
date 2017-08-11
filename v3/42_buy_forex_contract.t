@@ -221,7 +221,7 @@ SKIP: {
         my $res = $t->await::buy({ buy   => $proposal_id, price => $buy_price });
         is $res->{buy}->{buy_price}, '100.00', 'Buy with proposal id: Buy price is matching 100';
         ok $res->{buy}->{payout} > 100, 'Buy with proposal id: Payout is greater than 100';
-        my $proposal_1 = $t->await::proposal({ proposal => 1, %contract });
+        $proposal_1 = $t->await::proposal({ proposal => 1, %contract });
         $proposal_id = $proposal_1->{proposal}->{id};
 
         $res = $t->await::buy({ buy   => $proposal_id, price => 10000 });
