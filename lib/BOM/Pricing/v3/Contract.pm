@@ -134,12 +134,12 @@ sub _get_ask {
         if (blessed($_) && $_->isa('BOM::Product::Exception')) {
             $message_to_client = $_->message_to_client;
         } else {
-            $message_to_client = 'Cannot create contract';
+            $message_to_client = ['Cannot create contract'];
             warn __PACKAGE__ . " _get_ask produce_contract failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($args_copy);
         }
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
-                message_to_client => localize($message_to_client)});
+                message_to_client => localize(@$message_to_client)});
     };
     return $response if $response;
 
