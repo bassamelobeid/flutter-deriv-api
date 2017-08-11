@@ -240,8 +240,8 @@ sub error_map {
 }
 
 sub filter_siblings_by_landing_company {
-    my ($client, $siblings) = @_;
-    return {map { $_ => $siblings->{$_} } grep { $siblings->{$_}->{landing_company_name} eq $client->landing_company->short } keys %$siblings};
+    my ($landing_company_name, $siblings) = @_;
+    return {map { $_ => $siblings->{$_} } grep { $siblings->{$_}->{landing_company_name} eq $landing_company_name } keys %$siblings};
 }
 
 sub get_real_account_siblings_information {
@@ -265,7 +265,7 @@ sub get_real_account_siblings_information {
 }
 
 sub is_valid_to_make_new_account {
-    my ($client, $type) = @_;
+    my ($client, $account_type) = @_;
 
     my $residence = $client->residence;
     return create_error({
@@ -282,18 +282,18 @@ sub is_valid_to_make_new_account {
     # if no real sibling is present then its virtual
     if (scalar(keys %$siblings) == 0) {
 
-        if ($type eq 'real') {
+        if ($account_type eq 'real') {
             return if $gaming_company;
             # send error as account opening for maltainvest and japan has separate call
             return create_error({
                     code              => 'InvalidAccount',
                     message_to_client => error_map()->{'invalid'}}
             ) if ($financial_company and any { $_ eq $financial_company } qw(maltainvest japan));
-        } elsif ($type eq 'financial' and ($financial_company and $financial_company ne 'maltainvest')) {
+        } elsif ($account_type eq 'financial' and ($financial_company and $financial_company ne 'maltainvest')) {
             return create_error({
                     code              => 'InvalidAccount',
                     message_to_client => error_map()->{'invalid'}});
-        } elsif ($type eq 'japan' and ($financial_company and $financial_company ne 'japan')) {
+        } elsif ($account_type eq 'japan' and ($financial_company and $financial_company ne 'japan')) {
             return create_error({
                     code              => 'InvalidAccount',
                     message_to_client => error_map()->{'invalid'}});
@@ -307,10 +307,28 @@ sub is_valid_to_make_new_account {
     # we don't allow virtual client to make this again and
     return permission_error() if $client->is_virtual;
 
+    my $landing_company_name = $client->landing_company->short;
+
+    # as maltainvest can be opened in few ways, upgrade from malta,
+    # directly from virtual for Germany as residence
+    # or from maltainvest itself as we support multiple account now
+    # so upgrade is only allow once
+    if (($account_type and $account_type eq 'maltainvest') and $landing_company_name eq 'malta') {
+        # return error if client already has maltainvest account
+        return create_error({
+                code              => 'FinancialAccountExists',
+                message_to_client => localize('You already have a financial money account. Please switch accounts to trade financial products.')}
+        ) if (grep { $siblings->{$_}->{landing_company_name} eq 'maltainvest' } keys %$siblings);
+
+        # if from malta and account type is maltainvest, assign
+        # maltainvest to landing company as client is upgrading
+        $landing_company_name = 'maltainvest';
+    }
+
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
     # corresponding siblings not MLT one
-    $siblings = filter_siblings_by_landing_company($client, $siblings);
+    $siblings = filter_siblings_by_landing_company($landing_company_name, $siblings);
 
     # return if any one real client has not set account currency
     if (my ($loginid_no_curr) = grep { not $siblings->{$_}->{currency} } keys %$siblings) {
@@ -356,7 +374,7 @@ sub is_valid_to_set_currency {
     # be pluggable
     return if (scalar(keys %$siblings) == 0);
 
-    $siblings = filter_siblings_by_landing_company($client, $siblings);
+    $siblings = filter_siblings_by_landing_company($client->landing_company->short, $siblings);
 
     # check if currency is fiat or crypto
     my ($type, $error) = (
