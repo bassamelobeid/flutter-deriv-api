@@ -120,7 +120,6 @@ sub print_client_details {
         lang                   => request()->language,
         language_options       => \@language_options,
         mifir_config           => $Finance::MIFIR::CONCAT::config,
-        mrms_options           => \@mrms_options,
         promo_code_access      => $promo_code_access,
         proveID                => $proveID,
         salutation_options     => \@salutation_options,
