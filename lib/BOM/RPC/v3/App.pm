@@ -239,67 +239,83 @@ sub verify_app {
 }
 
 sub app_markup_aggregates {
-    my $params = shift;
-    my $args   = $params->{args};
-    my $client = $params->{client};
-    my $oauth  = BOM::Database::Model::OAuth->new;
-    my $user   = BOM::Platform::User->new({email => $client->email});
-    my $app_ids = $oauth->get_app_ids_by_user_id($user->id);
+    my $params  = shift;
+    my $args    = $params->{args};
+    my $client  = $params->{client};
+    my $oauth   = BOM::Database::Model::OAuth->new;
+    my $user    = BOM::Platform::User->new( { email => $client->email } );
+    my $app_ids = $oauth->get_app_ids_by_user_id( $user->id );
 
-    my $time_from =  Date::Utility->new($args->{date_from})->date_yyyymmdd;
-    my $time_to   =  Date::Utility->new($args->{date_to})->date_yyyymmdd;
+    my $time_from = Date::Utility->new( $args->{date_from} )->date_yyyymmdd;
+    my $time_to   = Date::Utility->new( $args->{date_to} )->date_yyyymmdd;
 
-    my $clientdb = BOM::Database::ClientDB->new({
-        client_loginid => $client->loginid,
-        operation      => 'replica',
-    })->db;
+    my $clientdb = BOM::Database::ClientDB->new(
+        {
+            client_loginid => $client->loginid,
+            operation      => 'replica',
+        }
+    )->db;
 
     return {
-        by_app_id => $clientdb->dbh->selectall_arrayref('SELECT * FROM reporting.get_app_markup_aggregates(?,?,?)',  {Slice => {}},
+        by_app_id => $clientdb->dbh->selectall_arrayref(
+            'SELECT * FROM reporting.get_app_markup_aggregates(?,?,?)',
+            { Slice => {} },
             __arrayref_to_db_array($app_ids),
             $time_from,
             $time_to
-        )};
+        )
+    };
 }
 
 sub app_markup_details {
-    my $params = shift;
-    my $args   = $params->{args};
-    my $client = $params->{client};
-    my $oauth  = BOM::Database::Model::OAuth->new;
-    my $user   = BOM::Platform::User->new({email => $client->email});
-    my $app_ids = $oauth->get_app_ids_by_user_id($user->id);
+    my $params  = shift;
+    my $args    = $params->{args};
+    my $client  = $params->{client};
+    my $oauth   = BOM::Database::Model::OAuth->new;
+    my $user    = BOM::Platform::User->new( { email => $client->email } );
+    my $app_ids = $oauth->get_app_ids_by_user_id( $user->id );
 
-    # If the app_id they have submitted is not in the list we have associated with them, then...
-    if ($args->{app_id} && ! grep {$args->{app_id} == $_} @$app_ids) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidAppID',
-            message_to_client => localize('Your app_id is invalid.'),
-        });
+# If the app_id they have submitted is not in the list we have associated with them, then...
+    if ( $args->{app_id} && !grep { $args->{app_id} == $_ } @$app_ids ) {
+        return BOM::RPC::v3::Utility::create_error(
+            {
+                code              => 'InvalidAppID',
+                message_to_client => localize('Your app_id is invalid.'),
+            }
+        );
     }
-    my $time_from =  Date::Utility->new($args->{date_time_from})->datetime_yyyymmdd_hhmmss;
-    my $time_to   =  Date::Utility->new($args->{date_time_to})->datetime_yyyymmdd_hhmmss;
+    my $time_from =
+      Date::Utility->new( $args->{date_time_from} )->datetime_yyyymmdd_hhmmss;
+    my $time_to =
+      Date::Utility->new( $args->{date_time_to} )->datetime_yyyymmdd_hhmmss;
 
-    my $clientdb = BOM::Database::ClientDB->new({
-        client_loginid => $client->loginid,
-        operation      => 'replica',
-    })->db;
+    my $clientdb = BOM::Database::ClientDB->new(
+        {
+            client_loginid => $client->loginid,
+            operation      => 'replica',
+        }
+    )->db;
 
     return {
-        transactions => $clientdb->dbh->selectall_arrayref('SELECT * FROM reporting.get_app_markup_details(?,?,?,?,?,?,?)',  {Slice => {}},
+        transactions => $clientdb->dbh->selectall_arrayref(
+            'SELECT * FROM reporting.get_app_markup_details(?,?,?,?,?,?,?,?,?)',
+            { Slice => {} },
             __arrayref_to_db_array($app_ids),
             $time_from,
             $time_to,
-            $args->{app_id} || undef,
-            $args->{offset} || undef,
-            $args->{limit} || undef,
-            $args->{client_loginid} || undef
-        )};
+            $args->{app_id}         || undef,
+            $args->{offset}         || undef,
+            $args->{limit}          || undef,
+            $args->{client_loginid} || undef,
+            $args->{sort_fields}    || undef,
+            $args->{sort}           || undef
+        )
+    };
 }
 
-# turn this [1,2,3] into this '{1,2,3}'
+# turn this perl [1,2,3] into this text {1,2,3}
 sub __arrayref_to_db_array {
-    return "{" . join(',', @{(shift)}) . "}";
+    return "{" . join( ',', @{ (shift) } ) . "}";
 }
 
 1;
