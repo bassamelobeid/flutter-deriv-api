@@ -168,11 +168,8 @@ subtest $method => sub {
     };
 
     subtest 'Create new account' => sub {
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidAccount',
-            'It should return error when try to create new client using exists real client')
-            ->error_message_is('Sorry, account opening is unavailable.',
-            'It should return error when try to create new client using exists real client');
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        isnt $result->{error}->{code}, 'InvalidAccount', 'No error with duplicate details but residence not provided so it errors out';
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vclient->loginid, 'test token');
         $rpc_ct->call_ok($method, $params)
@@ -266,10 +263,8 @@ subtest $method => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token} = $auth_token;
 
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidAccount',
-            'It should return error if client residense does not fit for maltainvest')
-            ->error_message_is('Sorry, account opening is unavailable.', 'It should return error if client residense does not fit for maltainvest');
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        is $result->{error}->{code}, 'InsufficientAccountDetails', 'It should return error if client residense does not fit for maltainvest';
 
         $client->residence('de');
         $client->save;
@@ -447,12 +442,11 @@ subtest $method => sub {
         }
     };
 
-    subtest 'Create new account maltainvest' => sub {
+    subtest 'Create new account japan' => sub {
         $params->{token} = $auth_token;
 
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidAccount', 'It should return error if client residense does not fit for japan')
-            ->error_message_is('Sorry, account opening is unavailable.', 'It should return error if client residense does not fit for japan');
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        is $result->{error}->{code}, 'PermissionDenied', 'It should return error if client residense does not fit for japan';
 
         $client->residence('jp');
         $client->save;
