@@ -1,8 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
-use Data::Dumper;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
@@ -15,6 +14,8 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Password;
 use BOM::Platform::User;
 use Client::Account;
+
+use await;
 
 my $t = build_wsapi_test({language => 'EN'});
 
@@ -50,8 +51,7 @@ $user->save;
 # non-virtual account is not allowed
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_1);
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
+my $authorize = $t->await::authorize({ authorize => $token });
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $cr_1;
 
@@ -67,22 +67,18 @@ my $old_balance = $client_vr->default_account->balance;
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_1);
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-$authorize = decode_json($t->message->[1]);
+$authorize = $t->await::authorize({ authorize => $token });
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $vr_1;
 
-$t = $t->send_ok({json => {topup_virtual => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
-is $res->{msg_type}, 'topup_virtual';
+$res = $t->await::topup_virtual({ topup_virtual => 1 });
 my $topup_amount = $res->{topup_virtual}->{amount};
 ok $topup_amount, 'topup ok';
 
 $client_vr = Client::Account->new({loginid => $client_vr->loginid});
 ok $old_balance + $topup_amount == $client_vr->default_account->balance, 'balance is right';
 
-$t = $t->send_ok({json => {topup_virtual => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::topup_virtual({ topup_virtual => 1 });
 ok $res->{error}->{message} =~ /Your balance is higher than the permitted amount/, 'Your balance is higher than the permitted amount';
 
 $client_vr = Client::Account->new({loginid => $client_vr->loginid});

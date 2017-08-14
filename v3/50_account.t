@@ -1,8 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
-use Data::Dumper;
+
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -22,6 +21,8 @@ use BOM::Test::Helper::FinancialAssessment;
 
 use BOM::Platform::Password;
 use BOM::Platform::User;
+
+use await;
 
 my $t = build_wsapi_test({language => 'EN'});
 
@@ -121,35 +122,22 @@ for (1 .. 10) {
 
 }
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
+my $authorize = $t->await::authorize({ authorize => $token });
 
 is $authorize->{authorize}->{email},   'unit_test@binary.com';
 is $authorize->{authorize}->{loginid}, $test_client->loginid;
 
-$t = $t->send_ok({
-        json => {
-            statement => 1,
-            limit     => 5
-        }})->message_ok;
-my $statement = decode_json($t->message->[1]);
+my $statement = $t->await::statement({ statement => 1, limit => 5 });
 ok($statement->{statement});
 is($statement->{statement}->{count}, 5);
 test_schema('statement', $statement);
 
 ## balance
-$t = $t->send_ok({json => {balance => 1}})->message_ok;
-my $balance = decode_json($t->message->[1]);
+my $balance = $t->await::balance({ balance => 1 });
 ok($balance->{balance});
 test_schema('balance', $balance);
-# diag Dumper(\$balance);
 
-$t = $t->send_ok({
-        json => {
-            profit_table => 1,
-            limit        => 1,
-        }})->message_ok;
-my $profit_table = decode_json($t->message->[1]);
+my $profit_table = $t->await::profit_table({ profit_table => 1, limit => 1 });
 ok($profit_table->{profit_table});
 ok($profit_table->{profit_table}->{count});
 my $trx = $profit_table->{profit_table}->{transactions}->[0];
@@ -161,8 +149,7 @@ my (undef, $call_params) = call_mocked_client($t, {get_limits => 1});
 is $call_params->{language}, 'EN';
 ok exists $call_params->{token};
 
-$t = $t->send_ok({json => {get_limits => 1}})->message_ok;
-my $res = decode_json($t->message->[1]);
+my $res = $t->await::get_limits({ get_limits => 1 });
 ok($res->{get_limits});
 is $res->{msg_type}, 'get_limits';
 is $res->{get_limits}->{open_positions}, 60;
@@ -172,15 +159,14 @@ my $args = {
     "set_financial_assessment" => 1,
     %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}};
 my $val = delete $args->{estimated_worth};
-$t = $t->send_ok({json => $args})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::set_financial_assessment($args);
 is($res->{error}->{code}, 'InputValidationFailed', 'Missing required field: estimated_worth');
 
 $args->{estimated_worth} = $val;
-$t = $t->send_ok({json => $args})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::set_financial_assessment($args);
 cmp_ok($res->{set_financial_assessment}->{score}, "<", 60, "Correct score");
-note("set_financial_assessment json :: " . encode_json($res));
+note("set_financial_assessment json :: ");
+note explain $res;
 is($res->{set_financial_assessment}->{is_professional}, 0, "is_professional flag is set correctly");
 
 $t->finish_ok;
