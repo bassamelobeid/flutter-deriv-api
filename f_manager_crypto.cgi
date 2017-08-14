@@ -15,6 +15,8 @@ use Format::Util::Numbers qw/financialrounding formatnumber/;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use Client::Account;
 
+use BOM::CTC::Reconciliation;
+
 use BOM::DualControl;
 use BOM::Database::ClientDB;
 use BOM::Backoffice::Auth0;
@@ -29,12 +31,11 @@ BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
 BOM::Backoffice::Auth0::can_access(['Payments']);
 
-my $broker         = request()->broker_code;
-my $encoded_broker = encode_entities($broker);
-my $staff          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $broker = request()->broker_code;
+my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 # Currency is utilised in Deposit and Withdrawal views accordingly
 # to distinguish information among supported cryptocurrencies.
-my $currency = request()->param('currency');
+my $currency = request()->param('currency') // 'BTC';
 # Action is used for transaction verification purposes.
 my $action = request()->param('action');
 # Address is retrieved from Search view for `Address` option.
@@ -57,7 +58,7 @@ my %va_cmds = (
 );
 # Currently, the controller renders page according to Deposit,
 # Withdrawal and Search actions.
-my $view_action = request()->param('view_action');
+my $view_action = request()->param('view_action') // '';
 # Assign descriptive message if comes from view_type filtering or
 # unless it is already.
 $view_action = $va_cmds{$view_action} // '' unless grep { $va_cmds{$_} eq $view_action } keys %va_cmds;
@@ -92,10 +93,7 @@ my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 
 $end_date = Date::Utility->new($end_date) unless ref $end_date;
 
 # Exchange rate should be populated according to supported cryptocurrencies.
-my %exchange_rates;
-for (qw/BTC LTC ETH/) {
-    $exchange_rates{$_} = in_USD(1.0, $_);
-}
+my %exchange_rates = map { $_ => in_USD(1.0, $_) } qw/BTC LTC ETH/;
 my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
     'backoffice/account/crypto_control_panel.html.tt',
@@ -103,7 +101,7 @@ $tt2->process(
         exchange_rates => \%exchange_rates,
         controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
         cmd            => request()->param('command') // '',
-        broker         => $encoded_broker,
+        broker         => $broker,
         start_date     => $start_date->date_yyyymmdd,
         end_date       => $end_date->date_yyyymmdd,
         now            => $now->datetime_ddmmmyy_hhmmss,
@@ -112,7 +110,12 @@ $tt2->process(
 
 code_exit_BO() unless ($view_action);
 
-my $clientdb = BOM::Database::ClientDB->new({broker_code => $encoded_broker});
+if (not $currency or $currency !~ /^[A-Z]{3}$/) {
+    print "Invalid currency.";
+    code_exit_BO();
+}
+
+my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbh = $clientdb->db->dbh;
 
 my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
@@ -124,10 +127,6 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     if ($view_action eq $va_cmds{withdrawals}) {
         Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
-        if (not $currency or $currency !~ /^[A-Z]{3}$/) {
-            print "Invalid currency.";
-            code_exit_BO();
-        }
         if ($address and $address !~ /^\w+$/) {
             print "Invalid address.";
             code_exit_BO();
@@ -271,124 +270,41 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     }
 
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
+    my $recon = BOM::CTC::Reconciliation->new(
+        currency => $currency,
+    );
 
-    my %db_by_address;
-    {    # First, we get a mapping from address to database transaction information
-        my $db_transactions = $dbh->selectall_arrayref(
+    # First, we get a mapping from address to database transaction information
+    $recon->from_database_items(
+        $dbh->selectall_arrayref(
             q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
             {Slice => {}},
             $currency, $start_date->iso8601, $end_date->iso8601
-        ) or die 'failed to run ctc_bo_transactions_for_reconciliation';
+            )
+            or die 'failed to run ctc_bo_transactions_for_reconciliation'
+    );
 
-        for my $db_tran (@$db_transactions) {
-            $db_tran->{type} = delete $db_tran->{transaction_type};
-            push @{$db_tran->{comments}}, 'Duplicate entries found in DB' if exists $db_by_address{$db_tran->{address}};
-            push @{$db_tran->{comments}}, 'Invalid entry - no amount in database'
-                unless length($db_tran->{amount} // '')
-                or $db_tran->{status} eq 'NEW';
-            $db_by_address{$db_tran->{address}} = $db_tran;
-        }
+    if (my $deposits = $rpc_client->listreceivedbyaddress(0)) {
+        $recon->from_blockchain_deposits($deposits);
+    } else {
+        print '<p style="color:red;">Unable to request deposits from RPC</p>';
+        code_exit_BO();
+    }
+    if (my $withdrawals = $rpc_client->listtransactions('', 10_000)) {
+        $recon->from_blockchain_withdrawals($withdrawals);
+    } else {
+        print '<p style="color:red;">Unable to request withdrawals from RPC</p>';
+        code_exit_BO();
     }
 
-    {    # Next, we retrieve all blockchain information relating to deposits
-        my $blockchain_transactions = $rpc_client->listreceivedbyaddress(0) or do {
-            print '<p style="color:red;">Unable to request transactions from RPC</p>';
-            code_exit_BO();
-        };
-        for my $blockchain_tran (sort_by { $_->{address} } @$blockchain_transactions) {
-            my $address = $blockchain_tran->{address};
-            my $db_tran = $db_by_address{$address} or do {
-                # TODO This should filter by prefix, not just ignore when we have a prefix!
-                $db_by_address{$address} = {
-                    address             => $address,
-                    type                => 'deposit',
-                    found_in_blockchain => 1,
-                    amount              => $blockchain_tran->{amount},
-                    confirmations       => $blockchain_tran->{confirmations},
-                    comments            => ['Deposit not found in database']};
-                next;
-            };
-            $db_tran->{found_in_blockchain} = 1;
-            if ($db_tran->{type} ne 'deposit') {
-                push @{$db_tran->{comments}}, 'Expected deposit, found ' . $db_tran->{type};
-            }
-
-            if (
-                financialrounding(
-                    price => $currency,
-                    $blockchain_tran->{amount}
-                ) != $db_tran->{amount})
-            {
-                push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
-            }
-            $db_tran->{confirmations} = $blockchain_tran->{confirmations};
-            if (Date::Utility->new($db_tran->{date})->epoch < time - 4 * 60) {
-                if ($blockchain_tran->{confirmations} < 3 and not($db_tran->{status} eq 'PENDING' or $db_tran->{status} eq 'NEW')) {
-                    push @{$db_tran->{comments}}, 'Invalid status - should be new or pending';
-                } elsif ($blockchain_tran->{confirmations} >= 3 and not($db_tran->{status} eq 'CONFIRMED')) {
-                    push @{$db_tran->{comments}}, 'Invalid status - should be confirmed';
-                }
-            }
-            if (@{$blockchain_tran->{txids}} > 1) {
-                push @{$db_tran->{comments}}, 'Multiple transactions seen';
-            }
-            $db_tran->{transaction_id} = $blockchain_tran->{txids}[0];
-        }
-    }
-
-    {    # Now we check for withdrawals
-        my $blockchain_transactions = $rpc_client->listtransactions('', 1000) or do {
-            print '<p style="color:red;">Unable to request transactions from RPC</p>';
-            code_exit_BO();
-        };
-        for my $blockchain_tran (sort_by { $_->{address} } @$blockchain_transactions) {
-            my $address = $blockchain_tran->{address};
-            my $db_tran = $db_by_address{$address} or do {
-                # TODO This should filter by prefix, not just ignore when we have a prefix!
-                $db_by_address{$address} = {
-                    address             => $address,
-                    type                => 'withdrawal',
-                    found_in_blockchain => 1,
-                    amount              => $blockchain_tran->{amount},
-                    confirmations       => $blockchain_tran->{confirmations},
-                    comments            => ['Withdrawal not found in database']};
-                next;
-            };
-            $db_tran->{type}                = 'withdrawal';
-            $db_tran->{found_in_blockchain} = 1;
-            if ($db_tran->{type} ne 'withdrawal') {
-                push @{$db_tran->{comments}}, 'Expected withdrawal, found ' . $db_tran->{type};
-            }
-            if (
-                financialrounding(
-                    price => $currency,
-                    $blockchain_tran->{amount}
-                ) != -$db_tran->{amount})
-            {
-                push @{$db_tran->{comments}}, 'Amount does not match - blockchain ' . $blockchain_tran->{amount} . ', db ' . $db_tran->{amount};
-            }
-            if (Date::Utility->new($db_tran->{date})->epoch < time - 4 * 60) {
-                if ($blockchain_tran->{confirmations} < 3
-                    and not($db_tran->{status} eq 'LOCKED' or $db_tran->{status} eq 'VERIFIED' or $db_tran->{status} eq 'PROCESSING'))
-                {
-                    push @{$db_tran->{comments}}, 'Invalid status - should be locked/verified/processing';
-                } elsif ($blockchain_tran->{confirmations} >= 3 and not($db_tran->{status} eq 'SENT')) {
-                    push @{$db_tran->{comments}}, 'Invalid status - should be SENT';
-                }
-            }
-        }
-    }
-
-    # Find out what's left over in the database
-    for my $db_tran (grep { !$_->{found_in_blockchain} } values %db_by_address) {
-        push @{$db_tran->{comments}}, 'Database entry not found in blockchain'
-            unless grep { $db_tran->{status} eq $_ } qw(NEW REJECTED LOCKED);
-    }
+    # Go through the complete list of db/blockchain entries to make sure that
+    # things are consistent.
+    my @recon_list = $recon->reconcile;
 
     my @hdr = (
-        'Client ID',     'Type',                $currency . ' Address', 'Amount',
-        'Status',        'DB Transaction date', 'Confirmations',        'Blockchain transaction ID',
-        'DB Payment ID', 'Errors'
+        'Client ID',    'Type',                      $currency . ' Address', 'Amount',
+        'Amount USD',   'Status',                    'DB Transaction date',  'Confirmations',
+        'Transactions', 'Blockchain transaction ID', 'DB Payment ID',        'Errors'
     );
     my $filename = join '-', $start_date->date_yyyymmdd, $end_date->date_yyyymmdd, $currency;
 
@@ -402,16 +318,42 @@ EOF
     print '<table id="recon_table" style="width:100%;" border="1" class="sortable"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
-    for my $db_tran (sort_by { $_->{address} } values %db_by_address) {
+    # sort_by { $_->{address} } values %db_by_address) {
+    for my $db_tran (@recon_list) {
         print '<tr>';
-        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type)};
-        print '<td><a href="$address_uri$_">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
-        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(amount status date)};
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(loginid type)};
+        print '<td><a href="' . $address_uri . $_ . '" target="_blank">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
+        if (defined $db_tran->{amount}) {
+            print '<td style="text-align:right;">'
+                . encode_entities($_)
+                . '</td>'
+                for formatnumber(
+                'amount',
+                $currency,
+                financialrounding(
+                    price => $currency,
+                    $db_tran->{amount})
+                ),
+                '$'
+                . formatnumber(
+                amount => 'USD',
+                financialrounding(
+                    price => 'USD',
+                    in_USD($db_tran->{amount}, $currency)));
+        } else {
+            print '<td colspan="2">&nbsp;</td>';
+        }
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
-        print '<td><a target="_blank" href="' . ($transaction_uri . $_) . '">' . encode_entities(substr $_, 0, 6) . '</td>'
-            for @{$db_tran}{qw(transaction_id)};
-        print '<td>' . encode_entities($db_tran->{payment_id}) . '</td>';
+        print '<td><span style="color: ' . ($_ > 1 ? 'red' : $_ == 1 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
+            for map { $_ // 0 } @{$db_tran}{qw(transactions)};
+        print '<td>'
+            . ($_ ? '<a target="_blank" href="' . ($transaction_uri . $_) . '">' : '')
+            . encode_entities(substr $_, 0, 6)
+            . ($_ ? '</a>' : '') . '</td>'
+            for map { $_ // '' } @{$db_tran}{qw(transaction_id)};
+        print '<td>' . ($db_tran->{payment_id} ? encode_entities($db_tran->{payment_id}) : '&nbsp;') . '</td>';
         print '<td style="color:red;">' . (join '<br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
     }

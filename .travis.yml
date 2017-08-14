@@ -37,6 +37,7 @@ before_install:
       regentmarkets/bom-transaction
       regentmarkets/bom-marketdataautoupdater
       regentmarkets/bom-pricing
+      regentmarkets/bom-cryptocurrency
     - /tmp/travis-scripts/redis.sh
 
 install:
