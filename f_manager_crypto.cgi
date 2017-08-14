@@ -348,7 +348,7 @@ EOF
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
-        print '<td><span style="color: ' . ($_ == 1 ? 'green' : 'red') . '">' . encode_entities($_) . '</td>'
+        print '<td><span style="color: ' . ($_ == 1 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // 0 } @{$db_tran}{qw(transactions)};
         print '<td>'
             . ($_ ? '<a target="_blank" href="' . ($transaction_uri . $_) . '">' : '')
