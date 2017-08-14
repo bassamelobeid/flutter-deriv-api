@@ -245,12 +245,10 @@ sub _append_to_existing_surface {
     my $existing_surface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying})->surface;
 
     foreach my $term (keys %{$existing_surface}) {
-
         my $tenor = $existing_surface->{$term}->{tenor};
-
-        if ($tenor ne 'ON' and $tenor ne '1W') {
-            $new_surface->{$tenor} = $existing_surface->{$term};
-        }
+        next unless $tenor;
+        next if $tenor eq 'ON' or $tenor eq '1W';
+        $new_surface->{$tenor} = $existing_surface->{$term};
     }
 
     return $new_surface;
