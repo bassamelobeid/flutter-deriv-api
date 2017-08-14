@@ -1,12 +1,12 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
-use JSON;
 use Test::Most;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
+
+use await;
 
 my $t = build_wsapi_test({
     debug    => 1,
@@ -14,13 +14,11 @@ my $t = build_wsapi_test({
 });
 my ($req_storage, $res, $start, $end);
 
-$t->send_ok({json => {authorize => 'test'}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::authorize({ authorize => 'test' });
 ok $res->{debug}->{time};
 ok $res->{debug}->{method};
 
-$t->send_ok({json => {ping => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::ping({ ping => 1 });
 ok $res->{debug}->{time};
 ok $res->{debug}->{method};
 
