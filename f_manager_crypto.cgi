@@ -324,7 +324,7 @@ EOF
     # sort_by { $_->{address} } values %db_by_address) {
     for my $db_tran (@recon_list) {
         print '<tr>';
-        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type)};
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(loginid type)};
         print '<td><a href="' . $address_uri . $_ . '" target="_blank">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
         if (defined $db_tran->{amount}) {
             print '<td style="text-align:right;">'
