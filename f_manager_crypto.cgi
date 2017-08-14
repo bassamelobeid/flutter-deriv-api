@@ -31,8 +31,8 @@ BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
 BOM::Backoffice::Auth0::can_access(['Payments']);
 
-my $broker         = request()->broker_code;
-my $staff          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $broker = request()->broker_code;
+my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 # Currency is utilised in Deposit and Withdrawal views accordingly
 # to distinguish information among supported cryptocurrencies.
 my $currency = request()->param('currency') // 'BTC';
@@ -58,7 +58,7 @@ my %va_cmds = (
 );
 # Currently, the controller renders page according to Deposit,
 # Withdrawal and Search actions.
-my $view_action = request()->param('view_action');
+my $view_action = request()->param('view_action') // '';
 # Assign descriptive message if comes from view_type filtering or
 # unless it is already.
 $view_action = $va_cmds{$view_action} // '' unless grep { $va_cmds{$_} eq $view_action } keys %va_cmds;
@@ -280,25 +280,26 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
             q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
             {Slice => {}},
             $currency, $start_date->iso8601, $end_date->iso8601
-        ) or die 'failed to run ctc_bo_transactions_for_reconciliation'
+            )
+            or die 'failed to run ctc_bo_transactions_for_reconciliation'
     );
 
-    if(my $deposits = $rpc_client->listreceivedbyaddress(0)) {
+    if (my $deposits = $rpc_client->listreceivedbyaddress(0)) {
         $recon->from_blockchain_deposits($deposits);
     } else {
         print '<p style="color:red;">Unable to request deposits from RPC</p>';
         code_exit_BO();
     }
-    if(my $withdrawals = $rpc_client->listtransactions('', 1000)) {
+    if (my $withdrawals = $rpc_client->listtransactions('', 10_000)) {
         $recon->from_blockchain_withdrawals($withdrawals);
     } else {
         print '<p style="color:red;">Unable to request withdrawals from RPC</p>';
         code_exit_BO();
-    };
+    }
 
     # Go through the complete list of db/blockchain entries to make sure that
     # things are consistent.
-    $recon->reconcile;
+    my @recon_list = $recon->reconcile;
 
     my @hdr = (
         'Client ID',     'Type',                $currency . ' Address', 'Amount',
@@ -318,10 +319,10 @@ EOF
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
     # sort_by { $_->{address} } values %db_by_address) {
-    for my $db_tran ($recon->entry_list) {
+    for my $db_tran (@recon_list) {
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type)};
-        print '<td><a href="' . $address_uri . $_ . '">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
+        print '<td><a href="' . $address_uri . $_ . '" target="_blank">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
         if(defined $db_tran->{amount}) {
             print '<td>' . encode_entities($_) . '</td>' for financialrounding(
                 price => $currency,
@@ -333,9 +334,12 @@ EOF
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
-        print '<td><a target="_blank" href="' . ($transaction_uri . $_) . '">' . encode_entities(substr $_, 0, 6) . '</td>'
-            for @{$db_tran}{qw(transaction_id)};
-        print '<td>' . encode_entities($db_tran->{payment_id}) . '</td>';
+        print '<td>'
+            . ($_ ? '<a target="_blank" href="' . ($transaction_uri . $_) . '">' : '')
+            . encode_entities(substr $_, 0, 6)
+            . ($_ ? '</a>' : '') . '</td>'
+            for map { $_ // '' } @{$db_tran}{qw(transaction_id)};
+        print '<td>' . ($db_tran->{payment_id} ? encode_entities($db_tran->{payment_id}) : '&nbsp;') . '</td>';
         print '<td style="color:red;">' . (join '<br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
     }
