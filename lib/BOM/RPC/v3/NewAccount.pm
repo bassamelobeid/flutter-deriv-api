@@ -179,10 +179,10 @@ sub new_account_real {
         if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
 
     my $company;
-    if ($args->{residence}) {
+    if (my $residence = $client->residence) {
         my $countries_list = Brands->new(name => request()->brand)->countries_instance->countries_list;
-        $company = $countries_list->{$args->{residence}}->{gaming_company};
-        $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
+        $company = $countries_list->{$residence}->{gaming_company};
+        $company = $countries_list->{$residence}->{financial_company} if (not $company or $company eq 'none');
     }
 
     my $error_map = BOM::RPC::v3::Utility::error_map();
@@ -193,9 +193,8 @@ sub new_account_real {
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'real');
     return $error if $error;
 
-    my $args = $params->{args};
-
-    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $args        = $params->{args};
+    my $broker      = LandingCompany::Registry->new->get($company)->broker_codes->[0];
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -351,9 +350,8 @@ sub new_account_japan {
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'japan');
     return $error if $error;
 
-    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
-
-    my $args = $params->{args};
+    my $broker      = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $args        = $params->{args};
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
