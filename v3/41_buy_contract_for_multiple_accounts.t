@@ -1,7 +1,7 @@
 #!perl
 
 use Test::More;
-use JSON;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
@@ -15,6 +15,9 @@ use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use Date::Utility;
+
+use await;
+
 build_test_R_50_data();
 my $t = build_wsapi_test();
 
@@ -57,16 +60,13 @@ $client->smart_payment(
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 # login
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
-is $authorize->{authorize}->{email},   $email,   'login result: email';
-is $authorize->{authorize}->{loginid}, $loginid, 'login result: loginid';
+my $authorize = $t->await::authorize({ authorize => $token });
+is $authorize->{authorize}{email},   $email,   'login result: email';
+is $authorize->{authorize}{loginid}, $loginid, 'login result: loginid';
 
 my ($price, $proposal_id);
 
 sub get_proposal {
-    #BOM::Platform::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
-
     my %contractParameters = (
         "amount"        => "5",
         "basis"         => "payout",
@@ -76,14 +76,7 @@ sub get_proposal {
         "duration"      => "2",
         "duration_unit" => "m",
     );
-    $t = $t->send_ok({
-            json => {
-                "proposal"  => 1,
-                "subscribe" => 1,
-                %contractParameters
-            }});
-    $t->message_ok;
-    my $proposal = decode_json($t->message->[1]);
+    my $proposal = $t->await::proposal({ proposal  => 1, subscribe => 1, %contractParameters });
     isnt $proposal->{proposal}->{id},        undef, 'got proposal id';
     isnt $proposal->{proposal}->{ask_price}, undef, 'got ask_price';
 
@@ -93,20 +86,6 @@ sub get_proposal {
     return;
 }
 
-sub filter_proposal {
-    ## skip proposal
-    my $res;
-    for (my $i = 0; $i < 100; $i++) {    # prevent infinite loop
-        $t   = $t->message_ok;
-        $res = decode_json($t->message->[1]);
-        # note explain $res;
-        return $res unless $res->{msg_type} eq 'proposal';
-        $proposal    = decode_json($t->message->[1]);
-        $proposal_id = $proposal->{proposal}->{id};
-        $price       = $proposal->{proposal}->{ask_price} || 0;
-    }
-    return $res;
-}
 
 {
     my %t;
@@ -114,13 +93,11 @@ sub filter_proposal {
     sub get_token {
         my @scopes = @_;
         my $cnt    = keys %t;
-        $t = $t->send_ok({
-                json => {
-                    api_token        => 1,
-                    new_token        => 'Test Token ' . $cnt,
-                    new_token_scopes => [@scopes]}})->message_ok;
-        my $res = decode_json($t->message->[1]);
-        # note explain $res;
+        my $res = $t->await::api_token({
+            api_token        => 1,
+            new_token        => 'Test Token ' . $cnt,
+            new_token_scopes => [@scopes]});
+
         for my $x (@{$res->{api_token}->{tokens}}) {
             next if exists $t{$x->{token}};
             $t{$x->{token}} = 1;
@@ -132,24 +109,20 @@ sub filter_proposal {
 
 subtest "1st try: no tokens => invalid input", sub {
     get_proposal;
-    $t = $t->send_ok({
-            json => {
-                buy_contract_for_multiple_accounts => $proposal_id,
-                price                              => $price,
-            }});
-    my $res = filter_proposal;
+    my $res = $t->await::buy_contract_for_multiple_accounts({
+        buy_contract_for_multiple_accounts => $proposal_id,
+        price                              => $price,
+    });
     isa_ok $res->{error}, 'HASH';
     is $res->{error}->{code}, 'InputValidationFailed', 'got InputValidationFailed';
 };
 
 subtest "2nd try: dummy tokens => success", sub {
-    $t = $t->send_ok({
-            json => {
-                buy_contract_for_multiple_accounts => $proposal_id,
-                price                              => $price,
-                tokens                             => ['DUMMY0', 'DUMMY1'],
-            }});
-    my $res = filter_proposal;
+    my $res = $t->await::buy_contract_for_multiple_accounts({
+        buy_contract_for_multiple_accounts => $proposal_id,
+        price                              => $price,
+        tokens                             => ['DUMMY0', 'DUMMY1'],
+    });
     isa_ok $res->{buy_contract_for_multiple_accounts}, 'HASH';
 
     is_deeply $res->{buy_contract_for_multiple_accounts},
@@ -170,9 +143,7 @@ subtest "2nd try: dummy tokens => success", sub {
 
     test_schema('buy_contract_for_multiple_accounts', $res);
 
-    $t = $t->send_ok({json => {forget => $proposal_id}})->message_ok;
-    my $forget = decode_json($t->message->[1]);
-    # note explain $forget;
+    my $forget = $t->await::forget({ forget => $proposal_id });
     is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 };
 
@@ -194,35 +165,24 @@ subtest "3rd try: the real thing => success", sub {
     push @tokens, $token;              # add the login token as well
                                        # note explain \@tokens;
     get_proposal;
-    $t = $t->send_ok({
-            json => {
-                buy_contract_for_multiple_accounts => $proposal_id,
-                price                              => $price,
-                tokens                             => \@tokens,
-            }});
-    my $res = filter_proposal;
+    my $res = $t->await::buy_contract_for_multiple_accounts({
+        buy_contract_for_multiple_accounts => $proposal_id,
+        price                              => $price,
+        tokens                             => \@tokens,
+    });
 
     isa_ok $res->{buy_contract_for_multiple_accounts}, 'HASH';
 
-    # note explain $res;
     test_schema('buy_contract_for_multiple_accounts', $res);
 
     $tokens_for_sell    = [map { $_->{token} } grep     { $_->{shortcode} } @{$res->{buy_contract_for_multiple_accounts}{result}}];
     $shortcode_for_sell = [map { $_->{shortcode} } grep { $_->{shortcode} } @{$res->{buy_contract_for_multiple_accounts}{result}}]->[0];
 
-    $t = $t->send_ok({json => {forget => $proposal_id}})->message_ok;
-    my $forget = decode_json($t->message->[1]);
-    # note explain $forget;
+    my $forget = $t->await::forget({ forget => $proposal_id });
     is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 
     # checking statement
-    $t = $t->send_ok({
-            json => {
-                statement => 1,
-                limit     => 3
-            }});
-    my $stmt = filter_proposal;
-    # note explain $stmt;
+    my $stmt = $t->await::statement({ statement => 1, limit => 3});
 
     $trx_ids = +{map { $_->{transaction_id} => 1 } @{$stmt->{statement}->{transactions}}};
 
@@ -242,15 +202,12 @@ subtest "3rd try: the real thing => success", sub {
 sleep 1;
 
 subtest "try to sell: dummy tokens => success", sub {
-    $t = $t->send_ok({
-            json => {
-                sell_contract_for_multiple_accounts => 1,
-                shortcode                           => $shortcode_for_sell,
-                price                               => 2.42,
-                tokens                              => ['DUMMY0', 'DUMMY1'],
-            }});
-    $t = $t->message_ok;
-    my $res = decode_json($t->message->[1]);
+    my $res = $t->await::sell_contract_for_multiple_accounts({
+        sell_contract_for_multiple_accounts => 1,
+        shortcode                           => $shortcode_for_sell,
+        price                               => 2.42,
+        tokens                              => ['DUMMY0', 'DUMMY1'],
+    });
     note explain $res;
     isa_ok $res->{sell_contract_for_multiple_accounts}, 'HASH';
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}, 'ARRAY';
@@ -274,16 +231,13 @@ subtest "try to sell: dummy tokens => success", sub {
 };
 
 subtest "sell_contract_for_multiple_accounts => successful", sub {
-    $t = $t->send_ok({
-            json => {
-                sell_contract_for_multiple_accounts => 1,
-                shortcode                           => $shortcode_for_sell,
-                price                               => 2.42,
-                tokens                              => $tokens_for_sell,
-            }});
-    $t   = $t->message_ok;
-    $res = decode_json($t->message->[1]);
-
+    $res = $t->await::sell_contract_for_multiple_accounts({
+        sell_contract_for_multiple_accounts => 1,
+        shortcode                           => $shortcode_for_sell,
+        price                               => 2.42,
+        tokens                              => $tokens_for_sell,
+    });
+note explain $res;
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}, 'ARRAY';
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}->[0], 'HASH';
     ok scalar @{$res->{sell_contract_for_multiple_accounts}{result}} == 3, 'check res count';

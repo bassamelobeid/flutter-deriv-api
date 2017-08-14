@@ -9,6 +9,7 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use File::Temp;
 use Date::Utility;
+use await;
 
 use BOM::Platform::RedisReplicated;
 use BOM::Test::Data::Utility::FeedTestDatabase;
@@ -44,97 +45,37 @@ initialize_realtime_ticks_db();
 
     my $t = build_wsapi_test();
 
-# both these subscribtion should work as req_id is different
-    $t->send_ok({json => {ticks => 'R_50'}});
-    $t->send_ok({
-            json => {
-                ticks  => 'R_50',
-                req_id => 1
-            }});
-    my $pid = fork;
-    die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
-    unless ($pid) {
-        # disable end test of Test::Warnings in child process
-        Test::Warnings->import(':no_end_test');
 
-        sleep 1;
-        _create_tick(700, 'R_50');
-        sleep 1;
-        exit;
+    sub _check_ticks {
+        my $type = shift;
+        my $msg  = shift;
+
+        # both these subscribtion should work as req_id is different
+        my $pid = fork;
+        die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
+        unless ($pid) {
+            # disable end test of Test::Warnings in child process
+            Test::Warnings->import(':no_end_test');
+            do { sleep 1; _create_tick(700, 'R_50');} for 0..1;
+            exit;
+        }
+        $type eq 'ticks' ? $t->await::tick($msg) : $t->await::ohlc($msg);
+        $msg->{req_id} = 1;
+        $type eq 'ticks' ? $t->await::tick($msg) : $t->await::ohlc($msg);
+
+        my $res = $t->await::forget_all({ forget_all => $type });
+        ok $res->{forget_all}, "Manage to forget_all: ticks" or diag explain $res;
+        is scalar(@{$res->{forget_all}}), 2, "Forget the relevant tick channel";
     }
 
-    my ($res, $ticks, @ids);
-    for (my $i = 0; $i < 2; $i++) {
-        $t->message_ok;
-        $res = decode_json($t->message->[1]);
-        push @ids, $res->{tick}->{id};
-        $ticks->{$res->{tick}->{symbol}}++;
-    }
-
-    $t->send_ok({json => {forget_all => 'ticks'}});
-    $t   = $t->message_ok;
-    $res = decode_json($t->message->[1]);
-    ok $res->{forget_all}, "Manage to forget_all: ticks" or diag explain $res;
-    is scalar(@{$res->{forget_all}}), 2, "Forget the relevant tick channel";
-
-    @ids = sort @ids;
-    my @forget_ids = sort @{$res->{forget_all}};
-    cmp_bag(\@ids, \@forget_ids, 'correct forget ids for ticks');
-
-    $t->send_ok({
-            json => {
-                ticks_history => 'R_50',
-                end           => "latest",
-                count         => 10,
-                style         => "candles",
-                subscribe     => 1
-            }});
-
-    $t->send_ok({
-            json => {
-                ticks_history => 'R_50',
-                end           => "latest",
-                count         => 10,
-                style         => "candles",
-                subscribe     => 1,
-                req_id        => 1
-            }});
-
-    $pid = fork;
-    die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
-    unless ($pid) {
-        # disable end test of Test::Warnings in child process
-        Test::Warnings->import(':no_end_test');
-
-        sleep 1;
-        _create_tick(701, 'R_50');
-        sleep 1;
-        exit;
-    }
-
-    for (my $i = 0; $i < 2; $i++) {
-        $t->message_ok;
-        $res = decode_json($t->message->[1]);
-        is $res->{msg_type}, "candles", 'correct message type';
-    }
-
-    @ids = ();
-    for (my $j = 0; $j < 2; $j++) {
-        $t->message_ok;
-        $res = decode_json($t->message->[1]);
-        push @ids, $res->{ohlc}->{id};
-        is $res->{msg_type}, "ohlc", 'correct message type';
-    }
-
-    $t->send_ok({json => {forget_all => 'candles'}});
-    $t   = $t->message_ok;
-    $res = JSON::from_json($t->message->[1]);
-    ok $res->{forget_all}, "Manage to forget_all: candles" or diag explain $res;
-    is scalar(@{$res->{forget_all}}), 2, "Forget the relevant candle feed channel";
-    test_schema('forget_all', $res);
-
-    @forget_ids = sort @{$res->{forget_all}};
-    cmp_bag(\@ids, \@forget_ids, 'correct forget ids for ticks history');
+    _check_ticks('ticks',{ ticks => 'R_50' });
+    _check_ticks('candles',{
+        ticks_history => 'R_50',
+        end           => "latest",
+        count         => 10,
+        style         => "candles",
+        subscribe     => 1
+    });
 
     $t->finish_ok;
 }

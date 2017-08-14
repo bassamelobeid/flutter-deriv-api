@@ -1,13 +1,13 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
-use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use Test::MockModule;
+
+use await;
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -35,8 +35,7 @@ $user->save;
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
+my $authorize = $t->await::authorize({ authorize => $token });
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
 
@@ -53,108 +52,54 @@ $fake_rpc_client->mock('call', sub { shift; $call_params = $_[1]->{params}; retu
 my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
 $module->mock('new', sub { return $fake_rpc_client });
 
-$t = $t->send_ok({json => {landing_company => 'de'}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::landing_company({ landing_company => 'de' });
 is($res->{msg_type}, 'landing_company');
 ok(ref $res->{landing_company});
 
-$t = $t->send_ok({json => {landing_company_details => 'costarica'}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::landing_company_details({ landing_company_details => 'costarica' });
 is($res->{msg_type}, 'landing_company_details');
 ok(ref $res->{landing_company_details});
 
-$t = $t->send_ok({
-        json => {
-            statement => 1,
-            limit     => 54
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'statement');
+$res = $t->await::statement({ statement => 1, limit => 54 });
 ok(ref $res->{statement});
 is $call_params->{token}, $token;
 
-$t = $t->send_ok({
-        json => {
-            profit_table => 1,
-            limit        => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'profit_table');
+$res = $t->await::profit_table({ profit_table => 1, limit => 1, });
 ok(ref $res->{profit_table});
 is $call_params->{token}, $token;
 
-$t = $t->send_ok({
-        json => {
-            get_settings => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'get_settings');
+$res = $t->await::get_settings({ get_settings => 1 });
 ok(ref $res->{get_settings});
 is $call_params->{token},    $token;
 is $call_params->{language}, 'EN';
 
-$t = $t->send_ok({
-        json => {
-            get_self_exclusion => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'get_self_exclusion');
+$res = $t->await::get_self_exclusion({ get_self_exclusion => 1 });
 ok(ref $res->{get_self_exclusion});
 is $call_params->{token}, $token;
 
-$t = $t->send_ok({
-        json => {
-            balance   => 1,
-            subscribe => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'balance');
+$res = $t->await::balance({ balance => 1, subscribe => 1, });
 ok(ref $res->{balance});
 ok($res->{balance}->{id});
 is $call_params->{token}, $token;
 
-$t = $t->send_ok({
-        json => {
-            api_token => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'api_token');
+$res = $t->await::api_token({ api_token => 1 });
 ok(ref $res->{api_token});
 is $call_params->{token}, $token;
 ok $call_params->{account_id};
 
-$t = $t->send_ok({
-        json => {
-            get_financial_assessment => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'get_financial_assessment');
+$res = $t->await::get_financial_assessment({ get_financial_assessment => 1 });
 ok(ref $res->{get_financial_assessment});
 is $call_params->{token}, $token;
 
-$t = $t->send_ok({
-        json => {
-            reality_check => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'reality_check');
+$res = $t->await::reality_check({ reality_check => 1 });
 ok(ref $res->{reality_check});
 is $call_params->{token}, $token;
-
-$t = $t->send_ok({
-        json => {
-            "set_financial_assessment" => 1,
-            %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()},
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'set_financial_assessment');
+$res = $t->await::set_financial_assessment({ %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}, set_financial_assessment => 1});
 ok(ref $res->{set_financial_assessment});
 is $call_params->{token}, $token;
 
 $rpc_response = [qw/ test /];
-$t            = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
-$res          = decode_json($t->message->[1]);
-is($res->{msg_type}, 'payout_currencies');
+$res = $t->await::payout_currencies({ payout_currencies => 1 });
 ok(ref $res->{payout_currencies});
 is $call_params->{token}, $token;
 
@@ -165,12 +110,7 @@ $rpc_response = {
             environment => 's',
             status      => 1
         }]};
-$t = $t->send_ok({
-        json => {
-            login_history => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'login_history');
+$res = $t->await::login_history({ login_history => 1 });
 ok(ref $res->{login_history});
 is $call_params->{token}, $token;
 
@@ -179,61 +119,26 @@ is $call_params->{token}, $token;
     risk_classification           => 1,
     prompt_client_to_authenticate => '1',
 );
-$t = $t->send_ok({
-        json => {
-            get_account_status => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'get_account_status');
+$res = $t->await::get_account_status({ get_account_status => 1 });
 ok(ref $res->{get_account_status});
 is $call_params->{token}, $token;
 
 %$rpc_response = (status => 1);
-$t = $t->send_ok({
-        json => {
-            change_password => 1,
-            old_password    => '123456',
-            new_password    => '654321',
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type},        'change_password');
+$res = $t->await::change_password({ change_password => 1, old_password => '123456', new_password => '654321' });
 is($res->{change_password}, 1);
 is $call_params->{token}, $token;
 ok $call_params->{client_ip};
 ok $call_params->{token_type};
 
-$t = $t->send_ok({
-        json => {
-            cashier_password => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type},         'cashier_password');
+$res = $t->await::cashier_password({ cashier_password => 1 });
 is($res->{cashier_password}, 1);
 is $call_params->{token}, $token;
 ok $call_params->{client_ip};
 
-$t = $t->send_ok({
-        json => {
-            reset_password    => 1,
-            verification_code => '123456789012345',
-            new_password      => '123456',
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type},       'reset_password');
+$res = $t->await::reset_password({ reset_password => 1, verification_code => '123456789012345', new_password => '123456' });
 is($res->{reset_password}, 1);
 
-$t = $t->send_ok({
-        json => {
-            "set_settings"     => 1,
-            "address_line_1"   => "Test Address Line 1",
-            "address_line_2"   => "Test Address Line 2",
-            "address_city"     => "Test City",
-            "address_state"    => "01",
-            "address_postcode" => "123456",
-            "phone"            => "1234567890"
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type},         'set_settings');
+$res = $t->await::set_settings({ set_settings => 1, address_line_1 => "Test Address Line 1", address_line_2 => "Test Address Line 2", address_city => "Test City", address_state => "01", address_postcode => "123456", phone => "1234567890" });
 is($res->{set_settings},     1);
 is($call_params->{language}, 'EN');
 is($call_params->{token},    $token);
@@ -241,193 +146,43 @@ ok($call_params->{server_name});
 ok($call_params->{client_ip});
 ok($call_params->{user_agent});
 
-$t = $t->send_ok({
-        json => {
-            set_self_exclusion => 1,
-            max_balance        => 9999,
-            max_turnover       => 1000,
-            max_open_bets      => 100,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type},           'set_self_exclusion');
-is($res->{set_self_exclusion}, 1);
-is($call_params->{token},      $token);
+$res = $t->await::set_self_exclusion({ set_self_exclusion => 1, max_balance => 9999, max_turnover => 1000, max_open_bets => 100 });
 
-$t = $t->send_ok({
-        json => {
-            tnc_approval => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type},      'tnc_approval');
+is($res->{set_self_exclusion}, 1);
+is($call_params->{token}, $token);
+
+$res = $t->await::tnc_approval({ tnc_approval => 1 });
 is($res->{tnc_approval},  1);
 is($call_params->{token}, $token);
 
-$t = $t->send_ok({
-        json => {
-            set_account_currency => 'EUR',
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type},             'set_account_currency');
+$res = $t->await::set_account_currency({ set_account_currency => 'EUR' });
 is($res->{set_account_currency}, 1);
 is($call_params->{token},        $token);
 is($call_params->{currency},     'EUR');
 
 # Test error messages
 $rpc_response = {error => {code => 'error'}};
-$t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'payout_currencies');
-
-$t = $t->send_ok({json => {landing_company => 'de'}})->message_ok;
-$res = decode_json($t->message->[1]);
-
-$t = $t->send_ok({json => {landing_company_details => 'costarica'}})->message_ok;
-$res = decode_json($t->message->[1]);
-
-$t = $t->send_ok({
-        json => {
-            statement => 1,
-            limit     => 54
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'statement');
-
-$t = $t->send_ok({
-        json => {
-            profit_table => 1,
-            limit        => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'profit_table');
-
-$t = $t->send_ok({
-        json => {
-            get_settings => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'get_settings');
-
-$t = $t->send_ok({
-        json => {
-            get_self_exclusion => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'get_self_exclusion');
-
-$t = $t->send_ok({
-        json => {
-            balance   => 1,
-            subscribe => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'balance');
-
-$t = $t->send_ok({
-        json => {
-            api_token => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'api_token');
-
-$t = $t->send_ok({
-        json => {
-            get_financial_assessment => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'get_financial_assessment');
-
-$t = $t->send_ok({
-        json => {
-            reality_check => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'reality_check');
-
-$t = $t->send_ok({
-        json => {
-            "set_financial_assessment" => 1,
-            "account_opening_reason"   => "Speculative",
-            %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}
-        },
-    })->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'set_financial_assessment');
-
-$t = $t->send_ok({
-        json => {
-            login_history => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'login_history');
-
-$t = $t->send_ok({
-        json => {
-            get_account_status => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'get_account_status');
-
-$t = $t->send_ok({
-        json => {
-            change_password => 1,
-            old_password    => '123456',
-            new_password    => '654321',
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'change_password');
-
-$t = $t->send_ok({
-        json => {
-            cashier_password => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'cashier_password');
-
-$t = $t->send_ok({
-        json => {
-            reset_password    => 1,
-            verification_code => '123456789012345',
-            new_password      => '123456',
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'reset_password');
-
-$t = $t->send_ok({
-        json => {
-            "set_settings"     => 1,
-            "address_line_1"   => "Test Address Line 1",
-            "address_line_2"   => "Test Address Line 2",
-            "address_city"     => "Test City",
-            "address_state"    => "01",
-            "address_postcode" => "123456",
-            "phone"            => "1234567890"
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'set_settings');
-
-$t = $t->send_ok({
-        json => {
-            set_self_exclusion => 1,
-            max_balance        => 9999,
-            max_turnover       => 1000,
-            max_open_bets      => 100,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'set_self_exclusion');
-
-$t = $t->send_ok({
-        json => {
-            tnc_approval => 1,
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'tnc_approval');
-
-$t = $t->send_ok({
-        json => {
-            set_account_currency => 'EUR',
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'set_account_currency');
+$t->await::payout_currencies({ payout_currencies => 1 });
+$t->await::landing_company({ landing_company => 'de' });
+$t->await::landing_company_details({ landing_company_details => 'costarica' });
+$t->await::statement({ statement => 1, limit => 54 });
+$t->await::profit_table({ profit_table => 1, limit => 1 });
+$t->await::get_settings({ get_settings => 1 });
+$t->await::get_self_exclusion({ get_self_exclusion => 1 });
+$t->await::balance({ balance => 1, subscribe => 1 });
+$t->await::api_token({ api_token => 1 });
+$t->await::get_financial_assessment({ get_financial_assessment => 1 });
+$t->await::reality_check({ reality_check => 1 });
+$t->await::set_financial_assessment({ set_financial_assessment => 1, account_opening_reason => "Speculative", %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()} });
+$t->await::login_history({ login_history => 1 });
+$t->await::get_account_status({ get_account_status => 1 });
+$t->await::change_password({ change_password => 1, old_password => '123456', new_password => '654321' });
+$t->await::cashier_password({ cashier_password => 1 });
+$t->await::reset_password({ reset_password => 1, verification_code => '123456789012345', new_password => '123456' });
+$t->await::set_settings({ set_settings => 1, address_line_1 => "Test Address Line 1", address_line_2 => "Test Address Line 2", address_city => "Test City", address_state => "01", address_postcode => "123456", phone => "1234567890" });
+$t->await::set_self_exclusion({ set_self_exclusion => 1, max_balance => 9999, max_turnover => 1000, max_open_bets => 100 });
+$t->await::tnc_approval({ tnc_approval => 1 });
+$t->await::set_account_currency({ set_account_currency => 'EUR' });
 
 $t->finish_ok;
 

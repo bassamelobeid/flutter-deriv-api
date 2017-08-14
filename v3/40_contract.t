@@ -1,7 +1,7 @@
 #!perl
 
 use Test::Most;
-use JSON;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_mocked_client/;
@@ -15,6 +15,8 @@ use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use Date::Utility;
+use await;
+
 build_test_R_50_data();
 my $t = build_wsapi_test();
 
@@ -56,8 +58,7 @@ $client->smart_payment(
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
+my $authorize = $t->await::authorize({ authorize => $token });
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
 
@@ -71,117 +72,64 @@ my %contractParameters = (
     "duration_unit" => "m",
 );
 
-$t = $t->send_ok({
-        json => {
-            "proposal" => 1,
-            %contractParameters
-        }});
-$t->message_ok;
-my $proposal = decode_json($t->message->[1]);
+my $proposal = $t->await::proposal({ proposal => 1, %contractParameters });
 ok $proposal->{proposal}->{id};
 ok $proposal->{proposal}->{ask_price};
 test_schema('proposal', $proposal);
 
 my $id1 = $proposal->{proposal}->{id};
-
-$t = $t->send_ok({
-        json => {
-            "proposal" => 1,
-            %contractParameters
-        }});
-$t->message_ok;
-$proposal = decode_json($t->message->[1]);
+$proposal = $t->await::proposal({ proposal => 1, %contractParameters });
 ok $proposal->{proposal}->{id};
 cmp_ok $id1, 'eq', $proposal->{proposal}->{id}, 'ids are the same for same parameters';
 
 $contractParameters{amount}++;
-$t = $t->send_ok({
-        json => {
-            "proposal" => 1,
-            %contractParameters
-        }});
-$t->message_ok;
-$proposal = decode_json($t->message->[1]);
+$proposal = $t->await::proposal({ proposal => 1, %contractParameters });
 ok $proposal->{proposal}->{id};
 cmp_ok $id1, 'ne', $proposal->{proposal}->{id}, 'ids are not the same if parameters are different';
 $contractParameters{amount}--;
 
-$t = $t->send_ok({
-        json => {
-            "proposal"  => 1,
-            "subscribe" => 1,
-            %contractParameters
-        }});
-$t->message_ok;
-$proposal = decode_json($t->message->[1]);
+$proposal = $t->await::proposal({ proposal => 1, subscribe => 1, %contractParameters });
+
 ok $proposal->{proposal}->{id};
 ok $proposal->{proposal}->{ask_price};
 test_schema('proposal', $proposal);
 
-$t = $t->send_ok({
-        json => {
-            "proposal"  => 1,
-            "subscribe" => 1,
-            %contractParameters
-        }})->message_ok;
-my $err_proposal = decode_json($t->message->[1]);
+my $err_proposal = $t->await::proposal({ proposal => 1, subscribe => 1, %contractParameters });
+note explain $err_proposal;
 cmp_ok $err_proposal->{msg_type},, 'eq', 'proposal';
 cmp_ok $err_proposal->{error}->{code},, 'eq', 'AlreadySubscribed', 'AlreadySubscribed error expected';
 
 sleep 1;
-$t = $t->send_ok({
-        json => {
-            buy   => 1,
-            price => 1,
-        }})->message_ok;
-my $buy_error = decode_json($t->message->[1]);
+my $buy_error = $t->await::buy({ buy   => 1, price => 1 });
 is $buy_error->{msg_type}, 'buy';
 is $buy_error->{error}->{code}, 'InvalidContractProposal';
 
 my $ask_price = $proposal->{proposal}->{ask_price};
-$t = $t->send_ok({
-        json => {
-            buy   => $proposal->{proposal}->{id},
-            price => $ask_price || 0
-        }});
+my $buy_res = $t->await::buy({ buy   => $proposal->{proposal}->{id}, price => $ask_price || 0 });
 
-## skip proposal until we meet buy
-while (1) {
-    $t = $t->message_ok;
-    my $res = decode_json($t->message->[1]);
-    note explain $res;
-    next if $res->{msg_type} eq 'proposal';
+note explain $buy_res;
+next if $buy_res->{msg_type} eq 'proposal';
 
-    ok $res->{buy};
-    ok $res->{buy}->{contract_id};
-    ok $res->{buy}->{purchase_time};
+ok $buy_res->{buy};
+ok $buy_res->{buy}->{contract_id};
+ok $buy_res->{buy}->{purchase_time};
 
-    test_schema('buy', $res);
-    last;
-}
+test_schema('buy', $buy_res);
 
-$t = $t->send_ok({json => {forget => $proposal->{proposal}->{id}}})->message_ok;
-my $forget = decode_json($t->message->[1]);
+my $forget = $t->await::forget({ forget => $proposal->{proposal}->{id} });
 note explain $forget;
 is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 
 my (undef, $call_params) = call_mocked_client($t, {portfolio => 1});
 is $call_params->{token}, $token;
 
-$t = $t->send_ok({json => {portfolio => 1}})->message_ok;
-my $portfolio = decode_json($t->message->[1]);
+my $portfolio = $t->await::portfolio({ portfolio => 1 });
 is $portfolio->{msg_type}, 'portfolio';
 ok $portfolio->{portfolio}->{contracts};
 ok $portfolio->{portfolio}->{contracts}->[0]->{contract_id};
 test_schema('portfolio', $portfolio);
 
-$t = $t->send_ok({
-        json => {
-            proposal_open_contract => 1,
-            contract_id            => $portfolio->{portfolio}->{contracts}->[0]->{contract_id},
-        }});
-$t = $t->message_ok;
-my $res = decode_json($t->message->[1]);
+my $res = $t->await::proposal_open_contract({ proposal_open_contract => 1, contract_id            => $portfolio->{portfolio}->{contracts}->[0]->{contract_id} });
 
 if (exists $res->{proposal_open_contract}) {
     ok $res->{proposal_open_contract}->{contract_id};
@@ -205,31 +153,22 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => '963'
 });
 
-$t = $t->send_ok({
-        json => {
-            buy        => 1,
-            price      => $ask_price || 0,
-            parameters => \%contractParameters,
-        },
-    });
+$res = $t->await::buy({
+    buy        => 1,
+    price      => $ask_price || 0,
+    parameters => \%contractParameters,
+});
+
 my $buy_txn_id = 0;
 my $contract_id;
 ## skip proposal until we meet buy
-while (1) {
-    $t = $t->message_ok;
-    my $res = decode_json($t->message->[1]);
-    note explain $res;
-    next if $res->{msg_type} eq 'proposal';
-    # note explain $res;
-    is $res->{msg_type}, 'buy';
-    ok $res->{buy};
-    ok($contract_id = $res->{buy}->{contract_id});
-    ok($buy_txn_id  = $res->{buy}->{transaction_id});
-    ok $res->{buy}->{purchase_time};
+is $res->{msg_type}, 'buy';
+ok $res->{buy};
+ok($contract_id = $res->{buy}->{contract_id});
+ok($buy_txn_id  = $res->{buy}->{transaction_id});
+ok $res->{buy}->{purchase_time};
 
-    test_schema('buy', $res);
-    last;
-}
+test_schema('buy', $res);
 
 (undef, $call_params) = call_mocked_client(
     $t,
@@ -239,25 +178,16 @@ while (1) {
     });
 is $call_params->{token}, $token;
 sleep 1;
-$t = $t->send_ok({
-        json => {
-            sell  => $contract_id,
-            price => 0
-        }});
+$res = $t->await::sell({
+    sell  => $contract_id,
+    price => 0
+});
+note explain $res;
+ok $res->{sell};
+ok($res->{sell}{contract_id} && $res->{sell}{contract_id} == $contract_id, "check contract ID");
+ok($res->{sell}{reference_id} == $buy_txn_id, "check buy transaction ID");
+test_schema('sell', $res);
 
-while (1) {
-    $t = $t->message_ok;
-    my $res = decode_json($t->message->[1]);
-    note explain $res;
-    next if $res->{msg_type} ne 'sell';
-    #note explain $res;
-    is $res->{msg_type}, 'sell';
-    ok $res->{sell};
-    ok($res->{sell}{contract_id} && $res->{sell}{contract_id} == $contract_id, "check contract ID");
-    ok($res->{sell}{reference_id} == $buy_txn_id, "check buy transaction ID");
-    test_schema('sell', $res);
-    last;
-}
 sleep 1;
 my %notouch = (
     "amount"        => "100",
@@ -270,31 +200,19 @@ my %notouch = (
     "barrier"       => "+1.574"
 );
 
-$t = $t->send_ok({
-        json => {
-            "proposal" => 1,
-            %notouch
-        }});
-$t->message_ok;
-my $proposal_1         = decode_json($t->message->[1]);
+my $proposal_1 = $t->await::proposal({ proposal => 1, %notouch });
 my $proposal_id        = $proposal_1->{proposal}->{id};
 my $proposal_ask_price = $proposal_1->{proposal}->{ask_price};
 my $trigger_price      = $proposal_ask_price - 2;
-$t = $t->send_ok({
-        json => {
-            buy   => $proposal_id,
-            price => $trigger_price,
-        }});
+my $response = $t->await::buy({ buy => $proposal_id, price => $trigger_price });
 
-$t = $t->message_ok;
-my $response = decode_json($t->message->[1]);
 like(
     $response->{error}{message},
     qr/The underlying market has moved too much since you priced the contract. The contract price has changed/,
     'price moved error'
 );
 
-$t = $t->send_ok({json => {forget => $proposal_1->{proposal}->{id}}})->message_ok;
+$t->await::forget({ forget => $proposal_1->{proposal}->{id} });
 
 my %notouch_2 = (
     "amount"        => "1000",
@@ -307,22 +225,10 @@ my %notouch_2 = (
     "barrier"       => "+25"
 );
 
-$t = $t->send_ok({
-        json => {
-            "proposal" => 1,
-            %notouch_2
-        }});
-$t->message_ok;
-$proposal_1  = decode_json($t->message->[1]);
+my $proposal_1 = $t->await::proposal({ proposal => 1, %notouch_2 });
 $proposal_id = $proposal_1->{proposal}->{id};
-$t           = $t->send_ok({
-        json => {
-            buy   => $proposal_id,
-            price => 100000,
-        }});
+$res = $t->await::buy({ buy   => $proposal_id, price => 100000 });
 
-$t->message_ok;
-$res = decode_json($t->message->[1]);
 is $res->{buy}->{buy_price}, '1000.00';
 
 $t->finish_ok;
