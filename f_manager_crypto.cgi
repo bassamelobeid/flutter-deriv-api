@@ -302,7 +302,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     my @recon_list = $recon->reconcile;
 
     my @hdr = (
-        'Client ID',     'Type',                $currency . ' Address', 'Amount',
+        'Client ID',     'Type',                $currency . ' Address', 'Amount', 'Amount USD',
         'Status',        'DB Transaction date', 'Confirmations',        'Blockchain transaction ID',
         'DB Payment ID', 'Errors'
     );
@@ -324,10 +324,13 @@ EOF
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type)};
         print '<td><a href="' . $address_uri . $_ . '" target="_blank">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
         if(defined $db_tran->{amount}) {
-            print '<td>' . encode_entities($_) . '</td>' for financialrounding(
+            print '<td style="text-align:right;">' . encode_entities($_) . '</td>' for formatnumber('amount', $currency, financialrounding(
                 price => $currency,
                 $db_tran->{amount}
-            ), in_USD($db_tran->{amount}, $currency);
+            )), formatnumber(amount => 'USD', financialrounding(
+                price => 'USD',
+                in_USD($db_tran->{amount}, $currency)
+            ));
         } else {
             print '<td colspan="2">&nbsp;</td>';
         }
