@@ -84,7 +84,6 @@ my $rates_file_last_load = 0;
 my $rates_file_content;
 
 sub site_limits {
-
     my $now = time;
     if ($now - $rates_file_last_load > RATES_FILE_CACHE_TIME) {
         $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
@@ -238,6 +237,13 @@ sub error_map {
         'InvalidDateOfBirth'         => localize('Date of birth is invalid'),
         'InsufficientAccountDetails' => localize('Please provide complete details for account opening.')};
 }
+
+=head2 filter_siblings_by_landing_company
+
+This returns sibling per landing company i.e
+filters out different landing company siblings
+
+=cut
 
 sub filter_siblings_by_landing_company {
     my ($landing_company_name, $siblings) = @_;

@@ -1311,14 +1311,14 @@ sub set_account_currency {
     # bail out if default account is already set
     return {status => 0} if $client->default_account;
 
-    # for real client and not omnibus and not sub account
+    # for real client and not for omnibus or sub account
     # check if we are allowed to set currency
     # i.e if we have exhausted available options
     # - client can have single fiat currency
     # - client can have multiple crypto currency
     #   but only with single type of crypto currency
     #   for example BTC, ETH is allowed but BTC BTC is not
-    unless ($client->is_virtual or ($client->allow_omnibus and $client->sub_account_of)) {
+    if (not $client->is_virtual and not($client->allow_omnibus or $client->sub_account_of)) {
         my $error = BOM::RPC::v3::Utility::validate_set_currency($client, $currency);
         return $error if $error;
     }
