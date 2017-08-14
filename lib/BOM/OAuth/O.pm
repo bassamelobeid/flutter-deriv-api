@@ -11,6 +11,7 @@ use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any firstval);
 use HTML::Entities;
 use Format::Util::Strings qw( defang );
+use Geo::IP;
 
 use Client::Account;
 use LandingCompany::Registry;
@@ -27,6 +28,11 @@ sub _oauth_model {
 
 sub authorize {
     my $c = shift;
+
+    my $g   = Geo::IP->new;
+    my $_ip = $c->{stash}->{request}->{_ip};
+    my $cc  = $g->country_code_by_addr($_ip);
+    warn 'CC::', $cc;
 
     # APP_ID verification logic
     my ($app_id, $state) = map { defang($c->param($_)) // undef } qw/ app_id state /;
@@ -50,14 +56,20 @@ sub authorize {
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
     } elsif ($c->req->method eq 'POST' and $c->session('_is_logined')) {
-        # get loginid from Mojo Session
+        # Get loginid from Mojo Session
         $client = $c->_get_client;
     } elsif ($c->session('_oneall_user_id')) {
-        # from Oneall Social Login
-        my $oneall_user_id = $c->session('_oneall_user_id');
-        $client = $c->_login($app, $oneall_user_id) or return;
-        $c->session('_is_logined', 1);
-        $c->session('_loginid',    $client->loginid);
+        my $geo          = Geo::IP->new;
+        my $request_ip   = $c->{stash}->{request}->{_ip};
+        my $country_code = $geo->country_code_by_addr($request_ip);
+        # Prevent Japan IP access social login feature.
+        if ($country_code ne 'JP') {
+            # Get client from Oneall Social Login.
+            my $oneall_user_id = $c->session('_oneall_user_id');
+            $client = $c->_login($app, $oneall_user_id) or return;
+            $c->session('_is_logined', 1);
+            $c->session('_loginid',    $client->loginid);
+        }
     }
 
     my $brand_name = $c->stash('brand')->name;

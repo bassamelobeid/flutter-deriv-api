@@ -37,7 +37,7 @@ sub callback {
     # wrong pub/private keys might be a reason of bad status code
     my $status_code = $data->{response}->{request}->{status}->{code};
     if ($status_code != 200) {
-        $c->session(_oneall_error => localize('Failed to get user identity.'));
+        $c->session(_oneall_error => localize('Failed to get user identity. Social signin service is currently unavailable.'));
         return $c->redirect_to($redirect_uri);
     }
 
@@ -46,8 +46,10 @@ sub callback {
     my $user_connect  = BOM::Database::Model::UserConnect->new;
     my $user_id       = $user_connect->get_user_id_by_connect($provider_data);
 
-    # create virtual client if user not found
-    # consequently initialize user_id
+    # Create virtual client if user not found
+    # consequently initialize user_id and link account to social login.
+    # Prevent clients in Japan create new account via social signin feature.
+    # TODO deny Japan IP
     unless ($user_id) {
         my $email = _get_email($provider_data);
         my $user  = try {
