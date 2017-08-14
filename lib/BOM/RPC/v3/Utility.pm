@@ -284,6 +284,10 @@ sub validate_make_new_account {
             message_to_client => localize('Please set your country of residence.')}) unless $residence;
 
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    create_error({
+            code              => 'InvalidResidence',
+            message_to_client => error_map()->{'invalid residence'}}) if ($countries_instance->restricted_country($residence));
+
     my ($gaming_company, $financial_company) =
         ($countries_instance->gaming_company_for_country($residence), $countries_instance->financial_company_for_country($residence));
 
