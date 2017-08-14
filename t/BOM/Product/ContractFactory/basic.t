@@ -7,6 +7,7 @@ use Test::Exception;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
+use Try::Tiny;
 
 use Postgres::FeedDB::Spot::Tick;
 use LandingCompany::Offerings qw(reinitialise_offerings);
@@ -59,8 +60,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 subtest 'produce_contract' => sub {
-    plan tests => 3;
-
     my $contract_params = {
         bet_type   => 'PUT',
         duration   => '4t',
@@ -69,18 +68,34 @@ subtest 'produce_contract' => sub {
         currency   => 'USD',
         barrier    => 108.26,
     };
-    my $contract;
+
     lives_ok {
-        $contract = produce_contract($contract_params);
+        my $contract = produce_contract($contract_params);
+        isa_ok($contract, 'BOM::Product::Contract');
     }
     'produce a contract';
+};
 
-    isa_ok($contract, 'BOM::Product::Contract');
+subtest 'produce_contract exception' => sub {
+    my $contract_params = {
+        bet_type   => 'PUT',
+        duration   => '4t',
+        underlying => 'frxUSDJPY',
+        payout     => 1,
+        currency   => 'USD',
+        barrier    => 108.26,
+    };
 
-    note "You don't really want to reuse these hash-refs, the factory will change them.";
-    delete $contract_params->{bet_type};
-    throws_ok { $contract = produce_contract($contract_params) } qr/bet_type.*required/, 'Improper construction arguments bubble up.';
-
+    foreach my $undef ({bet_type => undef}, {duration => undef}, {underlying => undef}, {currency => undef}) {
+        try {
+            produce_contract({%$contract_params, %$undef});
+        } catch {
+            isa_ok $_, 'BOM::Product::Exception';
+            is $_->message_to_client->[0], 'Missing required contract parameters. ([_1])';
+            my $missing = (keys %$undef)[0];
+            like $_->message_to_client->[1], qr/$missing/, 'correct error args';
+        }
+    }
 };
 
 subtest 'make_similar_contract' => sub {

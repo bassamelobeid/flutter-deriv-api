@@ -52,13 +52,6 @@ my $bet_params = {
     current_tick => $fake_tick,
 };
 
-subtest 'missing expiry and duration' => sub {
-
-    my $c = produce_contract($bet_params);
-
-    like(exception { $c->is_valid_to_buy }, qr/Call does not support builder method '_build_date_expiry' for attribute/, "exception matches");
-};
-
 subtest 'invalid start and expiry time' => sub {
     $bet_params->{date_start} = $bet_params->{date_expiry} = $now;
     my $c = produce_contract($bet_params);
