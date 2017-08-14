@@ -289,7 +289,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
         print '<p style="color:red;">Unable to request deposits from RPC</p>';
         code_exit_BO();
     }
-    if(my $withdrawals = $rpc_client->listtransactions('', 1000)) {
+    if(my $withdrawals = $rpc_client->listtransactions('', 10_000)) {
         $recon->from_blockchain_withdrawals($withdrawals);
     } else {
         print '<p style="color:red;">Unable to request withdrawals from RPC</p>';
@@ -298,7 +298,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
 
     # Go through the complete list of db/blockchain entries to make sure that
     # things are consistent.
-    $recon->reconcile;
+    my @recon_list = $recon->reconcile;
 
     my @hdr = (
         'Client ID',     'Type',                $currency . ' Address', 'Amount',
@@ -318,16 +318,16 @@ EOF
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
     # sort_by { $_->{address} } values %db_by_address) {
-    for my $db_tran ($recon->entry_list) {
+    for my $db_tran (@recon_list) {
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type)};
-        print '<td><a href="$address_uri$_">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
+        print '<td><a href="' . $address_uri . $_ . '" target="_blank">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(amount status date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
-        print '<td><a target="_blank" href="' . ($transaction_uri . $_) . '">' . encode_entities(substr $_, 0, 6) . '</td>'
-            for @{$db_tran}{qw(transaction_id)};
-        print '<td>' . encode_entities($db_tran->{payment_id}) . '</td>';
+        print '<td>' . ($_ ? '<a target="_blank" href="' . ($transaction_uri . $_) . '">' : '') . encode_entities(substr $_, 0, 6) . ($_ ? '</a>' : '') . '</td>'
+            for map { $_ // '' } @{$db_tran}{qw(transaction_id)};
+        print '<td>' . ($db_tran->{payment_id} ? encode_entities($db_tran->{payment_id}) : '&nbsp;') . '</td>';
         print '<td style="color:red;">' . (join '<br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
     }
