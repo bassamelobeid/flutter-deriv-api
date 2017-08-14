@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Request Customer Authentication",
+  "description": "Send documents for the authentication process",
+  "properties": {
+    "echo_req": {
+      "title":"Echo request",
+      "description":"Echo of the request made",
+      "required": 1
+    },
+    "document_upload": {
+      "type": "object",
+      "title": "Document Upload",
+      "properties":{
+				"upload_id": {
+					"type":"number",
+					"description": "Current upload ID"
+				},
+				"call_type": {
+					"type":"number",
+					"description": "Current call type"
+				},
+				"size": {
+					"type":"number",
+					"description": "File size"
+				},
+				"checksum": {
+					"type":"string",
+					"description": "Hex encoded SHA-1 checksum of the file"
+				},
+				"status": {
+					"type":"string",
+					"description": "Upload status (success|failure)"
+				}
+      }
+    },
+    "msg_type": {
+      "type": "string",
+      "description": "get_settings",
+      "required": 1
+    },
+    "req_id": {
+      "type": "integer",
+      "description": "Optional field send in request to map to response, present only when request contains req_id"
+    }
+  }
+}

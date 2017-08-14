@@ -20,6 +20,7 @@ use Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections |;
+use Binary::WebSocketAPI::v3::Wrapper::Authenticate;
 
 use File::Slurp;
 use JSON::Schema;
@@ -441,11 +442,12 @@ sub startup {
         ['copy_start', {require_auth => 'trade'}],
         ['copy_stop',  {require_auth => 'trade'}],
         [
-			'document_upload',
-			{
-				instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Authentication::document_upload
-			}
-		],
+            'document_upload',
+            {
+                # require_auth => 'admin',
+                success => \&Binary::WebSocketAPI::v3::Wrapper::Authenticate::save_upload_info,
+            }
+        ],
     ];
 
     for my $action (@$actions) {
@@ -497,66 +499,48 @@ sub startup {
             actions => $actions,
 
             binary_frame => sub {
-				my ($c, $frame) = @_;
-				return if !$frame;
+                my ($c, $frame) = @_;
+                return if !$frame;
 
-				my ($call_type, $upload_id, $size, $data) = unpack "N N N a*", $frame;
+                my ($call_type, $upload_id, $chunk_size, $data) = unpack "N N N a*", $frame;
 
-				my $params;
+                my $params;
 
-				try {
-					die "Uknown file id\n" unless $params = $stash->{document_uploads}->{$upload_id};
-					die "Unknown call type\n" unless $call_type == $params->{call_type};
-					die "Incorrect data size\n" unless $size == length $data;
-				} catch {
-					chomp;
-					$params->{send_response}->({
-							error => {
-								message => $_,
-							}
-						});
-					$c->finish;
-					return;
-				};
+                try {
+                    die "Uknown file id\n" unless $params = $c->stash('document_uploads');
+                    die "Unknown call type\n"   unless $call_type == $params->{call_type};
+                    die "Incorrect data size\n" unless $chunk_size == length $data;
+                }
+                catch {
+                    chomp;
+                    $c->send({
+                            msg_type    => 'document_upload',
+                            req_id      => exists($params) ? $params->{req_id} : 0,
+                            passthrough => exists($params) ? $params->{passthrough} : {},
+                            error       => {
+                                message => $_,
+                            }});
+                    $c->finish;
+                    return;
+                };
 
+                if ($chunk_size == 0) {
+                    $c->send({
+                            json => {
+                                msg_type        => 'document_upload',
+                                req_id          => $params->{req_id},
+                                passthrough     => $params->{passthrough},
+                                document_upload => {
+                                    status    => 'success',
+                                    size      => $params->{received_bytes},
+                                    checksum  => $params->{sha1}->hexdigest,
+                                    upload_id => $params->{upload_id},
+                                    call_type => $params->{call_type},
+                                }}});
+                    return;
+                }
 
-				if ($size == 0) {
-					$params->{send_response}->({
-							document_upload => {
-								file => {
-									status => 'success',
-									size => $params->{size},
-									checksum => $params->{sha1}->hexdigest,
-									upload_id => $params->{upload_id},
-									call_type => $params->{call_type},
-								}
-							}
-						});
-					return;
-				}
-
-sub send_response {
-    my ($c, $params) = @_;
-
-    return sub {
-        my $payload = shift;
-        my $resp = {
-            req_id => $params->{req_id},
-            passthrough => $params->{passthrough} || {},
-            msg_type => $params->{msg_type},
-        };
-        for my $key (keys %{ $payload }) {
-            $resp->{$key} = $payload->{$key}; 
-        }
-
-        $c->send({
-                json => $resp,
-            })
-    }
-}
-
-				$params->{uploader}->($params, $data);
-
+                $params->{uploader}->($params, $data);
             },
 
             # action hooks

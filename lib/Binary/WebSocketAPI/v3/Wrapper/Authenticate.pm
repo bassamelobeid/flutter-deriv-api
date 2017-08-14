@@ -11,70 +11,28 @@ sub uploader {
         my ($params, $data) = @_;
 
         $params->{sha1}->add($data);
-        $params->{size} = $params->{size} + length $data;
+        $params->{received_bytes} = $params->{received_bytes} + length $data;
 
-        open(my $fh, '>>', "/tmp/documents/$upload_id") or die 'Cannot open the file /tmp/documents/$upload_id';
-        print $fh $data;
-        close $fh;
-    }
-}
-
-sub send_response {
-    my ($c, $params) = @_;
-
-    return sub {
-        my $payload = shift;
-        my $resp = {
-            req_id => $params->{req_id},
-            passthrough => $params->{passthrough} || {},
-            msg_type => $params->{msg_type},
-        };
-        for my $key (keys %{ $payload }) {
-            $resp->{$key} = $payload->{$key}; 
+        # TODO: Stream through a cloud storage
         }
-
-        $c->send({
-                json => $resp,
-            })
-    }
 }
 
+sub save_upload_info {
+    my ($c, $rpc_response, $req_storage) = @_;
 
-my $last_upload_id = 0;
+    my $upload_id = $rpc_response->{upload_id};
 
-sub generate_upload_id {
-    return $last_upload_id < 2**31 - 1 ? ++$last_upload_id : ($last_upload_id = 1);
-}
+    my $params = {
+        upload_id      => $upload_id,
+        call_type      => $rpc_response->{call_type},
+        uploader       => uploader($upload_id),
+        sha1           => Digest::SHA1->new,
+        received_bytes => 0,
+        req_id         => $req_storage->{req_id},
+        passthrough    => $req_storage->{passthrough},
+    };
 
-sub document_upload {
-    my ($c, $rpc_response) = @_;
-
-    my $args = $req_storage->{args};
-
-	my $params = {
-		upload_id => generate_upload_id(),
-		call_type => 1,
-		req_id => $args->{req_id},
-		passthrough => $args->{passthrough},
-		msg_type => 'upload_documents',
-		uploader => uploader(10),
-		sha1 => Digest::SHA1->new,
-		size => 0,
-	};
-
-	$params->{send_response} = send_response($c, $params);
-
-	$stash->{document_uploads}->{$params->{upload_id}} = $params;
-
-	$params->{send_response}->({
-			upload_documents => {
-				file => {
-					upload_id => $params->{upload_id},
-					call_type => $params->{call_type},
-				}
-			}
-		})
-
+    $c->stash(document_uploads => $params);
 }
 
 1;

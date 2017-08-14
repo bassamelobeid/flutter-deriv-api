@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Request KYC information from client",
+  "description":"Request customer documents",
+  "properties": {
+    "document_upload": {
+      "type":"integer",
+      "pattern": "^1$",
+      "description": "Must be 1",
+      "required": "1"
+    },
+    "document_type": {
+      "type":"string",
+      "description": "Document type (passport, driver's license, etc.)"
+    },
+    "expiry_date": {
+      "type":"string",
+      "description": "Document expiry date received from user"
+    },
+    "document_id": {
+      "type":"string",
+      "description": "Document ID (different for each document)"
+    },
+    "passthrough": {
+      "type": "object",
+      "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
+    },
+    "req_id": {
+      "type": "integer",
+      "description": "Optional field to map request to response"
+    }
+  },
+  "additionalProperties": false
+}
