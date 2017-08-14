@@ -288,9 +288,7 @@ sub validate_make_new_account {
             code              => 'InvalidResidence',
             message_to_client => error_map()->{'invalid residence'}}) if ($countries_instance->restricted_country($residence));
 
-    my ($gaming_company, $financial_company) =
-        ($countries_instance->gaming_company_for_country($residence), $countries_instance->financial_company_for_country($residence));
-
+    my $financial_company = $countries_instance->financial_company_for_country($residence);
     # get all real account siblings
     my $siblings = get_real_account_siblings_information($client);
 
@@ -298,7 +296,7 @@ sub validate_make_new_account {
     if (scalar(keys %$siblings) == 0) {
 
         if ($account_type eq 'real') {
-            return undef if $gaming_company;
+            return undef if $countries_instance->gaming_company_for_country($residence);
             # send error as account opening for maltainvest and japan has separate call
             return create_error({
                     code              => 'InvalidAccount',
@@ -392,11 +390,10 @@ sub validate_set_currency {
     $siblings = filter_siblings_by_landing_company($client->landing_company->short, $siblings);
 
     # check if currency is fiat or crypto
-    my ($type, $error) = (
-        LandingCompany::Registry::get_currency_type($currency),
-        create_error({
-                code              => 'CurrencyTypeNotAllowed',
-                message_to_client => localize('Please note that you are limited to one account per currency type.')}));
+    my $type  = LandingCompany::Registry::get_currency_type($currency);
+    my $error = create_error({
+            code              => 'CurrencyTypeNotAllowed',
+            message_to_client => localize('Please note that you are limited to one account per currency type.')});
     # if fiat then check if client has already any fiat, if yes then don't allow
     return $error
         if ($type eq 'fiat' and grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings);

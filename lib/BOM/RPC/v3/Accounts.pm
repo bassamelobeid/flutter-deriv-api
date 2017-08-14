@@ -1317,7 +1317,7 @@ sub set_account_currency {
     # - client can have single fiat currency
     # - client can have multiple crypto currency
     #   but only with single type of crypto currency
-    #   for example BTC, ETH is allowed but BTC BTC is not
+    #   for example BTC => ETH is allowed but BTC => BTC is not
     if (not $client->is_virtual and not($client->allow_omnibus or $client->sub_account_of)) {
         my $error = BOM::RPC::v3::Utility::validate_set_currency($client, $currency);
         return $error if $error;

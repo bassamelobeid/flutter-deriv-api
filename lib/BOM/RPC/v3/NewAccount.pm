@@ -192,7 +192,8 @@ sub new_account_real {
 
     return BOM::RPC::v3::Utility::permission_error() unless $company;
 
-    my ($broker, $error_map) = (LandingCompany::Registry->new->get($company)->broker_codes->[0], BOM::RPC::v3::Utility::error_map());
+    my $broker      = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $error_map   = BOM::RPC::v3::Utility::error_map();
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
