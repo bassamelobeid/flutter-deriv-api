@@ -47,7 +47,7 @@ subtest 'new CR real account' => sub {
     });
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t->await::authorize({ authorize => $token });
+    $t->await::authorize({authorize => $token});
 
     subtest 'create CR account' => sub {
         my ($res, $call_params) = call_mocked_client($t, \%client_details);
@@ -75,7 +75,7 @@ subtest 'new CR real account' => sub {
         });
         # authorize
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-        $t->await::authorize({ authorize => $token });
+        $t->await::authorize({authorize => $token});
 
         # create CR acc
         my $res = $t->await::new_account_real(\%client_details);
@@ -94,7 +94,7 @@ subtest 'new MX real account' => sub {
     });
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t->await::authorize({ authorize => $token });
+    $t->await::authorize({authorize => $token});
 
     # create real acc
     my %details = %client_details;
@@ -127,7 +127,7 @@ subtest 'new MLT real account' => sub {
     });
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t->await::authorize({ authorize => $token });
+    $t->await::authorize({authorize => $token});
 
     # create real acc
     my %details = %client_details;
@@ -151,7 +151,7 @@ subtest 'create account failed' => sub {
     });
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t->await::authorize({ authorize => $token });
+    $t->await::authorize({authorize => $token});
 
     subtest 'insufficient info' => sub {
         # create real acc

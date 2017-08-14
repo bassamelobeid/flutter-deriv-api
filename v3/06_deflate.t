@@ -8,7 +8,7 @@ use await;
 
 ## test without deflate
 my $t = build_wsapi_test();
-my $res = $t->await::ping({ ping => 1 });
+my $res = $t->await::ping({ping => 1});
 is $res->{msg_type}, 'ping';
 is $res->{ping},     'pong';
 $t->header_unlike('Sec-WebSocket-Extensions', qr'permessage-deflate');
@@ -16,7 +16,7 @@ $t->finish_ok;
 
 ## test with deflate
 $t = build_wsapi_test({deflate => 1});
-$res = $t->await::ping({ ping => 1 });
+$res = $t->await::ping({ping => 1});
 is $res->{msg_type}, 'ping';
 is $res->{ping},     'pong';
 $t->header_like('Sec-WebSocket-Extensions', qr'permessage-deflate');

@@ -8,7 +8,7 @@ use Encode;
 use await;
 
 my $t = build_wsapi_test();
-my $res = $t->await::residence_list({ residence_list => 1 });
+my $res = $t->await::residence_list({residence_list => 1});
 is $res->{msg_type}, 'residence_list';
 ok $res->{residence_list};
 is_deeply $res->{residence_list}->[102],
@@ -22,7 +22,7 @@ is_deeply $res->{residence_list}->[102],
 
 # test RU
 $t = build_wsapi_test({language => 'RU'});
-$res = $t->await::residence_list({ residence_list => 1 });
+$res = $t->await::residence_list({residence_list => 1});
 ok $res->{residence_list};
 is_deeply $res->{residence_list}->[0],
     {
@@ -32,8 +32,8 @@ is_deeply $res->{residence_list}->[0],
     };
 
 # back to EN
-$t   = build_wsapi_test();
-$res = $t->await::residence_list({ residence_list => 1 });
+$t = build_wsapi_test();
+$res = $t->await::residence_list({residence_list => 1});
 ok $res->{residence_list};
 is_deeply $res->{residence_list}->[102],
     {

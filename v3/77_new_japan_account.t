@@ -75,7 +75,7 @@ subtest 'new JP real account' => sub {
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
 
-    $t->await::authorize({ authorize => $token });
+    $t->await::authorize({authorize => $token});
 
     subtest 'create JP account' => sub {
         my ($res, $call_params) = call_mocked_client($t, \%client_details);
@@ -121,7 +121,7 @@ subtest 'new JP real account' => sub {
         });
         # authorize
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-        $t->await::authorize({ authorize => $token });
+        $t->await::authorize({authorize => $token});
 
         # create CR acc
         my $res = $t->await::new_account_japan(\%client_details);
@@ -140,7 +140,7 @@ subtest 'Japan a/c jp residence only' => sub {
     });
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t->await::authorize({ authorize => $token });
+    $t->await::authorize({authorize => $token});
 
     # create JP real acc
     my %details = %client_details;
@@ -168,7 +168,7 @@ subtest 'VR Residence check' => sub {
 
         # authorize
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-        $t->await::authorize({ authorize => $token });
+        $t->await::authorize({authorize => $token});
 
         # create JP real acc
         my %details = %client_details;
@@ -192,7 +192,7 @@ subtest 'VR Residence check' => sub {
         });
         # authorize
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-        $t->await::authorize({ authorize => $token });
+        $t->await::authorize({authorize => $token});
 
         # create JP real acc
         my %details = %client_details;
@@ -209,7 +209,11 @@ subtest 'VR Residence check' => sub {
 };
 
 subtest 'jp_knowledge_test' => sub {
-    my $res = $t->await::jp_knowledge_test({ jp_knowledge_test => 1, score => 12, status => "pass" });
+    my $res = $t->await::jp_knowledge_test({
+        jp_knowledge_test => 1,
+        score             => 12,
+        status            => "pass"
+    });
     is $res->{msg_type}, 'jp_knowledge_test';
     is $res->{error}->{code}, 'PermissionDenied';
 };

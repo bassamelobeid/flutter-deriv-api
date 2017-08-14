@@ -29,10 +29,10 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
 # authorize ok
-$t->await::authorize({ authorize => $token });
+$t->await::authorize({authorize => $token});
 
 # get_self_exclusion
-my $res = $t->await::get_self_exclusion({ get_self_exclusion => 1 });
+my $res = $t->await::get_self_exclusion({get_self_exclusion => 1});
 ok($res->{get_self_exclusion});
 test_schema('get_self_exclusion', $res);
 is_deeply $res->{get_self_exclusion}, {}, 'all are blank';
@@ -50,7 +50,7 @@ ok($res->{set_self_exclusion});
 test_schema('set_self_exclusion', $res);
 
 # re-get should be get what saved
-$res = $t->await::get_self_exclusion({ get_self_exclusion => 1 });
+$res = $t->await::get_self_exclusion({get_self_exclusion => 1});
 ok($res->{get_self_exclusion});
 test_schema('get_self_exclusion', $res);
 my %data = %{$res->{get_self_exclusion}};
@@ -89,7 +89,7 @@ ok($res->{set_self_exclusion});
 test_schema('set_self_exclusion', $res);
 
 # re-get should be get what saved
-$res = $t->await::get_self_exclusion({ get_self_exclusion => 1 });
+$res = $t->await::get_self_exclusion({get_self_exclusion => 1});
 ok($res->{get_self_exclusion});
 test_schema('get_self_exclusion', $res);
 %data = %{$res->{get_self_exclusion}};
@@ -184,7 +184,7 @@ ok($res->{set_self_exclusion});
 test_schema('set_self_exclusion', $res);
 
 # re-get should be exclude yourself
-$res = $t->await::get_self_exclusion({ get_self_exclusion => 1 });
+$res = $t->await::get_self_exclusion({get_self_exclusion => 1});
 is $res->{error}->{code}, 'ClientSelfExclusion';
 ok $res->{error}->{message} =~ /you have excluded yourself until/;
 

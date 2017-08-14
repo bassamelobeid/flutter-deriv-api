@@ -41,22 +41,28 @@ $client->smart_payment(
 );
 
 # check for authenticated call
-my $response = $t->await::transaction({ transaction => 1, subscribe => 1 });
+my $response = $t->await::transaction({
+    transaction => 1,
+    subscribe   => 1
+});
 is $response->{error}->{code},    'AuthorizationRequired';
 is $response->{error}->{message}, 'Please log in.';
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-my $authorize = $t->await::authorize({ authorize => $token });
+my $authorize = $t->await::authorize({authorize => $token});
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
 
 # wrong call - no subscribe
-$response = $t->await::transaction({ transaction => 1 });
+$response = $t->await::transaction({transaction => 1});
 
 is $response->{error}->{code}, 'InputValidationFailed';
 
-$response = $t->await::transaction({ transaction => 1,            subscribe   => 1         });
+$response = $t->await::transaction({
+    transaction => 1,
+    subscribe   => 1
+});
 
 ok $response->{transaction}->{id};
 

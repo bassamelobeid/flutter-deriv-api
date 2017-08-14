@@ -58,7 +58,7 @@ $client->smart_payment(
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-my $authorize = $t->await::authorize({ authorize => $token });
+my $authorize = $t->await::authorize({authorize => $token});
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
 
@@ -72,40 +72,63 @@ my %contractParameters = (
     "duration_unit" => "m",
 );
 
-my $proposal = $t->await::proposal({ proposal => 1, %contractParameters });
+my $proposal = $t->await::proposal({
+    proposal => 1,
+    %contractParameters
+});
 ok $proposal->{proposal}->{id};
 ok $proposal->{proposal}->{ask_price};
 test_schema('proposal', $proposal);
 
 my $id1 = $proposal->{proposal}->{id};
-$proposal = $t->await::proposal({ proposal => 1, %contractParameters });
+$proposal = $t->await::proposal({
+    proposal => 1,
+    %contractParameters
+});
 ok $proposal->{proposal}->{id};
 cmp_ok $id1, 'eq', $proposal->{proposal}->{id}, 'ids are the same for same parameters';
 
 $contractParameters{amount}++;
-$proposal = $t->await::proposal({ proposal => 1, %contractParameters });
+$proposal = $t->await::proposal({
+    proposal => 1,
+    %contractParameters
+});
 ok $proposal->{proposal}->{id};
 cmp_ok $id1, 'ne', $proposal->{proposal}->{id}, 'ids are not the same if parameters are different';
 $contractParameters{amount}--;
 
-$proposal = $t->await::proposal({ proposal => 1, subscribe => 1, %contractParameters });
+$proposal = $t->await::proposal({
+    proposal  => 1,
+    subscribe => 1,
+    %contractParameters
+});
 
 ok $proposal->{proposal}->{id};
 ok $proposal->{proposal}->{ask_price};
 test_schema('proposal', $proposal);
 
-my $err_proposal = $t->await::proposal({ proposal => 1, subscribe => 1, %contractParameters });
+my $err_proposal = $t->await::proposal({
+    proposal  => 1,
+    subscribe => 1,
+    %contractParameters
+});
 note explain $err_proposal;
 cmp_ok $err_proposal->{msg_type},, 'eq', 'proposal';
 cmp_ok $err_proposal->{error}->{code},, 'eq', 'AlreadySubscribed', 'AlreadySubscribed error expected';
 
 sleep 1;
-my $buy_error = $t->await::buy({ buy   => 1, price => 1 });
+my $buy_error = $t->await::buy({
+    buy   => 1,
+    price => 1
+});
 is $buy_error->{msg_type}, 'buy';
 is $buy_error->{error}->{code}, 'InvalidContractProposal';
 
 my $ask_price = $proposal->{proposal}->{ask_price};
-my $buy_res = $t->await::buy({ buy   => $proposal->{proposal}->{id}, price => $ask_price || 0 });
+my $buy_res   = $t->await::buy({
+    buy   => $proposal->{proposal}->{id},
+    price => $ask_price || 0
+});
 
 note explain $buy_res;
 next if $buy_res->{msg_type} eq 'proposal';
@@ -116,20 +139,22 @@ ok $buy_res->{buy}->{purchase_time};
 
 test_schema('buy', $buy_res);
 
-my $forget = $t->await::forget({ forget => $proposal->{proposal}->{id} });
+my $forget = $t->await::forget({forget => $proposal->{proposal}->{id}});
 note explain $forget;
 is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 
 my (undef, $call_params) = call_mocked_client($t, {portfolio => 1});
 is $call_params->{token}, $token;
 
-my $portfolio = $t->await::portfolio({ portfolio => 1 });
+my $portfolio = $t->await::portfolio({portfolio => 1});
 is $portfolio->{msg_type}, 'portfolio';
 ok $portfolio->{portfolio}->{contracts};
 ok $portfolio->{portfolio}->{contracts}->[0]->{contract_id};
 test_schema('portfolio', $portfolio);
 
-my $res = $t->await::proposal_open_contract({ proposal_open_contract => 1, contract_id            => $portfolio->{portfolio}->{contracts}->[0]->{contract_id} });
+my $res = $t->await::proposal_open_contract({
+        proposal_open_contract => 1,
+        contract_id            => $portfolio->{portfolio}->{contracts}->[0]->{contract_id}});
 
 if (exists $res->{proposal_open_contract}) {
     ok $res->{proposal_open_contract}->{contract_id};
@@ -200,11 +225,17 @@ my %notouch = (
     "barrier"       => "+1.574"
 );
 
-my $proposal_1 = $t->await::proposal({ proposal => 1, %notouch });
+my $proposal_1 = $t->await::proposal({
+    proposal => 1,
+    %notouch
+});
 my $proposal_id        = $proposal_1->{proposal}->{id};
 my $proposal_ask_price = $proposal_1->{proposal}->{ask_price};
 my $trigger_price      = $proposal_ask_price - 2;
-my $response = $t->await::buy({ buy => $proposal_id, price => $trigger_price });
+my $response           = $t->await::buy({
+    buy   => $proposal_id,
+    price => $trigger_price
+});
 
 like(
     $response->{error}{message},
@@ -212,7 +243,7 @@ like(
     'price moved error'
 );
 
-$t->await::forget({ forget => $proposal_1->{proposal}->{id} });
+$t->await::forget({forget => $proposal_1->{proposal}->{id}});
 
 my %notouch_2 = (
     "amount"        => "1000",
@@ -225,9 +256,15 @@ my %notouch_2 = (
     "barrier"       => "+25"
 );
 
-$proposal_1 = $t->await::proposal({ proposal => 1, %notouch_2 });
+$proposal_1 = $t->await::proposal({
+    proposal => 1,
+    %notouch_2
+});
 $proposal_id = $proposal_1->{proposal}->{id};
-$res = $t->await::buy({ buy   => $proposal_id, price => 100000 });
+$res         = $t->await::buy({
+    buy   => $proposal_id,
+    price => 100000
+});
 
 is $res->{buy}->{buy_price}, '1000.00';
 

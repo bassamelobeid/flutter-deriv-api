@@ -25,7 +25,7 @@ my $stats   = [];
 $datadog->mock('stats_timing', sub { push @$timing, \@_ });
 $datadog->mock('stats_inc',    sub { push @$stats,  \@_ });
 
-$res = $t->await::website_status({ website_status => 1 });
+$res = $t->await::website_status({website_status => 1});
 
 is @$timing, 2, 'Should make 2 logs';
 
@@ -63,9 +63,9 @@ ok $timing->[1]->[1], 'Should log timing';
 is $timing->[1]->[2]->{tags}->[0], 'rpc:send_ask', 'Should set tag with rpc method name';
 
 my $token = BOM::Database::Model::AccessToken->new->create_token("CR0021", 'Test', ['trade']);
-$t->await::authorize({ authorize => $token });
-@$timing  = ();
-$res      = $t->await::buy({
+$t->await::authorize({authorize => $token});
+@$timing = ();
+$res     = $t->await::buy({
     buy   => 1,
     price => 1,
 });
@@ -89,7 +89,7 @@ $rpc_client_mock->mock('new', sub { return $fake_rpc_client });
 my $warn_string;
 {
     local $SIG{'__WARN__'} = sub { $warn_string = shift; };
-    $res = $t->await::website_status({ website_status => 1 });
+    $res = $t->await::website_status({website_status => 1});
 }
 like $warn_string, qr/error/, 'Should make warning if RPC response is_error method is true';
 
@@ -108,7 +108,7 @@ $fake_rpc_client->mock('call', sub { shift; return $_[2]->('') });
 
 {
     local $SIG{'__WARN__'} = sub { $warn_string = shift; };
-    $res = $t->await::website_status({ website_status => 1 });
+    $res = $t->await::website_status({website_status => 1});
 }
 like $warn_string, qr/WrongResponse/, 'Should make warning if RPC response is empty';
 
