@@ -275,7 +275,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     );
 
     # First, we get a mapping from address to database transaction information
-    $recon->scan_database_entries(
+    $recon->from_database_items(
         $dbh->selectall_arrayref(
             q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
             {Slice => {}},
@@ -284,17 +284,21 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     );
 
     if(my $deposits = $rpc_client->listreceivedbyaddress(0)) {
-        $recon->scan_blockchain_deposits($deposits);
+        $recon->from_blockchain_deposits($deposits);
     } else {
         print '<p style="color:red;">Unable to request deposits from RPC</p>';
         code_exit_BO();
     }
     if(my $withdrawals = $rpc_client->listtransactions('', 1000)) {
-        $recon->scan_blockchain_withdrawals($withdrawals);
+        $recon->from_blockchain_withdrawals($withdrawals);
     } else {
         print '<p style="color:red;">Unable to request withdrawals from RPC</p>';
         code_exit_BO();
     };
+
+    # Go through the complete list of db/blockchain entries to make sure that
+    # things are consistent.
+    $recon->reconcile;
 
     my @hdr = (
         'Client ID',     'Type',                $currency . ' Address', 'Amount',
