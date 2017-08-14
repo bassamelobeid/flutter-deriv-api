@@ -36,15 +36,6 @@ use YAML::XS qw(LoadFile);
 # FIXME This needs to come from config, requires chef changes
 use constant INTROSPECTION_PORT => 8801;
 
-sub uploader {
-    my $id = shift;
-    return sub {
-        open(my $fh, '>>', "/tmp/documents/$id") or die 'Cannot open the file /tmp/documents/$id';
-        print $fh shift;
-        close($fh);
-        }
-}
-
 sub apply_usergroup {
     my ($cf, $log) = @_;
 
