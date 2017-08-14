@@ -305,6 +305,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
         'Client ID', 'Type', $currency . ' Address',
         'Amount', 'Amount USD', 'Status', 'DB Transaction date',
         'Confirmations',
+        'Transactions',
         'Blockchain transaction ID',
         'DB Payment ID', 'Errors'
     );
@@ -347,6 +348,8 @@ EOF
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
+        print '<td><span style="color: ' . ($_ >= 1 ? 'red' : 'green') . '">' . encode_entities($_) . '</td>'
+            for map { $_ // '' } @{$db_tran}{qw(transactions)};
         print '<td>'
             . ($_ ? '<a target="_blank" href="' . ($transaction_uri . $_) . '">' : '')
             . encode_entities(substr $_, 0, 6)
