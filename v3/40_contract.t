@@ -225,7 +225,7 @@ my %notouch_2 = (
     "barrier"       => "+25"
 );
 
-my $proposal_1 = $t->await::proposal({ proposal => 1, %notouch_2 });
+$proposal_1 = $t->await::proposal({ proposal => 1, %notouch_2 });
 $proposal_id = $proposal_1->{proposal}->{id};
 $res = $t->await::buy({ buy   => $proposal_id, price => 100000 });
 
