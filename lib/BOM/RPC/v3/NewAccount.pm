@@ -171,7 +171,7 @@ sub verify_email {
 sub new_account_real {
     my $params = shift;
 
-    my ($client, $error_map) = ($params->{client}, BOM::RPC::v3::Utility::error_map());
+    my $client = $params->{client};
 
     # send error if maltaivest and japan client tried to make this call
     # as they have their own separate api call for account opening
@@ -192,7 +192,7 @@ sub new_account_real {
 
     return BOM::RPC::v3::Utility::permission_error() unless $company;
 
-    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my ($broker, $error_map) = (LandingCompany::Registry->new->get($company)->broker_codes->[0], BOM::RPC::v3::Utility::error_map());
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
