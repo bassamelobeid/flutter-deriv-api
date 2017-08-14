@@ -321,8 +321,16 @@ EOF
     for my $db_tran ($recon->entry_list) {
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(client_loginid type)};
-        print '<td><a href="$address_uri$_">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
-        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(amount status date)};
+        print '<td><a href="' . $address_uri . $_ . '">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
+        if(defined $db_tran->{amount}) {
+            print '<td>' . encode_entities($_) . '</td>' for financialrounding(
+                price => $currency,
+                $db_tran->{amount}
+            ), in_USD($db_tran->{amount}, $currency);
+        } else {
+            print '<td colspan="2">&nbsp;</td>';
+        }
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
         print '<td><a target="_blank" href="' . ($transaction_uri . $_) . '">' . encode_entities(substr $_, 0, 6) . '</td>'
