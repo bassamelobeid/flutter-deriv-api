@@ -294,7 +294,6 @@ sub validate_make_new_account {
 
     # if no real sibling is present then its virtual
     if (scalar(keys %$siblings) == 0) {
-
         if ($account_type eq 'real') {
             return undef if $countries_instance->gaming_company_for_country($residence);
             # send error as account opening for maltainvest and japan has separate call
