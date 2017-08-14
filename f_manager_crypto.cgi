@@ -58,7 +58,7 @@ my %va_cmds = (
 );
 # Currently, the controller renders page according to Deposit,
 # Withdrawal and Search actions.
-my $view_action = request()->param('view_action');
+my $view_action = request()->param('view_action') // '';
 # Assign descriptive message if comes from view_type filtering or
 # unless it is already.
 $view_action = $va_cmds{$view_action} // '' unless grep { $va_cmds{$_} eq $view_action } keys %va_cmds;
