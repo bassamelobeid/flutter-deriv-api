@@ -334,7 +334,7 @@ EOF
                     price => $currency,
                     $db_tran->{amount})
                 ),
-                formatnumber(
+                '$' . formatnumber(
                 amount => 'USD',
                 financialrounding(
                     price => 'USD',
