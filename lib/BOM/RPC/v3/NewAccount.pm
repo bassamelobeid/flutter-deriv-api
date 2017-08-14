@@ -174,6 +174,7 @@ sub new_account_real {
     my ($client, $error_map) = ($params->{client}, BOM::RPC::v3::Utility::error_map());
 
     # send error if maltaivest and japan client tried to make this call
+    # as they have their own separate api call for account opening
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
 
@@ -189,13 +190,9 @@ sub new_account_real {
         $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
     }
 
-    if (not $company) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'NoLandingCompany',
-                message_to_client => $error_map->{'No landing company for this country.'}});
-    }
-    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    return BOM::RPC::v3::Utility::permission_error() unless $company;
 
+    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -263,6 +260,7 @@ sub new_account_maltainvest {
     my $client = $params->{client};
 
     # send error if anyone other than maltainvest, virtual, malta
+    # tried to make this call
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest)$/);
 
@@ -336,21 +334,18 @@ sub new_account_japan {
 
     my $client = $params->{client};
 
-    # send error if anyone other than japan, virtual
+    # send error if anyone other than japan, japan-virtual
+    # tried to make this call
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short !~ /^(?:japan-virtual|japan)$/);
 
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'japan');
     return $error if $error;
 
-    my ($company, $error_map) =
-        (Brands->new(name => request()->brand)->countries_instance->countries_list->{'jp'}->{financial_company}, BOM::RPC::v3::Utility::error_map());
-    if (not $company) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'NoLandingCompany',
-                message_to_client => $error_map->{'No landing company for this country'}});
-    }
-    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $company = Brands->new(name => request()->brand)->countries_instance->countries_list->{'jp'}->{financial_company};
+    return BOM::RPC::v3::Utility::permission_error() unless $company;
+
+    my ($broker, $error_map) = (LandingCompany::Registry->new->get($company)->broker_codes->[0], BOM::RPC::v3::Utility::error_map());
 
     my $args = $params->{args};
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});

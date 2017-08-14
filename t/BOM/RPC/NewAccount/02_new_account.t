@@ -173,7 +173,7 @@ subtest $method => sub {
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vclient->loginid, 'test token');
         $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('NoLandingCompany',
+            ->has_no_system_error->has_error->error_code_is('PermissionDenied',
             'It should return error when try to create account without residence');
 
         $params->{args}->{residence} = 'id';
