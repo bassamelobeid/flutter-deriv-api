@@ -45,7 +45,7 @@ sub wsapi_wait_for {
 
     my $data = decode_json($msg);
 
-    if ($data->{msg_type} eq $wait_for) {
+    if ($data->{msg_type} eq $wait_for or $data->{msg_type} eq 'error') {
         $f->done($data) if !$f->is_ready;
     } else {
         diag "Got >>" . ($data->{msg_type} // 'nothing') . "<< instead >>$wait_for<<";
