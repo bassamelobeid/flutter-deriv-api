@@ -429,11 +429,10 @@ sub startup {
         ],
 
         ['copytrading_statistics'],
-        ['copy_start', {require_auth => 'trade'}],
-        ['copy_stop',  {require_auth => 'trade'}],
-        ['app_markup_aggregates',   {require_auth => 'admin'}],
-        ['app_markup_details',      {require_auth => 'admin'}]
-    ];
+        ['copy_start',            {require_auth => 'trade'}],
+        ['copy_stop',             {require_auth => 'trade'}],
+        ['app_markup_aggregates', {require_auth => 'admin'}],
+        ['app_markup_details',    {require_auth => 'admin'}]];
 
     for my $action (@$actions) {
         my $f             = '/home/git/regentmarkets/binary-websocket-api/config/v3/' . $action->[0];

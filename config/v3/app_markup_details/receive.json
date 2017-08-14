@@ -28,7 +28,7 @@
                     "description": "App id of app where this transaction was performed. For example, it's 1 for binary.com."
                   },
                   "transaction_time":{
-                    "type":"integer",
+                    "type":"string",
                     "description":"It is the purchase time of transaction"
                   },
                   "app_markup":{
