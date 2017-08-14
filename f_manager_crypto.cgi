@@ -302,12 +302,9 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     my @recon_list = $recon->reconcile;
 
     my @hdr = (
-        'Client ID', 'Type', $currency . ' Address',
-        'Amount', 'Amount USD', 'Status', 'DB Transaction date',
-        'Confirmations',
-        'Transactions',
-        'Blockchain transaction ID',
-        'DB Payment ID', 'Errors'
+        'Client ID',    'Type',                      $currency . ' Address', 'Amount',
+        'Amount USD',   'Status',                    'DB Transaction date',  'Confirmations',
+        'Transactions', 'Blockchain transaction ID', 'DB Payment ID',        'Errors'
     );
     my $filename = join '-', $start_date->date_yyyymmdd, $end_date->date_yyyymmdd, $currency;
 
