@@ -75,12 +75,13 @@ sub authorize {
 
         # show login form
         return $c->render(
-            template  => _get_login_template_name($brand_name),
-            layout    => $brand_name,
-            app       => $app,
-            error     => $error,
-            r         => $c->stash('request'),
-            csrftoken => $c->csrf_token,
+            template     => _get_login_template_name($brand_name),
+            layout       => $brand_name,
+            app          => $app,
+            error        => $error,
+            r            => $c->stash('request'),
+            csrftoken    => $c->csrf_token,
+            country_code => $c->{stash}->{request}->{country_code},
         );
     }
 
