@@ -59,7 +59,7 @@ sub validate_trx_sell {
 
     my @contract_validation_method = qw/_is_valid_to_sell/;
     # For ICO, there is no need to have slippage, date pricing validation
-    push @contract_validation_method, qw(_validate_sell_pricing_adjustment _validate_date_pricing)
+    push @contract_validation_method, qw(_validate_date_pricing)
         unless $self->transaction->contract->is_binaryico;
 
     CLI: for my $c (@$clients) {
