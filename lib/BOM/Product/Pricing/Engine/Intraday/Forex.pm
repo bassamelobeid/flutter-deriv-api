@@ -383,7 +383,7 @@ sub vol_spread_markup {
     my $vol_spread = min(0.05, max(-0.05, $long_term_average_vol - $twenty_minute_vol));
 
     return Pricing::Engine::Markup::VolSpread->new(
-        bet_vega   => $bet->vega,
+        bet_vega   => $self->base_probability->peek_amount('intraday_vega'),
         vol_spread => $vol_spread,
     )->markup;
 }
