@@ -17,12 +17,21 @@ sub uploader {
         }
 }
 
+my $last_upload_id = 0;
+
+sub generate_upload_id {
+    return $last_upload_id < 2**31 - 1 ? ++$last_upload_id : ($last_upload_id = 1);
+}
+
+
 sub save_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
 
-    my $upload_id = $rpc_response->{upload_id};
+    my $file_id = $rpc_response->{file_id};
+	my $upload_id = generate_upload_id();
 
     my $params = {
+		file_id		   => $file_id,
         upload_id      => $upload_id,
         call_type      => $rpc_response->{call_type},
         uploader       => uploader($upload_id),

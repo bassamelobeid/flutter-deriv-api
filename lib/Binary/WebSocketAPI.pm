@@ -516,18 +516,26 @@ sub startup {
                 };
 
                 if ($chunk_size == 0) {
-                    $c->send({
-                            json => {
-                                msg_type        => 'document_upload',
-                                req_id          => $params->{req_id},
-                                passthrough     => $params->{passthrough},
-                                document_upload => {
-                                    status    => 'success',
-                                    size      => $params->{received_bytes},
-                                    checksum  => $params->{sha1}->hexdigest,
-                                    upload_id => $params->{upload_id},
-                                    call_type => $params->{call_type},
-                                }}});
+					$c->call_rpc({
+						msg_type => 'document_upload',
+						call_params => {
+							file_id => $params->{file_id},
+						},
+						success => sub {
+							$c->send({
+									json => {
+										msg_type        => 'document_upload',
+										req_id          => $params->{req_id},
+										passthrough     => $params->{passthrough},
+										document_upload => {
+											status    => 'success',
+											size      => $params->{received_bytes},
+											checksum  => $params->{sha1}->hexdigest,
+											upload_id => $params->{upload_id},
+											call_type => $params->{call_type},
+										}}});
+								}
+							});
                     return;
                 }
 
