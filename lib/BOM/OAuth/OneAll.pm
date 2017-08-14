@@ -24,8 +24,9 @@ sub callback {
         // '';
 
     my $redirect_uri = $c->req->url->path('/oauth2/authorize')->to_abs;
-    # redirect client to authorize subroutine if there is no connection token provided
-    return $c->redirect_to($redirect_uri) unless $connection_token;
+    # Redirect client to authorize subroutine if there is no connection token provided
+    # or request came from Japan.
+    return $c->redirect_to($redirect_uri) if $c->{stash}->{request}->{country_code} eq 'jp' or not $connection_token;
 
     my $oneall = WWW::OneAll->new(
         subdomain   => 'binary',
@@ -37,7 +38,7 @@ sub callback {
     # wrong pub/private keys might be a reason of bad status code
     my $status_code = $data->{response}->{request}->{status}->{code};
     if ($status_code != 200) {
-        $c->session(_oneall_error => localize('Failed to get user identity. Social signin service is currently unavailable.'));
+        $c->session(_oneall_error => localize('Failed to get user identity.'));
         return $c->redirect_to($redirect_uri);
     }
 
@@ -48,8 +49,6 @@ sub callback {
 
     # Create virtual client if user not found
     # consequently initialize user_id and link account to social login.
-    # Prevent clients in Japan create new account via social signin feature.
-    # TODO deny Japan IP
     unless ($user_id) {
         my $email = _get_email($provider_data);
         my $user  = try {
