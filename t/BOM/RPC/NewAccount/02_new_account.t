@@ -172,10 +172,6 @@ subtest $method => sub {
         isnt $result->{error}->{code}, 'InvalidAccount', 'No error with duplicate details but residence not provided so it errors out';
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vclient->loginid, 'test token');
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('PermissionDenied',
-            'It should return error when try to create account without residence');
-
         $params->{args}->{residence} = 'id';
         @{$params->{args}}{keys %$client_details} = values %$client_details;
         delete $params->{args}->{first_name};
