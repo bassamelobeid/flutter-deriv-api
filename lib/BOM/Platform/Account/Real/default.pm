@@ -413,7 +413,7 @@ sub validate_account_details {
         # as we are going to support multiple accounts per landing company
         # so we need to copy secret question and answer from old clients
         # if present else we will take the new one
-        $value = $client->secret_question // $value if ($key eq 'secret_question');
+        $value = $client->secret_question || $value if ($key eq 'secret_question');
 
         if ($key eq 'secret_answer') {
             if (my $answer = $client->secret_answer) {
