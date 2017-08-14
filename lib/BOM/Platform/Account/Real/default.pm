@@ -410,7 +410,18 @@ sub validate_account_details {
 
     foreach my $key (get_account_fields($acc_type)) {
         my $value = $args->{$key};
-        $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
+        # as we are going to support multiple accounts per landing company
+        # so we need to copy secret question and answer from old clients
+        # if present else we will take the new one
+        $value = $client->secret_question // $value if ($key eq 'secret_question');
+
+        if ($key eq 'secret_answer') {
+            if (my $answer = $client->secret_answer) {
+                $value = $answer;
+            } elsif ($value) {
+                $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value);
+            }
+        }
 
         if (not $client->is_virtual) {
             $value ||= $client->$key;
