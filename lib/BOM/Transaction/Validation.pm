@@ -10,16 +10,39 @@ use YAML::XS qw(LoadFile);
 
 use Format::Util::Numbers qw/formatnumber/;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
-
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Context qw(localize request);
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use Geo::Region;
+use Geo::Region::Constant qw( :all );
+use BOM::Database::ClientDB;
+use Date::Utility;
 
 has clients => (
     is       => 'ro',
     required => 1
 );
 has transaction => (is => 'ro');
+
+=head2 $self->_open_ico_for_european_country
+
+This is to get the number of unique users that have place ICO in a European Union country
+
+=cut
+
+sub _open_ico_for_european_country {
+    my ($self, $client_residence) = @_;
+
+    my $db = BOM::Database::ClientDB->new({
+            broker_code => 'FOG',
+            operation   => 'collector'
+        })->db;
+    my $number_of_unique_client_per_eu_country =
+        $db->dbh->selectcol_arrayref(q{ SELECT cnt FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', ARRAY[?]::VARCHAR[]) },
+        undef, $client_residence)->[0];
+
+    return $number_of_unique_client_per_eu_country // 0;
+}
 
 ################ Client and transaction validation ########################
 
@@ -30,10 +53,19 @@ sub validate_trx_sell {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
+    my @client_validation_method = qw/ check_trade_status _validate_available_currency _validate_currency /;
+    # For ico, there is no need to be restricted by with the withdrawal limit imposed on IOM region
+    push @client_validation_method, '_validate_iom_withdrawal_limit' unless $self->transaction->contract->is_binaryico;
+
+    my @contract_validation_method = qw/_is_valid_to_sell/;
+    # For ICO, there is no need to have slippage, date pricing validation
+    push @contract_validation_method, qw(_validate_sell_pricing_adjustment _validate_date_pricing)
+        unless $self->transaction->contract->is_binaryico;
+
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
-        for (qw/ check_trade_status _validate_iom_withdrawal_limit _validate_available_currency _validate_currency /) {
-            my $res = $self->$_($c->{client});
+        foreach my $method (@client_validation_method) {
+            my $res = $self->$method($c->{client});
             next unless $res;
             if ($self->transaction && $self->transaction->multiple) {
                 $c->{code}  = $res->get_type;
@@ -44,22 +76,16 @@ sub validate_trx_sell {
         }
     }
 
-    my @validation_methods = qw/ _is_valid_to_sell  _validate_date_pricing /;
-    push @validation_methods, '_validate_sell_pricing_adjustment'           if $self->transaction->contract->is_binary;
-    push @validation_methods, '_validate_sell_pricing_adjustment_lookbacks' if not $self->transaction->contract->is_binary;
+#    my @validation_methods = qw/ _is_valid_to_sell  _validate_date_pricing /;
+    push @contract_validation_method, '_validate_sell_pricing_adjustment'           if $self->transaction->contract->is_binary;
+    push @contract_validation_method, '_validate_sell_pricing_adjustment_lookbacks' if not $self->transaction->contract->is_binary;
 
-    for my $method (@validation_methods) {
+    foreach my $c_method (@contract_validation_method) {
+        my $res = $self->$c_method();
 
-        my $res = $self->$method();
         return $res if $res;
     }
     return;
-}
-
-sub validate_trx_sell_ico {
-    my $self = shift;
-
-    return $self->_is_valid_to_sell();
 }
 
 sub validate_trx_buy {
@@ -73,23 +99,18 @@ sub validate_trx_buy {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
+    my @client_validation_method = qw/ check_trade_status _validate_client_status _validate_available_currency _validate_currency /;
+    push @client_validation_method,
+        qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_self_exclusion)
+        unless $self->transaction->contract->is_binaryico;
+    push @client_validation_method, qw(_validate_ico_jurisdictional_restrictions _validate_ico_european_restrictions)
+        if $self->transaction->contract->is_binaryico;
+    push @client_validation_method, '_is_valid_to_buy';    # do this is as last of the validation
+
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
-        for (
-            qw/
-            check_trade_status
-            validate_tnc
-            _validate_iom_withdrawal_limit
-            _validate_available_currency
-            _validate_currency
-            _validate_jurisdictional_restrictions
-            _validate_client_status
-            _validate_client_self_exclusion
-            _is_valid_to_buy
-            /
-            )
-        {
-            $res = $self->$_($c->{client});
+        foreach my $method (@client_validation_method) {
+            $res = $self->$method($c->{client});
             next unless $res;
 
             if ($self->transaction && $self->transaction->multiple) {
@@ -643,9 +664,6 @@ sub _validate_jurisdictional_restrictions {
 
     my $contract = $self->transaction->contract;
 
-    #TO DO: we need to set the jurisdictional check for ICO.
-    # The following check include check of market name which is not something we want , so I skip for here first.
-    return if $contract->is_binaryico;
     my $residence   = $client->residence;
     my $market_name = $contract->market->name;
 
@@ -704,6 +722,85 @@ sub _validate_jurisdictional_restrictions {
             -type              => 'NotLegalUnderlying',
             -mesg              => 'Clients are not allowed to trade on this underlying as its restricted for this landing company',
             -message_to_client => localize('Please switch accounts to trade this underlying.'),
+        );
+    }
+
+    return;
+}
+
+=head2 $self->_validate_ico_european_restrictions
+
+Note that under the EU Prospectus Directive we can only offer the token to up to 150 persons per European Union country.
+Therefore, we need to count the bids placed by persons in EU countries and not accept any more bids if there are already 150 outstanding bids
+
+=cut
+
+sub _validate_ico_european_restrictions {
+    my ($self, $client) = (shift, shift);
+
+    my $residence      = $client->residence;
+    my $european_union = Geo::Region->new(EUROPEAN_UNION);
+
+    if ($european_union->contains($residence)) {
+
+        # We notice that the open_ico_for_european_country from db does not update realtime enough, hence we limit it at 145
+        if ($self->_open_ico_for_european_country($residence) > 145) {
+            return Error::Base->cuss(
+                -type => 'ExceedEuIcoLimit',
+                -mesg => 'We are exceeding the limit that EU imposed on ICO ',
+                -message_to_client =>
+                    localize('Sorry, due to regulatory restrictions, no more bids for tokens may be placed for residents of your country.'),
+            );
+
+        }
+
+    }
+    return;
+
+}
+
+=head2 $self->_validate_ico_jurisdictional_restrictions
+
+Validates whether a client fullfill ICO jurisdicrtional restrictions
+
+=cut
+
+sub _validate_ico_jurisdictional_restrictions {
+    my ($self, $client) = (shift, shift);
+
+    my $residence = $client->residence;
+    my $loginid   = $client->loginid;
+
+    if (!$residence || $loginid =~ /^VR/) {
+        return Error::Base->cuss(
+            -type              => 'NoResidenceCountry',
+            -mesg              => 'Client cannot place ico as we do not know their residence.',
+            -message_to_client => localize(
+                'In order to participate in the ICO, we need to know your country of residence. Please update your account settings accordingly.'),
+        );
+    }
+
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    if ($countries_instance->ico_restricted_country($residence)) {
+        return Error::Base->cuss(
+            -type              => 'IcoRestrictedCountry',
+            -mesg              => 'Clients are not allowed to bid for ICO  as their country is restricted.',
+            -message_to_client => localize('Sorry, bidding for tokens is restricted in your country of residence.'),
+        );
+    }
+
+    my $is_professional = $client->financial_assessment && $client->financial_assessment->is_professional ? 1 : 0;
+
+    # For certain country, only professional investor is allow to place ico
+    if ($countries_instance->ico_restricted_professional_only_country($residence)
+        && !$is_professional)
+    {
+        return Error::Base->cuss(
+            -type              => 'IcoProfessionalRestrictedCountry',
+            -mesg              => 'Clients are not allowed to place ICO  as it is restricted to offer only to professional in the relevant country.',
+            -message_to_client => localize(
+                'Bidding for tokens in your country of residence is restricted to professional investors only. If you are a professional investor, please contact our Customer Support to certify your account as such.'
+            ),
         );
     }
 
