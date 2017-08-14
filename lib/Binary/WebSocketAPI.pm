@@ -440,6 +440,12 @@ sub startup {
         ['copytrading_statistics'],
         ['copy_start', {require_auth => 'trade'}],
         ['copy_stop',  {require_auth => 'trade'}],
+        [
+			'document_upload',
+			{
+				instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Authentication::document_upload
+			}
+		],
     ];
 
     for my $action (@$actions) {
@@ -491,52 +497,66 @@ sub startup {
             actions => $actions,
 
             binary_frame => sub {
-                my ($c, $frame) = @_;
-                my ($type, $id, $size, $data) = unpack "N N N a*", $frame;
+				my ($c, $frame) = @_;
+				return if !$frame;
 
-                if ($type != 1) {
-                    $c->send({
-                            json => {
-                                msg_type => 'upload_file',
-                                error    => 'Unknown request type',
-                            }});
-                    $c->finish;
-                    return;
-                }
+				my ($call_type, $upload_id, $size, $data) = unpack "N N N a*", $frame;
 
-                if ($size != (length $data)) {
-                    $c->send({
-                            json => {
-                                msg_type => 'upload_file',
-                                error    => 'Chunk size does not match',
-                            }});
-                    $c->finish;
-                    return;
+				my $params;
 
-                }
+				try {
+					die "Uknown file id\n" unless $params = $stash->{document_uploads}->{$upload_id};
+					die "Unknown call type\n" unless $call_type == $params->{call_type};
+					die "Incorrect data size\n" unless $size == length $data;
+				} catch {
+					chomp;
+					$params->{send_response}->({
+							error => {
+								message => $_,
+							}
+						});
+					$c->finish;
+					return;
+				};
 
-                if (!$c->stash->{document_uploads}->{$id}) {
-                    $c->stash->{document_uploads}->{$id} = uploader($id);
-                }
 
-                my $uploader = $c->stash->{document_uploads}->{$id};
+				if ($size == 0) {
+					$params->{send_response}->({
+							document_upload => {
+								file => {
+									status => 'success',
+									size => $params->{size},
+									checksum => $params->{sha1}->hexdigest,
+									upload_id => $params->{upload_id},
+									call_type => $params->{call_type},
+								}
+							}
+						});
+					return;
+				}
 
-                if ($size == 0) {
-                    $c->send({
-                            json => {
-                                msg_type    => 'upload_file',
-                                upload_file => {
-                                    status => 'Success!',
-                                    id     => $id,
-                                },
-                            }});
-                    delete $c->stash->{document_uploads}->{$id};
-                    return;
-                }
+sub send_response {
+    my ($c, $params) = @_;
 
-                # upload file
+    return sub {
+        my $payload = shift;
+        my $resp = {
+            req_id => $params->{req_id},
+            passthrough => $params->{passthrough} || {},
+            msg_type => $params->{msg_type},
+        };
+        for my $key (keys %{ $payload }) {
+            $resp->{$key} = $payload->{$key}; 
+        }
 
-                $uploader->($data);
+        $c->send({
+                json => $resp,
+            })
+    }
+}
+
+				$params->{uploader}->($params, $data);
+
             },
 
             # action hooks
