@@ -1,7 +1,7 @@
 #!perl
 
 use Test::Most;
-use JSON;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;

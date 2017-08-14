@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
@@ -11,6 +10,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
 use BOM::Database::Model::OAuth;
+
+use await;
 
 ## do not send email
 use Test::MockModule;

@@ -3,9 +3,7 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
-use Data::Dumper;
-use Date::Utility;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
@@ -13,6 +11,8 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+
+use await;
 
 my $t = build_wsapi_test();
 

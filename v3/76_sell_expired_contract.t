@@ -1,9 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
-use Data::Dumper;
-use Date::Utility;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
@@ -13,12 +11,13 @@ use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
+use await;
+
 my $t = build_wsapi_test();
 
 # check for authenticated call
 my $response = $t->await::sell_expired({ sell_expired => 1 });
 
-is $response->{msg_type}, 'sell_expired';
 is $response->{error}->{code},    'AuthorizationRequired';
 is $response->{error}->{message}, 'Please log in.';
 

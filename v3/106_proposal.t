@@ -2,21 +2,18 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Deep;
-use JSON;
-use Data::Dumper;
-use Date::Utility;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_mocked_client/;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
-use Data::Dumper;
-use Try::Tiny;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::Database::DataMapper::FinancialMarketBet;
+
 use await;
 
 build_test_R_50_data();

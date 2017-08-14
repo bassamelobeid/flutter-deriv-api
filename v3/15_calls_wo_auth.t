@@ -1,13 +1,13 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
-use Data::Dumper;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 use Test::MockModule;
 use BOM::Platform::Runtime;
+
 use await;
 
 my $t = build_wsapi_test();

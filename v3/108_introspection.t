@@ -11,7 +11,7 @@ use Test::MockTime qw/:all/;
 use Test::MockModule;
 
 use Date::Utility;
-use Data::Dumper;
+
 use File::Temp;
 use Future;
 use Future::Mojo;

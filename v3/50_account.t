@@ -1,8 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
-use Data::Dumper;
+
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -166,7 +165,8 @@ is($res->{error}->{code}, 'InputValidationFailed', 'Missing required field: esti
 $args->{estimated_worth} = $val;
 $res = $t->await::set_financial_assessment($args);
 cmp_ok($res->{set_financial_assessment}->{score}, "<", 60, "Correct score");
-note("set_financial_assessment json :: " . encode_json($res));
+note("set_financial_assessment json :: ");
+note explain $res;
 is($res->{set_financial_assessment}->{is_professional}, 0, "is_professional flag is set correctly");
 
 $t->finish_ok;

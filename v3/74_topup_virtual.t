@@ -1,8 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
-use Data::Dumper;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
@@ -15,6 +14,8 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Password;
 use BOM::Platform::User;
 use Client::Account;
+
+use await;
 
 my $t = build_wsapi_test({language => 'EN'});
 
@@ -71,7 +72,6 @@ is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $vr_1;
 
 $res = $t->await::topup_virtual({ topup_virtual => 1 });
-is $res->{msg_type}, 'topup_virtual';
 my $topup_amount = $res->{topup_virtual}->{amount};
 ok $topup_amount, 'topup ok';
 

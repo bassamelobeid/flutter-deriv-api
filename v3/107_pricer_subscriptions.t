@@ -13,9 +13,6 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 use await;
 
-#use BOM::Test::RPC::BomRpc;
-#use BOM::Test::RPC::PricingRpc;
-
 my $subs_count = 3;
 
 build_test_R_50_data();

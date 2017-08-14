@@ -1,8 +1,6 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
-use JSON;
 use Test::Most;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";

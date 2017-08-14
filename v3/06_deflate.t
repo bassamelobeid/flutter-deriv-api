@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/build_wsapi_test/;
