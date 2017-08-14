@@ -1,8 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
-use Data::Dumper;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
@@ -14,6 +13,8 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Password;
 use BOM::Platform::User;
 use Client::Account;
+
+use await;
 
 my $t = build_wsapi_test();
 
@@ -46,30 +47,19 @@ $user->save;
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_1);
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
+my $authorize = $t->await::authorize({ authorize => $token });
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $vr_1;
 
 ## test statement
-$t = $t->send_ok({
-        json => {
-            statement => 1,
-            limit     => 1
-        }})->message_ok;
-my $statement = decode_json($t->message->[1]);
+my $statement = $t->await::statement({ statement => 1, limit => 1 });
 ok($statement->{statement});
 is($statement->{statement}->{count}, 0);
 is_deeply $statement->{statement}->{transactions}, [];
 test_schema('statement', $statement);
 
 ## test profit table
-$t = $t->send_ok({
-        json => {
-            profit_table => 1,
-            limit        => 1,
-        }})->message_ok;
-my $profit_table = decode_json($t->message->[1]);
+my $profit_table = $t->await::profit_table({ profit_table => 1, limit => 1 });
 ok($profit_table->{profit_table});
 is($profit_table->{profit_table}->{count}, 0);
 is_deeply $profit_table->{profit_table}->{transactions}, [];
@@ -78,12 +68,8 @@ test_schema('profit_table', $profit_table);
 ## test disabled
 $client_vr->set_status('disabled', 'test.t', "just for test");
 $client_vr->save();
-$t = $t->send_ok({
-        json => {
-            profit_table => 1,
-            limit        => 1,
-        }})->message_ok;
-my $res = decode_json($t->message->[1]);
+my $res = $t->await::profit_table({ profit_table => 1, limit => 1 });
+
 is $res->{error}->{code}, 'DisabledClient', 'you can not call any authenticated api after disabled.';
 
 $t->finish_ok;

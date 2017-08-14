@@ -1,8 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
-use Data::Dumper;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
@@ -11,6 +10,8 @@ use Test::MockModule;
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+
+use await;
 
 # Hack to get stash values, can't use hook after dispatch, because we should check value after wss message
 my $stash  = {};
@@ -29,15 +30,13 @@ $module->mock(
 my $t = build_wsapi_test();
 
 ## test those requires auth
-$t = $t->send_ok({json => {balance => 1}})->message_ok;
-my $balance = decode_json($t->message->[1]);
+my $balance = $t->await::balance({ balance => 1 });
 is($balance->{error}->{code}, 'AuthorizationRequired');
 test_schema('balance', $balance);
 
 ## test with faked token
 my $faked_token = 'ABCDABCDABCDABCDABCDABCDABCDABCDABCDABCDABCDABCD';
-$t = $t->send_ok({json => {authorize => $faked_token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
+my $authorize = $t->await::authorize({ authorize => $faked_token });
 is $authorize->{msg_type}, 'authorize';
 is $authorize->{error}->{code}, 'InvalidToken';
 test_schema('authorize', $authorize);
@@ -63,8 +62,8 @@ $user->save;
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-$authorize = decode_json($t->message->[1]);
+$authorize = $t->await::authorize({ authorize => $token });
+
 is $authorize->{msg_type}, 'authorize';
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
@@ -85,14 +84,12 @@ is $authorize->{authorize}->{allow_omnibus}, 0, 'correct flag for allow_omnibus'
 is scalar @{$authorize->{authorize}->{sub_accounts}}, 0, 'correct number of sub accounts';
 
 ## it's ok after authorize
-$t = $t->send_ok({json => {balance => 1}})->message_ok;
-$balance = decode_json($t->message->[1]);
+$balance = $t->await::balance({ balance => 1 });
 ok($balance->{balance});
 test_schema('balance', $balance);
 
 ## try logout
-$t = $t->send_ok({json => {logout => 1}})->message_ok;
-my $res = decode_json($t->message->[1]);
+my $res = $t->await::logout({ logout => 1 });
 is $res->{msg_type}, 'logout';
 is $res->{logout},   1;
 test_schema('logout', $res);
@@ -104,8 +101,8 @@ ok exists $stash->{loginid} && !defined $stash->{account_id},           'Should 
 ok exists $stash->{loginid} && !defined $stash->{currency},             'Should remove currency from stash';
 ok exists $stash->{loginid} && !defined $stash->{landing_company_name}, 'Should remove landing_company_name from stash';
 
-$t = $t->send_ok({json => {balance => 1}})->message_ok;
-$balance = decode_json($t->message->[1]);
+$balance = $t->await::balance({ balance => 1 });
+
 is($balance->{error}->{code}, 'AuthorizationRequired', 'required again after logout');
 
 $t->finish_ok;
