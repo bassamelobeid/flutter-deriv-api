@@ -75,7 +75,7 @@ subtest 'MLT upgrade to MF account' => sub {
         my $mlt_client = Client::Account->new({loginid => $mlt_loginid});
         is($mlt_client->financial_assessment, undef, 'doesn\'t have financial assessment');
 
-        $t = $t->send_ok({json => { get_settings => 1 }})->message_ok;
+        $t = $t->send_ok({json => {get_settings => 1}})->message_ok;
         $res = decode_json($t->message->[1]);
         ok($res->{get_settings});
         is($res->{get_settings}->{address_line_1}, 'Jalan Usahawan', 'address line 1 set as expexted');
@@ -103,7 +103,7 @@ subtest 'MLT upgrade to MF account' => sub {
         my $mlt_client = Client::Account->new({loginid => $mlt_loginid});
         isnt($mlt_client->financial_assessment->data, undef, 'has financial assessment after MF account creation');
 
-        $t = $t->send_ok({json => { get_settings => 1 }})->message_ok;
+        $t = $t->send_ok({json => {get_settings => 1}})->message_ok;
         my $res = decode_json($t->message->[1]);
         ok($res->{get_settings});
         is($res->{get_settings}->{address_line_1}, 'Test', 'address line 1 has been updated after MF account creation');
@@ -191,8 +191,8 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
             my $res = decode_json($t->message->[1]);
 
             is($res->{msg_type}, 'new_account_maltainvest');
-            is($res->{error}->{code},           'InvalidAccount', "no MF upgrade for $broker");
-            is($res->{new_account_maltainvest}, undef,            'NO account created');
+            is($res->{error}->{code}, 'PermissionDenied', "no MF upgrade for $broker");
+            is($res->{new_account_maltainvest}, undef, 'NO account created');
         };
     }
 };
