@@ -178,24 +178,16 @@ sub new_account_real {
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
 
-    my $company;
-    if (my $residence = $client->residence) {
-        my $countries_list = Brands->new(name => request()->brand)->countries_instance->countries_list;
-        $company = $countries_list->{$residence}->{gaming_company};
-        $company = $countries_list->{$residence}->{financial_company} if (not $company or $company eq 'none');
-    }
-
-    my $error_map = BOM::RPC::v3::Utility::error_map();
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidAccount',
-            message_to_client => $error_map->{'invalid'}}) unless $company;
-
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'real');
     return $error if $error;
 
-    my $args        = $params->{args};
+    my $args               = $params->{args};
+    my $residence          = $client->residence;
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    my $company     = $countries_instance->gaming_company_for_country($residence) // $countries_instance->financial_company_for_country($residence);
     my $broker      = LandingCompany::Registry->new->get($company)->broker_codes->[0];
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
+    my $error_map   = BOM::RPC::v3::Utility::error_map();
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err,
@@ -269,7 +261,8 @@ sub new_account_maltainvest {
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'maltainvest');
     return $error if $error;
 
-    my ($args, $error_map) = ($params->{args}, BOM::RPC::v3::Utility::error_map());
+    my $args      = $params->{args};
+    my $error_map = BOM::RPC::v3::Utility::error_map();
 
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, 'MF', $params->{source});
     if (my $err = $details_ref->{error}) {
@@ -341,18 +334,14 @@ sub new_account_japan {
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short !~ /^(?:japan-virtual|japan)$/);
 
-    my $company = Brands->new(name => request()->brand)->countries_instance->countries_list->{'jp'}->{financial_company};
-    my $error_map = BOM::RPC::v3::Utility::error_map();
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidAccount',
-            message_to_client => $error_map->{'invalid'}}) unless $company;
-
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'japan');
     return $error if $error;
 
+    my $company     = Brands->new(name => request()->brand)->countries_instance->countries_list->{'jp'}->{financial_company};
     my $broker      = LandingCompany::Registry->new->get($company)->broker_codes->[0];
     my $args        = $params->{args};
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
+    my $error_map   = BOM::RPC::v3::Utility::error_map();
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err,

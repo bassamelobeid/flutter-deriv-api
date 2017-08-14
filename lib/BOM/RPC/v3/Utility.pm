@@ -284,31 +284,37 @@ sub validate_make_new_account {
             message_to_client => localize('Please set your country of residence.')}) unless $residence;
 
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-    create_error({
-            code              => 'InvalidResidence',
-            message_to_client => error_map()->{'invalid residence'}}) if ($countries_instance->restricted_country($residence));
+    my $gaming_company     = $countries_instance->gaming_company_for_country($residence);
+    my $financial_company  = $countries_instance->financial_company_for_country($residence);
 
-    my $financial_company = $countries_instance->financial_company_for_country($residence);
+    my $error_map = error_map();
+    return create_error({
+            code              => 'InvalidAccount',
+            message_to_client => $error_map->{'invalid'}}) unless ($gaming_company or $financial_company);
+
+    return create_error({
+            code              => 'InvalidResidence',
+            message_to_client => $error_map->{'invalid residence'}}) if ($countries_instance->restricted_country($residence));
+
     # get all real account siblings
     my $siblings = get_real_account_siblings_information($client);
 
     # if no real sibling is present then its virtual
     if (scalar(keys %$siblings) == 0) {
         if ($account_type eq 'real') {
-            return undef if $countries_instance->gaming_company_for_country($residence);
+            return undef if $gaming_company;
             # send error as account opening for maltainvest and japan has separate call
             return create_error({
                     code              => 'InvalidAccount',
-                    message_to_client => error_map()->{'invalid'}}
-            ) if ($financial_company and any { $_ eq $financial_company } qw(maltainvest japan));
+                    message_to_client => $error_map->{'invalid'}}) if ($financial_company and any { $_ eq $financial_company } qw(maltainvest japan));
         } elsif ($account_type eq 'financial' and ($financial_company and $financial_company ne 'maltainvest')) {
             return create_error({
                     code              => 'InvalidAccount',
-                    message_to_client => error_map()->{'invalid'}});
+                    message_to_client => $error_map->{'invalid'}});
         } elsif ($account_type eq 'japan' and ($financial_company and $financial_company ne 'japan')) {
             return create_error({
                     code              => 'InvalidAccount',
-                    message_to_client => error_map()->{'invalid'}});
+                    message_to_client => $error_map->{'invalid'}});
         }
 
         # some countries don't have gaming company like Singapore
