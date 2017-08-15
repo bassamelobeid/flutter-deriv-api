@@ -12,6 +12,8 @@ use BOM::Backoffice::Config;
 use BOM::Backoffice::Cookie;
 use BOM::Backoffice::Request::Base;
 use BOM::Backoffice::Request qw(request localize);
+use BOM::Platform::Config;
+use BOM::Platform::Chronicle;
 use Try::Tiny::Except ();    # should be preloaded as early as possible
                              # this statement here is merely a comment.
 
@@ -23,16 +25,27 @@ sub init {
     alarm(0);
     build_request();
 
+    if (BOM::Platform::Config::on_qa()) {
+        my $needed_service =
+            BOM::Backoffice::Cookie::get_cookie('backprice') ? '/home/nobody/.pg_service_backprice.conf' : '/home/nobody/.pg_service.conf';
+
+        #in case backprice settings have changed for session, make sure this fork uses newer pg_service file, but clearing Chronicle instance
+        if (!$ENV{PGSERVICEFILE} || $needed_service ne $ENV{PGSERVICEFILE}) {
+            BOM::Platform::Chronicle::clear_connections();
+            $ENV{PGSERVICEFILE} = $needed_service;    ## no critic (RequireLocalizedPunctuationVars)
+        }
+    }
+
     if (request()->from_ui) {
         {
-            no strict;                              ## no critic (ProhibitNoStrict)
+            no strict;                                ## no critic (ProhibitNoStrict)
             undef ${"main::input"}
         }
         my $http_handler = Plack::App::CGIBin::Streaming->request;
 
         my $timeout = 1800;
 
-        $SIG{ALRM} = sub {                          ## no critic (RequireLocalizedPunctuationVars)
+        $SIG{ALRM} = sub {                            ## no critic (RequireLocalizedPunctuationVars)
             my $runtime = time - $^T;
             my $timenow = Date::Utility->new->datetime;
 
@@ -75,7 +88,6 @@ sub init {
     }
 
     log_bo_access();
-
     return;
 }
 

@@ -117,6 +117,13 @@ sub ServerWarningBar {
 
     my $ipmessage = "Your IP: $ENV{'REMOTE_ADDR'}";
 
+    if (BOM::Platform::Config::on_qa()) {
+        my $url = request()->url_for('backoffice/login.cgi?backprice=');
+        my ($c, $h) = BOM::Backoffice::Cookie::get_cookie('backprice') ? ('YES', $url . '0') : ('NO', $url . '1');
+
+        $ipmessage .= qq{, backprice config: <a href="$h">$c</a>};
+    }
+
     my $topbarbackground;
     my $systemisoff;
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->system) {
