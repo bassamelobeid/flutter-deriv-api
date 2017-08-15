@@ -15,16 +15,21 @@ use BOM::Database::Model::AccessToken;
 my $t = build_wsapi_test();
 
 my $req = {
-    "document_upload" => 1,
-    "document_type"   => "passport",
-    "document_id"     => "123456",
-    "expiry_date"     => "12319823000",
+        document_upload => 1,
+        req_id => 10,
+        document_type => "passport",
+        expiry_date => "1345678",
+        document_id => "1234567"
 };
 
 $t->send_ok({json => $req})->message_ok;
 
 my $res = decode_json($t->message->[1]);
 
-ok $res->{document_upload}->{upload_id}, 'Should return upload_id';
+my $upload_id = $res->{document_upload}->{upload_id};
+my $call_type = $res->{document_upload}->{call_type};
+
+ok $upload_id, 'Should return upload_id';
+ok $call_type, 'Should return call_type';
 
 done_testing();
