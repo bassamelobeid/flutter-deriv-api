@@ -145,7 +145,12 @@ subtest 'prices without economic events' => sub {
                     %$barrier,
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                cmp_ok $c->ask_price, '==', $expected->{$c->shortcode}, 'correct ask price [' . $c->shortcode . ']';
+                ok abs($c->ask_price - $expected->{$c->shortcode}->[0]) < 1e-9, 'correct ask price [' . $c->shortcode . ']';
+                my $base = $c->pricing_engine->base_probability;
+                ok abs($base->base_amount - $expected->{$c->shortcode}->[1]) < 1e-9, 'correct bs probability [' . $c->shortcode . ']';
+                ok abs($base->peek_amount('intraday_delta_correction') - $expected->{$c->shortcode}->[2]) < 1e-9, 'correct delta correction [' . $c->shortcode . ']';
+                ok abs($base->peek_amount('intraday_vega_correction') - $expected->{$c->shortcode}->[3]) < 1e-9, 'correct vega correction [' . $c->shortcode . ']';
+                ok abs($c->pricing_engine->risk_markup->amount - $expected->{$c->shortcode}->[4]) < 1e-9, 'correct risk markup [' . $c->shortcode . ']';
             }
             'survived';
         }
@@ -167,7 +172,12 @@ subtest 'atm prices without economic events' => sub {
                     barrier      => 'S0P',
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                cmp_ok $c->ask_price, '==', $expected->{$c->shortcode}, 'correct ask price [' . $c->shortcode . ']';
+                ok abs($c->ask_price - $expected->{$c->shortcode}->[0]) < 1e-9, 'correct ask price [' . $c->shortcode . ']';
+                my $base = $c->pricing_engine->base_probability;
+                ok abs($base->base_amount - $expected->{$c->shortcode}->[1]) < 1e-9, 'correct bs probability [' . $c->shortcode . ']';
+                ok abs($base->peek_amount('intraday_delta_correction') - $expected->{$c->shortcode}->[2]) < 1e-9, 'correct delta correction [' . $c->shortcode . ']';
+                ok abs($base->peek_amount('intraday_vega_correction') - $expected->{$c->shortcode}->[3]) < 1e-9, 'correct vega correction [' . $c->shortcode . ']';
+                ok abs($c->pricing_engine->risk_markup->amount - $expected->{$c->shortcode}->[4]) < 1e-9, 'correct risk markup [' . $c->shortcode . ']';
             }
             'survived';
         }
@@ -203,8 +213,14 @@ subtest 'prices with economic events' => sub {
                     payout       => $payout,
                     %$barrier,
                 });
+                my $key = 'event_' . $c->shortcode;
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                cmp_ok $c->ask_price, '==', $expected->{'event_' . $c->shortcode}, 'correct ask price [event_' . $c->shortcode . ']';
+                ok abs($c->ask_price - $expected->{$key}->[0]) < 1e-9, 'correct ask price ['.$key.']';
+                my $base = $c->pricing_engine->base_probability;
+                ok abs($base->base_amount - $expected->{$key}->[1]) < 1e-9, 'correct bs probability ['.$key.']';
+                ok abs($base->peek_amount('intraday_delta_correction') - $expected->{$key}->[2]) < 1e-9, 'correct delta correction [' . $key . ']';
+                ok abs($base->peek_amount('intraday_vega_correction') - $expected->{$key}->[3]) < 1e-9, 'correct vega correction [' . $key . ']';
+                ok abs($c->pricing_engine->risk_markup->amount - $expected->{$key}->[4]) < 1e-9, 'correct risk markup [' . $key . ']';
             }
             'survived';
         }
@@ -225,8 +241,14 @@ subtest 'atm prices with economic events' => sub {
                     payout       => $payout,
                     barrier      => 'S0P',
                 });
+                my $key = 'event_' . $c->shortcode;
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                cmp_ok $c->ask_price, '==', $expected->{'event_' . $c->shortcode}, 'correct ask price [event_' . $c->shortcode . ']';
+                ok abs($c->ask_price - $expected->{$key}->[0]) < 1e-9, 'correct ask price ['.$key.']';
+                my $base = $c->pricing_engine->base_probability;
+                ok abs($base->base_amount - $expected->{$key}->[1]) < 1e-9, 'correct bs probability ['.$key.']';
+                ok abs($base->peek_amount('intraday_delta_correction') - $expected->{$key}->[2]) < 1e-9, 'correct delta correction [' . $key . ']';
+                ok abs($base->peek_amount('intraday_vega_correction') - $expected->{$key}->[3]) < 1e-9, 'correct vega correction [' . $key . ']';
+                ok abs($c->pricing_engine->risk_markup->amount - $expected->{$key}->[4]) < 1e-9, 'correct risk markup [' . $key . ']';
             }
             'survived';
         }
