@@ -25,6 +25,11 @@
       "description": "Document ID (based on each document type)",
       "required": 1
     },
+    "document_format": {
+      "type": "string",
+      "description": "Document file format (JPEG,PNG,etc.)",
+      "required": 1
+    },
     "passthrough": {
       "type": "object",
       "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
