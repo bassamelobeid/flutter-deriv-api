@@ -539,7 +539,7 @@ sub startup {
                     return;
                 }
 
-                $params->{uploader}->($params, $data);
+                $params->{uploader}->($data);
             },
 
             # action hooks
