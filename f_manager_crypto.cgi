@@ -302,9 +302,11 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     my @recon_list = $recon->reconcile;
 
     my @hdr = (
-        'Client ID',    'Type',                      $currency . ' Address', 'Amount',
-        'Amount USD',   'Status',                    'Payment date', 'Blockchain date', 'Status date', 'Confirmations',
-        'Transactions', 'Blockchain transaction ID', 'DB Payment ID',        'Errors'
+        'Client ID', 'Type', $currency . ' Address',
+        'Amount', 'Amount USD', 'Status', 'Payment date', 'Blockchain date',
+        'Status date', 'Confirmations', 'Transactions',
+        'Blockchain transaction ID',
+        'DB Payment ID', 'Errors'
     );
     my $filename = join '-', $start_date->date_yyyymmdd, $end_date->date_yyyymmdd, $currency;
 
@@ -344,7 +346,8 @@ EOF
             print '<td>&nbsp;</td><td>&nbsp;</td>';
         }
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status)};
-        print '<td sorttable_customkey="' . (sprintf "%012d", $_ ? Date::Utility->new($_)->epoch : 0) . '">' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(transaction_date blockchain_date status_date)};
+        print '<td sorttable_customkey="' . (sprintf "%012d", $_ ? Date::Utility->new($_)->epoch : 0) . '">' . encode_entities($_) . '</td>'
+            for map { $_ // '' } @{$db_tran}{qw(transaction_date blockchain_date status_date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
         print '<td><span style="color: ' . ($_ > 1 ? 'red' : $_ == 1 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
