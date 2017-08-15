@@ -103,8 +103,6 @@ sub rmg_table_format {
             my $smile  = $volsurface->get_surface_smile($day);
             my $spread = $volsurface->get_smile_spread($day);
 
-            $spread = $spread->{'vol_spread'} if $atm_spread_point ne 'atm_spread';
-
             # rr, 2vBF
             my $rr_bf = $volsurface->get_rr_bf_for_smile($smile);
 
