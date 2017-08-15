@@ -436,7 +436,7 @@ sub startup {
             'document_upload',
             {
                 # require_auth => 'admin',
-                success => \&Binary::WebSocketAPI::v3::Wrapper::Authenticate::save_upload_info,
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::Authenticate::add_upload_info,
             }
         ],
     ];
@@ -496,29 +496,32 @@ sub startup {
                 my ($call_type, $upload_id, $chunk_size, $data) = unpack "N N N a*", $frame;
 
                 my $params;
+                my $exception_occurred = 0;
 
                 try {
-                    die "Uknown file id\n" unless $params = $c->stash('document_uploads');
-                    die "Unknown call type\n"   unless $call_type == $params->{call_type};
-                    die "Incorrect data size\n" unless $chunk_size == length $data;
+                    die "Unknown upload request\n" unless $params = $c->stash('document_upload');
+                    die "Unknown call type\n"      unless $call_type == $params->{call_type};
+                    die "Incorrect data size\n"    unless $chunk_size == length $data;
                 }
                 catch {
                     chomp;
                     $c->send({
-                            msg_type    => 'document_upload',
-                            req_id      => exists($params) ? $params->{req_id} : 0,
-                            passthrough => exists($params) ? $params->{passthrough} : {},
-                            error       => {
-                                message => $_,
-                            }});
-                    $c->finish;
-                    return;
+                            json => {
+                                msg_type    => 'document_upload',
+                                req_id      => $params ? $params->{req_id} : 0,
+                                passthrough => $params ? $params->{passthrough} : {},
+                                error       => {
+                                    message => $_,
+                                }}});
+                    $exception_occurred = 1;
                 };
+
+                return if $exception_occurred;
 
                 if ($chunk_size == 0) {
                     $c->call_rpc({
-                            msg_type    => 'document_upload',
-                            call_params => {
+                            method => 'document_upload',
+                            args   => {
                                 file_id => $params->{file_id},
                             },
                             success => sub {
@@ -536,6 +539,7 @@ sub startup {
                                             }}});
                             }
                         });
+                    delete $c->stash->{'document_upload'};
                     return;
                 }
 

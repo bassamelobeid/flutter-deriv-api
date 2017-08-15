@@ -12,7 +12,6 @@
     "document_upload": {
       "type": "object",
       "title": "Document Upload",
-      "required": 1,
       "properties":{
         "upload_id": {
           "type": "number",
@@ -26,18 +25,15 @@
         },
         "size": {
           "type": "number",
-          "description": "File size",
-          "required": 1
+          "description": "File size"
         },
         "checksum": {
           "type": "string",
-          "description": "Hex encoded SHA-1 checksum of the file",
-          "required": 1
+          "description": "Hex encoded SHA-1 checksum of the file"
         },
         "status": {
           "type": "string",
-          "description": "Upload status (success|failure)",
-          "required": 1
+          "description": "Upload status (success|failure)"
         }
       }
     },
