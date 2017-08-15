@@ -6,41 +6,39 @@ use warnings;
 use Digest::SHA1;
 
 sub uploader {
-    my $upload_id = shift;
+    my $params = shift;
     return sub {
-        my ($params, $data) = @_;
+        my $data = shift;
 
         $params->{sha1}->add($data);
         $params->{received_bytes} = $params->{received_bytes} + length $data;
 
         # TODO: Stream through a cloud storage
-        }
+    };
 }
 
 my $last_upload_id = 0;
 
 sub generate_upload_id {
-    return $last_upload_id < 2**31 - 1 ? ++$last_upload_id : ($last_upload_id = 1);
+    return $last_upload_id = ($last_upload_id + 1) % 1 << 32;
 }
 
 
 sub save_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
 
-    my $file_id = $rpc_response->{file_id};
-	my $upload_id = generate_upload_id();
-
     my $params = {
-		file_id		   => $file_id,
-        upload_id      => $upload_id,
+	file_id        => $rpc_response->{file_id},
         call_type      => $rpc_response->{call_type},
-        uploader       => uploader($upload_id),
+	upload_id      => generate_upload_id(),
         sha1           => Digest::SHA1->new,
-        received_bytes => 0,
-        req_id         => $req_storage->{req_id},
+	received_bytes => 0,
+	req_id         => $req_storage->{req_id},
         passthrough    => $req_storage->{passthrough},
     };
 
+    $params->{uploader} = uploader($params);
+    
     $c->stash(document_uploads => $params);
 }
 
