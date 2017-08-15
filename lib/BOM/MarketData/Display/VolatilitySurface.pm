@@ -127,7 +127,7 @@ sub rmg_table_format {
             push @surface, [
                 map { defined $_ ? sprintf('%.3f', $_) : '—' } (
                     (map { $smile->{$_} * 100 } @deltas),
-                    (map { $spread->{$_} * 100 } @{$volsurface->spread_points}),
+                    (map { ($spread->{$_} // 0) * 100 } @{$volsurface->spread_points}),
                     # Forward Vol
                     ((grep { $day == $_ } @{$volsurface->original_term_for_smile}) ? ($forward_vols->{$day} * 100) : undef),
                     (map { $_ * 100 } ($rr_bf->{RR_25}, $rr_bf->{BF_25}, $bf_1vol)),
