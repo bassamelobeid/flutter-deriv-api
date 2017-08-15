@@ -12,26 +12,32 @@
     "document_upload": {
       "type": "object",
       "title": "Document Upload",
+      "required": 1,
       "properties":{
         "upload_id": {
-          "type":"number",
-          "description": "Current upload ID"
+          "type": "number",
+          "description": "Current upload ID",
+          "required": 1
         },
         "call_type": {
-          "type":"number",
-          "description": "Current call type"
+          "type": "number",
+          "description": "Current call type",
+          "required": 1
         },
         "size": {
-          "type":"number",
-          "description": "File size"
+          "type": "number",
+          "description": "File size",
+          "required": 1
         },
         "checksum": {
-          "type":"string",
-          "description": "Hex encoded SHA-1 checksum of the file"
+          "type": "string",
+          "description": "Hex encoded SHA-1 checksum of the file",
+          "required": 1
         },
         "status": {
-          "type":"string",
-          "description": "Upload status (success|failure)"
+          "type": "string",
+          "description": "Upload status (success|failure)",
+          "required": 1
         }
       }
     },
