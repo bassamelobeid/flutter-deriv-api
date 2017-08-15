@@ -62,16 +62,9 @@ sub validate {
             'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to [_1] to unlock your cashier.',
             Brands->new(name => request()->brand)->emails('support'))) if ($client->documents_expired);
 
-    # action specific validation
-    return _create_error(localize('Your account is restricted to withdrawals only.'))
-        if ($action eq 'deposit' and $client->get_status('unwelcome'));
-
-    return _create_error(localize('Your account is locked for withdrawals.'))
-        if ($action eq 'withdraw' and $client->get_status('withdrawal_locked'));
-
     # landing company or country specific validations
     if ($landing_company->short eq 'maltainvest') {
-        return _create_error(localize('Client is not fully authenticated.'), 'ASK_AUTHENTICATE') unless $client->client_fully_authenticated;
+        return _create_error(localize('Please authenticate your account.'), 'ASK_AUTHENTICATE') unless $client->client_fully_authenticated;
 
         return _create_error(localize('Financial Risk approval is required.'), 'ASK_FINANCIAL_RISK_APPROVAL')
             unless $client->get_status('financial_risk_approval');
@@ -102,6 +95,13 @@ sub validate {
         return _create_error(localize('Account needs age verification.'), 'ASK_AGE_VERIFICATION')
             if (not $client->get_status('age_verification') and not $client->has_valid_documents);
     }
+
+    # action specific validation should be last to be validated
+    return _create_error(localize('Your account is restricted to withdrawals only.'))
+        if ($action eq 'deposit' and $client->get_status('unwelcome'));
+
+    return _create_error(localize('Your account is locked for withdrawals.'))
+        if ($action eq 'withdraw' and $client->get_status('withdrawal_locked'));
 
     return;
 }
