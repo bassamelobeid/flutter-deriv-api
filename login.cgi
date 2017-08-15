@@ -36,9 +36,9 @@ if (request()->param('sig_response')) {
 
     $try_to_login = ($email eq request()->param('email'));
 }
-if( defined(request()->param('backprice'))) {
+if (defined(request()->param('backprice'))) {
     my $bo_cookies = BOM::Backoffice::Cookie::build_cookies({
-        backprice  => request()->param('backprice'),
+        backprice => request()->param('backprice'),
     });
     PrintContentType({'cookies' => $bo_cookies});
 } elsif ($try_to_login and my $staff = BOM::Backoffice::Auth0::login(request()->param('access_token'))) {
