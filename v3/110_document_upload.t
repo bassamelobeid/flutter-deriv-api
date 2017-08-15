@@ -29,4 +29,10 @@ my $res = decode_json($t->message->[1]);
 
 ok $res->{document_upload}, 'Returns document_upload';
 
+my $upload_id = $res->{document_upload}->{upload_id};
+my $call_type = $res->{document_upload}->{call_type};
+
+ok $upload_id, 'Returns upload_id';
+ok $call_type, 'Returns call_type';
+
 done_testing();
