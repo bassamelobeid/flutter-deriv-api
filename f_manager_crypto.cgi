@@ -303,7 +303,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
 
     my @hdr = (
         'Client ID',    'Type',                      $currency . ' Address', 'Amount',
-        'Amount USD',   'Status',                    'DB Transaction date',  'Confirmations',
+        'Amount USD',   'Status',                    'Payment date', 'Blockchain date', 'Confirmations',
         'Transactions', 'Blockchain transaction ID', 'DB Payment ID',        'Errors'
     );
     my $filename = join '-', $start_date->date_yyyymmdd, $end_date->date_yyyymmdd, $currency;
@@ -343,7 +343,7 @@ EOF
         } else {
             print '<td colspan="2">&nbsp;</td>';
         }
-        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status date)};
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status transaction_date blockchain_date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
         print '<td><span style="color: ' . ($_ > 1 ? 'red' : $_ == 1 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
