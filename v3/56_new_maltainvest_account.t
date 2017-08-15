@@ -183,8 +183,9 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
             delete $details{new_account_real};
             my $res = $t->await::new_account_maltainvest(\%details);
 
-            is($res->{error}->{code},           'InvalidAccount', "no MF upgrade for $broker");
-            is($res->{new_account_maltainvest}, undef,            'NO account created');
+            is($res->{msg_type}, 'new_account_maltainvest');
+            is($res->{error}->{code}, 'PermissionDenied', "no MF upgrade for $broker");
+            is($res->{new_account_maltainvest}, undef, 'NO account created');
         };
     }
 };

@@ -60,13 +60,6 @@ subtest 'new CR real account' => sub {
         like($loginid, qr/^CR\d+$/, "got CR client $loginid");
     };
 
-    subtest 'no duplicate account - same email' => sub {
-        my $res = $t->await::new_account_real(\%client_details);
-
-        is($res->{error}->{code},    'duplicate email', 'no duplicate account for CR');
-        is($res->{new_account_real}, undef,             'NO account created');
-    };
-
     subtest 'no duplicate - Name + DOB' => sub {
         my ($vr_client, $user) = create_vr_account({
             email           => 'test+test@binary.com',
@@ -193,8 +186,8 @@ subtest 'create account failed' => sub {
 
         my $res = $t->await::new_account_real(\%details);
 
-        is($res->{error}->{code},    'InvalidAccount', 'cannot create real account');
-        is($res->{new_account_real}, undef,            'NO account created');
+        is($res->{error}->{code},    'NoResidence', 'cannot create real account as residence is not set');
+        is($res->{new_account_real}, undef,         'NO account created');
     };
 
     $vr_client->residence('id');

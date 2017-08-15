@@ -105,12 +105,10 @@ subtest 'new JP real account' => sub {
         }
     };
 
-    subtest 'no duplicate account - same email' => sub {
+    subtest 'duplicate account - same email' => sub {
         my $res = $t->await::new_account_japan(\%client_details);
 
-        is $res->{msg_type}, 'new_account_japan';
-        is($res->{error}->{code},    'duplicate email', 'no duplicate account for JP');
-        is($res->{new_account_real}, undef,             'NO account created');
+        is $res->{new_account_japan}->{landing_company_shortcode}, 'japan', 'able to create multiple accounts';
     };
 
     subtest 'no duplicate - Name + DOB' => sub {
@@ -201,9 +199,9 @@ subtest 'VR Residence check' => sub {
         subtest 'VRTC au residence' => sub {
             my $res = $t->await::new_account_japan(\%details);
 
-            is($res->{error}->{code},     'InvalidAccount',                         'VR residence must be "jp"');
-            is($res->{error}->{message},  'Sorry, account opening is unavailable.', 'VR jp only');
-            is($res->{new_account_japan}, undef,                                    'NO account created');
+            is($res->{error}->{code},     'PermissionDenied',   'VR residence must be "jp"');
+            is($res->{error}->{message},  'Permission denied.', 'VR jp only');
+            is($res->{new_account_japan}, undef,                'NO account created');
         };
     };
 };
