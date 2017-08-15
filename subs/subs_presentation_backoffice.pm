@@ -10,6 +10,7 @@ use strict;
 use warnings;
 no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
+use BOM::Platform::Config;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
 use Mojo::URL;
