@@ -43,7 +43,6 @@ sub rmg_table_format {
     my ($self, $args) = @_;
 
     my $volsurface       = $self->surface;
-    my $atm_spread_point = $volsurface->atm_spread_point;
     my $dates            = (defined $args->{historical_dates}) ? $args->{historical_dates} : [];
     my $tab_id           = (defined $args->{tab_id}) ? $args->{tab_id} : undef;
     my $greeks           = (defined $args->{greeks}) ? $args->{greeks} : undef;
