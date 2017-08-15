@@ -112,7 +112,7 @@ my $err_proposal = $t->await::proposal({
     subscribe => 1,
     %contractParameters
 });
-note explain $err_proposal;
+
 cmp_ok $err_proposal->{msg_type},, 'eq', 'proposal';
 cmp_ok $err_proposal->{error}->{code},, 'eq', 'AlreadySubscribed', 'AlreadySubscribed error expected';
 
@@ -130,7 +130,6 @@ my $buy_res   = $t->await::buy({
     price => $ask_price || 0
 });
 
-note explain $buy_res;
 next if $buy_res->{msg_type} eq 'proposal';
 
 ok $buy_res->{buy};
@@ -140,7 +139,7 @@ ok $buy_res->{buy}->{purchase_time};
 test_schema('buy', $buy_res);
 
 my $forget = $t->await::forget({forget => $proposal->{proposal}->{id}});
-note explain $forget;
+
 is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 
 my (undef, $call_params) = call_mocked_client($t, {portfolio => 1});
@@ -207,7 +206,6 @@ $res = $t->await::sell({
     sell  => $contract_id,
     price => 0
 });
-note explain $res;
 ok $res->{sell};
 ok($res->{sell}{contract_id} && $res->{sell}{contract_id} == $contract_id, "check contract ID");
 ok($res->{sell}{reference_id} == $buy_txn_id, "check buy transaction ID");

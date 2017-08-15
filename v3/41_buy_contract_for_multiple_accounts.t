@@ -60,7 +60,7 @@ $client->smart_payment(
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 # login
-my $authorize = $t->await::authorize({ authorize => $token });
+my $authorize = $t->await::authorize({authorize => $token});
 is $authorize->{authorize}{email},   $email,   'login result: email';
 is $authorize->{authorize}{loginid}, $loginid, 'login result: loginid';
 
@@ -76,7 +76,11 @@ sub get_proposal {
         "duration"      => "2",
         "duration_unit" => "m",
     );
-    my $proposal = $t->await::proposal({ proposal  => 1, subscribe => 1, %contractParameters });
+    my $proposal = $t->await::proposal({
+        proposal  => 1,
+        subscribe => 1,
+        %contractParameters
+    });
     isnt $proposal->{proposal}->{id},        undef, 'got proposal id';
     isnt $proposal->{proposal}->{ask_price}, undef, 'got ask_price';
 
@@ -86,17 +90,16 @@ sub get_proposal {
     return;
 }
 
-
 {
     my %t;
 
     sub get_token {
         my @scopes = @_;
         my $cnt    = keys %t;
-        my $res = $t->await::api_token({
-            api_token        => 1,
-            new_token        => 'Test Token ' . $cnt,
-            new_token_scopes => [@scopes]});
+        my $res    = $t->await::api_token({
+                api_token        => 1,
+                new_token        => 'Test Token ' . $cnt,
+                new_token_scopes => [@scopes]});
 
         for my $x (@{$res->{api_token}->{tokens}}) {
             next if exists $t{$x->{token}};
@@ -143,7 +146,7 @@ subtest "2nd try: dummy tokens => success", sub {
 
     test_schema('buy_contract_for_multiple_accounts', $res);
 
-    my $forget = $t->await::forget({ forget => $proposal_id });
+    my $forget = $t->await::forget({forget => $proposal_id});
     is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 };
 
@@ -163,7 +166,6 @@ subtest "3rd try: the real thing => success", sub {
     my @tokens = map { get_token 'trade' } (1, 2);
     push @tokens, get_token 'read';    # generates an error
     push @tokens, $token;              # add the login token as well
-                                       # note explain \@tokens;
     get_proposal;
     my $res = $t->await::buy_contract_for_multiple_accounts({
         buy_contract_for_multiple_accounts => $proposal_id,
@@ -178,11 +180,14 @@ subtest "3rd try: the real thing => success", sub {
     $tokens_for_sell    = [map { $_->{token} } grep     { $_->{shortcode} } @{$res->{buy_contract_for_multiple_accounts}{result}}];
     $shortcode_for_sell = [map { $_->{shortcode} } grep { $_->{shortcode} } @{$res->{buy_contract_for_multiple_accounts}{result}}]->[0];
 
-    my $forget = $t->await::forget({ forget => $proposal_id });
+    my $forget = $t->await::forget({forget => $proposal_id});
     is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 
     # checking statement
-    my $stmt = $t->await::statement({ statement => 1, limit => 3});
+    my $stmt = $t->await::statement({
+        statement => 1,
+        limit     => 3
+    });
 
     $trx_ids = +{map { $_->{transaction_id} => 1 } @{$stmt->{statement}->{transactions}}};
 
@@ -208,7 +213,6 @@ subtest "try to sell: dummy tokens => success", sub {
         price                               => 2.42,
         tokens                              => ['DUMMY0', 'DUMMY1'],
     });
-    note explain $res;
     isa_ok $res->{sell_contract_for_multiple_accounts}, 'HASH';
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}, 'ARRAY';
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}->[0], 'HASH';
@@ -237,7 +241,6 @@ subtest "sell_contract_for_multiple_accounts => successful", sub {
         price                               => 2.42,
         tokens                              => $tokens_for_sell,
     });
-note explain $res;
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}, 'ARRAY';
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}->[0], 'HASH';
     ok scalar @{$res->{sell_contract_for_multiple_accounts}{result}} == 3, 'check res count';

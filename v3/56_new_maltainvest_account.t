@@ -59,7 +59,7 @@ subtest 'MLT upgrade to MF account' => sub {
     });
 
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t->await::authorize({ authorize => $token });
+    $t->await::authorize({authorize => $token});
 
     my $mlt_loginid;
     subtest 'create MLT account, authorize' => sub {
@@ -71,12 +71,12 @@ subtest 'MLT upgrade to MF account' => sub {
         like($mlt_loginid, qr/^MLT\d+$/, "got MLT client $mlt_loginid");
 
         ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mlt_loginid);
-        $t->await::authorize({ authorize => $token });
+        $t->await::authorize({authorize => $token});
 
         my $mlt_client = Client::Account->new({loginid => $mlt_loginid});
         is($mlt_client->financial_assessment, undef, 'doesn\'t have financial assessment');
 
-        $res = $t->await::get_settings({ get_settings => 1  });
+        $res = $t->await::get_settings({get_settings => 1});
         ok($res->{get_settings});
         is($res->{get_settings}->{address_line_1}, 'Jalan Usahawan', 'address line 1 set as expexted');
     };
@@ -100,7 +100,7 @@ subtest 'MLT upgrade to MF account' => sub {
         my $mlt_client = Client::Account->new({loginid => $mlt_loginid});
         isnt($mlt_client->financial_assessment->data, undef, 'has financial assessment after MF account creation');
 
-        my $res = $t->await::get_settings({ get_settings => 1  });
+        my $res = $t->await::get_settings({get_settings => 1});
         ok($res->{get_settings});
         is($res->{get_settings}->{address_line_1}, 'Test', 'address line 1 has been updated after MF account creation');
     };
@@ -114,7 +114,7 @@ subtest 'VR upgrade to MF - Germany' => sub {
         residence       => 'de',
     });
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t->await::authorize({ authorize => $token });
+    $t->await::authorize({authorize => $token});
 
     subtest 'upgrade to MF' => sub {
         my %details = (%client_details, %$mf_details);
@@ -160,7 +160,7 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
             client_password => 'abc123',
         });
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-        $t->await::authorize({ authorize => $token });
+        $t->await::authorize({authorize => $token});
 
         subtest 'create MX / CR acc, authorize' => sub {
             my %details = %client_details;
@@ -175,7 +175,7 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
             like($loginid, qr/^$broker\d+$/, "got $broker client $loginid");
 
             ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-            $t->await::authorize({ authorize => $token });
+            $t->await::authorize({authorize => $token});
         };
 
         subtest 'no MF upgrade for MX' => sub {

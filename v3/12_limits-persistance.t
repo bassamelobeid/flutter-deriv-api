@@ -34,7 +34,7 @@ $user->save;
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-my $authorize = $t->await::authorize({ authorize => $token });
+my $authorize = $t->await::authorize({authorize => $token});
 
 ok !$authorize->{error}, "authorised";
 
@@ -49,11 +49,11 @@ BAIL_OUT("cannot hit limit after $i attempts, no sense test further")
     if ($i == 500);
 pass "rate limit reached";
 
-my $logout = $t->await::logout({ logout => 1 });
-is $logout->{logout},   1;
+my $logout = $t->await::logout({logout => 1});
+is $logout->{logout}, 1;
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-$authorize = $t->await::authorize({ authorize => $token });
+$authorize = $t->await::authorize({authorize => $token});
 
 ok !$authorize->{error}, "re-authorised";
 

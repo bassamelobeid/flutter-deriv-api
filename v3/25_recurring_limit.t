@@ -39,13 +39,14 @@ die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
 unless ($pid) {
     # disable end test of Test::Warnings in child process
     Test::Warnings->import(':no_end_test');
-    do { sleep 1; _create_tick(700, 'R_50');} for 0..1;
+    do { sleep 1; _create_tick(700, 'R_50'); }
+        for 0 .. 1;
 
     exit;
 }
 
-$t->await::tick({ ticks => 'R_50' });
-my $res = $t->await::tick({ ticks => 'R_50' });
+$t->await::tick({ticks => 'R_50'});
+my $res = $t->await::tick({ticks => 'R_50'});
 is $res->{error}->{code}, 'AlreadySubscribed';
 
 done_testing();

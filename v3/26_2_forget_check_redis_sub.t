@@ -139,7 +139,7 @@ $client->smart_payment(
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-my $authorize = $t->await::authorize({ authorize => $token });
+my $authorize = $t->await::authorize({authorize => $token});
 
 my ($req, $res, $start, $end);
 $req = {
@@ -154,15 +154,15 @@ $req = {
     "duration_unit" => "m",
 };
 
-$t->await::forget_all({ forget_all => 'proposal' });
+$t->await::forget_all({forget_all => 'proposal'});
 create_proposals();
 cmp_ok pricer_sub_count(), '==', 3, "3 pricer sub Ok";
 
-$res = $t->await::forget({ forget => [values(%$sub_ids)]->[0] });
+$res = $t->await::forget({forget => [values(%$sub_ids)]->[0]});
 cmp_ok $res->{forget}, '==', 1, 'Correct number of subscription forget';
 cmp_ok pricer_sub_count(), '==', 2, "price count checking";
 
-$res = $t->await::forget_all({ forget_all => 'proposal' });
+$res = $t->await::forget_all({forget_all => 'proposal'});
 is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
 is pricer_sub_count(), 0, "price count checking";
 

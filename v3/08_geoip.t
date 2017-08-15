@@ -17,7 +17,7 @@ subtest 'country information is returned in website_status' => sub {
             {
                 'CF-IPCOUNTRY' => $country,
             });
-        my $res = $t->await::website_status({ website_status => 1 });
+        my $res = $t->await::website_status({website_status => 1});
         is($res->{website_status}{clients_country}, $country, 'have correct country for ' . $country);
         $t->finish_ok;
     }
@@ -29,7 +29,7 @@ subtest 'country code Malaysia' => sub {
         {
             'CF-IPCOUNTRY' => 'my',
         });
-    my $res = $t->await::payout_currencies({ payout_currencies => 1 });
+    my $res = $t->await::payout_currencies({payout_currencies => 1});
     cmp_deeply($res->{payout_currencies}, bag(qw(USD EUR GBP AUD BTC)), 'payout currencies are correct') or note explain $res;
     $t->finish_ok;
     done_testing;
@@ -40,7 +40,7 @@ subtest 'country code Japan' => sub {
         {
             'CF-IPCOUNTRY' => 'jp',
         });
-    my $res = $t->await::payout_currencies({ payout_currencies => 1 });
+    my $res = $t->await::payout_currencies({payout_currencies => 1});
     cmp_deeply($res->{payout_currencies}, bag(qw(JPY)), 'payout currencies are correct') or note explain $res;
     $t->finish_ok;
     done_testing;

@@ -45,7 +45,6 @@ initialize_realtime_ticks_db();
 
     my $t = build_wsapi_test();
 
-
     sub _check_ticks {
         my $type = shift;
         my $msg  = shift;
@@ -56,26 +55,29 @@ initialize_realtime_ticks_db();
         unless ($pid) {
             # disable end test of Test::Warnings in child process
             Test::Warnings->import(':no_end_test');
-            do { sleep 1; _create_tick(700, 'R_50');} for 0..1;
+            do { sleep 1; _create_tick(700, 'R_50'); }
+                for 0 .. 1;
             exit;
         }
         $type eq 'ticks' ? $t->await::tick($msg) : $t->await::ohlc($msg);
         $msg->{req_id} = 1;
         $type eq 'ticks' ? $t->await::tick($msg) : $t->await::ohlc($msg);
 
-        my $res = $t->await::forget_all({ forget_all => $type });
+        my $res = $t->await::forget_all({forget_all => $type});
         ok $res->{forget_all}, "Manage to forget_all: ticks" or diag explain $res;
         is scalar(@{$res->{forget_all}}), 2, "Forget the relevant tick channel";
     }
 
-    _check_ticks('ticks',{ ticks => 'R_50' });
-    _check_ticks('candles',{
-        ticks_history => 'R_50',
-        end           => "latest",
-        count         => 10,
-        style         => "candles",
-        subscribe     => 1
-    });
+    _check_ticks('ticks', {ticks => 'R_50'});
+    _check_ticks(
+        'candles',
+        {
+            ticks_history => 'R_50',
+            end           => "latest",
+            count         => 10,
+            style         => "candles",
+            subscribe     => 1
+        });
 
     $t->finish_ok;
 }

@@ -26,14 +26,20 @@ my $t     = build_wsapi_test();
 my $email = 'test@binary.com';
 
 subtest 'verify_email' => sub {
-    my $res = $t->await::verify_email({ verify_email => $email,                type         => 'some_garbage_value'             });
+    my $res = $t->await::verify_email({
+        verify_email => $email,
+        type         => 'some_garbage_value'
+    });
 
     is($res->{msg_type}, 'verify_email');
     is($res->{error}->{code}, 'InputValidationFailed', 'verify_email failed');
     is($res->{msg_type},      'verify_email',          'Message type is correct in case of error');
     test_schema('verify_email', $res);
 
-    $res = $t->await::verify_email({ verify_email => $email, type => 'account_opening' });
+    $res = $t->await::verify_email({
+        verify_email => $email,
+        type         => 'account_opening'
+    });
     is($res->{verify_email}, 1, 'verify_email OK');
     test_schema('verify_email', $res);
 
@@ -51,7 +57,10 @@ subtest 'verify_email' => sub {
 
     # close session to invalidate hit limit
     reconnect($t);
-    $res = $t->await::verify_email({ verify_email => $email, type => 'account_opening' });
+    $res = $t->await::verify_email({
+        verify_email => $email,
+        type         => 'account_opening'
+    });
     is($res->{verify_email}, 1, 'verify_email OK');
     test_schema('verify_email', $res);
     ok _get_token(), "Token exists";
@@ -70,7 +79,10 @@ subtest 'create Virtual account' => sub {
     my $res = $t->await::new_account_virtual($create_vr);
     is($res->{error}->{code}, 'InvalidToken', 'wrong token');
 
-    $res = $t->await::verify_email({ verify_email => $email, type => 'account_opening' });
+    $res = $t->await::verify_email({
+        verify_email => $email,
+        type         => 'account_opening'
+    });
     is($res->{verify_email}, 1, 'verify_email OK');
 
     $create_vr->{verification_code} = _get_token();
@@ -94,7 +106,10 @@ subtest 'Invalid email verification code' => sub {
 };
 
 subtest 'NO duplicate email' => sub {
-    my $res = $t->await::verify_email({ verify_email => $email, type => 'account_opening' });
+    my $res = $t->await::verify_email({
+        verify_email => $email,
+        type         => 'account_opening'
+    });
     is($res->{verify_email}, 1, 'verify_email OK');
     test_schema('verify_email', $res);
 

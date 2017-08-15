@@ -49,7 +49,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my $t = build_wsapi_test({language => 'EN'});
 
 # test payout_currencies
-my $payout_currencies = $t->await::payout_currencies({ payout_currencies => 1 });
+my $payout_currencies = $t->await::payout_currencies({payout_currencies => 1});
 ok($payout_currencies->{payout_currencies});
 ok(grep { $_ eq 'USD' } @{$payout_currencies->{payout_currencies}});
 test_schema('payout_currencies', $payout_currencies);
@@ -58,17 +58,17 @@ test_schema('payout_currencies', $payout_currencies);
 my (undef, $call_params) = call_mocked_client($t, {active_symbols => 'full'});
 ok exists $call_params->{token};
 
-my $active_symbols = $t->await::active_symbols({ active_symbols => 'full' });
+my $active_symbols = $t->await::active_symbols({active_symbols => 'full'});
 is($active_symbols->{msg_type}, 'active_symbols');
 ok($active_symbols->{active_symbols});
 test_schema('active_symbols', $active_symbols);
 
-$active_symbols = $t->await::active_symbols({ active_symbols => 'brief' });
+$active_symbols = $t->await::active_symbols({active_symbols => 'brief'});
 ok($active_symbols->{active_symbols});
- test_schema('active_symbols', $active_symbols);
+test_schema('active_symbols', $active_symbols);
 
 # test contracts_for
-my $contracts_for = $t->await::contracts_for({ contracts_for => 'R_50' });
+my $contracts_for = $t->await::contracts_for({contracts_for => 'R_50'});
 is($contracts_for->{msg_type}, 'contracts_for');
 ok($contracts_for->{contracts_for});
 ok($contracts_for->{contracts_for}->{available});
@@ -86,31 +86,22 @@ if (not $now->is_a_weekend) {
     test_schema('contracts_for', $contracts_for_japan);
 
 # test contracts_for EURUSD for forward_starting_options
-    my $expected_blackouts = [
-          [
-            '11:00:00',
-            '13:00:00'
-          ],
-          [
-            '20:00:00',
-            '23:59:59'
-          ]
-        ];
+    my $expected_blackouts = [['11:00:00', '13:00:00'], ['20:00:00', '23:59:59']];
 
-    my $contracts_for_eurusd = $t->await::contracts_for({ contracts_for => 'frxEURUSD' });
+    my $contracts_for_eurusd = $t->await::contracts_for({contracts_for => 'frxEURUSD'});
     ok($contracts_for_eurusd->{contracts_for});
     ok($contracts_for_eurusd->{contracts_for}->{available});
     is($contracts_for_eurusd->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
 
-    foreach my $contract (@{$contracts_for_eurusd->{contracts_for}->{'available'}}){
-      next if $contract->{'start_type'} ne 'forward';
-      cmp_deeply $contract->{'forward_starting_options'}[0]{'blackouts'}, $expected_blackouts, "expected blackouts";
+    foreach my $contract (@{$contracts_for_eurusd->{contracts_for}->{'available'}}) {
+        next if $contract->{'start_type'} ne 'forward';
+        cmp_deeply $contract->{'forward_starting_options'}[0]{'blackouts'}, $expected_blackouts, "expected blackouts";
     }
 
     test_schema('contracts_for', $contracts_for_eurusd);
 }
 
-my $trading_times = $t->await::trading_times({ trading_times => Date::Utility->new->date_yyyymmdd });
+my $trading_times = $t->await::trading_times({trading_times => Date::Utility->new->date_yyyymmdd});
 ok($trading_times->{trading_times});
 ok($trading_times->{trading_times}->{markets});
 test_schema('trading_times', $trading_times);
@@ -119,7 +110,7 @@ Cache::RedisDB->flushall;
 (undef, $call_params) = call_mocked_client($t, {asset_index => 1});
 is $call_params->{language}, 'EN';
 
-my $asset_index = $t->await::asset_index({ asset_index => 1 });
+my $asset_index = $t->await::asset_index({asset_index => 1});
 is($asset_index->{msg_type}, 'asset_index');
 ok($asset_index->{asset_index});
 my $got_asset_index = $asset_index->{asset_index};
