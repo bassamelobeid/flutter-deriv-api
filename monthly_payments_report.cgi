@@ -27,7 +27,8 @@ my $months        = $params{months}            // 1;
 # sensible before proceeding.
 sub _print_and_die {
     print @_;
-    code_exit_BO;
+    code_exit_BO();
+    return;
 }
 _print_and_die "Invalid broker code" unless $broker =~ /^[A-Z]{1,6}$/;
 
