@@ -50,14 +50,17 @@ sub authorize {
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
     } elsif ($c->req->method eq 'POST' and $c->session('_is_logined')) {
-        # get loginid from Mojo Session
+        # Get loginid from Mojo Session
         $client = $c->_get_client;
     } elsif ($c->session('_oneall_user_id')) {
-        # from Oneall Social Login
-        my $oneall_user_id = $c->session('_oneall_user_id');
-        $client = $c->_login($app, $oneall_user_id) or return;
-        $c->session('_is_logined', 1);
-        $c->session('_loginid',    $client->loginid);
+        # Prevent Japan IP access social login feature.
+        if ($c->{stash}->{request}->{country_code} ne 'jp') {
+            # Get client from Oneall Social Login.
+            my $oneall_user_id = $c->session('_oneall_user_id');
+            $client = $c->_login($app, $oneall_user_id) or return;
+            $c->session('_is_logined', 1);
+            $c->session('_loginid',    $client->loginid);
+        }
     }
 
     my $brand_name = $c->stash('brand')->name;
@@ -72,12 +75,13 @@ sub authorize {
 
         # show login form
         return $c->render(
-            template  => _get_login_template_name($brand_name),
-            layout    => $brand_name,
-            app       => $app,
-            error     => $error,
-            r         => $c->stash('request'),
-            csrftoken => $c->csrf_token,
+            template     => _get_login_template_name($brand_name),
+            layout       => $brand_name,
+            app          => $app,
+            error        => $error,
+            r            => $c->stash('request'),
+            csrftoken    => $c->csrf_token,
+            country_code => $c->{stash}->{request}->{country_code},
         );
     }
 

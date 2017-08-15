@@ -24,8 +24,9 @@ sub callback {
         // '';
 
     my $redirect_uri = $c->req->url->path('/oauth2/authorize')->to_abs;
-    # redirect client to authorize subroutine if there is no connection token provided
-    return $c->redirect_to($redirect_uri) unless $connection_token;
+    # Redirect client to authorize subroutine if there is no connection token provided
+    # or request came from Japan.
+    return $c->redirect_to($redirect_uri) if $c->{stash}->{request}->{country_code} eq 'jp' or not $connection_token;
 
     my $oneall = WWW::OneAll->new(
         subdomain   => 'binary',
@@ -46,8 +47,8 @@ sub callback {
     my $user_connect  = BOM::Database::Model::UserConnect->new;
     my $user_id       = $user_connect->get_user_id_by_connect($provider_data);
 
-    # create virtual client if user not found
-    # consequently initialize user_id
+    # Create virtual client if user not found
+    # consequently initialize user_id and link account to social login.
     unless ($user_id) {
         my $email = _get_email($provider_data);
         my $user  = try {
