@@ -13,24 +13,35 @@ use BOM::Database::ClientDB;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
+BOM::Backoffice::Auth0::can_access(['Accounts']);
+
 my %params = %{request()->params};
 
-my $yyyymm        = $params{yyyymm};
-my $broker        = $params{broker};
-my $payment_types = $params{payment_type};
-my $all_types     = $params{all_payment_types};
-my $months        = $params{months} // 1;
+my $yyyymm        = $params{yyyymm}            // '';
+my $broker        = $params{broker}            // '';
+my $payment_types = $params{payment_type}      // '';
+my $all_types     = $params{all_payment_types} // '';
+my $months        = $params{months}            // 1;
 
 # We construct the download filename from these two values, so let's make sure they're
 # sensible before proceeding.
-die "Invalid broker code" unless $broker =~ /^[A-Z]{1,6}$/;
-my ($yyyy, $mm) = $yyyymm =~ /^(\d{4})-(\d{2})$/
-    or die "Invalid yyyymm parameter";
+sub _print_and_die {
+    print @_;
+    code_exit_BO;
+}
+_print_and_die "Invalid broker code" unless $broker =~ /^[A-Z]{1,6}$/;
 
-my $start_date = DateTime->new(
-    year  => $yyyy,
-    month => $mm
-);
+my $start_date;
+try {
+    $yyyymm =~ /^(\d{4})-(\d{2})$/;
+    $start_date = DateTime->new(
+        year  => $1,
+        month => $2
+    );
+}
+catch {
+    _print_and_die "Date $yyyymm was not parsed as YYYY-MM, check it";
+};
 my $until_date = $start_date->clone->add(months => $months);
 
 my ($payment_filter, $csv_name);
