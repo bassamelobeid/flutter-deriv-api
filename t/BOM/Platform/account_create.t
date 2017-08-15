@@ -159,10 +159,6 @@ subtest 'create account' => sub {
         # test account_opening_reason
         is($real_client->account_opening_reason, $real_client_details{account_opening_reason}, "Account Opening Reason should be the same");
 
-        # duplicate acc
-        lives_ok { $real_acc = create_real_acc($vr_client, $user, $broker); } "Try create duplicate $broker acc";
-        is($real_acc->{error}, 'duplicate email', "Create duplicate $broker acc failed");
-
         # MF acc
         if ($broker eq 'MLT') {
             lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
