@@ -142,6 +142,7 @@ sub get_duplicate_client {
         UPPER(TRIM(BOTH ' ' FROM first_name))=(TRIM(BOTH ' ' FROM ?)) AND
         UPPER(TRIM(BOTH ' ' FROM last_name))=(TRIM(BOTH ' ' FROM ?)) AND
         date_of_birth=? AND
+        email<>? AND
         broker_code=?
 ";
     my $dupe_dbh = $self->db->dbh;
@@ -149,7 +150,8 @@ sub get_duplicate_client {
     $dupe_sth->bind_param(1, uc $args->{first_name});
     $dupe_sth->bind_param(2, uc $args->{last_name});
     $dupe_sth->bind_param(3, $args->{date_of_birth});
-    $dupe_sth->bind_param(4, $self->broker_code);
+    $dupe_sth->bind_param(4, $args->{email});
+    $dupe_sth->bind_param(5, $self->broker_code);
     $dupe_sth->execute();
     my @dupe_record = $dupe_sth->fetchrow_array();
 
