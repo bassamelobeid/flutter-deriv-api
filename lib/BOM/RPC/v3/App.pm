@@ -238,30 +238,6 @@ sub verify_app {
         }};
 }
 
-sub app_markup_aggregates {
-    my $params    = shift;
-    my $args      = $params->{args};
-    my $client    = $params->{client};
-    my $oauth     = BOM::Database::Model::OAuth->new;
-    my $user      = BOM::Platform::User->new({email => $client->email});
-    my $app_ids   = $oauth->get_app_ids_by_user_id($user->id);
-    my $time_from = Date::Utility->new($args->{date_from})->date_yyyymmdd;
-    my $time_to   = Date::Utility->new($args->{date_to})->date_yyyymmdd;
-
-    my $clientdb = BOM::Database::ClientDB->new({
-            client_loginid => $client->loginid,
-            operation      => 'replica',
-        })->db;
-
-    return {
-        by_app_id => $clientdb->dbh->selectall_arrayref(
-            'SELECT * FROM reporting.get_app_markup_aggregates(?,?,?)',
-            {Slice => {}},
-            __arrayref_to_db_array($app_ids),
-            $time_from, $time_to
-        )};
-}
-
 sub app_markup_details {
     my $params  = shift;
     my $args    = $params->{args};

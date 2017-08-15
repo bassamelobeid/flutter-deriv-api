@@ -276,7 +276,6 @@ sub startup {
         ['app_delete',            \&BOM::RPC::v3::App::delete,                [qw(auth)]],
         ['oauth_apps',            \&BOM::RPC::v3::App::oauth_apps,            [qw(auth)]],
         ['revoke_oauth_app',      \&BOM::RPC::v3::App::revoke_oauth_app,      [qw(auth)]],
-        ['app_markup_aggregates', \&BOM::RPC::v3::App::app_markup_aggregates, [qw(auth)]],
         ['app_markup_details',    \&BOM::RPC::v3::App::app_markup_details,    [qw(auth)]],
 
         ['mt5_login_list',      \&BOM::RPC::v3::MT5::Account::mt5_login_list,      [qw(auth)]],
