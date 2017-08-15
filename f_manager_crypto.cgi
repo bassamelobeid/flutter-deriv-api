@@ -341,9 +341,10 @@ EOF
                     price => 'USD',
                     in_USD($db_tran->{amount}, $currency)));
         } else {
-            print '<td colspan="2">&nbsp;</td>';
+            print '<td>&nbsp;</td><td>&nbsp;</td>';
         }
-        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status transaction_date blockchain_date)};
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status)};
+        print '<td sorttable_customkey="' . (sprintf "%012d", $_ ? Date::Utility->new($_)->epoch : 0) . '">' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(transaction_date blockchain_date)};
         print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(confirmations)};
         print '<td><span style="color: ' . ($_ > 1 ? 'red' : $_ == 1 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
