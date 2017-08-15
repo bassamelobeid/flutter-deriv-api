@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 
@@ -12,6 +12,8 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
+
+use await;
 
 ## do not send email
 use Test::MockModule;
@@ -57,12 +59,11 @@ subtest 'MLT upgrade to MF account' => sub {
     });
 
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+    $t->await::authorize({authorize => $token});
 
     my $mlt_loginid;
     subtest 'create MLT account, authorize' => sub {
-        $t = $t->send_ok({json => \%client_details})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_real(\%client_details);
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);
 
@@ -70,13 +71,12 @@ subtest 'MLT upgrade to MF account' => sub {
         like($mlt_loginid, qr/^MLT\d+$/, "got MLT client $mlt_loginid");
 
         ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mlt_loginid);
-        $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+        $t->await::authorize({authorize => $token});
 
         my $mlt_client = Client::Account->new({loginid => $mlt_loginid});
         is($mlt_client->financial_assessment, undef, 'doesn\'t have financial assessment');
 
-        $t = $t->send_ok({json => {get_settings => 1}})->message_ok;
-        $res = decode_json($t->message->[1]);
+        $res = $t->await::get_settings({get_settings => 1});
         ok($res->{get_settings});
         is($res->{get_settings}->{address_line_1}, 'Jalan Usahawan', 'address line 1 set as expexted');
     };
@@ -85,10 +85,7 @@ subtest 'MLT upgrade to MF account' => sub {
         my %details = (%client_details, %$mf_details);
         delete $details{new_account_real};
         note explain %details;
-        $t = $t->send_ok({json => \%details})->message_ok;
-        my $res = decode_json($t->message->[1]);
-        explain $res;
-        is($res->{msg_type}, 'new_account_maltainvest');
+        my $res = $t->await::new_account_maltainvest(\%details);
         ok($res->{new_account_maltainvest});
         test_schema('new_account_maltainvest', $res);
 
@@ -103,8 +100,7 @@ subtest 'MLT upgrade to MF account' => sub {
         my $mlt_client = Client::Account->new({loginid => $mlt_loginid});
         isnt($mlt_client->financial_assessment->data, undef, 'has financial assessment after MF account creation');
 
-        $t = $t->send_ok({json => {get_settings => 1}})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::get_settings({get_settings => 1});
         ok($res->{get_settings});
         is($res->{get_settings}->{address_line_1}, 'Test', 'address line 1 has been updated after MF account creation');
     };
@@ -118,7 +114,7 @@ subtest 'VR upgrade to MF - Germany' => sub {
         residence       => 'de',
     });
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+    $t->await::authorize({authorize => $token});
 
     subtest 'upgrade to MF' => sub {
         my %details = (%client_details, %$mf_details);
@@ -126,8 +122,7 @@ subtest 'VR upgrade to MF - Germany' => sub {
         $details{first_name} = 'first name DE';
         $details{residence}  = 'de';
 
-        $t = $t->send_ok({json => \%details})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = $t->await::new_account_maltainvest(\%details);
         ok($res->{new_account_maltainvest});
         test_schema('new_account_maltainvest', $res);
 
@@ -165,15 +160,14 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
             client_password => 'abc123',
         });
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-        $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+        $t->await::authorize({authorize => $token});
 
         subtest 'create MX / CR acc, authorize' => sub {
             my %details = %client_details;
             $details{first_name} = $map->{first_name};
             $details{residence}  = $map->{residence};
 
-            $t = $t->send_ok({json => \%details})->message_ok;
-            my $res = decode_json($t->message->[1]);
+            my $res = $t->await::new_account_real(\%details);
             ok($res->{new_account_real});
             test_schema('new_account_real', $res);
 
@@ -181,14 +175,13 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
             like($loginid, qr/^$broker\d+$/, "got $broker client $loginid");
 
             ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-            $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+            $t->await::authorize({authorize => $token});
         };
 
         subtest 'no MF upgrade for MX' => sub {
             my %details = (%client_details, %$mf_details);
             delete $details{new_account_real};
-            $t = $t->send_ok({json => \%details})->message_ok;
-            my $res = decode_json($t->message->[1]);
+            my $res = $t->await::new_account_maltainvest(\%details);
 
             is($res->{msg_type}, 'new_account_maltainvest');
             is($res->{error}->{code}, 'PermissionDenied', "no MF upgrade for $broker");

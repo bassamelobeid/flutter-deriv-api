@@ -2,7 +2,6 @@ use strict;
 use warnings;
 
 use Test::Most;
-use JSON;
 use Date::Utility;
 
 use FindBin qw/$Bin/;
@@ -13,6 +12,8 @@ use Sereal::Encoder;
 use BOM::Test::Helper qw/build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
+
+use await;
 
 use Test::MockModule;
 use Mojo::Redis2;
@@ -138,8 +139,7 @@ $client->smart_payment(
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
+my $authorize = $t->await::authorize({authorize => $token});
 
 my ($req, $res, $start, $end);
 $req = {
@@ -154,28 +154,24 @@ $req = {
     "duration_unit" => "m",
 };
 
-$t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
-create_propsals();
+$t->await::forget_all({forget_all => 'proposal'});
+create_proposals();
 cmp_ok pricer_sub_count(), '==', 3, "3 pricer sub Ok";
 
-$t->send_ok({json => {forget => [values(%$sub_ids)]->[0]}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::forget({forget => [values(%$sub_ids)]->[0]});
 cmp_ok $res->{forget}, '==', 1, 'Correct number of subscription forget';
 cmp_ok pricer_sub_count(), '==', 2, "price count checking";
 
-$t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $t->await::forget_all({forget_all => 'proposal'});
 is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
 is pricer_sub_count(), 0, "price count checking";
 
 done_testing();
 
-sub create_propsals {
+sub create_proposals {
     for my $s (@symbols) {
-        $req->{symbol} = $s;
-        $t->send_ok({json => $req})->message_ok;
-        $res = decode_json($t->message->[1]);
-        ok $res->{proposal}->{id}, 'Should return id';
+        $res = $t->await::proposal({%$req, symbol => $s});
+        ok $res->{proposal}{id}, 'Should return id';
         $sub_ids->{$s} = $res->{proposal}->{id};
     }
 }

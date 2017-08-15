@@ -122,22 +122,28 @@ for (1 .. 10) {
 
 }
 
-my $authorize = $t->await::authorize({ authorize => $token });
+my $authorize = $t->await::authorize({authorize => $token});
 
 is $authorize->{authorize}->{email},   'unit_test@binary.com';
 is $authorize->{authorize}->{loginid}, $test_client->loginid;
 
-my $statement = $t->await::statement({ statement => 1, limit => 5 });
+my $statement = $t->await::statement({
+    statement => 1,
+    limit     => 5
+});
 ok($statement->{statement});
 is($statement->{statement}->{count}, 5);
 test_schema('statement', $statement);
 
 ## balance
-my $balance = $t->await::balance({ balance => 1 });
+my $balance = $t->await::balance({balance => 1});
 ok($balance->{balance});
 test_schema('balance', $balance);
 
-my $profit_table = $t->await::profit_table({ profit_table => 1, limit => 1 });
+my $profit_table = $t->await::profit_table({
+    profit_table => 1,
+    limit        => 1
+});
 ok($profit_table->{profit_table});
 ok($profit_table->{profit_table}->{count});
 my $trx = $profit_table->{profit_table}->{transactions}->[0];
@@ -149,7 +155,7 @@ my (undef, $call_params) = call_mocked_client($t, {get_limits => 1});
 is $call_params->{language}, 'EN';
 ok exists $call_params->{token};
 
-my $res = $t->await::get_limits({ get_limits => 1 });
+my $res = $t->await::get_limits({get_limits => 1});
 ok($res->{get_limits});
 is $res->{msg_type}, 'get_limits';
 is $res->{get_limits}->{open_positions}, 60;

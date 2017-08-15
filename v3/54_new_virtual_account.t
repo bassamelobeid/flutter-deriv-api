@@ -9,6 +9,8 @@ use BOM::Platform::Token;
 use BOM::Platform::RedisReplicated;
 use List::Util qw(first);
 
+use await;
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 # We don't want to fail due to hitting limits
@@ -24,23 +26,20 @@ my $t     = build_wsapi_test();
 my $email = 'test@binary.com';
 
 subtest 'verify_email' => sub {
-    $t = $t->send_ok({
-            json => {
-                verify_email => $email,
-                type         => 'some_garbage_value'
-            }})->message_ok;
-    my $res = decode_json($t->message->[1]);
+    my $res = $t->await::verify_email({
+        verify_email => $email,
+        type         => 'some_garbage_value'
+    });
+
     is($res->{msg_type}, 'verify_email');
     is($res->{error}->{code}, 'InputValidationFailed', 'verify_email failed');
     is($res->{msg_type},      'verify_email',          'Message type is correct in case of error');
     test_schema('verify_email', $res);
 
-    $t = $t->send_ok({
-            json => {
-                verify_email => $email,
-                type         => 'account_opening'
-            }})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $t->await::verify_email({
+        verify_email => $email,
+        type         => 'account_opening'
+    });
     is($res->{verify_email}, 1, 'verify_email OK');
     test_schema('verify_email', $res);
 
@@ -58,13 +57,10 @@ subtest 'verify_email' => sub {
 
     # close session to invalidate hit limit
     reconnect($t);
-    $t = $t->send_ok({
-            json => {
-                verify_email => $email,
-                type         => 'account_opening'
-            }})->message_ok;
-    $res = decode_json($t->message->[1]);
-    is($res->{msg_type}, 'verify_email');
+    $res = $t->await::verify_email({
+        verify_email => $email,
+        type         => 'account_opening'
+    });
     is($res->{verify_email}, 1, 'verify_email OK');
     test_schema('verify_email', $res);
     ok _get_token(), "Token exists";
@@ -80,22 +76,18 @@ my $create_vr = {
 };
 
 subtest 'create Virtual account' => sub {
-    $t = $t->send_ok({json => $create_vr})->message_ok;
-    my $res = decode_json($t->message->[1]);
+    my $res = $t->await::new_account_virtual($create_vr);
     is($res->{error}->{code}, 'InvalidToken', 'wrong token');
 
-    $t = $t->send_ok({
-            json => {
-                verify_email => $email,
-                type         => 'account_opening'
-            }})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $t->await::verify_email({
+        verify_email => $email,
+        type         => 'account_opening'
+    });
     is($res->{verify_email}, 1, 'verify_email OK');
 
     $create_vr->{verification_code} = _get_token();
 
-    $t = $t->send_ok({json => $create_vr})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $t->await::new_account_virtual($create_vr);
     is($res->{msg_type}, 'new_account_virtual');
     ok($res->{new_account_virtual});
     test_schema('new_account_virtual', $res);
@@ -106,8 +98,7 @@ subtest 'create Virtual account' => sub {
 };
 
 subtest 'Invalid email verification code' => sub {
-    $t = $t->send_ok({json => $create_vr})->message_ok;
-    my $res = decode_json($t->message->[1]);
+    my $res = $t->await::new_account_virtual($create_vr);
 
     is($res->{msg_type}, 'new_account_virtual');
     is($res->{error}->{code},       'InvalidToken', 'wrong verification code');
@@ -115,18 +106,15 @@ subtest 'Invalid email verification code' => sub {
 };
 
 subtest 'NO duplicate email' => sub {
-    $t = $t->send_ok({
-            json => {
-                verify_email => $email,
-                type         => 'account_opening'
-            }})->message_ok;
-    my $res = decode_json($t->message->[1]);
+    my $res = $t->await::verify_email({
+        verify_email => $email,
+        type         => 'account_opening'
+    });
     is($res->{verify_email}, 1, 'verify_email OK');
     test_schema('verify_email', $res);
 
     $create_vr->{verification_code} = _get_token();
-    $t = $t->send_ok({json => $create_vr})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $t->await::new_account_virtual($create_vr);
 
     is($res->{error}->{code},       'duplicate email', 'duplicate email err code');
     is($res->{new_account_virtual}, undef,             'NO account created');
@@ -135,8 +123,7 @@ subtest 'NO duplicate email' => sub {
 subtest 'insufficient data' => sub {
     delete $create_vr->{residence};
 
-    $t = $t->send_ok({json => $create_vr})->message_ok;
-    my $res = decode_json($t->message->[1]);
+    my $res = $t->await::new_account_virtual($create_vr);
     note explain $res;
 
     is($res->{error}->{code}, 'InputValidationFailed', 'insufficient input');
