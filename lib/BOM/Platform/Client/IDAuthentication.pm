@@ -165,13 +165,23 @@ sub _fetch_proveid {
     if ($premise =~ /^(\d+)/) {
         $premise = $1;
     }
-
-    return BOM::Platform::ProveID->new(
-        client        => $self->client,
-        search_option => 'ProveID_KYC',
-        premise       => $premise,
-        force_recheck => $self->force_recheck
-    )->get_result;
+    my $result = {};
+    try {
+        $result = BOM::Platform::ProveID->new(
+            client        => $self->client,
+            search_option => 'ProveID_KYC',
+            premise       => $premise,
+            force_recheck => $self->force_recheck
+        )->get_result;
+    }
+    catch {
+        if ($_ =~ /Charging Error/) {
+            #send email to finance here?
+        }
+        # send email to compliance here?
+        warn "Experian error in _fetch_proveid: ", $_;
+    };
+    return $result;
 }
 
 __PACKAGE__->meta->make_immutable;
