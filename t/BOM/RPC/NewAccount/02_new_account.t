@@ -168,17 +168,10 @@ subtest $method => sub {
     };
 
     subtest 'Create new account' => sub {
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidAccount',
-            'It should return error when try to create new client using exists real client')
-            ->error_message_is('Sorry, account opening is unavailable.',
-            'It should return error when try to create new client using exists real client');
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        isnt $result->{error}->{code}, 'InvalidAccount', 'No error with duplicate details but residence not provided so it errors out';
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vclient->loginid, 'test token');
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('NoLandingCompany',
-            'It should return error when try to create account without residence');
-
         $params->{args}->{residence} = 'id';
         @{$params->{args}}{keys %$client_details} = values %$client_details;
         delete $params->{args}->{first_name};
@@ -266,10 +259,8 @@ subtest $method => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token} = $auth_token;
 
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidAccount',
-            'It should return error if client residense does not fit for maltainvest')
-            ->error_message_is('Sorry, account opening is unavailable.', 'It should return error if client residense does not fit for maltainvest');
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        is $result->{error}->{code}, 'InsufficientAccountDetails', 'It should return error if client residense does not fit for maltainvest';
 
         $client->residence('de');
         $client->save;
@@ -404,7 +395,7 @@ $params = {
 };
 
 subtest $method => sub {
-    my ($user, $client, $auth_token);
+    my ($user, $client, $auth_token, $normal_vr, $normal_user, $normal_auth_token, $normal_params);
 
     subtest 'Initialization' => sub {
         lives_ok {
@@ -417,13 +408,28 @@ subtest $method => sub {
             );
             $user->save;
             $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
+                broker_code => 'VRTJ',
                 email       => $email,
             });
             $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
 
             $user->add_loginid({loginid => $client->loginid});
             $user->save;
+
+            $email       = 'new_email' . rand(999) . '@binary.com';
+            $normal_user = BOM::Platform::User->create(
+                email    => $email,
+                password => $hash_pwd
+            );
+            $normal_user->save;
+            $normal_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'VRTC',
+                email       => $email,
+            });
+            $normal_auth_token = BOM::Database::Model::AccessToken->new->create_token($normal_vr->loginid, 'test token');
+
+            $normal_user->add_loginid({loginid => $normal_vr->loginid});
+            $normal_user->save;
         }
         'Initial users and clients';
     };
@@ -447,12 +453,18 @@ subtest $method => sub {
         }
     };
 
-    subtest 'Create new account maltainvest' => sub {
+    subtest 'Create new account japan' => sub {
+        $normal_params = $params;
+        $normal_params->{token} = $normal_auth_token;
+
+        my $result = $rpc_ct->call_ok($method, $normal_params)->has_no_system_error->has_error->result;
+        is $result->{error}->{code}, 'PermissionDenied',
+            'It should return an error if normal virtual client tried to make japan real account call, only japan-virtual is allowed';
+
         $params->{token} = $auth_token;
 
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidAccount', 'It should return error if client residense does not fit for japan')
-            ->error_message_is('Sorry, account opening is unavailable.', 'It should return error if client residense does not fit for japan');
+        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        is $result->{error}->{code}, 'InvalidAccount', 'It should return error if client residense does not fit for japan';
 
         $client->residence('jp');
         $client->save;
