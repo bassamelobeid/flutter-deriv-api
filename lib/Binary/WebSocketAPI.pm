@@ -520,23 +520,22 @@ sub startup {
 
                 if ($chunk_size == 0) {
                     $c->call_rpc({
-                            method => 'document_upload',
+                            method => 'upload_finished',
                             args   => {
-                                file_id => $params->{file_id},
+                                file_id   => $params->{file_id},
+                                size      => $params->{received_bytes},
+                                checksum  => $params->{sha1}->hexdigest,
+                                call_type => $params->{call_type},
                             },
-                            success => sub {
-                                $c->send({
-                                        json => {
-                                            msg_type        => 'document_upload',
-                                            req_id          => $params->{req_id},
-                                            passthrough     => $params->{passthrough},
-                                            document_upload => {
-                                                status    => 'success',
-                                                size      => $params->{received_bytes},
-                                                checksum  => $params->{sha1}->hexdigest,
-                                                upload_id => $params->{upload_id},
-                                                call_type => $params->{call_type},
-                                            }}});
+                            response => sub {
+                                my ($c, $rpc_response) = @_;
+
+                                return {
+                                    msg_type        => 'document_upload',
+                                    document_upload => {
+                                        upload_id => $params->{upload_id},
+                                        %{$rpc_response->{upload_finished}},
+                                    }};
                             }
                         });
                     delete $c->stash->{'document_upload'};
