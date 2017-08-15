@@ -5,22 +5,25 @@
   "description":"Request customer documents",
   "properties": {
     "document_upload": {
-      "type":"integer",
+      "type": "integer",
       "pattern": "^1$",
       "description": "Must be 1",
-      "required": "1"
+      "required": 1
     },
     "document_type": {
-      "type":"string",
-      "description": "Document type (passport, driver's license, etc.)"
+      "type": "string",
+      "description": "Document type (passport, driver's license, etc.)",
+      "required": 1
     },
     "expiry_date": {
-      "type":"string",
-      "description": "Document expiry date received from user"
+      "type": "string",
+      "description": "Document expiry date",
+      "required": 1
     },
     "document_id": {
-      "type":"string",
-      "description": "Document ID (different for each document)"
+      "type": "string",
+      "description": "Document ID (based on each document type)",
+      "required": 1
     },
     "passthrough": {
       "type": "object",
