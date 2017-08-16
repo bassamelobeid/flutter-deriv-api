@@ -22,11 +22,12 @@ sub callback {
     my $connection_token = $c->param('connection_token')
         // URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0])->query_param('provider_connection_token')
         // '';
-
     my $redirect_uri = $c->req->url->path('/oauth2/authorize')->to_abs;
     # Redirect client to authorize subroutine if there is no connection token provided
     # or request came from Japan.
-    return $c->redirect_to($redirect_uri) if $c->{stash}->{request}->{country_code} eq 'jp' or not $connection_token;
+    return $c->redirect_to($redirect_uri) 
+        if $c->{stash}->{request}->{country_code} eq 'jp' 
+            or not $connection_token;
 
     my $oneall = WWW::OneAll->new(
         subdomain   => 'binary',
@@ -54,7 +55,19 @@ sub callback {
         my $user  = try {
             BOM::Platform::User->new({email => $email})
         };
-        # create user based on email by fly unless already exists
+        # Registered users who have email/password based account are forbidden 
+        # from social signin. As only one login method 
+        # is allowed (either email/password or social login).
+        use Data::Dumper;
+        if ($user) {
+            for my $acc ($user->clients) {
+                # Redirect client to login page if social signup flag is not found.
+                # As the main purpose of this package is to serve
+                # social login clients.
+                $c->redirect_to($redirect_uri) unless $acc->get_status('social_signup');
+            }
+        }
+        # create user based on email by fly if account does not exist yet
         $user = $c->__create_virtual_user($email) unless $user;
         # connect oneall provider data to user identity
         $user_connect->insert_connect($user->id, $provider_data);
