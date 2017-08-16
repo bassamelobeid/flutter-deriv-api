@@ -177,31 +177,18 @@ sub _fetch_proveid {
     catch {
         my $brand = Brands->new(name => request()->brand);
         my $clientid = $client->loginid;
-        my @emails;
         warn "Experian error in _fetch_proveid: ", $_;
-        if ($_ =~ /Charging Error/) {
-            #send email to finance here?
-            push @emails,
-                {
-                from    => $brand->emails('support'),
-                to      => $brand->emails('accounting'),
-                subject => 'Insufficient experian credits ',
-                message => 'Experian credit balance is not enough to work. Please topup',
-                };
-        }
         # send email to compliance here?
-        push @emails, {
-            from    => $brand->emails('support'),
-            to      => $brand->emails('compliance'),
-            subject => 'Experian request error',
-            message => <<EOM
+        send_email({
+                from    => $brand->emails('support'),
+                to      => $brand->emails('compliance'),
+                subject => 'Experian request error',
+                message => <<EOM
 There was an error during Experian request.
 Error is: $_
 Client: $clientid
-Please run ProveID_KYC check manually via backoffice
 EOM
-        };
-        send_email($_) for @emails;
+        });
     };
     return $result;
 }
