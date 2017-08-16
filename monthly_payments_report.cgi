@@ -25,12 +25,7 @@ my $months        = $params{months}            // 1;
 
 # We construct the download filename from these two values, so let's make sure they're
 # sensible before proceeding.
-sub _print_and_die {
-    print @_;
-    code_exit_BO();
-    return;
-}
-_print_and_die "Invalid broker code" unless $broker =~ /^[A-Z]{1,6}$/;
+code_exit_BO("Invalid broker code") unless $broker =~ /^[A-Z]{1,6}$/;
 
 my $start_date;
 try {
@@ -41,7 +36,7 @@ try {
     );
 }
 catch {
-    _print_and_die "Date $yyyymm was not parsed as YYYY-MM, check it";
+    code_exit_BO("Date $yyyymm was not parsed as YYYY-MM, check it");
 };
 my $until_date = $start_date->clone->add(months => $months);
 
