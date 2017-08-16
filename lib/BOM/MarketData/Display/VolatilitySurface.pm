@@ -42,12 +42,11 @@ Output the volatility surface in table format.
 sub rmg_table_format {
     my ($self, $args) = @_;
 
-    my $volsurface       = $self->surface;
-    my $atm_spread_point = $volsurface->atm_spread_point;
-    my $dates            = (defined $args->{historical_dates}) ? $args->{historical_dates} : [];
-    my $tab_id           = (defined $args->{tab_id}) ? $args->{tab_id} : undef;
-    my $greeks           = (defined $args->{greeks}) ? $args->{greeks} : undef;
-    my $content_only     = (defined $args->{content_only}) ? $args->{content_only} : undef;
+    my $volsurface   = $self->surface;
+    my $dates        = (defined $args->{historical_dates}) ? $args->{historical_dates} : [];
+    my $tab_id       = (defined $args->{tab_id}) ? $args->{tab_id} : undef;
+    my $greeks       = (defined $args->{greeks}) ? $args->{greeks} : undef;
+    my $content_only = (defined $args->{content_only}) ? $args->{content_only} : undef;
 
     my $dates_tt;
     foreach my $date (@{$dates}) {
@@ -103,8 +102,6 @@ sub rmg_table_format {
             my $smile  = $volsurface->get_surface_smile($day);
             my $spread = $volsurface->get_smile_spread($day);
 
-            $spread = $spread->{'vol_spread'} if $atm_spread_point ne 'atm_spread';
-
             # rr, 2vBF
             my $rr_bf = $volsurface->get_rr_bf_for_smile($smile);
 
@@ -127,7 +124,7 @@ sub rmg_table_format {
             push @surface, [
                 map { defined $_ ? sprintf('%.3f', $_) : '—' } (
                     (map { $smile->{$_} * 100 } @deltas),
-                    (map { $spread->{$_} * 100 } @{$volsurface->spread_points}),
+                    (map { ($spread->{$_} // 0) * 100 } @{$volsurface->spread_points}),
                     # Forward Vol
                     ((grep { $day == $_ } @{$volsurface->original_term_for_smile}) ? ($forward_vols->{$day} * 100) : undef),
                     (map { $_ * 100 } ($rr_bf->{RR_25}, $rr_bf->{BF_25}, $bf_1vol)),
