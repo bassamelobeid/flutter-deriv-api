@@ -302,7 +302,7 @@ sub vk_BObottomPRES {
 
 sub code_exit_BO {
     my ($message) = @_;
-    print @message if @message;
+    print $message if $message;
     if ($vk_BarIsDoneOnce) { BarEnd(); }             #backoffice closing bar output (must be before vk_BObottomPRES)
     if ($vk_didBOtopPRES)  { vk_BObottomPRES(); }    #backoffice closing presentation
     no strict "refs";                                ## no critic (ProhibitNoStrict, ProhibitProlongedStrictureOverride)
