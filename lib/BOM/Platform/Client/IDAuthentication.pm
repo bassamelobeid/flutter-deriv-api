@@ -176,7 +176,7 @@ sub _fetch_proveid {
     }
     catch {
         my $brand = Brands->new(name => request()->brand);
-        my $clientid = $client->loginid;
+        my $clientid = $self->client->loginid;
         warn "Experian error in _fetch_proveid: ", $_;
         # send email to compliance here?
         send_email({
