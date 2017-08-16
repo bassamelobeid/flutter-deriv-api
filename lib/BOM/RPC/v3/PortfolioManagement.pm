@@ -141,6 +141,7 @@ sub proposal_open_contract {
                 buy_price             => $fmb->{buy_price},
                 app_markup_percentage => $params->{app_markup_percentage},
                 landing_company       => $lc_name,
+                source                => $fmb->{source},
             });
         if (exists $bid->{error}) {
             $response->{$id} = $bid;
