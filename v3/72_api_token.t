@@ -38,15 +38,18 @@ $user->save;
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-$t->await::authorize({ authorize => $token });
+$t->await::authorize({authorize => $token});
 
-my $res = $t->await::api_token({ api_token => 1 });
+my $res = $t->await::api_token({api_token => 1});
 ok($res->{api_token});
 is_deeply($res->{api_token}->{tokens}, [], 'empty');
 test_schema('api_token', $res);
 
 # create new token
-$res = $t->await::api_token({ api_token => 1, new_token => 'Test Token', new_token_scopes => ['read'] });
+$res = $t->await::api_token({
+        api_token        => 1,
+        new_token        => 'Test Token',
+        new_token_scopes => ['read']});
 ok($res->{api_token});
 ok $res->{api_token}->{new_token};
 is scalar(@{$res->{api_token}->{tokens}}), 1, '1 token created';
@@ -55,22 +58,33 @@ is $test_token->{display_name}, 'Test Token';
 test_schema('api_token', $res);
 
 # delete token
-$res = $t->await::api_token({ api_token => 1, delete_token => $test_token->{token} });
+$res = $t->await::api_token({
+        api_token    => 1,
+        delete_token => $test_token->{token}});
 ok($res->{api_token});
 ok $res->{api_token}->{delete_token};
 is_deeply($res->{api_token}->{tokens}, [], 'empty');
 test_schema('api_token', $res);
 
 ## re-create
-$res = $t->await::api_token({ api_token => 1, new_token => '1' });
+$res = $t->await::api_token({
+    api_token => 1,
+    new_token => '1'
+});
 ok $res->{error}->{message} =~ /alphanumeric with space and dash/, 'alphanumeric with space and dash';
 test_schema('api_token', $res);
 
-$res = $t->await::api_token({ api_token => 1, new_token => '1' x 33 });
+$res = $t->await::api_token({
+    api_token => 1,
+    new_token => '1' x 33
+});
 ok $res->{error}->{message} =~ /alphanumeric with space and dash/, 'alphanumeric with space and dash';
 test_schema('api_token', $res);
 
-$res = $t->await::api_token({ api_token => 1, new_token => 'Test', new_token_scopes => ['read', 'admin'] });
+$res = $t->await::api_token({
+        api_token        => 1,
+        new_token        => 'Test',
+        new_token_scopes => ['read', 'admin']});
 is scalar(@{$res->{api_token}->{tokens}}), 1, '1 token created';
 $test_token = $res->{api_token}->{tokens}->[0];
 is $test_token->{display_name}, 'Test';
@@ -80,11 +94,11 @@ test_schema('api_token', $res);
 $t->finish_ok;
 
 # try with the new token
-$t   = build_wsapi_test();
-$res = $t->await::authorize({ authorize => $test_token->{token} });
+$t = build_wsapi_test();
+$res = $t->await::authorize({authorize => $test_token->{token}});
 is $res->{authorize}->{email}, $email;
 
-$res = $t->await::api_token({ api_token => 1 });
+$res = $t->await::api_token({api_token => 1});
 ok($res->{api_token});
 is scalar(@{$res->{api_token}->{tokens}}), 1, '1 token';
 $test_token = $res->{api_token}->{tokens}->[0];
@@ -92,7 +106,9 @@ is $test_token->{display_name}, 'Test';
 ok $test_token->{last_used},    'last_used is ok';
 test_schema('api_token', $res);
 
-$t->await::api_token({ api_token => 1, delete_token => $test_token->{token} });
+$t->await::api_token({
+        api_token    => 1,
+        delete_token => $test_token->{token}});
 
 $t->finish_ok;
 

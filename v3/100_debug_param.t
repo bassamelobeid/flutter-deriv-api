@@ -14,11 +14,11 @@ my $t = build_wsapi_test({
 });
 my ($req_storage, $res, $start, $end);
 
-$res = $t->await::authorize({ authorize => 'test' });
+$res = $t->await::authorize({authorize => 'test'});
 ok $res->{debug}->{time};
 ok $res->{debug}->{method};
 
-$res = $t->await::ping({ ping => 1 });
+$res = $t->await::ping({ping => 1});
 ok $res->{debug}->{time};
 ok $res->{debug}->{method};
 

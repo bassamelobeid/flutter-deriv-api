@@ -13,44 +13,44 @@ use await;
 my $t = build_wsapi_test();
 
 # landing_company_details
-my $res = $t->await::landing_company_details({ landing_company_details => 'costarica' });
+my $res = $t->await::landing_company_details({landing_company_details => 'costarica'});
 ok $res->{landing_company_details};
 is $res->{landing_company_details}->{country}, 'Costa Rica';
 test_schema('landing_company_details', $res);
 
-$res = $t->await::landing_company_details({ landing_company_details => 'iom' });
+$res = $t->await::landing_company_details({landing_company_details => 'iom'});
 ok $res->{landing_company_details};
 is $res->{landing_company_details}->{country}, 'Isle of Man';
 test_schema('landing_company_details', $res);
 
-$res = $t->await::landing_company_details({ landing_company_details => 'unknown_blabla' });
+$res = $t->await::landing_company_details({landing_company_details => 'unknown_blabla'});
 ok $res->{error};
 is $res->{error}->{code}, 'UnknownLandingCompany';
 
 # landing_company
 SKIP: {
     skip 'No landing company tests during transition; check with Kaveh', 12;
-    $res = $t->await::landing_company({ landing_company => 'de' });
+    $res = $t->await::landing_company({landing_company => 'de'});
     ok $res->{landing_company};
     is $res->{landing_company}->{name}, 'Germany';
     is $res->{landing_company}->{financial_company}->{shortcode}, 'maltainvest';
     ok not $res->{landing_company}->{gaming_company};
     test_schema('landing_company', $res);
 
-    $res = $t->await::landing_company({ landing_company => 'im' });
+    $res = $t->await::landing_company({landing_company => 'im'});
     ok $res->{landing_company};
     is $res->{landing_company}->{name}, 'Isle of Man';
     is $res->{landing_company}->{financial_company}->{shortcode}, 'iom';
     is $res->{landing_company}->{gaming_company}->{shortcode},    'iom';
     test_schema('landing_company', $res);
 
-    $res = $t->await::landing_company({ landing_company => 'XX' });
+    $res = $t->await::landing_company({landing_company => 'XX'});
     ok $res->{error};
     is $res->{error}->{code}, 'UnknownLandingCompany';
 }
 
 ## residence_list
-$res = $t->await::residence_list({ residence_list => 1 });
+$res = $t->await::residence_list({residence_list => 1});
 ok $res->{residence_list};
 is_deeply $res->{residence_list}->[102],
     {
@@ -63,7 +63,7 @@ is_deeply $res->{residence_list}->[102],
 test_schema('residence_list', $res);
 
 ## states_list
-$res = $t->await::states_list({ states_list => 'MY' });
+$res = $t->await::states_list({states_list => 'MY'});
 is $res->{msg_type}, 'states_list';
 ok $res->{states_list};
 is_deeply $res->{states_list}->[0],
@@ -77,7 +77,7 @@ test_schema('states_list', $res);
 my (undef, $call_params) = call_mocked_client($t, {website_status => 1});
 ok $call_params->{country_code};
 
-$res = $t->await::website_status({ website_status => 1 });
+$res = $t->await::website_status({website_status => 1});
 is $res->{msg_type}, 'website_status';
 is $res->{website_status}->{terms_conditions_version}, BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
 

@@ -93,7 +93,7 @@ $client->smart_payment(
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-my $authorize = $t->await::authorize({ authorize => $token });
+my $authorize = $t->await::authorize({authorize => $token});
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
 my $underlying       = create_underlying('frxUSDJPY');
@@ -112,25 +112,43 @@ SKIP: {
             "duration_unit" => "d",
         );
 
-        my $proposal_1 = $t->await::proposal({ proposal => 1, %contract });
+        my $proposal_1 = $t->await::proposal({
+            proposal => 1,
+            %contract
+        });
         my $proposal_id = $proposal_1->{proposal}->{id};
         my $buy_price   = $proposal_1->{proposal}->{ask_price};
-        my $res = $t->await::buy({ buy   => $proposal_id, price => $buy_price });
+        my $res         = $t->await::buy({
+            buy   => $proposal_id,
+            price => $buy_price
+        });
 
         is $res->{buy}->{payout}, 100, 'Buy contract with proposal id : The payout is matching with defined amount 100';
         ok $res->{buy}->{buy_price} < 100, 'Buy contract with proposal id : Buy price is less than payout';
 
-        $proposal_1 = $t->await::proposal({ proposal => 1, %contract });
+        $proposal_1 = $t->await::proposal({
+            proposal => 1,
+            %contract
+        });
         $proposal_id = $proposal_1->{proposal}->{id};
 
-        $res = $t->await::buy({ buy   => $proposal_id, price => 10000 });
+        $res = $t->await::buy({
+            buy   => $proposal_id,
+            price => 10000
+        });
         is $res->{buy}->{payout}, 100, 'Buy contract with proposal id : The payout is matching with defined amount 100';
         ok $res->{buy}->{buy_price} < 10000, 'Buy contract with defined proposal id : Exceucted at better price. Buy price is less than 10000';
 
-        $proposal_1 = $t->await::proposal({ proposal => 1, %contract });
+        $proposal_1 = $t->await::proposal({
+            proposal => 1,
+            %contract
+        });
         $proposal_id = $proposal_1->{proposal}->{id};
 
-        $res = $t->await::buy({ buy   => $proposal_id, price => 1 });
+        $res = $t->await::buy({
+            buy   => $proposal_id,
+            price => 1
+        });
 
         like(
             $res->{error}{message},
@@ -215,20 +233,35 @@ SKIP: {
             "duration_unit" => "d",
         );
 
-        my $proposal_1 = $t->await::proposal({ proposal => 1, %contract });
+        my $proposal_1 = $t->await::proposal({
+            proposal => 1,
+            %contract
+        });
         my $proposal_id = $proposal_1->{proposal}->{id};
         my $buy_price   = $proposal_1->{proposal}->{ask_price};
-        my $res = $t->await::buy({ buy   => $proposal_id, price => $buy_price });
+        my $res         = $t->await::buy({
+            buy   => $proposal_id,
+            price => $buy_price
+        });
         is $res->{buy}->{buy_price}, '100.00', 'Buy with proposal id: Buy price is matching 100';
         ok $res->{buy}->{payout} > 100, 'Buy with proposal id: Payout is greater than 100';
-        $proposal_1 = $t->await::proposal({ proposal => 1, %contract });
+        $proposal_1 = $t->await::proposal({
+            proposal => 1,
+            %contract
+        });
         $proposal_id = $proposal_1->{proposal}->{id};
 
-        $res = $t->await::buy({ buy   => $proposal_id, price => 10000 });
+        $res = $t->await::buy({
+            buy   => $proposal_id,
+            price => 10000
+        });
         is $res->{buy}->{buy_price}, '100.00', 'Buy with proposal id: Buy price is 100';
         ok $res->{buy}->{payout} > 100, 'Buy with proposal id: Payout is greater than 100';
 
-        $proposal_1 = $t->await::proposal({ proposal => 1, %contract });
+        $proposal_1 = $t->await::proposal({
+            proposal => 1,
+            %contract
+        });
         $proposal_id = $proposal_1->{proposal}->{id};
 
         $res = $t->await::buy({
@@ -314,12 +347,18 @@ SKIP: {
             "duration_unit" => "m",
         );
 
-        my $proposal_1 = $t->await::proposal({ proposal => 1, %contract });
+        my $proposal_1 = $t->await::proposal({
+            proposal => 1,
+            %contract
+        });
         my $proposal_id = $proposal_1->{proposal}->{id};
         my $buy_price   = $proposal_1->{proposal}->{ask_price};
-        my $res = $t->await::buy({ buy => 1, price => $buy_price });
-        my $contract_id = $res->{buy}->{contract_id};
-        my $payout      = $res->{buy}->{payout};
+        my $res         = $t->await::buy({
+            buy   => 1,
+            price => $buy_price
+        });
+        my $contract_id      = $res->{buy}->{contract_id};
+        my $payout           = $res->{buy}->{payout};
         my $contract_details = $t->await::proposal_open_contract({
             proposal_open_contract => 1,
             contract_id            => $contract_id,

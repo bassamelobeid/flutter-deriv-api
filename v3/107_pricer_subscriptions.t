@@ -52,7 +52,7 @@ subtest "Born and die" => sub {
     $channel = [keys %{$test_server->app->pricing_subscriptions()}]->[0];
     is(refcount($test_server->app->pricing_subscriptions()->{$channel}), 1, "check refcount");
     ok(redis_pricer->get($channel), "check redis subscription");
-    $t->await::forget_all({ forget_all => 'proposal' });
+    $t->await::forget_all({forget_all => 'proposal'});
 
     is($test_server->app->pricing_subscriptions()->{$channel}, undef, "Killed");
     ### Mojo::Redis2 has not method PUBSUB
@@ -97,7 +97,7 @@ subtest "Create Subscribes" => sub {
         });
     }
 
-    cmp_ok(keys %$user_first, '==', 3 , "3 subscription created ok");
+    cmp_ok(keys %$user_first, '==', 3, "3 subscription created ok");
     $test_server->await::forget_all({'forget_all' => 'proposal'});
 
     $_->finish_ok for @connections;
@@ -109,15 +109,19 @@ subtest "Count Subscribes" => sub {
     my $subscr = {};
 
     my $redis2_module = Test::MockModule->new('Mojo::Redis2');
-    $redis2_module->mock('set', sub {
-        my ($redis, $channel_name, $value) = @_;
-        $sets->{$channel_name}++;
-    });
-    $redis2_module->mock('subscribe', sub {
-        my ($redis, $channel_names, $callback) = @_;
-        my $channel_name = shift @$channel_names;
-        $subscr->{$channel_name}++;
-    });
+    $redis2_module->mock(
+        'set',
+        sub {
+            my ($redis, $channel_name, $value) = @_;
+            $sets->{$channel_name}++;
+        });
+    $redis2_module->mock(
+        'subscribe',
+        sub {
+            my ($redis, $channel_names, $callback) = @_;
+            my $channel_name = shift @$channel_names;
+            $subscr->{$channel_name}++;
+        });
 
     my @connections;
     for my $i (0 .. 2) {
@@ -127,12 +131,12 @@ subtest "Count Subscribes" => sub {
             "proposal"  => 1,
             "subscribe" => 1,
             %contractParameters,
-            "contract_type"  => "CALL",
+            "contract_type" => "CALL",
         });
         test_schema('proposal', $res);
     }
 
-    cmp_ok(keys %$sets, '==', 1, "One key expected");
+    cmp_ok(keys %$sets,   '==', 1, "One key expected");
     cmp_ok(keys %$subscr, '==', 1, "One subscription expected");
 
     $redis2_module->unmock_all;

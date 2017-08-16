@@ -50,7 +50,7 @@ connect($socket, pack_sockaddr_in($intro_port, inet_aton("localhost")))
 
 my ($res, $ticks, $intro_stats, $intro_conn);
 
-my $now = Date::Utility->new;
+my $now  = Date::Utility->new;
 my $time = $now->epoch;
 my @ticks;
 for (my $i = $time - 1800; $i <= $time; $i += 15) {
@@ -60,7 +60,7 @@ for (my $i = $time - 1800; $i <= $time; $i += 15) {
         decimate_epoch => $i,
         quote          => 100 + rand(0.0001)};
 }
-my $redis = BOM::Platform::RedisReplicated::redis_write();
+my $redis   = BOM::Platform::RedisReplicated::redis_write();
 my $encoder = Sereal::Encoder->new({
     canonical => 1,
 });
@@ -143,12 +143,12 @@ my $underlying = create_underlying('frxUSDJPY');
 
 # cumulative_client_connections
 
-$t->await::ping({ ping => 1 });
+$t->await::ping({ping => 1});
 $intro_stats = send_introspection_cmd('stats');
 cmp_ok $intro_stats->{cumulative_client_connections}, '==', 1, "1 cumulative_client_connections";
 reconnect($t, {app_id => 2});
 note "RECONNECTED\n";
-$t->await::ping({ ping => 1 });
+$t->await::ping({ping => 1});
 $intro_stats = send_introspection_cmd('stats');
 cmp_ok $intro_stats->{cumulative_client_connections}, '==', 2, "2 cumulative_client_connections";
 
@@ -165,7 +165,10 @@ my %contract = (
     "subscribe"     => 1,
 );
 
-$t->await::proposal({ "proposal" => 1, %contract });
+$t->await::proposal({
+    "proposal" => 1,
+    %contract
+});
 
 subtest "redis errors" => sub {
     $t->app->stat->{redis_errors}++;
@@ -177,37 +180,46 @@ subtest "redis errors" => sub {
 
 # last sent and recieved message
 
-$t->await::time({ time => 1 });
+$t->await::time({time => 1});
 $intro_conn = send_introspection_cmd('connections');
 ok $intro_conn->{connections}[0]{last_call_received_from_client}{time}, 'last msg was time';
-$t->await::ping({ ping => 1 });
+$t->await::ping({ping => 1});
 $intro_conn = send_introspection_cmd('connections');
 cmp_ok $intro_conn->{connections}[0]{last_message_sent_to_client}{ping}, 'eq', 'pong', 'last msg was pong';
 
 # count of each type
 cmp_ok $intro_conn->{connections}[0]{messages_received_from_client}{time}, '==', 1, '1 time call';
 cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time},       '==', 1, '1 time reply';
-$t->await::time({ time => 1 });
+$t->await::time({time => 1});
 $intro_conn = send_introspection_cmd('connections');
 cmp_ok $intro_conn->{connections}[0]{messages_received_from_client}{time}, '==', 2, '2 time call';
 cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time},       '==', 2, '2 time reply';
 
 # number of pricer subs
 subtest "pricesrs subscriptions" => sub {
-    $t->await::proposal({ "proposal" => 1, %contract });
+    $t->await::proposal({
+        "proposal" => 1,
+        %contract
+    });
     my $intro_conn = send_introspection_cmd('connections');
 
     cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
     $contract{amount} = 200;
-    $t->await::proposal({ "proposal" => 1, %contract });
+    $t->await::proposal({
+        "proposal" => 1,
+        %contract
+    });
     $intro_conn = send_introspection_cmd('connections');
     cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
     $contract{duration} = 14;
-    $t->await::proposal({ "proposal" => 1, %contract });
+    $t->await::proposal({
+        "proposal" => 1,
+        %contract
+    });
     $intro_conn = send_introspection_cmd('connections');
     cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 2, 'now 2 price subscription';
 
-    $t->await::forget_all({ forget_all => 'proposal' });
+    $t->await::forget_all({forget_all => 'proposal'});
     $intro_conn = send_introspection_cmd('connections');
     cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 0, 'no more price subscription';
 };
