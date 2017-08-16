@@ -39,10 +39,6 @@ sub populate_details {
                 # as we cannot decode secret answer of client so we store dummy value
                 # for secret answer, we will not need it as its managed my master account
                 $populated_params->{$key} = $params->{$key} // 'dummy';
-            } elsif ($key eq 'first_name' or $key eq 'last_name') {
-                # we need to have firstname, lastname unique so append time to loginid
-                # of master account in case no name is provided
-                $populated_params->{$key} = $params->{$key} // $master_client->loginid . time;
             } else {
                 $populated_params->{$key} = $params->{$key} // $master_client->$key;
             }
