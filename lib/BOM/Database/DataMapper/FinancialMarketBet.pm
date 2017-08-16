@@ -227,6 +227,7 @@ sub get_contract_details_with_transaction_ids {
             if ($fmb->{action_type} eq 'buy') {
                 $record->{buy_transaction_id} = $fmb->{transaction_id};
             } elsif ($fmb->{action_type} eq 'sell') {
+                $record->{sell_source}         = $fmb->{source};
                 $record->{sell_transaction_id} = $fmb->{transaction_id};
             }
         }
@@ -272,7 +273,7 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
         $param->{'coinauction_bet_record'} = $rose_object->coinauction_bet;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::CoinauctionBet';
-    }else {
+    } else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
     }
 
