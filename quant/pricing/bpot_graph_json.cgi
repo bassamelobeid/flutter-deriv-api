@@ -62,8 +62,8 @@ my %prices = (
     theo_probability => [],
     ask_probability  => [],
     bid_probability  => [],
-    pricing_iv       => [],
-    pricing_mu       => [],
+    iv               => [],
+    mu               => [],
 );
 
 my $graph_more = 1;
@@ -91,10 +91,12 @@ while ($graph_more) {
         push @spots,  $bet->current_spot;
         foreach my $attr (keys %prices) {
             my $amount;
-            if ($attr eq 'pricing_iv') {
-                $amount = $bet->_pricing_args->{iv};
+            if ($attr !~ /probability/) {
+                # if it is not probability and it is not in pricing args, we should warn.
+                $amount = $expired ? 0 : $bet->_pricing_args->{$attr};
+                warn "$attr is not defined in \$bet->_pricing_args" unless defined $amount;
             } else {
-                $amount = ($expired and $attr =~ /probability$/) ? $value : (ref $bet->$attr) ? $bet->$attr->amount : $bet->$attr;
+                $amount = ($expired) ? $value : $bet->$attr->amount;
             }
             push @{$prices{$attr}}, financialrounding('amount', $bet->currency, (abs $amount > 3) ? $amount : $amount * 100);
         }
@@ -113,7 +115,7 @@ while ($graph_more) {
         } else {
             my $next_step = $when->plus_time_interval($timestep);
             $show_date = ($next_step->days_between($when)) ? 1    : 0;             # Show the date only when we switch days.
-            $when      = ($when->is_after($end))           ? $end : $next_step;    # This makes the last step the wrong size sometimes, but so be it.
+            $when      = ($next_step->is_after($end))      ? $end : $next_step;    # This makes the last step the wrong size sometimes, but so be it.
         }
     }
 }
@@ -129,8 +131,8 @@ my $data = {
         'Ask value'   => $prices{ask_probability},
         'Bid value'   => $prices{bid_probability},
         'Bet value'   => $prices{theo_probability},
-        'Pricing IV'  => $prices{pricing_iv},
-        'Pricing mu'  => $prices{pricing_mu},
+        'Pricing IV'  => $prices{iv},
+        'Pricing mu'  => $prices{mu},
         'wins'        => \@wins,
         'losses'      => \@losses,
         'vs_changes'  => \@vs_changes,

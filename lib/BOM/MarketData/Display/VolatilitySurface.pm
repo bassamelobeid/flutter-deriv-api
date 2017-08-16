@@ -42,12 +42,11 @@ Output the volatility surface in table format.
 sub rmg_table_format {
     my ($self, $args) = @_;
 
-    my $volsurface       = $self->surface;
-    my $atm_spread_point = $volsurface->atm_spread_point;
-    my $dates            = (defined $args->{historical_dates}) ? $args->{historical_dates} : [];
-    my $tab_id           = (defined $args->{tab_id}) ? $args->{tab_id} : undef;
-    my $greeks           = (defined $args->{greeks}) ? $args->{greeks} : undef;
-    my $content_only     = (defined $args->{content_only}) ? $args->{content_only} : undef;
+    my $volsurface   = $self->surface;
+    my $dates        = (defined $args->{historical_dates}) ? $args->{historical_dates} : [];
+    my $tab_id       = (defined $args->{tab_id}) ? $args->{tab_id} : undef;
+    my $greeks       = (defined $args->{greeks}) ? $args->{greeks} : undef;
+    my $content_only = (defined $args->{content_only}) ? $args->{content_only} : undef;
 
     my $dates_tt;
     foreach my $date (@{$dates}) {
@@ -102,8 +101,6 @@ sub rmg_table_format {
         foreach my $day (@days) {
             my $smile  = $volsurface->get_surface_smile($day);
             my $spread = $volsurface->get_smile_spread($day);
-
-            $spread = $spread->{'vol_spread'} if $atm_spread_point ne 'atm_spread';
 
             # rr, 2vBF
             my $rr_bf = $volsurface->get_rr_bf_for_smile($smile);
