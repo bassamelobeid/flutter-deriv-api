@@ -277,8 +277,8 @@ sub handle_batch_contract {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage, $landing_company, $sell_source) =
-        @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage landing_company sell_source/};
+    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage, $landing_company, $sell_source)
+        = @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage landing_company sell_source/};
 
     my ($response, $contract, $bet_params);
     my $tv = [Time::HiRes::gettimeofday];
