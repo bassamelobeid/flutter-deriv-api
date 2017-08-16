@@ -470,7 +470,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
         or diag "validatione error: " . ($result->{validation_error} // '<undef>');
     ok(!$result->{status}, 'no status because it is not expired yet');
 
-    $params->{is_sold} = 1;
+    $params->{is_sold}   = 1;
     $params->{sell_time} = $now->epoch;
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is($result->{status}, 'sold', 'contract sold');
@@ -547,6 +547,7 @@ subtest $method => sub {
         is_valid_to_sell  => 1,
         'status'          => 'won',
     };
+
     foreach my $key (keys %$expected_result) {
         cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
     }
