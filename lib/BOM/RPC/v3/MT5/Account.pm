@@ -536,7 +536,7 @@ sub mt5_withdrawal {
     # as of now we only support gaming for binary brand, in future if we
     # support for champion please revisit this
     if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated) {
-        return $error_sub->(localize('Client is not fully authenticated.'));
+        return $error_sub->(localize('Please authenticate your account.'));
     }
 
     if ($to_client->currency ne 'USD') {
