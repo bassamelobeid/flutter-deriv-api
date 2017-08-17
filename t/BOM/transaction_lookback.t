@@ -121,6 +121,22 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 initialize_realtime_ticks_db();
 
+my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 99,
+    underlying => 'R_50',
+    quote      => 76.5996,
+    bid        => 76.6010,
+    ask        => 76.2030,
+});
+
+my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 52,
+    underlying => 'R_50',
+    quote      => 76.6996,
+    bid        => 76.7010,
+    ask        => 76.3030,
+});
+
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     underlying => 'R_50',
@@ -583,6 +599,73 @@ subtest 'sell a bet', sub {
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
         is $txn->transaction_id, $trx->{id},            'txn->transaction_id';
         is $txn->balance_after,  $trx->{balance_after}, 'txn->balance_after';
+    }
+    'survived';
+};
+
+subtest 'sell_expired_contracts', sub {
+    plan tests => 37;
+    lives_ok {
+        my $cl = create_client;
+
+        top_up $cl, 'USD', 1000;
+
+        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+
+        my $bal;
+        is + ($bal = $acc_usd->balance + 0), 1000, 'USD balance is 1000 got: ' . $bal;
+
+        my $contract_expired = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'LBFIXEDCALL',
+            currency     => 'USD',
+            unit         => 10,
+            date_start   => $now->epoch - 100,
+            date_expiry  => $now->epoch - 50,
+            current_tick => $tick,
+            entry_tick   => $old_tick1,
+            exit_tick    => $old_tick2,
+            barrier      => 'S20P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract_expired,
+            price         => 100,
+            payout        => $contract_expired->payout,
+            amount_type   => 'unit',
+            unit          => 10,
+            purchase_date => $now->epoch - 101,
+        });
+
+        my (@expired_txnids, @expired_fmbids, @unexpired_fmbids);
+        # buy 2 expired contracts
+        for (1 .. 2) {
+            my $error = $txn->buy(skip_validation => 1);
+            is $error, undef, 'no error: bought 1 expired contract for 100';
+            push @expired_txnids, $txn->transaction_id;
+            push @expired_fmbids, $txn->contract_id;
+        }
+
+        $acc_usd->load;
+        is $acc_usd->balance + 0, 800, 'USD balance is down to 0';
+
+        # First sell some particular ones by id.
+        my $res = BOM::Transaction::sell_expired_contracts + {
+            client       => $cl,
+            source       => 29,
+            contract_ids => [@expired_fmbids[0 .. 1]],
+        };
+
+        is_deeply $res,
+            +{
+            number_of_sold_bets => 2,
+            skip_contract       => 0,
+            total_credited      => 200,
+            failures            => [],
+            },
+            'sold the two requested contracts';
+
     }
     'survived';
 };
