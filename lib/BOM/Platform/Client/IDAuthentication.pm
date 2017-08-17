@@ -79,17 +79,19 @@ sub _do_proveid {
         if (($type) = grep { /(OFAC|BOE)/ } @{$prove_id_result->{matches}}) {
             $set_status->('disabled', "$type match", "$type match");
         }
-        # Director or Politically Exposed => unwelcome client
-        elsif ((($type) = grep { /(PEP|Directors)/ } @{$prove_id_result->{matches}})) {
+        # Director is ok, no unwelcome, no documents request
+        elsif ((($type) = grep { /(Directors)/ } @{$prove_id_result->{matches}})) {
+        }
+        # Politically Exposed => unwelcome client
+        elsif ((($type) = grep { /(PEP)/ } @{$prove_id_result->{matches}})) {
             $set_status->('unwelcome', "$type match", "$type match");
         } else {
             $set_status->('unwelcome', 'EXPERIAN PROVE ID RETURNED MATCH', join(', ', @{$prove_id_result->{matches}}));
         }
         $skip_request_for_id = 1;
     }
-    # County Court Judgement => unwelcome client
+    # County Court Judgement is ok, no unwelcome, no documents request
     elsif ($prove_id_result->{CCJ}) {
-        $set_status->('unwelcome', 'PROVE ID INDICATES CCJ', 'Client was flagged as CCJ by Experian Prove ID check');
         $skip_request_for_id = 1;
     }
     # result is AGE VERIFIED ONLY
