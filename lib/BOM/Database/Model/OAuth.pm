@@ -105,9 +105,12 @@ SQL
 sub get_verification_uri_by_app_id {
     my ($self, $app_id) = @_;
 
-    my ($verification_uri) = $self->dbh->selectrow_array("
+    my ($verification_uri) = $self->dbic->run(
+        sub {
+            $_->selectrow_array("
         SELECT verification_uri FROM oauth.apps WHERE id = ? AND active
     ", undef, $app_id);
+        });
 
     return $verification_uri;
 }
@@ -196,7 +199,6 @@ sub update_app {
             appstore = ?, googleplay = ?, redirect_uri = ?, verification_uri = ?, app_markup_percentage = ?
         WHERE id = ?
     ");
-<<<<<<< HEAD
             $sth->execute(
                 $app->{name},
                 $app->{scopes},
@@ -205,25 +207,12 @@ sub update_app {
                 $app->{appstore}              || '',
                 $app->{googleplay}            || '',
                 $app->{redirect_uri}          || '',
+                $app->{verification_uri}      || '',
                 $app->{app_markup_percentage} || 0,
                 $app_id
             );
             return $old_scopes;
         });
-=======
-    $sth->execute(
-        $app->{name},
-        $app->{scopes},
-        $app->{homepage}              || '',
-        $app->{github}                || '',
-        $app->{appstore}              || '',
-        $app->{googleplay}            || '',
-        $app->{redirect_uri}          || '',
-        $app->{verification_uri}      || '',
-        $app->{app_markup_percentage} || 0,
-        $app_id
-    );
->>>>>>> master
 
     ## revoke user_scope_confirm on scope changes
     if ($old_scopes
