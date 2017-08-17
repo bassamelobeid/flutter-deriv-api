@@ -29,6 +29,7 @@
         <input type="submit" value="Reconciliation" name="view_action"/>
         <input type="text" name="[% start_date %]" class="datepick" value="[% start_date %]">
         <input type="text" name="end_date" class="datepick" value="[% end_date %]">
+        <input type="checkbox" name="include_new"><label for="include_new">Show new addresses</label>
     <br>
 <!-- Search -->
         <input type="submit" value="Search" name="view_action"/>
