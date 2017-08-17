@@ -26,6 +26,8 @@ sub init {
     build_request();
 
     if (BOM::Platform::Config::on_qa()) {
+        # Sometimes it is needed to do some stuff on QA's backoffice with production databases (backpricing for Quants/Japan checking/etc)
+        # here we implemenet an easy way of selection of needed database
         my $needed_service =
             BOM::Backoffice::Cookie::get_cookie('backprice') ? '/home/nobody/.pg_service_backprice.conf' : '/home/nobody/.pg_service.conf';
 
