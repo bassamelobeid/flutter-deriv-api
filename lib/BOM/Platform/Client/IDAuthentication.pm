@@ -1,8 +1,8 @@
 package BOM::Platform::Client::IDAuthentication;
 
 use Moose;
-
 use namespace::autoclean;
+use Try::Tiny;
 
 use Brands;
 use Client::Account;
@@ -175,19 +175,20 @@ sub _fetch_proveid {
         )->get_result;
     }
     catch {
-        my $brand = Brands->new(name => request()->brand);
+        my $brand    = Brands->new(name => request()->brand);
         my $clientid = $self->client->loginid;
-        warn "Experian error in _fetch_proveid: ", $_;
-        # send email to compliance here?
-        send_email({
-                from    => $brand->emails('compliance'),
-                to      => $brand->emails('compliance'),
-                subject => 'Experian request error',
-                message => <<EOM
+        my $message  = <<EOM;
 There was an error during Experian request.
 Error is: $_
 Client: $clientid
 EOM
+        warn "Experian error in _fetch_proveid: ", $_;
+        # send email to compliance here?
+        send_email({
+            from    => $brand->emails('compliance'),
+            to      => $brand->emails('compliance'),
+            subject => 'Experian request error',
+            message => $message,
         });
     };
     return $result;
