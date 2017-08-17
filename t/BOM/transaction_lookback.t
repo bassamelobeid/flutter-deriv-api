@@ -124,17 +124,17 @@ initialize_realtime_ticks_db();
 my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch - 99,
     underlying => 'R_50',
-    quote      => 76.5996,
-    bid        => 76.6010,
-    ask        => 76.2030,
+#    quote      => 76.5996,
+#    bid        => 76.6010,
+#    ask        => 76.2030,
 });
 
 my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch - 52,
     underlying => 'R_50',
-    quote      => 76.6996,
-    bid        => 76.7010,
-    ask        => 76.3030,
+#    quote      => 76.6996,
+#    bid        => 76.7010,
+#    ask        => 76.3030,
 });
 
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -616,26 +616,26 @@ subtest 'sell_expired_contracts', sub {
         is + ($bal = $acc_usd->balance + 0), 1000, 'USD balance is 1000 got: ' . $bal;
 
         my $contract_expired = produce_contract({
-            underlying   => $underlying,
+            underlying   => $underlying_R50,
             bet_type     => 'LBFIXEDCALL',
             currency     => 'USD',
             unit         => 10,
-            date_start   => $now->epoch - 100,
+            date_start   => ($now->epoch - 50) - (30*60),
             date_expiry  => $now->epoch - 50,
             current_tick => $tick,
-            entry_tick   => $old_tick1,
-            exit_tick    => $old_tick2,
+            entry_tick   => $tick,
+            exit_tick    => $tick,
             barrier      => 'S20P',
         });
 
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract_expired,
-            price         => 100,
-            payout        => $contract_expired->payout,
+            price         => $contract_expired->ask_price,
+#            payout        => $contract_expired->payout,
             amount_type   => 'unit',
             unit          => 10,
-            purchase_date => $now->epoch - 101,
+            purchase_date => $now->epoch - (30*60+51),
         });
 
         my (@expired_txnids, @expired_fmbids, @unexpired_fmbids);
@@ -648,20 +648,23 @@ subtest 'sell_expired_contracts', sub {
         }
 
         $acc_usd->load;
-        is $acc_usd->balance + 0, 800, 'USD balance is down to 0';
-
+        is $acc_usd->balance + 0, 998.04, 'USD balance is down to 900 plus';
+$DB::single=1;
         # First sell some particular ones by id.
         my $res = BOM::Transaction::sell_expired_contracts + {
             client       => $cl,
             source       => 29,
             contract_ids => [@expired_fmbids[0 .. 1]],
         };
+use Data::Dumper;
+
+print Dumper($res);
 
         is_deeply $res,
             +{
             number_of_sold_bets => 2,
             skip_contract       => 0,
-            total_credited      => 200,
+            total_credited      => 61622.26,
             failures            => [],
             },
             'sold the two requested contracts';
