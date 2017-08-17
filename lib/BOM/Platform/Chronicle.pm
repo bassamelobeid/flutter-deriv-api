@@ -147,6 +147,12 @@ sub dbic {
     return $dbic;
 }
 
+sub clear_connections {
+    $dbic                = undef;
+    $historical_instance = undef;
+    return;
+}
+
 sub _dbh_dsn {
     return "dbi:Pg:service=chronicle";
 }
