@@ -13,9 +13,8 @@ use BOM::Platform::Email qw(send_email);
 
 my $brand = Brands->new(name => 'binary');
 
-#my ($used, $limit) = BOM::Backoffice::ExperianBalance::get_balance(BOM::Platform::Config::third_party->{proveid}->{username},
-#    BOM::Platform::Config::third_party->{proveid}->{password});
-my ($used, $limit) = BOM::Backoffice::ExperianBalance::get_balance('search_facility', '8Hn7Q47kA3');
+my ($used, $limit) = BOM::Backoffice::ExperianBalance::get_balance(BOM::Platform::Config::third_party->{proveid}->{username},
+    BOM::Platform::Config::third_party->{proveid}->{password});
 
 my $threshold = shift // 10000;
 my $remain = $limit - $used;
