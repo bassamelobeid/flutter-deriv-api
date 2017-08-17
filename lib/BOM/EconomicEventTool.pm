@@ -120,11 +120,10 @@ sub save_new_event {
     } else {
         push @{$ref->{events}}, $args;
         Quant::Framework::EconomicEventCalendar->new({
-                events           => $ref->{events},
                 recorded_date    => Date::Utility->new,
                 chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-            })->save;
+            })->save_new($args);
         _regenerate($ref->{events});
 
     }
