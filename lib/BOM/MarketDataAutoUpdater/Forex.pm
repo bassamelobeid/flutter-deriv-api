@@ -205,6 +205,7 @@ sub run {
             next;    # skipping it here else it will die in the next line.
         }
 
+        # Vol needs to be saved if rr and bf are undefined when next day is holiday.
         my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
         my $is_next_day_holiday = $calendar->is_holiday_for($underlying->exchange, Date::Utility->new(time + 86400));
 
