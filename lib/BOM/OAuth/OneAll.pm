@@ -58,13 +58,12 @@ sub callback {
         # Registered users who have email/password based account are forbidden 
         # from social signin. As only one login method 
         # is allowed (either email/password or social login).
-        use Data::Dumper;
         if ($user) {
             for my $acc ($user->clients) {
                 # Redirect client to login page if social signup flag is not found.
                 # As the main purpose of this package is to serve
-                # social login clients.
-                $c->redirect_to($redirect_uri) unless $acc->get_status('social_signup');
+                # clients with social login only.
+                return $c->redirect_to($redirect_uri) unless $acc->get_status('social_signup');
             }
         }
         # create user based on email by fly if account does not exist yet
