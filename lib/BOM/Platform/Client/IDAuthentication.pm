@@ -50,6 +50,9 @@ sub run_authentication {
     return;
 }
 
+#
+# All logic in _do_proveid meet compliance requirements, which can be changed over time
+#
 sub _do_proveid {
     my $self   = shift;
     my $client = $self->client;
