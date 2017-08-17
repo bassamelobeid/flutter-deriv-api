@@ -76,13 +76,18 @@ if ($bet) {
     $timestep = Time::Duration::Concise::Localize->new(interval => int($duration / 100))
         if ($duration / $timestep->seconds > 100);    # Don't let them go crazy asking for hundreds of points.
 
-    my $start_bet = make_similar_contract(
-        $bet,
-        {
-            priced_at       => 'start',
-            landing_company => $landing_company
-        });
-    $debug_link = BOM::PricingDetails->new({bet => $start_bet})->debug_link;
+    try {
+        my $start_bet = make_similar_contract(
+            $bet,
+            {
+                priced_at       => 'start',
+                landing_company => $landing_company
+            });
+        $debug_link = BOM::PricingDetails->new({bet => $start_bet})->debug_link;
+    }
+    catch {
+        code_exit_BO("<pre>$_</pre>");
+    };
 }
 
 BOM::Backoffice::Request::template->process(
