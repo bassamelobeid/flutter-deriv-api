@@ -187,7 +187,7 @@ EOM
             from    => $brand->emails('compliance'),
             to      => $brand->emails('compliance'),
             subject => 'Experian request error',
-            message => $message,
+            message => [$message],
         });
     };
     return $result;
