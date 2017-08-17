@@ -66,24 +66,16 @@ sub authorize {
     my $brand_name = $c->stash('brand')->name;
 
     # show error when no client found in session
-    unless ($client) {
-        # taken error from oneall
-        my $error = '';
-        if ($error = $c->session('_oneall_error')) {
-            delete $c->session->{_oneall_error};
-        }
-
-        # show login form
-        return $c->render(
-            template     => _get_login_template_name($brand_name),
-            layout       => $brand_name,
-            app          => $app,
-            error        => $error,
-            r            => $c->stash('request'),
-            csrftoken    => $c->csrf_token,
-            country_code => $c->{stash}->{request}->{country_code},
-        );
-    }
+    # show login form
+    return $c->render(
+        template     => _get_login_template_name($brand_name),
+        layout       => $brand_name,
+        app          => $app,
+        error        => delete $c->session('_oneall_error') // '',
+        r            => $c->stash('request'),
+        csrftoken    => $c->csrf_token,
+        country_code => $c->{stash}->{request}->{country_code},
+    ) unless $client;
 
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
 
