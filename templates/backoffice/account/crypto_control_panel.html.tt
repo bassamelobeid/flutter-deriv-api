@@ -12,6 +12,7 @@
 <!-- Manual wallet functions -->
         <input type="hidden" name="wallet_command" value="getnewaddress">
         &nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;
         <input type="submit" value="Get New Deposit Address" name="view_action"/>
     <br>
     <br>
