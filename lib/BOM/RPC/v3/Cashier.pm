@@ -189,7 +189,7 @@ sub cashier {
         DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.doughflow_failure.count', {tags => ["action:$action"]});
 
         return $error_sub->(
-            localize('Sorry, an error has occurred, Please try accessing our Cashier again.'),
+            localize('Sorry, an error occurred. Please try accessing our cashier again.'),
             'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']'
         );
     }
