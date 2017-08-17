@@ -1,8 +1,8 @@
 package BOM::Platform::Client::IDAuthentication;
 
 use Moose;
-
 use namespace::autoclean;
+use Try::Tiny;
 
 use Brands;
 use Client::Account;
@@ -165,13 +165,32 @@ sub _fetch_proveid {
     if ($premise =~ /^(\d+)/) {
         $premise = $1;
     }
-
-    return BOM::Platform::ProveID->new(
-        client        => $self->client,
-        search_option => 'ProveID_KYC',
-        premise       => $premise,
-        force_recheck => $self->force_recheck
-    )->get_result;
+    my $result = {};
+    try {
+        $result = BOM::Platform::ProveID->new(
+            client        => $self->client,
+            search_option => 'ProveID_KYC',
+            premise       => $premise,
+            force_recheck => $self->force_recheck
+        )->get_result;
+    }
+    catch {
+        my $brand    = Brands->new(name => request()->brand);
+        my $clientid = $self->client->loginid;
+        my $message  = <<EOM;
+There was an error during Experian request.
+Error is: $_
+Client: $clientid
+EOM
+        warn "Experian error in _fetch_proveid: ", $_;
+        send_email({
+            from    => $brand->emails('compliance'),
+            to      => $brand->emails('compliance'),
+            subject => 'Experian request error',
+            message => [$message],
+        });
+    };
+    return $result;
 }
 
 __PACKAGE__->meta->make_immutable;
