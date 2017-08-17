@@ -9,6 +9,10 @@
       <option value="LTC">Litecoin</option>
       <option value="ETH">Ethereum</option>
     </select>
+<!-- Manual wallet functions -->
+        <input type="hidden" name="wallet_command" value="getnewaddress">
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <input type="submit" value="Get New Deposit Address" name="view_action"/>
     <br>
     <br>
     <br>
@@ -52,7 +56,4 @@
         <option  value="getnetworkinfo" [% IF cmd == "getnetworkinfo" %] selected="selected" [% END %] >Get network info</option>
         </select>
     <br>
-<!-- Manual wallet functions -->
-        <input type="hidden" name="wallet_command" value="getnewaddress">
-        <input type="submit" value="Get New Deposit Address" name="view_action"/>
 </form>
