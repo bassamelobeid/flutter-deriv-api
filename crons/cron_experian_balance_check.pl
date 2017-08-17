@@ -20,7 +20,7 @@ my $threshold = shift // 10000;
 my $remain = $limit - $used;
 
 if ($remain < $threshold) {
-    my $message = <<EOF;
+    my $message = <<"EOF";
 Experian credits warning:
 Limit: $limit
 Used: $used

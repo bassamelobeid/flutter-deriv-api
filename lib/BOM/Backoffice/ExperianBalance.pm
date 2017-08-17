@@ -10,21 +10,19 @@ my $urls = {
     login_post   => 'https://proveid.experian.com/signin/onsignin.cfm',
     logoff_page  => 'https://proveid.experian.com/signin/signoff.cfm',
     balance_page => 'https://proveid.experian.com/preferences/index.cfm',
-
 };
-my $ua = Mojo::UserAgent->new->cookie_jar(Mojo::UserAgent::CookieJar->new);
 
 sub _get_csrf {
-    my $dom = shift // $ua->get($urls->{login_page})->result->dom;
-    return $dom->at('input[name=_CSRF_token]')->attr('value');
+    return shift->at('input[name=_CSRF_token]')->attr('value');
 }
 
 sub get_balance {
     my ($login, $password) = @_;
-    my $csrf = _get_csrf();
-    my $tx   = $ua->post(
+    my $ua = Mojo::UserAgent->new->cookie_jar(Mojo::UserAgent::CookieJar->new);
+
+    my $tx = $ua->post(
         $urls->{login_post} => form => {
-            _CSRF_token => $csrf,
+            _CSRF_token => _get_csrf($ua->get($urls->{login_page})->result->dom),
             login       => $login,
             password    => $password,
             btnSubmit   => 'Login'
