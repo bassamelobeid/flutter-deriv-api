@@ -183,7 +183,6 @@ Error is: $_
 Client: $clientid
 EOM
         warn "Experian error in _fetch_proveid: ", $_;
-        # send email to compliance here?
         send_email({
             from    => $brand->emails('compliance'),
             to      => $brand->emails('compliance'),
