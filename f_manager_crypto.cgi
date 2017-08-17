@@ -40,6 +40,8 @@ my $currency = request()->param('currency') // 'BTC';
 my $action = request()->param('action');
 # Address is retrieved from Search view for `Address` option.
 my $address = request()->param('address');
+# Show new addresses in recon?
+my $show_new_addresses = request()->param('include_new');
 # view type is a filter option which is used to sort transactions
 # based on their status:it might be either pending, verified, rejected,
 # processing,performing_blockchain_txn, sent or error.
@@ -321,7 +323,9 @@ EOF
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
     # sort_by { $_->{address} } values %db_by_address) {
+    TRAN:
     for my $db_tran (@recon_list) {
+next TRAN if $db_tran->is_status_in(qw(NEW MIGRATED)) and not $show_new_addresses;
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(loginid type)};
         print '<td><a href="' . $address_uri . $_ . '" target="_blank">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
