@@ -109,8 +109,8 @@ sub get_matched_clients_info_by_broker {
         undef, Date::Utility->new->datetime, $broker);
     foreach my $c (@$clients) {
         my $client = Client::Account->new({loginid => $c});
-        my ($list, $name) = $sanctions->is_sanctioned($client->first_name, $client->last_name);
-        push @matched, [$client, $list, $name] if $list;
+        my $result = $sanctions->get_sanctioned_info($client->first_name, $client->last_name);
+        push @matched, [$client, $result->{list}, $result->{name}] if $result->{matched};
     }
     return '' unless @matched;
 
