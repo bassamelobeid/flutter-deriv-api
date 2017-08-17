@@ -180,7 +180,7 @@ sub _fetch_proveid {
         warn "Experian error in _fetch_proveid: ", $_;
         # send email to compliance here?
         send_email({
-                from    => $brand->emails('support'),
+                from    => $brand->emails('compliance'),
                 to      => $brand->emails('compliance'),
                 subject => 'Experian request error',
                 message => <<EOM
