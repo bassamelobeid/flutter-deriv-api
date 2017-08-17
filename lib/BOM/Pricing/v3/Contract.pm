@@ -344,7 +344,7 @@ sub get_bid {
             contract_type       => $contract->code,
         };
 
-        if ($sell_time && $sell_source && $sell_source != 2) {    # source is not 2, sold by hand.
+        if ($is_sold && $sell_source && $sell_source != 2) {    # source is not 2, sold by hand.
             $response->{status} = 'sold';
         } elsif ($contract->is_expired and $contract->is_settleable) {
             $response->{status} = $contract->bid_price == $contract->payout ? "won" : "lost";
