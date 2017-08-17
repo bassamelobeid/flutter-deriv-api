@@ -51,24 +51,24 @@ sub check {
 
     return if $client->is_virtual;
 
-    my $found_in_list = $sanctions->is_sanctioned($client->first_name, $client->last_name);
+    my $sanctioned_info = $sanctions->get_sanctioned_info($client->first_name, $client->last_name);
 
     $client->sanctions_check({
         type   => $self->type,
-        result => $found_in_list
+        result => $sanctioned_info->{matched} ? $sanctioned_info->{list} : '',
     });
     $client->save;
 
     # we don't mark or log fully_authenticated clients
-    return if (not $found_in_list or $client->client_fully_authenticated);
+    return if (not $sanctioned_info->{matched} or $client->client_fully_authenticated);
 
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
 
     my $message =
           "UN Sanctions: $client_loginid suspected ($client_name)\n"
-        . "Check possible match in UN sanctions list found in [$found_in_list, "
-        . Date::Utility->new($sanctions->last_updated($found_in_list))->date . "].";
+        . "Check possible match in UN sanctions list found in [$sanctioned_info->{list}, "
+        . Date::Utility->new($sanctions->last_updated($sanctioned_info->{list}))->date . "].";
 
     # do not send notification if client is already disabled
     if (!$client->get_status('disabled')) {
@@ -79,7 +79,7 @@ sub check {
                 message => [$message],
             }) unless $self->skip_email;
     }
-    return $found_in_list;
+    return $sanctioned_info->{list};
 }
 
 __PACKAGE__->meta->make_immutable;
