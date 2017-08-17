@@ -118,7 +118,8 @@ subtest 'When auth not required' => sub {
             };
             ok !$v->client->client_fully_authenticated, 'client should not be fully authenticated';
             ok !$v->client->get_status('age_verification'), 'client should not be age verified';
-            ok $v->client->get_status('unwelcome'), 'client is now unwelcome';
+            ok !$v->client->get_status('unwelcome'),        'client is not unwelcome';
+            ok $v->client->get_status('cashier_locked'), 'client is now cashier_locked';
         };
         subtest 'for MX' => sub {
             my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
