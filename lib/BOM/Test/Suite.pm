@@ -114,7 +114,7 @@ sub run {
 
     my $test_app;
     my $lang = '';
-    my ($last_lang, $reset);
+    my ($last_lang, $reset, $placeholder);
 
     # Track how long our steps take - we're resetting time so we do this as a sanity
     # check that our clock reset gives us sensible numbers.
@@ -143,6 +143,23 @@ sub run {
             $reset = $1;
             next;
         }
+
+        if ($line =~ s/^\\.*\=(.*)\\$//) {
+            my $func = $1;
+            local $@;    # ensure we clear this first, to avoid false positive
+            $placeholder = eval $func;    ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
+
+            # we do not expect any exceptions from the eval, they could indicate
+            # invalid Perl code or bug, either way we need to know about them
+            ok(!$@, "template content can eval successfully")
+                or diag "Possible exception on eval \"$func\": $@"
+                if $@;
+            # note that _get_token may return undef, the template implementation is not advanced
+            # enough to support JSON null so we fall back to an empty string
+            $placeholder //= '';
+            next;
+        }
+
         if ($lang || !$test_app || $reset) {
             my $new_lang = $lang || $last_lang;
             ok(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
@@ -182,7 +199,7 @@ sub run {
             ($receive_file, @template_func) = split(',', $line);
 
             my $content = read_file($suite_schema_path . $receive_file);
-            $content = _get_values($content, @template_func);
+            $content = _get_values($content, $placeholder, @template_func);
 
             $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $fail);
         } else {
@@ -192,7 +209,7 @@ sub run {
             my $call = $test_app->{call} = $1;
 
             my $content = read_file($suite_schema_path . $send_file);
-            $content = _get_values($content, @template_func);
+            $content = _get_values($content, $placeholder, @template_func);
             my $req_params = JSON::from_json($content);
 
             $req_params = $test_app->adjust_req_params($req_params, {language => $last_lang});
@@ -200,7 +217,7 @@ sub run {
             die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
 
             $content = read_file($suite_schema_path . $receive_file);
-            $content = _get_values($content, @template_func);
+            $content = _get_values($content, $placeholder, @template_func);
 
             my $result = $test_app->test_schema($req_params, $content, $receive_file, $fail);
             $response->{$call} = $result;
@@ -230,7 +247,7 @@ sub print_test_diag {
 }
 
 sub _get_values {
-    my ($content, @template_func) = @_;
+    my ($content, $placeholder_val, @template_func) = @_;
     my $c = 0;
     foreach my $f (@template_func) {
         $c++;
@@ -248,6 +265,8 @@ sub _get_values {
             # note that _get_token may return undef, the template implementation is not advanced
             # enough to support JSON null so we fall back to an empty string
             $template_content //= '';
+        } elsif ($f eq 'placeholder') {
+            $template_content = $placeholder_val;
         } else {
             $f =~ s/^\'|\'$//g;
             $template_content = $f;
