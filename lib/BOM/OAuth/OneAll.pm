@@ -25,9 +25,9 @@ sub callback {
     my $redirect_uri = $c->req->url->path('/oauth2/authorize')->to_abs;
     # Redirect client to authorize subroutine if there is no connection token provided
     # or request came from Japan.
-    return $c->redirect_to($redirect_uri) 
-        if $c->{stash}->{request}->{country_code} eq 'jp' 
-            or not $connection_token;
+    return $c->redirect_to($redirect_uri)
+        if $c->{stash}->{request}->{country_code} eq 'jp'
+        or not $connection_token;
 
     my $oneall = WWW::OneAll->new(
         subdomain   => 'binary',
@@ -55,8 +55,8 @@ sub callback {
         my $user  = try {
             BOM::Platform::User->new({email => $email})
         };
-        # Registered users who have email/password based account are forbidden 
-        # from social signin. As only one login method 
+        # Registered users who have email/password based account are forbidden
+        # from social signin. As only one login method
         # is allowed (either email/password or social login).
         if ($user) {
             for my $acc ($user->clients) {
@@ -66,7 +66,7 @@ sub callback {
                 unless ($acc->get_status('social_signup')) {
                     $c->session->{_oneall_error} = localize("Log in using your email address");
                     return $c->redirect_to($redirect_uri);
-                 }
+                }
             }
         }
         # create user based on email by fly if account does not exist yet
