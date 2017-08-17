@@ -71,7 +71,7 @@ sub authorize {
         template     => _get_login_template_name($brand_name),
         layout       => $brand_name,
         app          => $app,
-        error        => delete $c->session('_oneall_error') // '',
+        error        => $c->session->{_oneall_error} ? delete $c->session->{_oneall_error} : '',
         r            => $c->stash('request'),
         csrftoken    => $c->csrf_token,
         country_code => $c->{stash}->{request}->{country_code},

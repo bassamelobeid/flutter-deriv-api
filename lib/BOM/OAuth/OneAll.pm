@@ -63,7 +63,10 @@ sub callback {
                 # Redirect client to login page if social signup flag is not found.
                 # As the main purpose of this package is to serve
                 # clients with social login only.
-                return $c->redirect_to($redirect_uri) unless $acc->get_status('social_signup');
+                unless ($acc->get_status('social_signup')) {
+                    $c->session->{_oneall_error} = localize("Log in using your email address");
+                    return $c->redirect_to($redirect_uri);
+                 }
             }
         }
         # create user based on email by fly if account does not exist yet
