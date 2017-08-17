@@ -9,6 +9,11 @@
       <option value="LTC">Litecoin</option>
       <option value="ETH">Ethereum</option>
     </select>
+<!-- Manual wallet functions -->
+        <input type="hidden" name="wallet_command" value="getnewaddress">
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <input type="submit" value="Get New Deposit Address" name="view_action"/>
     <br>
     <br>
     <br>
@@ -19,10 +24,12 @@
     Amount: <input type="text" name="amount_dcc" size=15/>
     <input type="submit" value="Make Dual Control Code" name="view_action"/>
     ([% staff %])
+    <br>
 <!-- Recon -->
         <input type="submit" value="Reconciliation" name="view_action"/>
         <input type="text" name="[% start_date %]" class="datepick" value="[% start_date %]">
         <input type="text" name="end_date" class="datepick" value="[% end_date %]">
+        <input type="checkbox" name="include_new"><label for="include_new">Show new addresses</label>
     <br>
 <!-- Search -->
         <input type="submit" value="Search" name="view_action"/>
@@ -51,7 +58,4 @@
         <option  value="getnetworkinfo" [% IF cmd == "getnetworkinfo" %] selected="selected" [% END %] >Get network info</option>
         </select>
     <br>
-<!-- Manual wallet functions -->
-        <input type="hidden" name="wallet_command" value="getnewaddress">
-        <input type="submit" value="Get New Deposit Address" name="view_action"/>
 </form>
