@@ -325,7 +325,7 @@ EOF
     # sort_by { $_->{address} } values %db_by_address) {
     TRAN:
     for my $db_tran (@recon_list) {
-next TRAN if $db_tran->is_status_in(qw(NEW MIGRATED)) and not $show_new_addresses;
+        next TRAN if $db_tran->is_status_in(qw(NEW MIGRATED)) and not $show_new_addresses;
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(loginid type)};
         print '<td><a href="' . $address_uri . $_ . '" target="_blank">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
