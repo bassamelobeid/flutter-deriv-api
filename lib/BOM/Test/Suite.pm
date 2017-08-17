@@ -144,7 +144,7 @@ sub run {
             next;
         }
 
-        if ($line =~ s/^\\.*\=(.*)\\$//) {
+        if ($line =~ s/^\|.*\=(.*)\|$//) {
             my $func = $1;
             local $@;    # ensure we clear this first, to avoid false positive
             $placeholder = eval $func;    ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
