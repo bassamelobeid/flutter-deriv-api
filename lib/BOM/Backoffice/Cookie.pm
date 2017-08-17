@@ -10,7 +10,7 @@ use BOM::Platform::Config;
 
 my @base_cookies_list = qw/staff auth_token/;
 
-sub build_cookie {
+sub _build_cookie {
     return CGI::cookie(
         -name     => $_[0],
         -value    => $_[1],
@@ -23,13 +23,14 @@ sub build_cookie {
 }
 
 sub build_cookies {
-    return [map { defined($_[0]->{$_}) ? build_cookie($_, $_[0]->{$_}, '+30d') : () }
+    my $values = shift // {};
+    return [map { defined($values->{$_}) ? _build_cookie($_, $values->{$_}, '+30d') : () }
             (@base_cookies_list, BOM::Platform::Config::on_qa() ? 'backprice' : ())];
 }
 
 # expire cookies, by setting "expires" in the past
 sub expire_cookies {
-    return [map { build_cookie($_, undef, '-1d') } @base_cookies_list];
+    return [map { _build_cookie($_, undef, '-1d') } @base_cookies_list];
 }
 
 sub get_staff {
