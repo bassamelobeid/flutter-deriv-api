@@ -246,7 +246,7 @@ sub app_markup_details {
     my $user    = BOM::Platform::User->new({email => $client->email});
     my $app_ids = $oauth->get_app_ids_by_user_id($user->id);
 
-# If the app_id they have submitted is not in the list we have associated with them, then...
+    # If the app_id they have submitted is not in the list we have associated with them, then...
     if ($args->{app_id} && !grep { $args->{app_id} == $_ } @$app_ids) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidAppID',
