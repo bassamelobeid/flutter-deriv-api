@@ -6,68 +6,42 @@ use strict;
 use CGI::Cookie;
 use CGI::Util;
 use BOM::Backoffice::Request qw(request);
+use BOM::Platform::Config;
 
-sub build_cookies {
-    my $args = shift;
+my @base_cookies_list = qw/staff auth_token/;
 
-    my $staff      = $args->{staff};
-    my $auth_token = $args->{auth_token};
-
-    my $staff_cookie = CGI::cookie(
-        -name     => 'staff',
-        -value    => $staff,
-        -expires  => '+30d',
+sub _build_cookie {
+    return CGI::cookie(
+        -name     => $_[0],
+        -value    => $_[1],
+        -expires  => $_[2],
         -secure   => 1,
         -httponly => 1,
         -domain   => request()->cookie_domain,
         -path     => '/',
     );
-
-    my $token_cookie = CGI::cookie(
-        -name     => 'auth_token',
-        -value    => $auth_token,
-        -expires  => '+30d',
-        -secure   => 1,
-        -httponly => 1,
-        -domain   => request()->cookie_domain,
-        -path     => '/',
-    );
-
-    return [$staff_cookie, $token_cookie];
 }
 
+sub build_cookies {
+    my $values = shift // {};
+    return [map { defined($values->{$_}) ? _build_cookie($_, $values->{$_}, '+30d') : () }
+            (@base_cookies_list, BOM::Platform::Config::on_qa() ? 'backprice' : ())];
+}
+
+# expire cookies, by setting "expires" in the past
 sub expire_cookies {
-    # expire cookies, by setting "expires" in the past
-    my $staff_cookie = CGI::cookie(
-        -name     => 'staff',
-        -expires  => '-1d',
-        -secure   => 1,
-        -httponly => 1,
-        -domain   => request()->cookie_domain,
-        -path     => '/',
-    );
-
-    my $token_cookie = CGI::cookie(
-        -name     => 'auth_token',
-        -expires  => '-1d',
-        -secure   => 1,
-        -httponly => 1,
-        -domain   => request()->cookie_domain,
-        -path     => '/',
-    );
-
-    return [$staff_cookie, $token_cookie];
+    return [map { _build_cookie($_, undef, '-1d') } @base_cookies_list];
 }
 
 sub get_staff {
-    return __get_cookie('staff');
+    return get_cookie('staff');
 }
 
 sub get_auth_token {
-    return __get_cookie('auth_token');
+    return get_cookie('auth_token');
 }
 
-sub __get_cookie {
+sub get_cookie {
     my $name = shift;
 
     my %bo_cookies = CGI::Cookie->fetch;
