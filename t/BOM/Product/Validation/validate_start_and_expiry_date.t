@@ -536,7 +536,8 @@ subtest '4-second level 5 economic event blackout' => sub {
     my $event = {
         event_name   => 'test',
         impact       => 5,
-        release_date => $now->epoch
+        release_date => $now->epoch,
+        symbol       => 'USD'
     };
     $mock->mock('_applicable_economic_events', sub { [$event] });
     $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 3;
@@ -545,12 +546,14 @@ subtest '4-second level 5 economic event blackout' => sub {
     $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 2;
     $c = produce_contract($bet_params);
     my $err;
-    ok $err = $c->_validate_start_and_expiry_date, 'no blackout if event is 3 seconds after date pricing';
+    ok $err = $c->_validate_start_and_expiry_date, 'blackout if event is 2 seconds after date pricing';
     like $err->{message}, qr/blackout period/, 'correct error';
     $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch - 2;
     $c = produce_contract($bet_params);
-    ok $err = $c->_validate_start_and_expiry_date, 'no blackout if event is 3 seconds after date pricing';
+    ok $err = $c->_validate_start_and_expiry_date, 'blackout if event is 2 seconds before date pricing';
     like $err->{message}, qr/blackout period/, 'correct error';
+    $bet_params->{underlying} = 'frxAUDJPY';
+    ok !$c->_validate_start_and_expiry_date, 'no error for frxAUDJPY, only the direct forex pairs';
     $bet_params->{underlying} = 'DJI';
     $c = produce_contract($bet_params);
     ok !$c->_validate_start_and_expiry_date, 'no error for DJI';

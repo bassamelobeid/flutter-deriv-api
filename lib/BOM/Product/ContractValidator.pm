@@ -832,8 +832,12 @@ sub _build_date_start_blackouts {
         my $start_of_blackout = $effective_epoch - 2;
         my $end_of_blackout   = $effective_epoch + 2;
         my @events =
-            grep { $_->{release_date} >= $start_of_blackout && $_->{release_date} <= $end_of_blackout && $_->{impact} == 5 }
-            @{$self->_applicable_economic_events};
+            grep {
+                   $_->{release_date} >= $start_of_blackout
+                && $_->{release_date} <= $end_of_blackout
+                && $_->{impact} == 5
+                && $self->underlying->symbol =~ /$_->{symbol}/
+            } @{$self->_applicable_economic_events};
 
         if (@events) {
             push @periods, [$start_of_blackout, $end_of_blackout];
