@@ -12,6 +12,7 @@ use LandingCompany::Offerings qw(get_offerings_flyby);
 use JSON qw(to_json);
 use List::Util qw(first);
 use BOM::Backoffice::Request;
+use BOM::MarketDataAutoUpdater::Forex;
 
 sub get_economic_events_for_date {
     my $date = shift;
