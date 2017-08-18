@@ -439,10 +439,12 @@ sub _feed_channel_unsubscribe {
     # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
     transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
 
-    delete $shared_info->{$c + 0};
-    if (!keys %{$shared_info // {}}) {
-        $shared_info->{symbols}->{$symbol} = 0;
-        shared_redis->unsubscribe(["FEED::$symbol"], sub { });
+    unless (keys %$feed_channel_type) {    # one connection could have several subscriptions (ticks/candles)
+        delete $shared_info->{$c + 0};
+        if (!keys %{$shared_info // {}}) {
+            $shared_info->{symbols}->{$symbol} = 0;
+            shared_redis->unsubscribe(["FEED::$symbol"], sub { });
+        }
     }
 
     return $uuid;
