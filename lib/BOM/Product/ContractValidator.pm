@@ -221,10 +221,6 @@ sub _validate_feed {
     return if $self->is_expired;
 
     my $underlying = $self->underlying;
-    my $has_event_at_pricing_date =
-        (!$self->is_forward_starting && first { $_->{impact} == 5 && Date::Utility->new($_->{release_date})->epoch == $self->effective_start->epoch }
-        @{$self->_applicable_economic_events});
-    my $max_delay_seconds = $has_event_at_pricing_date ? 3 : $underlying->max_suspend_trading_feed_delay->seconds;
 
     if (not $self->current_tick) {
         warn "No current_tick for " . $underlying->symbol;
@@ -232,15 +228,27 @@ sub _validate_feed {
             message           => "No realtime data [symbol: " . $underlying->symbol . "]",
             message_to_client => [$ERROR_MAPPING->{MissingTickMarketData}],
         };
-    } elsif ($self->trading_calendar->is_open_at($underlying->exchange, $self->date_pricing)
-        and $self->date_pricing->epoch - $max_delay_seconds > $self->current_tick->epoch)
-    {
+    } elsif ($self->trading_calendar->is_open_at($underlying->exchange, $self->date_pricing)) {
+        my $max_delay_seconds = $underlying->max_suspend_trading_feed_delay->seconds;
+        if ($underlying->market->name eq 'forex' && !$self->is_forward_starting) {
+            my $effective_epoch = $self->effective_start->epoch;
+            my @events_in_the_last_15_seconds =
+                grep { $_->{release_date} >= $effective_epoch - 15 && $_->{release_date} <= $effective_epoch && $_->{impact} == 5 }
+                @{$self->_applicable_economic_events};
+
+            # We want to have a stricter feed delay threshold (3 seconds) if there's a level 5 economic event.
+            $max_delay_seconds = 3
+                if @events_in_the_last_15_seconds && $events_in_the_last_15_seconds[-1]->{release_date} > $self->current_tick->epoch;
+        }
+
         # only throw errors for quote too old, if the exchange is open at pricing time
-        warn "Quote too old for " . $underlying->symbol . ", epoch " . $self->current_tick->epoch . " with max tick age " . $max_delay_seconds;
-        return {
-            message           => "Quote too old [symbol: " . $underlying->symbol . "]",
-            message_to_client => [$ERROR_MAPPING->{OldMarketData}],
-        };
+        if ($self->date_pricing->epoch - $max_delay_seconds > $self->current_tick->epoch) {
+            warn "Quote too old for " . $underlying->symbol . ", epoch " . $self->current_tick->epoch . " with max tick age " . $max_delay_seconds;
+            return {
+                message           => "Quote too old [symbol: " . $underlying->symbol . "]",
+                message_to_client => [$ERROR_MAPPING->{OldMarketData}],
+            };
+        }
     }
 
     return;
