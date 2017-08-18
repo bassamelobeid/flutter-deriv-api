@@ -563,14 +563,14 @@ sub reset_password {
             code              => "InternalServerError",
             message_to_client => localize("Sorry, an error occurred while processing your account.")}) unless $user and @clients = $user->clients;
 
+    # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
+    my $client = $clients[0];
+
     # do not allow social based clients to reset password
     return BOM::RPC::v3::Utility::create_error({
             code              => "SocialBased",
             message_to_client => localize("Sorry, your account does not allow passwords because you use social media to log in.")}
-    ) unless $user->password;
-
-    # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
-    my $client = $clients[0];
+    ) if $client->get_status('social_signup');
 
     unless ($client->is_virtual) {
         unless ($args->{date_of_birth}) {
