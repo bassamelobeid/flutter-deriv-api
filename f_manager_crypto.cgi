@@ -72,12 +72,12 @@ if (length($broker) < 2) {
 }
 
 my %blockchain_transaction_url = (
-    BTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/'      : 'https://blockchain.info/tx/'); },
-    LTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/'      : 'https://blockchain.info/tx/'); },
+    BTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/' : 'https://blockchain.info/tx/'); },
+    LTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://chain.so/tx/LTCTEST/'        : 'https://live.blockcypher.com/ltc/tx/'); },
 );
 my %blockchain_address_url = (
     BTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/' : 'https://blockchain.info/address/') },
-    LTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/' : 'https://blockchain.info/address/') },
+    LTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://chain.so/address/LTCTEST/'        : 'https://live.blockcypher.com/ltc/address/') },
 );
 my $transaction_uri = URI->new($blockchain_transaction_url{$currency}->());
 my $address_uri     = URI->new($blockchain_address_url{$currency}->());
