@@ -268,14 +268,16 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     $tt->process(
         'backoffice/account/manage_crypto_transactions.tt',
         {
-            transactions   => $trxns,
-            broker         => $broker,
-            currency       => $currency,
-            view_action    => $reversed{$view_action},
-            view_type      => $view_type,
-            va_cmds        => \%va_cmds,
-            controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
-            testnet        => BOM::Platform::Config::on_qa() ? 1 : 0,
+            transactions    => $trxns,
+            broker          => $broker,
+            currency        => $currency,
+            transaction_uri => $transaction_uri,
+            address_uri     => $address_uri,
+            view_action     => $reversed{$view_action},
+            view_type       => $view_type,
+            va_cmds         => \%va_cmds,
+            controller_url  => request()->url_for('backoffice/f_manager_crypto.cgi'),
+            testnet         => BOM::Platform::Config::on_qa() ? 1 : 0,
         }) || die $tt->error();
 } elsif ($view_action eq $va_cmds{reconcil}) {
     Bar($currency . ' Reconciliation');
