@@ -144,6 +144,7 @@ sub run {
             next;
         }
 
+        # |placeholder=_get_stashed('new_account_real/new_account_real/oauth_token')|
         if ($line =~ s/^\|.*\=(.*)\|$//) {
             my $func = $1;
             local $@;    # ensure we clear this first, to avoid false positive
