@@ -77,7 +77,7 @@ my %blockchain_transaction_url = (
 );
 my %blockchain_address_url = (
     BTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/' : 'https://blockchain.info/address/') },
-    LTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://chain.so/address/LTCTEST/'        : 'https://live.blockcypher.com/ltc/address/') },
+    LTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://chain.so/address/LTCTEST/' : 'https://live.blockcypher.com/ltc/address/') },
 );
 my $transaction_uri = URI->new(($blockchain_transaction_url{$currency} // die "no currency transaction URL for $currency")->());
 my $address_uri     = URI->new($blockchain_address_url{$currency}->());
@@ -110,7 +110,7 @@ $tt2->process(
     {
         exchange_rates => \%exchange_rates,
         controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
-currency => $currency,
+        currency       => $currency,
         cmd            => request()->param('command') // '',
         broker         => $broker,
         start_date     => $start_date->date_yyyymmdd,
@@ -132,7 +132,7 @@ my $dbh = $clientdb->db->dbh;
 my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
 
 my %clients = (
-    BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5)) },
+    BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}},  timeout => 5)) },
     LTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{litecoin}}, timeout => 5)) },
     ETH => sub { ... },
 );
