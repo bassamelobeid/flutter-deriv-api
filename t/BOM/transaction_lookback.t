@@ -159,13 +159,13 @@ my $underlying_R50    = create_underlying('R_50');
 
 sub db {
     return BOM::Database::ClientDB->new({
-            broker_code => 'CR',
+            broker_code => 'VRTC',
         })->db;
 }
 
 sub create_client {
     return Client::Account->register_and_return_new_client({
-        broker_code      => 'CR',
+        broker_code      => 'VRTC',
         client_password  => BOM::Platform::Password::hashpw('12345678'),
         salutation       => 'Ms',
         last_name        => 'Doe',
