@@ -79,8 +79,9 @@ sub buy {
             client              => $client,
             contract_parameters => $contract_parameters,
             price               => ($price || 0),
-            (defined $payout)      ? (payout      => $payout)      : (),
-            (defined $amount_type) ? (amount_type => $amount_type) : (),
+            (defined $payout) ? (payout => $payout) : (),
+#experimentation
+            (defined $amount_type) ? (amount_type => $amount_type) : (amount_type => ''),
             purchase_date => $purchase_date,
             source        => $source,
             (defined $trading_period_start)
