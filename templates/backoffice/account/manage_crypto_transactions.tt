@@ -1,3 +1,17 @@
+[% MACRO address_link(addr) %]
+[% IF addr %]
+    <a href="[% address_uri _ addr %]" target="_blank">[% addr %]</a>
+[% ELSE %]
+    &nbsp;
+[% END %]
+[% END %]
+[% MACRO transaction_link(tx) %]
+[% IF tx %]
+    <a href="[% transaction_uri _ tx %]" target="_blank">[% tx.substr(0,6) %]</a>
+[% ELSE %]
+    &nbsp;
+[% END %]
+[% END %]
 <table>
     <thead>
         <th>Status</th>
@@ -79,15 +93,11 @@
                 <td><table><tbody>
                     <tr><td>
                         <b>Address</b>: 
-                        [% IF trx.address %]
-                            <a href="[% IF testnet %]https://www.blocktrail.com/tBTC/address/[% ELSE %]https://blockchain.info/address/[% END %][% trx.address %]" target="_blank">[% trx.address %]</a>
-                        [% END %]
+                        [% address_link(trx.address) %]
                     </td></tr>
                     <tr><td>
                         <b>Blockchain ID</b>: 
-                        [% IF trx.blockchain_txn %] 
-                            <a href="[% IF testnet %]https://www.blocktrail.com/tBTC/address/[% ELSE %]https://blockchain.info/address/[% END %][% trx.blockchain_txn %]" target="_blank">[% trx.blockchain_txn %]</a>
-                        [% END %]
+                        [% transaction_link(trx.blockchain_txn) %]
                     </td></tr>
                 </tbody></table></td>
                 <td><table><tbody>

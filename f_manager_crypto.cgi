@@ -71,8 +71,16 @@ if (length($broker) < 2) {
     code_exit_BO();
 }
 
-my $transaction_uri = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/'      : 'https://blockchain.info/tx/');
-my $address_uri     = URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/' : 'https://blockchain.info/address/');
+my %blockchain_transaction_url = (
+    BTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/'      : 'https://blockchain.info/tx/'); },
+    LTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/'      : 'https://blockchain.info/tx/'); },
+);
+my %blockchain_address_url = (
+    BTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/' : 'https://blockchain.info/address/') },
+    LTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/' : 'https://blockchain.info/address/') },
+);
+my $transaction_uri = URI->new($blockchain_transaction_url{$currency}->());
+my $address_uri     = URI->new($blockchain_address_url{$currency}->());
 my $tt              = BOM::Backoffice::Request::template;
 {
     my $cmd = request()->param('command');
@@ -121,7 +129,13 @@ my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbh = $clientdb->db->dbh;
 
 my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
-my $rpc_client = Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5));
+
+my %clients = (
+    BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}}, timeout => 5)) },
+    LTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{litecoin}}, timeout => 5)) },
+    ETH => sub { ... },
+);
+my $rpc_client = ($clients{$currency} // die "no RPC client found for currency " . $currency)->();
 
 # collect list of transactions and render in template.
 if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
@@ -264,7 +278,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
             testnet        => BOM::Platform::Config::on_qa() ? 1 : 0,
         }) || die $tt->error();
 } elsif ($view_action eq $va_cmds{reconcil}) {
-    Bar('BTC Reconciliation');
+    Bar($currency . ' Reconciliation');
 
     if (not $currency or $currency !~ /^[A-Z]{3}$/) {
         print "Invalid currency.";
