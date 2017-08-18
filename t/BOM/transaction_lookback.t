@@ -446,7 +446,7 @@ subtest 'buy a bet', sub {
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
             is !$fmb->{is_expired}, !0, 'is_expired';
             is !$fmb->{is_sold},    !0, 'is_sold';
-            is $fmb->{payout_price} + 0, 1000, 'payout_price';
+            is $fmb->{payout_price} + 0, 0, 'payout_price';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             like $fmb->{remark},   qr/\btrade\[230\.05000\]/, 'remark';
             is $fmb->{sell_price}, undef,                     'sell_price';
@@ -556,7 +556,7 @@ subtest 'sell a bet', sub {
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
             is !$fmb->{is_expired}, !1, 'is_expired';
             is !$fmb->{is_sold},    !1, 'is_sold';
-            is $fmb->{payout_price} + 0, 1000, 'payout_price';
+            is $fmb->{payout_price} + 0, 0, 'payout_price';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             like $fmb->{remark}, qr/\btrade\[230\.05000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price, 'sell_price';
@@ -604,7 +604,7 @@ subtest 'sell a bet', sub {
 };
 
 subtest 'sell_expired_contracts', sub {
-    plan tests => 37;
+    plan tests => 7;
     lives_ok {
         my $cl = create_client;
 
@@ -648,23 +648,20 @@ subtest 'sell_expired_contracts', sub {
         }
 
         $acc_usd->load;
-        is $acc_usd->balance + 0, 998.04, 'USD balance is down to 900 plus';
-$DB::single=1;
+        is $acc_usd->balance + 0, 995.4, 'USD balance is down to 900 plus';
+
         # First sell some particular ones by id.
         my $res = BOM::Transaction::sell_expired_contracts + {
             client       => $cl,
             source       => 29,
             contract_ids => [@expired_fmbids[0 .. 1]],
         };
-use Data::Dumper;
-
-print Dumper($res);
 
         is_deeply $res,
             +{
             number_of_sold_bets => 2,
             skip_contract       => 0,
-            total_credited      => 61622.26,
+            total_credited      => 66429.82,
             failures            => [],
             },
             'sold the two requested contracts';
