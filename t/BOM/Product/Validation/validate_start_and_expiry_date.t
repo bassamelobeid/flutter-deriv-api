@@ -553,6 +553,7 @@ subtest '4-second level 5 economic event blackout' => sub {
     ok $err = $c->_validate_start_and_expiry_date, 'blackout if event is 2 seconds before date pricing';
     like $err->{message}, qr/blackout period/, 'correct error';
     $bet_params->{underlying} = 'frxAUDJPY';
+    $c = produce_contract($bet_params);
     ok !$c->_validate_start_and_expiry_date, 'no error for frxAUDJPY, only the direct forex pairs';
     $bet_params->{underlying} = 'DJI';
     $c = produce_contract($bet_params);
