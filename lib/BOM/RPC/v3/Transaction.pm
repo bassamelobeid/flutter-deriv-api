@@ -81,7 +81,7 @@ sub buy {
             price               => ($price || 0),
             (defined $payout) ? (payout => $payout) : (),
 #experimentation
-            (defined $amount_type) ? (amount_type => $amount_type) : (amount_type => ''),
+            (defined $amount_type) ? (amount_type => $amount_type) : (amount_type => 'unit'),
             purchase_date => $purchase_date,
             source        => $source,
             (defined $trading_period_start)
