@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More;
 use Test::Warnings;
 use Test::MockModule;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -19,7 +19,11 @@ use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
 initialize_realtime_ticks_db;
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked->mock('get', sub {[map {{epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
+$mocked->mock(
+    'get',
+    sub {
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.1)} } (0 .. 80)];
+    });
 
 my $trading_calendar    = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
 my $weekday             = Date::Utility->new('2016-03-29');
@@ -355,8 +359,8 @@ subtest 'date start blackouts' => sub {
         epoch      => Date::Utility->new('2015-01-01 00:00:00')->epoch,
     });
     my $mocked_hl = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
-    $mocked_hl->mock('_get_expired_barriers', sub {[]});
-    $c                             = produce_contract($bet_params);
+    $mocked_hl->mock('_get_expired_barriers', sub { [] });
+    $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid for japan';
     delete $bet_params->{landing_company};
 };
@@ -515,3 +519,41 @@ subtest 'market_risk blackouts' => sub {
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '21:00:00', '23:59:59']);
 };
+
+subtest '4-second level 5 economic event blackout' => sub {
+    my $now        = Date::Utility->new();
+    my $bet_params = {
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        date_start   => $now,
+        date_pricing => $now,
+        duration     => '10h',
+        barrier      => 'S0P',
+        currency     => 'USD',
+        payout       => 100
+    };
+    my $mock  = Test::MockModule->new('BOM::Product::Contract');
+    my $event = {
+        event_name   => 'test',
+        impact       => 5,
+        release_date => $now->epoch
+    };
+    $mock->mock('_applicable_economic_events', sub { [$event] });
+    $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 3;
+    my $c = produce_contract($bet_params);
+    ok !$c->_validate_start_and_expiry_date, 'no blackout if event is 3 seconds after date pricing';
+    $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 2;
+    $c = produce_contract($bet_params);
+    my $err;
+    ok $err = $c->_validate_start_and_expiry_date, 'no blackout if event is 3 seconds after date pricing';
+    like $err->{message}, qr/blackout period/, 'correct error';
+    $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch - 2;
+    $c = produce_contract($bet_params);
+    ok $err = $c->_validate_start_and_expiry_date, 'no blackout if event is 3 seconds after date pricing';
+    like $err->{message}, qr/blackout period/, 'correct error';
+    $bet_params->{underlying} = 'DJI';
+    $c = produce_contract($bet_params);
+    ok !$c->_validate_start_and_expiry_date, 'no error for DJI';
+};
+
+done_testing();
