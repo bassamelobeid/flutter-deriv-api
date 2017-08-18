@@ -408,7 +408,7 @@ sub prepare_bet_data_for_buy {
         start_time        => scalar $contract->date_start->db_timestamp,
         expiry_time       => scalar $contract->date_expiry->db_timestamp,
         settlement_time   => scalar $contract->date_settlement->db_timestamp,
-        payout_price      => scalar $self->payout,
+        ($contract->is_binary) ? (payout_price => scalar $self->payout) : (),
     };
 
 #just for experimentation
