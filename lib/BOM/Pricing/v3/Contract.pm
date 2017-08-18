@@ -340,8 +340,9 @@ sub get_bid {
             currency            => $contract->currency,
             longcode            => localize($contract->longcode),
             shortcode           => $contract->shortcode,
-            payout              => $contract->payout,
-            contract_type       => $contract->code
+#just experimentation
+            ($contract->is_binary) ? (payout => $contract->payout) : (),
+            contract_type => $contract->code
         };
 
         if (not $contract->may_settle_automatically
