@@ -134,7 +134,7 @@ sub _init {
         Date::Utility->new
     );
     # set a recorded date that is incredibly back in time due to tests usually have different static times.
-    $writer->set('economic_events', 'economic_events', {events => []}, Date::Utility->new('2010-01-01'));
+    $writer->set('economic_events', 'economic_events', {events => []}, Date::Utility->new('2000-01-01'));
 
     return 1;
 }
