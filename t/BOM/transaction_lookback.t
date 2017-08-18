@@ -604,7 +604,7 @@ subtest 'sell a bet', sub {
 };
 
 subtest 'sell_expired_contracts', sub {
-    plan tests => 7;
+    plan tests => 8;
     lives_ok {
         my $cl = create_client;
 
