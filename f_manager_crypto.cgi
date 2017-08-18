@@ -79,7 +79,7 @@ my %blockchain_address_url = (
     BTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/' : 'https://blockchain.info/address/') },
     LTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://chain.so/address/LTCTEST/'        : 'https://live.blockcypher.com/ltc/address/') },
 );
-my $transaction_uri = URI->new($blockchain_transaction_url{$currency}->());
+my $transaction_uri = URI->new(($blockchain_transaction_url{$currency} // die "no currency transaction URL for $currency")->());
 my $address_uri     = URI->new($blockchain_address_url{$currency}->());
 my $tt              = BOM::Backoffice::Request::template;
 {
@@ -110,6 +110,7 @@ $tt2->process(
     {
         exchange_rates => \%exchange_rates,
         controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
+currency => $currency,
         cmd            => request()->param('command') // '',
         broker         => $broker,
         start_date     => $start_date->date_yyyymmdd,
