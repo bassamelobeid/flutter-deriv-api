@@ -47,8 +47,15 @@ sub authorize {
         and defang($c->param('login')))
     {
         $client = $c->_login($app) or return;
-        $c->session('_is_logined', 1);
-        $c->session('_loginid',    $client->loginid);
+        # Prevent login if social signup flag is found.
+        # As the main purpose of this package is to serve
+        # clients with email/password only.
+        if ($client->get_status('social_signup')) {
+            $c->session('_oneall_error', localize('Invalid login attempt. Please log in with a social network instead.'));
+        } else {
+            $c->session('_is_logined', 1);
+            $c->session('_loginid',    $client->loginid);
+        }
     } elsif ($c->req->method eq 'POST' and $c->session('_is_logined')) {
         # Get loginid from Mojo Session
         $client = $c->_get_client;
