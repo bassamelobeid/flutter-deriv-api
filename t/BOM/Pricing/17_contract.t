@@ -186,7 +186,6 @@ subtest 'get_bid' => sub {
             currency
             longcode
             shortcode
-            payout
             contract_type
             display_name
             barrier
