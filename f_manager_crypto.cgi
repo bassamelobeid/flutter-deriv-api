@@ -437,11 +437,11 @@ EOF
             print encode_entities(Dumper $rslt);
         }
     } else {
-        die 'Invalid BTC command: ' . $cmd;
+        die 'Invalid ' . $currency . ' command: ' . $cmd;
     }
 } elsif ($view_action eq $va_cmds{new_deposit_address}) {
     my $rslt = $rpc_client->getnewaddress('manual');
-    print '<p>New BTC address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
+    print '<p>New ' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
 } elsif ($view_action eq $va_cmds{make_dcc}) {
     my $amount_dcc  = request()->param('amount_dcc')  // 0;
     my $loginid_dcc = request()->param('loginid_dcc') // '';
