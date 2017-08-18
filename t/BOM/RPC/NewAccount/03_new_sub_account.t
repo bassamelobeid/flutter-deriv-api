@@ -112,12 +112,12 @@ subtest $method => sub {
         $real_client = Client::Account->new({loginid => $new_loginid});
         $real_client->allow_omnibus(1);
         $real_client->save();
-        $rpc_ct->call_ok('new_sub_account', $params)->has_no_system_error->has_error->error_code_is('duplicate name DOB',
-            'as details are provided so we will not populate with default values, hence duplicate error');
+        my $result = $rpc_ct->call_ok('new_sub_account', $params)->has_no_system_error->result;
+        is $result->{landing_company}, 'Binary (C.R.) S.A.', 'Landing company same as master account for sub account with details';
 
         # empty all details so that we default details to master account
         $params->{args} = {new_sub_account => 1};
-        my $result = $rpc_ct->call_ok('new_sub_account', $params)->has_no_system_error->result;
+        $result = $rpc_ct->call_ok('new_sub_account', $params)->has_no_system_error->result;
         is $result->{landing_company}, 'Binary (C.R.) S.A.', 'Landing company same as master account';
 
         my $sub_account_loginid = $result->{client_id};
@@ -128,8 +128,8 @@ subtest $method => sub {
         is $sub_client->email,         $real_client->email,         'Email for master and sub account is same';
         is $sub_client->date_of_birth, $real_client->date_of_birth, 'Date of birth for master and sub account is same';
 
-        ok $sub_client->first_name =~ /^$new_loginid\d+$/, "First name of sub account is master account loginid plus time";
-        ok $sub_client->last_name =~ /^$new_loginid\d+$/,  "Last name of sub account is master account loginid plus time";
+        is $sub_client->first_name,     $real_client->first_name,     "First name of sub account is same as master if details are not provided";
+        is $sub_client->last_name,      $real_client->last_name,      "Last name of sub account is same as master if details are not provided";
         is $sub_client->address_line_1, $real_client->address_line_1, 'same address as master account';
     };
 
@@ -166,7 +166,7 @@ subtest $method => sub {
         $params->{token} = $token;
         $result = $rpc_ct->call_ok('authorize', $params)->has_no_system_error->result;
         is $result->{allow_omnibus}, 1, 'Allow omnibus not set';
-        is $result->{sub_accounts}->[0]->{loginid}, $sub_client->loginid, 'Correct sub account for omnibus';
+        is $result->{sub_accounts}->[1]->{loginid}, $sub_client->loginid, 'Correct sub account for omnibus';
         is_deeply([sort keys %{$result->{sub_accounts}->[0]}], ['currency', 'loginid'], 'correct structure');
     };
 

@@ -114,6 +114,16 @@ sub cashier {
     my $sportsbook        = get_sportsbook($df_client->broker, $currency);
     my $handoff_token_key = _get_handoff_token_key($df_client->loginid);
 
+    # since subaccount has dummy name (loginid of master account plus timestamp),
+    # we want to pass name of master account if current client is a subaccount
+    # but if client's first name is saved as a human name instead of loginid don't override it
+    my $name;
+    my $sub_account_of = $client->sub_account_of;
+    if ($sub_account_of && $client->first_name =~ qr/^$sub_account_of/) {
+        my $main_client = Client::Account->new({loginid => $sub_account_of});
+        $name = $main_client->first_name . ' ' . $main_client->last_name;
+    }
+
     my $result = $ua->post(
         $url,
         $df_client->create_customer_property_bag({
@@ -121,6 +131,7 @@ sub cashier {
                 Sportsbook     => $sportsbook,
                 IP_Address     => '127.0.0.1',
                 Password       => $handoff_token_key,
+                $name ? (CustName => $name) : (),
             }));
 
     if ($result->{'_content'} ne 'OK') {
@@ -178,7 +189,7 @@ sub cashier {
         DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.doughflow_failure.count', {tags => ["action:$action"]});
 
         return $error_sub->(
-            localize('Sorry, an error has occurred, Please try accessing our Cashier again.'),
+            localize('Sorry, an error occurred. Please try accessing our cashier again.'),
             'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']'
         );
     }

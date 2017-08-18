@@ -299,7 +299,6 @@ sub get_account_status {
 
     my $client = $params->{client};
     my $already_unwelcomed;
-
     my @status;
     foreach my $s (sort keys %{$client->client_status_types}) {
         next if $s eq 'tnc_approval';    # the useful part for tnc_approval is reason
@@ -317,7 +316,6 @@ sub get_account_status {
 
     # differentiate between social and password based accounts
     my $user = BOM::Platform::User->new({email => $client->email});
-    push @status, 'has_password' if $user->password;
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->not_allow_trade($client);
 
     # check whether the user need to perform financial assessment
@@ -1322,6 +1320,21 @@ sub set_account_currency {
             code              => 'InvalidCurrency',
             message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)}
     ) unless $client->landing_company->is_currency_legal($currency);
+
+    # bail out if default account is already set
+    return {status => 0} if $client->default_account;
+
+    # for real client and not for omnibus or sub account
+    # check if we are allowed to set currency
+    # i.e if we have exhausted available options
+    # - client can have single fiat currency
+    # - client can have multiple crypto currency
+    #   but only with single type of crypto currency
+    #   for example BTC => ETH is allowed but BTC => BTC is not
+    if (not $client->is_virtual and not($client->allow_omnibus or $client->sub_account_of)) {
+        my $error = BOM::RPC::v3::Utility::validate_set_currency($client, $currency);
+        return $error if $error;
+    }
 
     # no change in default account currency if default account is already set
     return {status => 1} if (not $client->default_account and $client->set_default_account($currency));
