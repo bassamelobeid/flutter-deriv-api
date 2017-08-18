@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
@@ -604,7 +604,7 @@ subtest 'sell a bet', sub {
 };
 
 subtest 'sell_expired_contracts', sub {
-    plan tests => 8;
+    plan tests => 7;
     lives_ok {
         my $cl = create_client;
 
@@ -632,7 +632,6 @@ subtest 'sell_expired_contracts', sub {
             client        => $cl,
             contract      => $contract_expired,
             price         => $contract_expired->ask_price,
-#            payout        => $contract_expired->payout,
             amount_type   => 'unit',
             unit          => 10,
             purchase_date => $now->epoch - (30*60+51),
