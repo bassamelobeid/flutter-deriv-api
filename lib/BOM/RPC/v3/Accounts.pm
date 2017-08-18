@@ -373,7 +373,20 @@ sub change_password {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my ($user, @clients) = BOM::Platform::User->new({email => $client->email});
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => "InternalServerError",
+            message_to_client => localize("Sorry, an error occurred while processing your account.")}) unless $user and @clients = $user->clients;
+
+    # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
+    my $client = $clients[0];
+
+    # do not allow social based clients to reset password
+    return BOM::RPC::v3::Utility::create_error({
+            code              => "SocialBased",
+            message_to_client => localize("Sorry, your account does not allow passwords because you use social media to log in.")}
+    ) if $client->get_status('social_signup');
 
     if (
         my $pass_error = BOM::RPC::v3::Utility::_check_password({
@@ -390,11 +403,11 @@ sub change_password {
     $user->save;
 
     my $oauth = BOM::Database::Model::OAuth->new;
-    foreach my $c1 ($user->clients) {
-        $c1->password($new_password);
-        $c1->save;
+    foreach my $obj (@clients) {
+        $obj->password($new_password);
+        $obj->save;
 
-        $oauth->revoke_tokens_by_loginid($c1->loginid);
+        $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
     BOM::Platform::AuditLog::log('password has been changed', $client->email);
