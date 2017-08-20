@@ -41,7 +41,7 @@
     },
     "googleplay": {
       "type": "string",
-      "pattern": "^https?:\/\/[0-9a-zA-Z\\.-]+[\\%\\/\\w \\.-]*$",
+      "pattern": "^https?:\/\/[0-9a-zA-Z\\.-]+[\\%\\/\\w \\.-?]*$",
       "description":"Application's Google Play URL (if applicable)"
     },
     "redirect_uri": {
