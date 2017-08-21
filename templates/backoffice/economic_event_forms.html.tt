@@ -53,7 +53,7 @@
     [% END %]
 </table>
 
-<p><b>List of Deleted Economic Events: </b>  <select onchange="updateDeletedTable(this.value)">[% FOREACH date IN dates %]<option value="[% date %]">[% date %]</option>[% END %]</select></p>
+<p><b>List of Deleted Economic Events: </b> </p>
 
 <table class='deleted_economic_event_list'>
     <tr>
