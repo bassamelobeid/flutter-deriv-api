@@ -29,12 +29,15 @@ sub generate_economic_event_tool {
     my $today  = Date::Utility->new->truncate_to_day;
     my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 6);
 
+    my @deleted_events = map { get_info($_) } @{_get_deleted_events()};
+
     return BOM::Backoffice::Request::template->process(
         'backoffice/economic_event_forms.html.tt',
         {
-            ee_upload_url => $url,
-            events        => \@events,
-            dates         => \@dates,
+            ee_upload_url  => $url,
+            events         => \@events,
+            dates          => \@dates,
+            deleted_events => \@deleted_events,
         },
     ) || die BOM::Backoffice::Request::template->error;
 }
@@ -155,6 +158,14 @@ sub _get_economic_events {
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
     );
     return $eec->list_economic_events_for_date($date) // [];
+}
+
+sub _get_deleted_events {
+
+    my $eec = Quant::Framework::EconomicEventCalendar->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+    );
+    return $eec->get_deleted_events() // [];
 }
 
 sub _err {
