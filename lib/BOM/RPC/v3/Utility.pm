@@ -275,8 +275,19 @@ sub get_real_account_siblings_information {
             } BOM::Platform::User->new({email => $client->email})->clients(disabled => 1)};
 }
 
+# we need to verify details passed for new accounts
+# does not differ from existing clients for few required
+# fields, this need to go once we move details to userdb
+# keeping it in RPC so that it can be directly removed
+# without impacting anything else
+sub _check_details_mismatch {
+    my ($client, $args) = @_;
+
+    return grep { ($client->$_ // '') ne ($args->{$_} // '') } qw/first_name last_name date_of_birth residence address_city/;
+}
+
 sub validate_make_new_account {
-    my ($client, $account_type) = @_;
+    my ($client, $account_type, $args) = @_;
 
     my $residence = $client->residence;
     return create_error({
@@ -342,6 +353,11 @@ sub validate_make_new_account {
         # maltainvest to landing company as client is upgrading
         $landing_company_name = 'maltainvest';
     }
+
+    return create_error({
+            code              => 'DetailsMisMatch',
+            message_to_client => localize('Details provided does not match with existing account details.'),
+        }) if _check_details_mismatch($client, $args);
 
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
