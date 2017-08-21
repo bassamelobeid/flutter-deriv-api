@@ -29,7 +29,7 @@ sub add_upload_info {
     my $args = $req_storage->{origin_args};
 
     my $stash = {
-        file_id        => $rpc_response->{file_id},
+        file_name      => $rpc_response->{file_name},
         call_type      => $rpc_response->{call_type},
         upload_id      => generate_upload_id(),
         sha1           => Digest::SHA1->new,

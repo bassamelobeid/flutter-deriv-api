@@ -522,7 +522,7 @@ sub startup {
                     $c->call_rpc({
                             method => 'upload_finished',
                             args   => {
-                                file_id   => $params->{file_id},
+                                file_name => $params->{file_name},
                                 size      => $params->{received_bytes},
                                 checksum  => $params->{sha1}->hexdigest,
                                 call_type => $params->{call_type},
