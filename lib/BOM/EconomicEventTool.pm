@@ -57,7 +57,7 @@ sub check_unlisted_events {
     foreach my $event (@$events) {
         my $pattern = $event->{event_name};
         $pattern =~ s/\s+/_/g;
-        my @matches = grep /[1-5][_]$pattern/, keys %$economic_event_categories;
+        my @matches = grep { /[1-5][_]$pattern/ } keys %$economic_event_categories;
         push @unlisted_events, $event if not scalar(@matches);
     }
 
