@@ -35,14 +35,16 @@ sub generate_economic_event_tool {
     my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 6);
 
     my @deleted_events = map { get_info($_) } @{_get_deleted_events()};
+    my @unlisted_events = check_unlisted_events(\@events);
 
     return BOM::Backoffice::Request::template->process(
         'backoffice/economic_event_forms.html.tt',
         {
-            ee_upload_url  => $url,
-            events         => \@events,
-            dates          => \@dates,
-            deleted_events => \@deleted_events,
+            ee_upload_url   => $url,
+            events          => \@events,
+            dates           => \@dates,
+            deleted_events  => \@deleted_events,
+            unlisted_events => \@unlisted_events,
         },
     ) || die BOM::Backoffice::Request::template->error;
 }
