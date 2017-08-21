@@ -520,7 +520,7 @@ sub startup {
 
                 if ($chunk_size == 0) {
                     $c->call_rpc({
-                            method => 'upload_finished',
+                            method => 'document_upload',
                             args   => {
                                 file_name => $params->{file_name},
                                 size      => $params->{received_bytes},
@@ -535,7 +535,7 @@ sub startup {
                                     msg_type        => 'document_upload',
                                     document_upload => {
                                         upload_id => $params->{upload_id},
-                                        %{$rpc_response->{upload_finished}},
+                                        %{$rpc_response->{document_upload}},
                                     }};
                             }
                         });
