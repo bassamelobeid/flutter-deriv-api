@@ -2,17 +2,13 @@ use strict;
 use warnings;
 
 use Test::Most;
-use Test::MockTime qw/:all/;
 use JSON;
 use Data::Dumper;
-use Date::Utility;
-use FindBin qw/$Bin/;
-use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Database::Model::AccessToken;
+use BOM::Test::RPC::BomRpc;
+use BOM::Test::Helper qw/build_wsapi_test/;
+use Digest::SHA1 qw/sha1_hex/;
 
-my $t = build_wsapi_test({rpc_url => 'ws://localhost:5004'});
+my $t = build_wsapi_test();
 
 my $req = {
     document_upload => 1,
@@ -34,5 +30,21 @@ my $call_type = $res->{document_upload}->{call_type};
 
 ok $upload_id, 'Returns upload_id';
 ok $call_type, 'Returns call_type';
+
+my $chunk1 = pack 'N N N A*', 1, $upload_id, 6, 'Hello ';
+my $chunk2 = pack 'N N N A*', 1, $upload_id, 5, 'World';
+my $chunk3 = pack 'N N N A*', 1, $upload_id, 0;
+
+$t->send_ok({binary => $chunk1})->send_ok({binary => $chunk2})->send_ok({binary => $chunk3})->message_ok;
+
+$res = decode_json($t->message->[1]);
+
+my $success = $res->{document_upload};
+
+is $success->{status}, 'success', 'File is successfully uploaded';
+is $success->{upload_id}, $upload_id, 'upload id is correct';
+is $success->{call_type}, $call_type, 'call_type is correct';
+is $success->{size}, 11, 'file size is correct';
+is $success->{checksum}, sha1_hex('Hello World'), 'checksum is correct';
 
 done_testing();
