@@ -59,11 +59,11 @@ sub do_report {
     print $r if $verbose;
 
     my $headers =
-        'List Name,List Updated,Database,LoginID,First Name,Last Name,Email,Phone,Gender,DateOfBirth,DateJoined,Residence,Citizen,Status,Reason';
+        'Matched name,List Name,List Updated,Database,LoginID,First Name,Last Name,Email,Phone,Gender,DateOfBirth,DateJoined,Residence,Citizen,Status,Reason';
 
     my $csv_file = path($reports_path . '/sanctions-run-' . Date::Utility->new()->date . '.csv');
-    $csv_file->spew_utf8($headers . "\n");
-    $csv_file->spew_utf8($r . "\n");
+    $csv_file->append_utf8($headers . "\n");
+    $csv_file->append_utf8($r . "\n");
 
     send_email({
         from       => $brand->emails('support'),
@@ -76,8 +76,9 @@ sub do_report {
 }
 
 sub make_client_csv_line {
-    my ($c, $list) = @{+shift};
+    my ($c, $list, $matched_name) = @{+shift};
     my @fields = (
+        $matched_name,
         $list,
         Date::Utility->new($sanctions->last_updated($list))->date,
         (map { $c->$_ // '' } qw(broker loginid first_name last_name email phone gender date_of_birth date_joined residence citizen)),
@@ -108,8 +109,8 @@ sub get_matched_clients_info_by_broker {
         undef, Date::Utility->new->datetime, $broker);
     foreach my $c (@$clients) {
         my $client = Client::Account->new({loginid => $c});
-        my $list = $sanctions->is_sanctioned($client->first_name, $client->last_name);
-        push @matched, [$client, $list] if $list;
+        my $result = $sanctions->get_sanctioned_info($client->first_name, $client->last_name);
+        push @matched, [$client, $result->{list}, $result->{name}] if $result->{matched};
     }
     return '' unless @matched;
 
