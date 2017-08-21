@@ -526,6 +526,7 @@ sub startup {
                                 size      => $params->{received_bytes},
                                 checksum  => $params->{sha1}->hexdigest,
                                 call_type => $params->{call_type},
+                                status    => 'success',
                             },
                             response => sub {
                                 my ($c, $rpc_response) = @_;
