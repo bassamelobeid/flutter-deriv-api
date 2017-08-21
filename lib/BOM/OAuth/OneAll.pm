@@ -10,11 +10,9 @@ use BOM::Platform::User;
 use BOM::Platform::Account::Virtual;
 use Try::Tiny;
 use URI::QueryParam;
-use Data::Dumper;
 
 sub callback {
     my $c = shift;
- 
     # Microsoft Edge and Internet Exporer browsers have a drawback
     # in carrying parameters through responses. Hence, we are retrieving the token
     # from the stash.
