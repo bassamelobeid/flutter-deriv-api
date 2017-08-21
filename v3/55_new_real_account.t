@@ -60,7 +60,7 @@ subtest 'new CR real account' => sub {
         like($loginid, qr/^CR\d+$/, "got CR client $loginid");
     };
 
-    subtest 'no duplicate - Name + DOB' => sub {
+    subtest 'duplicate not allowed - Name + DOB + different email' => sub {
         my ($vr_client, $user) = create_vr_account({
             email           => 'test+test@binary.com',
             client_password => 'abc123',
