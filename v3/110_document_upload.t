@@ -10,41 +10,83 @@ use Digest::SHA1 qw/sha1_hex/;
 
 my $t = build_wsapi_test();
 
-my $req = {
+my $req_id     = 1;
+my $CHUNK_SIZE = 6;
+
+sub gen_frames {
+    my ($data, $call_type, $upload_id) = @_;
+    my $format = 'N3a*';
+    my @frames = map { pack $format, $call_type, $upload_id, length $_, $_ } (unpack "(a$CHUNK_SIZE)*", $data);
+    push @frames, pack $format, $call_type, $upload_id, 0;
+    return @frames;
+}
+
+sub upload_ok {
+    my ($metadata, $data) = @_;
+
+    my $req = {
+        req_id => ++$req_id,
+        %{$metadata}};
+
+    $t->send_ok({json => $req})->message_ok;
+
+    my $res = decode_json($t->message->[1]);
+
+    warn Dumper $res;
+
+    ok $res->{document_upload}, 'Returns document_upload';
+
+    my $upload_id = $res->{document_upload}->{upload_id};
+    my $call_type = $res->{document_upload}->{call_type};
+
+    ok $upload_id, 'Returns upload_id';
+    ok $call_type, 'Returns call_type';
+
+    my $length = length $data;
+
+    for (gen_frames $data, $call_type, $upload_id) {
+        $t->send_ok({binary => $_});
+    }
+    $t->message_ok;
+
+    $res = decode_json($t->message->[1]);
+    warn Dumper $res;
+    my $success = $res->{document_upload};
+
+    is $success->{upload_id}, $upload_id, 'upload id is correct';
+    is $success->{call_type}, $call_type, 'call_type is correct';
+
+    return $success;
+}
+
+my $file = 'Hello world!';
+
+sub document_upload_ok {
+    my ($metadata, $file) = @_;
+
+    my $success = upload_ok $metadata, $file;
+
+    is $success->{status}, 'success', 'File is successfully uploaded';
+    is $success->{size}, length $file, 'file size is correct';
+    is $success->{checksum}, sha1_hex($file), 'checksum is correct';
+}
+
+document_upload_ok {
     document_upload => 1,
     document_id     => '12456',
     document_format => 'JPEG',
     document_type   => 'passport',
-    req_id          => 10,
     expiry_date     => '12345',
-};
+    },
+    'Hello world!';
 
-$t->send_ok({json => $req})->message_ok;
-
-my $res = decode_json($t->message->[1]);
-
-ok $res->{document_upload}, 'Returns document_upload';
-
-my $upload_id = $res->{document_upload}->{upload_id};
-my $call_type = $res->{document_upload}->{call_type};
-
-ok $upload_id, 'Returns upload_id';
-ok $call_type, 'Returns call_type';
-
-my $chunk1 = pack 'N N N A*', 1, $upload_id, 6, 'Hello ';
-my $chunk2 = pack 'N N N A*', 1, $upload_id, 5, 'World';
-my $chunk3 = pack 'N N N A*', 1, $upload_id, 0;
-
-$t->send_ok({binary => $chunk1})->send_ok({binary => $chunk2})->send_ok({binary => $chunk3})->message_ok;
-
-$res = decode_json($t->message->[1]);
-
-my $success = $res->{document_upload};
-
-is $success->{status}, 'success', 'File is successfully uploaded';
-is $success->{upload_id}, $upload_id, 'upload id is correct';
-is $success->{call_type}, $call_type, 'call_type is correct';
-is $success->{size}, 11, 'file size is correct';
-is $success->{checksum}, sha1_hex('Hello World'), 'checksum is correct';
+document_upload_ok {
+    document_upload => 1,
+    document_id     => '124568',
+    document_format => 'PNG',
+    document_type   => 'license',
+    expiry_date     => '12345',
+    },
+    'Goodbye!';
 
 done_testing();
