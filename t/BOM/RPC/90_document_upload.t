@@ -60,5 +60,15 @@ my $result = $c->call_ok($method, $params)->result;
 my @docs = $test_client->find_client_authentication_document(query => [document_path => $result->{file_name}]);
 # Succesfully retrieved object from database.
 is($docs[0]->document_id, $params->{document_id});
+#is($docs[0]->status, 'uploading');
+$params = {
+    status => 'success',
+    file_name => $result->{file_name},
+    token => $token
+};
+
+$result = $c->call_ok($method, $params)->result;
+my ($doc) = $test_client->find_client_authentication_document(query => [document_path => $result->{file_name}]);
+#is($doc->status, 'uploaded');
 
 done_testing();
