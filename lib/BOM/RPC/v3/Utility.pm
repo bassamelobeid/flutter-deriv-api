@@ -283,7 +283,7 @@ sub get_real_account_siblings_information {
 sub _check_details_mismatch {
     my ($client, $args) = @_;
 
-    return grep { ($client->$_ // '') ne ($args->{$_} // '') } qw/first_name last_name date_of_birth residence address_city/;
+    return grep { ($client->$_ // '') ne ($args->{$_} // '') } qw/first_name last_name date_of_birth residence address_city phone/;
 }
 
 sub validate_make_new_account {
