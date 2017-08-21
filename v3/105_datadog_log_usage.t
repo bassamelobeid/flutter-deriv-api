@@ -104,8 +104,13 @@ ok $timing->[1]->[1], 'Should log timing';
 is $timing->[1]->[2]->{tags}->[0], 'rpc:website_status', 'Should set tag with rpc method name';
 
 @$timing = ();
+my $fake_req = Test::MockObject->new();
+my $fake_tx  = Test::MockObject->new();
+$fake_req->mock('url', sub { return "fake req url" });
+$fake_tx->mock('error', sub { return +{} });
+$fake_tx->mock('req',   sub { return $fake_req });
+$fake_rpc_client->mock('tx', sub { return $fake_tx });
 $fake_rpc_client->mock('call', sub { shift; return $_[2]->('') });
-
 {
     local $SIG{'__WARN__'} = sub { $warn_string = shift; };
     $res = $t->await::website_status({website_status => 1});
