@@ -76,7 +76,7 @@ document_upload_ok {
     document_id     => '12456',
     document_format => 'JPEG',
     document_type   => 'passport',
-    expiry_date     => '12345',
+    expiration_date     => '12345',
     },
     'Hello world!';
 
@@ -85,7 +85,7 @@ document_upload_ok {
     document_id     => '124568',
     document_format => 'PNG',
     document_type   => 'license',
-    expiry_date     => '12345',
+    expiration_date     => '12345',
     },
     'Goodbye!';
 
