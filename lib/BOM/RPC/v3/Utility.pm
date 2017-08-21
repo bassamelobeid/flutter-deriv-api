@@ -283,7 +283,25 @@ sub get_real_account_siblings_information {
 sub _check_details_mismatch {
     my ($client, $args) = @_;
 
-    return grep { ($client->$_ // '') ne ($args->{$_} // '') } qw/first_name last_name date_of_birth residence address_city phone/;
+    my $has_error = 0;
+    foreach my $field (qw/first_name last_name residence address_city phone date_of_birth/) {
+
+        if ($client->$field and $args->{$field}) {
+            if ($field eq 'date_of_birth') {
+                if (not Date::Utility->new($client->$field)->is_same_as(Date::Utility->new($args->{$field}))) {
+                    $has_error = 1;
+                    last;
+                }
+            } elsif ($client->$field ne $args->{$field}) {
+                $has_error = 1;
+                last;
+            }
+        } else {
+            last;
+        }
+    }
+
+    return $has_error;
 }
 
 sub validate_make_new_account {
@@ -352,12 +370,12 @@ sub validate_make_new_account {
         # if from malta and account type is maltainvest, assign
         # maltainvest to landing company as client is upgrading
         $landing_company_name = 'maltainvest';
+    } else {
+        return create_error({
+                code              => 'DetailsMisMatch',
+                message_to_client => localize('Details provided does not match with existing account details.'),
+            }) if _check_details_mismatch($client, $args);
     }
-
-    return create_error({
-            code              => 'DetailsMisMatch',
-            message_to_client => localize('Details provided does not match with existing account details.'),
-        }) if _check_details_mismatch($client, $args);
 
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
