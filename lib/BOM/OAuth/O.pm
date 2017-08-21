@@ -88,6 +88,7 @@ sub authorize {
         error     => localize('This account is unavailable.'),
         r         => $c->stash('request'),
         csrftoken => $c->csrf_token,
+        country_code => $c->{stash}->{request}->{country_code},
     ) if (grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands});
 
     my $redirect_uri = $app->{redirect_uri};
