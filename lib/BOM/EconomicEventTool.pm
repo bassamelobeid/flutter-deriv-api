@@ -47,14 +47,19 @@ sub generate_economic_event_tool {
     ) || die BOM::Backoffice::Request::template->error;
 }
 
-sub check_unlisted_event {
-    my $event = shift;
+sub check_unlisted_events {
+    my $events = shift;
 
-    my %unlisted_event;
+    my @unlisted_events;
 
-# Add code to check unlisted event here
+    foreach my $event (@$events) {
+        my $pattern = $event->{event_name};
+        $pattern =~ s/\s+/_/g;
+        my @matches = grep /[1-5][_]$pattern/, keys %$economic_event_categories;
+        push @unlisted_events, $event if not scalar(@matches);
+    }
 
-    return \%unlisted_event;
+    return \@unlisted_events;
 }
 
 # get the calibration magnitude and duration factor of the given economic event, if any.
