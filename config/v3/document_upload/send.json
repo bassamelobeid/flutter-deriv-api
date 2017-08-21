@@ -15,9 +15,9 @@
       "description": "Document type (passport, driver's license, etc.)",
       "required": 1
     },
-    "expiry_date": {
+    "expiration_date": {
       "type": "string",
-      "description": "Document expiry date",
+      "description": "Document expiration date",
       "required": 1
     },
     "document_id": {
