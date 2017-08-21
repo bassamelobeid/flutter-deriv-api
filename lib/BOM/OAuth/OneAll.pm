@@ -10,10 +10,11 @@ use BOM::Platform::User;
 use BOM::Platform::Account::Virtual;
 use Try::Tiny;
 use URI::QueryParam;
+use Data::Dumper;
 
 sub callback {
     my $c = shift;
-
+ 
     # Microsoft Edge and Internet Exporer browsers have a drawback
     # in carrying parameters through responses. Hence, we are retrieving the token
     # from the stash.
@@ -58,15 +59,13 @@ sub callback {
         # Registered users who have email/password based account are forbidden
         # from social signin. As only one login method
         # is allowed (either email/password or social login).
-        if ($user) {
-            for my $acc ($user->clients) {
-                # Redirect client to login page if social signup flag is not found.
-                # As the main purpose of this package is to serve
-                # clients with social login only.
-                unless ($acc->get_status('social_signup')) {
-                    $c->session('_oneall_error', localize("Invalid login attempt. Please log in with your email and password instead."));
-                    return $c->redirect_to($redirect_uri);
-                }
+        if (my @clients = $user->clients) {
+            # Redirect client to login page if social signup flag is not found.
+            # As the main purpose of this package is to serve
+            # clients with social login only.
+            unless ($clients[0]->get_status('social_signup')) {
+                $c->session('_oneall_error', localize("Invalid login attempt. Please log in with your email and password instead."));
+                return $c->redirect_to($redirect_uri);
             }
         }
         # create user based on email by fly if account does not exist yet
