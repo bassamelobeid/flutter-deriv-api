@@ -196,7 +196,7 @@
          "type": "string",
          "enum": ["sold", "won", "lost"],
          "title": "Contract status",
-         "description": "Will be 'sold' if the contract was sold earlier, 'won' if won and 'lost' if lost. Otherwise this field will not be set"
+         "description": "Will be 'sold' if the contract was sold by hand, 'won' if won and 'lost' if lost. Otherwise this field will not be set"
         }
       }
     },
