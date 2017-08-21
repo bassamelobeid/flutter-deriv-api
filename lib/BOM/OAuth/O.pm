@@ -63,7 +63,8 @@ sub authorize {
         }
     }
 
-    my $brand_name = $c->stash('brand')->name;
+    my $brand_name   = $c->stash('brand')->name;
+    my $country_code = $c->{stash}->{request}->{country_code};
 
     # show error when no client found in session
     # show login form
@@ -74,7 +75,7 @@ sub authorize {
         error        => $c->session->{_oneall_error} ? delete $c->session->{_oneall_error} : '',
         r            => $c->stash('request'),
         csrftoken    => $c->csrf_token,
-        country_code => $c->{stash}->{request}->{country_code},
+        country_code => $country_code,
     ) unless $client;
 
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
@@ -88,7 +89,7 @@ sub authorize {
         error     => localize('This account is unavailable.'),
         r         => $c->stash('request'),
         csrftoken => $c->csrf_token,
-        country_code => $c->{stash}->{request}->{country_code},
+        country_code => $country_code,
     ) if (grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands});
 
     my $redirect_uri = $app->{redirect_uri};
@@ -167,11 +168,12 @@ sub authorize {
 sub _login {
     my ($c, $app, $oneall_user_id) = @_;
 
-    my ($user, $client, $last_login, $err);
+    my ($user, $client, @clients, $last_login, $err);
 
     my $email    = defang($c->param('email'));
     my $password = $c->param('password');
     my $brand    = $c->stash('brand');
+    my $country_code = $c->{stash}->{request}->{country_code};
     LOGIN:
     {
         if ($oneall_user_id) {
@@ -201,12 +203,13 @@ sub _login {
             # Prevent login if social signup flag is found.
             # As the main purpose of this package is to serve
             # clients with email/password only.
-            my @_clients = $user->clients;
-            my $_client = $_clients[0];
-            if ($_client->get_status('social_signup')) {
-                $err = localize('Invalid login attempt. Please log in with a social network instead.');
-                last;
+            if (my @clients = $user->clients) {
+                if ($clients[0]->get_status('social_signup')) {
+                    $err = localize('Invalid login attempt. Please log in with a social network instead.');
+                    last;
+                }
             }
+
         }
 
         # get last login before current login to get last record
@@ -220,7 +223,7 @@ sub _login {
         last if ($err = $result->{error});
 
         # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
-        my @clients = $user->clients;
+        @clients = $user->clients;
         $client = $clients[0];
 
         # get 1st loginid, which is not currently self-excluded until
@@ -252,6 +255,7 @@ sub _login {
             error     => $err,
             r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
+            country_code => $country_code,
         );
         return;
     }
