@@ -172,7 +172,7 @@
                         if(r.error) {
                             result.text('ERR: ' + r.error).css('color','red');
                         } else{
-                            \$('tr#'+ r.id).hide();
+                            \$('tr#'+ r.id).remove();
                             result.text('Economic event deleted.').css('color','green');
                         }
                     }
