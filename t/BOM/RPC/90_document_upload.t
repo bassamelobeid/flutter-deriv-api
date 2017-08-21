@@ -62,11 +62,11 @@ my $status = $doc->status;
 $status =~ s/\s+$//;
 # Succesfully retrieved object from database.
 is($doc->document_id, $params->{document_id});
-is($status, 'uploading');
+is($status,           'uploading');
 $params = {
-    status => 'success',
+    status    => 'success',
     file_name => $result->{file_name},
-    token => $token
+    token     => $token
 };
 
 $result = $c->call_ok($method, $params)->result;

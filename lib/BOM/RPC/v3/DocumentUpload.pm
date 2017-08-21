@@ -15,12 +15,12 @@ sub upload {
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UploadDenied',
             message_to_client => localize("Virtual accounts don't require document uploads.")}) if $client->is_virtual;
-    
-    if($params->{status} && $params->{status} eq "success") {
-        my ($doc) = $client->find_client_authentication_document( query => [ document_path => $params->{file_name} ]);
+
+    if ($params->{status} && $params->{status} eq "success") {
+        my ($doc) = $client->find_client_authentication_document(query => [document_path => $params->{file_name}]);
         $doc->{status} = "uploaded";
         $doc->save();
-        
+
         return $params;
     }
 
