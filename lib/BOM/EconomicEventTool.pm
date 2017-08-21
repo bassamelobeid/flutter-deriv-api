@@ -47,6 +47,16 @@ sub generate_economic_event_tool {
     ) || die BOM::Backoffice::Request::template->error;
 }
 
+sub check_unlisted_event {
+    my $event = shift;
+
+    my %unlisted_event;
+
+# Add code to check unlisted event here
+
+    return \%unlisted_event;
+}
+
 # get the calibration magnitude and duration factor of the given economic event, if any.
 sub get_info {
     my $event = shift;
