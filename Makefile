@@ -26,6 +26,9 @@ json_schema_3:
 json_schema_4:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: copytrading.conf
 
+json_schema_5:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: multiple_account.conf
+
 loadtest:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/loadtest.t
 
@@ -35,7 +38,7 @@ structure:
 leaktest:
 	@$(PROVE) t/leak/v3
 
-test: structure v3_1 v3_2 v3_3 json_schema_1 json_schema_2 json_schema_3 json_schema_4 leaktest
+test: structure v3_1 v3_2 v3_3 json_schema_1 json_schema_2 json_schema_3 json_schema_4 json_schema_5 leaktest
 
 tidy:
 	find . -name '*.p?.bak' -delete
