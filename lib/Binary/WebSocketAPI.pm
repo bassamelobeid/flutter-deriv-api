@@ -536,19 +536,14 @@ sub startup {
                             response => sub {
                                 my ($c, $rpc_response) = @_;
 
-                                return {
-                                    msg_type        => 'document_upload',
-                                    document_upload => {
-                                        upload_id => $params->{upload_id},
-                                        %{$rpc_response->{document_upload}},
-                                    }};
+                                $rpc_response->{document_upload}->{upload_id} = $params->{upload_id};
+
+                                return $rpc_response;
                             }
                         });
-                    delete $c->stash->{'document_upload'};
-                    return;
+                } else {
+                    $params->{uploader}->($data);
                 }
-
-                $params->{uploader}->($data);
             },
 
             # action hooks
