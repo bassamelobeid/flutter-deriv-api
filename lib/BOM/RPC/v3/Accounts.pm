@@ -152,7 +152,7 @@ sub statement {
             # Otherwise, log unknow so we can request translation
             # for it in the weblate.
             action_type => translation { $txn->{action_type} } // do {
-                warn "No translation known for action_type $txn->{action_type}";
+                warn "No translation known for action_type " . $txn->{action_type};
                 $txn->{action_type};
             },
             balance_after => formatnumber('amount', $account->currency_code, $txn->{balance_after}),
