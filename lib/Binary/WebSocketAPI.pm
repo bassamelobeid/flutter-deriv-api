@@ -435,7 +435,8 @@ sub startup {
         [
             'document_upload',
             {
-                # require_auth => 'admin',
+                stash_params => [qw/ token /],
+                require_auth => 'admin',
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::Authenticate::add_upload_info,
             }
         ],
@@ -521,6 +522,9 @@ sub startup {
                 if ($chunk_size == 0) {
                     $c->call_rpc({
                             method => 'document_upload',
+                            call_params => {
+                                token => $c->stash('token'),
+                            },
                             args   => {
                                 file_name => $params->{file_name},
                                 size      => $params->{received_bytes},
