@@ -35,7 +35,8 @@ sub generate_economic_event_tool {
     my $today  = Date::Utility->new->truncate_to_day;
     my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 6);
 
-    my @deleted_events = map { get_info($_) } @{_get_deleted_events()};
+    my @deleted_events =
+        [grep { $_->{release_date} > $today->epoch && $_->{release_date} < $today->plus_time_interval('6d')->epoch } @{_get_deleted_events()}];
     my @unlisted_events = check_unlisted_events(\@events);
 
     return BOM::Backoffice::Request::template->process(
