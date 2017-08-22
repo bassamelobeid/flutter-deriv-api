@@ -564,8 +564,8 @@ sub reset_password {
     # do not allow social based clients to reset password
     return BOM::RPC::v3::Utility::create_error({
             code              => "SocialBased",
-            message_to_client => localize('Invalid login attempt. Please log in with a social network instead.') });
-    ) if $client->get_status('social_signup');
+            message_to_client => localize('Invalid login attempt. Please log in with a social network instead.'),
+        }) if $client->get_status('social_signup');
 
     unless ($client->is_virtual) {
         unless ($args->{date_of_birth}) {
