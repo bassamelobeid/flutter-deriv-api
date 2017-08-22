@@ -145,8 +145,8 @@ sub _build_surfaces_from_file {
             $surface = Bloomberg::VolSurfaces->new->parse_data_for($file);
         }
         foreach my $underlying (keys %{$surface}) {
-            # 3 for term 1 , 7 plus the new rr_bf_flag.
-            if (scalar keys %{$surface->{$underlying}->{surface}} == 3) {
+            # We request full volsurface every 4 hours, hence on other hours, we will only get ON and 1W vol. Hence the vol point we are receiving will be just  2. 
+            if (scalar keys %{$surface->{$underlying}->{surface}} == 2) {
                 $surface->{$underlying}->{surface} = _append_to_existing_surface($surface->{$underlying}->{surface}, $underlying);
             }
         }
@@ -205,17 +205,13 @@ sub run {
             next;    # skipping it here else it will die in the next line.
         }
 
-        # Vol needs to be saved if rr and bf are undefined when next day is holiday.
-        my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
-        my $is_next_day_holiday = $calendar->is_holiday_for($underlying->exchange, Date::Utility->new(time + 86400));
-
         if (grep { $_ eq $symbol } (@{$non_atm_symbol})) {
             #skip this symbol if it is non atm and rr , bb are undef.
-            next if exists $raw_volsurface->{rr_bf_undef} and $raw_volsurface->{rr_bf_undef} and not $is_next_day_holiday;
+            next if exists $raw_volsurface->{rr_bf_status} and $raw_volsurface->{rr_bf_status};
         }
 
         #Delete the flag since we do not need to save it into our system.
-        delete $raw_volsurface->{rr_bf_undef};
+        delete $raw_volsurface->{rr_bf_status};
 
         next
             if $raw_volsurface->{creation_date}->epoch >= $rollover_date->epoch
