@@ -398,7 +398,7 @@ sub _invalid_contract {
     }
 
     return Error::Base->cuss(
-        -type => ($p->{action} eq 'buy' ? 'InvalidToBuy' : 'InvalidToSell'),
+        -type => ($p->{action} eq 'buy' ? 'InvalidtoBuy' : 'InvalidtoSell'),
         -mesg => $contract->primary_validation_error->message,
         -message_to_client => $message_to_client,
     );
