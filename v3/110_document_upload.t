@@ -8,7 +8,17 @@ use BOM::Test::RPC::BomRpc;
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Digest::SHA1 qw/sha1_hex/;
 
+use BOM::Database::Model::OAuth;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+
 my $t = build_wsapi_test();
+
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, 'CR0021');
+
+$t = $t->send_ok({json => {authorize => $token}})->message_ok;
+my $res = decode_json($t->message->[1]);
+warn Dumper $res;
 
 my $req_id     = 1;
 my $CHUNK_SIZE = 6;
@@ -28,7 +38,7 @@ sub upload_ok {
         req_id => ++$req_id,
         %{$metadata}};
 
-    $t->send_ok({json => $req})->message_ok;
+    $t = $t->send_ok({json => $req})->message_ok;
 
     my $res = decode_json($t->message->[1]);
 
@@ -45,9 +55,9 @@ sub upload_ok {
     my $length = length $data;
 
     for (gen_frames $data, $call_type, $upload_id) {
-        $t->send_ok({binary => $_});
+        $t = $t->send_ok({binary => $_});
     }
-    $t->message_ok;
+    $t = $t->message_ok;
 
     $res = decode_json($t->message->[1]);
     warn Dumper $res;
@@ -76,7 +86,7 @@ document_upload_ok {
     document_id     => '12456',
     document_format => 'JPEG',
     document_type   => 'passport',
-    expiration_date     => '12345',
+    expiration_date     => '2020-01-01',
     },
     'Hello world!';
 
@@ -85,7 +95,7 @@ document_upload_ok {
     document_id     => '124568',
     document_format => 'PNG',
     document_type   => 'license',
-    expiration_date     => '12345',
+    expiration_date     => '2020-01-01',
     },
     'Goodbye!';
 
