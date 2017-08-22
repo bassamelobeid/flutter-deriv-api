@@ -219,6 +219,7 @@ sub _validate_sell_pricing_adjustment {
         $final_value = $recomputed_amount;
     } elsif ($move < -$allowed_move) {
         return $self->_write_to_rejected({
+            type              => 'slippage',
             action            => 'sell',
             amount            => $amount,
             recomputed_amount => $recomputed_amount
@@ -274,6 +275,7 @@ sub _validate_trade_pricing_adjustment {
         $final_value = $recomputed_amount;
     } elsif ($move < -$allowed_move) {
         return $self->_write_to_rejected({
+            type              => 'slippage',
             action            => 'buy',
             amount            => $amount,
             recomputed_amount => $recomputed_amount
@@ -310,7 +312,7 @@ sub _validate_trade_pricing_adjustment {
     return;
 }
 
-sub _write_to_rejected {
+sub _slippage {
     my ($self, $p) = @_;
 
     my $what_changed = $p->{action} eq 'sell' ? 'sell price' : undef;
@@ -364,15 +366,61 @@ sub _write_to_rejected {
     );
 }
 
+sub _invalid_contract {
+    my ($self, $p) = @_;
+
+    my $contract          = $self->transaction->contract;
+    my $message_to_client = localize($contract->primary_validation_error->message_to_client);
+    #Record failed transaction here.
+    for my $c (@{$self->clients}) {
+        my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
+                login_id => $c->loginid,
+                ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
+                shortcode   => $contract->shortcode,
+                action_type => $p->{action},
+                reason      => $message_to_client,
+                details     => JSON::to_json({
+                        current_tick_epoch => $contract->current_tick->epoch,
+                        pricing_epoch      => $contract->date_pricing->epoch,
+                        option_type        => $contract->code,
+                        currency_pair      => $contract->underlying->symbol,
+                        ($self->transaction->trading_period_start) ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
+                        : (),
+                        ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
+                        : (barriers => $contract->barrier->as_absolute),
+                        expiry => $contract->date_expiry->db_timestamp,
+                        payout => $contract->payout
+                    }
+                ),
+                db => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
+            });
+        $rejected_trade->record_fail_txn();
+    }
+
+    return Error::Base->cuss(
+        -type => ($p->{action} eq 'buy' ? 'InvalidToBuy' : 'InvalidToSell'),
+        -mesg => $contract->primary_validation_error->message,
+        -message_to_client => $message_to_client,
+    );
+}
+
+sub _write_to_rejected {
+    my ($self, $p) = @_;
+
+    my $method = '_' . $p->{type};
+    return $self->$method;
+}
+
 sub _is_valid_to_buy {
-    my ($self, $client) = (shift, shift);
+    my ($self, $client) = @_;
+
     my $contract = $self->transaction->contract;
 
     unless ($contract->is_valid_to_buy({landing_company => $client->landing_company->short})) {
-        return Error::Base->cuss(
-            -type              => 'InvalidtoBuy',
-            -mesg              => $contract->primary_validation_error->message,
-            -message_to_client => localize($contract->primary_validation_error->message_to_client));
+        return $self->_write_to_rejected({
+            type   => 'invalid_contract',
+            action => 'buy',
+        });
     }
 
     return;
@@ -383,10 +431,10 @@ sub _is_valid_to_sell {
     my $contract = $self->transaction->contract;
 
     if (not $contract->is_valid_to_sell) {
-        return Error::Base->cuss(
-            -type              => 'InvalidtoSell',
-            -mesg              => $contract->primary_validation_error->message,
-            -message_to_client => localize($contract->primary_validation_error->message_to_client));
+        return $self->_write_to_rejected({
+            type   => 'invalid_contract',
+            action => 'sell',
+        });
     }
 
     return;
