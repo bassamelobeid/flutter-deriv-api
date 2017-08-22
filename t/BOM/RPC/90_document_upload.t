@@ -42,37 +42,36 @@ $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $params->{token}  = $token;
 $params->{upload} = "some_id";
 
-$params->{expiration_date} = "asdaas-asd-asd";    # Invalid date
+my $args = {expiration_date => "asdaas-asd-asd"};
+
+$params->{args} = $args;    # Invalid date
 $c->call_ok($method, $params)->has_error->error_message_is('Invalid expiration_date.', 'check invalid expiration_date');
 
-$params->{expiration_date} = "2017-08-09";        # Expired documents.
+$args->{expiration_date} = "2017-08-09";    # Expired documents.
 $c->call_ok($method, $params)
     ->has_error->error_message_is('expiration_date cannot be less than or equal to current date.', 'check expiration_date is before current date');
 
 # Missing parameters
-$params->{expiration_date} = "2117-08-11";        # 100 years is all I give you, humanity!
+$args->{expiration_date} = "2117-08-11";    # 100 years is all I give you, humanity!
 $c->call_ok($method, $params)->has_error->error_message_is('Missing parameter.', 'check if missing parameters');
 
-$params->{document_type}   = "passport";
-$params->{document_id}     = "ABCD1234";
-$params->{document_format} = "jpg";
+$args->{document_type}   = "passport";
+$args->{document_id}     = "ABCD1234";
+$args->{document_format} = "jpg";
 my $result = $c->call_ok($method, $params)->result;
 my ($doc) = $test_client->find_client_authentication_document(query => [document_path => $result->{file_name}]);
-my $status = $doc->status;
-$status =~ s/\s+$//;
 # Succesfully retrieved object from database.
-is($doc->document_id, $params->{document_id});
-is($status,           'uploading');
-$params = {
+is($doc->document_id, $args->{document_id});
+is($doc->status,      'uploading');
+$args = {
     status    => 'success',
-    file_name => $result->{file_name},
-    token     => $token
-};
-
+    file_name => $result->{file_name}};
+$params->{args} = $args;
 $result = $c->call_ok($method, $params)->result;
 ($doc) = $test_client->find_client_authentication_document(query => [document_path => $result->{file_name}]);
-$status = $doc->status;
-$status =~ s/\s+$//;
-is($status, 'uploaded');
+is($doc->status, 'uploaded');
+
+$args->{file_name} = "garbage";
+$c->call_ok($method, $params)->has_error->error_message_is('Document not found.', 'error if document is not present');
 
 done_testing();

@@ -291,7 +291,7 @@ sub startup {
         ['copytrading_statistics', \&BOM::RPC::v3::CopyTrading::Statistics::copytrading_statistics],
         ['copy_start',             \&BOM::RPC::v3::CopyTrading::copy_start, [qw(auth)]],
         ['copy_stop',              \&BOM::RPC::v3::CopyTrading::copy_stop, [qw(auth)]],
-        
+
         ['document_upload', \&BOM::RPC::v3::DocumentUpload::upload, [qw(auth)]],
     );
     my $services = {};

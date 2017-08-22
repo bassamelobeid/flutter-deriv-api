@@ -8,20 +8,27 @@ use Date::Utility;
 
 sub upload {
     my $params = shift;
-    my ($client, $upload_id, $document_type, $document_id, $document_format, $expiration_date, $status, $file_name) =
-        @{$params}{qw/client upload_id document_type document_id document_format expiration_date/};
+    my $client = $params->{client};
+    my ($document_type, $document_id, $document_format, $expiration_date, $status, $file_name) =
+        @{$params->{args}}{qw/document_type document_id document_format expiration_date status file_name/};
 
     # Early return for virtual accounts.
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UploadDenied',
             message_to_client => localize("Virtual accounts don't require document uploads.")}) if $client->is_virtual;
 
-    if ($params->{status} && $params->{status} eq "success") {
-        my ($doc) = $client->find_client_authentication_document(query => [document_path => $params->{file_name}]);
+    if (defined($status) && $status eq "success") {
+        my ($doc) = $client->find_client_authentication_document(query => [document_path => $file_name]);
+
+        # Return if document is not present in db.
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'UploadDenied',
+                message_to_client => localize("Document not found.")}) unless defined($doc);
+
         $doc->{status} = "uploaded";
         $doc->save();
 
-        return $params;
+        return $params->{args};
     }
 
     if ($expiration_date ne '') {
