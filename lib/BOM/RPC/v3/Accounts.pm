@@ -135,16 +135,30 @@ sub statement {
 
     my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
 
+    my %translation = (
+        buy        => localize('buy'),
+        sell       => localize('sell'),
+        deposit    => localize('deposit'),
+        withdrawal => localize('withdrawal'),
+    );
+
     my @txns;
     foreach my $txn (@$results) {
         my $struct = {
             transaction_id => $txn->{id},
             reference_id   => $txn->{buy_tr_id},
             amount         => $txn->{amount},
-            action_type    => $txn->{action_type},
+            # Translate according to known action types.
+            # Otherwise, log unknow so we can request translation
+            # for it in the weblate.
+            action_type    => translation{$txn->{action_type}} // do {
+                warn "No translation known for action_type $txn->{action_type}";
+                $txn->{action_type};
+            },
             balance_after  => formatnumber('amount', $account->currency_code, $txn->{balance_after}),
             contract_id    => $txn->{financial_market_bet_id},
-            payout         => $txn->{payout_price}};
+            payout         => $txn->{payout_price},
+        };
 
         my $txn_time;
         if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
@@ -184,9 +198,8 @@ sub statement {
                     $struct->{longcode} = $longcode;
                 }
             }
-            $struct->{longcode} //= localize($txn->{payment_remark}) // '';
+            $struct->{longcode} //= $txn->{payment_remark} // '';
         }
-        $struct->{action_type} //= localize($txn->{action_type}) // '';
         push @txns, $struct;
     }
 
