@@ -524,7 +524,7 @@ sub startup {
                     $c->call_rpc({
                             method      => 'document_upload',
                             call_params => {
-                                token       => $c->stash('token'),
+                                token => $c->stash('token'),
                             },
                             args => {
                                 file_name => $params->{file_name},
@@ -537,14 +537,13 @@ sub startup {
                                 my $api_response = $_[1];
 
                                 return {
-                                    %{ $api_response },
-                                    req_id      => $params->{req_id},
-                                    passthrough => $params->{passthrough},
+                                    %{$api_response},
+                                    req_id          => $params->{req_id},
+                                    passthrough     => $params->{passthrough},
                                     document_upload => {
-                                        %{ $api_response->{document_upload} },
+                                        %{$api_response->{document_upload}},
                                         upload_id => $params->{upload_id},
-                                    }
-                                };
+                                    }};
                             }
                         });
                 } else {
