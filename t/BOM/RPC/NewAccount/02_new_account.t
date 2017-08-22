@@ -369,20 +369,33 @@ subtest $method => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token}               = $auth_token;
         $params->{args}->{residence}   = 'cz';
-        $params->{args}->{first_name}  = 'random';
 
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error;
-        my $new_loginid = $rpc_ct->result->{client_id};
+        # as first name is different from MLT so it will fail now
+        $params->{args}->{first_name} = 'random';
+
+        my $result = $rpc_ct->call_ok($method, $params)->result;
+        is $result->{error}->{code}, 'DetailsMisMatch', 'client not allowed to change firstname while upgrading';
+
+        $params->{args}->{first_name}    = $client_mlt->{first_name};
+        $params->{args}->{last_name}     = $client_mlt->{last_name};
+        $params->{args}->{phone}         = $client_mlt->{phone};
+        $params->{args}->{address_city}  = $client_mlt->{address_city};
+        $params->{args}->{residence}     = $client_mlt->{residence};
+        $params->{args}->{date_of_birth} = $client_mlt->{date_of_birth};
+
+        $result = $rpc_ct->call_ok($method, $params)->result;
+
+        my $new_loginid = $result->{client_id};
         my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
-        $rpc_ct->call_ok('get_settings', {token => $auth_token_mf});
-        is($rpc_ct->result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
-        $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf});
-        isnt(keys $rpc_ct->result, 0, 'MF client has financial assessment set');
+        $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
+        is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
+        $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
+        isnt(keys $result, 0, 'MF client has financial assessment set');
 
-        $rpc_ct->call_ok('get_settings', {token => $auth_token});
-        is($rpc_ct->result->{tax_residence}, 'de,nl', 'MLT client has tax residence set after MF creation');
-        $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token});
-        isnt(keys $rpc_ct->result, 0, 'MLT client has financial assessment set');
+        $result = $rpc_ct->call_ok('get_settings', {token => $auth_token})->result;
+        is($result->{tax_residence}, 'de,nl', 'MLT client has tax residence set after MF creation');
+        $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token})->result;
+        isnt(keys $result, 0, 'MLT client has financial assessment set');
     };
 };
 

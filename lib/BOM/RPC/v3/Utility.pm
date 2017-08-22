@@ -370,12 +370,11 @@ sub validate_make_new_account {
         # if from malta and account type is maltainvest, assign
         # maltainvest to landing company as client is upgrading
         $landing_company_name = 'maltainvest';
-    } else {
-        return create_error({
-                code              => 'DetailsMisMatch',
-                message_to_client => localize('Details provided does not match with existing account details.'),
-            }) if _check_details_mismatch($client, $args);
     }
+    return create_error({
+            code              => 'DetailsMisMatch',
+            message_to_client => localize('Details provided does not match with existing account details.'),
+        }) if _check_details_mismatch($client, $args);
 
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
