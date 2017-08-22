@@ -59,6 +59,8 @@ sub create_account {
         user        => $user,
         details     => $details,
         from_client => $from_client,
+        ip          => $args->{ip},
+        country     => $args->{country},
     });
 
     set_crs_tin_status($client, 1);
