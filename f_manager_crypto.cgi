@@ -76,8 +76,9 @@ my %blockchain_transaction_url = (
     LTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'http://explorer.litecointools.com/tx/' : 'https://live.blockcypher.com/ltc/tx/'); },
 );
 my %blockchain_address_url = (
-    BTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/'   : 'https://blockchain.info/address/') },
-    LTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'http://explorer.litecointools.com/address/' : 'https://live.blockcypher.com/ltc/address/') },
+    BTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/' : 'https://blockchain.info/address/') },
+    LTC =>
+        sub { URI->new(BOM::Platform::Config::on_qa() ? 'http://explorer.litecointools.com/address/' : 'https://live.blockcypher.com/ltc/address/') },
 );
 my $transaction_uri = URI->new(($blockchain_transaction_url{$currency} // die "no currency transaction URL for $currency")->());
 my $address_uri     = URI->new($blockchain_address_url{$currency}->());
