@@ -347,7 +347,7 @@ sub get_bid {
         if ($is_sold && $sell_source && $sell_source != 2) {    # source is not 2, sold manually.
             $response->{status} = 'sold';
         } elsif ($contract->is_expired and $contract->is_settleable) {
-            $response->{status} = $contract->bid_price == $contract->payout ? "won" : "lost";
+            $response->{status} = $contract->value == $contract->payout ? "won" : "lost";
         }
 
         if (not $contract->may_settle_automatically
