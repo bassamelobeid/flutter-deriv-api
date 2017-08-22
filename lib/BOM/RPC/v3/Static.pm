@@ -65,7 +65,7 @@ sub website_status {
         supported_languages      => BOM::Platform::Runtime->instance->app_config->cgi->supported_languages,
         currencies_config        => {
             map { $_ => {fractional_digits => $amt_precision->{$_}, type => LandingCompany::Registry::get_currency_type($_)} }
-            grep { $_ !~ /^(?:LTC|ETH|ETC)$/ } keys %$amt_precision
+                keys LandingCompany::Registry::get("costarica")->legal_allowed_currencies
         },
         ico_status => BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_ended == 1 ? 'closed' : 'open',
     };
