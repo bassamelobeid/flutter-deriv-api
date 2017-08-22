@@ -169,6 +169,7 @@ sub get_settings_by_group {
                 system.suspend.payments
                 system.suspend.payment_agents
                 system.suspend.cryptocashier
+                system.suspend.cryptocurrencies
                 system.suspend.new_accounts
                 system.suspend.is_auction_ended
                 system.suspend.ico_final_price
