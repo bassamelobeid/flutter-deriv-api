@@ -227,7 +227,7 @@ sub maximum_feed_delay_seconds {
         grep { $_->{release_date} >= $effective_epoch - 15 && $_->{release_date} <= $effective_epoch && $_->{impact} == 5 }
         @{$self->_applicable_economic_events};
 
-    # We want to have a stricter feed delay threshold (3 seconds) if there's a level 5 economic event.
+    # We want to have a stricter feed delay threshold (2 seconds) if there's a level 5 economic event.
     return 2
         if @events_in_the_last_15_seconds && $events_in_the_last_15_seconds[-1]->{release_date} > $self->current_tick->epoch;
     return $underlying->max_suspend_trading_feed_delay->seconds;
