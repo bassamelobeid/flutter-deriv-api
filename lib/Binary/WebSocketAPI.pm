@@ -435,8 +435,8 @@ sub startup {
         [
             'document_upload',
             {
-                stash_params => [qw/ token /],
-                require_auth => 'admin',
+                stash_params    => [qw/ token /],
+                require_auth    => 'admin',
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::Authenticate::add_upload_info,
             }
         ],
@@ -501,7 +501,7 @@ sub startup {
 
                 try {
                     die "Unknown upload request\n" unless $params = $c->stash('document_upload');
-                    die "Unknown upload id\n" unless $upload_id == $params->{upload_id};
+                    die "Unknown upload id\n"      unless $upload_id == $params->{upload_id};
                     die "Unknown call type\n"      unless $call_type == $params->{call_type};
                     die "Incorrect data size\n"    unless $chunk_size == length $data;
                 }
@@ -522,11 +522,11 @@ sub startup {
 
                 if ($chunk_size == 0) {
                     $c->call_rpc({
-                            method => 'document_upload',
+                            method      => 'document_upload',
                             call_params => {
                                 token => $c->stash('token'),
                             },
-                            args   => {
+                            args => {
                                 file_name => $params->{file_name},
                                 size      => $params->{received_bytes},
                                 checksum  => $params->{sha1}->hexdigest,
