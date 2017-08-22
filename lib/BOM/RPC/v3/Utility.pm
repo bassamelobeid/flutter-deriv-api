@@ -373,7 +373,7 @@ sub validate_make_new_account {
     }
     return create_error({
             code              => 'DetailsMisMatch',
-            message_to_client => localize('Details provided does not match with existing account details.'),
+            message_to_client => localize('The details you provided do not match your existing account details.'),
         }) if _check_details_mismatch($client, $args);
 
     # filter siblings by landing company as we don't want to check cross
