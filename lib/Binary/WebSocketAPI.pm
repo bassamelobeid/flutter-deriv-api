@@ -435,7 +435,7 @@ sub startup {
         [
             'document_upload',
             {
-                stash_params    => [qw/ token /],
+                stash_params    => [qw/ token req_id passthrough /],
                 require_auth    => 'admin',
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::Authenticate::add_upload_info,
             }
@@ -524,7 +524,7 @@ sub startup {
                     $c->call_rpc({
                             method      => 'document_upload',
                             call_params => {
-                                token => $c->stash('token'),
+                                token       => $c->stash('token'),
                             },
                             args => {
                                 file_name => $params->{file_name},
@@ -534,11 +534,17 @@ sub startup {
                                 status    => 'success',
                             },
                             response => sub {
-                                my ($c, $rpc_response) = @_;
+                                my $api_response = $_[1];
 
-                                $rpc_response->{document_upload}->{upload_id} = $params->{upload_id};
-
-                                return $rpc_response;
+                                return {
+                                    %{ $api_response },
+                                    req_id      => $params->{req_id},
+                                    passthrough => $params->{passthrough},
+                                    document_upload => {
+                                        %{ $api_response->{document_upload} },
+                                        upload_id => $params->{upload_id},
+                                    }
+                                };
                             }
                         });
                 } else {
