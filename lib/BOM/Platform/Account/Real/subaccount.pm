@@ -23,6 +23,8 @@ sub create_sub_account {
         client  => $register->{client},
         user    => $user,
         details => $details,
+        ip      => $args->{ip},
+        country => $args->{country},
     });
 }
 
