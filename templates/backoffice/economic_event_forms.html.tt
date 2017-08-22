@@ -139,7 +139,7 @@
                         var obj = \$.parseJSON(data);
                         if (obj.id) {
                             var list_el = \$('table.economic_event_list');
-                            var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td>';
+                            var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td id="binary_info">';
                             if (obj.info) {
                                 \$.each(obj.info, function(i, item) {
                                     to_append += '<p>'+item+'</p>';
@@ -172,7 +172,7 @@
                         if(r.error) {
                             result.text('ERR: ' + r.error).css('color','red');
                         } else{
-                            \$('tr#'+ r.id).hide();
+                            \$('tr#'+ r.id).remove();
                             result.text('Economic event deleted.').css('color','green');
                         }
                     }
