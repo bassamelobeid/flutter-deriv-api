@@ -16,7 +16,7 @@ my $brand = Brands->new(name => 'binary');
 my ($used, $limit) = BOM::Backoffice::ExperianBalance::get_balance(BOM::Platform::Config::third_party->{proveid}->{username},
     BOM::Platform::Config::third_party->{proveid}->{password});
 
-my $threshold = shift // 10000;
+my $threshold = shift // 25000;
 my $remain = $limit - $used;
 
 if ($remain < $threshold) {
