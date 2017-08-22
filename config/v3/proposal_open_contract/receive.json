@@ -196,7 +196,7 @@
          "type": "string",
          "enum": ["sold", "won", "lost"],
          "title": "Contract status",
-         "description": "Will be 'sold' if the contract was sold manually, 'won' if won and 'lost' if lost. Otherwise this field will not be set"
+         "description": "Will be 'sold' if the contract was sold back before expiry, 'won' if won and 'lost' if lost at expiry. Otherwise this field will not be set"
         }
       }
     },
