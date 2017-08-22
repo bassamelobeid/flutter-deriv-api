@@ -408,7 +408,7 @@ sub _write_to_rejected {
     my ($self, $p) = @_;
 
     my $method = '_' . $p->{type};
-    return $self->$method;
+    return $self->$method($p);
 }
 
 sub _is_valid_to_buy {
