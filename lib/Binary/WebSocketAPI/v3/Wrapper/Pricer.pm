@@ -748,7 +748,7 @@ sub process_ask_event {
         }
         my $results;
         if ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
-            warn __PACKAGE__ . " process_ask_event: _get_validation_for_type failed, results: " . JSON::XS->new->allow_blessed->encode($results);
+            stats_inc('price_adjustment.validation_for_type_failure', {tags => ['type:' . $type]});
         } else {
             $stash_data->{cache}->{contract_parameters}->{longcode} = $stash_data->{cache}->{longcode};
             my $adjusted_results =
@@ -757,9 +757,7 @@ sub process_ask_event {
                 my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
                 $results = $err;
-                warn __PACKAGE__
-                    . " process_ask_event: _price_stream_results_adjustment failed, results: "
-                    . JSON::XS->new->allow_blessed->encode($results);
+                stats_inc('price_adjustment.adjustment_failure', {tags => ['type:' . $type]});
             } else {
                 $results = {
                     msg_type => $type,
