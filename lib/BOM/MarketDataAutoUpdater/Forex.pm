@@ -145,7 +145,7 @@ sub _build_surfaces_from_file {
             $surface = Bloomberg::VolSurfaces->new->parse_data_for($file);
         }
         foreach my $underlying (keys %{$surface}) {
-            # We request full volsurface every 4 hours, hence on other hours, we will only get ON and 1W vol. Hence the vol point we are receiving will be just  2. 
+            # We request full volsurface every 4 hours, hence on other hours, we will only get ON and 1W vol. Hence the vol point we are receiving will be just  2.
             if (scalar keys %{$surface->{$underlying}->{surface}} == 2) {
                 $surface->{$underlying}->{surface} = _append_to_existing_surface($surface->{$underlying}->{surface}, $underlying);
             }
