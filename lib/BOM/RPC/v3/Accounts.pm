@@ -10,12 +10,13 @@ use WWW::OneAll;
 use Date::Utility;
 use Data::Password::Meter;
 use HTML::Entities qw(encode_entities);
-use List::Util qw(any);
+use List::Util qw(any sum0);
 
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber/;
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
@@ -23,7 +24,7 @@ use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Locale;
+use BOM::Platform::Locale qw/get_state_by_id/;
 use BOM::Platform::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
@@ -59,7 +60,7 @@ sub payout_currencies {
     # currencies enabled.
     $lc ||= LandingCompany::Registry::get('costarica');
 
-    return $lc->legal_allowed_currencies;
+    return [sort keys %{$lc->legal_allowed_currencies}];
 }
 
 sub landing_company {
@@ -113,7 +114,7 @@ sub __build_landing_company {
         address                           => $lc->address,
         country                           => $lc->country,
         legal_default_currency            => $lc->legal_default_currency,
-        legal_allowed_currencies          => $lc->legal_allowed_currencies,
+        legal_allowed_currencies          => [keys %{$lc->legal_allowed_currencies}],
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0
@@ -311,7 +312,6 @@ sub get_account_status {
 
     my $client = $params->{client};
     my $already_unwelcomed;
-
     my @status;
     foreach my $s (sort keys %{$client->client_status_types}) {
         next if $s eq 'tnc_approval';    # the useful part for tnc_approval is reason
@@ -329,7 +329,6 @@ sub get_account_status {
 
     # differentiate between social and password based accounts
     my $user = BOM::Platform::User->new({email => $client->email});
-    push @status, 'has_password' if $user->password;
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->not_allow_trade($client);
 
     # check whether the user need to perform financial assessment
@@ -341,9 +340,36 @@ sub get_account_status {
         any { !length $financial_assessment->{$_}->{answer} }
         keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
+    my $prompt_client_to_authenticate = 0;
+    my $shortcode                     = $client->landing_company->short;
+    if ($client->client_fully_authenticated) {
+        # Authenticated clients still need to go through age verification checks for IOM/MF/MLT
+        if (any { $shortcode eq $_ } qw(iom malta maltainvest)) {
+            $prompt_client_to_authenticate = 1 unless $client->get_status('age_verification');
+        }
+    } else {
+        if ($shortcode eq 'costarica' or $shortcode eq 'champion') {
+            # Our threshold is 4000 USD, but we want to include total across all the user's currencies
+            my $total = sum0(
+                map { in_USD($_->default_account->balance, $_->currency) }
+                grep { $_->default_account && $_->landing_company->short eq $shortcode } $user->clients
+            );
+            if ($total > 4000) {
+                $prompt_client_to_authenticate = 1;
+            }
+        } elsif ($shortcode eq 'virtual') {
+            # No authentication for virtual accounts - set this explicitly in case we change the default above
+            $prompt_client_to_authenticate = 0;
+        } else {
+            # Authentication required for all regulated companies, including JP - we'll handle this on the frontend
+            $prompt_client_to_authenticate = 1;
+        }
+    }
+
     return {
-        status              => \@status,
-        risk_classification => $risk_classification
+        status                        => \@status,
+        prompt_client_to_authenticate => $prompt_client_to_authenticate,
+        risk_classification           => $risk_classification
     };
 }
 
@@ -538,7 +564,7 @@ sub reset_password {
     # do not allow social based clients to reset password
     return BOM::RPC::v3::Utility::create_error({
             code              => "SocialBased",
-            message_to_client => localize("Sorry, your account does not allow passwords. Please contact customer support for more information.")}
+            message_to_client => localize("Sorry, your account does not allow passwords because you use social media to log in.")}
     ) unless $user->password;
 
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
@@ -748,10 +774,6 @@ sub set_settings {
         $user->save;
     }
 
-    if (defined $allow_copiers) {
-        $client->allow_copiers($allow_copiers);
-    }
-
     # need to handle for $err->{status} as that come from japan settings
     return {status => 1} if ($client->is_virtual || $err->{status});
 
@@ -773,9 +795,6 @@ sub set_settings {
     my $phone           = ($args->{'phone'} // $client->phone) // '';
     my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
 
-    # filter out irrelevant spaces and commas
-    foreach ($address1, $address2, $addressTown) { $_ =~ s/(?:,?\s*,)+\s*/, /g }
-
     my $cil_message;
     if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
@@ -783,8 +802,10 @@ sub set_settings {
         or $addressState ne $client->state
         or $addressPostcode ne $client->postcode)
     {
+        my $authenticated = $client->client_fully_authenticated;
         $cil_message =
-              'Client ['
+              ($authenticated ? 'Authenticated' : 'Non-authenticated')
+            . ' client ['
             . $client->loginid
             . '] updated his/her address from ['
             . join(' ', $client->address_1, $client->address_2, $client->city, $client->state, $client->postcode)
@@ -792,37 +813,54 @@ sub set_settings {
             . join(' ', ($address1 // ''), $address2, $addressTown, $addressState, $addressPostcode) . ']';
     }
 
-    $client->address_1($address1);
-    $client->address_2($address2);
-    $client->city($addressTown);
-    $client->state($addressState) if defined $addressState;                       # FIXME validate
-    $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
-    $client->phone($phone);
-    $client->place_of_birth($birth_place);
-    $client->account_opening_reason($args->{account_opening_reason}) unless $client->account_opening_reason;
+    my $user = BOM::Platform::User->new({email => $client->email});
+    foreach my $cli ($user->clients) {
+        next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
-    $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
+        $cli->address_1($address1);
+        $cli->address_2($address2);
+        $cli->city($addressTown);
+        $cli->state($addressState) if defined $addressState;                       # FIXME validate
+        $cli->postcode($addressPostcode) if defined $args->{'address_postcode'};
+        $cli->phone($phone);
+        $cli->place_of_birth($birth_place);
+        $cli->account_opening_reason($args->{account_opening_reason}) unless $cli->account_opening_reason;
 
-    # As per CRS/FATCA regulatory requirement we need to save this information as client status
-    # maintaining previous updates as well
-    if ((
-               $tax_residence
-            or $tax_identification_number
-        )
-        and (  ($client->tax_residence // '') ne $tax_residence
-            or ($client->tax_identification_number // '') ne $tax_identification_number))
-    {
-        $client->tax_residence($tax_residence)                         if $tax_residence;
-        $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
+        $cli->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 
-        BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($client);
+        # As per CRS/FATCA regulatory requirement we need to save this information as client status
+        # maintaining previous updates as well
+        if ((
+                   $tax_residence
+                or $tax_identification_number
+            )
+            and (  ($cli->tax_residence // '') ne $tax_residence
+                or ($cli->tax_identification_number // '') ne $tax_identification_number))
+        {
+            $cli->tax_residence($tax_residence)                         if $tax_residence;
+            $cli->tax_identification_number($tax_identification_number) if $tax_identification_number;
+
+            BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($cli);
+        }
+        if ((!$tax_residence || !$tax_identification_number) && $cli->landing_company->short ne 'maltainvest') {
+            ### Allow to clean tax info for Non-MF
+            $cli->tax_residence('')             unless $tax_residence;
+            $cli->tax_identification_number('') unless $tax_identification_number;
+        }
+
+        if (not $cli->save()) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize('Sorry, an error occurred while processing your account.')});
+        }
     }
-    if ((!$tax_residence || !$tax_identification_number) && $client->landing_company->short ne 'maltainvest') {
-        ### Allow to clean tax info for Non-MF
-        $client->tax_residence('')             unless $tax_residence;
-        $client->tax_identification_number('') unless $tax_identification_number;
-    }
+    # update client value after latest changes
+    $client = Client::Account->new({loginid => $client->loginid});
 
+    # only allow current client to set allow_copiers
+    if (defined $allow_copiers) {
+        $client->allow_copiers($allow_copiers);
+    }
     if (not $client->save()) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InternalServerError',
@@ -838,13 +876,19 @@ sub set_settings {
         map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($client->salutation),
         $client->first_name, $client->last_name
     ) . "\n\n";
-
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
-    my $residence_country = Locale::Country::code2country($client->residence);
-    my $full_address = join(', ', (map { $client->$_ } qw(address_1 address_2 city state postcode)), $residence_country);
+    # lookup state name by id
+    my $lookup_state =
+        ($client->state and $client->residence)
+        ? BOM::Platform::Locale::get_state_by_id($client->state, $client->residence) // ''
+        : '';
+    my @address_fields = ((map { $client->$_ } qw/address_1 address_2 city/), $lookup_state, $client->postcode);
+    # filter out empty fields
+    my $full_address = join ', ', grep { defined $_ and /\S/ } @address_fields;
 
-    my @updated_fields = (
+    my $residence_country = Locale::Country::code2country($client->residence);
+    my @updated_fields    = (
         [localize('Email address'),        $client->email],
         [localize('Country of Residence'), $residence_country],
         [localize('Address'),              $full_address],
@@ -966,6 +1010,19 @@ sub set_self_exclusion {
 
     my %args = %{$params->{args}};
 
+    my $decimals = Format::Util::Numbers::get_precision_config()->{price}->{$client->currency};
+    foreach my $field (qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover/) {
+        if ($args{$field} and $args{$field} !~ /^\d{0,20}(?:\.\d{0,$decimals})?$/) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InputValidationFailed',
+                    message_to_client => localize("Input validation failed: $field"),
+                    details           => {
+                        $field => "Please input a valid number.",
+                    },
+                });
+        }
+    }
+
     # at least one setting should present in request
     my $args_count = 0;
     foreach my $field (
@@ -984,7 +1041,7 @@ sub set_self_exclusion {
     {
         my $val      = $args{$field};
         my $is_valid = 0;
-        if ($val and $val =~ /^\d+$/ and $val > 0) {
+        if ($val and $val > 0) {
             $is_valid = 1;
             if (    $self_exclusion->{$field}
                 and $val > $self_exclusion->{$field})
@@ -1101,11 +1158,10 @@ sub set_self_exclusion {
         my $brand            = Brands->new(name => request()->brand);
         my $marketing_email  = $brand->emails('marketing');
         my $compliance_email = $brand->emails('compliance');
-        my $support_email    = $brand->emails('support');
 
         my $message = "Client $client_title set the following self-exclusion limits:\n\n- Exclude from website until: $ret\n";
 
-        my $to_email = $compliance_email . ',' . $support_email . ',' . $marketing_email;
+        my $to_email = $compliance_email . ',' . $marketing_email;
         send_email({
             from    => $compliance_email,
             to      => $to_email,
@@ -1259,12 +1315,26 @@ sub set_account_currency {
     my $params = shift;
 
     my ($client, $currency) = @{$params}{qw/client currency/};
-    my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidCurrency',
             message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)}
-    ) unless (grep { $_ eq $currency } @{$legal_allowed_currencies});
+    ) unless $client->landing_company->is_currency_legal($currency);
+
+    # bail out if default account is already set
+    return {status => 0} if $client->default_account;
+
+    # for real client and not for omnibus or sub account
+    # check if we are allowed to set currency
+    # i.e if we have exhausted available options
+    # - client can have single fiat currency
+    # - client can have multiple crypto currency
+    #   but only with single type of crypto currency
+    #   for example BTC => ETH is allowed but BTC => BTC is not
+    if (not $client->is_virtual and not($client->allow_omnibus or $client->sub_account_of)) {
+        my $error = BOM::RPC::v3::Utility::validate_set_currency($client, $currency);
+        return $error if $error;
+    }
 
     # no change in default account currency if default account is already set
     return {status => 1} if (not $client->default_account and $client->set_default_account($currency));
@@ -1286,11 +1356,18 @@ sub set_financial_assessment {
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
         my $is_professional = $financial_evaluation->{total_score} < 60 ? 0 : 1;
-        $client->financial_assessment({
-            data            => encode_json $financial_evaluation->{user_data},
-            is_professional => $is_professional
-        });
-        $client->save;
+
+        my $user = BOM::Platform::User->new({email => $client->email});
+        foreach my $cli ($user->clients) {
+            next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
+
+            $cli->financial_assessment({
+                data            => encode_json $financial_evaluation->{user_data},
+                is_professional => $is_professional
+            });
+            $cli->save;
+        }
+
         $response = {
             score           => $financial_evaluation->{total_score},
             is_professional => $is_professional
@@ -1307,12 +1384,13 @@ sub set_financial_assessment {
     };
 
     my $brand = Brands->new(name => request()->brand);
+    #only send email for MF-client
     send_email({
-        from    => $brand->emails('support'),
-        to      => $brand->emails('compliance'),
-        subject => $subject,
-        message => $message,
-    });
+            from    => $brand->emails('support'),
+            to      => $brand->emails('compliance'),
+            subject => $subject,
+            message => $message,
+        }) if $client->landing_company->short eq 'maltainvest';
 
     return $response;
 }

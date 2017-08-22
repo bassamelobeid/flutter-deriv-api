@@ -8,12 +8,14 @@ use Try::Tiny;
 use List::MoreUtils qw(any);
 use Data::Password::Meter;
 use Format::Util::Numbers qw/formatnumber/;
+use JSON qw/encode_json/;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use Brands;
 
 use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::EmailVerification qw(email_verification);
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
@@ -25,7 +27,7 @@ use BOM::Platform::User;
 use BOM::Platform::Config;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Context qw (request);
 use BOM::Database::Model::OAuth;
 
 sub _create_oauth_token {
@@ -52,6 +54,8 @@ sub new_account_virtual {
     }
 
     my $acc = BOM::Platform::Account::Virtual::create_account({
+            ip => $params->{client_ip} // '',
+            country => uc($params->{country_code} // ''),
             details => {
                 email           => $email,
                 client_password => $args->{client_password},
@@ -90,6 +94,28 @@ sub new_account_virtual {
     };
 }
 
+sub request_email {
+    my ($email, $args) = @_;
+
+    my $subject = $args->{subject};
+    my $message = $args->{message};
+
+    return send_email({
+        from                  => Brands->new(name => request()->brand)->emails('support'),
+        to                    => $email,
+        subject               => $subject,
+        message               => [$message],
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        skip_text2html        => 1,
+    });
+}
+
+sub get_verification_uri {
+    my $app_id = shift or return undef;
+    return BOM::Database::Model::OAuth->new->get_verification_uri_by_app_id($app_id);
+}
+
 sub verify_email {
     my $params = shift;
 
@@ -102,6 +128,14 @@ sub verify_email {
         })->token;
 
     my $loginid = $params->{token_details} ? $params->{token_details}->{loginid} : undef;
+
+    my $verification = email_verification({
+        code             => $code,
+        website_name     => $params->{website_name},
+        verification_uri => get_verification_uri($params->{source}),
+        language         => $params->{language},
+    });
+
     my $payment_sub = sub {
         my $type_call = shift;
 
@@ -114,70 +148,16 @@ sub verify_email {
             $skip_email = 1 unless BOM::Platform::User->new({email => $email});
         }
 
-        my $message =
-            $type_call eq 'payment_withdraw'
-            ? BOM::Platform::Context::localize(
-            '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-            $code,
-            $params->{website_name})
-            : BOM::Platform::Context::localize(
-            '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-            $code, $params->{website_name});
-
-        send_email({
-                from => Brands->new(name => request()->brand)->emails('support'),
-                to   => $email,
-                subject               => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
-                message               => [$message],
-                use_email_template    => 1,
-                email_content_is_html => 1,
-            }) unless $skip_email;
+        request_email($email, $verification->{payment_withdraw}->($type_call)) unless $skip_email;
     };
 
     if (BOM::Platform::User->new({email => $email}) && $type eq 'reset_password') {
-        send_email({
-                from => Brands->new(name => request()->brand)->emails('support'),
-                to   => $email,
-                subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
-                message => [
-                    BOM::Platform::Context::localize(
-                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                        $code,
-                        $params->{website_name})
-                ],
-                use_email_template    => 1,
-                email_content_is_html => 1,
-            });
+        request_email($email, $verification->{reset_password}->());
     } elsif ($type eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $email})) {
-            send_email({
-                    from => Brands->new(name => request()->brand)->emails('support'),
-                    to   => $email,
-                    subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-                    message => [
-                        BOM::Platform::Context::localize(
-                            '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                            $code,
-                            $params->{website_name})
-                    ],
-                    use_email_template    => 1,
-                    email_content_is_html => 1,
-                });
+            request_email($email, $verification->{account_opening_new}->());
         } else {
-            send_email({
-                    from => Brands->new(name => request()->brand)->emails('support'),
-                    to   => $email,
-                    subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
-                    message => [
-                        '<div style="line-height:200%;color:#333333;font-size:15px;">'
-                            . BOM::Platform::Context::localize(
-                            '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_1]</p>',
-                            $params->{website_name})
-                            . '</div>'
-                    ],
-                    use_email_template    => 1,
-                    email_content_is_html => 1,
-                });
+            request_email($email, $verification->{account_opening_existing}->());
         }
     } elsif ($type eq 'paymentagent_withdraw') {
         $payment_sub->($type);
@@ -193,31 +173,21 @@ sub new_account_real {
 
     my $client = $params->{client};
 
-    my $error_map = BOM::RPC::v3::Utility::error_map();
+    # send error if maltaivest and japan client tried to make this call
+    # as they have their own separate api call for account opening
+    return BOM::RPC::v3::Utility::permission_error()
+        if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
 
-    unless ($client->is_virtual and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidAccount',
-                message_to_client => $error_map->{'invalid'}});
-    }
+    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'real');
+    return $error if $error;
 
-    my $args = $params->{args};
-
-    my $company;
-    if ($args->{residence}) {
-        my $countries_list = Brands->new(name => request()->brand)->countries_instance->countries_list;
-        $company = $countries_list->{$args->{residence}}->{gaming_company};
-        $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
-    }
-
-    if (not $company) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'NoLandingCompany',
-                message_to_client => $error_map->{'No landing company for this country'}});
-    }
-    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
-
+    my $args               = $params->{args};
+    my $residence          = $client->residence;
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    my $company     = $countries_instance->gaming_company_for_country($residence) // $countries_instance->financial_company_for_country($residence);
+    my $broker      = LandingCompany::Registry->new->get($company)->broker_codes->[0];
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
+    my $error_map   = BOM::RPC::v3::Utility::error_map();
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err,
@@ -225,6 +195,8 @@ sub new_account_real {
     }
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
+        ip => $params->{client_ip} // '',
+        country => uc($params->{country_code} // ''),
         from_client => $client,
         user        => BOM::Platform::User->new({email => $client->email}),
         details     => $details_ref->{details},
@@ -261,19 +233,36 @@ sub new_account_real {
     };
 }
 
+sub set_details {
+    my ($client, $args) = @_;
+
+    # don't update client's brokercode with wrong value
+    delete $args->{broker_code};
+    $client->$_($args->{$_}) for keys %$args;
+
+    # special cases.. force empty string if necessary in these not-nullable cols.  They oughta be nullable in the db!
+    for (qw(citizen address_2 state postcode salutation)) {
+        $client->$_('') unless defined $client->$_;
+    }
+
+    return $client;
+}
+
 sub new_account_maltainvest {
     my $params = shift;
 
     my $client = $params->{client};
 
+    # send error if anyone other than maltainvest, virtual, malta
+    # tried to make this call
+    return BOM::RPC::v3::Utility::permission_error()
+        if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest)$/);
+
+    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'maltainvest');
+    return $error if $error;
+
     my $args      = $params->{args};
     my $error_map = BOM::RPC::v3::Utility::error_map();
-
-    unless ($client and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidAccount',
-                message_to_client => $error_map->{'invalid'}});
-    }
 
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, 'MF', $params->{source});
     if (my $err = $details_ref->{error}) {
@@ -285,6 +274,8 @@ sub new_account_maltainvest {
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
+        ip => $params->{client_ip} // '',
+        country => uc($params->{country_code} // ''),
         from_client    => $client,
         user           => BOM::Platform::User->new({email => $client->email}),
         details        => $details_ref->{details},
@@ -309,6 +300,21 @@ sub new_account_maltainvest {
     });
     $user->save;
 
+    my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
+    foreach my $cli ($user->clients) {
+        # no need to update current client since already updated above upon creation
+        next if (($cli->loginid eq $new_client->loginid) or not BOM::RPC::v3::Utility::should_update_account_details($new_client, $cli->loginid));
+
+        # 60 is the max score to achive in financial assessment to be marked as professional
+        # as decided by compliance
+        $cli->financial_assessment({
+            data            => encode_json($financial_assessment->{user_data}),
+            is_professional => $financial_assessment->{total_score} < 60 ? 0 : 1,
+        });
+        set_details($cli, $details_ref->{details});
+        $cli->save;
+    }
+
     BOM::Platform::AuditLog::log("successful login", "$client->email");
     return {
         client_id                 => $new_client->loginid,
@@ -321,26 +327,21 @@ sub new_account_maltainvest {
 sub new_account_japan {
     my $params = shift;
 
-    my $client    = $params->{client};
-    my $error_map = BOM::RPC::v3::Utility::error_map();
+    my $client = $params->{client};
 
-    unless ($client->is_virtual and (BOM::RPC::v3::Utility::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidAccount',
-                message_to_client => $error_map->{'invalid'}});
-    }
+    # send error if anyone other than japan, japan-virtual
+    # tried to make this call
+    return BOM::RPC::v3::Utility::permission_error()
+        if ($client->landing_company->short !~ /^(?:japan-virtual|japan)$/);
 
-    my $company = Brands->new(name => request()->brand)->countries_instance->countries_list->{'jp'}->{financial_company};
+    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'japan');
+    return $error if $error;
 
-    if (not $company) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'NoLandingCompany',
-                message_to_client => $error_map->{'No landing company for this country'}});
-    }
-    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
-
-    my $args = $params->{args};
+    my $company     = Brands->new(name => request()->brand)->countries_instance->countries_list->{'jp'}->{financial_company};
+    my $broker      = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $args        = $params->{args};
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
+    my $error_map   = BOM::RPC::v3::Utility::error_map();
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err,
@@ -356,6 +357,8 @@ sub new_account_japan {
     my %agreement = map { $_ => $args->{$_} } (BOM::Platform::Account::Real::japan::agreement_fields());
 
     my $acc = BOM::Platform::Account::Real::japan::create_account({
+        ip => $params->{client_ip} // '',
+        country => uc($params->{country_code} // ''),
         from_client    => $client,
         user           => BOM::Platform::User->new({email => $client->email}),
         details        => $details,

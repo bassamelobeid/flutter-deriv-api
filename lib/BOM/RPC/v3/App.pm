@@ -25,6 +25,7 @@ sub register {
     my $appstore              = $args->{appstore} // '';
     my $googleplay            = $args->{googleplay} // '';
     my $redirect_uri          = $args->{redirect_uri} // '';
+    my $verification_uri      = $args->{verification_uri} // '';
     my $app_markup_percentage = $args->{app_markup_percentage} // 0;
 
     my $error_sub = sub {
@@ -35,7 +36,7 @@ sub register {
         });
     };
 
-    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay)) {
+    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay, $redirect_uri, $verification_uri)) {
         return $error_sub->($err);
     }
 
@@ -52,6 +53,7 @@ sub register {
         appstore              => $appstore,
         googleplay            => $googleplay,
         redirect_uri          => $redirect_uri,
+        verification_uri      => $verification_uri,
         app_markup_percentage => $app_markup_percentage
     });
 
@@ -74,6 +76,7 @@ sub update {
     my $appstore              = $args->{appstore} // '';
     my $googleplay            = $args->{googleplay} // '';
     my $redirect_uri          = $args->{redirect_uri} // '';
+    my $verification_uri      = $args->{verification_uri} // '';
     my $app_markup_percentage = $args->{app_markup_percentage} // 0;
 
     ## do some validation
@@ -90,7 +93,7 @@ sub update {
     my $app = $oauth->get_app($user_id, $app_id);
     return $error_sub->(localize('Not Found')) unless $app;
 
-    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay)) {
+    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay, $redirect_uri, $verification_uri)) {
         return $error_sub->($err);
     }
 
@@ -109,6 +112,7 @@ sub update {
             appstore              => $appstore,
             googleplay            => $googleplay,
             redirect_uri          => $redirect_uri,
+            verification_uri      => $verification_uri,
             app_markup_percentage => $app_markup_percentage
         });
 
@@ -117,6 +121,14 @@ sub update {
 
 sub __validate_app_links {
     my ($homepage, $github, $appstore, $googleplay) = @_;
+
+    my @sites = @_;
+    my $validation_error;
+
+    for (grep { length($_) } @sites) {
+        $validation_error = BOM::RPC::v3::Utility::validate_uri($_);
+        return $validation_error if $validation_error;
+    }
 
     return localize('Invalid URI for homepage.')
         if length($homepage)
