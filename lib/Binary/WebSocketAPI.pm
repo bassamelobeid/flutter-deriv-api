@@ -501,6 +501,7 @@ sub startup {
 
                 try {
                     die "Unknown upload request\n" unless $params = $c->stash('document_upload');
+                    die "Unknown upload id\n" unless $upload_id == $params->{upload_id};
                     die "Unknown call type\n"      unless $call_type == $params->{call_type};
                     die "Incorrect data size\n"    unless $chunk_size == length $data;
                 }
