@@ -12,6 +12,7 @@ use LandingCompany::Offerings qw(get_offerings_flyby);
 use JSON qw(to_json);
 use List::Util qw(first);
 use BOM::Backoffice::Request;
+use BOM::MarketDataAutoUpdater::Forex;
 
 sub get_economic_events_for_date {
     my $date = shift;
@@ -120,11 +121,10 @@ sub save_new_event {
     } else {
         push @{$ref->{events}}, $args;
         Quant::Framework::EconomicEventCalendar->new({
-                events           => $ref->{events},
                 recorded_date    => Date::Utility->new,
                 chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-            })->save;
+            })->save_new($args);
         _regenerate($ref->{events});
 
     }
