@@ -3,7 +3,6 @@ use warnings;
 
 use Test::Most;
 use JSON;
-use Data::Dumper;
 use BOM::Test::RPC::BomRpc;
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Digest::SHA1 qw/sha1_hex/;
@@ -17,8 +16,6 @@ my $t = build_wsapi_test();
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, 'CR0021');
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $res = decode_json($t->message->[1]);
-warn Dumper $res;
 
 my $req_id     = 1;
 my $CHUNK_SIZE = 6;
@@ -42,8 +39,6 @@ sub upload_ok {
 
     my $res = decode_json($t->message->[1]);
 
-    warn Dumper $res;
-
     ok $res->{document_upload}, 'Returns document_upload';
 
     my $upload_id = $res->{document_upload}->{upload_id};
@@ -60,7 +55,6 @@ sub upload_ok {
     $t = $t->message_ok;
 
     $res = decode_json($t->message->[1]);
-    warn Dumper $res;
     my $success = $res->{document_upload};
 
     is $success->{upload_id}, $upload_id, 'upload id is correct';
