@@ -136,6 +136,20 @@ sub is_crypto_cashier_suspended {
     return BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocashier;
 }
 
+=head2 is_crypto_currency_suspended {
+
+Returns true if the given currency is suspended in the crypto cashier. Only works for crypto currencies,
+this will return false for currencies such as USD / GBP.
+
+=cut
+
+sub is_crypto_currency_suspended {
+    my $currency = shift or die "expected currency parameter";
+    return 1 if BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocashier;
+    return 1 if grep { $currency eq $_ } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    return 0;
+}
+
 =head2 pre_withdrawal_validation
 
 Validates withdrawal amount
