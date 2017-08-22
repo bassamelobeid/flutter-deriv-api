@@ -151,7 +151,7 @@ sub statement {
             # Translate according to known action types.
             # Otherwise, log unknow so we can request translation
             # for it in the weblate.
-            action_type => translation { $txn->{action_type} } // do {
+            action_type => $translation{$txn->{action_type}} // do {
                 warn "No translation known for action_type " . $txn->{action_type};
                 $txn->{action_type};
             },
