@@ -65,6 +65,8 @@ sub create_account {
         user        => $user,
         details     => $details,
         from_client => $from_client,
+        ip          => $args->{ip},
+        country     => $args->{country},
     });
 
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
