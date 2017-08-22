@@ -12,11 +12,11 @@
     },
     "payout_currencies": {
       "type": "array",
-      "minItems": 5,
+      "minItems": 6,
       "required": "1",
       "items": {
         "type": "string",
-        "pattern": "^(USD|EUR|GBP|AUD|BTC)$",
+        "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC)$",
         "required": "1"
       }
     },
