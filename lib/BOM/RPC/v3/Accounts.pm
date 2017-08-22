@@ -105,29 +105,20 @@ sub landing_company_details {
     return __build_landing_company($lc);
 }
 
-{
-    my %currencies_under_test = (
-        BCH => 1,
-        ETC => 1,
-        ETH => 1,
-        LTC => 1,
-    );
+sub __build_landing_company {
+    my ($lc) = @_;
 
-    sub __build_landing_company {
-        my ($lc) = @_;
-
-        return {
-            shortcode                         => $lc->short,
-            name                              => $lc->name,
-            address                           => $lc->address,
-            country                           => $lc->country,
-            legal_default_currency            => $lc->legal_default_currency,
-            legal_allowed_currencies          => [grep { !exists $currencies_under_text{$_} } keys %{$lc->legal_allowed_currencies}],
-            legal_allowed_markets             => $lc->legal_allowed_markets,
-            legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
-            has_reality_check                 => $lc->has_reality_check ? 1 : 0
-        };
-    }
+    return {
+        shortcode                         => $lc->short,
+        name                              => $lc->name,
+        address                           => $lc->address,
+        country                           => $lc->country,
+        legal_default_currency            => $lc->legal_default_currency,
+        legal_allowed_currencies          => [keys %{$lc->legal_allowed_currencies}],
+        legal_allowed_markets             => $lc->legal_allowed_markets,
+        legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
+        has_reality_check                 => $lc->has_reality_check ? 1 : 0
+    };
 }
 
 sub statement {
