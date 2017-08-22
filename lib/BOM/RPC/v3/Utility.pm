@@ -272,7 +272,7 @@ sub get_real_account_siblings_information {
             } grep {
             not($_->get_status('disabled') and $_->get_status('disabled')->reason =~ /^migration to single email login$/)
                 and not $_->is_virtual
-            } BOM::Platform::User->new({email => $client->email})->clients(disabled => 1)};
+            } BOM::Platform::User->new({email => $client->email})->clients(disabled_ok => 1)};
 }
 
 # we need to verify details passed for new accounts
