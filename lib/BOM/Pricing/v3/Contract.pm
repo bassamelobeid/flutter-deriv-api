@@ -277,8 +277,8 @@ sub handle_batch_contract {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage, $landing_company) =
-        @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage landing_company/};
+    my ($short_code, $contract_id, $currency, $is_sold, $is_expired, $sell_time, $buy_price, $sell_price, $app_markup_percentage, $landing_company) =
+        @{$params}{qw/short_code contract_id currency is_sold is_expired sell_time buy_price sell_price app_markup_percentage landing_company/};
 
     my ($response, $contract, $bet_params);
     my $tv = [Time::HiRes::gettimeofday];
@@ -344,12 +344,9 @@ sub get_bid {
             contract_type       => $contract->code,
         };
 
-        if (   $is_sold
-            && $sell_price
-            && $sell_time
-            && $sell_price > 0
-            && $contract->payout > $sell_price
-            && $sell_time < $contract->date_expiry->epoch)
+        # do not use $contract->is_expired here because this will mess up 'sold' condition once the contract has expired
+        # if the contract is sold early `$fmb->{is_expired}` will be false because the contract actually did not reach expiration time
+        if ($is_sold && ! $is_expired)
         {
             $response->{status} = 'sold';
         } elsif ($contract->is_expired and $contract->is_settleable) {
