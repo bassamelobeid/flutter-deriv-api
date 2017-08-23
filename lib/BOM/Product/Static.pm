@@ -51,7 +51,6 @@ my $config = {
         InvalidStake                  => 'Invalid stake/payout.',
         InvalidBinaryIcoBidPrice      => 'Your bid price is too low, the minimum bid price is USD1 (or equivalent in other currency).',
         IcoClosed                     => 'The ICO auction is already closed.',
-        InvalidBinaryIcoContract      => 'We are not support auction of  [_1]',
         MarketIsClosed                => 'This market is presently closed.',
         MarketIsClosedTryVolatility   => 'This market is presently closed. Try out the Volatility Indices which are always open.',
         MarketNotOpen                 => 'The market must be open at the start time.',
