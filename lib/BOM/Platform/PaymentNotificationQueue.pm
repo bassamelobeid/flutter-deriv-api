@@ -31,9 +31,8 @@ sub redis {
 sub add {
     my ($class, %args) = @_;
     my $redis = $class->redis;
-    return Future->done if $redis->llen('payment_notification_queue') > MAX_QUEUE_LENGTH;
     my $data = encode_json(\%args);
-    $redis->push('payment_notification_queue', $data);
+    $redis->publish('payment_notification_queue', $data);
     return Future->done;
 }
 
