@@ -9,6 +9,7 @@ use Data::Dumper;
 use Date::Utility;
 use HTML::Entities;
 use Bitcoin::RPC::Client;
+use Ethereum::RPC::Client;
 use List::UtilsBy qw(rev_nsort_by sort_by);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 
@@ -74,11 +75,13 @@ if (length($broker) < 2) {
 my %blockchain_transaction_url = (
     BTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/tx/'   : 'https://blockchain.info/tx/'); },
     LTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'http://explorer.litecointools.com/tx/' : 'https://live.blockcypher.com/ltc/tx/'); },
+    ETH => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://ropsten.etherscan.io/tx/'      : 'https://etherscan.io/tx/') },
 );
 my %blockchain_address_url = (
     BTC => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://www.blocktrail.com/tBTC/address/' : 'https://blockchain.info/address/') },
     LTC =>
         sub { URI->new(BOM::Platform::Config::on_qa() ? 'http://explorer.litecointools.com/address/' : 'https://live.blockcypher.com/ltc/address/') },
+    ETH => sub { URI->new(BOM::Platform::Config::on_qa() ? 'https://ropsten.etherscan.io/address/' : 'https://etherscan.io/address/') },
 );
 my $transaction_uri = URI->new(($blockchain_transaction_url{$currency} // die "no currency transaction URL for $currency")->());
 my $address_uri     = URI->new($blockchain_address_url{$currency}->());
@@ -133,9 +136,9 @@ my $dbh = $clientdb->db->dbh;
 my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
 
 my %clients = (
-    BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}},  timeout => 5)) },
-    LTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{litecoin}}, timeout => 5)) },
-    ETH => sub { ... },
+    BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}},   timeout => 5)) },
+    LTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{litecoin}},  timeout => 5)) },
+    ETH => sub { Ethereum::RPC::Client->new((%{$cfg->{ethereum}}, timeout => 5)) },
 );
 my $rpc_client = ($clients{$currency} // die "no RPC client found for currency " . $currency)->();
 
