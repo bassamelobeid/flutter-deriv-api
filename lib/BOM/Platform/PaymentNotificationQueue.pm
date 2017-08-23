@@ -20,6 +20,7 @@ use Mojo::Redis2;
 use Future;
 use JSON::XS qw(encode_json);
 
+use DataDog::DogStatsd::Helper qw(stats_timing);
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 # TODO This must be in config, so we should add to chef
@@ -36,6 +37,7 @@ sub add {
     $args{amount_usd} = in_USD($args{amount} => $args{currency});
     my $data = encode_json(\%args);
     $redis->publish('payment_notification_queue', $data);
+    stats_timing('payment.deposit.usd', $args{amount_usd}, { tag => ['source:' . $args{source}] });
     return Future->done;
 }
 
