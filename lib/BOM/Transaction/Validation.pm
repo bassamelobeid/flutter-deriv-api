@@ -791,7 +791,7 @@ Here we have any uncommon business logic check.
 
 Common checks (unwelcome & disabled) are done _validate_client_status.
 
-Don't allow to trade for unwelcome_clients and for MLT and MX without confirmed age
+Don't allow to trade for MLT and MX without confirmed age
 
 =cut
 
