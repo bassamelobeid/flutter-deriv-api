@@ -36,7 +36,7 @@ The following client opened an account on $check_date but has the same name and 
 my $dup_unique;
 foreach my $client_hash (@{$client_dup_list}) {
     # avoid sending multiple emails for same client with multiple duplicate loginids
-    my $client_str = join(',', $client_hash->{first_name}, $client_hash->{last_name}, $client_hash->{date_of_birth});
+    my $client_str = join(',', $client_hash->{first_name} // '', $client_hash->{last_name} // '', $client_hash->{date_of_birth} // '');
     next if (defined $dup_unique and exists $dup_unique->{$client_str});
     $dup_unique->{$client_str} = 1;
 
