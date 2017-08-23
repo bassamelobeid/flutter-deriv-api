@@ -21,7 +21,7 @@ use Future;
 use JSON::XS qw(encode_json);
 
 # TODO This must be in config, so we should add to chef
-my $redis_url = 'redis://localhost:6359';
+my $redis_url = 'redis://localhost:6379';
 
 sub redis {
     state $redis = Mojo::Redis2->new(url => $redis_url);
