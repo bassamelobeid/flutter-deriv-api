@@ -435,7 +435,7 @@ sub startup {
         [
             'document_upload',
             {
-                stash_params    => [qw/ token req_id passthrough /],
+                stash_params    => [qw/ token /],
                 require_auth    => 'admin',
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::Authenticate::add_upload_info,
             }
