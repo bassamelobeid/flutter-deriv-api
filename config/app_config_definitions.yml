@@ -207,6 +207,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        cryptocurrencies:
+          description: "Suspend comma-separated list of currencies"
+          isa: Str
+          default: ""
+          global: 1
         new_accounts:
           description: "Suspend opening new accounts"
           isa: Bool

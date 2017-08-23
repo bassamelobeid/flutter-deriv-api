@@ -95,6 +95,8 @@ sub create_account {
         user        => $user,
         details     => $details,
         from_client => $from_client,
+        ip          => $args->{ip},
+        country     => $args->{country},
     });
 
     add_details_to_desk($register->{client}, $details);
