@@ -19,12 +19,14 @@ send information to adwords/analytics/facebook.
 use Mojo::Redis2;
 use Future;
 use JSON::XS qw(encode_json);
+use YAML::XS qw(LoadFile);
 
 use DataDog::DogStatsd::Helper qw(stats_timing);
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
-# TODO This must be in config, so we should add to chef
-my $redis_url = 'redis://localhost:6379';
+my $redis_cfg = LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write};
+my $redis_url = Mojo::URL->new("redis://$redis_cfg->{host}:$redis_cfg->{port}");
+$redis_url->userinfo('user:' . $redis_cfg->{password}) if $redis_cfg->{password};
 
 sub redis {
     state $redis = Mojo::Redis2->new(url => $redis_url);
