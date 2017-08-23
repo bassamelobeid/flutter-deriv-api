@@ -3,6 +3,8 @@ package BOM::Platform::PaymentNotificationQueue;
 use strict;
 use warnings;
 
+use feature qw(state);
+
 =head1 NAME
 
 BOM::Platform::PaymentNotificationQueue
