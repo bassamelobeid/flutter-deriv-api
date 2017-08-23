@@ -520,44 +520,4 @@ subtest 'market_risk blackouts' => sub {
     is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '21:00:00', '23:59:59']);
 };
 
-subtest '4-second level 5 economic event blackout' => sub {
-    my $now        = Date::Utility->new();
-    my $bet_params = {
-        bet_type     => 'CALL',
-        underlying   => 'frxUSDJPY',
-        date_start   => $now,
-        date_pricing => $now,
-        duration     => '10h',
-        barrier      => 'S0P',
-        currency     => 'USD',
-        payout       => 100
-    };
-    my $mock  = Test::MockModule->new('BOM::Product::Contract');
-    my $event = {
-        event_name   => 'test',
-        impact       => 5,
-        release_date => $now->epoch,
-        symbol       => 'USD'
-    };
-    $mock->mock('_applicable_economic_events', sub { [$event] });
-    $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 3;
-    my $c = produce_contract($bet_params);
-    ok !$c->_validate_start_and_expiry_date, 'no blackout if event is 3 seconds after date pricing';
-    $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 2;
-    $c = produce_contract($bet_params);
-    my $err;
-    ok $err = $c->_validate_start_and_expiry_date, 'blackout if event is 2 seconds after date pricing';
-    like $err->{message}, qr/blackout period/, 'correct error';
-    $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch - 2;
-    $c = produce_contract($bet_params);
-    ok $err = $c->_validate_start_and_expiry_date, 'blackout if event is 2 seconds before date pricing';
-    like $err->{message}, qr/blackout period/, 'correct error';
-    $bet_params->{underlying} = 'frxAUDJPY';
-    $c = produce_contract($bet_params);
-    ok !$c->_validate_start_and_expiry_date, 'no error for frxAUDJPY, only the direct forex pairs';
-    $bet_params->{underlying} = 'DJI';
-    $c = produce_contract($bet_params);
-    ok !$c->_validate_start_and_expiry_date, 'no error for DJI';
-};
-
 done_testing();
