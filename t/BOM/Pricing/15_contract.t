@@ -468,7 +468,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     ok(!exists $result->{validation_error}, "No barrier validation error")
         or diag "validatione error: " . ($result->{validation_error} // '<undef>');
-    is($result->{status}, 'open' 'status is open');
+    is($result->{status}, 'open', 'status is open');
 
     $params->{sell_time}  = $now->epoch;
     $params->{sell_price} = $contract->payout / 2;
