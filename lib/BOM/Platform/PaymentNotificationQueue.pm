@@ -18,8 +18,6 @@ use Mojo::Redis2;
 use Future;
 use JSON::XS qw(encode_json);
 
-use constant MAX_QUEUE_LENGTH => 1000;
-
 # TODO This must be in config, so we should add to chef
 my $redis_url = 'redis://localhost:6359';
 
