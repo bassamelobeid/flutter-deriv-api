@@ -611,7 +611,7 @@ sub _validate_jurisdictional_restrictions {
 =head2 $self->_validate_ico_european_restrictions
 
 Note that under the EU Prospectus Directive we can only offer the token to up to 150 persons per European Union country.
-Therefore, we need to count the bids placed by persons in EU countries and not accept any more bids if there are already 150 outstanding bids
+Therefore, we need to count the bids placed by persons in EU countries and not accept any more bids if there are already 150 outstanding bidder.
 
 =cut
 
