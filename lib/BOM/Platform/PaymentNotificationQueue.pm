@@ -20,6 +20,8 @@ use Mojo::Redis2;
 use Future;
 use JSON::XS qw(encode_json);
 
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+
 # TODO This must be in config, so we should add to chef
 my $redis_url = 'redis://localhost:6379';
 
@@ -31,6 +33,7 @@ sub redis {
 sub add {
     my ($class, %args) = @_;
     my $redis = $class->redis;
+    $args{amount_usd} = in_USD($args{amount} => $args{currency});
     my $data = encode_json(\%args);
     $redis->publish('payment_notification_queue', $data);
     return Future->done;
