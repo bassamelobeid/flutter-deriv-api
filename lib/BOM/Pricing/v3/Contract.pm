@@ -346,7 +346,6 @@ sub get_bid {
 
         if (   $is_sold
             && $sell_price
-            && $sell_price
             && $sell_time
             && $sell_price > 0
             && $contract->payout > $sell_price
