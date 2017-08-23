@@ -45,7 +45,12 @@
     },
     "sort_fields": {
         "type": "array",
-        "enum": ["transaction_time", "app_id", "client_loginid"],
+        "items": 
+            {
+                "type": "string",
+                "pattern": "^transaction_time|app_id|client_loginid$"
+            }
+        ,
         "description": "Optional one or more of the specified fields to sort on. Default sort field is by transaction_time.",
         "required": "0",
         "uniqueItems": true,
