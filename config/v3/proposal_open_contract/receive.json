@@ -194,9 +194,10 @@
         },
        "status": {
          "type": "string",
-         "enum": ["sold", "won", "lost"],
+           "enum": ["open","sold", "won", "lost"],
          "title": "Contract status",
-         "description": "Contract status. Will be 'sold' if the contract was sold back before expiry, 'won' if won and 'lost' if lost at expiry. Otherwise will be 'open'"
+           "description": "Contract status. Will be 'sold' if the contract was sold back before expiry, 'won' if won and 'lost' if lost at expiry. Otherwise will be 'open'",
+           "required": 1
         }
       }
     },
