@@ -354,6 +354,8 @@ sub get_bid {
             $response->{status} = 'sold';
         } elsif ($contract->is_expired and $contract->is_settleable) {
             $response->{status} = $contract->value == $contract->payout ? "won" : "lost";
+        } else {
+            $response->{status} = 'open';
         }
 
         if (not $contract->may_settle_automatically
