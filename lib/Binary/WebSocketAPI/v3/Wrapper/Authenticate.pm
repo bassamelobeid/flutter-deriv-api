@@ -26,16 +26,29 @@ sub generate_upload_id {
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
 
-    my $args = $req_storage->{origin_args};
+    my $args   = $req_storage->{origin_args};
+    my $error  = $rpc_response->{error};
+    my $params = {
+        msg_type    => 'document_upload',
+        req_id      => $args->{req_id},
+        passthrough => $args->{passthrough} || {},
+    };
+
+    return {
+        %{$params},
+        error => {
+            code    => $error->{code},
+            message => $error->{message_to_client},
+        },
+    } if $error;
 
     my $stash = {
+        %{$params},
         file_name      => $rpc_response->{file_name},
         call_type      => $rpc_response->{call_type},
         upload_id      => generate_upload_id(),
         sha1           => Digest::SHA1->new,
         received_bytes => 0,
-        req_id         => $args->{req_id},
-        passthrough    => $args->{passthrough} || {},
     };
 
     $stash->{uploader} = uploader($stash);
@@ -43,9 +56,7 @@ sub add_upload_info {
     $c->stash(document_upload => $stash);
 
     return {
-        msg_type        => 'document_upload',
-        req_id          => $stash->{req_id},
-        passthrough     => $stash->{passthrough},
+        %{$params},
         document_upload => {
             upload_id => $stash->{upload_id},
             call_type => $stash->{call_type},
