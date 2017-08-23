@@ -50,6 +50,21 @@ sub mt5_login_list {
     return \@array;
 }
 
+# limit number of requests to once per minute
+sub _throttle {
+    my $loginid = shift;
+    my $key     = 'MT5ACCOUNT::THROTTLE::' . $loginid;
+
+    if (BOM::Platform::RedisReplicated::redis_read()->get($key)) {
+        return 1;
+    }
+
+    BOM::Platform::RedisReplicated::redis_write()->set($key, 1);
+    BOM::Platform::RedisReplicated::redis_write()->expire($key, 60);
+
+    return;
+}
+
 sub mt5_new_account {
     my $params = shift;
 
@@ -69,6 +84,10 @@ sub mt5_new_account {
     return BOM::RPC::v3::Utility::create_error({
             code              => 'NoResidence',
             message_to_client => localize('Please set your country of residence.')}) unless $residence;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'MT5CreateUserError',
+            message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
 
     my $countries_list = $brand->countries_instance->countries_list;
     return BOM::RPC::v3::Utility::permission_error()
