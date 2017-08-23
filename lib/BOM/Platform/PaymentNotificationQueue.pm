@@ -37,7 +37,7 @@ sub add {
     $args{amount_usd} = in_USD($args{amount} => $args{currency});
     my $data = encode_json(\%args);
     $redis->publish('payment_notification_queue', $data);
-    stats_timing('payment.deposit.usd', $args{amount_usd}, { tag => ['source:' . $args{source}] });
+    stats_timing('payment.deposit.usd', $args{amount_usd}, {tag => ['source:' . $args{source}]});
     return Future->done;
 }
 
