@@ -53,7 +53,7 @@ sub validate_trx_sell {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
-    my @client_validation_method = qw/ check_trade_status _validate_client_status _validate_available_currency _validate_currency /;
+    my @client_validation_method = qw/ check_trade_status _validate_available_currency _validate_currency /;
     # For ico, there is no need to be restricted by with the withdrawal limit imposed on IOM region
     push @client_validation_method, '_validate_iom_withdrawal_limit' unless $self->transaction->contract->is_binaryico;
 
