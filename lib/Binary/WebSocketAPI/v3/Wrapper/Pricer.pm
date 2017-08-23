@@ -443,12 +443,12 @@ sub _process_proposal_open_contract_response {
                 and not $contract->{is_expired}
                 and not $contract->{is_sold})
             {
-                # short_code contract_id currency is_sold sell_time are passed to pricer daemon and
+                # short_code contract_id currency is_sold is_expired sell_time are passed to pricer daemon and
                 # are used to to identify redis channel and as arguments to get_bid rpc call
                 # transaction_ids purchase_time buy_price should be stored and will be added to
                 # every get_bid results and sent to client while streaming
                 my $cache = {map { $_ => $contract->{$_} }
-                        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
+                        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold is_expired transaction_ids longcode)};
 
                 if (not $uuid = _pricing_channel_for_bid($c, $args, $cache)) {
                     my $error =
@@ -524,8 +524,9 @@ sub _pricing_channel_for_bid {
 
     my %hash;
     # get_bid RPC call requires 'short_code' param, not 'shortcode'
-    @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(shortcode contract_id currency sell_time)};
+    @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(shortcode contract_id currency sell_time is_expired)};
     $hash{is_sold} = $cache->{is_sold} + 0;
+    $hash{is_expired} = $cache->{is_expired} + 0;
     $hash{language}         = $c->stash('language') || 'EN';
     $hash{price_daemon_cmd} = $price_daemon_cmd;
     $hash{landing_company}  = $c->landing_company_name;
