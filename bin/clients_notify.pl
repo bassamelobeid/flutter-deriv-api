@@ -53,15 +53,15 @@ $ws_redis_master->on(
     });
 
 if ( $status || $message ) {
-  my $is_on_value = $is_on;
-  print $ws_redis_master->set($is_on_key, $is_on_value), "\n" if $is_on_value;
+    my $is_on_value = $is_on;
+    print $ws_redis_master->set($is_on_key, $is_on_value), "\n" if $is_on_value;
 
-  my $mess_obj = encode_json ( {
-      site_status => $status  // "up",
-      message     => $message // ""
-  } );
-  print $ws_redis_master->set($state_key, $mess_obj), "\n";
+    my $mess_obj = encode_json ( {
+        site_status => $status  // "up",
+        message     => $message // ""
+    } );
+    print $ws_redis_master->set($state_key, $mess_obj), "\n";
 
-  my $subscribes_count =  $ws_redis_master->publish($channel_name, $mess_obj);
-  print $subscribes_count . " workers subscribed\n";
+    my $subscribes_count =  $ws_redis_master->publish($channel_name, $mess_obj);
+    print $subscribes_count . " workers subscribed\n";
 }

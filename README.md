@@ -20,7 +20,7 @@ Commands are:
 * `connections` Returns a list of active connections.
 * `subscriptions` Returns a list of all subscribed Redis channels. Placeholder, not yet implemented.
 * `stats` Returns a summary of current stats.
-* `dumpmem` Writes a dumpfile using L<Devel::MAT::Dumper>.
+* `dumpmem` Writes a dumpfile using [Devel::MAT::Dumper](https://metacpan.org/pod/Devel::MAT::Dumper).
 * `help` Returns a list of available commands.
 
 # TEST
