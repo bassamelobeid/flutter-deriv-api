@@ -160,7 +160,7 @@ subtest 'IOM withdrawal limit' => sub {
 };
 
 subtest 'Is contract valid to buy' => sub {
-    plan tests => 2;
+    plan tests => 4;
 
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('is_valid_to_buy', sub { 1 });
@@ -203,11 +203,14 @@ subtest 'Is contract valid to buy' => sub {
             transaction => $transaction,
             clients     => [$client]})->_is_valid_to_buy($client);
     is($error->get_type, 'InvalidtoBuy', 'Contract is invalid to buy as it contains errors: _is_valid_to_buy - error type');
-
+    my $db = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db;
+    my @output = $db->dbh->selectrow_array("select * from data_collection.rejected_trades where action_type = ?", undef, 'buy');
+    is $output[1], 'MX1001', 'client id stored';
+    is $output[6], 'Error message to be sent to client', 'correct reason';
 };
 
 subtest 'Is contract valid to sell' => sub {
-    plan tests => 2;
+    plan tests => 4;
 
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('is_valid_to_sell', sub { 1 });
@@ -255,6 +258,10 @@ subtest 'Is contract valid to sell' => sub {
             clients     => [$client]})->_is_valid_to_sell($client);
     is($error->get_type, 'InvalidtoSell', 'Contract is invalid to sell as expiry is too low: _is_valid_to_sell - error type');
 
+    my $db = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db;
+    my @output = $db->dbh->selectrow_array("select * from data_collection.rejected_trades where action_type = ?", undef, 'sell');
+    is $output[1], 'MX1001', 'client id stored';
+    is $output[6], 'Waiting for entry tick.', 'correct reason';
 };
 
 subtest 'contract date pricing Validation' => sub {
