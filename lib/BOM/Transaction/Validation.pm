@@ -219,6 +219,7 @@ sub _validate_sell_pricing_adjustment {
         $final_value = $recomputed_amount;
     } elsif ($move < -$allowed_move) {
         return $self->_write_to_rejected({
+            type              => 'slippage',
             action            => 'sell',
             amount            => $amount,
             recomputed_amount => $recomputed_amount
@@ -274,6 +275,7 @@ sub _validate_trade_pricing_adjustment {
         $final_value = $recomputed_amount;
     } elsif ($move < -$allowed_move) {
         return $self->_write_to_rejected({
+            type              => 'slippage',
             action            => 'buy',
             amount            => $amount,
             recomputed_amount => $recomputed_amount
@@ -310,7 +312,7 @@ sub _validate_trade_pricing_adjustment {
     return;
 }
 
-sub _write_to_rejected {
+sub _slippage {
     my ($self, $p) = @_;
 
     my $what_changed = $p->{action} eq 'sell' ? 'sell price' : undef;
@@ -364,15 +366,61 @@ sub _write_to_rejected {
     );
 }
 
+sub _invalid_contract {
+    my ($self, $p) = @_;
+
+    my $contract          = $self->transaction->contract;
+    my $message_to_client = localize($contract->primary_validation_error->message_to_client);
+    #Record failed transaction here.
+    for my $c (@{$self->clients}) {
+        my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
+                login_id => $c->loginid,
+                ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
+                shortcode   => $contract->shortcode,
+                action_type => $p->{action},
+                reason      => $message_to_client,
+                details     => JSON::to_json({
+                        current_tick_epoch => $contract->current_tick->epoch,
+                        pricing_epoch      => $contract->date_pricing->epoch,
+                        option_type        => $contract->code,
+                        currency_pair      => $contract->underlying->symbol,
+                        ($self->transaction->trading_period_start) ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
+                        : (),
+                        ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
+                        : (barriers => $contract->barrier->as_absolute),
+                        expiry => $contract->date_expiry->db_timestamp,
+                        payout => $contract->payout
+                    }
+                ),
+                db => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
+            });
+        $rejected_trade->record_fail_txn();
+    }
+
+    return Error::Base->cuss(
+        -type => ($p->{action} eq 'buy' ? 'InvalidtoBuy' : 'InvalidtoSell'),
+        -mesg => $contract->primary_validation_error->message,
+        -message_to_client => $message_to_client,
+    );
+}
+
+sub _write_to_rejected {
+    my ($self, $p) = @_;
+
+    my $method = '_' . $p->{type};
+    return $self->$method($p);
+}
+
 sub _is_valid_to_buy {
-    my ($self, $client) = (shift, shift);
+    my ($self, $client) = @_;
+
     my $contract = $self->transaction->contract;
 
     unless ($contract->is_valid_to_buy({landing_company => $client->landing_company->short})) {
-        return Error::Base->cuss(
-            -type              => 'InvalidtoBuy',
-            -mesg              => $contract->primary_validation_error->message,
-            -message_to_client => localize($contract->primary_validation_error->message_to_client));
+        return $self->_write_to_rejected({
+            type   => 'invalid_contract',
+            action => 'buy',
+        });
     }
 
     return;
@@ -383,10 +431,10 @@ sub _is_valid_to_sell {
     my $contract = $self->transaction->contract;
 
     if (not $contract->is_valid_to_sell) {
-        return Error::Base->cuss(
-            -type              => 'InvalidtoSell',
-            -mesg              => $contract->primary_validation_error->message,
-            -message_to_client => localize($contract->primary_validation_error->message_to_client));
+        return $self->_write_to_rejected({
+            type   => 'invalid_contract',
+            action => 'sell',
+        });
     }
 
     return;
@@ -783,13 +831,31 @@ sub check_tax_information {
     return;
 }
 
-# don't allow to trade for unwelcome_clients
-# and for MLT and MX we don't allow trading without confirmed age
+=head2 check_trade_status
+
+Check if client is allowed to trade.
+
+Here we have any uncommon business logic check.
+
+Common checks (unwelcome & disabled) are done _validate_client_status.
+
+Don't allow to trade for MLT and MX without confirmed age
+
+=cut
+
 sub check_trade_status {
     my ($self, $client) = (shift, shift);
 
     return if $client->is_virtual;
-    return $self->not_allow_trade($client);
+
+    if (($client->landing_company->short =~ /^(?:malta|iom)$/) and not $client->get_status('age_verification') and $client->has_deposits) {
+        return Error::Base->cuss(
+            -type              => 'PleaseAuthenticate',
+            -mesg              => 'Please authenticate your account to continue',
+            -message_to_client => localize('Please authenticate your account to continue.'),
+        );
+    }
+    return;
 }
 
 =head2 allow_paymentagent_withdrawal
@@ -810,33 +876,6 @@ sub allow_paymentagent_withdrawal {
         my $payment_mapper = BOM::Database::DataMapper::Payment->new({'client_loginid' => $client->loginid});
         my $doughflow_count = $payment_mapper->get_client_payment_count_by({payment_gateway_code => 'doughflow'});
         return 1 if $doughflow_count == 0;
-    }
-    return;
-}
-
-=head2 not_allow_trade
-
-Check if client is allowed to trade.
-
-Don't allow to trade for unwelcome_clients and for MLT and MX without confirmed age
-
-=cut
-
-sub not_allow_trade {
-    my ($self, $client) = (shift, shift);
-
-    if (($client->landing_company->short =~ /^(?:malta|iom)$/) and not $client->get_status('age_verification') and $client->has_deposits) {
-        return Error::Base->cuss(
-            -type              => 'PleaseAuthenticate',
-            -mesg              => 'Please authenticate your account to continue',
-            -message_to_client => localize('Please authenticate your account to continue.'),
-        );
-    } elsif ($client->get_status('unwelcome') or $client->get_status('disabled')) {
-        return Error::Base->cuss(
-            -type              => 'AccountUnavailable',
-            -mesg              => 'This acccount is unavailable.',
-            -message_to_client => localize('This acccount is unavailable.'),
-        );
     }
     return;
 }
