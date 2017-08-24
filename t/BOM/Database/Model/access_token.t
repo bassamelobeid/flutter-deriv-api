@@ -15,7 +15,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 my $m = BOM::Database::Model::AccessToken->new;
-$m->dbh->do("DELETE FROM auth.access_token");
+$m->dbic->dbh->do("DELETE FROM auth.access_token");
 my $test_loginid = 'CR10002';
 
 ok not $m->is_name_taken($test_loginid, 'Test Token');

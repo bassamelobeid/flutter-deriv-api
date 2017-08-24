@@ -26,22 +26,22 @@ has 'db' => (
 sub record_questions_answered {
     my $self = shift;
 
-    $self->db->dbh->{AutoCommit} = 0;
+    my $dbic = $self->db->dbic;
 
-    my $insert_sth = $self->db->dbh->prepare(
-        q{
+    $dbic->txn(
+        sub {
+            my $insert_sth = $_->prepare(
+                q{
         INSERT INTO japan.questions_answered (client_loginid, qid, answer, pass,test_id, question_presented, category) values(?,?,?,?,?,?,?)
     }
-    );
+            );
 
-    for my $question (@{$self->questions}) {
-        $insert_sth->execute($self->login_id, $question->{id}, $question->{answer}, $question->{pass}, $self->test_id, $question->{question},
-            $question->{category});
+            for my $question (@{$self->questions}) {
+                $insert_sth->execute($self->login_id, $question->{id}, $question->{answer}, $question->{pass}, $self->test_id, $question->{question},
+                    $question->{category});
 
-    }
-
-    $self->db->dbh->commit;
-
+            }
+        });
     return 1;
 }
 

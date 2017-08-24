@@ -40,7 +40,7 @@ sub get_daily_summary_report {
     my $broker_code       = $args->{'broker_code'};
     my $currency_code     = $args->{'currency_code'};
 
-    my $dbh = $self->db->dbh;
+    my $dbic = $self->db->dbic;
 
     my $sql = q{
         SELECT
@@ -93,15 +93,18 @@ sub get_daily_summary_report {
             a.id
     };
 
-    my $sth = $dbh->prepare($sql);
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
 
-    $sth->bind_param(1, $currency_code);
-    $sth->bind_param(2, '^' . $broker_code . '[0-9]+');
-    $sth->bind_param(3, $start_of_next_day);
+            $sth->bind_param(1, $currency_code);
+            $sth->bind_param(2, '^' . $broker_code . '[0-9]+');
+            $sth->bind_param(3, $start_of_next_day);
 
-    $sth->execute();
+            $sth->execute();
 
-    return $sth->fetchall_hashref('loginid');
+            return $sth->fetchall_hashref('loginid');
+        });
 }
 
 sub get_accounts_with_open_bets_at_end_of {
@@ -112,7 +115,7 @@ sub get_accounts_with_open_bets_at_end_of {
     my $broker_code       = $args->{'broker_code'};
     my $currency_code     = $args->{'currency_code'};
 
-    my $dbh = $self->db->dbh;
+    my $dbic = $self->db->dbic;
 
     my $sql = <<'SQL';
 SELECT b.*
@@ -138,14 +141,17 @@ SELECT b.*
    AND a.client_loginid ~ ('^' || $2 || '[0-9]')
 SQL
 
-    my $sth = $dbh->prepare($sql);
+    my $open_bets = $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
 
-    $sth->bind_param(1, $currency_code);
-    $sth->bind_param(2, $broker_code);
-    $sth->bind_param(3, $start_of_next_day);
+            $sth->bind_param(1, $currency_code);
+            $sth->bind_param(2, $broker_code);
+            $sth->bind_param(3, $start_of_next_day);
 
-    $sth->execute();
-    my $open_bets = $sth->fetchall_hashref('id');
+            $sth->execute();
+            return $sth->fetchall_hashref('id');
+        });
 
     my $accounts_with_open_bet;
     foreach my $id (keys %{$open_bets}) {
@@ -178,11 +184,15 @@ sub get_turnover_of_account {
             AND t.action_type='buy'
     };
 
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($self->client_loginid, $self->currency_code);
+    my $dbic                = $self->db->dbic;
+    my $transaction_hashref = $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($self->client_loginid, $self->currency_code);
+            return $sth->fetchrow_hashref;
+        });
 
-    if (my $transaction_hashref = $sth->fetchrow_hashref) {
+    if ($transaction_hashref) {
         return $transaction_hashref->{'turnover'};
     }
 
@@ -202,7 +212,7 @@ sub get_turnover_of_account {
 sub get_reality_check_data_of_account {
     my $self       = shift;
     my $start_time = shift;
-    my $dbh        = $self->db->dbh;
+    my $dbic       = $self->db->dbic;
 
     my $sql = <<'SQL';
 SELECT tt.currency_code,
@@ -234,10 +244,13 @@ SELECT tt.currency_code,
  ORDER BY 1
 SQL
 
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($self->client_loginid, $start_time->db_timestamp);
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($self->client_loginid, $start_time->db_timestamp);
 
-    return $sth->fetchall_arrayref({});
+            return $sth->fetchall_arrayref({});
+        });
 }
 
 =head2 $self->get_payments($parameters)
@@ -289,22 +302,25 @@ sub get_payments {
     my $after  = $args->{after}  || '1970-01-01 00:00:00';
     my $limit  = $args->{limit}  || 50;
 
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
+    my $dbic = $self->db->dbic;
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
 
-    $sth->bind_param(1, $self->account->id);
-    $sth->bind_param(2, $before);
-    $sth->bind_param(3, $after);
-    $sth->bind_param(4, $limit);
+            $sth->bind_param(1, $self->account->id);
+            $sth->bind_param(2, $before);
+            $sth->bind_param(3, $after);
+            $sth->bind_param(4, $limit);
 
-    my $payments = [];
-    if ($sth->execute()) {
-        while (my $row = $sth->fetchrow_hashref()) {
-            $row->{date} = Date::Utility->new($row->{transaction_time});
-            push @$payments, $row;
-        }
-    }
-    return $payments;
+            my $payments = [];
+            if ($sth->execute()) {
+                while (my $row = $sth->fetchrow_hashref()) {
+                    $row->{date} = Date::Utility->new($row->{transaction_time});
+                    push @$payments, $row;
+                }
+            }
+            return $payments;
+        });
 }
 
 sub get_transactions_ws {
@@ -357,7 +373,7 @@ sub get_transactions_ws {
     $sql =~ s/##ACTION_TYPE##/$action_query/;
 
     my @binds = ($acc->id, $dt_to, $dt_fm, ($action_type) ? $action_type : (), $limit, $offset);
-    return $self->db->dbh->selectall_arrayref($sql, {Slice => {}}, @binds);
+    return $self->db->dbic->run(sub { $_->selectall_arrayref($sql, {Slice => {}}, @binds) });
 }
 
 sub get_monthly_payments_sum {
@@ -376,13 +392,13 @@ sub get_monthly_payments_sum {
     };
 
     my @binds = ($self->account->id);
-    return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
+    return $self->db->dbic->run(sub { $_->selectall_arrayref($sql, undef, @binds) });
 }
 
 sub get_monthly_balance {
     my ($self) = @_;
 
-     # Limit selecting time range to decrease DB load
+    # Limit selecting time range to decrease DB load
     my $sql = q{
         SELECT  t2.year, t2.month, max(t2.E0) AS E0, max(t2.E1) AS E1
         FROM (
@@ -411,7 +427,7 @@ sub get_monthly_balance {
     };
 
     my @binds = ($self->account->id);
-    return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
+    return $self->db->dbic->run(sub { $_->selectall_arrayref($sql, undef, @binds) });
 }
 
 sub unprocessed_bets {
@@ -444,7 +460,7 @@ sub unprocessed_bets {
         ORDER BY id ASC
     };
 
-    return $self->db->dbh->selectall_arrayref($sql, undef, @binds);
+    return $self->db->dbic->run(sub { $_->selectall_arrayref($sql, undef, @binds) });
 }
 
 =head2 $self->get_transactions($parameters)
@@ -513,22 +529,25 @@ sub get_transactions {
     my $after  = $args->{after}  || '1970-01-01 00:00:00';
     my $limit  = $args->{limit}  || 50;
 
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
+    my $dbic = $self->db->dbic;
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
 
-    $sth->bind_param(1, $self->account->id);
-    $sth->bind_param(2, $before);
-    $sth->bind_param(3, $after);
-    $sth->bind_param(4, $limit);
+            $sth->bind_param(1, $self->account->id);
+            $sth->bind_param(2, $before);
+            $sth->bind_param(3, $after);
+            $sth->bind_param(4, $limit);
 
-    my $transactions = [];
-    if ($sth->execute()) {
-        while (my $row = $sth->fetchrow_hashref()) {
-            $row->{date} = Date::Utility->new($row->{transaction_time});
-            push @$transactions, $row;
-        }
-    }
-    return $transactions;
+            my $transactions = [];
+            if ($sth->execute()) {
+                while (my $row = $sth->fetchrow_hashref()) {
+                    $row->{date} = Date::Utility->new($row->{transaction_time});
+                    push @$transactions, $row;
+                }
+            }
+            return $transactions;
+        });
 }
 
 sub get_bet_transactions_for_broker {
@@ -543,7 +562,7 @@ sub get_bet_transactions_for_broker {
         Carp::croak("[get_bet_transactions_for_broker] wrong action type [$action_type]");
     }
 
-    my $dbh = $self->db->dbh;
+    my $dbic = $self->db->dbic;
 
     my $sql = q{
         SELECT
@@ -575,11 +594,12 @@ sub get_bet_transactions_for_broker {
             t.id
     };
 
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($broker_code, $action_type, $start, $end);
-    my $result = $sth->fetchall_hashref('id');
-
-    return $result;
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($broker_code, $action_type, $start, $end);
+            return $sth->fetchall_hashref('id');
+        });
 }
 
 sub get_profit_for_days {
@@ -600,16 +620,19 @@ sub get_profit_for_days {
                 AND action_type IN ('buy', 'sell')
         };
 
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
+    my $dbic = $self->db->dbic;
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
 
-    $sth->bind_param(1, $self->account->id);
-    $sth->bind_param(2, $before);
-    $sth->bind_param(3, $after);
+            $sth->bind_param(1, $self->account->id);
+            $sth->bind_param(2, $before);
+            $sth->bind_param(3, $after);
 
-    $sth->execute();
-    my $result = $sth->fetchrow_arrayref() || [0];
-    return $result->[0];
+            $sth->execute();
+            my $result = $sth->fetchrow_arrayref() || [0];
+            return $result->[0];
+        });
 }
 
 sub get_details_by_transaction_ref {
@@ -643,10 +666,13 @@ sub get_details_by_transaction_ref {
         t.id = $1
    };
 
-    my $sth = $self->db->dbh->prepare($sql);
-    $sth->execute($transaction_id);
+    return $self->db->dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($transaction_id);
 
-    return $sth->fetchall_arrayref({})->[0];
+            return $sth->fetchall_arrayref({})->[0];
+        });
 }
 
 no Moose;
