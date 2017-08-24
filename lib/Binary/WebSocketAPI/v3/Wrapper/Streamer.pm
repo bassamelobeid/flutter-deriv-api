@@ -441,7 +441,7 @@ sub _feed_channel_unsubscribe {
 
     unless (keys %$feed_channel_type) {    # one connection could have several subscriptions (ticks/candles)
         delete $shared_info->{$c + 0};
-        if (!keys %{$shared_info // {}}) {
+        if (!keys %$shared_info) {
             $shared_info->{symbols}->{$symbol} = 0;
             shared_redis->unsubscribe(["FEED::$symbol"], sub { });
         }
