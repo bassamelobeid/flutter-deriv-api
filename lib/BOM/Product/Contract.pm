@@ -778,6 +778,8 @@ sub _build_applicable_economic_events {
     ) || 7200;
 
     my $event_length = ceil($max_event_length / 2);
+    # maximum lookback time should only be in one day.
+    my $max_lookback_seconds = min($seconds_to_expiry, 86400);
 
     my $start = $current_epoch - $seconds_to_expiry - $event_length;
     my $end   = $current_epoch + $seconds_to_expiry + $event_length;
