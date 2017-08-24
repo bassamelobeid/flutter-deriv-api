@@ -122,9 +122,7 @@ sub _get_severity {
 
 sub dbic {
     my $self = shift;
-    if (not exists $self->{dbic}) {
-        $self->init_dbh;
-    }
+    $self->init_dbh unless $self->{dbic};
     return $self->{dbic};
 }
 
