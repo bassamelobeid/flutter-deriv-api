@@ -117,10 +117,14 @@ sub getall_arrayref {
     my $self = shift;
     my ($query, $params) = @_;
 
-    my $sth = $self->db->dbh->prepare($query);
-    $sth->execute(@{$params});
+    my $result = $self->db->dbic->run(
+        sub {
+            my $sth = $_->prepare($query);
+            $sth->execute(@$params);
+            return $sth->fetchall_arrayref([0]);
+        });
 
-    my @result = map { JSON::XS::decode_json($_->[0]) } @{$sth->fetchall_arrayref([0])};
+    my @result = map { JSON::XS::decode_json($_->[0]) } @$result;
     return \@result;
 }
 
@@ -145,16 +149,18 @@ sub get_duplicate_client {
         email<>? AND
         broker_code=?
 ";
-    my $dupe_dbh = $self->db->dbh;
-    my $dupe_sth = $dupe_dbh->prepare($dupe_sql);
-    $dupe_sth->bind_param(1, uc $args->{first_name});
-    $dupe_sth->bind_param(2, uc $args->{last_name});
-    $dupe_sth->bind_param(3, $args->{date_of_birth});
-    $dupe_sth->bind_param(4, $args->{email});
-    $dupe_sth->bind_param(5, $self->broker_code);
-    $dupe_sth->execute();
-    my @dupe_record = $dupe_sth->fetchrow_array();
-
+    my $dbic        = $self->db->dbic;
+    my @dupe_record = $dbic->run(
+        sub {
+            my $dupe_sth = $_->prepare($dupe_sql);
+            $dupe_sth->bind_param(1, uc $args->{first_name});
+            $dupe_sth->bind_param(2, uc $args->{last_name});
+            $dupe_sth->bind_param(3, $args->{date_of_birth});
+            $dupe_sth->bind_param(4, $args->{email});
+            $dupe_sth->bind_param(5, $self->broker_code);
+            $dupe_sth->execute();
+            return $dupe_sth->fetchrow_array();
+        });
     return @dupe_record;
 }
 
@@ -162,18 +168,19 @@ sub lock_client_loginid {
     my $self = shift;
     my $client_loginid = shift || $self->loginid;
 
-    $self->db->dbh->do('SET synchronous_commit=local');
+    my $dbic   = $self->db->dbic;
+    my $result = $dbic->run(
+        sub {
+            $_->do('SET synchronous_commit=local');
 
-    my $sth = $self->db->dbh->prepare('SELECT lock_client_loginid($1)');
-    $sth->execute($client_loginid);
+            my $sth = $_->prepare('SELECT lock_client_loginid($1)');
+            $sth->execute($client_loginid);
 
-    $self->db->dbh->do('SET synchronous_commit=on');
+            $_->do('SET synchronous_commit=on');
+            return $sth->fetchrow_arrayref;
+        });
 
-    my $result;
-    if ($result = $sth->fetchrow_arrayref and $result->[0]) {
-
-        return 1;
-    }
+    return 1 if ($result and $result->[0]);
 
     return;
 }
@@ -186,17 +193,19 @@ sub unlock_client_loginid {
     my $self = shift;
     my $client_loginid = shift || $self->loginid;
 
-    $self->db->dbh->do('SET synchronous_commit=local');
+    my $dbic   = $self->db->dbic;
+    my $result = $dbic->run(
+        sub {
+            $_->do('SET synchronous_commit=local');
 
-    my $sth = $self->db->dbh->prepare('SELECT unlock_client_loginid($1)');
-    $sth->execute($client_loginid);
+            my $sth = $_->prepare('SELECT unlock_client_loginid($1)');
+            $sth->execute($client_loginid);
 
-    $self->db->dbh->do('SET synchronous_commit=on');
+            $_->do('SET synchronous_commit=on');
+            return $sth->fetchrow_arrayref;
+        });
 
-    my $result;
-    if ($result = $sth->fetchrow_arrayref and $result->[0]) {
-        return 1;
-    }
+    return 1 if ($result and $result->[0]);
 
     return;
 }

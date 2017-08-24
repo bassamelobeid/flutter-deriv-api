@@ -35,7 +35,7 @@ get the total deposit made by an account
 
 sub get_total_deposit_of_account {
     my $self       = shift;
-    my $dbh        = $self->db->dbh;
+    my $dbic       = $self->db->dbic;
     my $account_id = $self->account->account_record->id;
 
     # exclude compacted statement payment record
@@ -55,12 +55,16 @@ sub get_total_deposit_of_account {
 
     my $total_deposit = 0;
     try {
-        local $dbh->{'RaiseError'} = 1;
+        my $payment_hashref = $dbic->run(
+            sub {
+                local $_->{'RaiseError'} = 1;
 
-        my $sth = $dbh->prepare($sql);
-        $sth->execute($account_id);
+                my $sth = $_->prepare($sql);
+                $sth->execute($account_id);
 
-        my $payment_hashref = $sth->fetchrow_hashref;
+                return $sth->fetchrow_hashref;
+            });
+
         if ($payment_hashref and $payment_hashref->{'total_deposit'}) {
             $total_deposit = $payment_hashref->{'total_deposit'};
         }
@@ -84,13 +88,14 @@ usage :
             $payment_data_mapper->get_total_withdrawal({ start_time => Date::Utility->new(Date::Utility->new->epoch - 2 * 86400) })
 
 get_total_withdrawal
+
 =cut
 
 sub get_total_withdrawal {
     my $self     = shift;
     my $args_ref = shift;
     my ($start_time, $excludes) = @{$args_ref}{'start_time', 'exclude'};
-    my $dbh = $self->db->dbh;
+    my $dbic = $self->db->dbic;
     my @bind_values;
 
     my $sql = q{
@@ -123,12 +128,16 @@ sub get_total_withdrawal {
 
     my $total_withdrawal = 0;
     try {
-        local $dbh->{'RaiseError'} = 1;
+        my $payment_hashref = $dbic->run(
+            sub {
+                local $_->{'RaiseError'} = 1;
 
-        my $sth = $dbh->prepare($sql);
-        $sth->execute(@bind_values);
+                my $sth = $_->prepare($sql);
+                $sth->execute(@bind_values);
+                return $sth->fetchrow_hashref();
+            });
 
-        if (my $payment_hashref = $sth->fetchrow_hashref()) {
+        if ($payment_hashref) {
             $total_withdrawal = $payment_hashref->{total_withdrawal};
         }
     }

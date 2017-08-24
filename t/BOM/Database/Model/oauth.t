@@ -13,9 +13,9 @@ my $test_loginid = 'CR10002';
 my $test_user_id = 999;
 
 ## clear
-$m->dbh->do("DELETE FROM oauth.access_token");
-$m->dbh->do("DELETE FROM oauth.user_scope_confirm");
-$m->dbh->do("DELETE FROM oauth.apps");
+$m->dbic->dbh->do("DELETE FROM oauth.access_token");
+$m->dbic->dbh->do("DELETE FROM oauth.user_scope_confirm");
+$m->dbic->dbh->do("DELETE FROM oauth.apps");
 
 my $app1 = $m->create_app({
     name             => 'App 1',
@@ -145,27 +145,27 @@ subtest 'revoke tokens by loginid and app_id' => sub {
 
     # setup BO app, id = 4
     my $sql = 'INSERT INTO oauth.apps (id, name, binary_user_id, redirect_uri, scopes) VALUES (?,?,?,?,?)';
-    $m->dbh->do($sql, undef, 4, 'Binary.com backoffice', 1, 'https://www.binary.com/en/logged_inws.html', '{read}');
+    $m->dbic->dbh->do($sql, undef, 4, 'Binary.com backoffice', 1, 'https://www.binary.com/en/logged_inws.html', '{read}');
 
     foreach my $loginid (@loginids) {
-        my @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
+        my @cnt = $m->dbic->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
         is $cnt[0], 3, "access tokens [$loginid]";
 
         is $m->has_other_login_sessions($loginid), 1, "$loginid has other oauth token";
 
         is $m->revoke_tokens_by_loginid_app($loginid, $app1->{app_id}), 1, 'revoke_tokens_by_loginid_app';
-        @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
+        @cnt = $m->dbic->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
         is $cnt[0], 2, "access tokens [$loginid]";
 
         is $m->revoke_tokens_by_loginid($loginid), 1, 'revoke_tokens_by_loginid';
-        @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
+        @cnt = $m->dbic->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
         is $cnt[0], 0, "revoked access tokens [$loginid]";
 
         isnt $m->has_other_login_sessions($loginid), 1, "$loginid has NO oauth token";
 
         # Backoffice impersonate app id = 4, exclude in ->has_other_login_sessions
         my ($bo_token) = $m->store_access_token_only(4, $loginid);
-        @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
+        @cnt = $m->dbic->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
         is $cnt[0], 1, "BO access tokens [$loginid]";
         isnt $m->has_other_login_sessions($loginid), 1, "$loginid has NO oauth token, beside for BO impersonate";
     }
