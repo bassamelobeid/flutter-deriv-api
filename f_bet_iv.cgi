@@ -69,6 +69,7 @@ print qq~<br><form method=post action=$request_files_upload_url>
     <select name=frequency>
             <option value='daily'>Daily (Normal)</option>
             <option value='oneshot'>Oneshot</option>
+            <option value='adhoc'>Adhoc</option>
         </select>
         <select name=type>
             <option value=request>request file</option>
