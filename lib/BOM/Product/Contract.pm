@@ -782,7 +782,7 @@ sub _build_applicable_economic_events {
     my $max_lookback_seconds = min($seconds_to_expiry, 86400);
 
     my $start = $current_epoch - $max_lookback_seconds - $event_length;
-    my $end   = $current_epoch + $max_lookback_seconds + $event_length;
+    my $end   = $current_epoch + $seconds_to_expiry + $event_length;
 
     return Quant::Framework::EconomicEventCalendar->new({
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
