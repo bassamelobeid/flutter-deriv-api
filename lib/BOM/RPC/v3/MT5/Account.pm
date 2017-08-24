@@ -85,10 +85,6 @@ sub mt5_new_account {
             code              => 'NoResidence',
             message_to_client => localize('Please set your country of residence.')}) unless $residence;
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'MT5CreateUserError',
-            message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
-
     my $countries_list = $brand->countries_instance->countries_list;
     return BOM::RPC::v3::Utility::permission_error()
         unless $countries_list->{$residence};
@@ -148,6 +144,10 @@ sub mt5_new_account {
         $group .= "_$mt5_account_type" if $account_type eq 'financial';
         $group .= "_$residence" if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
     }
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'MT5CreateUserError',
+            message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
 
     # client can have only 1 MT demo & 1 MT real a/c
     my $user = BOM::Platform::User->new({email => $client->email});
