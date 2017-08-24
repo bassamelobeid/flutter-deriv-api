@@ -136,7 +136,6 @@ sub proposal_open_contract {
                 contract_id           => $id,
                 currency              => $currency,
                 is_sold               => $fmb->{is_sold},
-                is_expired            => $fmb->{is_expired},
                 sell_time             => $sell_time,
                 sell_price            => $fmb->{sell_price},
                 buy_price             => $fmb->{buy_price},
