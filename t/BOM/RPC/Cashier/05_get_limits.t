@@ -15,6 +15,10 @@ use BOM::Test::RPC::Client;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::RiskProfile;
 
+# Avoid payment queue call since we do not have the EUR/JPY currency rates
+my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
+$pnq_mocked->mock(add => sub { return Future->done; });
+
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my $method = 'get_limits';
@@ -162,8 +166,6 @@ subtest 'JP' => sub {
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
-        my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
-        $pnq_mocked->mock(add => sub { return Future->done; });
         $client->smart_payment(%deposit, currency => 'JPY');
         $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
         $client->save;
