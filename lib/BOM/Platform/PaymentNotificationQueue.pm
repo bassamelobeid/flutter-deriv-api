@@ -39,7 +39,8 @@ sub add {
     $args{amount_usd} = in_USD($args{amount} => $args{currency});
     my $data = encode_json(\%args);
     $redis->publish('payment_notification_queue', $data);
-    stats_timing('payment.' . $args{type} . '.usd', abs($args{amount_usd}), {tag => ['source:' . $args{source}]});
+    # Rescale by 100x to ensure we send integers (all amounts in USD)
+    stats_timing('payment.' . $args{type} . '.usd', abs(int(100.0 * $args{amount_usd})), {tag => ['source:' . $args{source}]});
     return Future->done;
 }
 
