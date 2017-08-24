@@ -954,6 +954,12 @@ sub extra_info {
         push @extra, [iv => $self->pricing_vol];
     }
 
+    # We are logging quote too old validation error for japan for the regulators.
+    # But no harm doing it for binary.
+    if (!$self->is_valid_to_buy && $self->primary_validation_error->message =~ /Quote too old/) {
+        push @extra, [error => $self->primary_validation_error->message];
+    }
+
     if ($as_type eq 'string') {
         my $string = join '_', map { $_->[1] } @extra;
         return $string;

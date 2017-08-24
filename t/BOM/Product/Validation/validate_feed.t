@@ -3,8 +3,9 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More;
 use Test::Warnings qw(warning);
+use Test::Warn;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData qw(create_underlying);
@@ -27,11 +28,23 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(USD JPY JPY-USD);
+    }) for qw(USD JPY JPY-USD NOK NOK-USD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol        => 'DJI',
+        recorded_date => $now
+    });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDJPY',
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw(frxUSDJPY frxUSDNOK);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol        => 'DJI',
         recorded_date => $now
     });
 my $bet_params = {
@@ -99,3 +112,52 @@ subtest 'expired contracts' => sub {
     ok !$c->_validate_feed, 'no feed error triggered';
 };
 
+subtest 'max_feed_delay_seconds' => sub {
+    $bet_params->{underlying} = 'frxUSDJPY';
+    my $c = produce_contract($bet_params);
+    is $c->maximum_feed_delay_seconds, 15, '15 seconds for major pairs';
+    $bet_params->{underlying} = 'frxUSDNOK';
+    $c = produce_contract($bet_params);
+    is $c->maximum_feed_delay_seconds, 30, '30 seconds for minor pairs';
+    $bet_params->{underlying} = 'DJI';
+    $c = produce_contract($bet_params);
+    is $c->maximum_feed_delay_seconds, 300, '5 minutes for index';
+
+    my $now = Date::Utility->new();
+    $bet_params->{date_pricing} = $now;
+    $bet_params->{date_start}   = $now;
+    $bet_params->{underlying}   = 'frxUSDJPY';
+    my $mock = Test::MockModule->new('BOM::Product::Contract');
+    my $tick = {
+        underlying => 'frxUSDJPY',
+        epoch      => $now->epoch - 15,
+        quote      => 100
+    };
+    $mock->mock('current_tick', sub { Postgres::FeedDB::Spot::Tick->new($tick) });
+    $c = produce_contract($bet_params);
+    ok !$c->_validate_feed, 'no event and feed is 15 seconds delay';
+    $tick->{epoch} = $now->epoch - 16;
+    $mock->mock('current_tick', sub { Postgres::FeedDB::Spot::Tick->new($tick) });
+    warning_like { $c->_validate_feed } qr/Quote too old for frxUSDJPY/, 'invalid if feed is more than 15 seconds delay';
+    my $event = {
+        event_name   => 'test',
+        impact       => 5,
+        release_date => $now->epoch
+    };
+    $mock->mock('_applicable_economic_events', sub { [$event] });
+    $tick->{epoch} = $now->epoch - 3;
+    $mock->mock('current_tick', sub { Postgres::FeedDB::Spot::Tick->new($tick) });
+    warning_like { $c->_validate_feed } qr/Quote too old for frxUSDJPY/, 'invalid if feed is more than 15 seconds delay';
+    $tick->{epoch} = $now->epoch - 2;
+    $mock->mock('current_tick', sub { Postgres::FeedDB::Spot::Tick->new($tick) });
+    ok !$c->_validate_feed, 'valid if tick is 2 seconds old if there is a level 5 economic event';
+    $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 1;
+    $c = produce_contract($bet_params);
+    warning_like { $c->_validate_feed } qr/Quote too old for frxUSDJPY/,
+        'invalid if feed is more than 2 seconds old if there is a level 5 economic event';
+    $tick->{epoch} = $now->epoch + 1;
+    $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 5;
+    ok !$c->_validate_feed, 'valid. maximum_feed_delay_seconds is back to 15 seconds once we receives a tick after the level 5 economic event';
+};
+
+done_testing();
