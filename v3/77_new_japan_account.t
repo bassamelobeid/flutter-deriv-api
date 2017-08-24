@@ -16,7 +16,10 @@ use await;
 ## do not send email
 use Test::MockModule;
 my $client_mocked = Test::MockModule->new('Client::Account');
-$client_mocked->mock('add_note', sub { return 1 });
+$client_mocked->mock(add_note => sub { return 1 });
+# avoid currency conversion for payment notification
+my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
+$pnq_mocked->mock(add => sub { return Future->done });
 
 my $t = build_wsapi_test();
 
