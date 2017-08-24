@@ -33,6 +33,8 @@ sub bo_js_files_for {
             if /view_192_raw_response/;
         push @js_files, 'external/excellentexport.min.js'
             if /f_manager_crypto/;
+        push @js_files, 'external/jquery.sparkline.min.js'
+            if /risk_dashboard/;
     }
 
     my $base_dir = Mojo::URL->new(BOM::Platform::Runtime->instance->app_config->cgi->backoffice->static_url);
