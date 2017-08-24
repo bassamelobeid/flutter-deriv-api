@@ -2,7 +2,7 @@ package BOM::Database::Script::CheckDataChecksums;
 
 use strict;
 use warnings;
-use DBI;
+use DBIx::Connector::Pg;
 
 sub run {
 # use environment variables to connect to the database
@@ -21,14 +21,13 @@ sub run {
     my $chunk = 100;    # how many blocks at once 1block=8kbyte
     my $sleep = 100;    # in millisec
 
-    my $dh = DBI->connect(
+    my $dbic = DBIx::Connector::Pg->new(
         'dbi:Pg:',
         undef, undef,
         {
             RaiseError => 1,
             PrintError => 0
         });
-
     my $sql_datadir = <<'EOF';
 SELECT setting
   FROM pg_settings
@@ -69,18 +68,18 @@ EOF
 
     $| = 1;
 
-    my $datadir = $dh->selectall_arrayref($sql_datadir)->[0]->[0];
+    my $datadir = $dbic->run(sub { $_->selectall_arrayref($sql_datadir)->[0]->[0] });
 
     for (
-        my ($oid, $tname, $path) = @{$dh->selectall_arrayref($sql_first_oid, undef, $table_pattern)->[0] // []};
+        my ($oid, $tname, $path) = @{$dbic->run(sub { $_->selectall_arrayref($sql_first_oid, undef, $table_pattern)->[0] }) // []};
         defined($oid);
-        ($oid, $tname, $path) = @{$dh->selectall_arrayref($sql_next_oid, undef, $oid, $table_pattern)->[0] // []})
+        ($oid, $tname, $path) = @{$dbic->run(sub {->selectall_arrayref($sql_next_oid, undef, $oid, $table_pattern)->[0] }) // []})
     {
         print "$oid: $tname ($datadir/$path)\n";
         for my $fork (qw/main fsm vm/) {    # skipping init fork
             my $n = 0;
             for (my $curr_block = 0;; $curr_block += $chunk) {
-                my $l = $dh->selectall_arrayref($sql_pages, undef, $oid, $fork, $curr_block, $chunk);
+                my $l = $dbic->run(sub { $_->selectall_arrayref($sql_pages, undef, $oid, $fork, $curr_block, $chunk) });
                 if (@$l < $chunk) {
                     print "." unless @$l == 0;
                     print "\n" unless $n == 0 and @$l == 0;

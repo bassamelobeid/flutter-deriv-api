@@ -10,70 +10,70 @@ sub run {
     my $u_file = Finance::Asset->instance->all_parameters;
     my $u_subm = LoadFile('/home/git/regentmarkets/bom-market/config/files/submarkets.yml');
 
-    my $dbh = BOM::Database::ClientDB->new({
+    my $dbic = BOM::Database::ClientDB->new({
             broker_code => 'FOG',
             operation   => 'collector',
         }
-        )->db->dbh
+        )->db->dbic
         or die "[$0] cannot create connection";
-    $dbh->{AutoCommit} = 0;
-    $dbh->{RaiseError} = 1;
 
-    my $u_db = $dbh->selectall_hashref(
-        qq{
+    my $txn = sub {
+
+        my $u_db = $_->selectall_hashref(
+            qq{
         SELECT * FROM data_collection.underlying_symbol_currency_mapper
     }, 'symbol'
-    );
+        );
 
-    my $insert_sth = $dbh->prepare(
-        q{
+        my $insert_sth = $_->prepare(
+            q{
         INSERT INTO data_collection.underlying_symbol_currency_mapper (symbol, market, submarket, quoted_currency) VALUES (?,?,?,?)
     }
-    );
+        );
 
-    my $update_sth = $dbh->prepare(
-        q{
+        my $update_sth = $_->prepare(
+            q{
         UPDATE data_collection.underlying_symbol_currency_mapper SET
             market = ?,
             submarket = ?,
             quoted_currency = ?
         WHERE symbol = ?
     }
-    );
+        );
 
-    print "starting update underlying\n";
+        my $ins = 0;
+        my $upd = 0;
 
-    my $ins = 0;
-    my $upd = 0;
-    foreach my $symbol (keys %{$u_file}) {
-        my $symbol_file = $u_file->{$symbol};
-        next if ref($symbol_file) ne 'HASH';
+        print "starting update underlying\n";
 
-        $symbol_file->{market} //= $u_subm->{$symbol_file->{submarket}}->{market};
+        foreach my $symbol (keys %{$u_file}) {
+            my $symbol_file = $u_file->{$symbol};
+            next if ref($symbol_file) ne 'HASH';
 
-        if (defined $u_db->{$symbol}) {
-            my $symbol_db = $u_db->{$symbol};
+            $symbol_file->{market} //= $u_subm->{$symbol_file->{submarket}}->{market};
 
-            # check for changes & update row
-            if (grep { $symbol_file->{$_} ne $symbol_db->{$_} } qw(market submarket quoted_currency)) {
-                $update_sth->execute($symbol_file->{market}, $symbol_file->{submarket}, $symbol_file->{quoted_currency}, $symbol);
-                $upd++;
+            if (defined $u_db->{$symbol}) {
+                my $symbol_db = $u_db->{$symbol};
+
+                # check for changes & update row
+                if (grep { $symbol_file->{$_} ne $symbol_db->{$_} } qw(market submarket quoted_currency)) {
+                    $update_sth->execute($symbol_file->{market}, $symbol_file->{submarket}, $symbol_file->{quoted_currency}, $symbol);
+                    $upd++;
+                }
+            } else {
+                # insert new underlying
+                $insert_sth->execute($symbol, $symbol_file->{market}, $symbol_file->{submarket}, $symbol_file->{quoted_currency});
+                $ins++;
             }
-        } else {
-            # insert new underlying
-            $insert_sth->execute($symbol, $symbol_file->{market}, $symbol_file->{submarket}, $symbol_file->{quoted_currency});
-            $ins++;
         }
-    }
+        return ($ins, $upd);
+    };
 
-    $dbh->commit;
-
+    my ($ins, $upd) = $dbic->txn($txn);
     print "inserted $ins underlyings\n";
     if ($upd) {
         print "updated $upd underlyings -- you probably want to fully reload the cube.\n";
     }
-
-    $dbh->disconnect;
 
 }
 

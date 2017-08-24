@@ -42,14 +42,18 @@ sub get_open_bet_overviews {
         $sql = q{ SELECT * FROM accounting.get_open_bets_overview() };
     }
 
-    my $sth = $self->db->dbh->prepare($sql);
-    if ($from_historical) {
-        $sth->execute($before_date->db_timestamp);
-    } else {
-        $sth->execute;
-    }
+    return $self->db->dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            if ($from_historical) {
+                $sth->execute($before_date->db_timestamp);
+            } else {
+                $sth->execute;
+            }
 
-    return [values %{$sth->fetchall_hashref('id')}];
+            return [values %{$sth->fetchall_hashref('id')}];
+        });
+
 }
 
 =item get_last_generated_historical_marked_to_market_time
@@ -60,9 +64,11 @@ Get the last calculation time of realtime_book. It is used in company pnl calcul
 
 sub get_last_generated_historical_marked_to_market_time {
     my $self = shift;
-    my $dbh  = $self->db->dbh;
+    my $dbic = $self->db->dbic;
 
-    my $sql = q{
+    my $result = $dbic->run(
+        sub {
+            my $sql = q{
         SELECT
             date_trunc('second', calculation_time) as max_time
         FROM
@@ -72,10 +78,10 @@ sub get_last_generated_historical_marked_to_market_time {
         LIMIT 1
     };
 
-    my $sth = $dbh->prepare($sql);
-    $sth->execute();
-
-    my $result = $sth->fetchrow_hashref();
+            my $sth = $_->prepare($sql);
+            $sth->execute();
+            return $sth->fetchrow_hashref();
+        });
     if ($result) {
         return $result->{'max_time'};
     }
@@ -92,24 +98,29 @@ sub get_active_accounts_payment_profit {
     my $self = shift;
     my $args = shift;
 
-    my $sql = q{ SELECT * FROM accounting.get_active_accounts_payment_profit(?, ?) };
-    my $sth = $self->db->dbh->prepare($sql);
-    $sth->execute($args->{start_time}->db_timestamp, $args->{end_time}->db_timestamp);
-
-    return values %{$sth->fetchall_hashref('account_id')};
+    return $self->db->dbic->run(
+        sub {
+            my $sql = q{ SELECT * FROM accounting.get_active_accounts_payment_profit(?, ?) };
+            my $sth = $_->prepare($sql);
+            $sth->execute($args->{start_time}->db_timestamp, $args->{end_time}->db_timestamp);
+            return values %{$sth->fetchall_hashref('account_id')};
+        });
 }
 
 sub turnover_in_period {
     my $self = shift;
     my $args = shift;
 
-    my $dbh = $self->db->dbh;
-    my $sql = q{ SELECT * FROM accounting.turnover_in_period(?, ?) };
+    my $dbic = $self->db->dbic;
+    my $sql  = q{ SELECT * FROM accounting.turnover_in_period(?, ?) };
 
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($args->{start_date}, $args->{end_date});
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($args->{start_date}, $args->{end_date});
 
-    return $sth->fetchall_hashref('accid');
+            return $sth->fetchall_hashref('accid');
+        });
 }
 
 =item check_clients_duplication
@@ -121,16 +132,18 @@ return list of clients that open more than one accounts
 sub check_clients_duplication {
     my $self      = shift;
     my $from_date = shift;
-    my $dbh       = $self->db->dbh;
+    my $dbic      = $self->db->dbic;
 
     my $sql = q{
         SELECT * FROM check_client_duplication(?)
     };
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($from_date->datetime_yyyymmdd_hhmmss);
 
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($from_date->datetime_yyyymmdd_hhmmss);
-
-    return $sth->fetchall_arrayref({});
+            return $sth->fetchall_arrayref({});
+        });
 }
 
 sub get_aggregated_sum_of_transactions_of_month {
@@ -138,11 +151,14 @@ sub get_aggregated_sum_of_transactions_of_month {
     my $args            = shift;
     my $month_first_day = $args->{date};
 
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare("SELECT * FROM sum_of_bet_txn_of_month(?)");
-    $sth->execute($month_first_day);
+    my $dbic = $self->db->dbic;
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare("SELECT * FROM sum_of_bet_txn_of_month(?)");
+            $sth->execute($month_first_day);
 
-    return $sth->fetchall_hashref([qw(date action_type currency_code)]);
+            return $sth->fetchall_hashref([qw(date action_type currency_code)]);
+        });
 
 }
 
@@ -156,7 +172,7 @@ return hashref
 sub eod_market_values_of_month {
     my $self            = shift;
     my $month_first_day = shift;
-    my $dbh             = $self->db->dbh;
+    my $dbic            = $self->db->dbic;
 
     my $sql = q{
         SELECT
@@ -176,10 +192,14 @@ sub eod_market_values_of_month {
             )
     };
 
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($month_first_day, $month_first_day);
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($month_first_day, $month_first_day);
 
-    return $sth->fetchall_hashref('calculation_time');
+            return $sth->fetchall_hashref('calculation_time');
+
+        });
 }
 
 =item number_of_active_clients_of_month
@@ -187,6 +207,7 @@ sub eod_market_values_of_month {
 Returns the number of active clients for the month
 
 =back
+
 =cut
 
 sub number_of_active_clients_of_month {
@@ -195,11 +216,13 @@ sub number_of_active_clients_of_month {
 
     my $sql = q{ SELECT * FROM number_of_active_clients_of_month(?) };
 
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($month_first_day);
-
-    return $sth->fetchall_hashref('transaction_time');
+    my $dbic = $self->db->dbic;
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($month_first_day);
+            return $sth->fetchall_hashref('transaction_time');
+        });
 }
 
 sub get_clients_result_by_field {
@@ -208,15 +231,18 @@ sub get_clients_result_by_field {
     my @binds;
     my $sql = q{ SELECT * FROM accounting.get_clients_result_by_field(?, ?, ?, ?, ?, ?::date) };
 
-    push @binds, map '%'. ($args->{$_} // '') . '%', (qw/first_name last_name email broker phone/);
+    push @binds, map '%' . ($args->{$_} // '') . '%', (qw/first_name last_name email broker phone/);
     push @binds, $args->{date_of_birth};
 
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute(@binds);
+    my $dbic = $self->db->dbic;
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute(@binds);
 
-    my $result = $sth->fetchall_arrayref({});
-    return $result;
+            my $result = $sth->fetchall_arrayref({});
+            return $result;
+        });
 }
 
 sub get_unregistered_client_token_pairs_before_datetime {
@@ -225,12 +251,15 @@ sub get_unregistered_client_token_pairs_before_datetime {
 
     my $sql = q{ SELECT * FROM get_unregistered_client_token_pairs_before_datetime(?) };
 
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($to_date);
+    my $dbic = $self->db->dbic;
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($to_date);
 
-    my $result = $sth->fetchall_arrayref({});
-    return $result;
+            my $result = $sth->fetchall_arrayref({});
+            return $result;
+        });
 }
 
 no Moose;
