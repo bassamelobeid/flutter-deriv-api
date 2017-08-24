@@ -29,13 +29,11 @@ sub new {
 sub _throttle {
     my $loginid = shift;
     my $key     = 'PROVEID::THROTTLE::' . $loginid;
+    my $redis   = BOM::Platform::RedisReplicated::redis_read();
 
-    if (BOM::Platform::RedisReplicated::redis_read()->get($key)) {
-        die 'Too many ProveID requests for ' . $loginid;
-    }
+    die 'Too many ProveID requests for ' . $loginid if $redis->get($key);
 
-    BOM::Platform::RedisReplicated::redis_write()->set($key, 1);
-    BOM::Platform::RedisReplicated::redis_write()->expire($key, 3600);
+    $redis->set($key, 1, 'EX', 60);
 
     return 1;
 }
