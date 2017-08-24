@@ -59,7 +59,7 @@ sub _throttle {
 
     BOM::Platform::RedisReplicated::redis_write()->set($key, 1, 'EX', 60);
 
-    return;
+    return 0;
 }
 
 sub mt5_new_account {
