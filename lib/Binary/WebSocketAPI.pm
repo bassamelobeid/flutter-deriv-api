@@ -527,12 +527,12 @@ sub startup {
                                 token => $c->stash('token'),
                             },
                             args => {
-                                file_name => $params->{file_name},
-                                size      => $params->{received_bytes},
-                                checksum  => $params->{sha1}->hexdigest,
-                                call_type => $params->{call_type},
+                                file_name     => $params->{file_name},
+                                size          => $params->{received_bytes},
+                                checksum      => $params->{sha1}->hexdigest,
+                                call_type     => $params->{call_type},
                                 document_path => $params->{document_path},
-                                status    => 'success',
+                                status        => 'success',
                             },
                             response => sub {
                                 my $api_response = $_[1];
