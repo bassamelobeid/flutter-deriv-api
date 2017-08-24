@@ -97,7 +97,6 @@ sub authorize {
         r            => $c->stash('request'),
         csrftoken    => $c->csrf_token,
         country_code => $c->{stash}->{request}->{country_code},
-
     ) if (grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands});
 
     my $redirect_uri = $app->{redirect_uri};
@@ -246,12 +245,13 @@ sub _login {
 
     if ($err) {
         $c->render(
-            template  => _get_login_template_name($brand->name),
-            layout    => $brand->name,
-            app       => $app,
-            error     => $err,
-            r         => $c->stash('request'),
-            csrftoken => $c->csrf_token,
+            template     => _get_login_template_name($brand->name),
+            layout       => $brand->name,
+            app          => $app,
+            error        => $err,
+            r            => $c->stash('request'),
+            csrftoken    => $c->csrf_token,
+            country_code => $c->{stash}->{request}->{country_code},
         );
         return;
     }
