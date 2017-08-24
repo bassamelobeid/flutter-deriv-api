@@ -531,6 +531,7 @@ sub startup {
                                 size      => $params->{received_bytes},
                                 checksum  => $params->{sha1}->hexdigest,
                                 call_type => $params->{call_type},
+                                document_path => $params->{document_path},
                                 status    => 'success',
                             },
                             response => sub {
