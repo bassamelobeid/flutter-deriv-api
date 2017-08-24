@@ -256,8 +256,8 @@ sub app_markup_details {
         $app_ids = [$args->{app_id}];
     }
 
-    my $time_from = Date::Utility->new($args->{date_time_from})->datetime_yyyymmdd_hhmmss;
-    my $time_to   = Date::Utility->new($args->{date_time_to})->datetime_yyyymmdd_hhmmss;
+    my $time_from = Date::Utility->new($args->{date_from})->datetime_yyyymmdd_hhmmss;
+    my $time_to   = Date::Utility->new($args->{date_to})->datetime_yyyymmdd_hhmmss;
 
     my $clientdb = BOM::Database::ClientDB->new({
             client_loginid => $client->loginid,
