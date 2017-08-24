@@ -35,8 +35,8 @@ sub generate_economic_event_tool {
     my $today  = Date::Utility->new->truncate_to_day;
     my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 6);
 
-    my @deleted_events =
-        grep { $_->{release_date} > $today->epoch && $_->{release_date} < $today->plus_time_interval('6d')->epoch } @{_get_deleted_events()};
+    my @deleted_events = values _get_deleted_events();
+
     my @unlisted_events = check_unlisted_events(\@events);
 
     return BOM::Backoffice::Request::template->process(
@@ -87,10 +87,18 @@ sub delete_by_id {
 
     return _err("ID is not found.") unless ($id);
 
+    my $ref = BOM::Platform::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
+    my @existing = @{$ref->{events}};
+
+    my $to_delete = first { $_->{id} eq $id } @existing;
+
     my $deleted = Quant::Framework::EconomicEventCalendar->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    )->delete_event({id => $id});
+        )->delete_event({
+            id => $id,
+            %$to_delete
+        });
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
     return {id => $deleted};
