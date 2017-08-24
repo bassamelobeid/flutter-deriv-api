@@ -32,7 +32,7 @@ sub _throttle {
 
     die 'Too many ProveID requests for ' . $loginid if BOM::Platform::RedisReplicated::redis_read()->get($key);
 
-    BOM::Platform::RedisReplicated::redis_write()->set($key, 1, 'EX', 60);
+    BOM::Platform::RedisReplicated::redis_write()->set($key, 1, 'EX', 3600);
 
     return 1;
 }
