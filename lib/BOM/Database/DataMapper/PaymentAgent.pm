@@ -27,6 +27,7 @@ extends 'BOM::Database::DataMapper::AccountBase';
 get all authenticated payment agent
 
 =back
+
 =cut
 
 sub get_authenticated_payment_agents {
@@ -34,11 +35,14 @@ sub get_authenticated_payment_agents {
     my $args           = shift;
     my $target_country = $args->{target_country};
 
-    my $dbh                  = $self->db->dbh;
-    my $authenticated_pa_sth = $dbh->prepare('SELECT * FROM betonmarkets.payment_agent WHERE is_authenticated = TRUE AND target_country = $1');
+    my $dbic = $self->db->dbic;
+    return $dbic->run(
+        sub {
+            my $authenticated_pa_sth = $_->prepare('SELECT * FROM betonmarkets.payment_agent WHERE is_authenticated = TRUE AND target_country = $1');
 
-    $authenticated_pa_sth->execute($target_country);
-    return $authenticated_pa_sth->fetchall_hashref('client_loginid');
+            $authenticated_pa_sth->execute($target_country);
+            return $authenticated_pa_sth->fetchall_hashref('client_loginid');
+        });
 }
 
 =head1 METHODS
@@ -52,18 +56,18 @@ get all authenticated payment agent countries
 =cut
 
 sub get_all_authenticated_payment_agent_countries {
-    my $self   = shift;
+    my $self = shift;
 
-    my $dbh = $self->db->dbh;
-    my $authenticated_payment_agents_statement =
-        $dbh->prepare('SELECT DISTINCT target_country FROM betonmarkets.payment_agent WHERE is_authenticated');
+    my $dbic = $self->db->dbic;
+    return $dbic->run(
+        sub {
+            my $authenticated_payment_agents_statement =
+                $_->prepare('SELECT DISTINCT target_country FROM betonmarkets.payment_agent WHERE is_authenticated');
 
-    my $countries;
-    if ($authenticated_payment_agents_statement->execute()) {
-        $countries = $authenticated_payment_agents_statement->fetchall_arrayref;
-    }
-
-    return $countries;
+            if ($authenticated_payment_agents_statement->execute()) {
+                return $authenticated_payment_agents_statement->fetchall_arrayref;
+            }
+        });
 }
 
 no Moose;

@@ -19,16 +19,19 @@ get different factors of clients activity needed for myaffiliates pl reports.
 sub get_clients_activity {
     my $self = shift;
     my $args = shift;
-    my $dbh  = $self->db->dbh;
+    my $dbic = $self->db->dbic;
 
     my $sql = q{
         SELECT * FROM get_myaffiliate_clients_activity($1)
     };
 
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ);
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ);
 
-    return $sth->fetchall_hashref('loginid');
+            return $sth->fetchall_hashref('loginid');
+        });
 }
 no Moose;
 __PACKAGE__->meta->make_immutable;

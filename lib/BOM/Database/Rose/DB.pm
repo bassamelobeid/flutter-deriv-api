@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 
 use Mojo::Exception;
-
+use DBIx::Connector::Pg;
 use parent 'Rose::DB';
 
 # If you are seeing connections being attempted to this Rose::DB
@@ -56,9 +56,9 @@ sub _handle_errors {
     my $dbh           = eval { $sth->isa('DBI::st') } ? $sth->{Database} : $sth;
     my $state         = $dbh->state;
     my $severity      = _get_severity($state);
-    my $err           = $dbh->err   || "[none]";
-    $error_message    ||= '[None Passed]';
-    $state            ||= "[none]";
+    my $err           = $dbh->err || "[none]";
+    $error_message ||= '[None Passed]';
+    $state         ||= "[none]";
 
     # Exceptions are really ugly. They obfuscate the control flow
     # just like "goto" or even worse.
@@ -66,7 +66,7 @@ sub _handle_errors {
     die [$state, $dbh->errstr] if $state =~ /^BI...$/;
 
     warn "DB Error Severity: $severity, $error_message. SQLSTATE=$state. Error=$err";
-    
+
     die Mojo::Exception->new($dbh->errstr || $error_message);
 }
 
@@ -120,8 +120,16 @@ sub _get_severity {
     return 'warn';
 }
 
+sub dbic {
+    my $self = shift;
+    if (not exists $self->{dbic}) {
+        $self->init_dbh;
+    }
+    return $self->{dbic};
+}
+
 sub dbi_connect {
-    my ($class, @params) = @_;
+    my ($self, @params) = @_;
 
     # Add extra parameters to the DSN. I tried to do that the right way.
     # But it means to create at least our own implementations of
@@ -137,7 +145,15 @@ sub dbi_connect {
             keepalives_count=10 /,
     );
 
-    return DBI->connect(@params) || croak $DBI::errstr;
+    if (not exists $self->{dbic}) {
+        $self->{dbic} = DBIx::Connector::Pg->new(@params);
+        # fixup mode is a safe and quick mode. That's why we switch from DBI  to  DBIx::Connector.
+        # So we set it as default mode
+        # But if the sub block will affect the outer environment, please use 'ping' mode instead.
+        # Please refer to the document of DBIx::Connector .
+        $self->{dbic}->mode('fixup');
+    }
+    return $self->{dbic}->dbh;
 }
 
 1;
