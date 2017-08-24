@@ -40,7 +40,7 @@ bet_limits:
       GBP: 1
       JPY: 70
       BTC: 0.0004
-      BCH: 0.008
+      BCH: 0.002
       ETH: 0.004
       LTC: 0.02
       ETC: 0.02
@@ -51,7 +51,7 @@ bet_limits:
       GBP: 0.7
       JPY: 70
       BTC: 0.0004
-      BCH: 0.008
+      BCH: 0.002
       ETH: 0.004
       LTC: 0.02
       ETC: 0.02
@@ -144,7 +144,7 @@ risk_profile:
           GBP: 50000
           JPY: 5000000
           BTC: 5
-          BCH: 25
+          BCH: 10
           ETH: 50
           LTC: 250
           ETC: 250
@@ -167,7 +167,7 @@ risk_profile:
           GBP: 100000
           JPY: 500000
           BTC: 15
-          BCH: 25
+          BCH: 10
           ETH: 50
           LTC: 250
           ETC: 250
@@ -190,7 +190,7 @@ risk_profile:
           GBP: 500000
           JPY: 50000000
           BTC: 30
-          BCH: 50
+          BCH: 20
           ETH: 100
           LTC: 500
           ETC: 500
