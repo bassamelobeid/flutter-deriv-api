@@ -831,13 +831,31 @@ sub check_tax_information {
     return;
 }
 
-# don't allow to trade for unwelcome_clients
-# and for MLT and MX we don't allow trading without confirmed age
+=head2 check_trade_status
+
+Check if client is allowed to trade.
+
+Here we have any uncommon business logic check.
+
+Common checks (unwelcome & disabled) are done _validate_client_status.
+
+Don't allow to trade for MLT and MX without confirmed age
+
+=cut
+
 sub check_trade_status {
     my ($self, $client) = (shift, shift);
 
     return if $client->is_virtual;
-    return $self->not_allow_trade($client);
+
+    if (($client->landing_company->short =~ /^(?:malta|iom)$/) and not $client->get_status('age_verification') and $client->has_deposits) {
+        return Error::Base->cuss(
+            -type              => 'PleaseAuthenticate',
+            -mesg              => 'Please authenticate your account to continue',
+            -message_to_client => localize('Please authenticate your account to continue.'),
+        );
+    }
+    return;
 }
 
 =head2 allow_paymentagent_withdrawal
@@ -858,33 +876,6 @@ sub allow_paymentagent_withdrawal {
         my $payment_mapper = BOM::Database::DataMapper::Payment->new({'client_loginid' => $client->loginid});
         my $doughflow_count = $payment_mapper->get_client_payment_count_by({payment_gateway_code => 'doughflow'});
         return 1 if $doughflow_count == 0;
-    }
-    return;
-}
-
-=head2 not_allow_trade
-
-Check if client is allowed to trade.
-
-Don't allow to trade for unwelcome_clients and for MLT and MX without confirmed age
-
-=cut
-
-sub not_allow_trade {
-    my ($self, $client) = (shift, shift);
-
-    if (($client->landing_company->short =~ /^(?:malta|iom)$/) and not $client->get_status('age_verification') and $client->has_deposits) {
-        return Error::Base->cuss(
-            -type              => 'PleaseAuthenticate',
-            -mesg              => 'Please authenticate your account to continue',
-            -message_to_client => localize('Please authenticate your account to continue.'),
-        );
-    } elsif ($client->get_status('unwelcome') or $client->get_status('disabled')) {
-        return Error::Base->cuss(
-            -type              => 'AccountUnavailable',
-            -mesg              => 'This acccount is unavailable.',
-            -message_to_client => localize('This acccount is unavailable.'),
-        );
     }
     return;
 }
