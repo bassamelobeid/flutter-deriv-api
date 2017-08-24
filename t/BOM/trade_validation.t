@@ -160,7 +160,7 @@ subtest 'IOM withdrawal limit' => sub {
 };
 
 subtest 'Is contract valid to buy' => sub {
-    plan tests => 2;
+    plan tests => 4;
 
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('is_valid_to_buy', sub { 1 });
@@ -210,7 +210,7 @@ subtest 'Is contract valid to buy' => sub {
 };
 
 subtest 'Is contract valid to sell' => sub {
-    plan tests => 2;
+    plan tests => 4;
 
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('is_valid_to_sell', sub { 1 });
