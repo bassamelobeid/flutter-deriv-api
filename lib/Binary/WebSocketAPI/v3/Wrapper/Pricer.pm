@@ -524,7 +524,7 @@ sub _pricing_channel_for_bid {
 
     my %hash;
     # get_bid RPC call requires 'short_code' param, not 'shortcode'
-    @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(shortcode contract_id currency sell_time is_expired)};
+    @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(shortcode contract_id currency sell_time)};
     $hash{is_sold} = $cache->{is_sold} + 0;
     $hash{is_expired} = $cache->{is_expired} + 0;
     $hash{language}         = $c->stash('language') || 'EN';
