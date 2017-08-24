@@ -90,12 +90,14 @@ sub authorize {
     # show error if stash brand name is not in the list
     # of allowed brands for landing company
     return $c->render(
-        template  => _get_login_template_name($brand_name),
-        layout    => $brand_name,
-        app       => $app,
-        error     => localize('This account is unavailable.'),
-        r         => $c->stash('request'),
-        csrftoken => $c->csrf_token,
+        template     => _get_login_template_name($brand_name),
+        layout       => $brand_name,
+        app          => $app,
+        error        => localize('This account is unavailable.'),
+        r            => $c->stash('request'),
+        csrftoken    => $c->csrf_token,
+        country_code => $c->{stash}->{request}->{country_code},
+
     ) if (grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands});
 
     my $redirect_uri = $app->{redirect_uri};
