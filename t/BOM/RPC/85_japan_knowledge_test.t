@@ -61,6 +61,8 @@ my ($vr_client, $user, $jp_loginid, $jp_client, $res);
 
 my $dt_mocked = Test::MockModule->new('DateTime');
 $dt_mocked->mock('day_of_week', sub { return 1 });
+my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
+$pnq_mocked->mock(add => sub { return Future->done; });
 
 subtest 'create VRTJ & JP client' => sub {
     # new VR client
