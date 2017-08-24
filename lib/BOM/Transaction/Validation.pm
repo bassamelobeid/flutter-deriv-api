@@ -629,7 +629,7 @@ sub _validate_ico_european_restrictions {
                 -type => 'ExceedEuIcoLimit',
                 -mesg => 'We are exceeding the limit that EU imposed on ICO ',
                 -message_to_client =>
-                    localize('Sorry, due to regulatory restrictions, no more bids for tokens may be placed for residents of your country.'),
+                    localize('Sorry, but due to regulatory restrictions, we are no longer accepting any bids from residents of your country.'),
             );
 
         }
@@ -665,7 +665,7 @@ sub _validate_ico_jurisdictional_restrictions {
         return Error::Base->cuss(
             -type              => 'IcoRestrictedCountry',
             -mesg              => 'Clients are not allowed to bid for ICO  as their country is restricted.',
-            -message_to_client => localize('Sorry, bidding for tokens is restricted in your country of residence.'),
+            -message_to_client => localize('Sorry, but the ICO is not available in your country of residence.'),
         );
     }
 
@@ -679,7 +679,7 @@ sub _validate_ico_jurisdictional_restrictions {
             -type              => 'IcoProfessionalRestrictedCountry',
             -mesg              => 'Clients are not allowed to place ICO  as it is restricted to offer only to professional in the relevant country.',
             -message_to_client => localize(
-                'Bidding for tokens in your country of residence is restricted to professional investors only. If you are a professional investor, please contact our Customer Support to certify your account as such.'
+                'The ICO is only available to professional investors in your country of residence. If you are a professional investor, please contact our customer support team to verify your account status.'
             ),
         );
     }
