@@ -583,7 +583,7 @@ subtest 'max_suspend_trading_feed_delay' => sub {
     plan tests => 6;
 
     my %expectations = (
-        'frxEURUSD' => 300,
+        'frxEURUSD' => 15,
         'frxBROUSD' => 300,
         'AS51'      => 300,
         'USAAPL'    => 300,
