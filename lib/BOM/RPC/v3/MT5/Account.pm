@@ -54,13 +54,11 @@ sub mt5_login_list {
 sub _throttle {
     my $loginid = shift;
     my $key     = 'MT5ACCOUNT::THROTTLE::' . $loginid;
+    my $redis   = BOM::Platform::RedisReplicated::redis_read();
 
-    if (BOM::Platform::RedisReplicated::redis_read()->get($key)) {
-        return 1;
-    }
+    return 1 if $redis->get($key);
 
-    BOM::Platform::RedisReplicated::redis_write()->set($key, 1);
-    BOM::Platform::RedisReplicated::redis_write()->expire($key, 60);
+    $redis->set($key, 1, 'EX', 60);
 
     return;
 }
