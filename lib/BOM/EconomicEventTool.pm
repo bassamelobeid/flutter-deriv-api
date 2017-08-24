@@ -101,7 +101,10 @@ sub delete_by_id {
         });
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
-    return {id => $deleted};
+    return {
+        id => $deleted,
+        %$to_delete
+    };
 }
 
 sub update_by_id {

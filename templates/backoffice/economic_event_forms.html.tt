@@ -55,7 +55,7 @@
 
 <p><b>List of Deleted Economic Events: </b> </p>
 
-<table class='economic_event_list'>
+<table class='deleted_economic_event_list'>
     <tr>
         <td><b>Event ID</b></td>
         <td><b>Event Name</b></td>
@@ -77,7 +77,7 @@
 
 <p><b>List of Unlisted Economic Events: </b> </p>
 
-<table class='economic_event_list'>
+<table class='unlisted_economic_event_list'>
     <tr>
         <td><b>Event ID</b></td>
         <td><b>Event Name</b></td>
@@ -216,8 +216,15 @@
                         if(r.error) {
                             result.text('ERR: ' + r.error).css('color','red');
                         } else{
+                            
+			    var del_list = \$('table.deleted_economic_event_list');
+                            var to_append = '<tr id="'+ r.id +'"><td>'+r.id+'</td><td>'+r.event_name+'</td><td>'+r.release_date+'</td><td>'+r.impact+'</td><td>'+r.symbol+'</td>';
+			    
+			    del_list.append(to_append);
+
                             \$('tr#'+ r.id).remove();
                             result.text('Economic event deleted.').css('color','green');
+
                         }
                     }
             });
@@ -230,6 +237,16 @@
         border-collapse: collapse;
     }
     .economic_event_list td, .economic_event_list th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 4px;
+    }
+    .deleted_economic_event_list td, .deleted_economic_event_list th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 4px;
+    }
+    .unlisted_economic_event_list td, .unlisted_economic_event_list th {
         border: 1px solid #dddddd;
         text-align: left;
         padding: 4px;
