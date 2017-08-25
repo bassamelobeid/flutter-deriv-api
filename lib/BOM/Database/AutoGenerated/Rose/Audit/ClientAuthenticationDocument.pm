@@ -24,6 +24,9 @@ __PACKAGE__->meta->setup(
         remote_addr                => { type => 'scalar' },
         comments                   => { type => 'varchar', default => '', length => 255, not_null => 1 },
         document_id                => { type => 'varchar', default => '', length => 30, not_null => 1 },
+        status                     => { type => 'varchar', length => 100 },
+        file_name                  => { type => 'varchar', length => 100 },
+        deleted                    => { type => 'varchar', length => 100 },
     ],
 
     primary_key_columns => [ 'id' ],

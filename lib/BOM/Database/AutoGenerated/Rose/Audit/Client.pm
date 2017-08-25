@@ -60,7 +60,7 @@ __PACKAGE__->meta->setup(
         tax_residence                            => { type => 'varchar', length => 100 },
         tax_identification_number                => { type => 'varchar', length => 255 },
         account_opening_reason                   => { type => 'varchar', length => 100 },
-        mifir_id                                 => { type => 'varchar', default => '', length => 35 },
+        mifir_id                                 => { type => 'varchar', length => 35 },
     ],
 
     primary_key_columns => [ 'custom_max_payout' ],

@@ -18,6 +18,9 @@ __PACKAGE__->meta->setup(
         expiration_date            => { type => 'date' },
         comments                   => { type => 'varchar', default => '', length => 255, not_null => 1 },
         document_id                => { type => 'varchar', default => '', length => 30, not_null => 1 },
+        status                     => { type => 'varchar', length => 100 },
+        file_name                  => { type => 'varchar', length => 100 },
+        deleted                    => { type => 'varchar', length => 100 },
     ],
 
     primary_key_columns => [ 'id' ],

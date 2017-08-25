@@ -23,8 +23,6 @@ __PACKAGE__->meta->setup(
         error_text       => { type => 'text' },
         resolution       => { type => 'text' },
         blockchain_txn   => { type => 'text' },
-        txn_fee          => { type => 'numeric' },
-        estimated_fee    => { type => 'numeric' },
     ],
 
     primary_key_columns => [ 'address', 'currency_code' ],

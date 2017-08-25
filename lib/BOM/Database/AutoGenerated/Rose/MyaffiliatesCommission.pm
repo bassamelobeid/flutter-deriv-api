@@ -20,11 +20,14 @@ __PACKAGE__->meta->setup(
         effective_pnl_for_commission => { type => 'numeric' },
         carry_over_to_next_month     => { type => 'numeric' },
         commission                   => { type => 'numeric' },
+        stamp                        => { type => 'timestamp', default => 'now()', remarks => 'When was this row created. Note: for rows that are NULL, they preexisted the addition of this column.' },
     ],
 
     primary_key_columns => [ 'id' ],
 
     unique_key => [ 'affiliate_userid', 'affiliate_username', 'effective_date' ],
+
+    allow_inline_column_values => 1,
 );
 
 1;
