@@ -61,10 +61,13 @@ sub delete_by_id {
 
     return _err("ID is not found.") unless ($id);
 
-    my $deleted = Quant::Framework::EconomicEventCalendar->new(
+    my $ee = Quant::Framework::EconomicEventCalendar->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    )->delete_event({id => $id});
+    );
+
+    my $deleted = $ee->delete_event({id => $id});
+    _regenerate($ee->get_economic_events_calendar);
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
     return {id => $deleted};
@@ -103,7 +106,9 @@ sub save_new_event {
 
     if ($args->{is_tentative} and not $args->{estimated_release_date}) {
         return _err('Must specify estimated announcement date for tentative events');
-    } elsif (not $args->{release_date}) {
+    }
+
+    if (not $args->{release_date} and not $args->{is_tentative}) {
         return _err('Must specify announcement date for economic events');
     }
 
