@@ -272,9 +272,7 @@ sub app_markup_details {
         transactions => $clientdb->dbh->selectall_arrayref(
             'SELECT * FROM reporting.get_app_markup_details(?,?,?,?,?,?,?,?)',
             {Slice => {}},
-            $app_ids,
-            $time_from,
-            $time_to,
+            $app_ids, $time_from, $time_to,
             $args->{offset}         || undef,
             $args->{limit}          || undef,
             $args->{client_loginid} || undef,
