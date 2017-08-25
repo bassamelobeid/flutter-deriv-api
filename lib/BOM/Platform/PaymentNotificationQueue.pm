@@ -35,6 +35,9 @@ sub redis {
 
 sub add {
     my ($class, %args) = @_;
+    # We are not interested in deposits from payment agents
+    return Future->done if $args{payment_agent};
+
     my $redis = $class->redis;
     $args{amount_usd} = in_USD($args{amount} => $args{currency});
     my $data = encode_json(\%args);
