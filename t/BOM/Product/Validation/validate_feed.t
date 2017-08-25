@@ -68,27 +68,31 @@ my $fake_tick = Postgres::FeedDB::Spot::Tick->new({
 my $old_tick;
 
 subtest 'open contracts - missing current tick & quote too old' => sub {
-    $bet_params->{_basis_tick}  = $fake_tick;    # basis tick need to be present
-    $bet_params->{date_pricing} = $now;
-    my $c = produce_contract($bet_params);
-    warning_like {ok !$c->is_expired, 'contract not expired'} qr/No current_tick for/, 'warn';
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/No realtime data/, 'no realtime data message');
-    $old_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $delay->epoch
-    });
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $now->epoch
-    });
-    $bet_params->{current_tick} = $old_tick;
-    $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/Quote too old/, 'no realtime data message');
-    $bet_params->{current_tick} = $tick;
-    $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'valid to buy';
+    warning_like {
+        $bet_params->{_basis_tick}  = $fake_tick;    # basis tick need to be present
+        $bet_params->{date_pricing} = $now;
+        my $c = produce_contract($bet_params);
+        ok !$c->is_expired, 'contract not expired';
+        ok !$c->is_valid_to_buy, 'not valid to buy';
+        like($c->primary_validation_error->{message}, qr/No realtime data/, 'no realtime data message');
+        $old_tick = Postgres::FeedDB::Spot::Tick->new({
+            underlying => 'frxUSDJPY',
+            epoch      => $delay->epoch,
+            quote => 100,
+        });
+        my $tick = Postgres::FeedDB::Spot::Tick->new({
+            underlying => 'frxUSDJPY',
+            epoch      => $now->epoch,
+            quote => 100
+        });
+        $bet_params->{current_tick} = $old_tick;
+        $c = produce_contract($bet_params);
+        ok !$c->is_valid_to_buy, 'not valid to buy';
+        like($c->primary_validation_error->{message}, qr/Quote too old/, 'no realtime data message');
+        $bet_params->{current_tick} = $tick;
+        $c = produce_contract($bet_params);
+        ok $c->is_valid_to_buy, 'valid to buy';
+    } qr/No current_tick for/, 'warn'
 };
 
 subtest 'expired contracts' => sub {
