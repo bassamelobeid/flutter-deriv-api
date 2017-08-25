@@ -277,9 +277,13 @@ sub get_apps_by_user_id {
 sub get_app_ids_by_user_id {
     my ($self, $user_id) = @_;
 
-    my $app_ids = $self->dbh->selectcol_arrayref("
-        SELECT id
+    my $app_ids = $self->dbic->run(
+        sub {
+            $_->selectcol_arrayref("
+        SELECT
+            id
         FROM oauth.apps WHERE binary_user_id = ?", undef, $user_id);
+        });
     return $app_ids || [];
 }
 
@@ -368,6 +372,12 @@ sub get_app_id_by_token {
 
     my @result = $self->dbic->run(sub { $_->selectrow_array("SELECT app_id FROM oauth.access_token WHERE access_token = ?", undef, $token) });
     return $result[0];
+}
+
+sub user_has_app_id {
+    my ($self, $user_id, $app_id) = @_;
+
+    return $self->dbic->run(sub { $_->selectrow_array("SELECT id FROM oauth.apps WHERE binary_user_id = ? AND id = ?", undef,  $user_id, $app_id) });
 }
 
 no Moose;
