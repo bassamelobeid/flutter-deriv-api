@@ -72,13 +72,7 @@ subtest 'open contracts - missing current tick & quote too old' => sub {
     $bet_params->{date_pricing} = $now;
     my $c = produce_contract($bet_params);
     ok !$c->is_expired, 'contract not expired';
-    like(
-        warning {
-            ok !$c->is_valid_to_buy, 'not valid to buy';
-        },
-        qr/No current_tick for/,
-        'warns if current tick is missing'
-    );
+    ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/No realtime data/, 'no realtime data message');
     $old_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
@@ -90,13 +84,7 @@ subtest 'open contracts - missing current tick & quote too old' => sub {
     });
     $bet_params->{current_tick} = $old_tick;
     $c = produce_contract($bet_params);
-    like(
-        warning {
-            ok !$c->is_valid_to_buy, 'not valid to buy';
-        },
-        qr/Quote too old for/,
-        'warns if quote is too old'
-    );
+    ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/Quote too old/, 'no realtime data message');
     $bet_params->{current_tick} = $tick;
     $c = produce_contract($bet_params);
@@ -139,7 +127,7 @@ subtest 'max_feed_delay_seconds' => sub {
     ok !$c->_validate_feed, 'no event and feed is 15 seconds delay';
     $tick->{epoch} = $now->epoch - 16;
     $mock->mock('current_tick', sub { Postgres::FeedDB::Spot::Tick->new($tick) });
-    warning_like { $c->_validate_feed } qr/Quote too old for frxUSDJPY/, 'invalid if feed is more than 15 seconds delay';
+    ok $c->_validate_feed,  'invalid if feed is more than 15 seconds delay';
     my $event = {
         event_name   => 'test',
         impact       => 5,
@@ -148,14 +136,13 @@ subtest 'max_feed_delay_seconds' => sub {
     $mock->mock('_applicable_economic_events', sub { [$event] });
     $tick->{epoch} = $now->epoch - 3;
     $mock->mock('current_tick', sub { Postgres::FeedDB::Spot::Tick->new($tick) });
-    warning_like { $c->_validate_feed } qr/Quote too old for frxUSDJPY/, 'invalid if feed is more than 15 seconds delay';
+    ok $c->_validate_feed , 'invalid if feed is more than 15 seconds delay';
     $tick->{epoch} = $now->epoch - 2;
     $mock->mock('current_tick', sub { Postgres::FeedDB::Spot::Tick->new($tick) });
     ok !$c->_validate_feed, 'valid if tick is 2 seconds old if there is a level 5 economic event';
     $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 1;
     $c = produce_contract($bet_params);
-    warning_like { $c->_validate_feed } qr/Quote too old for frxUSDJPY/,
-        'invalid if feed is more than 2 seconds old if there is a level 5 economic event';
+    ok $c->_validate_feed }, 'invalid if feed is more than 2 seconds old if there is a level 5 economic event';
     $tick->{epoch} = $now->epoch + 1;
     $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 5;
     ok !$c->_validate_feed, 'valid. maximum_feed_delay_seconds is back to 15 seconds once we receives a tick after the level 5 economic event';
