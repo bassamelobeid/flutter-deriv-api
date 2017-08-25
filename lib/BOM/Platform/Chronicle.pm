@@ -137,9 +137,4 @@ sub _dbh_dsn {
     return "dbi:Pg:service=chronicle";
 }
 
-sub _redis_write {
-    warn "Chronicle::_redis_write is deprecated. Please, use RedisReplicated::redis_write";
-    return BOM::Platform::RedisReplicated::redis_write;
-}
-
 1;
