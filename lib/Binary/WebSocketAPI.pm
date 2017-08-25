@@ -93,6 +93,8 @@ sub startup {
         before_dispatch => sub {
             my $c = shift;
 
+            return unless $c->tx;
+
             my $lang = defang($c->param('l'));
             if ($lang =~ /^\D{2}(_\D{2})?$/) {
                 $c->stash(language => uc $lang);
@@ -107,7 +109,6 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
-            return unless $c->tx;
             my $app_id = $c->app_id;
             return $c->render(
                 json   => {error => 'InvalidAppID'},
@@ -471,7 +472,9 @@ sub startup {
                     $app->log->warn("cannot determine client IP-address");
                     $ip = 'unknown-IP';
                 }
-                my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
+                my $user_agent = $c->tx
+                    and $c->req->headers->header('User-Agent');
+                $user_agent //= 'Unknown-UA';
                 my $client_id = md5_hex($ip . ":" . $user_agent);
                 "rate_limits::non-authorised::$app_id/$client_id";
             };

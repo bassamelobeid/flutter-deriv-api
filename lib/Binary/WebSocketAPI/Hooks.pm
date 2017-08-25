@@ -183,7 +183,7 @@ sub before_forward {
             _set_defaults($req_storage, $args);
 
             my $tag = 'origin:';
-            if (my $origin = $c->req->headers->header("Origin")) {
+            if (my $origin = $c->tx ? $c->req->headers->header("Origin") : undef) {
                 if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
                     $tag = "origin:$1";
                 }
