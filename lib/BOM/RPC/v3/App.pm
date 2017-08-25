@@ -244,16 +244,20 @@ sub app_markup_details {
     my $client  = $params->{client};
     my $oauth   = BOM::Database::Model::OAuth->new;
     my $user    = BOM::Platform::User->new({email => $client->email});
-    my $app_ids = $oauth->get_app_ids_by_user_id($user->id);
+    my $app_ids = ();
 
     # If the app_id they have submitted is not in the list we have associated with them, then...
-    if ($args->{app_id} && !grep { $args->{app_id} == $_ } @$app_ids) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidAppID',
-            message_to_client => localize('Your app_id is invalid.'),
-        });
-    } elsif ($args->{app_id}) {
-        $app_ids = [$args->{app_id}];
+    if ($args->{app_id}) {
+        unless ($oauth->user_has_app_id($user->id, $args->{app_id})) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidAppID',
+                message_to_client => localize('Your app_id is invalid.'),
+            });
+        } else {
+            $app_ids = [$args->{app_id}];
+        }
+    } else {
+        $app_ids = $oauth->get_app_ids_by_user_id($user->id)
     }
 
     my $time_from = Date::Utility->new($args->{date_from})->datetime_yyyymmdd_hhmmss;
