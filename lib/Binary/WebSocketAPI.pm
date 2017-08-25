@@ -450,7 +450,8 @@ sub startup {
 
     $app->helper(
         'app_id' => sub {
-            my $c               = shift;
+            my $c = shift;
+            return undef unless $c->tx;
             my $possible_app_id = $c->req->param('app_id');
             if (defined($possible_app_id) && $possible_app_id =~ /^(?!0)[0-9]{1,19}$/) {
                 return $possible_app_id;
@@ -462,7 +463,7 @@ sub startup {
         'rate_limitations_key' => sub {
             my $c                  = shift;
             my $login_id           = $c->stash('loginid');
-            my $app_id             = $c->app_id;
+            my $app_id             = $c->app_id // '';
             my $authorised_key     = $login_id ? "rate_limits::authorised::$app_id/$login_id" : undef;
             my $non_authorised_key = do {
                 my $ip = $c->client_ip;

@@ -129,7 +129,7 @@ sub reached_limit_check {
         my $f = $c->check_limits($limiting_service);
         $f->on_fail(
             sub {
-                stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["app_id:" . $c->app_id]});
+                stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["app_id:" . ($c->app_id // 'undef')]});
             });
         return $f;
     }
