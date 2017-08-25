@@ -1,8 +1,38 @@
+<p><b>README ME BEFORE USING THE TOOL</b></p>
+<p>Please follow these steps to add a scheduled economic event:</p>
+<ul>
+    <li>Enter 'Symbol'. Symbol should be the currency symbol that the event has an impact on.</li>
+    <li>Enter 'Announcement DateTime'. The release date of the event.</li>
+    <li>Enter 'Annoucement Name'. The name of the event. This is important please copy and paste to avoid typo.</li>
+    <li>Enter 'Impact'. The raw impact (1: low, 3: medium, 5: high) of the event. This will not be the impact used to scale volatility.</li>
+</ul>
+
+<p>Once completed, click <b>Save</b> and wait until a message shows up next to the <b>Save</b> button with ID of the economic event. The added economic event would be displayed at the table below. The <b>Binary's Category</b> column shows the impact and duration of impact of the event on the currency pairs.</p>
+
+<p>If you wish to update the magnitude of an economic event, enter the magnitude in custom magnitude column and click on <b>Update</b>. Wait until a message shows up next to the button with 'ok'. This custom magnitude will be applied to direct currency pairs affected by the economic event.</p>
+
+<p>If you wish to delete an economic event, click on the <b>Delete</b> button. The event will be removed from the table and it will be listed under the <b>Deleted Economic Events</b> table. To restore the deleted event, Click on the <b>Restore</b> button.</p>
+
+<p>Please follow these steps to add a tentative economic event:</p>
+<ul>
+    <li>Enter 'Symbol'. Symbol should be the currency symbol that the event has an impact on.</li>
+    <li>Enter 'Estimated Announcement Date'. Set to the date of which you want to add the event.</li>
+    <li>Enter 'Annoucement Name'. The name of the event. This is important please copy and paste to avoid typo.</li>
+    <li>Enter 'Impact'. The raw impact (1: low, 3: medium, 5: high) of the event. This will not be the impact used to scale volatility.</li>
+    <li>Check the 'Tentative' box.</li>
+</ul>
+
+<p>Once completed, click the <b>Save</b> button. The tentative event will be listed in the <b>Tentative events list</b> table.</p>
+
+<p>Now the tentative event is added into the system but it has no impact in contract pricing yet. To enable barrier shift for tentative event, enter the desired period and shift amount. Please note that by setting this, the tentative event will be added into the list of events that's used to scale pricing volatility. Please do this with caution! If you wish to set the release date for the tentative event, enter it in 'Release Datetime' or leave it blank and it will be set to the mid point of the desired period.</p>
+
+<p>To delete the tentative event, click on the <b>Delete</b> button.</p>
+
 <p><b>Add new economic event or tentative event manually with the tool below: </b></p>
 
 <table id='economic_event_form'>
     <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
-    <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z)</td></tr>
+    <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z. Do NOT set this for tentative event!)</td></tr>
     <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
     <INPUT type="hidden" name="source" value="binary">
     <tr><td>Impact</td>
