@@ -32,7 +32,7 @@
     },
     "github": {
       "type": "string",
-      "pattern": "^https?:\/\/[0-9a-zA-Z\\.-]+[\\%\\/\\w \\.-]*$",
+      "pattern": "^https?:\/\/play\\.google\\.com/store\/apps\/details\\?id=[\\w \\.]+$",
       "description":"Application's GitHub page (for open-source projects)"
     },
     "appstore": {
