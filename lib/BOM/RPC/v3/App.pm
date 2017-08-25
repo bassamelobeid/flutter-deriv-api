@@ -257,7 +257,7 @@ sub app_markup_details {
             $app_ids = [$args->{app_id}];
         }
     } else {
-        $app_ids = $oauth->get_app_ids_by_user_id($user->id)
+        $app_ids = $oauth->get_app_ids_by_user_id($user->id);
     }
 
     my $time_from = Date::Utility->new($args->{date_from})->datetime_yyyymmdd_hhmmss;
@@ -272,7 +272,7 @@ sub app_markup_details {
         transactions => $clientdb->dbh->selectall_arrayref(
             'SELECT * FROM reporting.get_app_markup_details(?,?,?,?,?,?,?,?)',
             {Slice => {}},
-            __arrayref_to_db_array($app_ids),
+            $app_ids,
             $time_from,
             $time_to,
             $args->{offset}         || undef,
@@ -281,11 +281,6 @@ sub app_markup_details {
             $args->{sort_fields}    || undef,
             $args->{sort}           || undef
         )};
-}
-
-# turn this perl [1,2,3] into this text {1,2,3}
-sub __arrayref_to_db_array {
-    return "{" . join(',', @{(shift)}) . "}";
 }
 
 1;
