@@ -59,16 +59,17 @@ $args->{document_type}   = "passport";
 $args->{document_id}     = "ABCD1234";
 $args->{document_format} = "jpg";
 my $result = $c->call_ok($method, $params)->result;
-my ($doc) = $test_client->find_client_authentication_document(query => [document_path => $result->{file_name}]);
+my ($doc) = $test_client->find_client_authentication_document(query => [file_name => $result->{file_name}]);
 # Succesfully retrieved object from database.
 is($doc->document_id, $args->{document_id});
 is($doc->status,      'uploading');
 $args = {
-    status    => 'success',
-    file_name => $result->{file_name}};
+    document_path => 'some-where.in.cloud/file',
+    status        => 'success',
+    file_name     => $result->{file_name}};
 $params->{args} = $args;
 $result = $c->call_ok($method, $params)->result;
-($doc) = $test_client->find_client_authentication_document(query => [document_path => $result->{file_name}]);
+($doc) = $test_client->find_client_authentication_document(query => [file_name => $result->{file_name}]);
 is($doc->status, 'uploaded');
 
 $args->{file_name} = "garbage";

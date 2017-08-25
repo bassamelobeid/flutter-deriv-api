@@ -49,7 +49,7 @@ sub upload {
             authentication_method_code => 'ID_DOCUMENT',
             expiration_date            => $expiration_date,
             document_id                => $document_id,
-            file_name                  => $file_name,
+            file_name                  => $newfilename,
             status                     => 'uploading',
         };
         $client->add_client_authentication_document($upload);
@@ -60,7 +60,7 @@ sub upload {
             call_type => 1,
         };
     }
-    
+
     # On success update the status of file to uploaded.
     if (defined $status && $status eq "success") {
         my ($doc) = $client->find_client_authentication_document(query => [file_name => $file_name]);
@@ -70,7 +70,7 @@ sub upload {
                 code              => 'UploadDenied',
                 message_to_client => localize("Document not found.")}) unless defined($doc);
 
-        $doc->{status} = "uploaded";
+        $doc->{status}        = "uploaded";
         $doc->{document_path} = $document_path;
         $doc->save();
 
