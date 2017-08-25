@@ -38,11 +38,7 @@ sub _connect {
     my $connection_config = $config->{$redis_type}->{$access_type};
     if ($connections->{$key}) {
         try {
-            # I was not able to reproduce an error for the last 24h
-            # that's why I'm not sure if separate cases for read and write needed
-            # if not - we can keep only ping() regardless of $access_type
-            $connections->{$key}->set('test', 'test') if $access_type eq 'write';
-            $connections->{$key}->ping() if $access_type eq 'read'
+            $connections->{$key}->ping();
         }
         catch {
             warn "RedisReplicated::_connect $key died: $_, reconnecting";
