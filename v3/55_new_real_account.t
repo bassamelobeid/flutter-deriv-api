@@ -277,6 +277,30 @@ subtest 'create account failed' => sub {
     };
 };
 
+subtest 'new_real_account with currency provided' => sub {
+    # create VR acc
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'test+111@binary.com',
+        client_password => 'abC123',
+        residence       => 'au',
+    });
+    # authorize
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    $t->await::authorize({authorize => $token});
+    my %details = %client_details;
+
+    $details{currency}  = 'USD';
+    $details{last_name} = 'Torvalds';
+    my $res = $t->await::new_account_real(\%details);
+
+    ok($res->{msg_type}, 'new_account_real');
+    ok($res->{new_account_real});
+    test_schema('new_account_real', $res);
+
+    my $loginid = $res->{new_account_real}->{client_id};
+    like($loginid, qr/^CR\d+$/, "got CR client $loginid");
+};
+
 sub create_vr_account {
     my $args = shift;
     my $acc  = BOM::Platform::Account::Virtual::create_account({
