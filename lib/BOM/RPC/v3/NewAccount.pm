@@ -16,6 +16,7 @@ use Brands;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
+use BOM::RPC::v3::Accounts;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
@@ -215,7 +216,7 @@ sub new_account_real {
     }
 
     if ($args->{currency}) {
-        my $currency_set_result = BOM::RPC::v3::Account::set_account_currency({
+        my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
                 client   => $client,
                 currency => $args->{currency}});
         return $currency_set_result->{error} if $currency_set_result->{error};
