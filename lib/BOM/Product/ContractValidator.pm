@@ -249,12 +249,6 @@ sub _validate_feed {
     } elsif ($self->trading_calendar->is_open_at($underlying->exchange, $self->date_pricing)
         && $self->date_pricing->epoch - $self->maximum_feed_delay_seconds > $self->current_tick->epoch)
     {
-        warn "Quote too old for "
-            . $underlying->symbol
-            . ", epoch "
-            . $self->current_tick->epoch
-            . " with max tick age "
-            . $self->maximum_feed_delay_seconds;
         return {
             message           => "Quote too old [symbol: " . $underlying->symbol . "]",
             message_to_client => [$ERROR_MAPPING->{OldMarketData}],
