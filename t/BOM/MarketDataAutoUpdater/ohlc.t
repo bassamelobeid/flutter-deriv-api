@@ -65,7 +65,7 @@ subtest everything => sub {
         my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
         my $underlying = create_underlying('N225');
         SKIP: {
-            # OHLC::_passes_sanity_check has no chance to produce correct error it market is closed for now
+            # OHLC::_passes_sanity_check has no chance to produce correct error if market is closed for now
             skip "No tradings on weekends" unless $trading_calendar->trades_on($underlying->exchange, Date::Utility->new);
             like($updater->report->{N225}->{reason}, qr/Incorrect date/, 'added incorrect date symbol to skipped list');
         }
