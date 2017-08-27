@@ -201,7 +201,6 @@ cmp_ok $intro_conn->{connections}[0]{messages_received_from_client}{time}, '==',
 cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time},       '==', 2, '2 time reply';
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
-my $underlying       = create_underlying('frxUSDJPY');
 
 SKIP: { 
     skip 'Forex test does not work on the weekends.', 1 if not $trading_calendar->is_open_at($underlying->exchange, Date::Utility->new);
