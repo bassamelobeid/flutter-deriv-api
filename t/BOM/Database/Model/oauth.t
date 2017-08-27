@@ -80,6 +80,15 @@ my $app2 = $m->create_app({
 my $get_apps = $m->get_apps_by_user_id($test_user_id);
 is_deeply($get_apps, [$app1, $app2], 'get_apps_by_user_id ok');
 
+$get_apps = $m->get_app_ids_by_user_id($test_user_id);
+is_deeply($get_apps, [$app1->{app_id}, $app2->{app_id}], 'get_app_ids_by_user_id ok');
+
+$get_apps = $m->user_has_app_id($test_user_id, $app1->{app_id});
+is $get_apps, $app1->{app_id}, 'user_has_app_id yes';
+
+$get_apps = $m->user_has_app_id($test_user_id, -1);
+is $get_apps, undef, 'user_has_app_id no';
+
 my $delete_st = $m->delete_app($test_user_id, $app2->{app_id});
 ok $delete_st;
 $get_apps = $m->get_apps_by_user_id($test_user_id);
