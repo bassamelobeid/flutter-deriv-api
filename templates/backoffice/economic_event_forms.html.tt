@@ -62,6 +62,7 @@
         <td><b>Release Date</b></td>
         <td><b>Impact (FF)</b></td>
         <td><b>Symbol</b></td>
+        <td><b>Action</b></td>
     </tr>
     [% FOREACH row IN deleted_events %]
         <tr id="[% row.id %]">
@@ -70,6 +71,7 @@
             <td>[% row.release_date %]</td>
             <td>[% row.impact %]</td>
             <td>[% row.symbol %]</td>
+            <td><button onclick="restoreEvent( '[% row.id %]' )">Restore</button> </td>
             <td style="display:none;" class='result'></td>
         </tr>
     [% END %]
