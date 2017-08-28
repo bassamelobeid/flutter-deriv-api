@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Format::Util::Numbers;
+use List::Util qw( min );
 
 use Brands;
 use LandingCompany::Registry;
@@ -53,21 +54,32 @@ sub states_list {
     return $states;
 }
 
+sub _currencies_config {
+    my $amt_precision = Format::Util::Numbers::get_precision_config()->{price};
+    my $static        = BOM::Platform::Config::quants;
+    my $bet_limits    = $static->{bet_limits};
+    return {
+        map {
+            $_ => {
+                fractional_digits => $amt_precision->{$_},
+                type              => LandingCompany::Registry::get_currency_type($_),
+                stake_default     => min($bet_limits->{min_payout}->{volidx}->{$_}, $bet_limits->{min_payout}->{default}->{$_}) / 2,
+                }
+            }
+            keys LandingCompany::Registry::get('costarica')->legal_allowed_currencies
+    };
+}
+
 sub website_status {
     my $params = shift;
-
-    my $amt_precision = Format::Util::Numbers::get_precision_config()->{price};
 
     return {
         terms_conditions_version => BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version,
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,
         clients_country          => $params->{country_code},
         supported_languages      => BOM::Platform::Runtime->instance->app_config->cgi->supported_languages,
-        currencies_config        => {
-            map { $_ => {fractional_digits => $amt_precision->{$_}, type => LandingCompany::Registry::get_currency_type($_)} }
-                keys LandingCompany::Registry::get("costarica")->legal_allowed_currencies
-        },
-        ico_status => BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_ended == 1 ? 'closed' : 'open',
+        currencies_config        => _currencies_config(),
+        ico_status               => BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_ended == 1 ? 'closed' : 'open',
     };
 }
 
