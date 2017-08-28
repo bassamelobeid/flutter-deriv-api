@@ -194,7 +194,6 @@ sub new_account_real {
                 code              => $err,
                 message_to_client => $error_map->{$err}});
     }
-
     # call was done with currency flag
     if ($args->{currency}) {
         $error = BOM::RPC::v3::Utility::validate_set_currency($client, $args->{currency});
@@ -215,15 +214,16 @@ sub new_account_real {
                 message_to_client => $error_map->{$err_code}});
     }
 
-    if ($args->{currency}) {
-        my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
-                client   => $client,
-                currency => $args->{currency}});
-        return $currency_set_result->{error} if $currency_set_result->{error};
-    }
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
     my $user            = $acc->{user};
+
+    if ($args->{currency}) {
+        my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
+                client   => $new_client,
+                currency => $args->{currency}});
+        return $currency_set_result if $currency_set_result->{error};
+    }
 
     $user->add_login_history({
         action      => 'login',
@@ -243,6 +243,7 @@ sub new_account_real {
         landing_company           => $landing_company->name,
         landing_company_shortcode => $landing_company->short,
         oauth_token               => _create_oauth_token($new_client->loginid),
+        $args->{currency} ? (currency => $new_client->currency) : (),
     };
 }
 
