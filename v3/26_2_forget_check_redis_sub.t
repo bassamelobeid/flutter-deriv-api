@@ -12,6 +12,10 @@ use Sereal::Encoder;
 use BOM::Test::Helper qw/build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
+use BOM::MarketData qw(create_underlying);
+
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 
 use await;
 
@@ -154,17 +158,25 @@ $req = {
     "duration_unit" => "m",
 };
 
-$t->await::forget_all({forget_all => 'proposal'});
-create_proposals();
-cmp_ok pricer_sub_count(), '==', 3, "3 pricer sub Ok";
+my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+my $underlying       = create_underlying('frxUSDJPY');
 
-$res = $t->await::forget({forget => [values(%$sub_ids)]->[0]});
-cmp_ok $res->{forget}, '==', 1, 'Correct number of subscription forget';
-cmp_ok pricer_sub_count(), '==', 2, "price count checking";
+SKIP: {
+    skip 'Forex test does not work on the weekends.', 1 if not $trading_calendar->is_open_at($underlying->exchange, Date::Utility->new);
+    subtest 'forget' => sub {
+        $t->await::forget_all({forget_all => 'proposal'});
+        create_proposals();
+        cmp_ok pricer_sub_count(), '==', 3, "3 pricer sub Ok";
 
-$res = $t->await::forget_all({forget_all => 'proposal'});
-is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
-is pricer_sub_count(), 0, "price count checking";
+        $res = $t->await::forget({forget => [values(%$sub_ids)]->[0]});
+        cmp_ok $res->{forget}, '==', 1, 'Correct number of subscription forget';
+        cmp_ok pricer_sub_count(), '==', 2, "price count checking";
+
+        $res = $t->await::forget_all({forget_all => 'proposal'});
+        is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
+        is pricer_sub_count(), 0, "price count checking";
+    };
+};
 
 done_testing();
 
