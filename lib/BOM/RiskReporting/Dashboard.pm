@@ -289,6 +289,8 @@ sub _open_bets_report {
         push @{$treemap->{labels}}, \@ul_labels;
     }
 
+    push @{$treemap->{labels}}, 'NO DATA' unless @{$treemap->{labels}};
+    push @{$treemap->{data}},   '1'       unless @{$treemap->{data}};
     $report->{pivot}   = to_json($pivot_info);
     $report->{treemap} = to_json($treemap);
     $report->{sparks}  = to_json($sparks);
