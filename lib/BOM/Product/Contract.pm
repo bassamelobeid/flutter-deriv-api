@@ -799,21 +799,27 @@ sub _build_tentative_events {
     my $self = shift;
 
     my $effective_start = $self->effective_start->epoch;
+    my $expiry_epoch    = $self->date_expiry->epoch;
 
     my %affected_currency = (
         $self->underlying->asset_symbol           => 1,
         $self->underlying->quoted_currency_symbol => 1,
     );
 
-    #Add check for blankout and blankout_end.
+    # Add check for blankout and blankout_end.
+    # Tentative event markup will be applied to contracts
+    # - spanning the tentative event blackout period
+    # - which starts within the blackout period
+    # - which expires within the blackout period
     return [
         grep {
                     $_->{is_tentative}
                 and $affected_currency{$_->{symbol}}
                 and exists $_->{blankout}
                 and exists $_->{blankout_end}
-                and $_->{blankout} <= $effective_start
-                and $_->{blankout_end} >= $effective_start
+                and (($_->{blankout} >= $effective_start and $_->{blankout_end} <= $expiry_epoch)
+                or ($effective_start >= $_->{blankout} and $expiry_start <= $_->{blankout_end})
+                or ($expiry_epoch >= $_->{blankout} and $expiry_epoch <= $_->{blankout_end}))
         } @{$self->_applicable_economic_events}];
 
 }
