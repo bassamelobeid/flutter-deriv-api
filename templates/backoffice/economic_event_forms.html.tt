@@ -77,8 +77,8 @@
                 [% END %]
             </td>
             <td><INPUT type="text" name="custom_magnitude" size="10"></td>
-            <td><button onclick="deleteEvent( '[% row.id %]' )">Delete</button> <button onclick="update( '[% row.id %]' )">Update</button></td>
-            <td style="display:none;" class='result'></td>
+            <td> <button onclick="update( '[% row.id %]' )">Update</button> </br></br> <button onclick="deleteEvent( '[% row.id %]' )">Delete</button> </td>
+            <td style="display:none;" class='update_result'></td>
         </tr>
     [% END %]
 </table>
@@ -104,7 +104,9 @@
                                 content += '<p>'+ row.info[j] +'</p>';
                             }
 
-                            content += '</td> <td><INPUT type="text" name="custom_magnitude" size="10"></td> <td><button onclick="deleteEvent( \''+ row.id +'\' )">Delete</button> <button onclick="update( \''+ row.id +'\' )">Update</button></td> <td style="display:none;" class="result"></td> </tr>';
+                            content += '</td> <td><INPUT type="text" name="custom_magnitude" size="10"></td>';
+                            content += '<td> <button onclick="update( \''+ row.id +'\' )">Update</button> <button onclick="deleteEvent( \''+ row.id +'\' )">Delete</button> </td>';
+                            content += '<td style="display:none;" class="update_result"></td> </tr>';
                         }
 
                         \$('table.economic_event_list tbody').html(content);
@@ -115,6 +117,9 @@
     function update(id) {
         if (id) {
             var el = \$('tr#'+id);
+            var result = el.find('td.update_result');
+
+            result.text('processing ...').show();
             var custom_magnitude = el.find('input[name="custom_magnitude"]').val();
             \$.ajax({
                     url: "[% ee_upload_url | none %]",
@@ -125,11 +130,10 @@
                     },
                     success: function(data){
                         var r = \$.parseJSON(data);
-                        var result = el.find('td.result');
                         if (r.error) {
-                            result.text(r.error).css('color','red').show();
+                            result.text(r.error).css('color','red');
                         } else {
-                            result.text("ok").css('color','green').show();
+                            result.text("ok").css('color','green');
                             var text = '';
                             for (i=0;i < r.new_info.length; i++) {
                                 text += "<p>" + r.new_info[i] + "</p>";
@@ -143,6 +147,8 @@
     function saveEvent() {
         var el = \$('table#economic_event_form');
         if (el) {
+            var result = \$("td.save_result");
+            result.text('processing ...');
             var name = el.find('input[name="event_name"]').val();
             var release_date = el.find('input[name="release_date"]').val();
             var symbol = el.find('input[name="symbol"]').val();
@@ -165,7 +171,6 @@
                         estimated_release_date: estimated_release_date
                     },
                     success: function(data){
-                        var result = \$("td.save_result");
                         var obj = \$.parseJSON(data);
                         if (obj.id) {
                             var list_el = \$('table.economic_event_list');
@@ -176,7 +181,7 @@
                                 });
                             }
 
-                            to_append += '<td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="result"></td>';
+                            to_append += '<td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="update_result"></td>';
                             to_append += '</td></tr>';
                             list_el.append(to_append);
                             list_el.find('tr#'+obj.id).css('color', 'green');
@@ -190,6 +195,10 @@
     }
     function deleteEvent(id) {
         if (id) {
+            alert('Confirm?');
+            var el = \$('tr#'+id);
+            var result = el.find("td.update_result");
+            result.text('processing ...').show();
             \$.ajax({
                     url: "[% ee_upload_url | none %]",
                     data: {
@@ -198,7 +207,6 @@
                     },
                     success: function(data){
                         var r = \$.parseJSON(data);
-                        var result = \$("td.delete_result");
                         if(r.error) {
                             result.text('ERR: ' + r.error).css('color','red');
                         } else{
@@ -219,5 +227,6 @@
         border: 1px solid #dddddd;
         text-align: left;
         padding: 4px;
+        vertical-align: top;
     }
 </style>
