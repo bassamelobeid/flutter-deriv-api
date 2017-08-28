@@ -94,6 +94,8 @@ sub startup {
         before_dispatch => sub {
             my $c = shift;
 
+            return unless $c->tx;
+
             my $lang = defang($c->param('l'));
             if ($lang =~ /^\D{2}(_\D{2})?$/) {
                 $c->stash(language => uc $lang);
@@ -108,7 +110,6 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
-            return unless $c->tx;
             my $app_id = $c->app_id;
             return $c->render(
                 json   => {error => 'InvalidAppID'},
@@ -459,7 +460,8 @@ sub startup {
 
     $app->helper(
         'app_id' => sub {
-            my $c               = shift;
+            my $c = shift;
+            return undef unless $c->tx;
             my $possible_app_id = $c->req->param('app_id');
             if (defined($possible_app_id) && $possible_app_id =~ /^(?!0)[0-9]{1,19}$/) {
                 return $possible_app_id;
@@ -469,9 +471,10 @@ sub startup {
 
     $app->helper(
         'rate_limitations_key' => sub {
-            my $c                  = shift;
+            my $c = shift;
+            return "rate_limitations_key: connection closed" unless $c->tx;
             my $login_id           = $c->stash('loginid');
-            my $app_id             = $c->app_id;
+            my $app_id             = $c->app_id // '';
             my $authorised_key     = $login_id ? "rate_limits::authorised::$app_id/$login_id" : undef;
             my $non_authorised_key = do {
                 my $ip = $c->client_ip;
