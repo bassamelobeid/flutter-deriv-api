@@ -80,6 +80,7 @@ sub update_event {
     $existing->{blankout}              = $rd->plus_time_interval("$b1[0]h$b1[1]m")->epoch;
     $existing->{blankout_end}          = $rd->plus_time_interval("$b2[0]h$b2[1]m")->epoch;
     $existing->{tentative_event_shift} = $shift;
+    $existing->{release_date}          = Date::Utility->new($params->{release_date})->epoch if defined $params->{release_date};
 
     my $diff = $existing->{blankout_end} - $existing->{blankout};
     return "Blackout start must be before  Blackout end" if ($diff <= 0);

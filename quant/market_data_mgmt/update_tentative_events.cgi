@@ -16,5 +16,6 @@ print BOM::TentativeEvents::update_event({
     blankout              => request()->param('blankout'),
     blankout_end          => request()->param('blankout_end'),
     tentative_event_shift => request()->param('tentative_event_shift'),
+    release_date          => request()->param('release_date'),
 });
 

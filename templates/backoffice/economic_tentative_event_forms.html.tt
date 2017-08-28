@@ -3,6 +3,7 @@
     <tr>
         <td>Date:</td>
         <td>Time:</td>
+        <td>Release Datetime:</td>
         <td>Currency:</td>
         <td>Impact:</td>
         <td></td>
@@ -14,6 +15,7 @@
         <td>[% row.date %]</td>
         <td><input class="blankout" type="time" value="[% row.blankout %]"> -
         <input class="blankout_end" type="time" value="[% row.blankout_end %]"></td>
+        <td><input type='text' name='release_date'></input></td>
         <td>[% row.symbol %]</td>
         <td>[% row.impact %]</td>
         <td>[% row.event_name %]</td>
@@ -47,7 +49,8 @@
 						id: id,
 						blankout: el.find('.blankout').val(),
 						blankout_end: el.find('.blankout_end').val(),
-						tentative_event_shift: el.find('.tentative_event_shift').val()
+						tentative_event_shift: el.find('.tentative_event_shift').val(),
+                                                release_date: el.find('input[name="release_date"]').val()
 					},
 					success: function(data){
 						if(data==1){
