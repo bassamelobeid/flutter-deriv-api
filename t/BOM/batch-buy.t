@@ -24,6 +24,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client qw(create_client);
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -147,28 +148,6 @@ sub db {
         })->db;
 }
 
-sub create_client {
-    my $broker = shift || 'CR';
-    return Client::Account->register_and_return_new_client({
-        broker_code      => $broker,
-        client_password  => BOM::Platform::Password::hashpw('12345678'),
-        salutation       => 'Ms',
-        last_name        => 'Doe',
-        first_name       => 'Jane' . time . '.' . int(rand 1000000000),
-        email            => 'jane.doe' . time . '.' . int(rand 1000000000) . '@test.domain.nowhere',
-        residence        => 'in',
-        address_line_1   => '298b md rd',
-        address_line_2   => '',
-        address_city     => 'Place',
-        address_postcode => '65432',
-        address_state    => 'st',
-        phone            => '+9145257468',
-        secret_question  => 'What the f***?',
-        secret_answer    => BOM::Platform::Client::Utility::encrypt_secret_answer('is that'),
-        date_of_birth    => '1945-08-06',
-    });
-}
-
 sub top_up {
     my ($c, $cur, $amount) = @_;
 
@@ -221,6 +200,7 @@ sub check_one_result {
 
     subtest $title, sub {
         my $err = 0;
+        $err++ unless is $m->{error}, undef, "no error should be provided";
         $err++ unless is $m->{loginid}, $cl->loginid, 'loginid';
         $err++ unless is $m->{txn}->{account_id}, $acc->id, 'txn account_id';
         $err++ unless is $m->{fmb}->{account_id}, $acc->id, 'fmb account_id';
