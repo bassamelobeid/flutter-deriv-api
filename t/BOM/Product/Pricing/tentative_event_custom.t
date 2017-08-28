@@ -39,11 +39,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 set_absolute_time($now->epoch);
 
-my $blackout_start_15m = $now->minus_time_interval('30m');
-my $blackout_end_15m   = $now->minus_time_interval('15m');
-
-my $blackout_start_2h = $now->minus_time_interval('3h');
-my $blackout_end_2h   = $now->minus_time_interval('1h');
+my $blackout_start_15m = $now->minus_time_interval('15m');
+my $blackout_end_15m   = $now->plus_time_interval('15m');
 
 my $events         = [{
         symbol                => 'USD',
@@ -56,17 +53,6 @@ my $events         = [{
         event_name            => 'Test tentative',
         impact                => 5,
     },
-    {
-        symbol                => 'EUR',
-        release_date          => $now->epoch,
-        blankout              => $blackout_start_2h->epoch,
-        estimated_release_date => $now->epoch,
-        blankout_end          => $blackout_end_2h->epoch,
-        is_tentative          => 1,
-        tentative_event_shift => 0.01,
-        event_name            => 'Test tentative',
-        impact                => 5,
-    }
     ];
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -95,15 +81,14 @@ my $contract_args = {
             epoch  => $now->epoch,
             quote  => 100,
         })};
-
 #key is "contract type_pip diff" and value is expected barrier(s)
 my $expected = {
     'CALL_0'        => 55.48,
-    'CALL_1000'     => 52.12,
+    'CALL_1000'     => 57.83,
     'NOTOUCH_0'     => 5.51,
-    'NOTOUCH_1000'  => 19.15,
-    'ONETOUCH_2000' => 97.05,
-    'PUT_1000'      => 61.1,
+    'NOTOUCH_1000'  => 31.4,
+    'ONETOUCH_2000' => 100,
+    'PUT_1000'      => 66.72,
     'PUT_0'         => 55.52
 };
 
@@ -122,6 +107,7 @@ foreach my $key (sort { $a cmp $b } keys %{$expected}) {
     $contract_args->{landing_company}     = 'japan';
     $contract_args->{pricing_vol} = 0.1; # not testing vol here
     my $c = produce_contract($contract_args);
+    ok @{$c->tentative_events}, 'checks if tentative events is fetched for this price';
     cmp_ok $c->ask_price, '==', $expected->{$key}, "correct ask price for $key";
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', "correct engine for $key";
 }
