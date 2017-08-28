@@ -818,7 +818,7 @@ sub _build_tentative_events {
                 and exists $_->{blankout}
                 and exists $_->{blankout_end}
                 and (($_->{blankout} >= $effective_start and $_->{blankout_end} <= $expiry_epoch)
-                or ($effective_start >= $_->{blankout} and $expiry_start <= $_->{blankout_end})
+                or ($effective_start >= $_->{blankout} and $expiry_epoch <= $_->{blankout_end})
                 or ($expiry_epoch >= $_->{blankout} and $expiry_epoch <= $_->{blankout_end}))
         } @{$self->_applicable_economic_events}];
 
