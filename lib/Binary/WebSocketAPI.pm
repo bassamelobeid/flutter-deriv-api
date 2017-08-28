@@ -430,8 +430,6 @@ sub startup {
         ],
 
         ['copytrading_statistics'],
-        ['copy_start', {require_auth => 'trade'}],
-        ['copy_stop',  {require_auth => 'trade'}],
         [
             'document_upload',
             {
@@ -440,7 +438,9 @@ sub startup {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::Authenticate::add_upload_info,
             }
         ],
-    ];
+        ['copy_start',         {require_auth => 'trade'}],
+        ['copy_stop',          {require_auth => 'trade'}],
+        ['app_markup_details', {require_auth => 'admin'}]];
 
     for my $action (@$actions) {
         my $f             = '/home/git/regentmarkets/binary-websocket-api/config/v3/' . $action->[0];
