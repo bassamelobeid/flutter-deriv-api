@@ -462,7 +462,8 @@ sub startup {
 
     $app->helper(
         'rate_limitations_key' => sub {
-            my $c                  = shift;
+            my $c = shift;
+            return "rate_limitations_key: connection closed" unless $c->tx;
             my $login_id           = $c->stash('loginid');
             my $app_id             = $c->app_id // '';
             my $authorised_key     = $login_id ? "rate_limits::authorised::$app_id/$login_id" : undef;
@@ -472,9 +473,7 @@ sub startup {
                     $app->log->warn("cannot determine client IP-address");
                     $ip = 'unknown-IP';
                 }
-                my $user_agent = $c->tx
-                    and $c->req->headers->header('User-Agent');
-                $user_agent //= 'Unknown-UA';
+                my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
                 my $client_id = md5_hex($ip . ":" . $user_agent);
                 "rate_limits::non-authorised::$app_id/$client_id";
             };
