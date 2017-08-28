@@ -118,7 +118,7 @@
     "currency": {
       "pattern": "^[A-Z]{3}$",
       "required": "0",
-      "description": "List of supported currencies can be acquired with 'payout_currencies' call"
+      "description": "Optional field to set currency of the account. List of supported currencies can be acquired with 'payout_currencies' call"
     },
     "passthrough": {
       "type": "object",
