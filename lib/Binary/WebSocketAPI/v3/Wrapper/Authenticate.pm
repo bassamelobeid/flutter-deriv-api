@@ -49,7 +49,7 @@ sub add_upload_info {
         upload_id      => generate_upload_id(),
         sha1           => Digest::SHA1->new,
         received_bytes => 0,
-        document_path  => 's3://hostname/filehash',
+        document_path  => '/hostname/filehash',
     };
 
     $stash->{uploader} = uploader($stash);
