@@ -23,7 +23,7 @@ use Performance::Probability qw(get_performance_probability);
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
-my $loginID         = uc(request()->param('loginID'));
+my $loginID         = uc(request()->param('loginID') // '');
 my $encoded_loginID = encode_entities($loginID);
 
 PrintContentType();
