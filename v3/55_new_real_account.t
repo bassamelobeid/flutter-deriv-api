@@ -284,21 +284,43 @@ subtest 'new_real_account with currency provided' => sub {
         client_password => 'abC123',
         residence       => 'au',
     });
+    my %details = %client_details;
+    use Data::Dumper;
+
+    my $compiled_checks = sub {
+        my ($res, $details) = @_;
+        my $loginid = $res->{new_account_real}->{client_id};
+
+        ok($res->{msg_type}, 'new_account_real');
+        ok($res->{new_account_real});
+        test_schema('new_account_real', $res);
+        like($loginid, qr/^CR\d+$/, "got CR client $loginid");
+        is($res->{new_account_real}->{currency}, $details->{currency}, "currency set as per request");
+    };
+
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t->await::authorize({authorize => $token});
-    my %details = %client_details;
 
     $details{currency}  = 'USD';
     $details{last_name} = 'Torvalds';
     my $res = $t->await::new_account_real(\%details);
+    $compiled_checks->($res, \%details);
 
-    ok($res->{msg_type}, 'new_account_real');
-    ok($res->{new_account_real});
-    test_schema('new_account_real', $res);
+    # now let's login as a real account and try to create more accounts
+    $token = $res->{new_account_real}->{oauth_token};
+    $t->await::authorize({authorize => $token});
 
-    my $loginid = $res->{new_account_real}->{client_id};
-    like($loginid, qr/^CR\d+$/, "got CR client $loginid");
+    $res = $t->await::new_account_real(\%details);
+    is($res->{error}->{code}, 'CurrencyTypeNotAllowed', 'Second account with the same currency is not allowed');
+
+    $details{currency} = 'LTC';
+    $res = $t->await::new_account_real(\%details);
+    $compiled_checks->($res, \%details);
+
+    $details{currency} = 'XXX';
+    $res = $t->await::new_account_real(\%details);
+    is($res->{error}->{code}, 'InvalidCurrency', 'Try to create account with incorrect currency');
 };
 
 sub create_vr_account {
