@@ -7,7 +7,8 @@ use warnings;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
 use BOM::Database::Model::OAuth;
-
+use BOM::Database::ClientDB;
+use Date::Utility;
 use DataDog::DogStatsd::Helper;
 
 sub register {
@@ -235,6 +236,49 @@ sub verify_app {
             valid_source          => $app_id,
             app_markup_percentage => $app->{app_markup_percentage} // 0
         }};
+}
+
+sub app_markup_details {
+    my $params  = shift;
+    my $args    = $params->{args};
+    my $client  = $params->{client};
+    my $oauth   = BOM::Database::Model::OAuth->new;
+    my $user    = BOM::Platform::User->new({email => $client->email});
+    my $app_ids = ();
+
+    # If the app_id they have submitted is not in the list we have associated with them, then...
+    if ($args->{app_id}) {
+        unless ($oauth->user_has_app_id($user->id, $args->{app_id})) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidAppID',
+                message_to_client => localize('Your app_id is invalid.'),
+            });
+        } else {
+            $app_ids = [$args->{app_id}];
+        }
+    } else {
+        $app_ids = $oauth->get_app_ids_by_user_id($user->id);
+    }
+
+    my $time_from = Date::Utility->new($args->{date_from})->datetime_yyyymmdd_hhmmss;
+    my $time_to   = Date::Utility->new($args->{date_to})->datetime_yyyymmdd_hhmmss;
+
+    my $clientdb = BOM::Database::ClientDB->new({
+            client_loginid => $client->loginid,
+            operation      => 'replica',
+        })->db;
+
+    return {
+        transactions => $clientdb->dbh->selectall_arrayref(
+            'SELECT * FROM reporting.get_app_markup_details(?,?,?,?,?,?,?,?)',
+            {Slice => {}},
+            $app_ids, $time_from, $time_to,
+            $args->{offset}         || undef,
+            $args->{limit}          || undef,
+            $args->{client_loginid} || undef,
+            $args->{sort_fields}    || undef,
+            $args->{sort}           || undef
+        )};
 }
 
 1;
