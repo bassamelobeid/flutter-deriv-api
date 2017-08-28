@@ -855,7 +855,7 @@ sub check_trade_status {
             and not $client->get_status('age_verification')
             and $client->has_deposits
         )
-        or ($client->landing_company->short eq 'maltainvest' and not $client->client_fully_authenticate))
+        or ($client->landing_company->short eq 'maltainvest' and not $client->client_fully_authenticated))
     {
         return Error::Base->cuss(
             -type              => 'PleaseAuthenticate',
