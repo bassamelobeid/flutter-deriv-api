@@ -105,6 +105,8 @@
                     <tr><td>Client: [% trx.client_loginid %]<td></tr>
                     <tr><td>Balance: [% trx.balance %]</td></tr>
                     <tr><td>Payment ID: [% trx.payment_id %]</td></tr>
+                    <tr><td>Estimated Fee: [% trx.estimated_fee %]</td></tr>
+                    <tr><td>Transaction Fee: [% trx.txn_fee %]</td></tr>
                 </tbody></table></td>
                 <td><table><tbody>
                     <tr><td>Creation: [% trx.creation_date %]</td></tr>
