@@ -536,6 +536,8 @@ sub startup {
                             },
                             response => sub {
                                 my $api_response = $_[1];
+                                
+                                exists($api_response->{document_upload}) or return $api_response;
 
                                 return {
                                     %{$api_response},
