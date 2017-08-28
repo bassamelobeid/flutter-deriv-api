@@ -54,7 +54,10 @@ sub run {
     }
 
     # we need to include rates for BTC LTC ETH ETC here. Currently setting it to zero rates.
-    $rates->{$_}->{rates} = {0 => 0, 365 => 0} foreach qw/BTC BCH LTC ETH ETC/;
+    $rates->{$_}->{rates} = {
+        0   => 0,
+        365 => 0
+    } foreach qw/BTC BCH LTC ETH ETC/;
 
     foreach my $currency_symbol (keys %$rates) {
         my $data = $rates->{$currency_symbol}->{rates};
