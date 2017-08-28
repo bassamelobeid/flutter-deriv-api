@@ -183,7 +183,9 @@ sub before_forward {
             _set_defaults($req_storage, $args);
 
             my $tag = 'origin:';
-            if (my $origin = $c->tx ? $c->req->headers->header("Origin") : undef) {
+            # if connection is early closed there is no $c->req
+            return Future->fail($c->new_error($category, 'RateLimit', $c->l('Connection closed'))) unless $c->tx;
+            if (my $origin = $c->req->headers->header("Origin")) {
                 if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
                     $tag = "origin:$1";
                 }
