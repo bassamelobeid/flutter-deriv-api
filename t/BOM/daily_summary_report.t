@@ -3,28 +3,30 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
 use Test::Exception;
-use Test::Warn;
 use Test::MockModule;
+use Test::More tests => 3;
+use Test::Warn;
 use Test::Warnings;
 
-use Date::Utility;
-use Crypt::NamedKeys;
-Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
-
 use Client::Account;
+use Crypt::NamedKeys;
+use Date::Utility;
+
 
 use BOM::DailySummaryReport;
-use BOM::Platform::Runtime;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Platform::Password;
 use BOM::Platform::Client::Utility;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Platform::Password;
+use BOM::Platform::Runtime;
+
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw(create_client);
+use BOM::Test::Helper::Client qw( create_client top_up );
+
+Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'USD'});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('index',    {symbol => 'R_100'});
@@ -197,53 +199,5 @@ sub buy_one_bet {
     my ($bet, $txn) = $fmb->buy_bet;
     # note explain [$bet, $txn];
     return ($txn->{id}, $bet->{id}, $txn->{balance_after});
-}
-
-sub top_up {
-    my ($c, $cur, $amount) = @_;
-
-    my @acc = $c->account;
-    if (@acc) {
-        @acc = grep { $_->currency_code eq $cur } @acc;
-        @acc = $c->add_account({
-                currency_code => $cur,
-                is_default    => 0
-            }) unless @acc;
-    } else {
-        @acc = $c->add_account({
-            currency_code => $cur,
-            is_default    => 1
-        });
-    }
-
-    my $acc = $acc[0];
-    unless (defined $acc->id) {
-        $acc->save;
-        note 'Created account ' . $acc->id . ' for ' . $c->loginid . ' segment ' . $cur;
-    }
-
-    my ($pm) = $acc->add_payment({
-        amount               => $amount,
-        payment_gateway_code => "legacy_payment",
-        payment_type_code    => "ewallet",
-        status               => "OK",
-        staff_loginid        => "test",
-        remark               => __FILE__ . ':' . __LINE__,
-    });
-    $pm->legacy_payment({legacy_type => "ewallet"});
-    my ($trx) = $pm->add_transaction({
-        account_id    => $acc->id,
-        amount        => $amount,
-        staff_loginid => "test",
-        remark        => __FILE__ . ':' . __LINE__,
-        referrer_type => "payment",
-        action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
-        quantity      => 1,
-    });
-    $acc->save(cascade => 1);
-    $trx->load;    # to re-read (get balance_after)
-
-    note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
-    return;
 }
 
