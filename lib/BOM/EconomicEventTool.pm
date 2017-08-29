@@ -18,26 +18,44 @@ sub get_economic_events_for_date {
     my $date = shift;
 
     return _err('Date is undefined') unless $date;
-    my @events = map { get_info($_) } @{_get_economic_events(Date::Utility->new($date))};
+    $date = Date::Utility->new($date);
 
-    return {events => \@events};
+    my $economic_events = _get_economic_events('scheduled', $date);
+    my @events               = map  { get_info($_) } @$economic_events;
+    my @uncategorized_events = grep { !is_categorized($_) } @$economic_events;
+    my @deleted_events       = map  { get_info($_) } @{_get_economic_events('deleted', $date)};
+
+    return {
+        categorized_events   => \@events,
+        uncategorized_events => \@uncategorized_events,
+        deleted_events       => \@deleted_events,
+    };
 }
 
 sub generate_economic_event_tool {
     my $url = shift;
 
-    my @events = map { get_info($_) } @{_get_economic_events()};
+    my $events = get_economic_events_for_date();
     my $today  = Date::Utility->new->truncate_to_day;
     my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 6);
 
     return BOM::Backoffice::Request::template->process(
         'backoffice/economic_event_forms.html.tt',
-        {
+        +{
             ee_upload_url => $url,
-            events        => \@events,
             dates         => \@dates,
+            %$events,
         },
     ) || die BOM::Backoffice::Request::template->error;
+}
+
+sub is_categorized {
+    my $event = shift;
+
+    $event->{event_name} =~ s/\s/_/g;
+    my @categories = keys %{Volatility::Seasonality::get_economic_event_categories()};
+    return 1 if first { $_ =~ /$event->{event_name}/ } @categories;
+    return 0;
 }
 
 # get the calibration magnitude and duration factor of the given economic event, if any.
@@ -157,12 +175,12 @@ sub _regenerate {
 }
 
 sub _get_economic_events {
-    my $date = shift;
+    my ($type, $date) = @_;
 
     my $eec = Quant::Framework::EconomicEventCalendar->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
     );
-    return $eec->list_economic_events_for_date($date) // [];
+    return $eec->list_economic_events_for_date($type, $date) // [];
 }
 
 sub _err {
