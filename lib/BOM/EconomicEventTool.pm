@@ -135,6 +135,29 @@ sub update_by_id {
     }
 }
 
+sub restore_by_id {
+    my $args = shift;
+
+    return _err("ID is not found.") unless $args->{id};
+
+    my @deleted_events = _get_deleted_events();
+
+    my $to_restore = first { $_->{id} eq $args->{id} } @deleted_events;
+
+    my $new_event_id = Quant::Framework::EconomicEventCalendar::_generate_id($args);
+
+    Quant::Framework::EconomicEventCalendar->new({
+            recorded_date    => Date::Utility->new,
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        })->save_new($to_restore);
+
+    return {
+        id => $args->{id},
+        %$to_restore
+    };
+}
+
 sub save_new_event {
     my $args = shift;
 
