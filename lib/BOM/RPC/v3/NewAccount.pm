@@ -30,6 +30,7 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (request);
 use BOM::Database::Model::OAuth;
+use BOM::Platform::PaymentNotificationQueue;
 
 sub _create_oauth_token {
     my $loginid = shift;
@@ -86,6 +87,14 @@ sub new_account_virtual {
     $user->save;
 
     BOM::Platform::AuditLog::log("successful login", "$email");
+    BOM::Platform::PaymentNotificationQueue->add_sync(
+        source        => 'virtual',
+        currency      => 'USD',
+        loginid       => $client->loginid,
+        type          => 'newaccount',
+        amount        => 0,
+        payment_agent => 0,
+    );
     return {
         client_id   => $client->loginid,
         email       => $email,
@@ -238,6 +247,14 @@ sub new_account_real {
     }
 
     BOM::Platform::AuditLog::log("successful login", "$client->email");
+    BOM::Platform::PaymentNotificationQueue->add_sync(
+        source        => 'real',
+        currency      => 'USD',
+        loginid       => $new_client->loginid,
+        type          => 'newaccount',
+        amount        => 0,
+        payment_agent => 0,
+    );
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -330,6 +347,14 @@ sub new_account_maltainvest {
     }
 
     BOM::Platform::AuditLog::log("successful login", "$client->email");
+    BOM::Platform::PaymentNotificationQueue->add_sync(
+        source        => 'real',
+        currency      => 'USD',
+        loginid       => $new_client->loginid,
+        type          => 'newaccount',
+        amount        => 0,
+        payment_agent => 0,
+    );
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -398,6 +423,14 @@ sub new_account_japan {
     $user->save;
 
     BOM::Platform::AuditLog::log("successful login", "$client->email");
+    BOM::Platform::PaymentNotificationQueue->add_sync(
+        source        => 'real',
+        currency      => 'USD',
+        loginid       => $new_client->loginid,
+        type          => 'newaccount',
+        amount        => 0,
+        payment_agent => 0,
+    );
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
