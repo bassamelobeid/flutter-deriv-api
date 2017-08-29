@@ -839,7 +839,9 @@ Here we have any uncommon business logic check.
 
 Common checks (unwelcome & disabled) are done _validate_client_status.
 
-Don't allow to trade for MLT and MX without confirmed age
+Don't allow to trade for:
+- MLT, MX and MF without confirmed age
+- MF without fully_authentication
 
 =cut
 
@@ -848,7 +850,13 @@ sub check_trade_status {
 
     return if $client->is_virtual;
 
-    if (($client->landing_company->short =~ /^(?:malta|iom)$/) and not $client->get_status('age_verification') and $client->has_deposits) {
+    if ((
+                ($client->landing_company->short =~ /^(?:maltainvest|malta|iom)$/)
+            and not $client->get_status('age_verification')
+            and $client->has_deposits
+        )
+        or ($client->landing_company->short eq 'maltainvest' and not $client->client_fully_authenticated))
+    {
         return Error::Base->cuss(
             -type              => 'PleaseAuthenticate',
             -mesg              => 'Please authenticate your account to continue',
