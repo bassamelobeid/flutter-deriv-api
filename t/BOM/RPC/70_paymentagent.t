@@ -13,6 +13,10 @@ use BOM::Database::ClientDB;
 my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
 
+# Avoid payment queue call since we do not have the EUR/JPY currency rates
+my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
+$pnq_mocked->mock(add => sub { return Future->done; });
+
 my ($client,         $pa_client);
 my ($client_account, $pa_account);
 {
