@@ -58,6 +58,9 @@ sub states_list {
 sub _currencies_config {
     my $amt_precision     = Format::Util::Numbers::get_precision_config()->{price};
     my $bet_limits        = BOM::Platform::Config::quants->{bet_limits};
+    # As a stake_default (amount, which will be pre-populated for this currency on our website,
+    # if there were no amount entered by client), we get max out of two minimal possible stakes.
+    # Logic is copied from _build_staking_limits
     my %currencies_config = map {
         $_ => {
             fractional_digits => $amt_precision->{$_},
