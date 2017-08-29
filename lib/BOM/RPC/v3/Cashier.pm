@@ -618,14 +618,14 @@ sub paymentagent_transfer {
         }
     }
 
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::Platform::PaymentNotificationQueue->add_sync(
         source        => 'payment_agent',
         currency      => $currency,
         loginid       => $loginid_to,
         type          => 'deposit',
         amount        => $amount,
         payment_agent => 0,
-    )->get;
+    );
 
     # sent email notification to client
     my $emailcontent = localize(
@@ -873,14 +873,14 @@ sub paymentagent_withdraw {
         }
     }
 
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::Platform::PaymentNotificationQueue->add_sync(
         source        => 'payment_agent',
         currency      => $currency,
         loginid       => $pa_client->loginid,
         type          => 'withdrawal',
         amount        => $amount,
         payment_agent => 0,
-    )->get;
+    );
 
     my $client_name = $client->first_name . ' ' . $client->last_name;
     # sent email notification to Payment Agent
