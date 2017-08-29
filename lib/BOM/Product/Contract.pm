@@ -976,7 +976,7 @@ sub pricing_details {
     my $iv = $self->is_expired ? 0 : $self->pricing_vol;
     my $iv_2 = 0;
 
-    if ($self->pricing_vol_for_two_barriers) {
+    if ($self->pricing_vol_for_two_barriers and not $self->is_expired) {
         $iv   = $self->pricing_vol_for_two_barriers->{high_barrier_vol};
         $iv_2 = $self->pricing_vol_for_two_barriers->{low_barrier_vol};
     }
