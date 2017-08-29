@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More (tests => 4);
+use Test::MockModule;
 use Test::Exception;
 use Test::Warnings;
 
@@ -57,6 +58,8 @@ subtest "get_balance" => sub {
 };
 
 subtest "making new transaction" => sub {
+    my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
+    $pnq_mocked->mock(add => sub { return Future->done; });
     lives_ok {
 
         my $client = Client::Account->new({loginid => 'CR0008'});
