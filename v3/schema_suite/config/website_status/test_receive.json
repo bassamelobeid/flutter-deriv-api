@@ -84,7 +84,7 @@
                             "properties": {
                                 "minutely": {
                                     "type": "number",
-                                    "pattern": "^44$",
+                                    "pattern": "^244$",
                                     "required": "1"
                                 },
                                 "hourly": {
