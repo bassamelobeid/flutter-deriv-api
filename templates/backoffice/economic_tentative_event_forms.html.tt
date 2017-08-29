@@ -1,5 +1,5 @@
 <p><b>Tentative events list:</b></p>[% FOREACH row = events %] [% END %]
-<table>
+<table id='tentative_event_list'>
     <tr>
         <td>Date:</td>
         <td>Time:</td>
@@ -27,7 +27,7 @@
 <script>
 	function updateEvent(id){
 		if(id){
-			var el = \$('#'+id);
+			var el = \$('table#tentative_event_list').find('tr#'+id);
 			if(el.length>0){
 				var result = el.find('.result');
 				var m1 = el.find('.blankout').val().match(/^(\d+):(\d+)\$/);
