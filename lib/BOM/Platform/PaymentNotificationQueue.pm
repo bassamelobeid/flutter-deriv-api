@@ -67,7 +67,8 @@ sub add_sync {
     try {
         my $f = $class->add(%args);
         $f->get;
-    } catch {
+    }
+    catch {
         warn "Redis notification failed: $_\n";
         stats_inc('payment.' . $args{type} . '.notification.error', {tag => ['source:' . $args{source}]});
     };
@@ -109,31 +110,35 @@ Usage:
 sub publish {
     my ($class, $k, $v) = @_;
     my $redis = $class->redis;
-    my $loop = Mojo::IOLoop->new;
+    my $loop  = Mojo::IOLoop->new;
 
     # We have a hardcoded 3-second timeout to avoid the payment API calls taking
     # too long for cashier callbacks.
     my $timeout = Future::Mojo->new($loop);
-    $loop->timer(3 => sub {
-        $timeout->fail('Redis connection timeout exceeded')
-    });
+    $loop->timer(
+        3 => sub {
+            $timeout->fail('Redis connection timeout exceeded');
+        });
 
     my $f = Future::Mojo->new($loop);
-    $redis->publish($k => $v, sub {
-        my ($self, $count, $err) = @_;
-        stats_gauge('payment.notification.listeners', $count);
-        if($err) {
-            $f->fail($err, payment_notification => $k, $v);
+    $redis->publish(
+        $k => $v,
+        sub {
+            my ($self, $count, $err) = @_;
+            stats_gauge('payment.notification.listeners', $count);
+            if ($err) {
+                $f->fail(
+                    $err,
+                    payment_notification => $k,
+                    $v
+                );
+                return;
+            }
+            $f->done($count);
             return;
-        }
-        $f->done($count);
-        return;
-    });
+        });
 
-    return Future->wait_any(
-        $f,
-        $timeout,
-    );
+    return Future->wait_any($f, $timeout,);
 }
 
 1;
