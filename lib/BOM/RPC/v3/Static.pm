@@ -56,19 +56,17 @@ sub states_list {
 }
 
 sub _currencies_config {
-    my $amt_precision = Format::Util::Numbers::get_precision_config()->{price};
-    my $static        = BOM::Platform::Config::quants;
-    my $bet_limits    = $static->{bet_limits};
-    return {
-        map {
-            $_ => {
-                fractional_digits => $amt_precision->{$_},
-                type              => LandingCompany::Registry::get_currency_type($_),
-                stake_default     => min($bet_limits->{min_payout}->{volidx}->{$_}, $bet_limits->{min_payout}->{default}->{$_}) / 2,
-                }
+    my $amt_precision     = Format::Util::Numbers::get_precision_config()->{price};
+    my $bet_limits        = BOM::Platform::Config::quants->{bet_limits};
+    my %currencies_config = map {
+        $_ => {
+            fractional_digits => $amt_precision->{$_},
+            type              => LandingCompany::Registry::get_currency_type($_),
+            stake_default     => min($bet_limits->{min_payout}->{volidx}->{$_}, $bet_limits->{min_payout}->{default}->{$_}) / 2,
             }
-            keys LandingCompany::Registry::get('costarica')->legal_allowed_currencies
-    };
+        }
+        keys LandingCompany::Registry::get('costarica')->legal_allowed_currencies;
+    return \%currencies_config;
 }
 
 sub website_status {
