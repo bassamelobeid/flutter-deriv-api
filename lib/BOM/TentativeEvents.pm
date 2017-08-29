@@ -105,4 +105,20 @@ sub update_event {
     return $update ? 1 : 0;
 }
 
+sub delete_event {
+    my $args = shift;
+
+    return _eec->delete_event({
+        id   => $args->{id},
+        type => 'tentative',
+    });
+}
+
+sub _eec {
+    return Quant::Framework::EconomicEventCalendar->new({
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
+}
+
 1;

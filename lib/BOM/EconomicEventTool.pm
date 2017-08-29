@@ -66,7 +66,10 @@ sub delete_by_id {
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     );
 
-    my $deleted = $ee->delete_event({id => $id});
+    my $deleted = $ee->delete_event({
+        id   => $id,
+        type => 'scheduled'
+    });
     _regenerate($ee->get_economic_events_calendar);
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;

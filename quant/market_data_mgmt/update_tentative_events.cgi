@@ -11,11 +11,18 @@ use BOM::TentativeEvents;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-print BOM::TentativeEvents::update_event({
-    id                    => request()->param('id'),
-    blankout              => request()->param('blankout'),
-    blankout_end          => request()->param('blankout_end'),
-    tentative_event_shift => request()->param('tentative_event_shift'),
-    release_date          => request()->param('release_date'),
-});
+if (request()->param('update_event')) {
+    print BOM::TentativeEvents::update_event({
+        id                    => request()->param('id'),
+        blankout              => request()->param('blankout'),
+        blankout_end          => request()->param('blankout_end'),
+        tentative_event_shift => request()->param('tentative_event_shift'),
+        release_date          => request()->param('release_date'),
+    });
+}
 
+if (request()->param('delete_event')) {
+    print BOM::TentativeEvents::delete_event({
+        id => request()->param('id'),
+    });
+}
