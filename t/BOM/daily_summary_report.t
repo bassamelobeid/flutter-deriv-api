@@ -24,6 +24,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client qw(create_client);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'USD'});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('index',    {symbol => 'R_100'});
@@ -244,27 +245,5 @@ sub top_up {
 
     note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
     return;
-}
-
-sub create_client {
-    my $broker = shift;
-    return Client::Account->register_and_return_new_client({
-        broker_code      => $broker,
-        client_password  => BOM::Platform::Password::hashpw('12345678'),
-        salutation       => 'Ms',
-        last_name        => 'Doe',
-        first_name       => 'Jane' . time . '.' . int(rand 1000000000),
-        email            => 'jane.doe' . time . '.' . int(rand 1000000000) . '@test.domain.nowhere',
-        residence        => 'in',
-        address_line_1   => '298b md rd',
-        address_line_2   => '',
-        address_city     => 'Place',
-        address_postcode => '65432',
-        address_state    => 'st',
-        phone            => '+9145257468',
-        secret_question  => 'What the f***?',
-        secret_answer    => BOM::Platform::Client::Utility::encrypt_secret_answer('is that'),
-        date_of_birth    => '1945-08-06',
-    });
 }
 
