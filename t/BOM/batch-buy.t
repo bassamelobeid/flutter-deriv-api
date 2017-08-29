@@ -3,32 +3,32 @@
 use strict;
 use warnings;
 
-use Date::Utility;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More;    # tests => 4;
+use Test::More;
 use Test::Exception;
-use Guard;
+
 use Client::Account;
-use BOM::Platform::Password;
-use BOM::Platform::Client::Utility;
-
+use Date::Utility;
 use ExpiryQueue ();
+use Guard;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 
-use BOM::Transaction;
-use BOM::Transaction::Validation;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData::Types;
+use BOM::Platform::Client::Utility;
+use BOM::Platform::Password;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use BOM::Transaction::Validation;
+use BOM::Transaction;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw(create_client);
-use BOM::MarketData qw(create_underlying_db);
-use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types;
-use LandingCompany::Offerings qw(reinitialise_offerings);
+use BOM::Test::Helper::Client qw( create_client top_up );
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
@@ -146,53 +146,6 @@ sub db {
     return BOM::Database::ClientDB->new({
             broker_code => 'CR',
         })->db;
-}
-
-sub top_up {
-    my ($c, $cur, $amount) = @_;
-
-    my @acc = $c->account;
-    if (@acc) {
-        @acc = grep { $_->currency_code eq $cur } @acc;
-        @acc = $c->add_account({
-                currency_code => $cur,
-                is_default    => 0
-            }) unless @acc;
-    } else {
-        @acc = $c->add_account({
-            currency_code => $cur,
-            is_default    => 1
-        });
-    }
-
-    my $acc = $acc[0];
-    unless (defined $acc->id) {
-        $acc->save;
-        note 'Created account ' . $acc->id . ' for ' . $c->loginid . ' segment ' . $cur;
-    }
-
-    my ($pm) = $acc->add_payment({
-        amount               => $amount,
-        payment_gateway_code => "legacy_payment",
-        payment_type_code    => "ewallet",
-        status               => "OK",
-        staff_loginid        => "test",
-        remark               => __FILE__ . ':' . __LINE__,
-    });
-    $pm->legacy_payment({legacy_type => "ewallet"});
-    my ($trx) = $pm->add_transaction({
-        account_id    => $acc->id,
-        amount        => $amount,
-        staff_loginid => "test",
-        remark        => __FILE__ . ':' . __LINE__,
-        referrer_type => "payment",
-        action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
-        quantity      => 1,
-    });
-    $acc->save(cascade => 1);
-    $trx->load;    # to re-read (get balance_after)
-
-    note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
 }
 
 sub check_one_result {
