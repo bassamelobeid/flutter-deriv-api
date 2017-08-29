@@ -35,6 +35,7 @@ use BOM::Platform::Config;
 use BOM::Platform::AuditLog;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
+use BOM::Platform::PaymentNotificationQueue;
 use BOM::RPC::v3::Utility;
 use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
@@ -606,6 +607,15 @@ sub paymentagent_transfer {
         }
     }
 
+    BOM::Platform::PaymentNotificationQueue->add(
+        source        => 'payment_agent',
+        currency      => $currency,
+        loginid       => $loginid_to,
+        type          => 'deposit',
+        amount        => $amount,
+        payment_agent => 0,
+    )->get;
+
     # sent email notification to client
     my $emailcontent = localize(
         'Dear [_1] [_2] [_3],',                  encode_entities($client_to->salutation),
@@ -851,6 +861,15 @@ sub paymentagent_withdraw {
             return $error_sub->(localize('An error occurred while processing your payment agent withdrawal.'), $error);
         }
     }
+
+    BOM::Platform::PaymentNotificationQueue->add(
+        source        => 'payment_agent',
+        currency      => $currency,
+        loginid       => $pa_client->loginid,
+        type          => 'withdrawal',
+        amount        => $amount,
+        payment_agent => 0,
+    )->get;
 
     my $client_name = $client->first_name . ' ' . $client->last_name;
     # sent email notification to Payment Agent
