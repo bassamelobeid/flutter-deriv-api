@@ -21,6 +21,10 @@ use utf8;
 
 my ($email, $t, $rpc_ct) = ('test' . rand(999) . '@binary.com');
 
+# Avoid payment queue call since we do not have the EUR/JPY currency rates
+my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
+$pnq_mocked->mock(add => sub { return Future->done; });
+
 my $client_details = {
     salutation             => 'Mr',
     last_name              => 'Kathuria' . rand(999),

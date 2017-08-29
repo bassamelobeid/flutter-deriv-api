@@ -24,6 +24,10 @@ my $email = 'test' . rand(999) . '@binary.com';
 my ($t, $rpc_ct);
 my ($method, $params, $client_details);
 
+# Avoid payment queue call since we do not have the EUR/JPY currency rates
+my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
+$pnq_mocked->mock(add => sub { return Future->done; });
+
 $client_details = {
     salutation             => 'hello',
     last_name              => 'Vostrov' . rand(999),
