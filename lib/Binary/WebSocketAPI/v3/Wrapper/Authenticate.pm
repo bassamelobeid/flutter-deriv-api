@@ -20,7 +20,7 @@ sub uploader {
 my $last_upload_id = 0;
 
 sub generate_upload_id {
-    return ($last_upload_id = ($last_upload_id + 1) % (1 << 32));
+    return $last_upload_id = ($last_upload_id + 1) % (1 << 32);
 }
 
 sub add_upload_info {
