@@ -11,6 +11,7 @@ use LandingCompany::Registry;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
+use BOM::Platform::Config;
 use BOM::Platform::Context qw (request);
 use BOM::RPC::v3::Utility;
 
