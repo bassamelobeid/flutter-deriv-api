@@ -50,20 +50,6 @@ sub top_up {
     my $fdp = $c->is_first_deposit_pending;
     my @acc = $c->account;
 
-# two behaviours:
-#_home_git_regentmarkets_bom-cryptocurrency_t_BOM_002_helper_b.t
-#_home_git_regentmarkets_bom-platform_t_BOM_Platform_financial_market_bet_02.t
-#_home_git_regentmarkets_bom-rpc_t_BOM_RPC_Transaction_12_copiers.t
-#    return if (@acc && $acc[0]->currency_code ne $cur);
-#
-#    if (not @acc) {
-#       @acc = $c->add_account({
-#          currency_code => $cur,
-#          is_default    => 1
-#       });
-#    }
-#_home_git_regentmarkets_bom-transaction_t_BOM_transaction.t
-#_home_git_regentmarkets_bom-transaction_t_BOM_transaction2.t
     if (@acc) {
         @acc = grep { $_->currency_code eq $cur } @acc;
         @acc = $c->add_account({
