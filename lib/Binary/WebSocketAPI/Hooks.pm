@@ -129,7 +129,7 @@ sub reached_limit_check {
         my $f = $c->check_limits($limiting_service);
         $f->on_fail(
             sub {
-                stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["app_id:" . $c->app_id]});
+                stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["app_id:" . ($c->app_id // 'undef')]});
             });
         return $f;
     }
@@ -183,6 +183,8 @@ sub before_forward {
             _set_defaults($req_storage, $args);
 
             my $tag = 'origin:';
+            # if connection is early closed there is no $c->req
+            return Future->fail($c->new_error($category, 'RateLimit', $c->l('Connection closed'))) unless $c->tx;
             if (my $origin = $c->req->headers->header("Origin")) {
                 if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
                     $tag = "origin:$1";
