@@ -26,7 +26,7 @@ use Future::Mojo;
 use JSON::XS qw(encode_json);
 use YAML::XS qw(LoadFile);
 
-use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
+use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge stats_inc);
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 my $redis_cfg = LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write};
