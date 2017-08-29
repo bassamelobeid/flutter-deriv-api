@@ -29,13 +29,21 @@ use YAML::XS qw(LoadFile);
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge stats_inc);
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
-my $redis_cfg = LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write};
-my $redis_url = Mojo::URL->new("redis://$redis_cfg->{host}:$redis_cfg->{port}");
-$redis_url->userinfo('user:' . $redis_cfg->{password}) if $redis_cfg->{password};
+our $REDIS;
 
 sub redis {
-    state $redis = Mojo::Redis2->new(url => $redis_url);
-    return $redis;
+    unless($REDIS) {
+        my $redis_cfg = LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write};
+        my $redis_url = Mojo::URL->new("redis://$redis_cfg->{host}:$redis_cfg->{port}");
+        $redis_url->userinfo('user:' . $redis_cfg->{password}) if $redis_cfg->{password};
+        $REDIS = Mojo::Redis2->new(url => $redis_url);
+    }
+
+    return $REDIS;
+}
+
+sub disconnect {
+    undef $REDIS;
 }
 
 =head2 add
