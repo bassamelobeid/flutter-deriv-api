@@ -207,13 +207,13 @@ sub run {
 
         if (grep { $_ eq $symbol } (@{$non_atm_symbol})) {
             #skip this symbol if it is non atm and rr , bb are undef.
-             if(exists $raw_volsurface->{rr_bf_status} and $raw_volsurface->{rr_bf_status}) {
-             $self->report->{$symbol} = {
+            if (exists $raw_volsurface->{rr_bf_status} and $raw_volsurface->{rr_bf_status}) {
+                $self->report->{$symbol} = {
                     success => 0,
                     reason  => "BF or RR is undef ",
                 };
                 next;
-        }
+            }
         }
 
         #Delete the flag since we do not need to save it into our system.
