@@ -61,10 +61,16 @@ sub delete_by_id {
 
     return _err("ID is not found.") unless ($id);
 
-    my $deleted = Quant::Framework::EconomicEventCalendar->new(
+    my $ee = Quant::Framework::EconomicEventCalendar->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    )->delete_event({id => $id});
+    );
+
+    my $deleted = $ee->delete_event({
+        id   => $id,
+        type => 'scheduled'
+    });
+    _regenerate($ee->get_economic_events_calendar);
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
     return {id => $deleted};
