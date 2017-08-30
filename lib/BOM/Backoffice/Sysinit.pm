@@ -3,26 +3,30 @@ package BOM::Backoffice::Sysinit;
 use warnings;
 use strict;
 
-use Time::HiRes ();
-use Guard;
 use File::Copy;
+use Guard;
+use List::MoreUtils qw( any );
 use Path::Tiny;
 use Plack::App::CGIBin::Streaming;
+use Time::HiRes ();
+
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Cookie;
-use BOM::Backoffice::Request::Base;
-use BOM::Backoffice::Request qw(request localize);
-use BOM::Platform::Config;
-use BOM::Platform::Chronicle;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request localize);
+use BOM::Backoffice::Request::Base;
+use BOM::Platform::Chronicle;
+use BOM::Platform::Config;
+
 use Try::Tiny::Except ();    # should be preloaded as early as possible
                              # this statement here is merely a comment.
 
 my $permissions = {
-    'f_broker_login.cgi'              => undef,                          #login page is allowed for all
-    'login.cgi'                       => undef,                          #login page is allowed for all
-    'second_step_auth.cgi'            => undef,
+    'f_broker_login.cgi'   => ['ALL'],
+    'login.cgi'            => ['ALL'],
+    'second_step_auth.cgi' => ['ALL'],
+
     'batch_payments.cgi'              => ['Payments'],
     'c_listclientlimits.cgi'          => ['CS'],
     'client_email.cgi'                => ['CS'],
@@ -230,9 +234,8 @@ sub _check_access {
     my $script = shift // '';
     $script =~ s/^\///;
     # don't allow access to unknown scripts
-    return 0 unless exists $permissions->{$script};
-    # and allow access if permissions are undef
-    return 1 unless defined $permissions->{$script};
+    return 0 unless defined $permissions->{$script};
+    return 1 if any { $_ eq 'ALL' } @{$permissions->{$script}};
     return BOM::Backoffice::Auth0::has_authorisation($permissions->{$script});
 }
 
