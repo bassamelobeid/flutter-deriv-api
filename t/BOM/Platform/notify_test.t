@@ -3,7 +3,6 @@
 use strict;
 use warnings;
 use Test::More tests => 6;
-use Test::MockModule;
 use Test::Exception;
 use Test::Warnings;
 
@@ -18,9 +17,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use YAML::XS;
 
 use IO::Select;
-
-my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
-$pnq_mocked->mock(add => sub { return Future->done; });
 
 my $connection_builder;
 my ($acc1, $acc2, $acc3, $acc4);
