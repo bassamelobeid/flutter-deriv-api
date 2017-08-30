@@ -140,11 +140,11 @@ sub restore_by_id {
 
     return _err("ID is not found.") unless $args->{id};
 
-    my @deleted_events = _get_deleted_events();
+    my $deleted_events = _get_deleted_events();
 
-    my $to_restore = first { $_->{id} eq $args->{id} } @deleted_events;
+    my $to_restore = $deleted_events->{$args->{id}};
 
-    my $new_event_id = Quant::Framework::EconomicEventCalendar::_generate_id($args);
+    return _err('Economic event not found with [' . $args->{id} . ']') unless $to_restore;
 
     Quant::Framework::EconomicEventCalendar->new({
             recorded_date    => Date::Utility->new,
