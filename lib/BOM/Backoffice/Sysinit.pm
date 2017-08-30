@@ -8,14 +8,90 @@ use Guard;
 use File::Copy;
 use Path::Tiny;
 use Plack::App::CGIBin::Streaming;
+use BOM::Backoffice::Auth0;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Cookie;
 use BOM::Backoffice::Request::Base;
 use BOM::Backoffice::Request qw(request localize);
 use BOM::Platform::Config;
 use BOM::Platform::Chronicle;
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Try::Tiny::Except ();    # should be preloaded as early as possible
                              # this statement here is merely a comment.
+
+my $permissions = {
+    'f_broker_login.cgi'              => undef,                                   #login page is allowed for all
+    'login.cgi'                       => undef,                                   #login page is allowed for all
+    'second_step_auth.cgi'            => undef,
+    'batch_payments.cgi'              => ['Payments'],
+    'c_listclientlimits.cgi'          => ['CS'],
+    'client_email.cgi'                => ['CS'],
+    'client_impersonate.cgi'          => ['CS'],
+    'client_risk_report.cgi'          => ['Compliance'],
+    'download_document.cgi'           => ['CS', 'Compliance', 'Quants', 'IT'],    #initially it was not checking at all
+    'easy_search.cgi'                 => ['CS'],
+    'f_accountingreports.cgi'         => ['Accounts'],
+    'f_bet_iv.cgi'                    => ['Quants'],
+    'f_bo_enquiry.cgi'                => ['CS'],
+    'f_clientloginid.cgi'             => ['CS'],
+    'f_clientloginid_edit.cgi'        => ['CS'],
+    'f_clientloginid_newpassword.cgi' => ['CS'],
+    'f_dailyico.cgi'                  => ['Quants'],
+    'f_dailyico_graph.cgi'            => ['Quants'],
+    'f_dailyturnoverreport.cgi'     => ['Accounts', 'Quants', 'IT'],
+    'f_dynamic_settings.cgi'        => ['Quants',   'IT'],    # it has extra internal logic inside
+    'f_formatdailysummary.cgi'      => ['Quants'],
+    'f_investigative.cgi'           => ['CS'],
+    'f_makeclientdcc.cgi'           => ['CS'],
+    'f_makedcc.cgi'                 => ['Payments'],
+    'f_manager.cgi'                 => ['Payments'],
+    'f_manager_confodeposit.cgi'    => ['Payments'],
+    'f_manager_crypto.cgi'          => ['Payments'],
+    'f_manager_history.cgi'         => ['CS'],
+    'f_manager_statement.cgi'       => ['CS'],
+    'f_popupclientsearch.cgi'       => ['CS'],
+    'f_profit_check.cgi'            => ['CS'],
+    'f_profit_table.cgi'            => ['CS'],
+    'f_promotional.cgi'             => ['Marketing'],
+    'f_promotional_processing.cgi'  => ['Marketing'],
+    'f_rescind_freegift.cgi'        => ['Payments'],
+    'f_rescind_listofaccounts.cgi'  => ['Payments'],
+    'f_rtquoteslogin.cgi'           => ['Quants'],
+    'f_save.cgi'                    => ['Quants'],
+    'f_setting_paymentagent.cgi'    => ['CS'],
+    'f_setting_selfexclusion.cgi'   => ['CS'],
+    'f_show.cgi'                    => ['Accounts'],
+    'f_upload_holidays.cgi'         => ['Quants'],
+    'f_viewclientsubset.cgi'        => ['CS'],
+    'f_viewloginhistory.cgi'        => ['CS'],
+    'fetch_myaffiliate_payment.cgi' => ['Marketing'],
+    'ip_search.cgi'                 => ['CS'],
+    'monthly_client_report.cgi'     => ['Accounts'],
+    'monthly_payments_report.cgi'   => ['Accounts'],
+    'open_contracts_report.cgi'                                => ['Accounts', 'Quants'],
+    'promocode_edit.cgi'                                       => ['Marketing'],
+    'quant/edit_interest_rate.cgi'                             => ['Quants'],
+    'quant/market_data_mgmt/quant_market_tools_backoffice.cgi' => ['Quants'],
+    'quant/pricing/bpot.cgi'                                   => ['Quants'],
+    'quant/pricing/contract_details.cgi'                       => ['Quants'],
+    'quant/pricing/f_dealer.cgi'                               => ['Quants'],
+    'quant/product_management.cgi'                             => ['Quants'],
+    'quant/settle_contracts.cgi'                               => ['Quants'],
+    'rtquotes_displayallgraphs.cgi'                            => ['Quants'],
+    'show_audit_trail.cgi'                                     => ['CS'],
+    'trusted_client_edit.cgi'                                  => ['CS'],
+    'untrusted_client_edit.cgi'                                => ['CS'],
+    'view_192_raw_response.cgi'                                => ['CS'],
+    #following files have no access check inside
+    'f_bbdl_download.cgi'                => ['Quants'],
+    'f_bbdl_list_directory.cgi'          => ['Quants'],
+    'f_bbdl_scheduled_request_files.cgi' => ['Quants'],
+    'f_bbdl_upload.cgi'                  => ['Quants'],
+    'f_bbdl_upload_request_files.cgi'    => ['Quants'],
+    'f_client_combined_audit.cgi'        => ['CS'],
+    'f_client_deskcom.cgi'               => ['CS'],
+    'f_quant_query.cgi'                  => ['Quants'],
+};
 
 sub init {
     $ENV{REQUEST_STARTTIME} = Time::HiRes::time;    ## no critic (RequireLocalizedPunctuationVars)
@@ -37,7 +113,6 @@ sub init {
             $ENV{PGSERVICEFILE} = $needed_service;    ## no critic (RequireLocalizedPunctuationVars)
         }
     }
-
     if (request()->from_ui) {
         {
             no strict;                                ## no critic (ProhibitNoStrict)
@@ -49,26 +124,13 @@ sub init {
 
         $SIG{ALRM} = sub {                            ## no critic (RequireLocalizedPunctuationVars)
             my $runtime = time - $^T;
-            my $timenow = Date::Utility->new->datetime;
 
             warn("Panic timeout after $runtime seconds");
+            _show_error_and_exit(
+                localize(
+                    'The page has timed out. This may be due to a slow Internet connection, or to excess load on our servers.  Please try again in a few moments.'
+                ));
 
-            print '<div id="page_timeout_notice" class="aligncenter">'
-                . '<p class="normalfonterror">'
-                . $timenow . ' '
-                . localize(
-                'The page has timed out. This may be due to a slow Internet connection, or to excess load on our servers.  Please try again in a few moments.'
-                )
-                . '</p>'
-                . '<p class="normalfonterror">'
-                . '<a href="javascript:document.location.reload();"><b>'
-                . localize('Reload page')
-                . '</b></a> '
-                . ' <a href="http://'
-                . localize('homepage') . '</p>'
-                . '</div>';
-            BOM::Backoffice::Request::request_completed();
-            exit;
         };
         alarm($timeout);
 
@@ -83,6 +145,9 @@ sub init {
         $ENV{AUDIT_STAFF_IP}   = request()->client_ip;                    ## no critic (RequireLocalizedPunctuationVars)
 
         request()->http_handler($http_handler);
+        if (!_check_access($http_handler->script_name)) {
+            _show_error_and_exit($http_handler, 'Access to ' . $http_handler->script_name . ' is not allowed');
+        }
     } else {
         # We can ignore the alarm because we're not serving a web request here.
         # This is most likely happening in tests, long execution of which should be caught elsewhere.
@@ -140,6 +205,37 @@ sub log_bo_access {
     Path::Tiny::path($log)->append_utf8(Date::Utility->new->datetime . " $s $l\n");
 
     return;
+}
+
+sub _show_error_and_exit {
+    my $http_handler = shift;
+    my $error        = shift;
+    my $timenow      = Date::Utility->new->datetime;
+    # this can be duplicated for ALARM message, but not an issue
+    PrintContentType();
+    print '<div id="page_timeout_notice" class="aligncenter">'
+        . '<p class="normalfonterror">'
+        . $timenow . ' '
+        . $error . '</p>'
+        . '<p class="normalfonterror">'
+        . '<a href="javascript:document.location.reload();"><b>'
+        . localize('Reload page')
+        . '</b></a> '
+        . ' <a href="http://'
+        . localize('homepage') . '</p>'
+        . '</div>';
+    BOM::Backoffice::Request::request_completed();
+    exit;
+}
+
+sub _check_access {
+    my $script = shift // '';
+    $script =~ s/^\///;
+    # don't allow access to unknown scripts
+    return 0 unless exists $permissions->{$script};
+    # and allow access if permissions are undef
+    return 1 unless defined $permissions->{$script};
+    return BOM::Backoffice::Auth0::has_authorisation($permissions->{$script});
 }
 
 1;
