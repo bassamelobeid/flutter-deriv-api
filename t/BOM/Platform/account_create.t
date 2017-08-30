@@ -26,9 +26,6 @@ my $on_production = 1;
 my $config_mocked = Test::MockModule->new('BOM::Platform::Config');
 $config_mocked->mock('on_production', sub { return $on_production });
 
-my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
-$pnq_mocked->mock(add => sub { return Future->done; });
-
 my $vr_acc;
 lives_ok {
     $vr_acc = create_vr_acc({
