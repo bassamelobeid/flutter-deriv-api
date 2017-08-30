@@ -54,7 +54,7 @@ sub add {
     # We are not interested in deposits from payment agents
     return if $args{payment_agent};
     # Skip any virtual accounts
-    return if $args{loginid} =~ /^VR/;
+    return if $args{loginid} =~ /^VR/ and ($args{action} eq 'deposit' or $args{action} eq 'withdrawal');
 
     # If we don't have rates, that's not worth causing anything else to fail: just tell datadog and bail out.
     return unless try {
