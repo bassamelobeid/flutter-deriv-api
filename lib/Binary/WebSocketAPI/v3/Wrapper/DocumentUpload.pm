@@ -1,4 +1,4 @@
-package Binary::WebSocketAPI::v3::Wrapper::Authenticate;
+package Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 
 use strict;
 use warnings;
