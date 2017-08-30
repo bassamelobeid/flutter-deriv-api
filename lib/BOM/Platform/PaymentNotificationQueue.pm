@@ -60,7 +60,8 @@ sub add {
     return unless try {
         $args{amount_usd} = $args{amount} ? in_USD($args{amount} => $args{currency}) : 0.0;
         1
-    } catch {
+    }
+    catch {
         stats_inc('payment.' . $args{type} . '.usd_conversion.failure', {tag => ['source:' . $args{source}]});
         return 0;
     };
