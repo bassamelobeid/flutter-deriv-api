@@ -491,7 +491,7 @@ sub startup {
 
     $app->plugin(
         'web_socket_proxy' => {
-            actions => $actions,
+            actions      => $actions,
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
