@@ -34,18 +34,7 @@ sub redis {
 }
 
 sub add {
-    my ($class, %args) = @_;
-    # We are not interested in deposits from payment agents
-    return Future->done if $args{payment_agent};
-    # Skip any virtual accounts
-    return Future->done if $args{loginid} =~ /^VR/;
-
-    my $redis = $class->redis;
-    $args{amount_usd} = in_USD($args{amount} => $args{currency});
-    my $data = encode_json(\%args);
-    $redis->publish('payment_notification_queue', $data);
-    # Rescale by 100x to ensure we send integers (all amounts in USD)
-    stats_timing('payment.' . $args{type} . '.usd', abs(int(100.0 * $args{amount_usd})), {tag => ['source:' . $args{source}]});
+    # Entirely disabled due to timeout problems.
     return Future->done;
 }
 
