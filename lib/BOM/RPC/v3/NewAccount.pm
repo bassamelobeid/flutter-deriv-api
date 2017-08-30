@@ -87,7 +87,7 @@ sub new_account_virtual {
     $user->save;
 
     BOM::Platform::AuditLog::log("successful login", "$email");
-    BOM::Platform::PaymentNotificationQueue->add_sync(
+    BOM::Platform::PaymentNotificationQueue->add(
         source        => 'virtual',
         currency      => 'USD',
         loginid       => $client->loginid,
@@ -247,7 +247,7 @@ sub new_account_real {
     }
 
     BOM::Platform::AuditLog::log("successful login", "$client->email");
-    BOM::Platform::PaymentNotificationQueue->add_sync(
+    BOM::Platform::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => 'USD',
         loginid       => $new_client->loginid,
@@ -347,7 +347,7 @@ sub new_account_maltainvest {
     }
 
     BOM::Platform::AuditLog::log("successful login", "$client->email");
-    BOM::Platform::PaymentNotificationQueue->add_sync(
+    BOM::Platform::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => 'USD',
         loginid       => $new_client->loginid,
@@ -423,7 +423,7 @@ sub new_account_japan {
     $user->save;
 
     BOM::Platform::AuditLog::log("successful login", "$client->email");
-    BOM::Platform::PaymentNotificationQueue->add_sync(
+    BOM::Platform::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => 'USD',
         loginid       => $new_client->loginid,
