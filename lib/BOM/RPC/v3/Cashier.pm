@@ -359,9 +359,9 @@ sub get_limits {
 
 sub paymentagent_list {
     my $params = shift;
-    my ($language, $args) = @{$params}{qw/language args/};
 
-    my $token_details = $params->{token_details};
+    my ($language, $args, $token_details) = @{$params}{qw/language args token_details/};
+
     my $client;
     if ($token_details and exists $token_details->{loginid}) {
         $client = Client::Account->new({loginid => $token_details->{loginid}});
@@ -965,9 +965,7 @@ sub __client_withdrawal_notes {
 sub transfer_between_accounts {
     my $params = shift;
 
-    my $client = $params->{client};
-    my $source = $params->{source};
-    my $user;
+    my ($client, $source) = @{$params}{qw/client source/};
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -984,6 +982,8 @@ sub transfer_between_accounts {
     {
         return $error_sub->(localize('Payments are suspended.'));
     }
+
+    my $user;
     unless ($user = BOM::Platform::User->new({email => $client->email})) {
         warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
         return $error_sub->(localize('Internal server error'));
@@ -992,11 +992,8 @@ sub transfer_between_accounts {
         return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
     }
 
-    my $args         = $params->{args};
-    my $loginid_from = $args->{account_from};
-    my $loginid_to   = $args->{account_to};
-    my $currency     = $args->{currency};
-    my $amount       = $args->{amount};
+    my $args = $params->{args};
+    my ($loginid_from, $loginid_to, $currency, $amount) = @{$args}{qw/account_from account_to currency amount/};
 
     my %siblings = map { $_->loginid => $_ } $user->clients;
 
@@ -1211,8 +1208,7 @@ sub transfer_between_accounts {
 sub topup_virtual {
     my $params = shift;
 
-    my $client = $params->{client};
-    my $source = $params->{source};
+    my ($client, $source) = @{$params}{qw/client source/};
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;

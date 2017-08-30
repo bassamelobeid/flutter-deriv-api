@@ -254,13 +254,14 @@ sub filter_siblings_by_landing_company {
 sub get_real_account_siblings_information {
     my ($client, $no_disabled) = @_;
 
+    my $user = BOM::Platform::User->new({email => $client->email});
     # return empty if we are not able to find user, this should not
     # happen but added as additional check
-    return {} unless BOM::Platform::User->new({email => $client->email});
+    return {} unless $user;
 
     my @clients = ();
     if ($no_disabled) {
-        @clients = BOM::Platform::User->new({email => $client->email})->clients;
+        @clients = $user->clients;
     } else {
         # we don't need to consider disabled client that have reason
         # as 'migration to single email login', because we moved to single
@@ -270,7 +271,7 @@ sub get_real_account_siblings_information {
         @clients = grep {
                     not($_->get_status('disabled') and $_->get_status('disabled')->reason =~ /^migration to single email login$/)
                 and not $_->is_virtual
-        } BOM::Platform::User->new({email => $client->email})->clients(disabled_ok => 1);
+        } $user->clients(disabled_ok => 1);
     }
 
     my $siblings;
