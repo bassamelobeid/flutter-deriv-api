@@ -144,8 +144,9 @@ sub init {
         $ENV{AUDIT_STAFF_IP}   = request()->client_ip;                    ## no critic (RequireLocalizedPunctuationVars)
 
         request()->http_handler($http_handler);
+
         if (!_check_access($http_handler->script_name)) {
-            _show_error_and_exit($http_handler, 'Access to ' . $http_handler->script_name . ' is not allowed');
+            _show_error_and_exit('Access to ' . $http_handler->script_name . ' is not allowed');
         }
     } else {
         # We can ignore the alarm because we're not serving a web request here.
@@ -207,9 +208,8 @@ sub log_bo_access {
 }
 
 sub _show_error_and_exit {
-    my $http_handler = shift;
-    my $error        = shift;
-    my $timenow      = Date::Utility->new->datetime;
+    my $error   = shift;
+    my $timenow = Date::Utility->new->datetime;
     warn "_show_error_and_exit: $error (IP: " . request()->client_ip . ')';
     # this can be duplicated for ALARM message, but not an issue
     PrintContentType();

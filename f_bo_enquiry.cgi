@@ -11,7 +11,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('TRANSACTION REPORTS');
 
-my $broker = request()->broker_code;
+my $broker           = request()->broker_code;
 my $currency_options = get_currency_options();
 
 if ($broker eq 'FOG') {
