@@ -21,6 +21,8 @@ use Try::Tiny;
 use JSON::XS qw(encode_json);
 use YAML::XS qw(LoadFile);
 use IO::Socket::IP;
+use Client::Account;
+use BOM::Platform::User;
 
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge stats_inc);
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
@@ -54,7 +56,16 @@ sub add {
     # We are not interested in deposits from payment agents
     return if $args{payment_agent};
     # Skip any virtual accounts
-    return if $args{loginid} =~ /^VR/;
+    return if $args{loginid} =~ /^VR/ and ($args{type} eq 'deposit' or $args{type} eq 'withdrawal');
+
+    try {
+        my $client = Client::Account->new({loginid => $args{loginid}}) or die 'client not found';
+        my $user = BOM::Platform::User->new({email => $client->email}) or die 'user not found';
+        $args{$_} = $user->$_ for qw(utm_source utm_medium utm_campaign);
+    }
+    catch {
+        stats_inc('payment.' . $args{type} . '.user_lookup.failure', {tag => ['source:' . $args{source}]});
+    };
 
     # If we don't have rates, that's not worth causing anything else to fail: just tell datadog and bail out.
     return unless try {
@@ -74,7 +85,7 @@ sub add {
     };
 
     # Rescale by 100x to ensure we send integers (all amounts in USD)
-    stats_timing('payment.' . $args{type} . '.usd', abs(int(100.0 * $args{amount_usd})), {tag => ['source:' . $args{source}]});
+    stats_timing('payment.' . $args{type} . '.usd', abs(int(100.0 * $args{amount_usd})), {tags => ['source:' . $args{source}]});
     return;
 }
 
