@@ -19,8 +19,8 @@ use Binary::WebSocketAPI::v3::Wrapper::Accounts;
 use Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
+use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections |;
-use Binary::WebSocketAPI::v3::Wrapper::Authenticate;
 
 use File::Slurp;
 use JSON::Schema;
@@ -436,7 +436,7 @@ sub startup {
             {
                 stash_params    => [qw/ token /],
                 require_auth    => 'admin',
-                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::Authenticate::add_upload_info,
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::add_upload_info,
             }
         ],
         ['copy_start',         {require_auth => 'trade'}],
@@ -492,71 +492,7 @@ sub startup {
     $app->plugin(
         'web_socket_proxy' => {
             actions => $actions,
-
-            binary_frame => sub {
-                my ($c, $frame) = @_;
-                return if !$frame;
-
-                my ($call_type, $upload_id, $chunk_size, $data) = unpack "N N N a*", $frame;
-
-                my $params;
-                my $exception_occurred = 0;
-
-                try {
-                    die "Unknown upload request\n" unless $params = $c->stash('document_upload');
-                    die "Unknown upload id\n"      unless $upload_id == $params->{upload_id};
-                    die "Unknown call type\n"      unless $call_type == $params->{call_type};
-                    die "Incorrect data size\n"    unless $chunk_size == length $data;
-                }
-                catch {
-                    chomp;
-                    $c->send({
-                            json => {
-                                msg_type    => 'document_upload',
-                                req_id      => $params ? $params->{req_id} : 0,
-                                passthrough => $params ? $params->{passthrough} : {},
-                                error       => {
-                                    message => $_,
-                                }}});
-                    $exception_occurred = 1;
-                };
-
-                return if $exception_occurred;
-
-                if ($chunk_size == 0) {
-                    $c->call_rpc({
-                            method      => 'document_upload',
-                            call_params => {
-                                token => $c->stash('token'),
-                            },
-                            args => {
-                                file_name     => $params->{file_name},
-                                size          => $params->{received_bytes},
-                                checksum      => $params->{sha1}->hexdigest,
-                                call_type     => $params->{call_type},
-                                document_path => $params->{document_path},
-                                status        => 'success',
-                            },
-                            response => sub {
-                                my $api_response = $_[1];
-
-                                exists($api_response->{document_upload}) or return $api_response;
-
-                                return {
-                                    %{$api_response},
-                                    req_id          => $params->{req_id},
-                                    passthrough     => $params->{passthrough},
-                                    document_upload => {
-                                        %{$api_response->{document_upload}},
-                                        upload_id => $params->{upload_id},
-                                    }};
-                            }
-                        });
-                } else {
-                    $params->{uploader}->($data);
-                }
-            },
-
+            binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
                 \&Binary::WebSocketAPI::Hooks::check_app_id, \&Binary::WebSocketAPI::Hooks::before_forward,
