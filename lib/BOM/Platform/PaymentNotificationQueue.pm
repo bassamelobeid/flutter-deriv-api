@@ -56,7 +56,7 @@ sub add {
     # We are not interested in deposits from payment agents
     return if $args{payment_agent};
     # Skip any virtual accounts
-    return if $args{loginid} =~ /^VR/ and ($args{action} eq 'deposit' or $args{action} eq 'withdrawal');
+    return if $args{loginid} =~ /^VR/ and ($args{type} eq 'deposit' or $args{type} eq 'withdrawal');
 
     try {
         my $client = Client::Account->new({loginid => $args{loginid}}) or die 'client not found';
