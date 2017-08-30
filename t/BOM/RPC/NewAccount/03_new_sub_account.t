@@ -3,7 +3,6 @@ use warnings;
 
 use Test::Most;
 use Test::Mojo;
-use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warn;
 
@@ -20,10 +19,6 @@ use Client::Account;
 use utf8;
 
 my ($email, $t, $rpc_ct) = ('test' . rand(999) . '@binary.com');
-
-# Avoid payment queue call since we do not have the EUR/JPY currency rates
-my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
-$pnq_mocked->mock(add => sub { return Future->done; });
 
 my $client_details = {
     salutation             => 'Mr',
