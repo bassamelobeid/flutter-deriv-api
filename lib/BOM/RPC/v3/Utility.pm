@@ -9,6 +9,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use List::Util qw(any);
 use URI;
 use Domain::PublicSuffix;
+use Format::Util::Numbers qw/formatnumber/;
 
 use Brands;
 use LandingCompany::Registry;
@@ -251,28 +252,39 @@ sub filter_siblings_by_landing_company {
 }
 
 sub get_real_account_siblings_information {
-    my $client = shift;
+    my ($client, $no_disabled) = @_;
 
     # return empty if we are not able to find user, this should not
     # happen but added as additional check
     return {} unless BOM::Platform::User->new({email => $client->email});
 
-    # we don't need to consider disabled client that have reason
-    # as 'migration to single email login', because we moved to single
-    # currency per account in past and mark duplicate clients as disabled
-    # with that reason itself
-    # TODO: create new status for migrated clients
-    return {
-        map {
-            $_->loginid => {
-                currency => $_->default_account        ? ($_->default_account->currency_code) : (undef),
-                disabled => $_->get_status('disabled') ? ($_->get_status('disabled')->reason) : (undef),
-                landing_company_name => $_->landing_company->short
-                }
-            } grep {
-            not($_->get_status('disabled') and $_->get_status('disabled')->reason =~ /^migration to single email login$/)
+    my @clients = ();
+    if ($no_disabled) {
+        @clients = BOM::Platform::User->new({email => $client->email})->clients;
+    } else {
+        # we don't need to consider disabled client that have reason
+        # as 'migration to single email login', because we moved to single
+        # currency per account in past and mark duplicate clients as disabled
+        # with that reason itself
+        # TODO: create new status for migrated clients
+        @clients = grep {
+                    not($_->get_status('disabled') and $_->get_status('disabled')->reason =~ /^migration to single email login$/)
                 and not $_->is_virtual
-            } BOM::Platform::User->new({email => $client->email})->clients(disabled_ok => 1)};
+        } BOM::Platform::User->new({email => $client->email})->clients(disabled_ok => 1);
+    }
+
+    my $siblings;
+    foreach my $cl (@clients) {
+        my $acc = $cl->default_account;
+
+        $siblings->{$cl->loginid} = {
+            currency => $acc ? $acc->currency_code : '',
+            balance => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
+            landing_company_name => $cl->landing_company->short
+        };
+    }
+
+    return $siblings;
 }
 
 sub validate_make_new_account {
