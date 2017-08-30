@@ -25,13 +25,20 @@ use IO::Socket::IP;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge stats_inc);
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
-my $cfg = LoadFile('/etc/rmg/payment_notification.yml');
-my $sock = IO::Socket::IP->new(
-    Proto    => "udp",
-    PeerAddr => $cfg->{host},
-    PeerPort => $cfg->{port},
-) or die "can't connect to notification service";
-$sock->blocking(0);
+my $sock;
+sub reload {
+    my $cfg = LoadFile($ENV{BOM_PAYMENT_NOTIFICATION_CONFIG} // '/etc/rmg/payment_notification.yml');
+    $sock = IO::Socket::IP->new(
+        Proto    => "udp",
+        PeerAddr => $cfg->{host},
+        PeerPort => $cfg->{port},
+    ) or die "can't connect to notification service";
+    $sock->blocking(0);
+}
+
+sub import {
+    reload() unless $sock;
+}
 
 =head2 add
 
@@ -52,7 +59,8 @@ sub add {
         $class->send(\%args);
     } catch {
         warn "Failed to send - $_";
-    }
+    };
+
     # Rescale by 100x to ensure we send integers (all amounts in USD)
     stats_timing('payment.' . $args{type} . '.usd', abs(int(100.0 * $args{amount_usd})), {tag => ['source:' . $args{source}]});
     return;
@@ -68,7 +76,7 @@ Usage:
 
 =cut
 
-sub publish {
+sub send {
     my ($class, $data) = @_;
     my $bytes = encode_json($data);
     $sock->send($bytes);
