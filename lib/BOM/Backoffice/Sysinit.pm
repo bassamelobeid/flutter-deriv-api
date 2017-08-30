@@ -221,8 +221,6 @@ sub _show_error_and_exit {
         . '<a href="javascript:document.location.reload();"><b>'
         . localize('Reload page')
         . '</b></a> '
-        . ' <a href="http://'
-        . localize('homepage') . '</p>'
         . '</div>';
     BOM::Backoffice::Request::request_completed();
     exit;
