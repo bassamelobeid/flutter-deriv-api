@@ -35,10 +35,12 @@ sub reload {
         PeerPort => $cfg->{port},
     ) or die "can't connect to notification service";
     $sock->blocking(0);
+    return;
 }
 
 sub import {
     reload() unless $sock;
+    return;
 }
 
 =head2 add
@@ -57,10 +59,10 @@ sub add {
     $args{amount_usd} = in_USD($args{amount} => $args{currency});
 
     try {
-        $class->send(\%args);
+        $class->publish(\%args);
     }
     catch {
-        warn "Failed to send - $_";
+        warn "Failed to publish - $_";
     };
 
     # Rescale by 100x to ensure we send integers (all amounts in USD)
@@ -68,20 +70,21 @@ sub add {
     return;
 }
 
-=head2 send
+=head2 publish
 
 Publish a notification using the given data.
 
 Usage:
 
- $class->send({ source => 'doughflow', amount => 123.45 });
+ $class->publish({ source => 'doughflow', amount => 123.45 });
 
 =cut
 
-sub send {
+sub publish {
     my ($class, $data) = @_;
     my $bytes = encode_json($data);
     $sock->send($bytes);
+    return;
 }
 
 1;
