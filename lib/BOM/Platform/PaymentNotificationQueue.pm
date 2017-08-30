@@ -62,8 +62,9 @@ sub add {
         my $client = Client::Account->new({loginid => $args{loginid}}) or die 'client not found';
         my $user = BOM::Platform::User->new({email => $client->email}) or die 'user not found';
         $args{$_} = $user->$_ for qw(utm_source utm_medium utm_campaign);
-    } catch {
-        stats_inc('payment.' . $args{type} . '.user_lookup.failure',  {tag => ['source:' . $args{source}]});
+    }
+    catch {
+        stats_inc('payment.' . $args{type} . '.user_lookup.failure', {tag => ['source:' . $args{source}]});
     };
 
     # If we don't have rates, that's not worth causing anything else to fail: just tell datadog and bail out.
