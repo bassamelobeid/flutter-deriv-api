@@ -26,6 +26,7 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge stats_inc);
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 my $sock;
+
 sub reload {
     my $cfg = LoadFile($ENV{BOM_PAYMENT_NOTIFICATION_CONFIG} // '/etc/rmg/payment_notification.yml');
     $sock = IO::Socket::IP->new(
@@ -57,7 +58,8 @@ sub add {
 
     try {
         $class->send(\%args);
-    } catch {
+    }
+    catch {
         warn "Failed to send - $_";
     };
 
