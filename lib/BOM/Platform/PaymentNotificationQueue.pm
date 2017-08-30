@@ -70,7 +70,7 @@ Usage:
 
 sub publish {
     my ($class, $data) = @_;
-    my $bytes = encode_json(\%args);
+    my $bytes = encode_json($data);
     $sock->send($bytes);
 }
 
