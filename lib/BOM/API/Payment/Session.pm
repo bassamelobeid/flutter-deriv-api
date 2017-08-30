@@ -109,7 +109,7 @@ sub session_validate_GET {
     # have accepted the validation request and also provide a
     # link to additional client details that might be useful
     my $client_uri = $c->req->base->clone;
-    $client_uri->path('/client/');
+    $client_uri->path('/paymentapi/client/');
     $client_uri->query('loginid=' . $c->user->loginid);
     return {
         status  => 'accepted',

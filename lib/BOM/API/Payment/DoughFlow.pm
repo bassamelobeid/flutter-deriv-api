@@ -141,7 +141,7 @@ sub _doughflow_backend {
     return $new_txn_id if $type =~ 'validate';
 
     my $location = $c->req->base->clone;
-    $location->path('/transaction/payment/doughflow/record/');
+    $location->path('/paymentapi/transaction/payment/doughflow/record/');
     $location->query(
         'client_loginid=' . $c->user->loginid . '&currency_code=' . $c->request_parameters->{'currency_code'} . '&reference_number=' . $new_txn_id);
 
