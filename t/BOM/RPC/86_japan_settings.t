@@ -18,8 +18,6 @@ use BOM::MarketData::Types;
 ## do not send email
 my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
-my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
-$pnq_mocked->mock(add => sub { return Future->done; });
 
 my %jp_client_details = (
     gender                                      => 'f',
