@@ -26,16 +26,16 @@ sub get_economic_events_for_date {
     my @deleted_events       = map  { get_info($_) } @{_get_economic_events('deleted', $date)};
 
     return {
-        categorized_events   => \@events,
-        uncategorized_events => \@uncategorized_events,
-        deleted_events       => \@deleted_events,
+        categorized_events   => to_json(\@events),
+        uncategorized_events => to_json(\@uncategorized_events),
+        deleted_events       => to_json(\@deleted_events),
     };
 }
 
 sub generate_economic_event_tool {
     my $url = shift;
 
-    my $events = get_economic_events_for_date();
+    my $events = get_economic_events_for_date(Date::Utility->new);
     my $today  = Date::Utility->new->truncate_to_day;
     my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 6);
 
