@@ -7,7 +7,7 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
 use Test::Warnings;
@@ -179,7 +179,7 @@ subtest 'create user by loginid' => sub {
         my $user_2 = BOM::Platform::User->new({
             loginid => $vr_1,
         });
-        is $user_2->binary_userid, $user->binary_userid, 'found correct user by loginid';
+        is $user_2->id, $user->id, 'found correct user by loginid';
         $user_2 = BOM::Platform::User->new({
             loginid => 'does not exist',
         });
