@@ -4,7 +4,6 @@ use warnings;
 use Test::Most;
 use Data::Dumper;
 use JSON;
-use BOM::Test::RPC::BomRpc;
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Digest::SHA1 qw/sha1_hex/;
 
