@@ -19,7 +19,6 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType);
 use BOM::Backoffice::Request;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
-BOM::Backoffice::Auth0::can_access(['Quants']);
 use BOM::RiskReporting::BinaryIco;
 
 if (request()->param('download_csv')) {

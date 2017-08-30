@@ -12,7 +12,6 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
-BOM::Backoffice::Auth0::can_access(['CS']);
 
 if (my $email_list = request()->param('email')) {
     BrokerPresentation("USER LOGIN HISTORY");

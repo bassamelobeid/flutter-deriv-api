@@ -66,7 +66,6 @@ my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
 
 my $broker         = $client->broker;
 my $encoded_broker = encode_entities($broker);
-my $staff          = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 if ($broker eq 'MF') {
@@ -699,7 +698,7 @@ print qq[<form action="$self_post" method="POST">
     <input type="hidden" name="broker" value="$encoded_broker">
     <input type="hidden" name="loginID" value="$encoded_loginid">];
 
-print_client_details($client, $staff);
+print_client_details($client);
 
 print qq{<input type=submit value="Save Client Details"></form>};
 

@@ -35,7 +35,6 @@ if ($outputtype eq 'csv') {
 
 my $broker         = request()->broker_code;
 my $encoded_broker = encode_entities($broker);
-BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^$broker/) {
     print "Error : wrong loginID $encoded_loginID";

@@ -12,7 +12,6 @@ PrintContentType();
 BrokerPresentation('TRANSACTION REPORTS');
 
 my $broker = request()->broker_code;
-BOM::Backoffice::Auth0::can_access(['CS']);
 my $currency_options = get_currency_options();
 
 if ($broker eq 'FOG') {
