@@ -127,9 +127,8 @@ sub init {
 
             warn("Panic timeout after $runtime seconds");
             _show_error_and_exit(
-                localize(
-                    'The page has timed out. This may be due to a slow Internet connection, or to excess load on our servers.  Please try again in a few moments.'
-                ));
+                'The page has timed out. This may be due to a slow Internet connection, or to excess load on our servers.  Please try again in a few moments.'
+            );
 
         };
         alarm($timeout);
@@ -211,12 +210,13 @@ sub _show_error_and_exit {
     my $http_handler = shift;
     my $error        = shift;
     my $timenow      = Date::Utility->new->datetime;
+    warn "_show_error_and_exit: $error (IP: " . request()->client_ip . ')';
     # this can be duplicated for ALARM message, but not an issue
     PrintContentType();
     print '<div id="page_timeout_notice" class="aligncenter">'
         . '<p class="normalfonterror">'
         . $timenow . ' '
-        . $error . '</p>'
+        . localize($error) . '</p>'
         . '<p class="normalfonterror">'
         . '<a href="javascript:document.location.reload();"><b>'
         . localize('Reload page')
