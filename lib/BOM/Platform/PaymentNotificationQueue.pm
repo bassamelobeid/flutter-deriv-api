@@ -49,7 +49,7 @@ sub add {
     $args{amount_usd} = in_USD($args{amount} => $args{currency});
 
     try {
-        $class->send($data);
+        $class->send(\%args);
     } catch {
         warn "Failed to send - $_";
     }
