@@ -56,7 +56,14 @@ sub add {
     # Skip any virtual accounts
     return if $args{loginid} =~ /^VR/;
 
-    $args{amount_usd} = $args{amount} ? in_USD($args{amount} => $args{currency}) : 0.0;
+    # If we don't have rates, that's not worth causing anything else to fail: just tell datadog and bail out.
+    return unless try {
+        $args{amount_usd} = $args{amount} ? in_USD($args{amount} => $args{currency}) : 0.0;
+        1
+    } catch {
+        stats_inc('payment.' . $args{type} . '.usd_conversion.failure', {tag => ['source:' . $args{source}]});
+        return 0;
+    };
 
     try {
         $class->publish(\%args);
