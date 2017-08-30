@@ -74,7 +74,7 @@ sub add {
     };
 
     # Rescale by 100x to ensure we send integers (all amounts in USD)
-    stats_timing('payment.' . $args{type} . '.usd', abs(int(100.0 * $args{amount_usd})), {tag => ['source:' . $args{source}]});
+    stats_timing('payment.' . $args{type} . '.usd', abs(int(100.0 * $args{amount_usd})), {tags => ['source:' . $args{source}]});
     return;
 }
 
