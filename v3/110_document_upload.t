@@ -2,7 +2,6 @@ use strict;
 use warnings;
 
 use Test::Most;
-use Data::Dumper;
 use JSON;
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Digest::SHA1 qw/sha1_hex/;
@@ -41,8 +40,8 @@ sub upload_ok {
 
     my $res = decode_json($t->message->[1]);
 
-    is $res->{req_id}, $req->{req_id}, 'req_id is unchanged';
-    is Dumper($res->{passthrough}), Dumper($req->{passthrough}), 'passthrough is unchanged';
+    is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
+    is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
 
     ok $res->{document_upload}, 'Returns document_upload';
 
@@ -65,8 +64,8 @@ sub upload_ok {
     is $success->{upload_id}, $upload_id, 'upload id is correct';
     is $success->{call_type}, $call_type, 'call_type is correct';
 
-    is $res->{req_id}, $req->{req_id}, 'binary payload req_id is unchanged';
-    is Dumper($res->{passthrough}), Dumper($req->{passthrough}), 'binary payload passthrough is unchanged';
+    is $res->{req_id},             $req->{req_id},      'binary payload req_id is unchanged';
+    is_deeply $res->{passthrough}, $req->{passthrough}, 'binary payload passthrough is unchanged';
 
     return $success;
 }
@@ -83,10 +82,19 @@ sub document_upload_ok {
     is $success->{checksum}, sha1_hex($file), 'checksum is correct';
 }
 
+subtest 'Invalid upload frame' => sub {
+    $t = $t->send_ok({
+            binary => (pack 'N', 1),
+        })->message_ok;
+
+    my $res = decode_json($t->message->[1]);
+
+    ok $res->{error}, 'Upload frame should be at least 12 bytes';
+};
+
 subtest 'Send binary data without requesting document_upload' => sub {
     $t = $t->send_ok({
-            binary => pack 'N3A*',
-            1, 1, 1, 'A'
+            binary => (pack 'N3A*', 1, 1, 1, 'A'),
         })->message_ok;
 
     my $res = decode_json($t->message->[1]);
@@ -114,12 +122,11 @@ subtest 'binary metadata should be correctly sent' => sub {
     my $upload_id = $res->{document_upload}->{upload_id};
     my $call_type = $res->{document_upload}->{call_type};
 
-    is $res->{req_id}, $req->{req_id}, 'binary payload req_id is unchanged';
-    is Dumper($res->{passthrough}), Dumper($req->{passthrough}), 'binary payload passthrough is unchanged';
+    is $res->{req_id},             $req->{req_id},      'binary payload req_id is unchanged';
+    is_deeply $res->{passthrough}, $req->{passthrough}, 'binary payload passthrough is unchanged';
 
     $t = $t->send_ok({
-            binary => pack 'N3A*',
-            1111, $upload_id, 1, 'A'
+            binary => (pack 'N3A*', 1111, $upload_id, 1, 'A'),
         })->message_ok;
 
     $res = decode_json($t->message->[1]);
@@ -127,20 +134,18 @@ subtest 'binary metadata should be correctly sent' => sub {
     ok $res->{error}, 'call_type should be valid';
 
     $t = $t->send_ok({
-            binary => pack 'N3A*',
-            $call_type, 1111, 1, 'A'
+            binary => (pack 'N3A*', $call_type, 1111, 1, 'A'),
         })->message_ok;
 
     $res = decode_json($t->message->[1]);
 
-    is $res->{req_id}, $req->{req_id}, 'binary payload req_id is unchanged';
-    is Dumper($res->{passthrough}), Dumper($req->{passthrough}), 'binary payload passthrough is unchanged';
+    is $res->{req_id},             $req->{req_id},      'binary payload req_id is unchanged';
+    is_deeply $res->{passthrough}, $req->{passthrough}, 'binary payload passthrough is unchanged';
 
     ok $res->{error}, 'upload_id should be valid';
 
     $t = $t->send_ok({
-            binary => pack 'N3A*',
-            $call_type, $upload_id, 2, 'A'
+            binary => (pack 'N3A*', $call_type, $upload_id, 2, 'A'),
         })->message_ok;
 
     $res = decode_json($t->message->[1]);
