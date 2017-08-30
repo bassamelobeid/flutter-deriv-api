@@ -17,13 +17,13 @@
     },
     "expiration_date": {
       "type": "string",
-      "description": "Document expiration date",
-      "required": 1
+      "description": "(Optional) Document expiration date",
+      "required": 0
     },
     "document_id": {
       "type": "string",
-      "description": "Document ID (based on each document type)",
-      "required": 1
+      "description": "(Optional) Document ID (based on each document type)",
+      "required": 0
     },
     "document_format": {
       "type": "string",
