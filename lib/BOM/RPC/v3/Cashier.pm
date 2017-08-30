@@ -618,7 +618,7 @@ sub paymentagent_transfer {
         }
     }
 
-    BOM::Platform::PaymentNotificationQueue->add_sync(
+    BOM::Platform::PaymentNotificationQueue->add(
         source        => 'payment_agent',
         currency      => $currency,
         loginid       => $loginid_to,
@@ -873,7 +873,7 @@ sub paymentagent_withdraw {
         }
     }
 
-    BOM::Platform::PaymentNotificationQueue->add_sync(
+    BOM::Platform::PaymentNotificationQueue->add(
         source        => 'payment_agent',
         currency      => $currency,
         loginid       => $pa_client->loginid,
