@@ -56,7 +56,7 @@ sub add {
     # Skip any virtual accounts
     return if $args{loginid} =~ /^VR/;
 
-    $args{amount_usd} = in_USD($args{amount} => $args{currency});
+    $args{amount_usd} = $args{amount} ? in_USD($args{amount} => $args{currency}) : 0.0;
 
     try {
         $class->publish(\%args);
