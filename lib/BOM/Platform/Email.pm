@@ -91,13 +91,15 @@ sub send_email {
         $email_stuffer->attach_file($attach_file);
     }
 
-    unless ($email_stuffer->send) {
+    return try {
+        $email_stuffer->send_or_die;
+        return 1;
+    }
+    catch {
         warn("Error sending mail [$subject]: ", $_)
             unless $ENV{BOM_SUPPRESS_WARNINGS};
         return 0;
-    }
-
-    return 1;
+    };
 }
 
 1;
