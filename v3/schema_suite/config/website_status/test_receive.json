@@ -21,13 +21,13 @@
                 },
                 "currencies_config": {
                     "type": "array",
-                    "required": "1"
+                    "required": "1",
                     "items": {
                         "type": "object",
                         "properties": {
                             "fractional_digits": {
                                 "type": "number",
-                                "pattern": "^\d+$",
+                                "pattern": "^\\d+$",
                                 "required": "1"
                             },
                             "type": {
