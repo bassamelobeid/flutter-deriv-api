@@ -14,10 +14,34 @@
                     "required": "1"
                 },
                 "supported_languages": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "currencies_config": {
+                    "type": "array",
+                    "required": "1"
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "fractional_digits": {
+                                "type": "number",
+                                "pattern": "^\d+$",
+                                "required": "1"
+                            },
+                            "type": {
+                                "type": "string",
+                                "pattern": "^(fiat|crypto)$",
+                                "required": "1"
+                            },
+                            "stake_default": {
+                                "type": "number",
+                                "minimum": "0",
+                                "required": "1"
+                            }
+                        }
+                    }
                 },
                 "api_call_limits": {
                     "type": "object",
