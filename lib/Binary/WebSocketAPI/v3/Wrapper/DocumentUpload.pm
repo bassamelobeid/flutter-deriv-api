@@ -7,21 +7,22 @@ use Try::Tiny;
 use Digest::SHA1;
 use BOM::Platform::Context qw(localize);
 
+# Remove this.
+use Data::Dumper;
+
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
     my $args = $req_storage->{origin_args};
-
+    
     return create_error($args) if $rpc_response->{error};
 
-    my $current_stash = $c->stash('document_upload');
+    my %current_stash = %{$c->stash('document_upload') || {}};
     my $upload_id     = generate_upload_id();
-
-    my $call_params = create_call_params($args)
-
+    my %call_params = %{create_call_params($args)};
     my $stash = {
-        %{$current_stash},
+        %current_stash,
         $upload_id => {
-            %{$call_params},
+            %call_params,
             file_name      => $rpc_response->{file_name},
             call_type      => $rpc_response->{call_type},
             sha1           => Digest::SHA1->new,
@@ -31,12 +32,12 @@ sub add_upload_info {
     };
 
     $c->stash(document_upload => $stash);
-
+    warn Dumper $stash->{call_type};
     return create_response(
         $args,
         {
             upload_id => $upload_id,
-            call_type => $stash->{call_type},
+            call_type => $rpc_response->{call_type},
         });
 }
 
@@ -62,9 +63,9 @@ sub get_upload_info {
     die 'Invalid frame' unless length $frame >= 12;
 
     my ($call_type, $upload_id, $chunk_size, $data) = unpack "N3a*", $frame;
-
+    
     die "Unknown upload request" unless my $stash = $c->stash('document_upload');
-    die "Unknown upload id"      unless my $upload_info == $stash->{upload_id};
+    die "Unknown upload id"      unless my $upload_info = $stash->{$upload_id};
     die "Unknown call type"      unless $call_type == $upload_info->{call_type};
     die "Incorrect data size"    unless $chunk_size == length $data;
 
