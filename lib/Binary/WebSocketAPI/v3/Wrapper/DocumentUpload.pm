@@ -3,6 +3,7 @@ package Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use strict;
 use warnings;
 
+use Try::Tiny;
 use Digest::SHA1;
 use BOM::Platform::Context qw(localize);
 
@@ -15,10 +16,12 @@ sub add_upload_info {
     my $current_stash = $c->stash('document_upload');
     my $upload_id     = generate_upload_id();
 
+    my $call_params = create_call_params($args)
+
     my $stash = {
         %{$current_stash},
         $upload_id => {
-            %{create_call_params($args)},
+            %{$call_params},
             file_name      => $rpc_response->{file_name},
             call_type      => $rpc_response->{call_type},
             sha1           => Digest::SHA1->new,
@@ -48,9 +51,8 @@ sub document_upload {
         return upload($upload_info) if $upload_info->{chunk_size} != 0;
 
         upload_finished($c, $upload_info);
-    }
-    catch {
-        $c->send(create_error($upload_info));
+    } catch {
+        $c->send({json => create_error($upload_info)});
     };
 }
 

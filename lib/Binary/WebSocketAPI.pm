@@ -25,7 +25,6 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections |;
 use File::Slurp;
 use JSON::Schema;
 use JSON::XS;
-use Try::Tiny;
 use Format::Util::Strings qw( defang );
 use Digest::MD5 qw(md5_hex);
 use RateLimitations::Pluggable;
