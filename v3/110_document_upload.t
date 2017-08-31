@@ -20,68 +20,6 @@ my $req_id      = 1;
 my $CHUNK_SIZE  = 6;
 my $PASSTHROUGH = {key => 'value'};
 
-sub gen_frames {
-    my ($data, $call_type, $upload_id) = @_;
-    my $format = 'N3a*';
-    my @frames = map { pack $format, $call_type, $upload_id, length $_, $_ } (unpack "(a$CHUNK_SIZE)*", $data);
-    push @frames, pack $format, $call_type, $upload_id, 0;
-    return @frames;
-}
-
-sub upload_ok {
-    my ($metadata, $data) = @_;
-
-    my $req = {
-        req_id      => ++$req_id,
-        passthrough => $PASSTHROUGH,
-        %{$metadata}};
-
-    $t = $t->send_ok({json => $req})->message_ok;
-
-    my $res = decode_json($t->message->[1]);
-
-    is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
-    is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
-
-    ok $res->{document_upload}, 'Returns document_upload';
-
-    my $upload_id = $res->{document_upload}->{upload_id};
-    my $call_type = $res->{document_upload}->{call_type};
-
-    ok $upload_id, 'Returns upload_id';
-    ok $call_type, 'Returns call_type';
-
-    my $length = length $data;
-
-    for (gen_frames $data, $call_type, $upload_id) {
-        $t = $t->send_ok({binary => $_});
-    }
-    $t = $t->message_ok;
-
-    $res = decode_json($t->message->[1]);
-    my $success = $res->{document_upload};
-
-    is $success->{upload_id}, $upload_id, 'upload id is correct';
-    is $success->{call_type}, $call_type, 'call_type is correct';
-
-    is $res->{req_id},             $req->{req_id},      'binary payload req_id is unchanged';
-    is_deeply $res->{passthrough}, $req->{passthrough}, 'binary payload passthrough is unchanged';
-
-    return $success;
-}
-
-my $file = 'Hello world!';
-
-sub document_upload_ok {
-    my ($metadata, $file) = @_;
-
-    my $success = upload_ok $metadata, $file;
-
-    is $success->{status}, 'success', 'File is successfully uploaded';
-    is $success->{size}, length $file, 'file size is correct';
-    is $success->{checksum}, sha1_hex($file), 'checksum is correct';
-}
-
 subtest 'Invalid upload frame' => sub {
     $t = $t->send_ok({
             binary => (pack 'N', 1),
@@ -153,24 +91,128 @@ subtest 'binary metadata should be correctly sent' => sub {
     ok $res->{error}, 'chunk_size should be valid';
 };
 
-subtest 'Send two files correctly' => sub {
-    document_upload_ok {
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'JPEG',
-        document_type   => 'passport',
-        expiration_date => '2020-01-01',
-        },
-        'Hello world!';
+subtest 'Concurrent upload' => sub {
+    my ($metadata, $data) = @_;
 
-    document_upload_ok {
-        document_upload => 1,
-        document_id     => '124568',
-        document_format => 'PNG',
-        document_type   => 'license',
-        expiration_date => '2020-01-01',
-        },
-        'Goodbye!';
+    my $req = {
+        req_id      => ++$req_id,
+        passthrough => $PASSTHROUGH,
+        %{$metadata}};
+
+    $t = $t->send_ok({json => $req})->message_ok;
+
+    my $res = decode_json($t->message->[1]);
+
+    is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
+    is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
+
+    ok $res->{document_upload}, 'Returns document_upload';
+
+    my $upload_id = $res->{document_upload}->{upload_id};
+    my $call_type = $res->{document_upload}->{call_type};
+
+    ok $upload_id, 'Returns upload_id';
+    ok $call_type, 'Returns call_type';
+
+    my $length = length $data;
+
+    for (gen_frames $data, $call_type, $upload_id) {
+        $t = $t->send_ok({binary => $_});
+    }
+    $t = $t->message_ok;
+
+    $res = decode_json($t->message->[1]);
+    my $success = $res->{document_upload};
+
+    is $success->{upload_id}, $upload_id, 'upload id is correct';
+    is $success->{call_type}, $call_type, 'call_type is correct';
+
+    is $res->{req_id},             $req->{req_id},      'binary payload req_id is unchanged';
+    is_deeply $res->{passthrough}, $req->{passthrough}, 'binary payload passthrough is unchanged';
+
+    return $success;
 };
+
+subtest 'Send two files correctly' => sub {
+    document_upload_ok({
+            document_upload => 1,
+            document_id     => '12456',
+            document_format => 'JPEG',
+            document_type   => 'passport',
+            expiration_date => '2020-01-01',
+        },
+        'Hello world!'
+    );
+
+    document_upload_ok({
+            document_upload => 1,
+            document_id     => '124568',
+            document_format => 'PNG',
+            document_type   => 'license',
+            expiration_date => '2020-01-01',
+        },
+        'Goodbye!'
+    );
+};
+
+sub gen_frames {
+    my ($data, $call_type, $upload_id) = @_;
+    my $format = 'N3a*';
+    my @frames = map { pack $format, $call_type, $upload_id, length $_, $_ } (unpack "(a$CHUNK_SIZE)*", $data);
+    push @frames, pack $format, $call_type, $upload_id, 0;
+    return @frames;
+}
+
+sub upload_ok {
+    my ($metadata, $data) = @_;
+
+    my $req = {
+        req_id      => ++$req_id,
+        passthrough => $PASSTHROUGH,
+        %{$metadata}};
+
+    $t = $t->send_ok({json => $req})->message_ok;
+
+    my $res = decode_json($t->message->[1]);
+
+    is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
+    is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
+
+    ok $res->{document_upload}, 'Returns document_upload';
+
+    my $upload_id = $res->{document_upload}->{upload_id};
+    my $call_type = $res->{document_upload}->{call_type};
+
+    ok $upload_id, 'Returns upload_id';
+    ok $call_type, 'Returns call_type';
+
+    my $length = length $data;
+
+    for (gen_frames $data, $call_type, $upload_id) {
+        $t = $t->send_ok({binary => $_});
+    }
+    $t = $t->message_ok;
+
+    $res = decode_json($t->message->[1]);
+    my $success = $res->{document_upload};
+
+    is $success->{upload_id}, $upload_id, 'upload id is correct';
+    is $success->{call_type}, $call_type, 'call_type is correct';
+
+    is $res->{req_id},             $req->{req_id},      'binary payload req_id is unchanged';
+    is_deeply $res->{passthrough}, $req->{passthrough}, 'binary payload passthrough is unchanged';
+
+    return $success;
+}
+
+sub document_upload_ok {
+    my ($metadata, $file) = @_;
+
+    my $success = upload_ok $metadata, $file;
+
+    is $success->{status}, 'success', 'File is successfully uploaded';
+    is $success->{size}, length $file, 'file size is correct';
+    is $success->{checksum}, sha1_hex($file), 'checksum is correct';
+}
 
 done_testing();
