@@ -968,75 +968,15 @@ sub _validate_transfer_between_account {
         my ($message_to_client, $message) = @_;
         BOM::RPC::v3::Utility::create_error({
             code              => 'TransferBetweenAccountsError',
-            message_to_client => $message_to_client,
+            message_to_client => ($message_to_client // localize('The account transfer is unavailable for your account.')),
             ($message) ? (message => $message) : (),
         });
     };
 
-    return $error_sub->(localize('The account transfer is unavailable for your account.')) if (not $client_from or not $client_to);
+    return $error_sub->() if (not $client_from or not $client_to);
 
-    return $error_sub->(localize('Invalid currency.')) unless $client_from->landing_company->is_currency_legal($currency);
-    return $error_sub->(localize('Invalid currency.')) unless $client_to->landing_company->is_currency_legal($currency);
-
-    return undef;
-}
-
-sub transfer_between_accounts {
-    my $params = shift;
-
-    my ($client, $source) = @{$params}{qw/client source/};
-
-    my $error_sub = sub {
-        my ($message_to_client, $message) = @_;
-        BOM::RPC::v3::Utility::create_error({
-            code              => 'TransferBetweenAccountsError',
-            message_to_client => $message_to_client,
-            ($message) ? (message => $message) : (),
-        });
-    };
-
-    if (BOM::Platform::Client::CashierValidation::is_system_suspended() or BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
-        return $error_sub->(localize('Payments are suspended.'));
-    }
-
-    if ($client->get_status('disabled') or $client->get_status('cashier_locked') or $client->get_status('withdrawal_locked')) {
-        return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
-    }
-
-    my $siblings = get_real_account_siblings_information($client, 1);
-    unless (keys %siblings) {
-        warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
-        return $error_sub->(localize('Internal server error'));
-    }
-
-    my $args = $params->{args};
-    my ($loginid_from, $loginid_to, $currency, $amount) = @{$args}{qw/account_from account_to currency amount/};
-
-    my @accounts;
-    foreach my $cl (values %$siblings) {
-        push @accounts,
-            {
-            loginid  => $cl->{loginid},
-            balance  => $cl->{balance},
-            currency => $cl->{currency},
-            };
-    }
-
-    # get clients
-    if (not $loginid_from or not $loginid_to) {
-        return {
-            status   => 0,
-            accounts => \@accounts
-        };
-    }
-
-    return $error_sub->(localize('Please provide valid currency.')) unless $currency;
-    return $error_sub->(localize('Please provide valid amount.'))   unless looks_like_number($amount);
-
-    my ($is_good, $client_from, $client_to) = (0, $siblings->{$loginid_from}, $siblings->{$loginid_to});
-
-    my $res = _validate_transfer_between_account($client_from, $client_to, $currency);
-    return $res if $res;
+    return $error_sub->(localize('Invalid currency.'))
+        if (not $client_from->landing_company->is_currency_legal($currency) or $client_to->landing_company->is_currency_legal($currency));
 
     if ($client_from && $client_to) {
         # for sub account we need to check if it fulfils sub_account_of criteria and allow_omnibus is set
@@ -1072,6 +1012,68 @@ sub transfer_between_accounts {
             return $error_sub->(localize('The account transfer is unavailable for accounts with different default currency.'));
         }
     }
+
+    return undef;
+}
+
+sub transfer_between_accounts {
+    my $params = shift;
+
+    my ($client, $source) = @{$params}{qw/client source/};
+
+    my $error_sub = sub {
+        my ($message_to_client, $message) = @_;
+        BOM::RPC::v3::Utility::create_error({
+            code              => 'TransferBetweenAccountsError',
+            message_to_client => $message_to_client,
+            ($message) ? (message => $message) : (),
+        });
+    };
+
+    if (BOM::Platform::Client::CashierValidation::is_system_suspended() or BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
+        return $error_sub->(localize('Payments are suspended.'));
+    }
+
+    if ($client->get_status('disabled') or $client->get_status('cashier_locked') or $client->get_status('withdrawal_locked')) {
+        return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
+    }
+
+    my $args = $params->{args};
+    my ($currency, $amount) = @{$args}{qw/currency amount/};
+
+    return $error_sub->(localize('Please provide valid currency.')) unless $currency;
+    return $error_sub->(localize('Please provide valid amount.'))   unless looks_like_number($amount);
+
+    my $siblings = get_real_account_siblings_information($client, 1);
+    unless (keys %siblings) {
+        warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
+        return $error_sub->(localize('Internal server error'));
+    }
+
+    my ($loginid_from, $loginid_to) = @{$args}{qw/account_from account_to/};
+
+    my @accounts;
+    foreach my $cl (values %$siblings) {
+        push @accounts,
+            {
+            loginid  => $cl->{loginid},
+            balance  => $cl->{balance},
+            currency => $cl->{currency},
+            };
+    }
+
+    # get clients
+    if (not $loginid_from or not $loginid_to) {
+        return {
+            status   => 0,
+            accounts => \@accounts
+        };
+    }
+
+    my ($is_good, $client_from, $client_to) = (0, $siblings->{$loginid_from}, $siblings->{$loginid_to});
+
+    my $res = _validate_transfer_between_account($client_from, $client_to, $currency);
+    return $res if $res;
 
     BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
