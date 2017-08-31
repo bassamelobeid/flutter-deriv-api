@@ -50,7 +50,6 @@ if ($input{new_email}) {
 
 my $user = BOM::Platform::User->new({email => $email});
 if (not $user) {
-    my $self_href = request()->url_for('backoffice/client_email.cgi');
     print "<p>ERROR: Clients with email <b>$encoded_email</b> not found.</p>";
     code_exit_BO();
 }
