@@ -10,13 +10,13 @@ use BOM::Platform::Context qw(localize);
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
     my $args = $req_storage->{origin_args};
-    
+
     return create_error($args) if $rpc_response->{error};
 
     my $current_stash = $c->stash('document_upload') || {};
     my $upload_id     = generate_upload_id();
-    my $call_params = create_call_params($args);
-    my $stash = {
+    my $call_params   = create_call_params($args);
+    my $stash         = {
         %{$current_stash},
         $upload_id => {
             %{$call_params},
@@ -45,10 +45,13 @@ sub document_upload {
 
     try {
         $upload_info = get_upload_info($c, $frame);
+
         return upload($c, $upload_info) if $upload_info->{chunk_size} != 0;
 
         upload_finished($c, $upload_info);
-    } catch {
+    }
+    catch {
+        warn "UploadError: $_";
         $c->send({json => create_error($upload_info)});
     };
 }
@@ -59,8 +62,8 @@ sub get_upload_info {
     die 'Invalid frame' unless length $frame >= 12;
 
     my ($call_type, $upload_id, $chunk_size, $data) = unpack "N3a*", $frame;
-    
-    die "Unknown upload request" unless my $stash = $c->stash('document_upload');
+
+    die "Unknown upload request" unless my $stash       = $c->stash('document_upload');
     die "Unknown upload id"      unless my $upload_info = $stash->{$upload_id};
     die "Unknown call type"      unless $call_type == $upload_info->{call_type};
     die "Incorrect data size"    unless $chunk_size == length $data;
@@ -107,10 +110,10 @@ sub upload_finished {
 }
 
 sub upload {
-    my ($c,$upload_info)= @_;
-    my $upload_id       = $upload_info->{upload_id};
-    my $data            = $upload_info->{data};
-    my $stash           = $c->stash('document_upload');
+    my ($c, $upload_info) = @_;
+    my $upload_id = $upload_info->{upload_id};
+    my $data      = $upload_info->{data};
+    my $stash     = $c->stash('document_upload');
 
     $stash->{$upload_id}->{sha1}->add($data);
     $stash->{$upload_id}->{received_bytes} += length $data;
