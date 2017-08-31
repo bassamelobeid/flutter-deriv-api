@@ -16,13 +16,14 @@ sub add_upload_info {
     
     return create_error($args) if $rpc_response->{error};
 
-    my %current_stash = %{$c->stash('document_upload') || {}};
+    my $current_stash = $c->stash('document_upload') || {};
     my $upload_id     = generate_upload_id();
-    my %call_params = %{create_call_params($args)};
+    my $call_params = create_call_params($args);
+    warn Dumper $current_stash;
     my $stash = {
-        %current_stash,
+        %{$current_stash},
         $upload_id => {
-            %call_params,
+            %{$call_params},
             file_name      => $rpc_response->{file_name},
             call_type      => $rpc_response->{call_type},
             sha1           => Digest::SHA1->new,
@@ -32,7 +33,7 @@ sub add_upload_info {
     };
 
     $c->stash(document_upload => $stash);
-    warn Dumper $stash->{call_type};
+
     return create_response(
         $args,
         {
