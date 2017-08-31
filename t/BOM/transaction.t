@@ -1475,7 +1475,7 @@ subtest 'max_30day_turnover validation', sub {
             price         => 5.20,
             payout        => $contract_up->payout,
             amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $contract_up->date_start,
         });
 
         my $error = do {
@@ -1489,7 +1489,7 @@ subtest 'max_30day_turnover validation', sub {
                     price         => 5.20,
                     payout        => $contract_up->payout,
                     amount_type   => 'payout',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $contract_up->date_start,
                 })->buy, undef, 'CALL bet bought';
 
             is +BOM::Transaction->new({
@@ -1498,7 +1498,7 @@ subtest 'max_30day_turnover validation', sub {
                     price         => 5.20,
                     payout        => $contract_down->payout,
                     amount_type   => 'payout',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $contract_down->date_start,
                 })->buy, undef, 'PUT bet bought';
 
             $txn->buy;
