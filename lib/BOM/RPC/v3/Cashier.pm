@@ -961,6 +961,28 @@ sub __client_withdrawal_notes {
     return ($error_message);
 }
 
+sub _validate_transfer_between_account {
+    my ($client_from, $client_to, $amount, $currency) = @_;
+
+    my $error_sub = sub {
+        my ($message_to_client, $message) = @_;
+        BOM::RPC::v3::Utility::create_error({
+            code              => 'TransferBetweenAccountsError',
+            message_to_client => $message_to_client,
+            ($message) ? (message => $message) : (),
+        });
+    };
+
+    return $error_sub->(localize('Please provide valid currency.')) unless $currency;
+    return $error_sub->(localize('Please provide valid amount.'))   unless looks_like_number($amount);
+    return $error_sub->(localize('The account transfer is unavailable for your account.')) if (not $client_from or not $client_to);
+
+    return $error_sub->(localize('Invalid currency.')) unless $client_from->landing_company->is_currency_legal($currency);
+    return $error_sub->(localize('Invalid currency.')) unless $client_to->landing_company->is_currency_legal($currency);
+
+    return undef;
+}
+
 sub transfer_between_accounts {
     my $params = shift;
 
@@ -983,8 +1005,7 @@ sub transfer_between_accounts {
         return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
     }
 
-    my $siblings = get_real_account_siblings_information($client);
-
+    my $siblings = get_real_account_siblings_information($client, 1);
     unless (keys %siblings) {
         warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
         return $error_sub->(localize('Internal server error'));
@@ -995,32 +1016,23 @@ sub transfer_between_accounts {
 
     my @accounts;
     foreach my $cl (values %$siblings) {
-        if ($client->loginid eq $cl->{sub_account_of} || $cl->{landing_company_name} =~ /^(?:malta|maltainvest)$/) {
-            push @accounts,
-                {
-                loginid  => $cl->{loginid},
-                balance  => $cl->{balance},
-                currency => $cl->{currency},
-                };
-        } else {
-            next;
-        }
-
+        push @accounts,
+            {
+            loginid  => $cl->{loginid},
+            balance  => $cl->{balance},
+            currency => $cl->{currency},
+            };
     }
 
     # get clients
-    unless ($loginid_from and $loginid_to and $currency and $amount) {
+    if (not $loginid_from or not $loginid_to) {
         return {
             status   => 0,
             accounts => \@accounts
         };
     }
 
-    if (not looks_like_number($amount) or $amount < 0.1 or $amount !~ /^\d+.?\d{0,2}$/) {
-        return $error_sub->(localize('Invalid amount. Minimum transfer amount is 0.10, and up to 2 decimal places.'));
-    }
-
-    my ($is_good, $client_from, $client_to) = (0, $siblings{$loginid_from}, $siblings{$loginid_to});
+    my ($is_good, $client_from, $client_to) = (0, $siblings->{$loginid_from}, $siblings->{$loginid_to});
 
     if ($client_from && $client_to) {
         # for sub account we need to check if it fulfils sub_account_of criteria and allow_omnibus is set
@@ -1040,8 +1052,6 @@ sub transfer_between_accounts {
             $is_good = $landing_companies{malta} && $landing_companies{maltainvest};
         }
     }
-
-    return $error_sub->(localize('The account transfer is unavailable for your account.')) if (not $is_good);
 
     my %deposited = (
         $loginid_from => $client_from->default_account ? $client_from->default_account->currency_code : '',
