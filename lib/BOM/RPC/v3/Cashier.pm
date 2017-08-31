@@ -1023,18 +1023,9 @@ sub transfer_between_accounts {
     my $res = _validate_transfer_between_account($client_from, $client_to, $currency, $siblings);
     return $res if $res->{error};
 
-    my $to_currency = $siblings->{$client_to->loginid}->{currency};
-
-    my $from_curr_type = LandingCompany::Registry::get_currency_type($currency);
-    my $to_curr_type   = LandingCompany::Registry::get_currency_type($to_currency);
-
-    # we don't allow crypto to crypto transfer
-    return $error_sub->(localize('The account transfer is not available for accounts with cryptocurrency as default currency.'))
-        if ($from_curr_type eq $to_currency_type and $from_currency_type eq 'crypto');
-
-    # we don't allow fiat to fiat if they are different
-    return $error_sub->(localize('The account transfer is not available for accounts with different default currency.'))
-        if ($from_curr_type eq $to_currency_type and $from_currency_type eq 'fiat' and $currency ne $to_currency);
+    # store orig amount, we can use it for payment remark
+    my $orig_amount = $amount;
+    $amount = _calculate_amount_with_fees($amount, $currency, $to_currency);
 
     BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
@@ -1241,7 +1232,7 @@ sub _validate_transfer_between_account {
     return $error_sub->(localize('Invalid currency.'))
         if (not $client_from->landing_company->is_currency_legal($currency) or not $client_to->landing_company->is_currency_legal($currency));
 
-    my $from_currency = $siblings->{$client_from->loginid}->{currency};
+    my ($from_currency, $to_currency) = ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
     # error if currency provided is not same as from account default currency
     return $error_sub->(localize('The account transfer is not available for your account. Currency provided is different from account currency'))
         if ($from_currency ne $currency);
@@ -1255,16 +1246,24 @@ sub _validate_transfer_between_account {
         localize('The account transfer is not available. Please set the currency for your existing account [_1].', $client_to->loginid))
         unless $to_currency;
 
-    # check if both have same currency for MLT -> MF, MF -> MLT transfer
-    if (    $client_from && $client_to
-        and $siblings->{$client_from->loginid}->{landing_company_name} =~ /^(?:malta|maltainvest)$/
-        and $siblings->{$client_to->loginid}->{landing_company_name} =~ /^(?:malta|maltainvest)$/)
-    {
-        return $error_sub->(localize('The account transfer is not available for accounts with different default currency.'))
-            if ($from_currency ne $to_currency);
-    }
+    my $from_curr_type = LandingCompany::Registry::get_currency_type($currency);
+    my $to_curr_type   = LandingCompany::Registry::get_currency_type($to_currency);
+
+    # we don't allow fiat to fiat if they are different
+    return $error_sub->(localize('The account transfer is not available for accounts with different default currency.'))
+        if ($from_curr_type eq $to_currency_type and $from_currency_type eq 'fiat' and $currency ne $to_currency);
+
+    # we don't allow crypto to crypto transfer
+    return $error_sub->(localize('The account transfer is not available for accounts with cryptocurrency as default currency.'))
+        if ($from_curr_type eq $to_currency_type and $from_currency_type eq 'crypto');
 
     return undef;
+}
+
+sub _calculate_amount_with_fees {
+    my ($amount, $from_currency, $to_currency) = @_;
+
+    return $amount;
 }
 
 1;
