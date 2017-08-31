@@ -961,61 +961,6 @@ sub __client_withdrawal_notes {
     return ($error_message);
 }
 
-sub _validate_transfer_between_account {
-    my ($client_from, $client_to, $currency) = @_;
-
-    my $error_sub = sub {
-        my ($message_to_client, $message) = @_;
-        BOM::RPC::v3::Utility::create_error({
-            code              => 'TransferBetweenAccountsError',
-            message_to_client => ($message_to_client // localize('The account transfer is unavailable for your account.')),
-            ($message) ? (message => $message) : (),
-        });
-    };
-
-    return $error_sub->() if (not $client_from or not $client_to);
-
-    return $error_sub->(localize('Invalid currency.'))
-        if (not $client_from->landing_company->is_currency_legal($currency) or $client_to->landing_company->is_currency_legal($currency));
-
-    if ($client_from && $client_to) {
-        # for sub account we need to check if it fulfils sub_account_of criteria and allow_omnibus is set
-        if (
-            ($client_from->allow_omnibus || $client_to->allow_omnibus)
-            && (   ($client_from->sub_account_of && $client_from->sub_account_of eq $loginid_to)
-                || ($client_to->sub_account_of && $client_to->sub_account_of eq $loginid_from)))
-        {
-            $is_good = 1;
-        } else {
-            my %landing_companies = (
-                $client_from->landing_company->short => 1,
-                $client_to->landing_company->short   => 1,
-            );
-
-            # check for transfer between malta & maltainvest
-            $is_good = $landing_companies{malta} && $landing_companies{maltainvest};
-        }
-    }
-
-    my %deposited = (
-        $loginid_from => $client_from->default_account ? $client_from->default_account->currency_code : '',
-        $loginid_to   => $client_to->default_account   ? $client_to->default_account->currency_code   : ''
-    );
-
-    if (not $deposited{$loginid_from} and not $deposited{$loginid_to}) {
-        return $error_sub->(localize('The account transfer is unavailable. Please deposit to your account.'));
-    }
-
-    foreach my $c ($loginid_from, $loginid_to) {
-        my $curr = $deposited{$c};
-        if ($curr and $curr ne $currency) {
-            return $error_sub->(localize('The account transfer is unavailable for accounts with different default currency.'));
-        }
-    }
-
-    return undef;
-}
-
 sub transfer_between_accounts {
     my $params = shift;
 
@@ -1070,10 +1015,13 @@ sub transfer_between_accounts {
         };
     }
 
-    my ($is_good, $client_from, $client_to) = (0, $siblings->{$loginid_from}, $siblings->{$loginid_to});
+    # create client from siblings so that we are sure that from and to loginid
+    # provided are for same client
+    my $client_from = Client::Account->new({loginid => $siblings->{$loginid_from}});
+    my $client_to   = Client::Account->new({loginid => $siblings->{$loginid_to}});
 
-    my $res = _validate_transfer_between_account($client_from, $client_to, $currency);
-    return $res if $res;
+    my $res = _validate_transfer_between_account($client_from, $client_to, $currency, $siblings);
+    return $res if $res->{error};
 
     BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
@@ -1258,6 +1206,44 @@ sub _get_amount_and_count {
     });
     my $amount_data = $clientdb->getall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$loginid]);
     return ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
+}
+
+sub _validate_transfer_between_account {
+    my ($client_from, $client_to, $currency, $siblings) = @_;
+
+    my $error_sub = sub {
+        my ($message_to_client, $message) = @_;
+        BOM::RPC::v3::Utility::create_error({
+            code              => 'TransferBetweenAccountsError',
+            message_to_client => ($message_to_client // localize('The account transfer is unavailable for your account.')),
+            ($message) ? (message => $message) : (),
+        });
+    };
+
+    # error out if one of the client is not defined, i.e.
+    # loginid provided is wrong or not in siblings
+    return $error_sub->() if (not $client_from or not $client_to);
+
+    # check if currency is legal for landing company
+    return $error_sub->(localize('Invalid currency.'))
+        if (not $client_from->landing_company->is_currency_legal($currency) or not $client_to->landing_company->is_currency_legal($currency));
+
+    my $from_currency = $siblings->{$client_from->loginid}->{currency};
+
+    # if from account has no currency set then error out
+    return $error_sub->(localize('The account transfer is unavailable. Please deposit to your account.')) unless $from_currency;
+
+    # check if both have same currency for MLT -> MF, MF -> MLT transfer
+    if (    $client_from && $client_to
+        and $siblings->{$client_from->loginid}->{landing_company_name} =~ /^(?:malta|maltainvest)$/
+        and $siblings->{$client_to->loginid}->{landing_company_name} =~ /^(?:malta|maltainvest)$/)
+    {
+        my $to_currency = $siblings->{$client_to->loginid}->{currency};
+        return $error_sub->(localize('The account transfer is unavailable for accounts with different default currency.'))
+            if ($from_currency ne $to_currency);
+    }
+
+    return undef;
 }
 
 1;
