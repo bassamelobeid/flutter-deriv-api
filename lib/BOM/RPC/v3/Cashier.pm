@@ -962,7 +962,7 @@ sub __client_withdrawal_notes {
 }
 
 sub _validate_transfer_between_account {
-    my ($client_from, $client_to, $amount, $currency) = @_;
+    my ($client_from, $client_to, $currency) = @_;
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -973,8 +973,6 @@ sub _validate_transfer_between_account {
         });
     };
 
-    return $error_sub->(localize('Please provide valid currency.')) unless $currency;
-    return $error_sub->(localize('Please provide valid amount.'))   unless looks_like_number($amount);
     return $error_sub->(localize('The account transfer is unavailable for your account.')) if (not $client_from or not $client_to);
 
     return $error_sub->(localize('Invalid currency.')) unless $client_from->landing_company->is_currency_legal($currency);
@@ -1032,7 +1030,13 @@ sub transfer_between_accounts {
         };
     }
 
+    return $error_sub->(localize('Please provide valid currency.')) unless $currency;
+    return $error_sub->(localize('Please provide valid amount.'))   unless looks_like_number($amount);
+
     my ($is_good, $client_from, $client_to) = (0, $siblings->{$loginid_from}, $siblings->{$loginid_to});
+
+    my $res = _validate_transfer_between_account($client_from, $client_to, $currency);
+    return $res if $res;
 
     if ($client_from && $client_to) {
         # for sub account we need to check if it fulfils sub_account_of criteria and allow_omnibus is set
