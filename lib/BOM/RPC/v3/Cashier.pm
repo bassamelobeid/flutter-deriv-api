@@ -970,7 +970,7 @@ sub transfer_between_accounts {
         my ($message_to_client, $message) = @_;
         BOM::RPC::v3::Utility::create_error({
             code              => 'TransferBetweenAccountsError',
-            message_to_client => $message_to_client,
+            message_to_client => ($message_to_client // localize('The account transfer is unavailable for your account.')),
             ($message) ? (message => $message) : (),
         });
     };
@@ -1022,6 +1022,14 @@ sub transfer_between_accounts {
 
     my $res = _validate_transfer_between_account($client_from, $client_to, $currency, $siblings);
     return $res if $res->{error};
+
+    my $to_currency = $siblings->{$client_to->loginid}->{currency};
+
+    my $from_curr_type = LandingCompany::Registry::get_currency_type($currency);
+    my $to_curr_type   = LandingCompany::Registry::get_currency_type($to_currency);
+
+    # we don't allow crypto to crypto transfer
+    return $error_sub->() if ($from_curr_type eq $to_currency_type and $from_currency_type eq 'crypto');
 
     BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
@@ -1229,16 +1237,23 @@ sub _validate_transfer_between_account {
         if (not $client_from->landing_company->is_currency_legal($currency) or not $client_to->landing_company->is_currency_legal($currency));
 
     my $from_currency = $siblings->{$client_from->loginid}->{currency};
+    # error if currency provided is not same as from account default currency
+    return $error_sub->(localize('The account transfer is unavailable for your account. Currency provided is different from account currency'))
+        if ($from_currency ne $currency);
 
-    # if from account has no currency set then error out
+    # error out if from account has no currency set
     return $error_sub->(localize('The account transfer is unavailable. Please deposit to your account.')) unless $from_currency;
+
+    # error out if to account has no currency set else
+    # client will be able to set same crypto for same account
+    return $error_sub->(localize('The account transfer is unavailable. Please set the currency for your existing account [_1].', $client_to->loginid))
+        unless $to_currency;
 
     # check if both have same currency for MLT -> MF, MF -> MLT transfer
     if (    $client_from && $client_to
         and $siblings->{$client_from->loginid}->{landing_company_name} =~ /^(?:malta|maltainvest)$/
         and $siblings->{$client_to->loginid}->{landing_company_name} =~ /^(?:malta|maltainvest)$/)
     {
-        my $to_currency = $siblings->{$client_to->loginid}->{currency};
         return $error_sub->(localize('The account transfer is unavailable for accounts with different default currency.'))
             if ($from_currency ne $to_currency);
     }
