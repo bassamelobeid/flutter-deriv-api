@@ -7,9 +7,6 @@ use Try::Tiny;
 use Digest::SHA1;
 use BOM::Platform::Context qw(localize);
 
-# Remove this.
-use Data::Dumper;
-
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
     my $args = $req_storage->{origin_args};
@@ -19,7 +16,6 @@ sub add_upload_info {
     my $current_stash = $c->stash('document_upload') || {};
     my $upload_id     = generate_upload_id();
     my $call_params = create_call_params($args);
-    warn Dumper $current_stash;
     my $stash = {
         %{$current_stash},
         $upload_id => {
@@ -49,8 +45,7 @@ sub document_upload {
 
     try {
         $upload_info = get_upload_info($c, $frame);
-
-        return upload($upload_info) if $upload_info->{chunk_size} != 0;
+        return upload($c, $upload_info) if $upload_info->{chunk_size} != 0;
 
         upload_finished($c, $upload_info);
     } catch {
@@ -112,16 +107,15 @@ sub upload_finished {
 }
 
 sub upload {
-    my $upload_info     = shift;
+    my ($c,$upload_info)= @_;
+    my $upload_id       = $upload_info->{upload_id};
     my $data            = $upload_info->{data};
-    my $new_upload_info = {%{$upload_info}};
+    my $stash           = $c->stash('document_upload');
 
-    $new_upload_info->{sha1}->add($data);
-    $new_upload_info->{received_bytes} = $new_upload_info->{received_bytes} + length $data;
+    $stash->{$upload_id}->{sha1}->add($data);
+    $stash->{$upload_id}->{received_bytes} += length $data;
 
     # TODO: Stream through a cloud storage
-
-    return $new_upload_info;
 }
 
 sub create_error {
