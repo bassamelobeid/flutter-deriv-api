@@ -961,7 +961,6 @@ sub __client_withdrawal_notes {
     return ($error_message);
 }
 
-## This endpoint is only available for MLT/MF accounts
 sub transfer_between_accounts {
     my $params = shift;
 
@@ -976,40 +975,32 @@ sub transfer_between_accounts {
         });
     };
 
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
-    if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->system)
-    {
+    if (BOM::Platform::Client::CashierValidation::is_system_suspended() or BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
         return $error_sub->(localize('Payments are suspended.'));
     }
 
-    my $user;
-    unless ($user = BOM::Platform::User->new({email => $client->email})) {
-        warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
-        return $error_sub->(localize('Internal server error'));
-    }
     if ($client->get_status('disabled') or $client->get_status('cashier_locked') or $client->get_status('withdrawal_locked')) {
         return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
+    }
+
+    my $siblings = get_real_account_siblings_information($client);
+
+    unless (keys %siblings) {
+        warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
+        return $error_sub->(localize('Internal server error'));
     }
 
     my $args = $params->{args};
     my ($loginid_from, $loginid_to, $currency, $amount) = @{$args}{qw/account_from account_to currency amount/};
 
-    my %siblings = map { $_->loginid => $_ } $user->clients;
-
     my @accounts;
-    foreach my $account (values %siblings) {
-        # check if client has any sub_account_of as we allow omnibus transfers also
-        # for MLT MF transfer check landing company
-        my $sub_account = $account->sub_account_of // '';
-        if ($client->loginid eq $sub_account || (grep { $account->landing_company->short eq $_ } ('malta', 'maltainvest'))) {
+    foreach my $cl (values %$siblings) {
+        if ($client->loginid eq $cl->{sub_account_of} || $cl->{landing_company_name} =~ /^(?:malta|maltainvest)$/) {
             push @accounts,
                 {
-                loginid => $account->loginid,
-                balance => $account->default_account
-                ? formatnumber('amount', $account->default_account->currency_code, $account->default_account->balance)
-                : "0.00",
-                currency => $account->default_account ? $account->default_account->currency_code : '',
+                loginid  => $cl->{loginid},
+                balance  => $cl->{balance},
+                currency => $cl->{currency},
                 };
         } else {
             next;

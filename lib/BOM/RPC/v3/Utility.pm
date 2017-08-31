@@ -279,9 +279,11 @@ sub get_real_account_siblings_information {
         my $acc = $cl->default_account;
 
         $siblings->{$cl->loginid} = {
-            currency => $acc ? $acc->currency_code : '',
-            balance => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
-            landing_company_name => $cl->landing_company->short
+            loginid              => $c1->loginid,
+            landing_company_name => $cl->landing_company->short,
+            sub_account_of       => ($cl->sub_account_of // ''),
+            currency             => $acc ? $acc->currency_code : '',
+            balance              => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
         };
     }
 
