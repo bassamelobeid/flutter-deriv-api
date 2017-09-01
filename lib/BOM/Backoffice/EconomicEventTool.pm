@@ -1,4 +1,4 @@
-package BOM::EconomicEventTool;
+package BOM::Backoffice::EconomicEventTool;
 
 use strict;
 use warnings;
