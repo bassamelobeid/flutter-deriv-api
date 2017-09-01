@@ -134,7 +134,9 @@ sub create_error {
     my ($call_params, $rpc_response) = @_;
     return {
         %{create_call_params($call_params)},
-        error => exists($rpc_response->{error}) ? $rpc_response->{error} : {
+        error => exists($rpc_response->{error})
+        ? $rpc_response->{error}
+        : {
             code    => 'UploadError',
             message => 'Sorry, we cannot process your upload request',
         },
