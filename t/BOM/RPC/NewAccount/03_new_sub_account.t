@@ -3,7 +3,6 @@ use warnings;
 
 use Test::Most;
 use Test::Mojo;
-use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warn;
 
