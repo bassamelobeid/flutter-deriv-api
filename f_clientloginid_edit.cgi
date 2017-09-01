@@ -258,7 +258,7 @@ if ($input{whattodo} eq 'uploadID') {
         # we don't flag such files with anything different (like _1) for it not to affect any other legacy code
         my $time = time() + $used_doctypes->{$doctype}++;
 
-        my $new_file_name = "$loginid.$doctype.$time.$docformat";
+        my $new_file_name     = "$loginid.$doctype.$time.$docformat";
         my $new_document_path = "$path/$new_file_name";
         copy($filetoupload, $new_document_path) or die "[$0] could not copy uploaded file to $new_document_path: $!";
         my $filesize = (stat $new_document_path)[7];
