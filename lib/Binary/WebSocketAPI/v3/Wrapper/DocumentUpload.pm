@@ -47,12 +47,14 @@ sub document_upload {
 
         return upload($c, $upload_info) if $upload_info->{chunk_size} != 0;
 
-        upload_finished($c, $upload_info);
+        send_upload_finished($c, $upload_info);
     }
     catch {
         warn "UploadError: $_";
         $c->send({json => create_error($upload_info)});
     };
+
+    return;
 }
 
 sub get_upload_info {
@@ -75,7 +77,7 @@ sub get_upload_info {
     };
 }
 
-sub upload_finished {
+sub send_upload_finished {
     my ($c, $upload_info) = @_;
 
     $c->call_rpc({
@@ -106,6 +108,8 @@ sub upload_finished {
                     }};
             }
         });
+
+    return;
 }
 
 sub upload {
@@ -118,6 +122,8 @@ sub upload {
     $stash->{$upload_id}->{received_bytes} += length $data;
 
     # TODO: Stream through a cloud storage
+
+    return;
 }
 
 sub create_error {
