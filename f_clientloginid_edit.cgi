@@ -258,14 +258,16 @@ if ($input{whattodo} eq 'uploadID') {
         # we don't flag such files with anything different (like _1) for it not to affect any other legacy code
         my $time = time() + $used_doctypes->{$doctype}++;
 
-        my $newfilename = "$path/$loginid.$doctype.$time.$docformat";
-        copy($filetoupload, $newfilename) or die "[$0] could not copy uploaded file to $newfilename: $!";
-        my $filesize = (stat $newfilename)[7];
+        my $new_file_name = "$loginid.$doctype.$time.$docformat";
+        my $new_document_path = "$path/$new_file_name";
+        copy($filetoupload, $new_document_path) or die "[$0] could not copy uploaded file to $new_document_path: $!";
+        my $filesize = (stat $new_document_path)[7];
 
         my $upload_submission = {
             document_type              => $doctype,
             document_format            => $docformat,
-            document_path              => $newfilename,
+            document_path              => $new_document_path,
+            file_name                  => $new_file_name,
             authentication_method_code => 'ID_DOCUMENT',
             expiration_date            => $expiration_date,
             document_id                => $document_id,
@@ -281,7 +283,7 @@ if ($input{whattodo} eq 'uploadID') {
 
         $client->save;
 
-        $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $newfilename is uploaded (filesize $filesize).</p><br />";
+        $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_document_path is uploaded (filesize $filesize).</p><br />";
     }
     print $result;
 }

@@ -311,7 +311,7 @@ sub show_client_id_docs {
         my ($id, $document_file, $file_name, $download_file, $input);
         $id            = $doc->id;
         $document_file = $doc->document_path;
-        ($file_name) = $document_file =~ m[clientIDscans/\w+/(.+)$];
+        $file_name     = $doc->file_name;
         $download_file = $client->broker . "/$file_name";
         my $date = $doc->expiration_date || '';
         $date = Date::Utility->new($date)->date_yyyymmdd if $date;
