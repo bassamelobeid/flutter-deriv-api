@@ -10,7 +10,7 @@ sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
     my $args = $req_storage->{origin_args};
 
-    return create_error($args) if $rpc_response->{error};
+    return create_error($args, $rpc_response) if $rpc_response->{error};
 
     my $current_stash = $c->stash('document_upload') || {};
     my $upload_id     = generate_upload_id();
@@ -80,6 +80,13 @@ sub get_upload_info {
 sub send_upload_finished {
     my ($c, $upload_info) = @_;
 
+    my $upload_finished = {
+        size      => $upload_info->{received_bytes},
+        checksum  => $upload_info->{sha1}->hexdigest,
+        call_type => $upload_info->{call_type},
+        status    => 'success',
+    };
+
     $c->call_rpc({
             method      => 'document_upload',
             call_params => {
@@ -87,23 +94,20 @@ sub send_upload_finished {
             },
             args => {
                 file_name     => $upload_info->{file_name},
-                size          => $upload_info->{received_bytes},
-                checksum      => $upload_info->{sha1}->hexdigest,
-                call_type     => $upload_info->{call_type},
                 document_path => $upload_info->{document_path},
-                status        => 'success',
+                %{$upload_finished},
             },
             response => sub {
                 my $api_response = $_[1];
 
-                return create_error($upload_info) unless exists($api_response->{document_upload});
+                return create_error($upload_info, $api_response) if exists($api_response->{error});
 
                 return {
                     %{$api_response},
                     req_id          => $upload_info->{req_id},
                     passthrough     => $upload_info->{passthrough},
                     document_upload => {
-                        %{$api_response->{document_upload}},
+                        %{$upload_finished},
                         upload_id => $upload_info->{upload_id},
                     }};
             }
@@ -127,9 +131,10 @@ sub upload {
 }
 
 sub create_error {
+    my ($call_params, $rpc_response) = @_;
     return {
-        %{create_call_params(shift)},
-        error => {
+        %{create_call_params($call_params)},
+        error => exists($rpc_response->{error}) ? $rpc_response->{error} : {
             code    => 'UploadError',
             message => 'Sorry, we cannot process your upload request',
         },
