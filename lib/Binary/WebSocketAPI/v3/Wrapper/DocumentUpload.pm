@@ -47,11 +47,11 @@ sub document_upload {
 
         return upload($c, $upload_info) if $upload_info->{chunk_size} != 0;
 
-        send_upload_finished($c, $upload_info);
+        send_upload_successful($c, $upload_info, 'success');
     }
     catch {
         warn "UploadError: $_";
-        $c->send({json => create_error($upload_info)});
+        send_upload_failed($c);
     };
 
     return;
@@ -77,14 +77,29 @@ sub get_upload_info {
     };
 }
 
-sub send_upload_finished {
-    my ($c, $upload_info) = @_;
+sub send_upload_failed {
+    my $c = shift;
+    $c->call_rpc({
+            method      => 'document_upload',
+            call_params => {
+                token => $c->stash('token'),
+            },
+            args => {
+                status => 'failure',
+            },
+        });
+
+    return;
+};
+
+sub send_upload_successful {
+    my ($c, $upload_info, $status) = @_;
 
     my $upload_finished = {
         size      => $upload_info->{received_bytes},
         checksum  => $upload_info->{sha1}->hexdigest,
         call_type => $upload_info->{call_type},
-        status    => 'success',
+        status    => $status,
     };
 
     $c->call_rpc({
