@@ -1202,7 +1202,7 @@ sub _build_pricing_comment {
 
     # Record price slippage, requested_price and recomputed_price in quants bet variable.
     # To always reproduce ask price, we would want to record the slippage allowed during transaction.
-    push @comment_fields, ($_ => $args->{$_}) if defined $args->{$_} for qw/price_slippage requested_price recomputed_price/;
+    push @comment_fields, map { defined $args->{$_} ? ($_ => $args->{$_}) : () } qw/price_slippage requested_price recomputed_price/;
 
     for (my $i = 0; $i < @comment_fields; $i += 2) {
         unless (looks_like_a_number($comment_fields[$i + 1])) {
@@ -1213,11 +1213,9 @@ sub _build_pricing_comment {
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
 
     push @comment_fields, (binaryico_auction_status => $contract->binaryico_auction_status) if $contract->is_binaryico;
-    push @comment_fields, ($_ => $args->{$_}) if defined $args->{$_} for qw/trading_period_start/;
+    push @comment_fields, map { defined $args->{$_} ? ($_ => $args->{$_}) : () } qw/trading_period_start/;
 
-    my %comment_hash = map { $_ } @comment_fields;
-
-    return [$comment_str, \%comment_hash];
+    return [$comment_str, {@comment_fields}];
 }
 
 =head2 sell_expired_contracts
