@@ -32,8 +32,6 @@ if ((request()->param('whattodo') // '') eq 'showdocs') {
     Bar(encode_entities("SHOW CLIENT PAYMENT DOCS FOR $loginid " . $client->full_name));
     print "ID docs:";
     print show_client_id_docs($client, show_delete => 1);
-    print "<hr>Payment docs:";
-    print show_client_id_docs($client, folder => 'payments');
     code_exit_BO();
 }
 

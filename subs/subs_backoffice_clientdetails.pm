@@ -300,51 +300,31 @@ sub get_untrusted_client_reason {
 ## show_client_id_docs #######################################
 # Purpose : generate the html to display client's documents.
 # Relocated to here from Client module.
-# If 'folder' arg present, this is a request to show docs from that folder.
-# Otherwise it's a request to show the client's authentication docs.
 ##############################################################
 sub show_client_id_docs {
     my ($client, %args) = @_;
     my $show_delete = $args{show_delete};
-    my $folder      = $args{folder};
     my $links       = '';
     my $loginid     = $client->loginid;
-    my @docs;
-    if ($folder) {
-        my $path = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/clientIDscans/" . $client->broker . "/$folder";
-        @docs = glob("$path/$loginid*");
-        for (@docs) {
-            s/\s/+/g;
-            s/\&/%26/g;
-        }
-    } else {
-        @docs = $client->client_authentication_document;
-    }
+    my @docs        = $client->client_authentication_document;
     foreach my $doc (sort { $a->id <=> $b->id } @docs) {
         my ($id, $document_file, $file_name, $download_file, $input);
-        if ($folder) {
-            $id            = 0;
-            $document_file = $doc;
-            ($file_name) = $document_file =~ m[clientIDscans/\w+/\w+/(.+)$];
-            $download_file = $client->broker . "/$folder/$file_name";
-            $input         = '';
-        } else {
-            $id            = $doc->id;
-            $document_file = $doc->document_path;
-            ($file_name) = $document_file =~ m[clientIDscans/\w+/(.+)$];
-            $download_file = $client->broker . "/$file_name";
-            my $date = $doc->expiration_date || '';
-            $date = Date::Utility->new($date)->date_yyyymmdd if $date;
-            my $comments    = $doc->comments;
-            my $document_id = $doc->document_id;
-            $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date">};
-            $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments">};
-            $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id">};
-        }
+        $id            = $doc->id;
+        $document_file = $doc->document_path;
+        ($file_name) = $document_file =~ m[clientIDscans/\w+/(.+)$];
+        $download_file = $client->broker . "/$file_name";
+        my $date = $doc->expiration_date || '';
+        $date = Date::Utility->new($date)->date_yyyymmdd if $date;
+        my $comments    = $doc->comments;
+        my $document_id = $doc->document_id;
+        $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date">};
+        $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments">};
+        $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id">};
         my $file_size = -s $document_file || next;
         my $file_age  = int(-M $document_file);
         my $url       = request()->url_for("backoffice/download_document.cgi?path=$download_file");
         $links .= qq{<tr><td><a href="$url">$file_name</a> $file_size bytes, $file_age days old</td><td>$input};
+
         if ($show_delete) {
             $url .= qq{&loginid=$loginid&doc_id=$id&deleteit=yes};
             my $onclick = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
