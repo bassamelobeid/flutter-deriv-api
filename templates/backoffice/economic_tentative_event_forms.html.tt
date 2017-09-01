@@ -67,23 +67,4 @@
 			}
 		}
 	}
-        function deleteEvent(id) {
-            if (id) {
-                var el = \$('table#tentative_event_list').find('tr#'+id);
-                \$.ajax({
-                        url: "[% ee_upload_url | none %]",
-                        data: {
-                                delete_event: 1,
-                                id: id
-                        },
-                        success: function(data){
-                                if(data==1){
-                                        el.remove();
-                                } else{
-                                        el.find('.result').text(data).css('color','red');
-                                }
-                        }
-                });
-            }
-        }
 </script>

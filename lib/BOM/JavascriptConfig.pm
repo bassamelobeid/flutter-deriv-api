@@ -16,7 +16,7 @@ sub bo_js_files_for {
         'external/jquery.jsonify-0.1.js', 'backoffice.js'
     );
     for ($page) {
-        push @js_files, 'bbdl.js', 'economic_event.js' if /f_bet_iv/;
+        push @js_files, 'bbdl.js' if /f_bet_iv/;
         push @js_files, 'risk_dashboard.js', 'external/jbpivot.min.js', 'external/raphael-min.js', 'external/treemap-squared-0.5.min.js',
             'external/jquery.sparkline.min.js'
             if /risk_dashboard/;
