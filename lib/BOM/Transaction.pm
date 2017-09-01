@@ -11,6 +11,7 @@ use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
+use Scalar::Util qw(looks_like_number);
 
 use Brands;
 use Client::Account;
@@ -1205,7 +1206,7 @@ sub _build_pricing_comment {
     push @comment_fields, map { defined $args->{$_} ? ($_ => $args->{$_}) : () } qw/price_slippage requested_price recomputed_price/;
 
     for (my $i = 0; $i < @comment_fields; $i += 2) {
-        unless (looks_like_a_number($comment_fields[$i + 1])) {
+        unless (looks_like_number($comment_fields[$i + 1])) {
             warn "_build_pricing_comment: $comment_fields[$i] is $comment_fields[$i+1]";
             $comment_fields[$i + 1] = 0;
         }
