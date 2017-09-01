@@ -183,9 +183,12 @@ sub add_details_to_desk {
                 token_secret => BOM::Platform::Config::third_party->{desk}->{access_token_secret},
             });
 
-            $details->{loginid}  = $client->loginid;
-            $details->{language} = request()->language;
-            $desk_api->upload($details);
+            # we don't want to modify original details hence create
+            # copy for desk.com
+            my $copy = {%$details};
+            $copy->{loginid}  = $client->loginid;
+            $copy->{language} = request()->language;
+            $desk_api->upload($copy);
         }
         catch {
             warn("Unable to add loginid " . $client->loginid . "(" . $client->email . ") to desk.com API: $_");
