@@ -1192,41 +1192,28 @@ sub format_error {
 sub _build_pricing_comment {
     my $args = shift;
 
-    my ($contract, $price, $action, $price_slippage, $requested_price, $recomputed_price, $trading_period_start) =
-        @{$args}{'contract', 'price', 'action', 'price_slippage', 'requested_price', 'recomputed_price', 'trading_period_start'};
+    my ($contract, $price, $action) = @{$args}{qw/contract price action/};
 
     my @comment_fields = @{$contract->pricing_details($action)};
 
     #NOTE The handling of sell whether the bid is sucess or not will be handle in next card
     # only manual sell and buy has a price
-    if ($price) {
-        push @comment_fields, (trade => $price);
-    }
+    push @comment_fields, (trade => $price) if $price;
 
-    # Record price slippage in quants bet variable.
+    # Record price slippage, requested_price and recomputed_price in quants bet variable.
     # To always reproduce ask price, we would want to record the slippage allowed during transaction.
-    if (defined $price_slippage) {
-        push @comment_fields, (price_slippage => $price_slippage);
-    }
+    push @comment_fields, ($_ => $args->{$_}) if defined $args->{$_} for qw/price_slippage requested_price recomputed_price/;
 
-    # Record requested price in quants bet variable.
-    if (defined $requested_price) {
-        push @comment_fields, (requested_price => $requested_price);
+    for (my $i = 0; $i < @comment_fields; $i += 2) {
+        unless (looks_like_a_number($comment_fields[$i + 1])) {
+            warn "_build_pricing_comment: $comment_fields[$i] is $comment_fields[$i+1]";
+            $comment_fields[$i + 1] = 0;
+        }
     }
-
-    # Record recomputed price in quants bet variable.
-    if (defined $recomputed_price) {
-        push @comment_fields, (recomputed_price => $recomputed_price);
-    }
-
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
 
-    if ($contract->is_binaryico) {
-        push @comment_fields, (binaryico_auction_status => $contract->binaryico_auction_status);
-    }
-    if (defined $trading_period_start) {
-        push @comment_fields, (trading_period_start => $trading_period_start);
-    }
+    push @comment_fields, (binaryico_auction_status => $contract->binaryico_auction_status) if $contract->is_binaryico;
+    push @comment_fields, ($_ => $args->{$_}) if defined $args->{$_} for qw/trading_period_start/;
 
     my %comment_hash = map { $_ } @comment_fields;
 
