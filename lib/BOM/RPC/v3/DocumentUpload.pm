@@ -40,7 +40,7 @@ sub upload {
     }
 
     # Add new entry to database.
-    if ($document_type && $document_id && $document_format) {
+    if ($document_type && $document_format) {
         my $newfilename = join '.', $document_id, time(), $document_format;
         my $upload = {
             document_type              => $document_type,
@@ -48,12 +48,18 @@ sub upload {
             document_path              => '',
             authentication_method_code => 'ID_DOCUMENT',
             expiration_date            => $expiration_date,
-            document_id                => $document_id,
+            document_id                => $document_id || '',
             file_name                  => $newfilename,
             status                     => 'uploading',
         };
         $client->add_client_authentication_document($upload);
         $client->save();
+
+        if (not $client->save()) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize('Sorry, an error occurred while processing your request.')});
+        }
 
         return {
             file_name => $newfilename,
@@ -72,7 +78,20 @@ sub upload {
 
         $doc->{status}        = "uploaded";
         $doc->{document_path} = $document_path;
-        $doc->save();
+
+        if (not $doc->save()) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize('Sorry, an error occurred while processing your request.')});
+        }
+
+        # Change client's account status.
+        $client->set_status('under_review', 'system', 'Documents uploaded');
+        if (not $client->save()) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize('Sorry, an error occurred while processing your request.')});
+        }
 
         return $params->{args};
     }
