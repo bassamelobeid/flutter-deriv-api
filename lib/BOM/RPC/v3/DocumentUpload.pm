@@ -97,8 +97,8 @@ sub upload {
     }
 
     return BOM::RPC::v3::Utility::create_error({
-            code              => 'UploadDenied',
-            message_to_client => localize("Missing parameter.")});
+            code              => 'InternalServerError',
+            message_to_client => localize('Sorry, an error occurred while processing your request.')});
 }
 
 1;

@@ -51,9 +51,9 @@ $args->{expiration_date} = "2017-08-09";    # Expired documents.
 $c->call_ok($method, $params)
     ->has_error->error_message_is('expiration_date cannot be less than or equal to current date.', 'check expiration_date is before current date');
 
-# Missing parameters
+# Unsuccessful finished upload
 $args->{expiration_date} = "2117-08-11";    # 100 years is all I give you, humanity!
-$c->call_ok($method, $params)->has_error->error_message_is('Missing parameter.', 'check if missing parameters');
+$c->call_ok($method, $params)->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
 
 $args->{document_type}   = "passport";
 $args->{document_id}     = "ABCD1234";
