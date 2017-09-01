@@ -89,7 +89,63 @@ subtest 'binary metadata should be correctly sent' => sub {
     ok $res->{error}, 'chunk_size should be valid';
 };
 
-subtest 'Send two files correctly' => sub {
+subtest 'sending two files concurrently' => sub {
+    my $req1 = {
+        req_id          => ++$req_id,
+        passthrough     => $PASSTHROUGH,
+        document_upload => 1,
+        document_id     => '12456',
+        document_format => 'JPEG',
+        document_type   => 'passport',
+        expiration_date => '2020-01-01',
+    };
+
+    my $req2 = {
+        req_id          => ++$req_id,
+        passthrough     => $PASSTHROUGH,
+        document_upload => 1,
+        document_id     => '12456',
+        document_format => 'JPEG',
+        document_type   => 'passport',
+        expiration_date => '2022-01-01',
+    };
+
+    my $data = 'Some text';
+
+    $t = $t->send_ok({json => $req1})->message_ok;
+    my $res1 = decode_json($t->message->[1]);
+    my $upload_id1 = $res1->{document_upload}->{upload_id};
+    my $call_type1 = $res1->{document_upload}->{call_type};
+
+    $t = $t->send_ok({json => $req2})->message_ok;
+    my $res2 = decode_json($t->message->[1]);
+    my $upload_id2 = $res2->{document_upload}->{upload_id};
+    my $call_type2 = $res2->{document_upload}->{call_type};
+
+    my $length = length $data;
+    
+    my @frames1 = gen_frames($data, $call_type1, $upload_id1);
+    my @frames2 = gen_frames($data, $call_type2, $upload_id2);
+
+    $t = $t->send_ok({binary => $frames1[0]});
+    $t = $t->send_ok({binary => $frames2[0]});
+    $t = $t->send_ok({binary => $frames1[1]});
+    $t = $t->send_ok({binary => $frames2[1]});
+    $t = $t->send_ok({binary => $frames1[2]})->message_ok;
+    $res1 = decode_json($t->message->[1]);
+    $t = $t->send_ok({binary => $frames2[2]})->message_ok;
+    $res2 = decode_json($t->message->[1]);
+
+    my $success = $res1->{document_upload};
+    is $success->{upload_id}, $upload_id1, 'upload id1 is correct';
+    is $success->{call_type}, $call_type1, 'call_type1 is correct';
+
+    $success = $res2->{document_upload};
+    is $success->{upload_id}, $upload_id2, 'upload id2 is correct';
+    is $success->{call_type}, $call_type2, 'call_type2 is correct';
+};
+
+subtest 'Send two files one by one' => sub {
     document_upload_ok({
             document_upload => 1,
             document_id     => '12456',
