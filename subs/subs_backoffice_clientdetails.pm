@@ -320,10 +320,8 @@ sub show_client_id_docs {
         $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date">};
         $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments">};
         $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id">};
-        my $file_size = -s $document_file || next;
-        my $file_age  = int(-M $document_file);
         my $url       = request()->url_for("backoffice/download_document.cgi?path=$download_file");
-        $links .= qq{<tr><td><a href="$url">$file_name</a> $file_size bytes, $file_age days old</td><td>$input};
+        $links .= qq{<tr><td><a href="$url">$file_name</a></td><td>$input};
 
         if ($show_delete) {
             $url .= qq{&loginid=$loginid&doc_id=$id&deleteit=yes};
