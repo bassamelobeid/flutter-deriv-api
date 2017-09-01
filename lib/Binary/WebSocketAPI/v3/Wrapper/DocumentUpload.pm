@@ -5,7 +5,6 @@ use warnings;
 
 use Try::Tiny;
 use Digest::SHA1;
-use BOM::Platform::Context qw(localize);
 
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
@@ -126,7 +125,7 @@ sub create_error {
         %{create_call_params(shift)},
         error => {
             code    => 'UploadError',
-            message => localize('Sorry, we cannot process your upload request'),
+            message => 'Sorry, we cannot process your upload request',
         },
     };
 }
