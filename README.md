@@ -31,7 +31,7 @@ To update economic events: bin/bom_update_economic_events.pl
 
 Source: ForexFactory
 
-Package dependency: BOM::MarketDataAutoUpdater::UpdateEconomicEvents, ForexFactory, Quant::Framework::EconomicEventCalendar.
+Package dependency: BOM::MarketDataAutoUpdater::UpdateEconomicEvents, ForexFactory, Quant::Framework::EconomicEvent::Scheduled, Quant::Framework::EconomicEvent::Tentative.
 
 Frequency of this script being called: 00GMT on daily basic
 

@@ -5,7 +5,8 @@ with 'App::Base::Script';
 
 use ForexFactory;
 use Volatility::Seasonality;
-use Quant::Framework::EconomicEventCalendar;
+use Quant::Framework::EconomicEvent::Scheduled;
+use Quant::Framework::EconomicEvent::Tentative;
 use BOM::MarketData qw(create_underlying_db);
 use Volatility::Seasonality;
 use BOM::Platform::Runtime;
@@ -41,16 +42,29 @@ sub script_run {
 
     try {
 
-        my $tentative_count = grep { $_->{is_tentative} } @$events_received;
+        my @tentative_events = grep { $_->{is_tentative} } @$events_received;
+        my @scheduled_events = grep { !$_->{is_tentative} } @$events_received;
+        my %args             = (
+            recorded_date    => Date::Utility->new,
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        );
 
-        Quant::Framework::EconomicEventCalendar->new({
-                events           => $events_received,
-                recorded_date    => Date::Utility->new(),
-                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-            })->save;
+        if (@tentative_events) {
+            Quant::Framework::EconomicEvent::Tentative->new(
+                events => \@tentative_events,
+                %args,
+            )->save;
+        }
 
-        print "stored " . (scalar @$events_received) . " events ($tentative_count are tentative events) in chronicle...\n";
+        if (@scheduled_events) {
+            Quant::Framework::EconomicEvent::Scheduled->new(
+                events => \@scheduled_events,
+                %args,
+            )->save;
+        }
+
+        print "stored " . (scalar @$events_received) . " events (" . (scalar @tentative_events) . " are tentative events) in chronicle...\n";
 
         my @underlying_symbols = create_underlying_db->symbols_for_intraday_fx;
 
