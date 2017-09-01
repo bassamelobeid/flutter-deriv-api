@@ -220,7 +220,7 @@ SKIP: {
 # And this line set amount to higher value to fix the minimum stake validation failure that seems to happen based
 # on the timing this test runs.
         $proposal_array_req_tpl->{amount}                   = 1000;
-        $proposal_array_req_tpl->{barriers}                 = [{barrier => 97.1}];
+        $proposal_array_req_tpl->{barriers}                 = [{barrier => 111}];
         $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
 
         $response = $t->await::proposal_array($proposal_array_req_tpl);
@@ -228,14 +228,14 @@ SKIP: {
 
         ok $response->{proposal_array}{proposals}{CALLE}[0]{ask_price}, "proposal is ok, price presented";
 
-        $proposal_array_req_tpl->{barriers}                 = [{barrier => 99}];
+        $proposal_array_req_tpl->{barriers}                 = [{barrier => 111}];
 # Here we reset the amount back to 100 to ensure we get the minimum stake error for the next test.
         $proposal_array_req_tpl->{amount}                   = 100;
         $response = $t->await::proposal_array($proposal_array_req_tpl);
         test_schema('proposal_array', $response);
         ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : Minimum stake of 35 and maximum payout of 100000.";
 
-        $proposal_array_req_tpl->{barriers}                 = [{barrier => 95}];
+        $proposal_array_req_tpl->{barriers}                 = [{barrier => 109}];
         $response = $t->await::proposal_array($proposal_array_req_tpl);
         test_schema('proposal_array', $response);
         ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : This contract offers no return.";
