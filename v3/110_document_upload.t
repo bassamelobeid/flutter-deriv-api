@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::Most;
+use Test::Warn;
 use JSON;
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Digest::SHA1 qw/sha1_hex/;
@@ -21,19 +22,22 @@ my $CHUNK_SIZE  = 6;
 my $PASSTHROUGH = {key => 'value'};
 
 subtest 'Invalid upload frame' => sub {
-    $t = $t->send_ok({
+    warning_like {
+        $t = $t->send_ok({
             binary => (pack 'N', 1),
         })->message_ok;
-
+    } [qr/Invalid frame/], 'Expected warning';
     my $res = decode_json($t->message->[1]);
 
     ok $res->{error}, 'Upload frame should be at least 12 bytes';
 };
 
 subtest 'Send binary data without requesting document_upload' => sub {
-    $t = $t->send_ok({
+    warning_like {
+        $t = $t->send_ok({
             binary => (pack 'N3A*', 1, 1, 1, 'A'),
         })->message_ok;
+    } [qr/Unknown upload request/], 'Expected warning';
 
     my $res = decode_json($t->message->[1]);
 
@@ -60,21 +64,27 @@ subtest 'binary metadata should be correctly sent' => sub {
     my $upload_id = $res->{document_upload}->{upload_id};
     my $call_type = $res->{document_upload}->{call_type};
 
-    $t = $t->send_ok({
+    warning_like {
+        $t = $t->send_ok({
             binary => (pack 'N3A*', $call_type, 1111, 1, 'A'),
         })->message_ok;
+    } [qr/Unknown upload id/], 'Expected warning';
     $res = decode_json($t->message->[1]);
     ok $res->{error}, 'upload_id should be valid';
 
-    $t = $t->send_ok({
+    warning_like {
+        $t = $t->send_ok({
             binary => (pack 'N3A*', 1111, $upload_id, 1, 'A'),
         })->message_ok;
+    } [qr/Unknown call type/], 'Expected warning';
     $res = decode_json($t->message->[1]);
     ok $res->{error}, 'call_type should be valid';
 
-    $t = $t->send_ok({
+    warning_like {
+        $t = $t->send_ok({
             binary => (pack 'N3A*', $call_type, $upload_id, 2, 'A'),
         })->message_ok;
+    } [qr/Incorrect data size/], 'Expected warning';
     $res = decode_json($t->message->[1]);
     ok $res->{error}, 'chunk_size should be valid';
 };
