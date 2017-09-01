@@ -109,7 +109,7 @@ sub delete_by_id {
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
 
-    _regenerate($ees->get_economic_events_calendar);
+    _regenerate($ees->get_all_events());
 
     return $deleted;
 }
