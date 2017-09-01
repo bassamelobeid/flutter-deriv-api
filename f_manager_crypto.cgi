@@ -313,9 +313,9 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
         # as a parameter instead.
         my $filter = sub {
             my ($transactions) = @_;
-            my $start_epoch = $start_date->epoch;
-            my $end_epoch = $end_date->epoch;
-            return [ grep { $_->{time} >= $start_epoch and $_->{time} <= $end_epoch } @$transactions ];
+            my $start_epoch    = $start_date->epoch;
+            my $end_epoch      = $end_date->epoch;
+            return [grep { $_->{time} >= $start_epoch and $_->{time} <= $end_epoch } @$transactions];
         };
         if (my $deposits = $rpc_client->listreceivedbyaddress(0)) {
             $recon->from_blockchain_deposits($filter->($deposits));
