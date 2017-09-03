@@ -44,6 +44,7 @@ Readonly our $BET_CLASS_TO_TYPE_MAP => {
 
     'touch_bet' => ['ONETOUCH',   'NOTOUCH'],
     'digit_bet' => ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITODD', 'DIGITEVEN'],
+    'INVALID'   => ['INVALID'],
 };
 
 Readonly our $BET_TYPE_TO_CLASS_MAP => {
