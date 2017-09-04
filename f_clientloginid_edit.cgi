@@ -307,14 +307,10 @@ if (my $check_str = $input{do_id_check}) {
 if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     #error checks
     unless ($client->is_virtual) {
-        if (length($input{'last_name'}) < 1) {
-            code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! LNAME field appears incorrect or empty.</p></p>");
-        }
-        if (length($input{'first_name'}) < 1) {
-            code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! FNAME field appears incorrect or empty.</p></p>");
-        }
-        if (length($input{'salutation'}) < 1) {
-            code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field appears to be empty.</p></p>");
+        foreach (qw/last_name first_name salutation/) {
+            if (length($input{$_}) < 1) {
+                code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! $_ field appears incorrect or empty.</p></p>");
+            }
         }
         if (!grep(/^$input{'salutation'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) {    ## no critic (RequireBlockGrep)
             code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field is invalid.</p></p>");
