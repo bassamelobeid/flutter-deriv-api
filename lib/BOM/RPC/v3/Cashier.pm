@@ -992,7 +992,7 @@ sub transfer_between_accounts {
     return $error_sub->(localize('Please provide valid amount.'))   unless looks_like_number($amount);
 
     my $siblings = get_real_account_siblings_information($client, 1);
-    unless (keys %siblings) {
+    unless (keys %$siblings) {
         warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
         return $error_sub->(localize('Internal server error'));
     }
@@ -1230,16 +1230,16 @@ sub _validate_transfer_between_account {
     return $error_sub->(localize('Please set the currency for your existing account [_1].', $client_to->loginid))
         unless $to_currency;
 
-    my $from_curr_type = LandingCompany::Registry::get_currency_type($currency);
-    my $to_curr_type   = LandingCompany::Registry::get_currency_type($to_currency);
+    my $from_currency_type = LandingCompany::Registry::get_currency_type($currency);
+    my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
 
     # we don't allow fiat to fiat if they are different
     return $error_sub->(localize('The account transfer is not available for accounts with different default currency.'))
-        if (($from_curr_type eq $to_currency_type) and ($from_currency_type eq 'fiat') and ($currency ne $to_currency));
+        if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'fiat') and ($currency ne $to_currency));
 
     # we don't allow crypto to crypto transfer
     return $error_sub->(localize('The account transfer is not available within accounts with cryptocurrency as default currency.'))
-        if (($from_curr_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
+        if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
 
     return undef;
 }
@@ -1251,8 +1251,8 @@ sub _validate_transfer_between_account {
 sub _calculate_to_amount_with_fees {
     my ($client, $amount, $from_currency, $to_currency) = @_;
 
-    my $from_curr_type = LandingCompany::Registry::get_currency_type($from_currency);
-    my $to_curr_type   = LandingCompany::Registry::get_currency_type($to_currency);
+    my $from_currency_type = LandingCompany::Registry::get_currency_type($from_currency);
+    my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
 
     my $is_authenticated_pa = $client->payment_agent and $client->payment_agent->is_authenticated;
 
@@ -1265,9 +1265,9 @@ sub _calculate_to_amount_with_fees {
     # currencies are different, we don't allow transfer between same
     # currency type
     my $fees = 0;
-    if (($from_curr_type ne $to_curr_type) and ($from_currency ne $to_currency)) {
+    if (($from_currency_type ne $to_currency_type) and ($from_currency ne $to_currency)) {
         # no fees for authenticate payment agent
-        return ($amount, $fees) if ($from_curr_type eq 'crypto' and $is_authenticated_pa);
+        return ($amount, $fees) if ($from_currency_type eq 'crypto' and $is_authenticated_pa);
 
         $fees = ($amount) * ($fees_rate->{$from_currency_type});
         $amount -= $fees;
