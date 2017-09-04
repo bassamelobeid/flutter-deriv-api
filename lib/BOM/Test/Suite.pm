@@ -247,6 +247,13 @@ sub exec_line {
     print_test_diag($self->{title}, $linenum, $elapsed, ($test_stream_id || $start_stream_id), $send_file, $receive_file);
 }
 
+sub finish {
+    my ($self) = @_;
+
+    diag "Cumulative elapsed time for all steps was $self->{cumulative_elapsed}s";
+    return $self->{cumulative_elapsed};
+}
+
 sub run {
     my ($class, $args) = @_;
 
@@ -267,8 +274,7 @@ sub run {
         $self->exec_line($line, $linenum);
     }
 
-    diag "Cumulative elapsed time for all steps was $self->{cumulative_elapsed}s";
-    return $self->{cumulative_elapsed};
+    return $self->finish;
 }
 
 sub print_test_diag {
