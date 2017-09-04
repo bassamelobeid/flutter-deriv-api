@@ -10,29 +10,22 @@ use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Password;
 use Test::More;
+use BOM::Test::Data::Utility::UnitTestDatabase;
 
 our @EXPORT_OK = qw( create_client top_up );
 
+#
+# takes
+#   broker_code (defaults to CR)
+#   skipauth (default to undef)
+#
+# Creates client with uniq email, and authenticates him for trades if MF/MLT/MX and not skipauth
+#
 sub create_client {
     my $broker   = shift || 'CR';
     my $skipauth = shift;
-    my $client   = Client::Account->register_and_return_new_client({
-        broker_code      => $broker,
-        client_password  => BOM::Platform::Password::hashpw('12345678'),
-        salutation       => 'Ms',
-        last_name        => 'Doe',
-        first_name       => 'Jane' . time . '.' . int(rand 1000000000),
-        email            => 'jane.doe' . time . '.' . int(rand 1000000000) . '@test.domain.nowhere',
-        residence        => 'in',
-        address_line_1   => '298b md rd',
-        address_line_2   => '',
-        address_city     => 'Place',
-        address_postcode => '65432',
-        address_state    => 'st',
-        phone            => '+9145257468',
-        secret_question  => 'What the f***?',
-        secret_answer    => BOM::Platform::Client::Utility::encrypt_secret_answer('is that'),
-        date_of_birth    => '1945-08-06',
+    my $client   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => $broker,
     });
     if (!$skipauth && $broker =~ /(?:MF|MLT|MX)/) {
         $client->set_status('age_verification');
