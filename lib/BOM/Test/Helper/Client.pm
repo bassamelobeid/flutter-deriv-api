@@ -15,23 +15,16 @@ use BOM::Test::Data::Utility::UnitTestDatabase;
 our @EXPORT_OK = qw( create_client top_up );
 
 #
-# takes
-#   broker_code (defaults to CR)
-#   skipauth (default to undef)
-#
-# Creates client with uniq email, and authenticates him for trades if MF/MLT/MX and not skipauth
+# wrapper for BOM::Test::Data::Utility::UnitTestDatabase::create_client(
 #
 sub create_client {
     my $broker   = shift || 'CR';
     my $skipauth = shift;
     my $client   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => $broker,
-    });
-    if (!$skipauth && $broker =~ /(?:MF|MLT|MX)/) {
-        $client->set_status('age_verification');
-        $client->set_authentication('ID_DOCUMENT')->status('pass') if $broker eq 'MF';
-        $client->save;
-    }
+            broker_code => $broker,
+        },
+        $skipauth ? undef : 1
+    );
     return $client;
 }
 
