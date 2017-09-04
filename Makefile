@@ -18,7 +18,7 @@ json_schema_1:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: proposal.conf
 
 json_schema_2:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: assets.conf
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/assets.t
 
 json_schema_3:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: accounts.conf
