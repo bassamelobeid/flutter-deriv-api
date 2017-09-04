@@ -220,10 +220,11 @@ if ($input{whattodo} eq 'uploadID') {
                 $submitted_date = Date::Utility->new($expiration_date);
             }
             catch {
-                $error = $_;
+                $error = (split "\n", $_)[0];    #handle Date::Utility's confess() call
             };
             if ($error) {
-                $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Expiration date error: $error</p><br />";
+                $result .=
+                    "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Expiration date($expiration_date) error: $error</p><br />";
                 next;
             } elsif ($submitted_date->is_before($current_date) || $submitted_date->is_same_as($current_date)) {
                 $result .=
@@ -396,8 +397,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                     $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
                 }
                 catch {
-                    $_ = (split "\n", $_)[0];                                              #handle Date::Utility's confess() call
-                    print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $_</p>};
+                    my $err = (split "\n", $_)[0];                                         #handle Date::Utility's confess() call
+                    print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
                     next CLIENT_KEY;
                 };
             } elsif ($document_field eq 'comments') {
