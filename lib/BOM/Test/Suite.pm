@@ -51,6 +51,15 @@ sub read_file {
     return $content;
 }
 
+# Read entire contents of file as a list of lines
+sub read_file_lines {
+    my $path = shift;
+    open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
+    my @lines = <$fh>;
+    close $fh;
+    return @lines;
+}
+
 my $ticks_inserted;
 
 sub run {
@@ -104,13 +113,7 @@ sub run {
         BAIL_OUT($@);
     };
 
-    my @lines = do {
-        my $path = $path;
-        open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
-        my @lines = <$fh>;
-        close $fh;
-        @lines;
-    };
+    my @lines = read_file_lines($path);
 
     my $test_app;
     my $lang = '';
