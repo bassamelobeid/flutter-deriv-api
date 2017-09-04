@@ -13,7 +13,6 @@ use Client::Account;
 use Crypt::NamedKeys;
 use Date::Utility;
 
-
 use BOM::DailySummaryReport;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Client::Utility;
