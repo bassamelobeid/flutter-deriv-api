@@ -68,6 +68,8 @@ sub run {
     my $path              = $args->{test_conf_path};
     my $suite_schema_path = $args->{suite_schema_path};
 
+    my ($title) = ($path =~ /\/(.+?)$/);
+
     # When using remapped email addresses, ensure that each call to ->run increments the counter
     ++$global_test_iteration;
 
@@ -233,20 +235,19 @@ sub run {
         my $elapsed = tv_interval($t0, [gettimeofday]);
         $cumulative_elapsed += $elapsed;
 
-        print_test_diag($path, $counter, $elapsed, ($test_stream_id || $start_stream_id), $send_file, $receive_file);
+        print_test_diag($title, $counter, $elapsed, ($test_stream_id || $start_stream_id), $send_file, $receive_file);
     }
     diag "Cumulative elapsed time for all steps was ${cumulative_elapsed}s";
     return $cumulative_elapsed;
 }
 
 sub print_test_diag {
-    my ($path, $counter, $elapsed, $stream_id, $send_file, $receive_file) = @_;
+    my ($title, $counter, $elapsed, $stream_id, $send_file, $receive_file) = @_;
 
     $stream_id = "stream:" . $stream_id if $stream_id;
 
     # Stream ID and/or send_file may be undef
-    my ($test_conf_file) = ($path =~ /\/(.+?)$/);
-    diag(sprintf "%s:%d [%s] - %.3fs", $test_conf_file, $counter, join(',', grep { defined } ($stream_id, $send_file, $receive_file)), $elapsed);
+    diag(sprintf "%s:%d [%s] - %.3fs", $title, $counter, join(',', grep { defined } ($stream_id, $send_file, $receive_file)), $elapsed);
     return;
 }
 
