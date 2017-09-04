@@ -112,7 +112,6 @@ sub new {
 
     my $self = bless {
         title     => $args{title},
-        counter   => 0,
         lang      => '',
         last_lang => undef,
 
@@ -139,7 +138,7 @@ sub new {
 }
 
 sub exec_line {
-    my ($self, $line) = @_;
+    my ($self, $line, $linenum) = @_;
 
     # arbitrary perl code
     if ($line =~ s/^\[%(.*?)%\]//) {
@@ -245,7 +244,7 @@ sub exec_line {
     my $elapsed = tv_interval($t0, [gettimeofday]);
     $self->{cumulative_elapsed} += $elapsed;
 
-    print_test_diag($self->{title}, $self->{counter}, $elapsed, ($test_stream_id || $start_stream_id), $send_file, $receive_file);
+    print_test_diag($self->{title}, $linenum, $elapsed, ($test_stream_id || $start_stream_id), $send_file, $receive_file);
 }
 
 sub run {
@@ -259,12 +258,13 @@ sub run {
         title => $title,
     );
 
+    my $linenum = 0;
     foreach my $line (read_file_lines($path)) {
-        ++$self->{counter};    # slightly more informative name, for use in log messages at the end of the loop
+        $linenum++;
         chomp $line;
         next if ($line =~ /^(#.*|)$/);
 
-        $self->exec_line($line);
+        $self->exec_line($line, $linenum);
     }
 
     diag "Cumulative elapsed time for all steps was $self->{cumulative_elapsed}s";
@@ -272,12 +272,12 @@ sub run {
 }
 
 sub print_test_diag {
-    my ($title, $counter, $elapsed, $stream_id, $send_file, $receive_file) = @_;
+    my ($title, $linenum, $elapsed, $stream_id, $send_file, $receive_file) = @_;
 
     $stream_id = "stream:" . $stream_id if $stream_id;
 
     # Stream ID and/or send_file may be undef
-    diag(sprintf "%s:%d [%s] - %.3fs", $title, $counter, join(',', grep { defined } ($stream_id, $send_file, $receive_file)), $elapsed);
+    diag(sprintf "%s:%d [%s] - %.3fs", $title, $linenum, join(',', grep { defined } ($stream_id, $send_file, $receive_file)), $elapsed);
     return;
 }
 
