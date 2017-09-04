@@ -346,9 +346,9 @@ sub show_client_id_docs {
             $date = Date::Utility->new($date)->date_yyyymmdd if $date;
             my $comments    = $doc->comments;
             my $document_id = $doc->document_id;
-            $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date"$extra>};
-            $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments"$extra>};
-            $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id"$extra>};
+            $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
+            $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
+            $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
         }
         my $file_size = -s $document_file || next;
         my $file_age  = int(-M $document_file);
