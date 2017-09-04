@@ -23,7 +23,7 @@ use Client::Account;
 use LandingCompany::Registry;
 use Client::Account::PaymentAgent;
 use Format::Util::Numbers qw/formatnumber/;
-use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
+use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
 use BOM::Platform::User;
 use BOM::Platform::Client::DoughFlowClient;
@@ -1025,7 +1025,8 @@ sub transfer_between_accounts {
     my $res = _validate_transfer_between_account($client_from, $client_to, $currency, $siblings);
     return $res if $res;
 
-    my ($to_amount, $fees) = _calculate_to_amount_with_fees($client, $amount, $currency, $siblings->{$client_to->loginid}->{currency});
+    my $to_currency = $siblings->{$client_to->loginid}->{currency};
+    my ($to_amount, $fees) = _calculate_to_amount_with_fees($client, $amount, $currency, $to_currency);
 
     BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
@@ -1066,16 +1067,6 @@ sub transfer_between_accounts {
 
     my $err;
     try {
-        $client_from->set_default_account($currency) || die "NO curr[$currency] for[$loginid_from]";
-    }
-    catch {
-        $err = "$err_msg Wrong curr for $loginid_from [$_]";
-    };
-    if ($err) {
-        return $error_unfreeze_sub->($err, $client_from->loginid, $client_to->loginid);
-    }
-
-    try {
         $client_from->validate_payment(
             currency => $currency,
             amount   => -1 * $amount,
@@ -1109,19 +1100,9 @@ sub transfer_between_accounts {
     }
 
     try {
-        $client_to->set_default_account($currency) || die "NO curr[$currency] for[$loginid_to]";
-    }
-    catch {
-        $err = "$err_msg Wrong curr for $loginid_to [$_]";
-    };
-    if ($err) {
-        return $error_unfreeze_sub->($err, $client_from->loginid, $client_to->loginid);
-    }
-
-    try {
         $client_to->validate_payment(
-            currency => $currency,
-            amount   => $amount,
+            currency => $to_currency,
+            amount   => $to_amount,
         ) || die "validate_payment [$loginid_to]";
     }
     catch {
@@ -1275,7 +1256,7 @@ sub _calculate_to_amount_with_fees {
 
     my $is_authenticated_pa = $client->payment_agent and $client->payment_agent->is_authenticated;
 
-    my $fees = {
+    my $fees_rate = {
         fiat   => 0.01,
         crypto => 0.005,
     };
@@ -1285,15 +1266,12 @@ sub _calculate_to_amount_with_fees {
     # currency type
     my $fees = 0;
     if (($from_curr_type ne $to_curr_type) and ($from_currency ne $to_currency)) {
-        $fees = ($amount) * ($fees->{$from_currency_type});
-        if ($from_curr_type eq 'fiat') {
-            $amount -= $fees;
-        } elsif ($from_curr_type eq 'crypto') {
-            # no fees for authenticate payment agent
-            return ($amount, 0) if $is_authenticated_pa;
+        # no fees for authenticate payment agent
+        return ($amount, $fees) if ($from_curr_type eq 'crypto' and $is_authenticated_pa);
 
-            $amount -= $fees;
-        }
+        $fees = ($amount) * ($fees_rate->{$from_currency_type});
+        $amount -= $fees;
+        $amount = amount_from_to_currency($amount, $from_currency, $to_currency);
     }
 
     return ($amount, $fees);
