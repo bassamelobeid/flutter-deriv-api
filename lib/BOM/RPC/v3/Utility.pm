@@ -279,7 +279,7 @@ sub get_real_account_siblings_information {
         my $acc = $cl->default_account;
 
         $siblings->{$cl->loginid} = {
-            loginid              => $c1->loginid,
+            loginid              => $cl->loginid,
             landing_company_name => $cl->landing_company->short,
             sub_account_of       => ($cl->sub_account_of // ''),
             currency             => $acc ? $acc->currency_code : '',

@@ -1023,11 +1023,9 @@ sub transfer_between_accounts {
     my $client_to   = Client::Account->new({loginid => $siblings->{$loginid_to}});
 
     my $res = _validate_transfer_between_account($client_from, $client_to, $currency, $siblings);
-    return $res if $res->{error};
+    return $res if $res;
 
-    # store orig amount, we can use it for payment remark
-    my ($orig_amount, $remark) = ($amount);
-    $amount = _calculate_amount_with_fees($client, $amount, $currency, $to_currency);
+    my ($to_amount, $fees) = _calculate_to_amount_with_fees($client, $amount, $currency, $siblings->{$client_to->loginid}->{currency});
 
     BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
@@ -1237,15 +1235,17 @@ sub _validate_transfer_between_account {
         if (not $client_from->landing_company->is_currency_legal($currency) or not $client_to->landing_company->is_currency_legal($currency));
 
     my ($from_currency, $to_currency) = ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
-    # error if currency provided is not same as from account default currency
-    return $error_sub->(localize('Currency provided is different from account currency.'))
-        if ($from_currency ne $currency);
 
     # error out if from account has no currency set
     return $error_sub->(localize('Please make a deposit to your account.')) unless $from_currency;
 
-    # error out if to account has no currency set else
-    # client will be able to set same crypto for same account
+    # error if currency provided is not same as from account default currency
+    return $error_sub->(localize('Currency provided is different from account currency.'))
+        if ($from_currency ne $currency);
+
+    # error out if to account has no currency set, we should
+    # not set it from currency else client will be able to
+    # set same crypto for multiple account
     return $error_sub->(localize('Please set the currency for your existing account [_1].', $client_to->loginid))
         unless $to_currency;
 
@@ -1267,19 +1267,36 @@ sub _validate_transfer_between_account {
 # From cryptocurrency to fiat currency: 0.5% fee
 # for an approved PA, we don't need to charge any
 # % fee for converting BTC to USD only
-sub _calculate_amount_with_fees {
+sub _calculate_to_amount_with_fees {
     my ($client, $amount, $from_currency, $to_currency) = @_;
 
     my $from_curr_type = LandingCompany::Registry::get_currency_type($from_currency);
     my $to_curr_type   = LandingCompany::Registry::get_currency_type($to_currency);
 
+    my $is_authenticated_pa = $client->payment_agent and $client->payment_agent->is_authenticated;
+
+    my $fees = {
+        fiat   => 0.01,
+        crypto => 0.005,
+    };
+
+    # need to calculate fees only when currency type are different and
+    # currencies are different, we don't allow transfer between same
+    # currency type
+    my $fees = 0;
     if (($from_curr_type ne $to_curr_type) and ($from_currency ne $to_currency)) {
+        $fees = ($amount) * ($fees->{$from_currency_type});
         if ($from_curr_type eq 'fiat') {
-        } else {
+            $amount -= $fees;
+        } elsif ($from_curr_type eq 'crypto') {
+            # no fees for authenticate payment agent
+            return ($amount, 0) if $is_authenticated_pa;
+
+            $amount -= $fees;
         }
     }
 
-    return $amount;
+    return ($amount, $fees);
 }
 
 1;
