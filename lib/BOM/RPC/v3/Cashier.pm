@@ -983,6 +983,8 @@ sub transfer_between_accounts {
         return $error_sub->(localize('The account transfer is not available for your account: [_1].', $client->loginid));
     }
 
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
     my $args = $params->{args};
     my ($currency, $amount) = @{$args}{qw/currency amount/};
 
@@ -1024,8 +1026,8 @@ sub transfer_between_accounts {
     return $res if $res->{error};
 
     # store orig amount, we can use it for payment remark
-    my $orig_amount = $amount;
-    $amount = _calculate_amount_with_fees($amount, $currency, $to_currency);
+    my ($orig_amount, $remark) = ($amount);
+    $amount = _calculate_amount_with_fees($client, $amount, $currency, $to_currency);
 
     BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
@@ -1215,6 +1217,8 @@ sub _get_amount_and_count {
 sub _validate_transfer_between_account {
     my ($client_from, $client_to, $currency, $siblings) = @_;
 
+    return BOM::RPC::v3::Utility::permission_error() if ($client_from->is_virtual or $client_to->is_virtual);
+
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
         BOM::RPC::v3::Utility::create_error({
@@ -1234,16 +1238,15 @@ sub _validate_transfer_between_account {
 
     my ($from_currency, $to_currency) = ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
     # error if currency provided is not same as from account default currency
-    return $error_sub->(localize('The account transfer is not available for your account. Currency provided is different from account currency'))
+    return $error_sub->(localize('Currency provided is different from account currency.'))
         if ($from_currency ne $currency);
 
     # error out if from account has no currency set
-    return $error_sub->(localize('The account transfer is not available. Please deposit to your account.')) unless $from_currency;
+    return $error_sub->(localize('Please make a deposit to your account.')) unless $from_currency;
 
     # error out if to account has no currency set else
     # client will be able to set same crypto for same account
-    return $error_sub->(
-        localize('The account transfer is not available. Please set the currency for your existing account [_1].', $client_to->loginid))
+    return $error_sub->(localize('Please set the currency for your existing account [_1].', $client_to->loginid))
         unless $to_currency;
 
     my $from_curr_type = LandingCompany::Registry::get_currency_type($currency);
@@ -1251,17 +1254,30 @@ sub _validate_transfer_between_account {
 
     # we don't allow fiat to fiat if they are different
     return $error_sub->(localize('The account transfer is not available for accounts with different default currency.'))
-        if ($from_curr_type eq $to_currency_type and $from_currency_type eq 'fiat' and $currency ne $to_currency);
+        if (($from_curr_type eq $to_currency_type) and ($from_currency_type eq 'fiat') and ($currency ne $to_currency));
 
     # we don't allow crypto to crypto transfer
-    return $error_sub->(localize('The account transfer is not available for accounts with cryptocurrency as default currency.'))
-        if ($from_curr_type eq $to_currency_type and $from_currency_type eq 'crypto');
+    return $error_sub->(localize('The account transfer is not available within accounts with cryptocurrency as default currency.'))
+        if (($from_curr_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
 
     return undef;
 }
 
+# From fiat currency to cryptocurrency: 1% fee
+# From cryptocurrency to fiat currency: 0.5% fee
+# for an approved PA, we don't need to charge any
+# % fee for converting BTC to USD only
 sub _calculate_amount_with_fees {
-    my ($amount, $from_currency, $to_currency) = @_;
+    my ($client, $amount, $from_currency, $to_currency) = @_;
+
+    my $from_curr_type = LandingCompany::Registry::get_currency_type($from_currency);
+    my $to_curr_type   = LandingCompany::Registry::get_currency_type($to_currency);
+
+    if (($from_curr_type ne $to_curr_type) and ($from_currency ne $to_currency)) {
+        if ($from_curr_type eq 'fiat') {
+        } else {
+        }
+    }
 
     return $amount;
 }
