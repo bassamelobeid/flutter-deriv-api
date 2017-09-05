@@ -214,6 +214,28 @@ sub exec_line {
         ($send_file, $receive_file, @template_func) = split(',', $line);
     }
 
+    $self->exec_test(
+        send_file       => $send_file,
+        receive_file    => $receive_file,
+        test_stream_id  => $test_stream_id,
+        start_stream_id => $start_stream_id,
+        template_func   => \@template_func,
+        expect_fail     => $fail,
+        linenum         => $linenum,
+    );
+}
+
+sub exec_test {
+    my ($self, %args) = @_;
+
+    my $send_file       = $args{send_file};
+    my $receive_file    = $args{receive_file} or Carp::croak('Require a receive_file');
+    my $test_stream_id  = $args{test_stream_id};
+    my $start_stream_id = $args{start_stream_id};
+    my $template_func   = $args{template_func};
+    my $expect_fail     = $args{expect_fail};
+    my $linenum         = $args{linenum};
+
     # we are setting the time two seconds ahead for every step to ensure time
     # sensitive tests (pricing tests) always start at a consistent time.
     # Note that we have seen problems when resetting the time backwards:
@@ -222,18 +244,20 @@ sub exec_line {
     set_date($self->{reset_time});
     $self->{reset_time} += 2;
 
+    my $test_app = $self->test_app;
+
     my $t0 = [gettimeofday];
     if ($test_stream_id) {
         my $content = read_file($self->{suite_schema_path} . $receive_file);
-        $content = _get_values($content, $self->{placeholder}, @template_func);
+        $content = _get_values($content, $self->{placeholder}, @$template_func);
 
-        $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $fail);
+        $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $expect_fail);
     } else {
         $send_file =~ /^(.*)\//;
         my $call = $test_app->{call} = $1;
 
         my $content = read_file($self->{suite_schema_path} . $send_file);
-        $content = _get_values($content, $self->{placeholder}, @template_func);
+        $content = _get_values($content, $self->{placeholder}, @$template_func);
         my $req_params = JSON::from_json($content);
 
         $req_params = $test_app->adjust_req_params($req_params, {language => $self->{language}});
@@ -241,9 +265,9 @@ sub exec_line {
         die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
 
         $content = read_file($self->{suite_schema_path} . $receive_file);
-        $content = _get_values($content, $self->{placeholder}, @template_func);
+        $content = _get_values($content, $self->{placeholder}, @$template_func);
 
-        my $result = $test_app->test_schema($req_params, $content, $receive_file, $fail);
+        my $result = $test_app->test_schema($req_params, $content, $receive_file, $expect_fail);
         $response->{$call} = $result;
 
         if ($start_stream_id) {
