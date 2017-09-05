@@ -16,7 +16,6 @@ use Finance::Exchange;
 
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
-use Pricing::Engine::Markup::TentativeEvents;
 
 =head2 tick_source
 
@@ -143,36 +142,6 @@ sub economic_events_markup {
     $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
 
     return $markup;
-}
-
-sub _tentative_events_markup {
-    my $self = shift;
-    my $bet  = $self->bet;
-
-    # Don't calculate tentative event shfit if contract is ATM
-    # In this case, economic events markup will be calculated using normal formula
-    if ($bet->is_atm_bet) {
-        return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'economic_events_volatility_risk_markup',
-            description => 'markup to account for volatility risk of economic events',
-            set_by      => __PACKAGE__,
-            base_amount => 0,
-        });
-    }
-
-    my $pricing_args = $bet->_pricing_args;
-    return Pricing::Engine::Markup::TentativeEvents->new(
-        tentative_events       => $bet->tentative_events,
-        ticks                  => $self->ticks_for_trend,
-        barrier                => $pricing_args->{barrier1},
-        contract_type          => $bet->pricing_code,
-        underlying_symbol      => $bet->underlying->symbol,
-        asset_symbol           => $bet->underlying->asset_symbol,
-        quoted_currency_symbol => $bet->underlying->quoted_currency_symbol,
-        long_term_prediction   => $self->long_term_prediction->amount,
-        vol                    => $pricing_args->{iv},
-        map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)
-    )->markup;
 }
 
 has ticks_for_trend => (
@@ -342,16 +311,23 @@ sub _build_risk_markup {
 sub economic_events_volatility_risk_markup {
     my $self = shift;
 
-    # Tentative event markup takes precedence
-    if ((my $tentative_events_markup = $self->_tentative_events_markup)->amount) {
-        return $tentative_events_markup;
+    my $theo              = $self->base_probability->amount;
+    my @support           = (0, 1);
+    my $width             = max(1e-9, 0.5);
+    my $floor             = 0.1;
+    my $cap               = 0.3;
+    my $center_offset     = 0;
+    my $calculated_markup = 0;
+
+    if ($theo >= $support[0] && $theo <= $support[1]) {
+        $calculated_markup = $cap - ($cap - $floor) * (1 - (2 / $width * abs($theo - 0.5 - $center_offset))**3)**3;
     }
 
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_volatility_risk_markup',
         description => 'markup to account for volatility risk of economic events',
         set_by      => __PACKAGE__,
-        base_amount => 0,
+        base_amount => min($cap, $calculated_markup),
     });
 }
 
