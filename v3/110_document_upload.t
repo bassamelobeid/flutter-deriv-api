@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use BOM::Test::RPC::BomRpc;
 use Test::Most;
 use Test::Warn;
 use JSON;
@@ -24,9 +25,10 @@ my $PASSTHROUGH = {key => 'value'};
 subtest 'Invalid upload frame' => sub {
     warning_like {
         $t = $t->send_ok({
-            binary => (pack 'N', 1),
-        })->message_ok;
-    } [qr/Invalid frame/], 'Expected warning';
+                binary => (pack 'N', 1),
+            })->message_ok;
+    }
+    [qr/Invalid frame/], 'Expected warning';
     my $res = decode_json($t->message->[1]);
 
     ok $res->{error}, 'Upload frame should be at least 12 bytes';
@@ -35,9 +37,10 @@ subtest 'Invalid upload frame' => sub {
 subtest 'Send binary data without requesting document_upload' => sub {
     warning_like {
         $t = $t->send_ok({
-            binary => (pack 'N3A*', 1, 1, 1, 'A'),
-        })->message_ok;
-    } [qr/Unknown upload request/], 'Expected warning';
+                binary => (pack 'N3A*', 1, 1, 1, 'A'),
+            })->message_ok;
+    }
+    [qr/Unknown upload request/], 'Expected warning';
 
     my $res = decode_json($t->message->[1]);
 
@@ -66,25 +69,28 @@ subtest 'binary metadata should be correctly sent' => sub {
 
     warning_like {
         $t = $t->send_ok({
-            binary => (pack 'N3A*', $call_type, 1111, 1, 'A'),
-        })->message_ok;
-    } [qr/Unknown upload id/], 'Expected warning';
+                binary => (pack 'N3A*', $call_type, 1111, 1, 'A'),
+            })->message_ok;
+    }
+    [qr/Unknown upload id/], 'Expected warning';
     $res = decode_json($t->message->[1]);
     ok $res->{error}, 'upload_id should be valid';
 
     warning_like {
         $t = $t->send_ok({
-            binary => (pack 'N3A*', 1111, $upload_id, 1, 'A'),
-        })->message_ok;
-    } [qr/Unknown call type/], 'Expected warning';
+                binary => (pack 'N3A*', 1111, $upload_id, 1, 'A'),
+            })->message_ok;
+    }
+    [qr/Unknown call type/], 'Expected warning';
     $res = decode_json($t->message->[1]);
     ok $res->{error}, 'call_type should be valid';
 
     warning_like {
         $t = $t->send_ok({
-            binary => (pack 'N3A*', $call_type, $upload_id, 2, 'A'),
-        })->message_ok;
-    } [qr/Incorrect data size/], 'Expected warning';
+                binary => (pack 'N3A*', $call_type, $upload_id, 2, 'A'),
+            })->message_ok;
+    }
+    [qr/Incorrect data size/], 'Expected warning';
     $res = decode_json($t->message->[1]);
     ok $res->{error}, 'chunk_size should be valid';
 };
@@ -113,17 +119,17 @@ subtest 'sending two files concurrently' => sub {
     my $data = 'Some text';
 
     $t = $t->send_ok({json => $req1})->message_ok;
-    my $res1 = decode_json($t->message->[1]);
+    my $res1       = decode_json($t->message->[1]);
     my $upload_id1 = $res1->{document_upload}->{upload_id};
     my $call_type1 = $res1->{document_upload}->{call_type};
 
     $t = $t->send_ok({json => $req2})->message_ok;
-    my $res2 = decode_json($t->message->[1]);
+    my $res2       = decode_json($t->message->[1]);
     my $upload_id2 = $res2->{document_upload}->{upload_id};
     my $call_type2 = $res2->{document_upload}->{call_type};
 
     my $length = length $data;
-    
+
     my @frames1 = gen_frames($data, $call_type1, $upload_id1);
     my @frames2 = gen_frames($data, $call_type2, $upload_id2);
 
@@ -133,7 +139,7 @@ subtest 'sending two files concurrently' => sub {
     $t = $t->send_ok({binary => $frames2[1]});
     $t = $t->send_ok({binary => $frames1[2]})->message_ok;
     $res1 = decode_json($t->message->[1]);
-    $t = $t->send_ok({binary => $frames2[2]})->message_ok;
+    $t    = $t->send_ok({binary => $frames2[2]})->message_ok;
     $res2 = decode_json($t->message->[1]);
 
     my $success = $res1->{document_upload};
@@ -167,6 +173,27 @@ subtest 'Send two files one by one' => sub {
     );
 };
 
+subtest 'Maximum file size' => sub {
+    my $max_size = 2**20 * 3 + 1;
+
+    my $metadata = {
+        document_upload => 1,
+        document_id     => '124568',
+        document_format => 'PNG',
+        document_type   => 'license',
+        expiration_date => '2020-01-01',
+    };
+
+    my $file = pack "A$max_size", ' ';
+
+    my $previous_chunk_size = $CHUNK_SIZE;
+    $CHUNK_SIZE = 16 * 1024;
+    my $error = upload_error($metadata, $file);
+    $CHUNK_SIZE = $previous_chunk_size;
+
+    is $error->{code}, 'UploadDenied', 'Upload should be denied';
+};
+
 sub gen_frames {
     my ($data, $call_type, $upload_id) = @_;
     my $format = 'N3a*';
@@ -175,7 +202,35 @@ sub gen_frames {
     return @frames;
 }
 
+sub upload_error {
+    my ($metadata, $data) = @_;
+
+    my $upload = upload($metadata, $data);
+    my $res = $upload->{res};
+
+    my $error = $res->{error};
+
+    ok $error->{code}, 'Upload should be failed';
+
+    return $error;
+}
+
 sub upload_ok {
+    my ($metadata, $data) = @_;
+
+    my $upload    = upload($metadata, $data);
+    my $res       = $upload->{res};
+    my $upload_id = $upload->{upload_id};
+    my $call_type = $upload->{call_type};
+    my $success   = $res->{document_upload};
+
+    is $success->{upload_id}, $upload_id, 'upload id is correct';
+    is $success->{call_type}, $call_type, 'call_type is correct';
+
+    return $success;
+}
+
+sub upload {
     my ($metadata, $data) = @_;
 
     my $req = {
@@ -205,16 +260,14 @@ sub upload_ok {
     }
     $t = $t->message_ok;
 
-    $res = decode_json($t->message->[1]);
-    my $success = $res->{document_upload};
-
-    is $success->{upload_id}, $upload_id, 'upload id is correct';
-    is $success->{call_type}, $call_type, 'call_type is correct';
-
     is $res->{req_id},             $req->{req_id},      'binary payload req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'binary payload passthrough is unchanged';
 
-    return $success;
+    return {
+        res       => decode_json($t->message->[1]),
+        upload_id => $upload_id,
+        call_type => $call_type,
+    };
 }
 
 sub document_upload_ok {
