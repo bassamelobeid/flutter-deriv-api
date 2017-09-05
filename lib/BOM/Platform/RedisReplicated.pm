@@ -36,7 +36,7 @@ sub _redis {
     $timeout //= 10;
     my $key = join '_', ($redis_type, $access_type, $timeout);
     my $connection_config = $config->{$redis_type}->{$access_type};
-    if ($connections->{$key}) {
+    if ($access_type eq 'write' && $connections->{$key}) {
         try {
             $connections->{$key}->ping();
         }
