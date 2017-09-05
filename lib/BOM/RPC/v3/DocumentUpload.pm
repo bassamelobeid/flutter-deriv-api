@@ -96,13 +96,13 @@ sub create_error {
         code              => $code,
         message_to_client => $message
     });
-};
+}
 
 sub get_error_details {
     my $reason = shift || 'unkown';
 
     return localize('Maximum file size reached') if $reason eq 'max_size';
     return localize('Sorry, an error occurred while processing your request.');
-};
+}
 
 1;

@@ -53,7 +53,8 @@ $c->call_ok($method, $params)
 
 # Unsuccessful finished upload
 $args->{expiration_date} = "2117-08-11";    # 100 years is all I give you, humanity!
-$c->call_ok($method, $params)->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
+$c->call_ok($method, $params)
+    ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
 
 $args->{document_type}   = "passport";
 $args->{document_id}     = "ABCD1234";
