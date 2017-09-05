@@ -1114,6 +1114,13 @@ sub transfer_between_accounts {
 
     my $response;
     try {
+        my $remark = 'Account transfer from ' . $client_from->loginid . ' to ' . $client_to->loginid . '.';
+        if ($fees) {
+            $remark .=
+                  " Fees for $currency $amount to $to_currency $to_amount is $fees ("
+                . BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->{LandingCompany::Registry::get_currency_type($currency)}
+                . "%)";
+        }
         $response = $client_from->payment_account_transfer(
             currency          => $currency,
             amount            => $amount,
@@ -1251,15 +1258,9 @@ sub _validate_transfer_between_account {
 sub _calculate_to_amount_with_fees {
     my ($client, $amount, $from_currency, $to_currency) = @_;
 
-    my $from_currency_type = LandingCompany::Registry::get_currency_type($from_currency);
-    my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
-
+    my $from_currency_type  = LandingCompany::Registry::get_currency_type($from_currency);
+    my $to_currency_type    = LandingCompany::Registry::get_currency_type($to_currency);
     my $is_authenticated_pa = $client->payment_agent and $client->payment_agent->is_authenticated;
-
-    my $fees_rate = {
-        fiat   => 0.01,
-        crypto => 0.005,
-    };
 
     # need to calculate fees only when currency type are different and
     # currencies are different, we don't allow transfer between same
@@ -1269,7 +1270,7 @@ sub _calculate_to_amount_with_fees {
         # no fees for authenticate payment agent
         return ($amount, $fees) if ($from_currency_type eq 'crypto' and $is_authenticated_pa);
 
-        $fees = ($amount) * ($fees_rate->{$from_currency_type});
+        $fees = ($amount) * (BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->{$from_currency_type} / 100);
         $amount -= $fees;
         $amount = amount_from_to_currency($amount, $from_currency, $to_currency);
     }
