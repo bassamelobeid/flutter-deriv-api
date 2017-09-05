@@ -13,6 +13,8 @@ use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use Finance::Exchange;
+use BOM::Platform::QuantsConfig;
+use BOM::Platform::Chronicle;
 
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
@@ -311,23 +313,34 @@ sub _build_risk_markup {
 sub economic_events_volatility_risk_markup {
     my $self = shift;
 
-    my $theo              = $self->base_probability->amount;
-    my @support           = (0, 1);
-    my $width             = max(1e-9, 0.5);
-    my $floor             = 0.1;
-    my $cap               = 0.3;
-    my $center_offset     = 0;
-    my $calculated_markup = 0;
+    my $qc = BOM::Platform::QuantsConfig->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader());
+    my $commissions = $qc->get_config(
+        'commission',
+        +{
+            contract_type => $self->bet->code,
+            symbol        => $self->bet->underlying->symbol
+        });
+    my $theo    = $self->base_probability->amount;
+    my @markups = (0);
 
-    if ($theo >= $support[0] && $theo <= $support[1]) {
-        $calculated_markup = $cap - ($cap - $floor) * (1 - (2 / $width * abs($theo - 0.5 - $center_offset))**3)**3;
+    foreach (@$commissions) {
+        my $support       = $_->{support};
+        my $width         = max(1e-9, $_->{width});
+        my $floor         = $_->{floor_rate};
+        my $cap           = $_->{cap_rate};
+        my $center_offset = $_->{center_offset};
+
+        if ($theo >= $support->[0] && $theo <= $support->[1]) {
+            my $calculated_markup = $cap - ($cap - $floor) * (1 - (2 / $width * abs($theo - 0.5 - $center_offset))**3)**3;
+            push @markups, $calculated_markup;
+        }
     }
 
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_volatility_risk_markup',
         description => 'markup to account for volatility risk of economic events',
         set_by      => __PACKAGE__,
-        base_amount => min($cap, $calculated_markup),
+        base_amount => min($cap, max(@markups)),
     });
 }
 
