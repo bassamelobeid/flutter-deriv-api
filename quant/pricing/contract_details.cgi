@@ -31,8 +31,9 @@ use BOM::JapanContractDetailsOutput;
 use Data::Dumper;
 my %params = %{request()->params};
 
-my $cgi             = CGI->new;
-my $broker          = $params{'broker'} // $cgi->param('broker');
+my $cgi = CGI->new;
+my $broker = $params{'broker'} // $cgi->param('broker');
+code_exit_BO("No broker provided") unless $broker;
 my $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
 
 if ($cgi->param('upload_file')) {
