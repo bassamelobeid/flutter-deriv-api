@@ -113,9 +113,8 @@ sub new {
     my $self = bless {
         title => $args{title},
 
-        # The current and new-pending language
-        language         => '',
-        pending_language => undef,
+        # The current language
+        language => '',
 
         # Track how long our steps take - we're resetting time so we do this as a sanity
         # check that our clock reset gives us sensible numbers.
@@ -131,9 +130,6 @@ sub new {
 
         test_app_class    => $args{test_app},
         suite_schema_path => $args{suite_schema_path},
-
-        # A simple boolean flag
-        is_reset_pending => undef,
     }, $class;
 
     return $self;
@@ -141,7 +137,23 @@ sub new {
 
 sub set_language {
     my ($self, $lang) = @_;
-    $self->{pending_language} = $lang;
+    $self->{language} = $lang;
+    undef $self->{test_app};
+}
+
+sub test_app {
+    my ($self) = @_;
+    return $self->{test_app} //= do {
+        my $lang = $self->{language};
+        ok(defined($lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
+        ok(length($lang),  'have a valid language')   or diag "invalid [LANG] tag in config or broken test?";
+
+        my $test_app = BOM::Test::App->new({
+                language => $lang,
+                app      => $self->{test_app_class}});
+        $test_app->{language} = $lang;
+        $test_app;
+    };
 }
 
 sub exec_line {
@@ -158,7 +170,7 @@ sub exec_line {
         return;
     }
     if ($line =~ s/^\{(\w+)\}//) {
-        $self->{is_reset_pending}++;
+        undef $self->{test_app};
         return;
     }
 
@@ -179,25 +191,12 @@ sub exec_line {
         return;
     }
 
-    if ($self->{pending_language} || !$self->{test_app} || $self->{is_reset_pending}) {
-        my $new_lang = $self->{pending_language} || $self->{language};
-        ok(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
-        ok(length($new_lang),  'have a valid language')   or diag "invalid [LANG] tag in config or broken test?";
-        $self->{test_app} = BOM::Test::App->new({
-                language => $new_lang,
-                app      => $self->{test_app_class}});
-        $self->{test_app}->{language} = $self->{language} = $new_lang;
-
-        undef $self->{pending_language};
-        undef $self->{is_reset_pending};
-    }
-
     my $fail;
     if ($line =~ s/^!//) {
         $fail = 1;
     }
 
-    my $test_app = $self->{test_app};
+    my $test_app = $self->test_app;
 
     my $start_stream_id;
     if ($test_app->is_websocket && $line =~ s/^\{start_stream:(.+?)\}//) {
