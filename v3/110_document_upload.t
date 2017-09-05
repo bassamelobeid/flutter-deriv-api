@@ -52,14 +52,19 @@ subtest 'binary metadata should be correctly sent' => sub {
         passthrough     => $PASSTHROUGH,
         document_upload => 1,
         document_id     => '12456',
-        document_format => 'JPEG',
+        document_format => 'INVALID',
         document_type   => 'passport',
         expiration_date => '2020-01-01',
     };
 
+    $t = $t->send_ok({json => $req })->message_ok;
+    my $res = decode_json($t->message->[1]);
+    ok $res->{error}, 'Error for wrong document_format';
+    
+    $req->{document_format} = 'JPEG';
     $t = $t->send_ok({json => $req})->message_ok;
 
-    my $res = decode_json($t->message->[1]);
+    $res = decode_json($t->message->[1]);
 
     ok $res->{document_upload}, 'Returns document_upload';
 
