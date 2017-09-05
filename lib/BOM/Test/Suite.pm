@@ -111,9 +111,11 @@ sub new {
     };
 
     my $self = bless {
-        title     => $args{title},
-        lang      => '',
-        last_lang => undef,
+        title => $args{title},
+
+        # The current and new-pending language
+        language         => '',
+        pending_language => undef,
 
         # Track how long our steps take - we're resetting time so we do this as a sanity
         # check that our clock reset gives us sensible numbers.
@@ -139,7 +141,7 @@ sub new {
 
 sub set_language {
     my ($self, $lang) = @_;
-    $self->{lang} = $lang;
+    $self->{pending_language} = $lang;
 }
 
 sub exec_line {
@@ -177,16 +179,16 @@ sub exec_line {
         return;
     }
 
-    if ($self->{lang} || !$self->{test_app} || $self->{is_reset_pending}) {
-        my $new_lang = $self->{lang} || $self->{last_lang};
+    if ($self->{pending_language} || !$self->{test_app} || $self->{is_reset_pending}) {
+        my $new_lang = $self->{pending_language} || $self->{language};
         ok(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
         ok(length($new_lang),  'have a valid language')   or diag "invalid [LANG] tag in config or broken test?";
         $self->{test_app} = BOM::Test::App->new({
                 language => $new_lang,
                 app      => $self->{test_app_class}});
-        $self->{test_app}->{language} = $self->{last_lang} = $new_lang;
+        $self->{test_app}->{language} = $self->{language} = $new_lang;
 
-        $self->{lang} = '';
+        undef $self->{pending_language};
         undef $self->{is_reset_pending};
     }
 
@@ -232,7 +234,7 @@ sub exec_line {
         $content = _get_values($content, $self->{placeholder}, @template_func);
         my $req_params = JSON::from_json($content);
 
-        $req_params = $test_app->adjust_req_params($req_params, {language => $self->{last_lang}});
+        $req_params = $test_app->adjust_req_params($req_params, {language => $self->{language}});
 
         die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
 
