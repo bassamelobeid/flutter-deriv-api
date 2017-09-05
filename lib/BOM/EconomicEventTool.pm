@@ -92,14 +92,16 @@ sub delete_by_id {
 
     my $to_delete = first { $_->{id} eq $id } @existing;
 
-    my $deleted = Quant::Framework::EconomicEventCalendar->new(
+    my $ee = Quant::Framework::EconomicEventCalendar->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-        )->delete_event({
-            id => $id,
-            %$to_delete
-        });
-        
+    );
+
+    my $deleted = $ee->delete_event({
+        id => $id,
+        %$to_delete
+    });
+
     _regenerate($ee->get_economic_events_calendar);
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
