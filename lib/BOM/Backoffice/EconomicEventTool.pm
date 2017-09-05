@@ -158,6 +158,18 @@ sub save_new_event {
     return get_info($added);
 }
 
+sub restore_by_id {
+    my ($id, $type) = @_;
+
+    my $ee_object = $type eq 'scheduled' ? _ees() : _eet();
+
+    my $restored =  $ee_object->restore_event($id);
+
+    return _err('Failed to restore event.') unless $restored;
+
+    return $restored;
+}
+
 sub _regenerate {
     my $events = shift;
 

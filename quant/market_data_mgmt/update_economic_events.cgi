@@ -12,7 +12,6 @@ use BOM::Backoffice::EconomicEventTool;
 BOM::Backoffice::Sysinit::init();
 
 ## Updates economic event list
-
 if (request()->param('get_event')) {
     print to_json(BOM::Backoffice::EconomicEventTool::get_economic_events_for_date(request()->param('date')));
 }
@@ -20,6 +19,10 @@ if (request()->param('get_event')) {
 ## Delete economic event
 if (request()->param('delete_event')) {
     print to_json(BOM::Backoffice::EconomicEventTool::delete_by_id(request()->param('event_id')));
+}
+
+if (request()->param('restore_event')) {
+    print to_json(BOM::Backoffice::EconomicEventTool::restore_by_id(request()->param('event_id'), request()->param('type')));
 }
 
 ## Update with custom magnitude

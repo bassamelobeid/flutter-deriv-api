@@ -80,7 +80,12 @@
                     table += '<p>'+ row.info[y] +'</p>';
                 }
 
-                table += '</td> <td><INPUT type="text" name="custom_magnitude" size="10"></td> <td> <button onclick="update( \''+ row.id +'\' )">Update</button> </br></br> <button onclick="deleteEvent( \''+ row.id +'\' )">Delete</button> </td> <td style="display:none;" class="update_result"></td> </tr>';
+                table += '</td> <td><INPUT type="text" name="custom_magnitude" size="10"></td>';
+                if (id === 'deleted_event_list') {
+                    table += '<td><button onclick="restoreEvent(\''+ row.id +'\')">Retore</button></td> <td style="display:none;" class="update_result"></td></tr>';
+                } else {
+                    table += '<td> <button onclick="update( \''+ row.id +'\' )">Update</button> </br></br> <button onclick="deleteEvent( \''+ row.id +'\' )">Delete</button> </td> <td style="display:none;" class="update_result"></td> </tr>';
+                }
             }
         } else {
             table += '<tr><td>Empty</td></tr>';
@@ -163,27 +168,33 @@
                         estimated_release_date: estimated_release_date
                     },
                     success: function(data){
-                        var obj = \$.parseJSON(data);
-                        if (obj.id) {
-                            var list_el = \$('table.economic_event_list');
-                            var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td id="binary_info">';
-                            if (obj.info) {
-                                \$.each(obj.info, function(i, item) {
-                                    to_append += '<p>'+item+'</p>';
-                                });
-                            }
-
-                            to_append += '<td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="update_result"></td>';
-                            to_append += '</td></tr>';
-                            list_el.append(to_append);
-                            list_el.find('tr#'+obj.id).css('color', 'green');
-                            result.text('Economic event saved. ID ' + obj.id).css('color', 'green');
+                        var event = \$.parseJSON(data);
+                        if (event.error) {
+                            result.text(event.error).css('color', 'red');
                         } else {
-                            result.text(obj.error).css('color', 'red');
+                            appendTable(event, 'scheduled_event_list');
                         }
                     }
             });
         }
+    }
+    function appendTable (event, table_id) {
+        var table = \$('table#' + table_id);
+        var to_append = '<tr id="'+ event.id +'"><td>'+event.id+'</td><td>'+event.event_name+'</td><td>'+event.release_date+'</td><td>'+event.impact+'</td><td>'+event.symbol+'</td><td id="binary_info">';
+        if (event.info) {
+            \$.each(event.info, function(i, item) {
+                to_append += '<p>'+item+'</p>';
+            });
+        }
+
+        to_append += '</td><td><INPUT type="text" name="custom_magnitude" size="10"></td>';
+        if (table_id === 'deleted_event_list') {
+            to_append += '<td><button onclick="restoreEvent(\''+ event.id +'\')">Retore</button></td> <td style="display:none;" class="update_result"></td></tr>';
+        } else {
+            to_append += '<td> <button onclick="update( \''+ event.id +'\' )">Update</button> </br></br> <button onclick="deleteEvent( \''+ event.id +'\' )">Delete</button> </td> <td style="display:none;" class="update_result"></td></tr>';
+        }
+        table.append(to_append);
+        table.find('tr#'+event.id).css('color', 'green');
     }
     function deleteEvent(id) {
         if (id) {
@@ -198,12 +209,36 @@
                         delete_event: "1"
                     },
                     success: function(data){
-                        var r = \$.parseJSON(data);
-                        if(r.error) {
-                            result.text('ERR: ' + r.error).css('color','red');
+                        var event = \$.parseJSON(data);
+                        if(event.error) {
+                            result.text('ERR: ' + event.error).css('color','red');
                         } else{
-                            \$('tr#'+ r.id).remove();
-                            result.text('Economic event deleted.').css('color','green');
+                            \$('tr#'+ event.id).remove();
+                            appendTable(event, 'deleted_event_list');
+                        }
+                    }
+            });
+        }
+    }
+    function restoreEvent(id) {
+        if (id) {
+            var el = \$('tr#'+id);
+            var result = el.find("td.update_result");
+            result.text('processing ...').show();
+            \$.ajax({
+                    url: "[% ee_upload_url | none %]",
+                    data: {
+                        event_id: id,
+                        restore_event: "1",
+                        type: "scheduled"
+                    },
+                    success: function(data){
+                        var event = \$.parseJSON(data);
+                        if(event.error) {
+                            result.text('ERR: ' + event.error).css('color','red');
+                        } else {
+                            appendTable(event, 'scheduled_event_list');
+                            el.remove();
                         }
                     }
             });
