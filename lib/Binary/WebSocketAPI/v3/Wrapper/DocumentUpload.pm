@@ -53,7 +53,7 @@ sub document_upload {
     }
     catch {
         warn "UploadError: $_";
-        send_upload_failed($c);
+        send_upload_failure($c);
     };
 
     return;
@@ -79,8 +79,9 @@ sub get_upload_info {
     };
 }
 
-sub send_upload_failed {
+sub send_upload_failure {
     my ($c, $reason) = @_;
+
     $c->call_rpc({
             method      => 'document_upload',
             call_params => {
@@ -140,10 +141,11 @@ sub upload {
     my $data      = $upload_info->{data};
     my $stash     = $c->stash('document_upload');
 
-    $stash->{$upload_id}->{sha1}->add($data);
-    $stash->{$upload_id}->{received_bytes} += length $data;
+    my $new_received_bytes = $stash->{$upload_id}->{received_bytes} + length $data;
+    return send_upload_failure($c, 'max_size') if $new_received_bytes > MAX_FILE_SIZE;
 
-    return send_upload_failed($c, 'max_size') if $stash->{$upload_id}->{received_bytes} > MAX_FILE_SIZE;
+    $stash->{$upload_id}->{sha1}->add($data);
+    $stash->{$upload_id}->{received_bytes} = $new_received_bytes;
 
     # TODO: Stream through a cloud storage
 
