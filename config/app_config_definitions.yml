@@ -80,7 +80,7 @@ payments:
       isa: section
       contains:
         fiat:
-          description: 'Fees for transfering from fiat currency to crypto currency, specify in numeric form 1% = 0.01'
+          description: 'Fees for transfering from fiat currency to crypto currency in percentage'
           isa: Num
           default: 1
           global: 1
