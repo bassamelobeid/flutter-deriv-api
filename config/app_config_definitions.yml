@@ -82,12 +82,12 @@ payments:
         fiat:
           description: 'Fees for transfering from fiat currency to crypto currency, specify in numeric form 1% = 0.01'
           isa: Num
-          default: 0.01
+          default: 1
           global: 1
         crypto:
-          description: 'Fees for transfering from crypto currency to fiat currency, specify in numeric form 1% = 0.01'
+          description: 'Fees for transfering from crypto currency to fiat currency in percentage'
           isa: Num
-          default: 0.01
+          default: 0.5
           global: 1
 quants:
   description: "Various quants' parameters"
