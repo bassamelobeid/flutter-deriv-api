@@ -28,26 +28,23 @@ ok $res->{error};
 is $res->{error}->{code}, 'UnknownLandingCompany';
 
 # landing_company
-SKIP: {
-    skip 'No landing company tests during transition; check with Kaveh', 12;
-    $res = $t->await::landing_company({landing_company => 'de'});
-    ok $res->{landing_company};
-    is $res->{landing_company}->{name}, 'Germany';
-    is $res->{landing_company}->{financial_company}->{shortcode}, 'maltainvest';
-    ok not $res->{landing_company}->{gaming_company};
-    test_schema('landing_company', $res);
+$res = $t->await::landing_company({landing_company => 'de'});
+ok $res->{landing_company};
+is $res->{landing_company}->{name}, 'Germany';
+is $res->{landing_company}->{financial_company}->{shortcode}, 'maltainvest';
+ok not $res->{landing_company}->{gaming_company};
+test_schema('landing_company', $res);
 
-    $res = $t->await::landing_company({landing_company => 'im'});
-    ok $res->{landing_company};
-    is $res->{landing_company}->{name}, 'Isle of Man';
-    is $res->{landing_company}->{financial_company}->{shortcode}, 'iom';
-    is $res->{landing_company}->{gaming_company}->{shortcode},    'iom';
-    test_schema('landing_company', $res);
+$res = $t->await::landing_company({landing_company => 'im'});
+ok $res->{landing_company};
+is $res->{landing_company}->{name}, 'Isle of Man';
+is $res->{landing_company}->{financial_company}->{shortcode}, 'iom';
+is $res->{landing_company}->{gaming_company}->{shortcode},    'iom';
+test_schema('landing_company', $res);
 
-    $res = $t->await::landing_company({landing_company => 'XX'});
-    ok $res->{error};
-    is $res->{error}->{code}, 'UnknownLandingCompany';
-}
+$res = $t->await::landing_company({landing_company => 'XX'});
+ok $res->{error};
+is $res->{error}->{code}, 'UnknownLandingCompany';
 
 ## residence_list
 $res = $t->await::residence_list({residence_list => 1});
