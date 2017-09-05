@@ -47,7 +47,6 @@ install:
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
     - /tmp/travis-scripts/setup_clientdb.sh
-    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E /etc/rmg/bin/perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-platform/lib -I/home/git/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5432" --username=postgres --database=regentmarkets --dbset=collector'
     - /tmp/travis-scripts/setup_feeddb.sh
     - /tmp/travis-scripts/setup_chronicledb.sh
     - export PAYMENTAPI_LOG_FILE=/tmp/paymentapi.log
