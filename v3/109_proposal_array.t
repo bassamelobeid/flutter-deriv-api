@@ -168,8 +168,8 @@ $contracts_for = $t->await::contracts_for( {
 });
 
 
-my $put_array = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration} eq '2h15m'} @{$contracts_for->{contracts_for}{available}}];
-# Try avoid bail out below by using the latest window available for 2h15m.
+my $put_array = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration} eq '0d'} @{$contracts_for->{contracts_for}{available}}];
+# Try avoid bail out below by using the latest window available for 0d contract duration.
 my $put = $put_array->[scalar(@{$put_array})-1];
 
 my $barriers = $put->{available_barriers};
