@@ -6,20 +6,13 @@ use BOM::Platform::Context qw (localize);
 use Try::Tiny;
 use Date::Utility;
 
-sub create_error {
-    my ($code, $message) = @_;
-
-    return BOM::RPC::v3::Utility::create_error({
-        code              => $code,
-        message_to_client => $message
-    });
-};
-
 sub upload {
     my $params = shift;
     my $client = $params->{client};
-    my ($document_type, $document_id, $document_format, $expiration_date, $document_path, $status, $file_name) =
-        @{$params->{args}}{qw/document_type document_id document_format expiration_date document_path status file_name/};
+    my ($document_type, $document_id, $document_format, $expiration_date, $document_path, $status, $file_name, $reason) =
+        @{$params->{args}}{qw/document_type document_id document_format expiration_date document_path status file_name reason/};
+
+    return create_error('UploadError', $reason) if defined $status and $status eq 'failure';
 
     # Early return for virtual accounts.
     return create_error('UploadDenied', localize("Virtual accounts don't require document uploads.")) if $client->is_virtual;
@@ -59,7 +52,7 @@ sub upload {
         $client->save();
 
         if (not $client->save()) {
-            return create_error('InternalServerError', localize('Sorry, an error occurred while processing your request.'));
+            return create_error('UploadError');
         }
 
         return {
@@ -79,19 +72,37 @@ sub upload {
         $doc->{document_path} = $document_path;
 
         if (not $doc->save()) {
-            return create_error('InternalServerError', localize('Sorry, an error occurred while processing your request.'));
+            return create_error('UploadError');
         }
 
         # Change client's account status.
         $client->set_status('under_review', 'system', 'Documents uploaded');
         if (not $client->save()) {
-            return create_error('InternalServerError', localize('Sorry, an error occurred while processing your request.'));
+            return create_error('UploadError');
         }
 
         return $params->{args};
     }
 
-    return create_error('InternalServerError', localize('Sorry, an error occurred while processing your request.'));
+    return create_error('UploadError');
 }
+
+sub create_error {
+    my ($code, $reason) = @_;
+
+    my $message = $code eq 'UploadError' ? get_error_details($reason) : $reason;
+
+    return BOM::RPC::v3::Utility::create_error({
+        code              => $code,
+        message_to_client => $message
+    });
+};
+
+sub get_error_details {
+    my $reason = shift || 'unkown';
+
+    return localize('Maximum file size reached') if $reason eq 'max_size';
+    return localize('Sorry, an error occurred while processing your request.');
+};
 
 1;
