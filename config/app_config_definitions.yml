@@ -75,6 +75,20 @@ payments:
       isa: json_string
       default: '{"jy":"99999"}'
       global: 1
+    transfer_fees:
+      description: 'Transfer fees for currency conversion'
+      isa: section
+      contains:
+        fiat:
+          description: 'Fees for transfering from fiat currency to crypto currency, specify in numeric form 1% = 0.01'
+          isa: Num
+          default: 0.01
+          global: 1
+        crypto:
+          description: 'Fees for transfering from crypto currency to fiat currency, specify in numeric form 1% = 0.01'
+          isa: Num
+          default: 0.01
+          global: 1
 quants:
   description: "Various quants' parameters"
   isa: section
