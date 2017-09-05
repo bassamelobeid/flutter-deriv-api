@@ -137,6 +137,11 @@ sub new {
     return $self;
 }
 
+sub set_language {
+    my ($self, $lang) = @_;
+    $self->{lang} = $lang;
+}
+
 sub exec_line {
     my ($self, $line, $linenum) = @_;
 
@@ -147,7 +152,7 @@ sub exec_line {
     }
 
     if ($line =~ s/^\[(\w+)\]//) {
-        $self->{lang} = $1;
+        $self->set_language($1);
         return;
     }
     if ($line =~ s/^\{(\w+)\}//) {
