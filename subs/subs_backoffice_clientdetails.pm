@@ -69,14 +69,16 @@ sub print_client_details {
         my @siblings = $user->clients(disabled_ok => 1);
 
         $show_uploaded_documents .= show_client_id_docs($_, show_delete => 1) for $client;
-        if (my @l = grep { $_->loginid ne $client->loginid } @siblings) {
-            $show_uploaded_documents .= 'To edit following documents please select corresponding user';
-            $show_uploaded_documents .= show_client_id_docs(
-                $_,
-                show_delete => 1,
-                no_edit     => 1
-            ) for @l;
-        }
+
+        my $siblings_docs = '';
+        $siblings_docs .= show_client_id_docs(
+            $_,
+            show_delete => 1,
+            no_edit     => 1
+        ) for grep { $_->loginid ne $client->loginid } @siblings;
+
+        $show_uploaded_documents .= 'To edit following documents please select corresponding user<br>' . $siblings_docs
+            if $siblings_docs;
     }
 
     # COMMUNICATION ADDRESSES
@@ -133,7 +135,9 @@ sub print_client_details {
         salutation_options     => \@salutation_options,
         secret_answer          => $secret_answer,
         self_exclusion_enabled => $self_exclusion_enabled,
-        show_allow_omnibus => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0,
+        show_allow_omnibus     => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of)
+        ? 1
+        : 0,
         show_funds_message => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
