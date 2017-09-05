@@ -1,0 +1,16 @@
+<p><b>Add new custom commission with the tool below: </b></p>
+
+<table id='custom_commission_form'>
+    <tr><td>Name</td><td> : <input type="text" name="name"></td></tr>
+    <tr><td>Underlying/Currency Symbol</td><td> : <input type="text" name="symbol"></td></tr>
+    <tr><td>Support</td><td> : <input type="text" name="support_from"></td> to <td><input type="text" name="support_to"></td></tr>
+    <tr><td>Contract Type</td><td> : <input type="text" name="contract_type"></td></tr>
+    <tr><td>Cap rate</td><td> : <input type="text" name="cap_rate"></td></tr>
+    <tr><td>Floor rate</td><td> : <input type="text" name="floor_rate"></td></tr>
+    <tr><td>Width</td><td> : <input type="text" name="width"></td></tr>
+    <tr><td>Center Offset</td><td> : <input type="text" name="center_offset"></td></tr>
+    <tr><td></td><td><button onclick="saveCustom()">Save</td><td class='save_result'></td></tr>
+</table>
+
+<script>
+</script>

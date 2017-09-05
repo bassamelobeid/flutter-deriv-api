@@ -130,10 +130,8 @@ print generate_correlations_upload_form({
 Bar("Update the news events database");
 print BOM::EconomicEventTool::generate_economic_event_tool(request()->url_for('backoffice/quant/market_data_mgmt/update_economic_events.cgi'));
 
-Bar("Update the tentative events");
-print BOM::TentativeEvents::generate_tentative_events_form({
-    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_tentative_events.cgi'),
-});
+Bar("Custom Commission Tool");
+print BOM::Backoffice::CustomCommissionTool::generate_commission_form(request()->url_for('backoffice/quant/market_data_mgmt/update_custom_commission.cgi'));
 
 code_exit_BO();
 
