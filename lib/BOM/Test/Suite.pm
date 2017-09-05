@@ -198,14 +198,22 @@ sub exec_line {
 
     my $test_app = $self->test_app;
 
+    # Finish parsing $line here to keep the test logic separated from it
+
     my $start_stream_id;
     if ($test_app->is_websocket && $line =~ s/^\{start_stream:(.+?)\}//) {
         $start_stream_id = $1;
     }
-    my $test_stream_id;
+
+    my ($test_stream_id, $send_file, $receive_file, @template_func);
     if ($test_app->is_websocket && $line =~ s/^\{test_last_stream_message:(.+?)\}//) {
         $test_stream_id = $1;
+        # there is no $send_file here
+        ($receive_file, @template_func) = split(',', $line);
+    } else {
+        ($send_file, $receive_file, @template_func) = split(',', $line);
     }
+
     # we are setting the time two seconds ahead for every step to ensure time
     # sensitive tests (pricing tests) always start at a consistent time.
     # Note that we have seen problems when resetting the time backwards:
@@ -215,17 +223,12 @@ sub exec_line {
     $self->{reset_time} += 2;
 
     my $t0 = [gettimeofday];
-    my ($send_file, $receive_file, @template_func);
     if ($test_stream_id) {
-        ($receive_file, @template_func) = split(',', $line);
-
         my $content = read_file($self->{suite_schema_path} . $receive_file);
         $content = _get_values($content, $self->{placeholder}, @template_func);
 
         $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $fail);
     } else {
-        ($send_file, $receive_file, @template_func) = split(',', $line);
-
         $send_file =~ /^(.*)\//;
         my $call = $test_app->{call} = $1;
 
