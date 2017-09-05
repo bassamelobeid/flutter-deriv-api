@@ -90,7 +90,7 @@ sub send_upload_failed {
         });
 
     return;
-};
+}
 
 sub send_upload_successful {
     my ($c, $upload_info, $status) = @_;
