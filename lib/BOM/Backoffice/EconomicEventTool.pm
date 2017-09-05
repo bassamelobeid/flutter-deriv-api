@@ -15,20 +15,6 @@ use List::Util qw(first);
 use BOM::Backoffice::Request;
 use BOM::MarketDataAutoUpdater::Forex;
 
-sub _ees {
-    return Quant::Framework::EconomicEvent::Scheduled->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    );
-}
-
-sub _eet {
-    return Quant::Framework::EconomicEvent::Tentative->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    );
-}
-
 sub get_economic_events_for_date {
     my $date = shift;
 
@@ -75,7 +61,7 @@ sub is_categorized {
     my $event = shift;
 
     $event->{event_name} =~ s/\s/_/g;
-    my @categories = keys %{Volatility::Seasonality::get_economic_event_categories()};
+    my @categories = keys %{_vs()->get_economic_event_categories()};
     return 1 if first { $_ =~ /$event->{event_name}/ } @categories;
     return 0;
 }
@@ -87,7 +73,7 @@ sub get_info {
     my @by_symbols;
     foreach my $symbol (_get_affected_underlying_symbols()) {
         my %cat = map { $symbol => 'magnitude: ' . int($_->{magnitude}) . ' duration: ' . int($_->{duration}) . 's' }
-            @{Volatility::Seasonality::categorize_events($symbol, [$event])};
+            @{_vs()->categorize_events($symbol, [$event])};
         push @by_symbols, to_json(\%cat) if %cat;
     }
     $event->{info}         = \@by_symbols;
@@ -163,7 +149,7 @@ sub restore_by_id {
 
     my $ee_object = $type eq 'scheduled' ? _ees() : _eet();
 
-    my $restored =  $ee_object->restore_event($id);
+    my $restored = $ee_object->restore_event($id);
 
     return _err('Failed to restore event.') unless $restored;
 
@@ -176,7 +162,7 @@ sub _regenerate {
     my $events = shift;
 
     # update economic events impact curve with the newly added economic event
-    Volatility::Seasonality::generate_economic_event_seasonality({
+    _vs()->generate_economic_event_seasonality({
         underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
         economic_events    => $events,
         chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
@@ -200,6 +186,27 @@ sub _get_affected_underlying_symbols {
     my $fb = get_offerings_flyby();
     @symbols = $fb->query({submarket => 'major_pairs'}, ['underlying_symbol']);
     return @symbols;
+}
+
+sub _ees {
+    return Quant::Framework::EconomicEvent::Scheduled->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    );
+}
+
+sub _eet {
+    return Quant::Framework::EconomicEvent::Tentative->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    );
+}
+
+sub _vs {
+    return Volatility::Seasonality->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    );
 }
 
 1;
