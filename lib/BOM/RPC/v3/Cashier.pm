@@ -988,10 +988,7 @@ sub transfer_between_accounts {
     my $args = $params->{args};
     my ($currency, $amount) = @{$args}{qw/currency amount/};
 
-    return $error_sub->(localize('Please provide valid currency.')) unless $currency;
-    return $error_sub->(localize('Please provide valid amount.'))   unless looks_like_number($amount);
-
-    my $siblings = get_real_account_siblings_information($client, 1);
+    my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client, 1);
     unless (keys %$siblings) {
         warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
         return $error_sub->(localize('Internal server error'));
@@ -1010,12 +1007,15 @@ sub transfer_between_accounts {
     }
 
     # get clients
-    if (not $loginid_from or not $loginid_to) {
+    if (not $loginid_from or not $loginid_to or not $currency or not $amount) {
         return {
             status   => 0,
             accounts => \@accounts
         };
     }
+
+    return $error_sub->(localize('Please provide valid currency.')) unless $currency;
+    return $error_sub->(localize('Please provide valid amount.'))   unless looks_like_number($amount);
 
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same client
