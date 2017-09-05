@@ -6,6 +6,8 @@ use warnings;
 use Try::Tiny;
 use Digest::SHA1;
 
+use constant MAX_FILE_SIZE => 3 * 2 ** 20; # 3 MB
+
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
     my $args = $req_storage->{origin_args};
@@ -78,13 +80,14 @@ sub get_upload_info {
 }
 
 sub send_upload_failed {
-    my $c = shift;
+    my ($c, $reason) = @_;
     $c->call_rpc({
             method      => 'document_upload',
             call_params => {
                 token => $c->stash('token'),
             },
             args => {
+                reason => $reason,
                 status => 'failure',
             },
         });
@@ -139,6 +142,8 @@ sub upload {
 
     $stash->{$upload_id}->{sha1}->add($data);
     $stash->{$upload_id}->{received_bytes} += length $data;
+
+    return send_upload_failed($c, 'max_size') if $stash->{$upload_id}->{received_bytes} > MAX_FILE_SIZE;
 
     # TODO: Stream through a cloud storage
 
