@@ -167,6 +167,8 @@ sub restore_by_id {
 
     return _err('Failed to restore event.') unless $restored;
 
+    _regenerate($ee_object->get_all_events());
+
     return $restored;
 }
 
