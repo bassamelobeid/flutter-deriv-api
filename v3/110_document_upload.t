@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 
-use BOM::Test::RPC::BomRpc;
 use Test::Most;
 use Test::Warn;
 use JSON;
@@ -191,7 +190,7 @@ subtest 'Maximum file size' => sub {
     my $error = upload_error($metadata, $file);
     $CHUNK_SIZE = $previous_chunk_size;
 
-    is $error->{code}, 'UploadDenied', 'Upload should be denied';
+    is $error->{code}, 'UploadError', 'Upload should be failed';
 };
 
 sub gen_frames {
