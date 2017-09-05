@@ -6,7 +6,7 @@ use warnings;
 use Try::Tiny;
 use Digest::SHA1;
 
-use constant MAX_FILE_SIZE => 3 * 2 ** 20; # 3 MB
+use constant MAX_FILE_SIZE => 3 * 2**20;    # 3 MB
 
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
