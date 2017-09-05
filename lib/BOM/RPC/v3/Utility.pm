@@ -261,7 +261,7 @@ sub get_real_account_siblings_information {
 
     my @clients = ();
     if ($no_disabled) {
-        @clients = $user->clients;
+        @clients = grep { not $_->is_virtual } $user->clients;
     } else {
         # we don't need to consider disabled client that have reason
         # as 'migration to single email login', because we moved to single

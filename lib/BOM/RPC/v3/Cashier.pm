@@ -1019,8 +1019,8 @@ sub transfer_between_accounts {
 
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same client
-    my $client_from = Client::Account->new({loginid => $siblings->{$loginid_from}});
-    my $client_to   = Client::Account->new({loginid => $siblings->{$loginid_to}});
+    my $client_from = Client::Account->new({loginid => $siblings->{$loginid_from}->{loginid}});
+    my $client_to   = Client::Account->new({loginid => $siblings->{$loginid_to}->{loginid}});
 
     my $res = _validate_transfer_between_account($client_from, $client_to, $currency, $siblings);
     return $res if $res;
@@ -1051,18 +1051,18 @@ sub transfer_between_accounts {
 
     my $err_msg      = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
     my $fm_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $client_from->loginid,
+        client_loginid => $loginid_from,
     });
 
     if (not $fm_client_db->freeze) {
-        return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $client_from->loginid . ']');
+        return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_from . ']');
     }
     my $to_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $client_to->loginid,
+        client_loginid => $loginid_to,
     });
 
     if (not $to_client_db->freeze) {
-        return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $client_to->loginid . ']', $client_from->loginid);
+        return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_to . ']', $loginid_from);
     }
 
     my $err;
@@ -1095,7 +1095,7 @@ sub transfer_between_accounts {
         return $error_unfreeze_msg_sub->(
             "$err_msg validate_payment failed for $loginid_from [$err]",
             (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : '',
-            $client_from->loginid, $client_to->loginid
+            $loginid_from, $loginid_to
         );
     }
 
@@ -1109,12 +1109,12 @@ sub transfer_between_accounts {
         $err = "$err_msg validate_payment failed for $loginid_to [$_]";
     };
     if ($err) {
-        return $error_unfreeze_sub->($err, $client_from->loginid, $client_to->loginid);
+        return $error_unfreeze_sub->($err, $loginid_from, $loginid_to);
     }
 
     my $response;
     try {
-        my $remark = 'Account transfer from ' . $client_from->loginid . ' to ' . $client_to->loginid . '.';
+        my $remark = 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to . '.';
         if ($fees) {
             $remark .=
                   " Fees for $currency $amount to $to_currency $to_amount is $fees ("
@@ -1125,9 +1125,9 @@ sub transfer_between_accounts {
             currency          => $currency,
             amount            => $amount,
             toClient          => $client_to,
-            fmStaff           => $client_from->loginid,
-            toStaff           => $client_to->loginid,
-            remark            => 'Account transfer from ' . $client_from->loginid . ' to ' . $client_to->loginid,
+            fmStaff           => $loginid_from,
+            toStaff           => $loginid_to,
+            remark            => 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to,
             inter_db_transfer => 1,
             source            => $source,
         );
@@ -1148,7 +1148,7 @@ sub transfer_between_accounts {
         status              => 1,
         transaction_id      => $response->{transaction_id},
         client_to_full_name => $client_to->full_name,
-        client_to_loginid   => $client_to->loginid
+        client_to_loginid   => $loginid_to
     };
 }
 
