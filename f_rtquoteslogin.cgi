@@ -73,7 +73,6 @@ sub get_quote {
 PrintContentType();
 BrokerPresentation('REALTIME QUOTES');
 my $broker = request()->broker_code;
-BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;
 push @all_markets, 'futures';    # this is added to check for futures feed

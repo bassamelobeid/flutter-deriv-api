@@ -58,7 +58,6 @@ unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::nod
 }
 
 my $broker = request()->broker_code;
-my $staff  = BOM::Backoffice::Auth0::can_access(['Quants']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 $text =~ s/\r\n/\n/g;

@@ -12,8 +12,6 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
-BOM::Backoffice::Auth0::can_access(['Quants']);
-
 # Upload holiday files
 my $cgi           = CGI->new;
 my $calendar_type = $cgi->param('calendar-type');

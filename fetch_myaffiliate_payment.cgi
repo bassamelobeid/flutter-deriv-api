@@ -21,8 +21,6 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Myaffiliate Payment');
 
-BOM::Backoffice::Auth0::can_access(['Marketing']);
-
 Bar('Myaffiliate Payment Info');
 
 unless (request()->param('from') and request()->param('to')) {

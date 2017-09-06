@@ -27,15 +27,14 @@ my $settings_list = [];
 if (request()->param('page') eq 'global') {
     my $group_to_display = request()->param('group');
     my $authorisations   = {
-        shutdown_suspend => 'IT',
-        quant            => 'Quants',
-        it               => 'IT',
-        others           => 'IT',
-        payments         => 'IT',
+        shutdown_suspend => ['IT'],
+        quant            => ['Quants'],
+        it               => ['IT'],
+        others           => ['IT'],
+        payments         => ['IT'],
     };
 
-    if ($authorisations->{$group_to_display}) {
-        BOM::Backoffice::Auth0::can_access([$authorisations->{$group_to_display}]);
+    if ($authorisations->{$group_to_display} && BOM::Backoffice::Auth0::has_authorisation($authorisations->{$group_to_display})) {
         push @{$settings_list}, @{BOM::DynamicSettings::get_settings_by_group($group_to_display)};
     } else {
         print "Access restricted.";

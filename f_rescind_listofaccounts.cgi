@@ -17,7 +17,6 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("RESCIND LIST OF ACCOUNTS");
 
-BOM::Backoffice::Auth0::can_access(['Payments']);
 my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my $listaccounts = request()->param('listaccounts');
