@@ -34,7 +34,6 @@ if (BOM::Platform::Runtime->instance->app_config->system->suspend->system) {
 
 my $cgi               = CGI->new;
 my $broker            = request()->broker_code;
-my $staff             = BOM::Backoffice::Auth0::can_access(['Payments']);
 my $clerk             = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $confirm           = $cgi->param('confirm');
 my $preview           = $cgi->param('preview');
