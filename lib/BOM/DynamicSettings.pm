@@ -201,8 +201,8 @@ sub get_settings_by_group {
         ],
         payments => [qw(
                 payments.payment_limits
-                payments.doughflow.location
-                payments.doughflow.passcode
+                payments.transfer_fees.fiat
+                payments.transfer_fees.crypto
                 )]};
 
     my $settings;

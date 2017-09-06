@@ -59,16 +59,6 @@ sub logout {
     return;
 }
 
-sub can_access {
-    my $groups = shift;
-
-    if (BOM::Backoffice::Auth0::has_authorisation($groups)) {
-        return 1;
-    }
-    print "login again";
-    exit 0;
-}
-
 sub has_authorisation {
     my $groups     = shift;
     my $staff      = BOM::Backoffice::Cookie::get_staff();

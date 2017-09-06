@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use open qw[ :encoding(UTF-8) ];
 use Bloomberg::RequestFiles;
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 my $request_file = Bloomberg::RequestFiles->new();
 eval { $request_file->generate_request_files('daily') };    ## no critic (RequireCheckingReturnValueOfEval)

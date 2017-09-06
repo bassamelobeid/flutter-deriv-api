@@ -19,7 +19,6 @@ my $login         = request()->param('login');
 my $encoded_login = encode_entities($login);
 
 BrokerPresentation('CLIENT LIMITS FOR ' . $encoded_login);
-BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $broker = request()->broker_code;
 
