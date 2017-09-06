@@ -41,7 +41,6 @@ use Date::Utility;
 
 # property bag for DoughFlow CreateCustomer API
 # requires SportsBook, SecurePassCode, IP, and hash key as "password"
-# optional CustName to be passed to override default CustName - this is used for subaccounts with dummy names
 sub create_customer_property_bag {
     my $self = shift;
     my $args = shift;
@@ -52,7 +51,7 @@ sub create_customer_property_bag {
         IP_Address     => $args->{'IP_Address'},
         Password       => $args->{'Password'},
         PIN            => $self->loginid,
-        CustName       => $args->{'CustName'} // $self->CustName,
+        CustName       => $self->CustName,
         City           => $self->City,
         Street         => $self->Street,
         Province       => $self->Province,
