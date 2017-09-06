@@ -47,6 +47,8 @@ use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
 local $ENV{PGSERVICEFILE} = '/home/nobody/.pg_service_backprice.conf';
 
+my $threshold = 0.003; 
+
 while (<STDIN>) {
     # Get line of data from STDIN
     # Data is in csv in the form of
@@ -83,7 +85,7 @@ while (<STDIN>) {
     my $ask_percentage_diff = ($ask_price == 0) ? 0 : abs($recalculated_ask_price - $ask_price) / $ask_price;
     my $bid_percentage_diff = ($bid_price == 0) ? 0 : abs($recalculated_bid_price - $bid_price) / $bid_price;
 
-    if ($ask_percentage_diff > 0.01 or $bid_percentage_diff > 0.01) {
+    if ($ask_percentage_diff > $threshold or $bid_percentage_diff > $threshold) {
         print
             "Recalculated price not matching: shortcode: $shortcode Logged ask: $ask_price Logged bid: $bid_price Recalc ask : $recalculated_ask_price Recalc bid: $recalculated_bid_price \n";
     }
