@@ -31,8 +31,9 @@ sub save_config {
     my %args = %$args;
     my $existing_config = $self->chronicle_reader->get($namespace, $config_type) // {};
 
-    my $identifier = delete $args{name} // die 'name is required';
+    my $identifier = $args{name} // die 'name is required';
     foreach my $key (keys %args) {
+        next if $key eq 'name' || !$args{$key};
         if ($key eq 'contract_type' or $key eq 'currency_symbol' or $key eq 'underlying_symbol') {
             my @values = split ',', $args{$key};
             if ($key ne 'currency_symbol') {
@@ -63,6 +64,8 @@ sub get_config {
     my ($self, $config_type, $args) = @_;
 
     my $existing_config = $self->chronicle_reader->get($namespace, $config_type) // {};
+    return [values %$existing_config] unless $args;
+
     my @match;
     foreach my $key (keys %$existing_config) {
         my $config       = $existing_config->{$key};
