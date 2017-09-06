@@ -2,15 +2,100 @@
 
 <table id='custom_commission_form'>
     <tr><td>Name</td><td> : <input type="text" name="name"></td></tr>
-    <tr><td>Underlying/Currency Symbol</td><td> : <input type="text" name="symbol"></td></tr>
-    <tr><td>Support</td><td> : <input type="text" name="support_from"></td> to <td><input type="text" name="support_to"></td></tr>
+    <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol"></td></tr>
+    <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol"></td></tr>
     <tr><td>Contract Type</td><td> : <input type="text" name="contract_type"></td></tr>
+    <tr><td>Support</td><td> : <input type="text" name="support_from"></td> <td>to <input type="text" name="support_to"></td></tr>
     <tr><td>Cap rate</td><td> : <input type="text" name="cap_rate"></td></tr>
     <tr><td>Floor rate</td><td> : <input type="text" name="floor_rate"></td></tr>
     <tr><td>Width</td><td> : <input type="text" name="width"></td></tr>
     <tr><td>Center Offset</td><td> : <input type="text" name="center_offset"></td></tr>
-    <tr><td></td><td><button onclick="saveCustom()">Save</td><td class='save_result'></td></tr>
+    <tr><td></td><td><button onclick="saveCustom()">Save</td><td class='save_result'></td><td class="result"></td></tr>
 </table>
 
+<div id='custom_commission_table'>
+</div>
+
 <script>
+    function saveCustom() {
+        var el = \$('table#custom_commission_form');
+        var result = el.find('.result');
+        result.text('processing...');
+        \$.ajax({
+                url: "[% upload_url | none %]",
+                data: {
+                    save_config: "1",
+                    name: el.find('input[name="name"]').val(),
+                    underlying_symbol: el.find('input[name="underlying_symbol"]').val(),
+                    currency_symbol: el.find('input[name="currency_symbol"]').val(),
+                    support_from: el.find('input[name="support_from"]').val(),
+                    support_to: el.find('input[name="support_to"]').val(),
+                    contract_type: el.find('input[name="contract_type"]').val(),
+                    cap_rate: el.find('input[name="cap_rate"]').val(),
+                    floor_rate: el.find('input[name="floor_rate"]').val(),
+                    width: el.find('input[name="width"]').val(),
+                    center_offset: el.find('input[name="center_offset"]').val()
+                },
+                success: function(data){
+                    var config = \$.parseJSON(data);
+                    if (config.error) {
+                        result.text('Failed: '+ config.error).css('color', 'red');
+                    } else {
+                        appendTable('custom_commission_table',config);
+                        result.hide();
+                    }
+                }
+        });
+    }
+    function appendTable(id, config) {
+        var table = \$('table#'+id);
+        var to_append = '<tr id="'+config.name+'"><td>'+config.name+'</td><td>'+config.underlying_symbol+'</td><td>'+config.currency_symbol+'</td><td>'+config.contract_type+'</td><td>'+JSON.stringify(config.config)+'</td><td><button onclick="deleteConfig(\''+config.name+'\')">Delete</button></td><td class="result"></td></tr>';
+        table.append(to_append);
+    }
+    function createTable(id, config) {
+        var table = '<table id="'+id+'">';
+        table += '<tr><td>Name</td><td>Underlying Symbol</td><td>Currency Symbol</td><td>Contract Type</td><td>Config</td></tr>';
+
+        if (config.length > 0) {
+            for (var i=0; i < config.length; i++) {
+                table += '<tr id="'+config[i].name+'"><td>'+config[i].name+'</td><td>'+config[i].underlying_symbol+'</td><td>'+config[i].currency_symbol+'</td><td>'+config[i].contract_type+'</td><td>'+JSON.stringify(config[i].config)+'</td><td><button onclick="deleteConfig(\''+config[i].name+'\')">Delete</button></td><td class="result"></td></tr>';
+            }
+        } else {
+            table += '<tr><td>None</td></tr>';
+        }
+
+        table += '</table>';
+        \$('div#'+id).html(table);
+    }
+    function deleteConfig (name) {
+        var el = \$('tr#'+name);
+        \$.ajax({
+                url: "[% upload_url | none %]",
+                data: {
+                    delete_config: "1",
+                    name: name
+                },
+                success: function(data){
+                    var config = \$.parseJSON(data);
+                    if (config.error) {
+                        el.find('td.result').text('Failed: '+ config.error).css('color','red');
+                    } else {
+                        el.remove();
+                    }
+                }
+        });
+    }
+    createTable('custom_commission_table', [% config | none %])
 </script>
+
+<style>
+    table {
+        border-collapse: collapse;
+    }
+    #custom_commission_table td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 4px;
+        vertical-align: top;
+    }
+</style>
