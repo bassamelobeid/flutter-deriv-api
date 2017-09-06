@@ -15,7 +15,7 @@ use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use YAML::XS qw(LoadFile);
-use Scope::Guard qw/scope_guard/;
+use Scope::Guard qw/guard/;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Format::Util::Numbers qw/formatnumber/;
 
@@ -1055,12 +1055,10 @@ sub transfer_between_accounts {
         return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_to . ']');
     }
 
-    my $guard = scope_guard sub {
+    my $guard_scope = guard {
         $fm_client_db->unfreeze;
         $to_client_db->unfreeze;
     };
-    # extra step else guard will become unused var
-    $guard->dismiss(0);
 
     my $err;
     try {
