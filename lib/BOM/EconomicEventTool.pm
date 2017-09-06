@@ -35,7 +35,7 @@ sub generate_economic_event_tool {
     my $today  = Date::Utility->new->truncate_to_day;
     my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 6);
 
-    my @deleted_events = values _get_deleted_events();
+    my @deleted_events = map { get_info($_) } values _get_deleted_events();
 
     my $unlisted_events = check_unlisted_events(\@events);
 
@@ -102,6 +102,9 @@ sub delete_by_id {
     });
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
+
+    my $new_info = get_info($to_delete);
+
     return {
         id => $deleted,
         %$to_delete
