@@ -107,12 +107,13 @@ sub update_by_id {
 sub save_new_event {
     my $args = shift;
 
-    if ($args->{is_tentative} and not $args->{estimated_release_date}) {
-        return _err('Must specify estimated announcement date for tentative events');
-    }
-
-    if (not $args->{is_tentative} and not $args->{release_date}) {
-        return _err('Must specify announcement date for economic events');
+    my $today = Date::Utility->new->truncate_to_day->epoch;
+    if ($args->{is_tentative}) {
+        return _err('Must specify estimated announcement date for tentative events') if not $args->{estimated_release_date};
+        return _err('Estimated release date too old') if Date::Utility->new($args->{estimated_release_date})->epoch < $today;
+    } else {
+        return _err('Must specify announcement date for economic events') if not $args->{release_date};
+        return _err('Release date too old') if Date::Utility->new($args->{release_date})->epoch < $today;
     }
 
     $args->{release_date} = Date::Utility->new($args->{release_date})->epoch if $args->{release_date};
