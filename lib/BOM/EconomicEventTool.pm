@@ -138,7 +138,8 @@ sub save_new_event {
 
     }
 
-    return BOM::EconomicEventTool::get_info($args);
+    return BOM::EconomicEventTool::get_info($args) unless $args->{is_tentative};
+    return $args;
 }
 
 sub _regenerate {
