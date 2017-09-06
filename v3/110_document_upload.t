@@ -92,6 +92,8 @@ subtest 'binary metadata should be correctly sent' => sub {
     [qr/Incorrect data size/], 'Expected warning';
     $res = decode_json($t->message->[1]);
     ok $res->{error}, 'chunk_size should be valid';
+
+    ok(not $res->{echo_req}->{status}), 'status should not be present';
 };
 
 subtest 'sending two files concurrently' => sub {
@@ -204,7 +206,7 @@ subtest 'Invalid document_format' => sub {
         expiration_date => '2020-01-01',
     };
 
-    $t = $t->send_ok({json => $req })->message_ok;
+    $t = $t->send_ok({json => $req})->message_ok;
     my $res = decode_json($t->message->[1]);
     ok $res->{error}, 'Error for wrong document_format';
 };
@@ -241,6 +243,8 @@ sub upload_ok {
 
     is $success->{upload_id}, $upload_id, 'upload id is correct';
     is $success->{call_type}, $call_type, 'call_type is correct';
+
+    ok(not $res->{echo_req}->{status}), 'status should not be present';
 
     return $success;
 }
