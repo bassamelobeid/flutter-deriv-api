@@ -275,37 +275,17 @@ sub get_real_account_siblings_information {
             } BOM::Platform::User->new({email => $client->email})->clients(disabled_ok => 1)};
 }
 
-# we need to verify details passed for new accounts
-# does not differ from existing clients for few required
-# fields, this need to go once we move details to userdb
-# keeping it in RPC so that it can be directly removed
-# without impacting anything else
-sub _check_details_mismatch {
-    my ($client, $args) = @_;
+=head2 validate_make_new_account
 
-    my $has_error = 0;
-    foreach my $field (qw/first_name last_name residence address_city phone date_of_birth/) {
+    validate_make_new_account($client, $account_type, $request_data)
 
-        if ($client->$field and $args->{$field}) {
-            if ($field eq 'date_of_birth') {
-                if (not Date::Utility->new($client->$field)->is_same_as(Date::Utility->new($args->{$field}))) {
-                    $has_error = 1;
-                    last;
-                }
-            } elsif ($client->$field ne $args->{$field}) {
-                $has_error = 1;
-                last;
-            }
-        } else {
-            last;
-        }
-    }
+    Make several checks based on $client and $account type.
+    Updates $request_data(hashref, if provided) with $client's sensetive data.
 
-    return $has_error;
-}
+=cut
 
 sub validate_make_new_account {
-    my ($client, $account_type, $args) = @_;
+    my ($client, $account_type, $request_data) = @_;
 
     my $residence = $client->residence;
     return create_error({
@@ -350,7 +330,6 @@ sub validate_make_new_account {
         # but we do allow them to open only financial account
         return;
     }
-
     # we don't allow virtual client to make this again and
     return permission_error() if $client->is_virtual;
 
@@ -371,10 +350,11 @@ sub validate_make_new_account {
         # maltainvest to landing company as client is upgrading
         $landing_company_name = 'maltainvest';
     }
-    return create_error({
-            code              => 'DetailsMisMatch',
-            message_to_client => localize('The details you provided do not match your existing account details.'),
-        }) if _check_details_mismatch($client, $args);
+
+    # we have real account, and going to create another one
+    # So, lets populate all sensetive data from current client, ignoring provided input
+    # this logic should gone after we separate new_account with new_currency for account
+    $request_data->{$_} = $client->$_ for qw/first_name last_name residence address_city phone date_of_birth/;
 
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
