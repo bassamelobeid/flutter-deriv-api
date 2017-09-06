@@ -30,6 +30,7 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (request);
 use BOM::Database::Model::OAuth;
+use BOM::Platform::PaymentNotificationQueue;
 
 sub _create_oauth_token {
     my $loginid = shift;
@@ -86,6 +87,14 @@ sub new_account_virtual {
     $user->save;
 
     BOM::Platform::AuditLog::log("successful login", "$email");
+    BOM::Platform::PaymentNotificationQueue->add(
+        source        => 'virtual',
+        currency      => 'USD',
+        loginid       => $client->loginid,
+        type          => 'newaccount',
+        amount        => 0,
+        payment_agent => 0,
+    );
     return {
         client_id   => $client->loginid,
         email       => $email,
@@ -238,6 +247,14 @@ sub new_account_real {
     }
 
     BOM::Platform::AuditLog::log("successful login", "$client->email");
+    BOM::Platform::PaymentNotificationQueue->add(
+        source        => 'real',
+        currency      => 'USD',
+        loginid       => $new_client->loginid,
+        type          => 'newaccount',
+        amount        => 0,
+        payment_agent => 0,
+    );
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -314,22 +331,15 @@ sub new_account_maltainvest {
     });
     $user->save;
 
-    my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
-    foreach my $cli ($user->clients) {
-        # no need to update current client since already updated above upon creation
-        next if (($cli->loginid eq $new_client->loginid) or not BOM::RPC::v3::Utility::should_update_account_details($new_client, $cli->loginid));
-
-        # 60 is the max score to achive in financial assessment to be marked as professional
-        # as decided by compliance
-        $cli->financial_assessment({
-            data            => encode_json($financial_assessment->{user_data}),
-            is_professional => $financial_assessment->{total_score} < 60 ? 0 : 1,
-        });
-        set_details($cli, $details_ref->{details});
-        $cli->save;
-    }
-
     BOM::Platform::AuditLog::log("successful login", "$client->email");
+    BOM::Platform::PaymentNotificationQueue->add(
+        source        => 'real',
+        currency      => 'USD',
+        loginid       => $new_client->loginid,
+        type          => 'newaccount',
+        amount        => 0,
+        payment_agent => 0,
+    );
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -398,6 +408,14 @@ sub new_account_japan {
     $user->save;
 
     BOM::Platform::AuditLog::log("successful login", "$client->email");
+    BOM::Platform::PaymentNotificationQueue->add(
+        source        => 'real',
+        currency      => 'USD',
+        loginid       => $new_client->loginid,
+        type          => 'newaccount',
+        amount        => 0,
+        payment_agent => 0,
+    );
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,

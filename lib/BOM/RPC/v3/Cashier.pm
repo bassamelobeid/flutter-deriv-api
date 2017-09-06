@@ -614,7 +614,7 @@ sub paymentagent_transfer {
         type          => 'deposit',
         amount        => $amount,
         payment_agent => 0,
-    )->get;
+    );
 
     # sent email notification to client
     my $emailcontent = localize(
@@ -869,7 +869,7 @@ sub paymentagent_withdraw {
         type          => 'withdrawal',
         amount        => $amount,
         payment_agent => 0,
-    )->get;
+    );
 
     my $client_name = $client->first_name . ' ' . $client->last_name;
     # sent email notification to Payment Agent

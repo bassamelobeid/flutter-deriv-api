@@ -498,6 +498,7 @@ sub should_update_account_details {
     if ($allow_omnibus and $sibling_loginid ne $current_client->loginid) {
         return 0;
     }
+
     return 1;
 }
 
