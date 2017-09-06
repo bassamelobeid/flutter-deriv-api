@@ -1111,7 +1111,6 @@ sub transfer_between_accounts {
         my $remark = 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to . '.';
         if ($fees) {
             my $currency_type = LandingCompany::Registry::get_currency_type($currency);
-            my $currency_type = LandingCompany::Registry::get_currency_type($currency);
             $remark .=
                   " Includes $currency "
                 . formatnumber('amount', $currency, $fees) . " ("
