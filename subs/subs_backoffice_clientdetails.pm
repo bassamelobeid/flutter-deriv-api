@@ -324,7 +324,7 @@ sub show_client_id_docs {
         my ($id, $document_file, $file_name, $download_file, $input);
         $id            = $doc->id;
         $document_file = $doc->document_path;
-        ($file_name) = $document_file =~ m[clientIDscans/\w+/(.+)$];
+        $file_name     = $doc->file_name;
         $download_file = $client->broker . "/$file_name";
         my $date = $doc->expiration_date || '';
         $date = Date::Utility->new($date)->date_yyyymmdd if $date;
@@ -334,7 +334,7 @@ sub show_client_id_docs {
         $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
         $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
 
-        my $url       = request()->url_for("backoffice/download_document.cgi?path=$download_file");
+        my $url = request()->url_for("backoffice/download_document.cgi?path=$download_file");
         $links .= qq{<tr><td><a href="$url">$file_name</a></td><td>$input};
         if ($show_delete && !$args{no_edit}) {
             $url .= qq{&loginid=$loginid&doc_id=$id&deleteit=yes};
