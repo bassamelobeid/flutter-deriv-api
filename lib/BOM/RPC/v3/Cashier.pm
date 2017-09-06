@@ -15,14 +15,14 @@ use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use YAML::XS qw(LoadFile);
-
+use Scope::Guard qw/scope_guard/;
 use DataDog::DogStatsd::Helper qw(stats_inc);
+use Format::Util::Numbers qw/formatnumber/;
 
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
 use Client::Account::PaymentAgent;
-use Format::Util::Numbers qw/formatnumber/;
 use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
 use BOM::Platform::User;
@@ -1030,23 +1030,13 @@ sub transfer_between_accounts {
 
     BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
-    # error subs
-    my $error_unfreeze_msg_sub = sub {
-        my ($err, $client_message, @unfreeze) = @_;
-        foreach my $loginid (@unfreeze) {
-            BOM::Database::ClientDB->new({
-                    client_loginid => $loginid,
-                })->unfreeze;
-        }
+    my $error_audit_sub = sub {
+        my ($err, $client_message) = @_;
 
         BOM::Platform::AuditLog::log("Account Transfer FAILED, $err");
 
         $client_message ||= localize('An error occurred while processing request. Please try again after one minute.');
         return $error_sub->($client_message);
-    };
-    my $error_unfreeze_sub = sub {
-        my ($err, @unfreeze) = @_;
-        $error_unfreeze_msg_sub->($err, '', @unfreeze);
     };
 
     my $err_msg      = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
@@ -1055,15 +1045,22 @@ sub transfer_between_accounts {
     });
 
     if (not $fm_client_db->freeze) {
-        return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_from . ']');
+        return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_from . ']');
     }
     my $to_client_db = BOM::Database::ClientDB->new({
         client_loginid => $loginid_to,
     });
 
     if (not $to_client_db->freeze) {
-        return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_to . ']', $loginid_from);
+        return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_to . ']');
     }
+
+    my $guard = scope_guard sub {
+        $fm_client_db->unfreeze;
+        $to_client_db->unfreeze;
+    };
+    # extra step else guard will become unused var
+    $guard->dismiss(0);
 
     my $err;
     try {
@@ -1092,10 +1089,9 @@ sub transfer_between_accounts {
             }
         }
 
-        return $error_unfreeze_msg_sub->(
+        return $error_audit_sub->(
             "$err_msg validate_payment failed for $loginid_from [$err]",
-            (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : '',
-            $loginid_from, $loginid_to
+            (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : ''
         );
     }
 
@@ -1109,7 +1105,7 @@ sub transfer_between_accounts {
         $err = "$err_msg validate_payment failed for $loginid_to [$_]";
     };
     if ($err) {
-        return $error_unfreeze_sub->($err, $loginid_from, $loginid_to);
+        return $error_audit_sub->($err);
     }
 
     my $response;
@@ -1136,7 +1132,7 @@ sub transfer_between_accounts {
         $err = "$err_msg Account Transfer failed [$_]";
     };
     if ($err) {
-        return $error_unfreeze_sub->($err);
+        return $error_audit_sub->($err);
     }
 
     BOM::Platform::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
