@@ -17,7 +17,6 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Payment Agent Setting');
 my $broker = request()->broker_code;
-my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my $loginid         = request()->param('loginid');

@@ -22,8 +22,6 @@ my %params = %{request()->params};
 my $broker = $params{broker} || request()->broker_code;
 BrokerPresentation("EASY SEARCH: $broker");
 
-my $staff = BOM::Backoffice::Auth0::can_access(['CS']);
-
 my $stash = {now => DateTime->now};
 
 my $tt = BOM::Backoffice::Request::template();

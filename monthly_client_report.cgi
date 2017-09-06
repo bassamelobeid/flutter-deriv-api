@@ -13,8 +13,6 @@ use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-BOM::Backoffice::Auth0::can_access(['Accounts']);
-
 my %params = %{request()->params};
 
 my $yyyymm = $params{yyyymm};
