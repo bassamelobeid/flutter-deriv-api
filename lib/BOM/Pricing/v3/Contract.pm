@@ -321,8 +321,13 @@ sub get_bid {
         $response = {
             is_valid_to_sell => $is_valid_to_sell,
             (
+
+                # until contract is fully settled (primary_validation_error is Waiting for entry tick), we cannot
+                # generate shortcode, it depends on correct barriers, which, in turn, on tick
                 $is_valid_to_sell
-                ? ()
+                ? (
+                    shortcode => $contract->shortcode,
+                    )
                 : (validation_error => localize($contract->primary_validation_error->message_to_client))
             ),
             bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
@@ -339,7 +344,6 @@ sub get_bid {
             date_settlement     => $contract->date_settlement->epoch,
             currency            => $contract->currency,
             longcode            => localize($contract->longcode),
-            shortcode           => $contract->shortcode,
             payout              => $contract->payout,
             contract_type       => $contract->code
         };
