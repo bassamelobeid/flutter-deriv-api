@@ -1111,12 +1111,12 @@ sub transfer_between_accounts {
         my $remark = 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to . '.';
         if ($fees) {
             my $currency_type = LandingCompany::Registry::get_currency_type($currency);
+            my $currency_type = LandingCompany::Registry::get_currency_type($currency);
             $remark .=
-                  " (1 $currency at rate of "
-                . formatnumber('amount', $to_currency, amount_from_to_currency(1, $currency, $to_currency))
-                . "$to_currency, "
+                  " Includes $currency "
+                . formatnumber('amount', $currency, $fees) . " ("
                 . BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->$currency_type
-                . "% fee of $fees$currency)";
+                . "%) as fees.";
         }
         $response = $client_from->payment_account_transfer(
             currency          => $currency,
