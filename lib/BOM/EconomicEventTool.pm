@@ -35,7 +35,7 @@ sub generate_economic_event_tool {
     my $today  = Date::Utility->new->truncate_to_day;
     my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 6);
 
-    my @deleted_events = map { get_info($_) } values _get_deleted_events();
+    my @deleted_events = map { human_readable_date($_) } values _get_deleted_events();
 
     my $unlisted_events = check_unlisted_events(\@events);
 
@@ -63,6 +63,14 @@ sub check_unlisted_events {
         push @unlisted_events, $event if not scalar(@matches);
     }
     return \@unlisted_events;
+}
+
+sub human_readable_date {
+    my $event = shift;
+
+    $event->{release_date} = Date::Utility->new($event->{release_date})->datetime if $event->{release_date};
+
+    return $event;
 }
 
 # get the calibration magnitude and duration factor of the given economic event, if any.
@@ -157,6 +165,9 @@ sub restore_by_id {
         })->save_new($to_restore);
 
     my $new_info = get_info($to_restore);
+
+    my $unlisted = check_unlisted_events([$to_restore]);
+    $to_restore->{unlisted} = 1 if scalar(@$unlisted);
 
     return {
         id       => $args->{id},
