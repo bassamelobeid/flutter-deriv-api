@@ -1039,26 +1039,26 @@ sub transfer_between_accounts {
         return $error_sub->($client_message);
     };
 
-    my $err_msg      = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
     my $fm_client_db = BOM::Database::ClientDB->new({
         client_loginid => $loginid_from,
     });
-
-    if (not $fm_client_db->freeze) {
-        return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_from . ']');
-    }
     my $to_client_db = BOM::Database::ClientDB->new({
         client_loginid => $loginid_to,
     });
 
-    if (not $to_client_db->freeze) {
-        return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_to . ']');
-    }
-
+    # have added this as exception in unused var test
     my $guard_scope = guard {
         $fm_client_db->unfreeze;
         $to_client_db->unfreeze;
     };
+
+    my $err_msg = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
+    if (not $fm_client_db->freeze) {
+        return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_from . ']');
+    }
+    if (not $to_client_db->freeze) {
+        return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_to . ']');
+    }
 
     my $err;
     try {
@@ -1122,7 +1122,7 @@ sub transfer_between_accounts {
             fmStaff           => $loginid_from,
             toStaff           => $loginid_to,
             remark            => 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to,
-            inter_db_transfer => 1,
+            inter_db_transfer => ($client_from->landing_company->short ne $client_to->landing_company->short),
             source            => $source,
         );
     }
