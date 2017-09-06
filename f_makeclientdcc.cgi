@@ -16,7 +16,6 @@ use Client::Account;
 
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");
-BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk = BOM::Backoffice::Cookie::get_staff();
 
 Bar("Make client dual control code");

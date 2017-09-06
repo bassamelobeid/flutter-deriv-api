@@ -18,7 +18,6 @@ use String::UTF8::MD5;
 BOM::Backoffice::Sysinit::init;
 PrintContentType();
 BrokerPresentation("Plot Graph");
-BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $market = request()->param('market');
 

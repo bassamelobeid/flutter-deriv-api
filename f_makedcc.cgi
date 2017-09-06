@@ -21,7 +21,6 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");
-BOM::Backoffice::Auth0::can_access(['Payments']);
 my $staff = BOM::Backoffice::Cookie::get_staff();
 
 Bar("Make dual control code");
