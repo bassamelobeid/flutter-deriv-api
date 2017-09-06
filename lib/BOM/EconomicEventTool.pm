@@ -51,7 +51,7 @@ sub get_info {
         push @by_symbols, to_json(\%cat) if %cat;
     }
     $event->{info}         = \@by_symbols;
-    $event->{release_date} = Date::Utility->new($event->{release_date})->datetime;
+    $event->{release_date} = Date::Utility->new($event->{release_date})->datetime if $event->{release_date};
 
     return $event;
 }
@@ -138,8 +138,7 @@ sub save_new_event {
 
     }
 
-    return BOM::EconomicEventTool::get_info($args) unless $args->{is_tentative};
-    return $args;
+    return BOM::EconomicEventTool::get_info($args);
 }
 
 sub _regenerate {
