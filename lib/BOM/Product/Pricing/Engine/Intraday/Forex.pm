@@ -317,8 +317,8 @@ sub economic_events_volatility_risk_markup {
     my $commissions = $qc->get_config(
         'commission',
         +{
-            contract_type => $self->bet->code,
-            symbol        => $self->bet->underlying->symbol
+            contract_type     => $self->bet->code,
+            underlying_symbol => $self->bet->underlying->symbol
         });
     my $theo    = $self->base_probability->amount;
     my @markups = (0);
