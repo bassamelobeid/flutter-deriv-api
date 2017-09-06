@@ -6,10 +6,8 @@
 # we do a production release, it does not break our pricing for japan.
 #
 # What does this script do?
-# This script will price contracts, save the pricing parameters in memory , and
-# it will reprice, to ensure reprice works properly for japan.
+# This script will reprice contracts for japan based on csv input, to ensure reprice works properly for japan.
 # It also checks that , payout - ask = ask of the opposite contract.
-# Measures pricing speed.
 
 use strict;
 use warnings;
@@ -47,9 +45,9 @@ use constant APP_CONFIG_REFRESH_INTERVAL => 60;
 use Log::Any qw($log);
 use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
-my $appconfig_age = 0;
+local $ENV{PGSERVICEFILE} = '/home/nobody/.pg_service_backprice.conf';
 
-while (<>) {
+while (<STDIN>) {
     # Get line of data from STDIN
     # Data is in csv in the form of
     # shortcode,currency,payout,ask_price,bid_price,extra_info
@@ -82,8 +80,8 @@ while (<>) {
     my $recalculated_ask_price = $ask_prob * $payout;
     my $recalculated_bid_price = $bid_prob * $payout;
 
-    my $ask_percentage_diff = abs($recalculated_ask_price - $ask_price) / $ask_price;
-    my $bid_percentage_diff = abs($recalculated_bid_price - $bid_price) / $bid_price;
+    my $ask_percentage_diff = ($ask_price == 0) ? 0 : abs($recalculated_ask_price - $ask_price) / $ask_price;
+    my $bid_percentage_diff = ($bid_price == 0) ? 0 : abs($recalculated_bid_price - $bid_price) / $bid_price;
 
     if ($ask_percentage_diff > 0.01 or $bid_percentage_diff > 0.01) {
         print
