@@ -1112,8 +1112,11 @@ sub transfer_between_accounts {
         if ($fees) {
             my $currency_type = LandingCompany::Registry::get_currency_type($currency);
             $remark .=
-                " Fees for $currency $amount to $to_currency $to_amount is $fees ("
-                . BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->$currency_type . "%)";
+                  " (1 $currency at rate of "
+                . formatnumber('amount', $to_currency, amount_from_to_currency(1, $currency, $to_currency))
+                . "$to_currency, "
+                . BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->$currency_type
+                . "% fee of $fees$currency)";
         }
         $response = $client_from->payment_account_transfer(
             currency          => $currency,
@@ -1121,9 +1124,10 @@ sub transfer_between_accounts {
             toClient          => $client_to,
             fmStaff           => $loginid_from,
             toStaff           => $loginid_to,
-            remark            => 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to,
+            remark            => $remark,
             inter_db_transfer => ($client_from->landing_company->short ne $client_to->landing_company->short),
             source            => $source,
+            fees              => $fees,
         );
     }
     catch {
