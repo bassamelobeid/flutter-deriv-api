@@ -49,7 +49,7 @@ sub save_config {
 
     $self->chronicle_writer->set($namespace, $config_type, $existing_config, Date::Utility->new);
 
-    return $args;
+    return \%args;
 }
 
 =head2 get_config
