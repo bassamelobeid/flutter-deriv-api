@@ -5,9 +5,15 @@ extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary', 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 use BOM::Product::Static qw/get_longcodes/;
+use BOM::Product::Exception;
 
 sub ticks_to_expiry {
-    die 'no ticks_to_expiry on an EXPIRYRANGEE contract';
+    my $self = shift;
+
+    BOM::Product::Exception->throw(
+        error_code => 'InvalidTickExpiry',
+        error_args => [$self->code],
+    );
 }
 
 sub localizable_description {
