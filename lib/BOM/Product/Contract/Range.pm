@@ -10,7 +10,7 @@ use BOM::Product::Exception;
 sub ticks_to_expiry {
     my $self = shift;
 
-    BOM::Product::Exception->throw(
+    return BOM::Product::Exception->throw(
         error_code => 'InvalidTickExpiry',
         error_args => [$self->code],
     );
