@@ -33,7 +33,13 @@ sub save_config {
 
     my $identifier = $args{name} // die 'name is required';
     foreach my $key (keys %args) {
-        next if $key eq 'name' || !$args{$key};
+        next if $key eq 'name';
+
+        if ($args{$key} eq '') {
+            delete $args{$key};
+            next;
+        }
+
         if ($key eq 'contract_type' or $key eq 'currency_symbol' or $key eq 'underlying_symbol') {
             my @values = split ',', $args{$key};
             if ($key ne 'currency_symbol') {
