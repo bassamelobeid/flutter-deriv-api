@@ -190,4 +190,14 @@ sub generate_upload_id {
     return $last_upload_id = ($last_upload_id + 1) % (1 << 32);
 }
 
+sub remove_echo_req {
+    my (undef, $req_storage, undef) = @_;
+
+    my $args = $req_storage->{args};
+
+    $req_storage->{args} = {} if exists($req_storage->{msg_type}) and $req_storage->{msg_type} eq 'document_upload' and exists($args->{status});
+
+    return;
+}
+
 1;
