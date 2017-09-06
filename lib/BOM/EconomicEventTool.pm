@@ -37,7 +37,7 @@ sub generate_economic_event_tool {
 
     my @deleted_events = values _get_deleted_events();
 
-    my @unlisted_events = check_unlisted_events(\@events);
+    my $unlisted_events = check_unlisted_events(\@events);
 
     return BOM::Backoffice::Request::template->process(
         'backoffice/economic_event_forms.html.tt',
@@ -46,7 +46,7 @@ sub generate_economic_event_tool {
             events          => \@events,
             dates           => \@dates,
             deleted_events  => \@deleted_events,
-            unlisted_events => \@unlisted_events,
+            unlisted_events => $unlisted_events,
         },
     ) || die BOM::Backoffice::Request::template->error;
 }
@@ -59,10 +59,9 @@ sub check_unlisted_events {
     foreach my $event (@$events) {
         my $pattern = $event->{event_name};
         $pattern =~ s/\s+/_/g;
-        my @matches = grep { /[1-5][_]$pattern/ } keys %$economic_event_categories;
+        my @matches = grep { /$pattern/ } keys %$economic_event_categories;
         push @unlisted_events, $event if not scalar(@matches);
     }
-
     return \@unlisted_events;
 }
 
@@ -101,8 +100,6 @@ sub delete_by_id {
         id => $id,
         %$to_delete
     });
-
-    _regenerate($ee->get_economic_events_calendar);
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
     return {
@@ -156,8 +153,11 @@ sub restore_by_id {
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
         })->save_new($to_restore);
 
+    my $new_info = get_info($to_restore);
+
     return {
-        id => $args->{id},
+        id       => $args->{id},
+        new_info => $new_info->{info},
         %$to_restore
     };
 }

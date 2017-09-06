@@ -178,10 +178,7 @@
                             
                             to_append += '</td><td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="result"></td>';                                    to_append += '</tr>';
 
-console.log(to_append);
-console.log("before remove");
-
-                                                       
+                            \$('tr#'+id).remove();                                                       
 
                             list_el.append(to_append);
                             list_el.find('tr#'+obj.id).css('color', 'green');
@@ -255,17 +252,15 @@ console.log("before remove");
                         if(r.error) {
                             result.text('ERR: ' + r.error).css('color','red');
                         } else{
-console.log("first line");                            
+                        
 			    var del_list = \$('table.deleted_economic_event_list');
                             var to_append = '<tr id="'+ r.id +'"><td>'+r.id+'</td><td>'+r.event_name+'</td><td>'+r.release_date+'</td><td>'+r.impact+'</td><td>'+r.symbol+'</td>';
 			    to_append += '<td><button onclick="restoreEvent( \''+ r.id +'\' )">Restore</button> </td><td style="display:none;" class="result"></td></tr>';                            
-			   
-console.log("before append ... del");
  
 			    del_list.append(to_append);
 
                             \$('tr#'+ r.id).remove();
-console.log("after remove");
+
                             result.text('Economic event deleted.').css('color','green');
 
                         }
