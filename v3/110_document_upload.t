@@ -93,7 +93,7 @@ subtest 'binary metadata should be correctly sent' => sub {
     $res = decode_json($t->message->[1]);
     ok $res->{error}, 'chunk_size should be valid';
 
-    ok(not $res->{echo_req}->{status}), 'status should not be present';
+    ok((not exists($res->{echo_req}->{status})), 'status should not be present');
 };
 
 subtest 'sending two files concurrently' => sub {
@@ -209,6 +209,9 @@ subtest 'Invalid document_format' => sub {
     $t = $t->send_ok({json => $req})->message_ok;
     my $res = decode_json($t->message->[1]);
     ok $res->{error}, 'Error for wrong document_format';
+
+    is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
+    is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
 };
 
 sub gen_frames {
@@ -244,7 +247,7 @@ sub upload_ok {
     is $success->{upload_id}, $upload_id, 'upload id is correct';
     is $success->{call_type}, $call_type, 'call_type is correct';
 
-    ok(not $res->{echo_req}->{status}), 'status should not be present';
+    ok((not exists($res->{echo_req}->{status})), 'status should not be present');
 
     return $success;
 }
