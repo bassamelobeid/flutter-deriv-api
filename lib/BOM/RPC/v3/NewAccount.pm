@@ -181,14 +181,13 @@ sub verify_email {
 sub new_account_real {
     my $params = shift;
 
-    my $client = $params->{client};
+    my ($client, $args) = @{$params}{qw/client args/};
 
     # send error if maltaivest and japan client tried to make this call
     # as they have their own separate api call for account opening
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
 
-    my $args = $params->{args};
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'real', $args);
     return $error if $error;
 
@@ -282,14 +281,13 @@ sub set_details {
 sub new_account_maltainvest {
     my $params = shift;
 
-    my $client = $params->{client};
+    my ($client, $args) = @{$params}{qw/client args/};
 
     # send error if anyone other than maltainvest, virtual, malta
     # tried to make this call
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest)$/);
 
-    my $args = $params->{args};
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'maltainvest', $args);
     return $error if $error;
 
@@ -351,14 +349,13 @@ sub new_account_maltainvest {
 sub new_account_japan {
     my $params = shift;
 
-    my $client = $params->{client};
+    my ($client, $args) = @{$params}{qw/client args/};
 
     # send error if anyone other than japan, japan-virtual
     # tried to make this call
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short !~ /^(?:japan-virtual|japan)$/);
 
-    my $args = $params->{args};
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'japan', $args);
     return $error if $error;
 
