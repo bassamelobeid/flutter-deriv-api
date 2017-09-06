@@ -13,7 +13,6 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
-BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $filename      = request()->param('show');
 my $displayport   = request()->param('displayport');

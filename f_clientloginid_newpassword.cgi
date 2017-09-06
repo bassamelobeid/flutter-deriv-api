@@ -23,8 +23,6 @@ PrintContentType();
 my $loginID = request()->param('show');
 BrokerPresentation('ISSUE NEW PASSWORD TO ' . $loginID);
 
-BOM::Backoffice::Auth0::can_access(['CS']);
-
 # Issue new password to client
 if (not $loginID) {
     print 'Invalid loginID: please set loginID';

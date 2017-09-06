@@ -18,7 +18,6 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("Setting Client Self Exclusion");
-BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $loginid = request()->param('loginid');
 Bar("Setting Client Self Exclusion");

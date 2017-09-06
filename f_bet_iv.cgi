@@ -26,7 +26,6 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('I.V. DATABASE');
 my $broker = request()->broker_code;
-my $staff  = BOM::Backoffice::Auth0::can_access(['Quants']);
 
 Bar("Update volatilities");
 my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;
