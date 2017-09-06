@@ -325,14 +325,14 @@ sub economic_events_volatility_risk_markup {
 
     foreach (@$commissions) {
         my $support       = $_->{support};
-        my $width         = max(1e-9, $_->{width});
+        my $width         = max(0.01, $_->{width});
         my $floor         = $_->{floor_rate};
         my $cap           = $_->{cap_rate};
         my $center_offset = $_->{center_offset};
 
         if ($theo >= $support->[0] && $theo <= $support->[1]) {
             my $calculated_markup = $cap - ($cap - $floor) * (1 - (2 / $width * abs($theo - 0.5 - $center_offset))**3)**3;
-            push @markups, $calculated_markup;
+            push @markups, min($cap, $calculated_markup);
         }
     }
 
@@ -340,7 +340,7 @@ sub economic_events_volatility_risk_markup {
         name        => 'economic_events_volatility_risk_markup',
         description => 'markup to account for volatility risk of economic events',
         set_by      => __PACKAGE__,
-        base_amount => min($cap, max(@markups)),
+        base_amount => max(@markups),
     });
 }
 
