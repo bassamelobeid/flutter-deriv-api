@@ -109,7 +109,9 @@ sub save_new_event {
 
     if ($args->{is_tentative} and not $args->{estimated_release_date}) {
         return _err('Must specify estimated announcement date for tentative events');
-    } elsif (not $args->{release_date}) {
+    }
+
+    if (not $args->{is_tentative} and not $args->{release_date}) {
         return _err('Must specify announcement date for economic events');
     }
 

@@ -38,9 +38,9 @@ if (request()->param('save_event')) {
         impact                 => request()->param('impact'),
         event_name             => request()->param('event_name'),
         source                 => request()->param('source'),
-        is_tentative           => (request()->param('is_tentative') || 0),
-        estimated_release_date => (request()->param('estimated_release_date') || 0),
-        release_date           => (request()->param('release_date') || 0),
+        is_tentative           => request()->param('is_tentative'),
+        estimated_release_date => request()->param('estimated_release_date'),
+        release_date           => request()->param('release_date'),
     };
     print to_json(BOM::EconomicEventTool::save_new_event($param));
 }
