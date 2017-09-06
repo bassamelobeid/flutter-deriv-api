@@ -1110,10 +1110,10 @@ sub transfer_between_accounts {
     try {
         my $remark = 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to . '.';
         if ($fees) {
+            my $currency_type = LandingCompany::Registry::get_currency_type($currency);
             $remark .=
-                  " Fees for $currency $amount to $to_currency $to_amount is $fees ("
-                . BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->{LandingCompany::Registry::get_currency_type($currency)}
-                . "%)";
+                " Fees for $currency $amount to $to_currency $to_amount is $fees ("
+                . BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->$currency_type . "%)";
         }
         $response = $client_from->payment_account_transfer(
             currency          => $currency,
@@ -1264,7 +1264,7 @@ sub _calculate_to_amount_with_fees {
         # no fees for authenticate payment agent
         return ($amount, $fees) if ($from_currency_type eq 'crypto' and $is_authenticated_pa);
 
-        $fees = ($amount) * (BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->{$from_currency_type} / 100);
+        $fees = ($amount) * (BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->$from_currency_type / 100);
         $amount -= $fees;
         $amount = amount_from_to_currency($amount, $from_currency, $to_currency);
     }
