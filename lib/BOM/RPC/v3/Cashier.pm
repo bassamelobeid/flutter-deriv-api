@@ -970,7 +970,7 @@ sub transfer_between_accounts {
         my ($message_to_client, $message) = @_;
         BOM::RPC::v3::Utility::create_error({
             code              => 'TransferBetweenAccountsError',
-            message_to_client => ($message_to_client // localize('The account transfer is not available for your account.')),
+            message_to_client => ($message_to_client // localize('Account transfer is not available for your account.')),
             ($message) ? (message => $message) : (),
         });
     };
@@ -980,7 +980,7 @@ sub transfer_between_accounts {
     }
 
     if ($client->get_status('disabled') or $client->get_status('cashier_locked') or $client->get_status('withdrawal_locked')) {
-        return $error_sub->(localize('The account transfer is not available for your account: [_1].', $client->loginid));
+        return $error_sub->(localize('Account transfer is not available for your account: [_1].', $client->loginid));
     }
 
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
@@ -1207,7 +1207,7 @@ sub _validate_transfer_between_account {
         my ($message_to_client, $message) = @_;
         BOM::RPC::v3::Utility::create_error({
             code              => 'TransferBetweenAccountsError',
-            message_to_client => ($message_to_client // localize('The account transfer is not available for your account.')),
+            message_to_client => ($message_to_client // localize('Account transfer is not available for your account.')),
             ($message) ? (message => $message) : (),
         });
     };
@@ -1215,6 +1215,9 @@ sub _validate_transfer_between_account {
     # error out if one of the client is not defined, i.e.
     # loginid provided is wrong or not in siblings
     return $error_sub->() if (not $client_from or not $client_to);
+
+    # error out if from and to loginid are same
+    return $error_sub->(localize('Account transfer is not available within same accounts.')) if ($client_from->loginid eq $client_to->loginid);
 
     # check if currency is legal for landing company
     return $error_sub->(localize('Invalid currency.'))
@@ -1239,11 +1242,11 @@ sub _validate_transfer_between_account {
     my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
 
     # we don't allow fiat to fiat if they are different
-    return $error_sub->(localize('The account transfer is not available for accounts with different default currency.'))
+    return $error_sub->(localize('Account transfer is not available for accounts with different default currency.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'fiat') and ($currency ne $to_currency));
 
     # we don't allow crypto to crypto transfer
-    return $error_sub->(localize('The account transfer is not available within accounts with cryptocurrency as default currency.'))
+    return $error_sub->(localize('Account transfer is not available within accounts with cryptocurrency as default currency.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
 
     return undef;
