@@ -23,6 +23,7 @@ if (request()->param('save_config')) {
         floor_rate        => request()->param('floor_rate'),
         width             => request()->param('width'),
         center_offset     => request()->param('center_offset'),
+        flat              => request()->param('flat'),
     };
     print to_json(BOM::Backoffice::CustomCommissionTool::save_commission($args));
 }

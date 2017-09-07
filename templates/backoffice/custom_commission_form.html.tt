@@ -6,6 +6,7 @@
     <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol"></td></tr>
     <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol"></td></tr>
     <tr><td>Contract Type</td><td> : <input type="text" name="contract_type"></td></tr>
+    <tr><td>Flat</td><td> : <input type="checkbox" name="flat" value="1"></td></tr>
     <tr><td>Support</td><td> : <input type="text" name="support_from"></td> <td>to <input type="text" name="support_to"></td></tr>
     <tr><td>Cap rate</td><td> : <input type="text" name="cap_rate"></td></tr>
     <tr><td>Floor rate</td><td> : <input type="text" name="floor_rate"></td></tr>
@@ -44,7 +45,8 @@
                     cap_rate: el.find('input[name="cap_rate"]').val(),
                     floor_rate: el.find('input[name="floor_rate"]').val(),
                     width: el.find('input[name="width"]').val(),
-                    center_offset: el.find('input[name="center_offset"]').val()
+                    center_offset: el.find('input[name="center_offset"]').val(),
+                    flat: el.find('input[name="flat"]').val()
                 },
                 success: function(data){
                     var config = \$.parseJSON(data);
