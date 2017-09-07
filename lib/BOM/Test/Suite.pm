@@ -200,7 +200,7 @@ sub run {
             ($receive_file, @template_func) = split(',', $line);
 
             my $content = read_file($suite_schema_path . $receive_file);
-            $content = _get_values($content, $placeholder, @template_func);
+            $content = _get_values($content, $placeholder, \@template_func);
 
             $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $fail);
         } else {
@@ -210,7 +210,7 @@ sub run {
             my $call = $test_app->{call} = $1;
 
             my $content = read_file($suite_schema_path . $send_file);
-            $content = _get_values($content, $placeholder, @template_func);
+            $content = _get_values($content, $placeholder, \@template_func);
             my $req_params = JSON::from_json($content);
 
             $req_params = $test_app->adjust_req_params($req_params, {language => $last_lang});
@@ -218,7 +218,7 @@ sub run {
             die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
 
             $content = read_file($suite_schema_path . $receive_file);
-            $content = _get_values($content, $placeholder, @template_func);
+            $content = _get_values($content, $placeholder, \@template_func);
 
             my $result = $test_app->test_schema($req_params, $content, $receive_file, $fail);
             $response->{$call} = $result;
@@ -248,11 +248,11 @@ sub print_test_diag {
 }
 
 sub _get_values {
-    my ($content, $placeholder_val, @template_func) = @_;
+    my ($content, $placeholder_val, $template_funcs) = @_;
 
     my $expand = sub {
         my ($idx) = @_;
-        my $f = $template_func[$idx];
+        my $f = $template_funcs->[$idx];
         if (!defined $f) {
             my $idx1 = $idx + 1;
             warn "No template function defined for template parameter [_$idx1]";
@@ -282,7 +282,7 @@ sub _get_values {
     };
 
     # Expand templates in the form [_nnn] by using the functions given in
-    # @template_func. Template numbers are 1-based.
+    # @$template_funcs. Template numbers are 1-based.
     $content =~ s{\[_(\d+)\]}{$expand->($1-1)}eg;
 
     return $content;
