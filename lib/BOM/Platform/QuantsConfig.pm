@@ -15,6 +15,11 @@ use List::Util qw(first);
 
 has [qw(chronicle_reader chronicle_writer)] => (is => 'ro');
 
+has for_date => (
+    is      => 'ro',
+    default => undef,
+);
+
 my $namespace = 'quants_config';
 
 =head2 save_config
@@ -69,7 +74,8 @@ Retrieves config based on contract_type and underlying_symbol matching
 sub get_config {
     my ($self, $config_type, $args) = @_;
 
-    my $existing_config = $self->chronicle_reader->get($namespace, $config_type) // {};
+    my $method = $self->for_date ? 'get_for' : 'get';
+    my $existing_config = $self->chronicle_reader->$method($namespace, $config_type, $self->for_date) // {};
     return [values %$existing_config] unless $args;
 
     my @match;
