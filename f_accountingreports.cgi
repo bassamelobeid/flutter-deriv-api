@@ -21,7 +21,6 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('ACCOUNTING REPORTS');
-BOM::Backoffice::Auth0::can_access(['Accounts']);
 my $broker           = request()->broker_code;
 my $all_currencies   = request()->available_currencies;
 my $currency_options = get_currency_options();

@@ -22,7 +22,6 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("SHOW AUDIT TRAIL");
-BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $broker = request()->broker_code;
 

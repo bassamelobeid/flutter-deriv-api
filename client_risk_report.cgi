@@ -10,7 +10,6 @@ use BOM::Backoffice::PlackHelpers qw/PrintContentType_XSendfile/;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-BOM::Backoffice::Auth0::can_access(['Compliance']);
 my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my $loginid = request()->param('loginid') || '';

@@ -25,7 +25,6 @@ use BOM::Backoffice::Request qw(request);
 use Quant::Framework::CorrelationMatrix;
 use BOM::MarketDataAutoUpdater::Forex;
 my $broker = request()->broker_code;
-BOM::Backoffice::Auth0::can_access(['Quants']);
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 

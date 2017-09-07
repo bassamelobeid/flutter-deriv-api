@@ -3,7 +3,7 @@
 <table id='economic_event_form'>
     <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
     <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z)</td></tr>
-    <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
+    <tr><td>Announcement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
     <INPUT type="hidden" name="source" value="binary">
     <tr><td>Impact</td>
         <td> : <select name=impact>

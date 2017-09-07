@@ -30,8 +30,6 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
-BOM::Backoffice::Auth0::can_access(['Payments']);
-
 my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 # Currency is utilised in Deposit and Withdrawal views accordingly

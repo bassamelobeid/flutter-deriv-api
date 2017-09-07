@@ -13,8 +13,6 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-BOM::Backoffice::Auth0::can_access(['CS']);
-
 my $broker        = request()->param('broker')        // "";
 my $partialfname  = request()->param('partialfname')  // "";
 my $partiallname  = request()->param('partiallname')  // "";

@@ -19,8 +19,6 @@ BrokerPresentation('EDIT PROMOTIONAL CODE DETAILS');
 
 my %input = %{request()->params};
 
-my $staff = BOM::Backoffice::Auth0::can_access(['Marketing']);
-
 sub is_valid_promocode { return uc($_[0]->{promocode} // '') =~ /^\s*[A-Z0-9_\-\.]+\s*$/ ? 1 : 0 }
 
 my $pc;
