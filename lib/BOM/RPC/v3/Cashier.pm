@@ -1015,7 +1015,7 @@ sub transfer_between_accounts {
     }
 
     return $error_sub->(localize('Please provide valid currency.')) unless $currency;
-    return $error_sub->(localize('Please provide valid amount.'))   unless looks_like_number($amount);
+    return $error_sub->(localize('Please provide valid amount.')) if (not looks_like_number($amount) or $amount <= 0);
 
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same client

@@ -267,6 +267,10 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
             ->error_message_is('Please provide valid amount.', 'Correct error message for transfering invalid amount');
 
+        $params->{args}->{amount} = 0;
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
+            ->error_message_is('Please provide valid amount.', 'Correct error message for transfering invalid amount');
+
         $params->{args}->{amount} = 0.01;
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
             ->error_message_is('The maximum amount you may transfer is: EUR 0.00.', 'Correct error message for transfering invalid amount');
