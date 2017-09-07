@@ -10,7 +10,9 @@ our @EXPORT = qw(
     start
     set_language
     test_sendrecv
+    test_sendrecv_params
     fail_test_sendrecv
+    fail_test_sendrecv_params
     finish
 );
 
@@ -36,10 +38,28 @@ sub test_sendrecv {
         %args,
     );
 }
+
+sub test_sendrecv_params {
+    my ($send_file, $recv_file, @params) = @_;
+    test_sendrecv($send_file, $recv_file,
+        template_func => [map { "'$_'" } @params],
+        linenum       => (caller)[2],
+    );
+}
+
 sub fail_test_sendrecv {
     my ($send_file, $receive_file, %args) = @_;
     test_sendrecv($send_file, $receive_file, %args,
         expect_fail   => 1,
+        linenum       => (caller)[2],
+    );
+}
+
+sub fail_test_sendrecv_params {
+    my ($send_file, $recv_file, @params) = @_;
+    test_sendrecv($send_file, $recv_file,
+        expect_fail   => 1,
+        template_func => [map { "'$_'" } @params],
         linenum       => (caller)[2],
     );
 }
