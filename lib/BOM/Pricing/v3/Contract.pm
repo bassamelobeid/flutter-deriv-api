@@ -339,7 +339,7 @@ sub get_bid {
             date_settlement     => $contract->date_settlement->epoch,
             currency            => $contract->currency,
             longcode            => localize($contract->longcode),
-            shortcode           => $contract->shortcode,
+            shortcode           => $shortcode,
             payout              => $contract->payout,
             contract_type       => $contract->code
         };
