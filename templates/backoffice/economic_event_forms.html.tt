@@ -139,19 +139,21 @@
                         var obj = \$.parseJSON(data);
                         if (obj.error) {
                             result.text(obj.error).css('color', 'red');
-                        } else if (obj.id && obj.release_date !== 0) {
-                            var list_el = \$('table.economic_event_list');
-                            var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td id="binary_info">';
-                            if (obj.info) {
-                                \$.each(obj.info, function(i, item) {
-                                    to_append += '<p>'+item+'</p>';
-                                });
-                            }
+                        } else if (obj.id) {
+                            if (obj.release_date !== 0) {
+                                var list_el = \$('table.economic_event_list');
+                                var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td id="binary_info">';
+                                if (obj.info) {
+                                    \$.each(obj.info, function(i, item) {
+                                        to_append += '<p>'+item+'</p>';
+                                    });
+                                }
 
-                            to_append += '<td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="result"></td>';
-                            to_append += '</td></tr>';
-                            list_el.append(to_append);
-                            list_el.find('tr#'+obj.id).css('color', 'green');
+                                to_append += '<td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="result"></td>';
+                                to_append += '</td></tr>';
+                                list_el.append(to_append);
+                                list_el.find('tr#'+obj.id).css('color', 'green');
+                            }
                             result.text('Economic event saved. ID ' + obj.id).css('color', 'green');
                         }
                     }
