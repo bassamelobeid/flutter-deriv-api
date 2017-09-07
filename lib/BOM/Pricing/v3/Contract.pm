@@ -315,10 +315,9 @@ sub get_bid {
     }
 
     try {
-        $params->{validation_params}->{landing_company} = $landing_company;
         my $is_valid_to_sell = $contract->is_valid_to_sell($params->{validation_params});
-        my $validation_error = $contract->primary_validation_error && $contract->primary_validation_error->message_to_client // '';
-
+        my $validation_error = $contract->primary_validation_error ? $contract->primary_validation_error->message_to_client : '';
+        $params->{validation_params}->{landing_company} = $landing_company;
         $response = {
             is_valid_to_sell => $is_valid_to_sell,
             (
@@ -342,9 +341,10 @@ sub get_bid {
             longcode            => localize($contract->longcode),
             # until contract is fully settled (primary_validation_error is Waiting for entry tick), we cannot
             # generate shortcode, it depends on correct barriers, which, in turn, on tick
+            # XXX: maybe just uncoditionally return $short_code? Why bother generating it again?
             (
-                $validation_error =~ /Waiting for entry tick/
-                ? ()
+                  (ref($validation_error) eq 'ARRAY') && $validation_error->[0] =~ /Waiting for entry tick/
+                ? (shortcode => $short_code)
                 : (shortcode => $contract->shortcode),
             ),
             payout        => $contract->payout,
