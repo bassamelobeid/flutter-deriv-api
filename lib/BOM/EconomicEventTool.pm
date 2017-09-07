@@ -111,7 +111,7 @@ sub delete_by_id {
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
 
-    my $new_info = human_readable_date($to_delete);
+    human_readable_date($to_delete);
 
     return {
         id => $deleted,
