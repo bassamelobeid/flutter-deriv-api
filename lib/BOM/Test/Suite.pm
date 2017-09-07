@@ -249,9 +249,15 @@ sub print_test_diag {
 
 sub _get_values {
     my ($content, $placeholder_val, @template_func) = @_;
-    my $c = 0;
-    foreach my $f (@template_func) {
-        $c++;
+
+    my $expand = sub {
+        my ($idx) = @_;
+        my $f = $template_func[$idx];
+        if (!defined $f) {
+            my $idx1 = $idx + 1;
+            warn "No template function defined for template parameter [_$idx1]";
+            return "[MISSING VALUE FOR PARAMETER $idx1]";
+        }
         $f =~ s/^\s+|\s+$//g;
         my $template_content;
         if ($f =~ /^\_.*$/) {
@@ -272,8 +278,13 @@ sub _get_values {
             $f =~ s/^\'|\'$//g;
             $template_content = $f;
         }
-        $content =~ s/\[_$c\]/$template_content/g;
-    }
+        return $template_content;
+    };
+
+    # Expand templates in the form [_nnn] by using the functions given in
+    # @template_func. Template numbers are 1-based.
+    $content =~ s{\[_(\d+)\]}{$expand->($1-1)}eg;
+
     return $content;
 }
 
