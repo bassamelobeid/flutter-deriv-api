@@ -130,13 +130,7 @@ sub _get_ask {
         $contract = $args_copy->{proposal_array} ? produce_batch_contract($args_copy) : produce_contract($args_copy);
     }
     catch {
-        my $message_to_client;
-        if (blessed($_) && $_->isa('BOM::Product::Exception')) {
-            $message_to_client = $_->message_to_client;
-        } else {
-            $message_to_client = ['Cannot create contract'];
-            warn __PACKAGE__ . " _get_ask produce_contract failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($args_copy);
-        }
+        my $message_to_client = _get_error_message($_, $args_copy);
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => localize(@$message_to_client)});
@@ -149,10 +143,10 @@ sub _get_ask {
         $contract_parameters = {%$args_copy, %{contract_metadata($contract)}};
     }
     catch {
-        warn __PACKAGE__ . " _get_ask contract_metadata failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($args_copy);
+        my $message_to_client = _get_error_message($_, $args_copy);
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
-                message_to_client => localize('Cannot create contract')});
+                message_to_client => localize(@$message_to_client)});
     };
     return $response if $response;
 
@@ -209,9 +203,9 @@ sub _get_ask {
         stats_timing('compute_price.buy.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     }
     catch {
-        _log_exception(_get_ask => $_);
+        my $message_to_client = _get_error_message($_, $args_copy, 1);
         $response = BOM::Pricing::v3::Utility::create_error({
-            message_to_client => localize("Cannot create contract"),
+            message_to_client => localize(@$message_to_client),
             code              => "ContractCreationFailure"
         });
     };
@@ -749,6 +743,17 @@ sub _log_exception {
     warn "Unhandled exception in $component: $err\n";
     stats_inc('contract.exception.' . $component);
     return;
+}
+
+sub _get_error_message {
+    my ($reason, $args_copy, $log_exception) = @_;
+
+    return $reason->message_to_client if (blessed($reason) && $reason->isa('BOM::Product::Exception'));
+
+    warn __PACKAGE__ . " _get_ask produce_contract failed: $reason, parameters: " . JSON::XS->new->allow_blessed->encode($args_copy);
+    _log_exception(_get_ask => $reason) if $log_exception;
+
+    return ['Cannot create contract'];
 }
 
 1;
