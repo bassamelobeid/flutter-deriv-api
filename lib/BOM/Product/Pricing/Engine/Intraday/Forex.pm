@@ -324,15 +324,8 @@ sub economic_events_volatility_risk_markup {
     my @markups = (0);
 
     foreach my $c (@$commissions) {
-        my $support       = $c->{support};
-        my $width         = max(0.01, $c->{width});
-        my $floor         = $c->{floor_rate};
-        my $cap           = $c->{cap_rate};
-        my $center_offset = $c->{center_offset};
-
-        if ($delta >= $support->[0] && $delta <= $support->[1]) {
-            my $calculated_markup = $c->{flat} ? $cap : ($cap - ($cap - $floor) * (1 - (2 / $width * abs($delta - 0.5 - $center_offset))**3)**3);
-            push @markups, min($cap, $calculated_markup);
+        if ($delta >= $c->{support}->[0] && $delta <= $c->{support}->[1]) {
+            push @markups, calculate_commission($delta, $c);
         }
     }
 
@@ -342,6 +335,18 @@ sub economic_events_volatility_risk_markup {
         set_by      => __PACKAGE__,
         base_amount => max(@markups),
     });
+}
+
+sub calculate_commission {
+    my ($delta, $c) = @_;
+
+    my $width         = max(0.01, $c->{width});
+    my $floor         = $c->{floor_rate};
+    my $cap           = $c->{cap_rate};
+    my $center_offset = $c->{center_offset};
+
+    return $cap if $c->{flat};
+    return min($cap, $cap - ($cap - $floor) * (1 - (2 / $width * abs($delta - 0.5 - $center_offset))**3)**3);
 }
 
 sub economic_events_spot_risk_markup {
