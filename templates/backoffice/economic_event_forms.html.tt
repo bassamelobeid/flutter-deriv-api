@@ -243,8 +243,9 @@
 
 		 	                      var unlisted_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td>'+'<td style="display:none;" class="result"></td></tr>';
                             unlisted_el.append(unlisted_append);
-
+                            }
                             result.text('Economic event saved. ID ' + obj.id).css('color', 'green');
+                            
                         }
                     }
             });
