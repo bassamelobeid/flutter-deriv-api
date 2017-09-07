@@ -1237,7 +1237,7 @@ sub _validate_transfer_between_account {
 
     my ($from_currency, $to_currency) = ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
     # error out if from account has no currency set
-    return $error_sub->(localize('Please make a deposit to your account.')) unless $from_currency;
+    return $error_sub->(localize('Please deposit to your account.')) unless $from_currency;
 
     # error if currency provided is not same as from account default currency
     return $error_sub->(localize('Currency provided is different from account currency.'))
