@@ -64,6 +64,11 @@ my ($doc) = $test_client->find_client_authentication_document(query => [file_nam
 # Succesfully retrieved object from database.
 is($doc->document_id, $args->{document_id}, 'document is saved in db');
 is($doc->status,      'uploading',          'document status is set to uploading');
+
+# Document with no expiration_date
+$args->{expiration_date} = ''; # Document with no expiration_date
+$c->call_ok($method, $params)->result;
+
 $args = {
     document_path => 'some-where.in.cloud/file',
     status        => 'success',

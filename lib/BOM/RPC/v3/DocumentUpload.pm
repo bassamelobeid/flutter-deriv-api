@@ -32,7 +32,7 @@ sub upload {
             return create_error('UploadDenied', localize("expiration_date cannot be less than or equal to current date."));
         }
     } else {
-        $expiration_date = '';
+        $expiration_date = undef;
     }
 
     # Add new entry to database.
@@ -42,12 +42,13 @@ sub upload {
             document_type              => $document_type,
             document_format            => $document_format,
             document_path              => '',
-            authentication_method_code => 'ID_DOCUMENT',
             expiration_date            => $expiration_date,
+            authentication_method_code => 'ID_DOCUMENT',
             document_id                => $document_id || '',
             file_name                  => $newfilename,
             status                     => 'uploading',
         };
+
         $client->add_client_authentication_document($upload);
         $client->save();
 
