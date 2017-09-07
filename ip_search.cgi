@@ -21,7 +21,6 @@ my $date_from = request()->param('date_from') // '2016-01-01';
 my $date_to   = request()->param('date_to')   // '2018-01-01';
 Bar("IP Search");
 BrokerPresentation("IP SEARCH FOR");
-BOM::Backoffice::Auth0::can_access(['CS']);
 my $broker = request()->broker_code;
 
 my $last_login_age = request()->param('lastndays') || 10;
