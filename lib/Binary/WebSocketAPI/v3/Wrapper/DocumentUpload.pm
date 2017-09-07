@@ -50,6 +50,7 @@ sub document_upload {
         return upload($c, $upload_info) if $upload_info->{chunk_size} != 0;
 
         send_upload_successful($c, $upload_info, 'success');
+        delete_upload_info($c, $upload_info);
     }
     catch {
         warn "UploadError: $_";
@@ -212,5 +213,11 @@ sub remove_echo_req {
 
     return;
 }
+
+sub delete_upload_info {
+    my ($c, $upload_info) = @_;
+    my $stash = $c->stash('document_upload');
+    delete $stash->{$upload_info->{upload_id}}
+};
 
 1;
