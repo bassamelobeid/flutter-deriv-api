@@ -53,7 +53,7 @@ sub document_upload {
     }
     catch {
         warn "UploadError: $_";
-        send_upload_failure($c);
+        send_upload_failure($c, $upload_info, 'unknown');
     };
 
     return;
@@ -80,7 +80,11 @@ sub get_upload_info {
 }
 
 sub send_upload_failure {
-    my ($c, $reason) = @_;
+    my ($c, $upload_info, $reason) = @_;
+
+    $upload_info = {
+        req_id      => '1',
+        passthrough => {}} if not defined $upload_info;
 
     $c->call_rpc({
             method      => 'document_upload',
@@ -88,8 +92,10 @@ sub send_upload_failure {
                 token => $c->stash('token'),
             },
             args => {
-                reason => $reason,
-                status => 'failure',
+                req_id      => $upload_info->{req_id},
+                passthrough => $upload_info->{passthrough},
+                reason      => $reason,
+                status      => 'failure',
             },
         });
 
@@ -112,6 +118,8 @@ sub send_upload_successful {
                 token => $c->stash('token'),
             },
             args => {
+                req_id        => $upload_info->{req_id},
+                passthrough   => $upload_info->{passthrough},
                 file_name     => $upload_info->{file_name},
                 document_path => $upload_info->{document_path},
                 %{$upload_finished},
@@ -142,7 +150,7 @@ sub upload {
     my $stash     = $c->stash('document_upload');
 
     my $new_received_bytes = $stash->{$upload_id}->{received_bytes} + length $data;
-    return send_upload_failure($c, 'max_size') if $new_received_bytes > MAX_FILE_SIZE;
+    return send_upload_failure($c, $upload_info, 'max_size') if $new_received_bytes > MAX_FILE_SIZE;
 
     $stash->{$upload_id}->{sha1}->add($data);
     $stash->{$upload_id}->{received_bytes} = $new_received_bytes;
@@ -195,7 +203,12 @@ sub remove_echo_req {
 
     my $args = $req_storage->{args};
 
-    $req_storage->{args} = {} if exists($req_storage->{msg_type}) and $req_storage->{msg_type} eq 'document_upload' and exists($args->{status});
+    return unless exists($req_storage->{msg_type}) and $req_storage->{msg_type} eq 'document_upload' and exists($args->{status});
+
+    $req_storage->{args} = {
+        req_id      => $args->{req_id},
+        passthrough => $args->{passthrough},
+    };
 
     return;
 }
