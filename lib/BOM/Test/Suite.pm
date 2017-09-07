@@ -41,16 +41,6 @@ $ENV{BOM_TEST_RATE_LIMITATIONS} =    ## no critic (Variables::RequireLocalizedPu
 # all tests start from this date
 my $start_date = Date::Utility->new('2016-08-09 11:59:00')->epoch;
 
-# Return entire contents of file as string
-sub read_file {
-    my $path = shift;
-    open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
-    local $/;
-    my $content = <$fh>;
-    close $fh;
-    return $content;
-}
-
 # Read entire contents of file as a list of lines
 sub read_file_lines {
     my $path = shift;
@@ -156,6 +146,17 @@ sub test_app {
     };
 }
 
+sub read_schema_file {
+    my ($self, $relpath) = @_;
+    my $path = $self->{suite_schema_path} . $relpath;
+
+    open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
+    local $/;
+    my $content = <$fh>;
+    close $fh;
+    return $content;
+}
+
 sub exec_line {
     my ($self, $line, $linenum) = @_;
 
@@ -248,7 +249,7 @@ sub exec_test {
 
     my $t0 = [gettimeofday];
     if ($test_stream_id) {
-        my $content = read_file($self->{suite_schema_path} . $receive_file);
+        my $content = $self->read_schema_file($receive_file);
         $content = _get_values($content, $self->{placeholder}, @$template_func);
 
         $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $expect_fail);
@@ -256,7 +257,7 @@ sub exec_test {
         $send_file =~ /^(.*)\//;
         my $call = $test_app->{call} = $1;
 
-        my $content = read_file($self->{suite_schema_path} . $send_file);
+        my $content = $self->read_schema_file($send_file);
         $content = _get_values($content, $self->{placeholder}, @$template_func);
         my $req_params = JSON::from_json($content);
 
@@ -264,7 +265,7 @@ sub exec_test {
 
         die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
 
-        $content = read_file($self->{suite_schema_path} . $receive_file);
+        $content = $self->read_schema_file($receive_file);
         $content = _get_values($content, $self->{placeholder}, @$template_func);
 
         my $result = $test_app->test_schema($req_params, $content, $receive_file, $expect_fail);
