@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Transfer Between Accounts Request",
-  "description": "This call allows transfers between accounts held by a given user with the 'malta' and 'maltainvest' Landing Companies or between sub account and master account for omnibus accounts.",
+  "description": "This call allows transfers between accounts held by a given user. Fees structure: From fiat currency to cryptocurrency: 1% fee, From cryptocurrency to fiat currency: 0.5% fee, for an approved payment agent there is not fees for cryptocurrecncy to fiat only.",
   "properties": {
     "transfer_between_accounts": {
       "type":"integer",
