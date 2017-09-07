@@ -137,7 +137,9 @@
                     success: function(data){
                         var result = \$("td.save_result");
                         var obj = \$.parseJSON(data);
-                        if (obj.id) {
+                        if (obj.error) {
+                            result.text(obj.error).css('color', 'red');
+                        } else if (obj.id && obj.release_date !== 0) {
                             var list_el = \$('table.economic_event_list');
                             var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td id="binary_info">';
                             if (obj.info) {
@@ -151,8 +153,6 @@
                             list_el.append(to_append);
                             list_el.find('tr#'+obj.id).css('color', 'green');
                             result.text('Economic event saved. ID ' + obj.id).css('color', 'green');
-                        } else {
-                            result.text(obj.error).css('color', 'red');
                         }
                     }
             });
