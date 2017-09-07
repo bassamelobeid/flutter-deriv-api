@@ -317,14 +317,18 @@ sub get_bid {
     try {
         $params->{validation_params}->{landing_company} = $landing_company;
         my $is_valid_to_sell = $contract->is_valid_to_sell($params->{validation_params});
-        my $validation_error = $contract->primary_validation_error && $contract->primary_validation_error->message_to_client // '';
 
         $response = {
             is_valid_to_sell => $is_valid_to_sell,
             (
+
+                # until contract is fully settled (primary_validation_error is Waiting for entry tick), we cannot
+                # generate shortcode, it depends on correct barriers, which, in turn, on tick
                 $is_valid_to_sell
-                ? ()
-                : (validation_error => localize($validation_error))
+                ? (
+                    shortcode => $contract->shortcode,
+                    )
+                : (validation_error => localize($contract->primary_validation_error->message_to_client))
             ),
             bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
@@ -340,15 +344,8 @@ sub get_bid {
             date_settlement     => $contract->date_settlement->epoch,
             currency            => $contract->currency,
             longcode            => localize($contract->longcode),
-            # until contract is fully settled (primary_validation_error is Waiting for entry tick), we cannot
-            # generate shortcode, it depends on correct barriers, which, in turn, on tick
-            (
-                $validation_error =~ /Waiting for entry tick/
-                ? ()
-                : (shortcode => $contract->shortcode),
-            ),
-            payout        => $contract->payout,
-            contract_type => $contract->code
+            payout              => $contract->payout,
+            contract_type       => $contract->code
         };
 
         if (not $contract->may_settle_automatically
