@@ -1006,8 +1006,8 @@ sub transfer_between_accounts {
             };
     }
 
-    # get clients
-    if (not $loginid_from or not $loginid_to or not $currency or not $amount) {
+    # get clients if loginid from or to is not provided
+    if (not $loginid_from or not $loginid_to) {
         return {
             status   => 0,
             accounts => \@accounts
@@ -1019,10 +1019,17 @@ sub transfer_between_accounts {
 
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same client
-    my $client_from = Client::Account->new({loginid => $siblings->{$loginid_from}->{loginid}});
-    my $client_to   = Client::Account->new({loginid => $siblings->{$loginid_to}->{loginid}});
+    my ($client_from, $client_to, $res);
+    try {
+        $client_from = Client::Account->new({loginid => $siblings->{$loginid_from}->{loginid}});
+        $client_to   = Client::Account->new({loginid => $siblings->{$loginid_to}->{loginid}});
+    }
+    catch {
+        $res = $error_sub->();
+    };
+    return $res if $res;
 
-    my $res = _validate_transfer_between_account($client_from, $client_to, $currency, $siblings);
+    $res = _validate_transfer_between_account($client_from, $client_to, $currency, $siblings);
     return $res if $res;
 
     my $to_currency = $siblings->{$client_to->loginid}->{currency};
@@ -1216,16 +1223,16 @@ sub _validate_transfer_between_account {
     return $error_sub->() if (not $client_from or not $client_to);
 
     # error out if from and to loginid are same
-    return $error_sub->(localize('Account transfer is not available within same accounts.')) if ($client_from->loginid eq $client_to->loginid);
+    return $error_sub->(localize('Account transfer is not available within same account.')) if ($client_from->loginid eq $client_to->loginid);
 
     my ($lc_from, $lc_to) = ($client_from->landing_company, $client_to->landing_company);
     # error if landing companies are different with exception
     # of maltainvest and malta as we allow transfer between them
     return $error_sub->()
-        if (($lc_from->short ne $lc_to->short) and ($lc_from->short !~ /^(?:malta|maltainvest)$/ and $lc_to->short !~ /^(?:malta|maltainvest)$/));
+        if (($lc_from->short ne $lc_to->short) and ($lc_from->short !~ /^(?:malta|maltainvest)$/ or $lc_to->short !~ /^(?:malta|maltainvest)$/));
 
     # error if currency is not legal for landing company
-    return $error_sub->(localize('Invalid currency.'))
+    return $error_sub->(localize('Currency provided is not valid for your account.'))
         if (not $lc_from->is_currency_legal($currency) or not $lc_to->is_currency_legal($currency));
 
     my ($from_currency, $to_currency) = ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
