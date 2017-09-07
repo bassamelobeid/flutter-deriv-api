@@ -157,7 +157,7 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">State/Province</td>
-        <td>: <select name="state">[% state_options | none %]</select> [% client.state %]</td>
+        <td>: <select name="state">[% state_options | none %]</select> [% client_state %]</td>
     </tr>
     <tr>
         <td class="label">Postcode</td>
