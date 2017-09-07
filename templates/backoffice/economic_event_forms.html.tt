@@ -222,14 +222,17 @@
                     success: function(data){
                         var result = \$("td.save_result");
                         var obj = \$.parseJSON(data);
-                        if (obj.id) {
-                            var list_el = \$('table.economic_event_list');
-                            var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td id="binary_info">';
-                            if (obj.info) {
-                                \$.each(obj.info, function(i, item) {
-                                    to_append += '<p>'+item+'</p>';
-                                });
-                            }
+                        if (obj.error) {
+                            result.text(obj.error).css('color', 'red');
+                        } else if (obj.id) {
+                            if (obj.release_date !== 0) {
+                                var list_el = \$('table.economic_event_list');
+                                var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td id="binary_info">';
+                                if (obj.info) {
+                                    \$.each(obj.info, function(i, item) {
+                                        to_append += '<p>'+item+'</p>';
+                                    });
+                                }
 
                             to_append += '<td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="result"></td>';
                             to_append += '</td></tr>';
@@ -238,13 +241,10 @@
 
                             var unlisted_el = \$('table.unlisted_economic_event_list');
 
-                            
-		 	    var unlisted_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td>'+'<td style="display:none;" class="result"></td></tr>';
+		 	                      var unlisted_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td>'+'<td style="display:none;" class="result"></td></tr>';
                             unlisted_el.append(unlisted_append);
 
                             result.text('Economic event saved. ID ' + obj.id).css('color', 'green');
-                        } else {
-                            result.text(obj.error).css('color', 'red');
                         }
                     }
             });
