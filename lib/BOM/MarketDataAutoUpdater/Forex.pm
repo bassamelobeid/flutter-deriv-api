@@ -205,7 +205,7 @@ sub run {
             next;    # skipping it here else it will die in the next line.
         }
 
-        if (grep { $_ eq $symbol } (@{$non_atm_symbol})) {
+        if (grep { $_ eq $symbol } (@non_atm_symbol)) {
             #skip this symbol if it is non atm and rr , bb are undef.
             if (exists $raw_volsurface->{rr_bf_status} and $raw_volsurface->{rr_bf_status}) {
                 $self->report->{$symbol} = {
