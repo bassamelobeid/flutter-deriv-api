@@ -313,7 +313,11 @@ sub _build_risk_markup {
 sub economic_events_volatility_risk_markup {
     my $self = shift;
 
-    my $qc = BOM::Platform::QuantsConfig->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader());
+    my $for_date = $self->bet->underlying->for_date;
+    my $qc       = BOM::Platform::QuantsConfig->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
+        for_date         => $for_date
+    );
     my $commissions = $qc->get_config(
         'commission',
         +{
