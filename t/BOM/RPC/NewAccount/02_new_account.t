@@ -365,23 +365,19 @@ subtest $method => sub {
         $params->{token}               = $auth_token;
         $params->{args}->{residence}   = 'cz';
 
-        # as first name is different from MLT so it will fail now
-        $params->{args}->{first_name} = 'random';
+        # call with totally random values - our client still should have correct one
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
+        $params->{args}->{phone}         = '1234567890';
+        $params->{args}->{date_of_birth} = '1990-09-09';
 
-        my $result = $rpc_ct->call_ok($method, $params)->result;
-        is $result->{error}->{code}, 'DetailsMisMatch', 'client not allowed to change firstname while upgrading';
-
-        $params->{args}->{first_name}    = $client_mlt->{first_name};
-        $params->{args}->{last_name}     = $client_mlt->{last_name};
-        $params->{args}->{phone}         = $client_mlt->{phone};
-        $params->{args}->{address_city}  = $client_mlt->{address_city};
-        $params->{args}->{residence}     = $client_mlt->{residence};
-        $params->{args}->{date_of_birth} = $client_mlt->{date_of_birth};
-
-        $result = $rpc_ct->call_ok($method, $params)->result;
-
-        my $new_loginid = $result->{client_id};
+        my $result        = $rpc_ct->call_ok($method, $params)->result;
+        my $new_loginid   = $result->{client_id};
         my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
+
+        # make sure data is same, as in first account, regardless of what we have provided
+        my $cl = Client::Account->new({loginid => $new_loginid});
+        is $client_mlt->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
+
         $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
