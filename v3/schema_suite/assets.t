@@ -1,41 +1,20 @@
 use strict;
 use warnings;
-use Test::Most;
 use Dir::Self;
 use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
 use lib "$Bin";
 
-use BOM::Test::Suite;
+use BOM::Test::Suite::DSL;
 
-my $dir_path = __DIR__;
-
-my $suite = BOM::Test::Suite->new(
+start(
     title             => 'assets.t',
     test_app          => 'Binary::WebSocketAPI',
-    suite_schema_path => $dir_path . '/config/',
+    suite_schema_path => __DIR__ . '/config/',
 );
 
-# Some DSL-like functions that can be moved into a shared module at some point
-sub test_sendrecv {
-    my ($send_file, $receive_file, %args) = @_;
-    $suite->exec_test(
-        send_file     => $send_file,
-        receive_file  => $receive_file,
-        linenum       => (caller)[2],
-        %args,
-    );
-}
-sub fail_test_sendrecv {
-    my ($send_file, $receive_file, %args) = @_;
-    test_sendrecv($send_file, $receive_file, %args,
-        expect_fail   => 1,
-        linenum       => (caller)[2],
-    );
-}
-
 # Connect in French
-$suite->set_language('FR');
+set_language 'FR';
 
 # Doing a test that must fail
 fail_test_sendrecv 'payout_currencies/test_send.json', 'payout_currencies/test_receive_no_login_to_be_failed.json';
@@ -49,7 +28,7 @@ fail_test_sendrecv 'landing_company_details/test_send.json', 'landing_company_de
 
 
 # Reconnect in English
-$suite->set_language('EN');
+set_language 'EN';
 
 test_sendrecv 'ping/test_send.json', 'ping/test_receive.json';
 test_sendrecv 'time/test_send.json', 'time/test_receive.json';
@@ -88,5 +67,4 @@ test_sendrecv 'trading_times/test_send.json', 'trading_times/test_receive.json';
 test_sendrecv 'residence_list/test_send.json', 'residence_list/test_receive.json';
 test_sendrecv 'states_list/test_send.json', 'states_list/test_receive.json';
 
-$suite->finish;
-done_testing();
+finish;
