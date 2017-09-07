@@ -386,11 +386,6 @@ subtest $method => sub {
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
         isnt(keys $result, 0, 'MF client has financial assessment set');
-
-        $result = $rpc_ct->call_ok('get_settings', {token => $auth_token})->result;
-        is($result->{tax_residence}, 'de,nl', 'MLT client has tax residence set after MF creation');
-        $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token})->result;
-        isnt(keys $result, 0, 'MLT client has financial assessment set');
     };
 };
 
