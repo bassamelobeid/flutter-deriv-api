@@ -1026,7 +1026,7 @@ sub transfer_between_accounts {
     return $res if $res;
 
     my $to_currency = $siblings->{$client_to->loginid}->{currency};
-    my ($to_amount, $fees) = _calculate_to_amount_with_fees($client, $amount, $currency, $to_currency);
+    my ($to_amount, $fees) = _calculate_to_amount_with_fees($client, $client_from, $client_to, $amount, $currency, $to_currency);
 
     BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
@@ -1219,18 +1219,16 @@ sub _validate_transfer_between_account {
     return $error_sub->(localize('Account transfer is not available within same accounts.')) if ($client_from->loginid eq $client_to->loginid);
 
     my ($lc_from, $lc_to) = ($client_from->landing_company, $client_to->landing_company);
-
-    # error if landing companies are not different with exception
+    # error if landing companies are different with exception
     # of maltainvest and malta as we allow transfer between them
     return $error_sub->()
-        if ($lc_from->short ne $lc_to and ($lc_from->short !~ /^(?:malta|maltainvest)$/ and $lc_to->short !~ /^(?:malta|maltainvest)$/));
+        if (($lc_from->short ne $lc_to->short) and ($lc_from->short !~ /^(?:malta|maltainvest)$/ and $lc_to->short !~ /^(?:malta|maltainvest)$/));
 
-    # check if currency is legal for landing company
+    # error if currency is not legal for landing company
     return $error_sub->(localize('Invalid currency.'))
-        if (not $lc_from->is_currency_legal($currency) or not $$lc_to->is_currency_legal($currency));
+        if (not $lc_from->is_currency_legal($currency) or not $lc_to->is_currency_legal($currency));
 
     my ($from_currency, $to_currency) = ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
-
     # error out if from account has no currency set
     return $error_sub->(localize('Please make a deposit to your account.')) unless $from_currency;
 
@@ -1263,11 +1261,16 @@ sub _validate_transfer_between_account {
 # for an approved PA, we don't need to charge any
 # % fee for converting BTC to USD only
 sub _calculate_to_amount_with_fees {
-    my ($client, $amount, $from_currency, $to_currency) = @_;
+    my ($client, $client_from, $client_to, $amount, $from_currency, $to_currency) = @_;
 
-    my $from_currency_type  = LandingCompany::Registry::get_currency_type($from_currency);
-    my $to_currency_type    = LandingCompany::Registry::get_currency_type($to_currency);
-    my $is_authenticated_pa = $client->payment_agent and $client->payment_agent->is_authenticated;
+    my $from_currency_type = LandingCompany::Registry::get_currency_type($from_currency);
+    my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
+    # as payment agent flag is not copied so need to check for payment agent
+    # in all loginids associated with transfer
+    my $is_authenticated_pa = (
+               ($client->payment_agent      and $client->payment_agent->is_authenticated)
+            or ($client_from->payment_agent and $client_from->payment_agent->is_authenticated)
+            or ($client_to->payment_agent   and $client_to->payment_agent->is_authenticated));
 
     # need to calculate fees only when currency type are different and
     # currencies are different, we don't allow transfer between same
