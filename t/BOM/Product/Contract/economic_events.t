@@ -64,7 +64,7 @@ is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 
 
 my $amount;
 warning_like {
-    $amount = $bet->pricing_engine->economic_events_volatility_risk_markup->amount;
+    $amount = $bet->pricing_engine->event_markup->amount;
 }
 qr/basis tick/, 'warns';
 

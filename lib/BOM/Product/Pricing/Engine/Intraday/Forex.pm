@@ -137,10 +137,10 @@ sub economic_events_markup {
         name        => 'economic_events_markup',
         description => 'the maximum of spot or volatility risk markup of economic events',
         set_by      => __PACKAGE__,
-        base_amount => max($self->economic_events_volatility_risk_markup->amount, $self->economic_events_spot_risk_markup->amount),
+        base_amount => max($self->event_markup->amount, $self->economic_events_spot_risk_markup->amount),
     });
 
-    $markup->include_adjustment('info', $self->economic_events_volatility_risk_markup);
+    $markup->include_adjustment('info', $self->event_markup);
     $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
 
     return $markup;
@@ -310,7 +310,7 @@ sub _build_risk_markup {
     return $risk_markup;
 }
 
-sub economic_events_volatility_risk_markup {
+sub event_markup {
     my $self = shift;
 
     my $for_date = $self->bet->underlying->for_date;
@@ -332,7 +332,7 @@ sub economic_events_volatility_risk_markup {
     }
 
     return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_volatility_risk_markup',
+        name        => 'event_markup',
         description => 'markup to account for volatility risk of economic events',
         set_by      => __PACKAGE__,
         base_amount => max(@markups),

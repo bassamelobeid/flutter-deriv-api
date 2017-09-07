@@ -78,16 +78,16 @@ subtest 'match/mismatch condition for commission adjustment' => sub {
             );
         });
     my $c = produce_contract($args);
-    is $c->pricing_engine->economic_events_volatility_risk_markup->amount, 0, 'zero markup if no matching config';
+    is $c->pricing_engine->event_markup->amount, 0, 'zero markup if no matching config';
     $args->{bet_type} = 'CALLE';
     $c = produce_contract($args);
-    is $c->pricing_engine->economic_events_volatility_risk_markup->amount, 0.15, '0.15 markup for matching contract type config';
+    is $c->pricing_engine->event_markup->amount, 0.15, '0.15 markup for matching contract type config';
     $args->{underlying} = 'frxUSDJPY';
     $c = produce_contract($args);
-    is $c->pricing_engine->economic_events_volatility_risk_markup->amount, 0.25, '0.25 markup for matching both underlying & contract type config';
+    is $c->pricing_engine->event_markup->amount, 0.25, '0.25 markup for matching both underlying & contract type config';
     $args->{underlying} = 'frxEURJPY';
     $c = produce_contract($args);
-    is $c->pricing_engine->economic_events_volatility_risk_markup->amount, 0.45, '0.45 markup for matching both underlying & contract type config';
+    is $c->pricing_engine->event_markup->amount, 0.45, '0.45 markup for matching both underlying & contract type config';
 };
 
 done_testing();
