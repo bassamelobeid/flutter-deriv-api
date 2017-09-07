@@ -56,7 +56,6 @@ my $range             = delete $params{range};
 my $encoded_loginID   = encode_entities($loginID);
 my $encoded_toLoginID = encode_entities($toLoginID);
 
-BOM::Backoffice::Auth0::can_access(['Payments']);
 my $staff = BOM::Backoffice::Auth0::from_cookie();
 my $clerk = $staff->{nickname};
 

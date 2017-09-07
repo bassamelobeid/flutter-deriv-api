@@ -25,7 +25,7 @@ sub get_currency_options {
 
 sub print_client_details {
 
-    my ($client, $staff) = @_;
+    my ($client) = @_;
 
     # IDENTITY sECTION
     my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();

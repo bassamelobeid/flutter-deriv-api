@@ -16,7 +16,6 @@ PrintContentType();
 BrokerPresentation("TRUSTED CLIENT");
 
 my $broker = request()->broker_code;
-my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my $dbloc           = BOM::Platform::Runtime->instance->app_config->system->directory->db;

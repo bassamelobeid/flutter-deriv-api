@@ -16,7 +16,6 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
-BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $loginID = uc(request()->param('loginID') // '');
 $loginID =~ s/\s//g;
