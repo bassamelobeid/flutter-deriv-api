@@ -1,3 +1,29 @@
+use strict;
+use warnings;
+use Test::Most;
+use Dir::Self;
+use FindBin qw/$Bin/;
+use lib "$Bin/../../lib";
+use lib "$Bin";
+
+use BOM::Test::Suite;
+
+my $dir_path = __DIR__;
+my $suite = BOM::Test::Suite->new(
+    title             => "accounts.t",
+    test_app          => 'Binary::WebSocketAPI',
+    suite_schema_path => $dir_path . '/config/',
+);
+while (defined(my $line = <DATA>)) {
+    chomp $line;
+    next if ($line =~ /^(#.*|)$/);
+    $suite->exec_line($line, $.);
+}
+$suite->finish;
+done_testing();
+
+BEGIN { DATA->input_line_number(__LINE__ + 1) }    # ensure that $. reports physical line
+__DATA__
 # The Format of this file is as follows:
 # [%next if time>1000%]!landing_company_details/test_send.json,landing_company_details/test_receive_costarica.json, 'virtual'
 # you can define a test that must fail by adding an exclamation mark at the start of the line:
