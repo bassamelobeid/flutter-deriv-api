@@ -1218,9 +1218,16 @@ sub _validate_transfer_between_account {
     # error out if from and to loginid are same
     return $error_sub->(localize('Account transfer is not available within same accounts.')) if ($client_from->loginid eq $client_to->loginid);
 
+    my ($lc_from, $lc_to) = ($client_from->landing_company, $client_to->landing_company);
+
+    # error if landing companies are not different with exception
+    # of maltainvest and malta as we allow transfer between them
+    return $error_sub->()
+        if ($lc_from->short ne $lc_to and ($lc_from->short !~ /^(?:malta|maltainvest)$/ and $lc_to->short !~ /^(?:malta|maltainvest)$/));
+
     # check if currency is legal for landing company
     return $error_sub->(localize('Invalid currency.'))
-        if (not $client_from->landing_company->is_currency_legal($currency) or not $client_to->landing_company->is_currency_legal($currency));
+        if (not $lc_from->is_currency_legal($currency) or not $$lc_to->is_currency_legal($currency));
 
     my ($from_currency, $to_currency) = ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
 
