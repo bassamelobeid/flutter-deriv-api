@@ -38,7 +38,7 @@ my $params = {
 
 my ($method, $email, $client_cr, $client_cr1, $client_mlt, $client_mf, $user) = ('transfer_between_accounts');
 
-subtest 'check_landing_company' => sub {
+subtest 'call params validation' => sub {
     $email     = 'dummy' . rand(999) . '@binary.com';
     $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -49,6 +49,7 @@ subtest 'check_landing_company' => sub {
         broker_code => 'MLT',
         email       => $email
     });
+
     $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
         email       => $email
@@ -66,25 +67,145 @@ subtest 'check_landing_company' => sub {
     $user->save;
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+
+    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is @{$result->{accounts}}, 3, 'if no loginid from or to passed then it returns accounts';
+
     $params->{args} = {
         "account_from" => $client_cr->loginid,
         "account_to"   => $client_mlt->loginid,
-        "currency"     => "EUR",
-        "amount"       => 100
     };
 
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as wrong landing companies')
-        ->error_message_is('The account transfer is unavailable for your account.', 'Correct error message for transfer failure');
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code},              'TransferBetweenAccountsError',   'Correct error code for no currency';
+    is $result->{error}->{message_to_client}, 'Please provide valid currency.', 'Correct error message for no currency';
+
+    $params->{args}->{currency} = 'EUR';
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code},              'TransferBetweenAccountsError', 'Correct error code for invalid amount';
+    is $result->{error}->{message_to_client}, 'Please provide valid amount.', 'Correct error message for invalid amount';
+
+    $params->{args}->{amount} = 'NA';
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code},              'TransferBetweenAccountsError', 'Correct error code for invalid amount';
+    is $result->{error}->{message_to_client}, 'Please provide valid amount.', 'Correct error message for invalid amount';
+
+    $params->{args}->{amount} = 1;
+};
+
+subtest 'validation' => sub {
+    # random loginid to make it fail
+    $params->{args}->{account_from} = 'CR123';
+
+    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for loginid that does not exists';
+    is $result->{error}->{message_to_client}, 'Account transfer is not available for your account.',
+        'Correct error message for loginid that does not exists';
+
+    my $cr_dummy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+
+    # send loginid that is not linked to used
+    $params->{args}->{account_from} = $cr_dummy->loginid;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for loginid not in siblings';
+    is $result->{error}->{message_to_client}, 'Account transfer is not available for your account.',
+        'Correct error message for loginid not in siblings';
+
+    $params->{args}->{account_from} = $client_mlt->loginid;
+    $params->{args}->{account_to}   = $client_mlt->loginid;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if from and to are same';
+    is $result->{error}->{message_to_client}, 'Account transfer is not available within same account.',
+        'Correct error message if from and to are same';
+
+    $params->{args}->{account_from} = $client_cr->loginid;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code';
+    is $result->{error}->{message_to_client}, 'Account transfer is not available for your account.', 'Correct error message';
+
+    $params->{args}->{account_from} = $client_mf->loginid;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code},              'TransferBetweenAccountsError',    'Correct error code for no default currency';
+    is $result->{error}->{message_to_client}, 'Please deposit to your account.', 'Correct error message for no default currency';
 
     $client_mf->set_default_account('EUR');
+    $params->{args}->{currency} = 'JPY';
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for invalid currency for landing company';
+    is $result->{error}->{message_to_client}, 'Currency provided is not valid for your account.',
+        'Correct error message for invalid currency for landing company';
+
+    $params->{args}->{currency} = 'BTC';
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for invalid currency for landing company';
+    is $result->{error}->{message_to_client}, 'Currency provided is not valid for your account.',
+        'Correct error message for invalid currency for landing company';
+
+    $params->{args}->{currency} = 'USD';
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code';
+    is $result->{error}->{message_to_client}, 'Currency provided is different from account currency.', 'Correct error message';
+
+    $params->{args}->{currency} = 'EUR';
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code';
+    is $result->{error}->{message_to_client}, 'Please set the currency for your existing account ' . $client_mlt->loginid . '.',
+        'Correct error message';
+
     $client_mlt->set_default_account('USD');
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mf->loginid, 'test token');
     $params->{args}->{account_from} = $client_mf->loginid;
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as no different currency')
-        ->error_message_is('The account transfer is unavailable for accounts with different default currency.', 'Different currency error message');
+        ->error_message_is('Account transfer is not available for accounts with different default currency.', 'Different currency error message');
+
+    $email    = 'new_email' . rand(999) . '@binary.com';
+    $cr_dummy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+
+    $user = BOM::Platform::User->create(
+        email    => $email,
+        password => BOM::Platform::Password::hashpw('jskjd8292922'));
+    $user->email_verified(1);
+    $user->save;
+
+    $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email,
+    });
+
+    $user->add_loginid({loginid => $cr_dummy->loginid});
+    $user->add_loginid({loginid => $client_cr->loginid});
+    $user->save;
+
+    $client_cr->set_default_account('BTC');
+    $cr_dummy->set_default_account('BTC');
+
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $params->{args}->{currency}     = 'BTC';
+    $params->{args}->{account_from} = $client_cr->loginid;
+    $params->{args}->{account_to}   = $cr_dummy->loginid;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
+    is $result->{error}->{message_to_client}, 'Account transfer is not available within accounts with cryptocurrency as default currency.',
+        'Correct error message for crypto to crypto';
 };
 
 subtest $method => sub {
@@ -126,7 +247,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as no deposit done')
-            ->error_message_is('The account transfer is unavailable. Please deposit to your account.', 'Please deposit before transfer.');
+            ->error_message_is('Please deposit to your account.', 'Please deposit before transfer.');
 
         $client_mf->set_default_account('EUR');
         $client_mlt->set_default_account('EUR');
@@ -135,20 +256,20 @@ subtest $method => sub {
         $params->{args}->{account_to} = 'MLT999999';
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as wrong to client')
-            ->error_message_is('The account transfer is unavailable for your account.', 'Correct error message for transfering to random client');
+            ->error_message_is('Account transfer is not available for your account.', 'Correct error message for transfering to random client');
 
         $params->{args}->{account_to} = $client_mf->loginid;
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as no money in account')
             ->error_message_is('The maximum amount you may transfer is: EUR 0.00.', 'Correct error message for account with no money');
 
-        foreach my $amount (-1, 0.01) {
-            $params->{args}->{amount} = $amount;
-            $rpc_ct->call_ok($method, $params)
-                ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount $amount")
-                ->error_message_is('Invalid amount. Minimum transfer amount is 0.10, and up to 2 decimal places.',
-                'Correct error message for transfering invalid amount');
-        }
+        $params->{args}->{amount} = -1;
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
+            ->error_message_is('Please provide valid amount.', 'Correct error message for transfering invalid amount');
+
+        $params->{args}->{amount} = 0.01;
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
+            ->error_message_is('The maximum amount you may transfer is: EUR 0.00.', 'Correct error message for transfering invalid amount');
     };
 
     subtest 'Transfer between mlt and mf' => sub {
@@ -246,20 +367,10 @@ subtest 'Sub account transfer' => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Sub account transfer error")
-            ->error_message_is('The account transfer is unavailable for your account.',
-            'Correct error message for sub account as client is not marked as allow_omnibus');
+            ->error_message_is('The maximum amount you may transfer is: USD 0.00.', 'Correct error message as no deposit done yet.');
 
         $client_cr = Client::Account->new({loginid => $client_cr->loginid});
         # set allow_omnibus (master account has this set)
-        $client_cr->allow_omnibus(1);
-        $client_cr->save();
-
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Sub account transfer error")
-            ->error_message_is('The account transfer is unavailable for your account.',
-            'Correct error message for sub account as client has no sub account');
-
-        $client_cr = Client::Account->new({loginid => $client_cr->loginid});
         $client_cr->allow_omnibus(1);
         $client_cr->save();
 
