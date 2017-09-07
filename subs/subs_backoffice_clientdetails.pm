@@ -103,7 +103,11 @@ sub print_client_details {
 
     my $stateoptionlist = BOM::Platform::Locale::get_state_option($client->residence);
     my $stateoptions    = '<option value=""></option>';
-    $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>| for @$stateoptionlist;
+    my $state_name      = '';
+    for (@$stateoptionlist) {
+        $state_name = $_->{text} if $_->{value} eq $client->state;
+        $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>|;
+    }
     my $tnc_status = $client->get_status('tnc_approval');
 
     my @crs_tin_array = ();
@@ -143,6 +147,7 @@ sub print_client_details {
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
         show_uploaded_documents => $show_uploaded_documents,
         state_options           => set_selected_item($client->state, $stateoptions),
+        client_state            => $state_name,
         tnc_approval_status     => $tnc_status,
         ukgc_funds_status       => $client->get_status('ukgc_funds_protection'),
         vip_since               => $client->vip_since,
