@@ -21,7 +21,7 @@ json_schema_2:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/assets.t
 
 json_schema_3:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: accounts.conf
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/accounts.t
 
 json_schema_4:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: copytrading.conf
