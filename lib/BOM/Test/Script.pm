@@ -29,6 +29,7 @@ sub check_script {
     my $pid  = $self->pid;
     return 0 unless $pid;
     my $name = $self->name;
+    local $?;    # localise $? in case this method is called at END time
     system("/usr/bin/pgrep $name | grep $pid");
     return !$?;    # return  true if pgrep success
 }
