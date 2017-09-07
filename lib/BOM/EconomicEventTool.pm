@@ -50,7 +50,7 @@ sub get_info {
             @{Volatility::Seasonality::categorize_events($symbol, [$event])};
         push @by_symbols, to_json(\%cat) if %cat;
     }
-    $event->{info}         = \@by_symbols;
+    $event->{info} = \@by_symbols;
     $event->{release_date} = Date::Utility->new($event->{release_date})->datetime if $event->{release_date};
 
     return $event;
