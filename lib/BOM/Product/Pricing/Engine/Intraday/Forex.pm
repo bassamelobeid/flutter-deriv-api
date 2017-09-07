@@ -324,9 +324,7 @@ sub economic_events_volatility_risk_markup {
     my @markups = (0);
 
     foreach my $c (@$commissions) {
-        if ($delta >= $c->{support}->[0] && $delta <= $c->{support}->[1]) {
-            push @markups, calculate_commission($delta, $c);
-        }
+        push @markups, calculate_commission($delta, $c);
     }
 
     return Math::Util::CalculatedValue::Validatable->new({
