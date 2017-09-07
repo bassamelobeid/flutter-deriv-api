@@ -65,7 +65,7 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
     - /tmp/travis-scripts/setup_postfix.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
-    - export RPC_CONFIG=/home/git/regentmarkets/bom-pricing/pricing_rpc.conf.travis
+    - export RPC_CONFIG=/home/git/regentmarkets/bom-pricing/pricing_rpc.conf.example
     - /etc/rmg/bin/perl /home/git/regentmarkets/bom-pricing/bin/binary_pricing_rpc.pl  daemon -m production -l http://*:5006/jsonrpc  &
 script:
     - /etc/rmg/bin/perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
