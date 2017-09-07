@@ -157,6 +157,41 @@ sub read_schema_file {
     return $content;
 }
 
+sub read_templated_schema_file {
+    my ($self, $relpath, %args) = @_;
+
+    my @template_func = @{ $args{template_func} };
+
+    my $content = $self->read_schema_file($relpath);
+
+    my $c = 0;
+    foreach my $f (@template_func) {
+        $c++;
+        $f =~ s/^\s+|\s+$//g;
+        my $template_content;
+        if ($f =~ /^\_.*$/) {
+            local $@;    # ensure we clear this first, to avoid false positive
+            $template_content = eval $f;    ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
+
+            # we do not expect any exceptions from the eval, they could indicate
+            # invalid Perl code or bug, either way we need to know about them
+            ok(!$@, "template content can eval successfully")
+                or diag "Possible exception on eval \"$f\": $@"
+                if $@;
+            # note that _get_token may return undef, the template implementation is not advanced
+            # enough to support JSON null so we fall back to an empty string
+            $template_content //= '';
+        } elsif ($f eq 'placeholder') {
+            $template_content = $self->{placeholder};
+        } else {
+            $f =~ s/^\'|\'$//g;
+            $template_content = $f;
+        }
+        $content =~ s/\[_$c\]/$template_content/g;
+    }
+    return $content;
+}
+
 sub exec_line {
     my ($self, $line, $linenum) = @_;
 
@@ -233,9 +268,9 @@ sub exec_test {
     my $receive_file    = $args{receive_file} or Carp::croak('Require a receive_file');
     my $test_stream_id  = $args{test_stream_id};
     my $start_stream_id = $args{start_stream_id};
-    my $template_func   = $args{template_func};
     my $expect_fail     = $args{expect_fail};
     my $linenum         = $args{linenum};
+    # plus 'template_func'
 
     # we are setting the time two seconds ahead for every step to ensure time
     # sensitive tests (pricing tests) always start at a consistent time.
@@ -249,24 +284,21 @@ sub exec_test {
 
     my $t0 = [gettimeofday];
     if ($test_stream_id) {
-        my $content = $self->read_schema_file($receive_file);
-        $content = _get_values($content, $self->{placeholder}, @$template_func);
+        my $content = $self->read_templated_schema_file($receive_file, template_func => $args{template_func});
 
         $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $expect_fail);
     } else {
         $send_file =~ /^(.*)\//;
         my $call = $test_app->{call} = $1;
 
-        my $content = $self->read_schema_file($send_file);
-        $content = _get_values($content, $self->{placeholder}, @$template_func);
+        my $content = $self->read_templated_schema_file($send_file, template_func => $args{template_func});
         my $req_params = JSON::from_json($content);
 
         $req_params = $test_app->adjust_req_params($req_params, {language => $self->{language}});
 
         die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
 
-        $content = $self->read_schema_file($receive_file);
-        $content = _get_values($content, $self->{placeholder}, @$template_func);
+        $content = $self->read_templated_schema_file($receive_file, template_func => $args{template_func});
 
         my $result = $test_app->test_schema($req_params, $content, $receive_file, $expect_fail);
         $response->{$call} = $result;
@@ -319,36 +351,6 @@ sub print_test_diag {
     # Stream ID and/or send_file may be undef
     diag(sprintf "%s:%d [%s] - %.3fs", $title, $linenum, join(',', grep { defined } ($stream_id, $send_file, $receive_file)), $elapsed);
     return;
-}
-
-sub _get_values {
-    my ($content, $placeholder_val, @template_func) = @_;
-    my $c = 0;
-    foreach my $f (@template_func) {
-        $c++;
-        $f =~ s/^\s+|\s+$//g;
-        my $template_content;
-        if ($f =~ /^\_.*$/) {
-            local $@;    # ensure we clear this first, to avoid false positive
-            $template_content = eval $f;    ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
-
-            # we do not expect any exceptions from the eval, they could indicate
-            # invalid Perl code or bug, either way we need to know about them
-            ok(!$@, "template content can eval successfully")
-                or diag "Possible exception on eval \"$f\": $@"
-                if $@;
-            # note that _get_token may return undef, the template implementation is not advanced
-            # enough to support JSON null so we fall back to an empty string
-            $template_content //= '';
-        } elsif ($f eq 'placeholder') {
-            $template_content = $placeholder_val;
-        } else {
-            $f =~ s/^\'|\'$//g;
-            $template_content = $f;
-        }
-        $content =~ s/\[_$c\]/$template_content/g;
-    }
-    return $content;
 }
 
 # fetch the token related to a specific email
