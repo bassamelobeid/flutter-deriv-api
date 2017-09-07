@@ -177,11 +177,6 @@ has [qw(opposite_contract opposite_contract_for_sale)] => (
     lazy_build => 1
 );
 
-has tentative_events => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has is_sold => (
     is      => 'ro',
     isa     => 'Bool',
@@ -760,29 +755,12 @@ sub _build_applicable_economic_events {
     my $effective_start   = $self->effective_start;
     my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
     my $current_epoch     = $effective_start->epoch;
-    # Go back and forward an hour to get all the tentative events.
 
-    my $tentative_events = Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        }
-        )->get_tentative_events
-        || {};
-
-    my $max_event_length = max(
-        grep { $a->{length} }
-            map {
-            my $event = $tentative_events->{$_};
-            $event->{length} = $event->{blankout_end} - $event->{blankout} if (exists $event->{blankout} and exists $event->{blankout_end});
-            $event;
-            } keys %$tentative_events
-    ) || 7200;
-
-    my $event_length = ceil($max_event_length / 2);
     # maximum lookback time should only be in one day.
     my $max_lookback_seconds = min($seconds_to_expiry, 86400);
 
-    my $start = $current_epoch - $max_lookback_seconds - $event_length;
-    my $end   = $current_epoch + $seconds_to_expiry + $event_length;
+    my $start = $current_epoch - $max_lookback_seconds;
+    my $end   = $current_epoch + $seconds_to_expiry;
 
     return Quant::Framework::EconomicEventCalendar->new({
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
@@ -793,35 +771,6 @@ sub _build_applicable_economic_events {
         },
         $self->underlying->for_date
         );
-}
-
-sub _build_tentative_events {
-    my $self = shift;
-
-    my $effective_start = $self->effective_start->epoch;
-    my $expiry_epoch    = $self->date_expiry->epoch;
-
-    my %affected_currency = (
-        $self->underlying->asset_symbol           => 1,
-        $self->underlying->quoted_currency_symbol => 1,
-    );
-
-    # Add check for blankout and blankout_end.
-    # Tentative event markup will be applied to contracts
-    # - spanning the tentative event blackout period
-    # - which starts within the blackout period
-    # - which expires within the blackout period
-    return [
-        grep {
-                    $_->{is_tentative}
-                and $affected_currency{$_->{symbol}}
-                and exists $_->{blankout}
-                and exists $_->{blankout_end}
-                and (($_->{blankout} >= $effective_start and $_->{blankout_end} <= $expiry_epoch)
-                or ($effective_start >= $_->{blankout} and $effective_start <= $_->{blankout_end})
-                or ($expiry_epoch >= $_->{blankout} and $expiry_epoch <= $_->{blankout_end}))
-        } @{$self->_applicable_economic_events}];
-
 }
 
 sub _build_pricing_spot {
