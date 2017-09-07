@@ -189,7 +189,11 @@ subtest 'Maximum file size' => sub {
 
     my $previous_chunk_size = $CHUNK_SIZE;
     $CHUNK_SIZE = 16 * 1024;
-    my $error = upload_error($metadata, $file);
+    my $error;
+    warning_like {
+        $error = upload_error($metadata, $file);
+    }
+    [qr/Unknown upload id/], 'Expected warning';
     $CHUNK_SIZE = $previous_chunk_size;
 
     is $error->{code}, 'UploadError', 'Upload should be failed';
@@ -212,6 +216,52 @@ subtest 'Invalid document_format' => sub {
 
     is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
+
+# catch extra error message because of the EOF
+    $t = $t->message_ok;
+};
+
+subtest 'sending extra data after EOF chunk' => sub {
+    my $req = {
+        req_id          => ++$req_id,
+        passthrough     => $PASSTHROUGH,
+        document_upload => 1,
+        document_id     => '12456',
+        document_format => 'JPEG',
+        document_type   => 'passport',
+        expiration_date => '2020-01-01',
+    };
+
+    my $data = 'Some text is here';
+
+    $t = $t->send_ok({json => $req})->message_ok;
+
+    my $res = decode_json($t->message->[1]);
+
+    my $upload_id = $res->{document_upload}->{upload_id};
+    my $call_type = $res->{document_upload}->{call_type};
+
+    my $length = length $data;
+
+    my @frames = gen_frames($data, $call_type, $upload_id);
+
+    for (@frames) {
+        $t = $t->send_ok({binary => $_});
+    }
+    $t = $t->message_ok;
+
+    $res = decode_json($t->message->[1]);
+    my $success = $res->{document_upload};
+
+    ok $success, 'Document is successfully uploaded';
+
+    warning_like {
+        $t = $t->send_ok({binary => $frames[0]})->message_ok;
+    }
+    [qr/Unknown upload id/], 'Expected warning';
+    $res = decode_json($t->message->[1]);
+
+    ok $res->{error}, 'Document no longer exists';
 };
 
 sub gen_frames {
