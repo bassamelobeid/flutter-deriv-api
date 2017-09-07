@@ -164,9 +164,11 @@ sub read_templated_schema_file {
 
     my $content = $self->read_schema_file($relpath);
 
-    my $c = 0;
-    foreach my $f (@template_func) {
-        $c++;
+    # TODO(leonerd): use 'my sub ...' when we can use 5.18+
+    my $expand = sub {
+        my ($idx) = @_;
+
+        my $f = $template_func[$idx];
         $f =~ s/^\s+|\s+$//g;
         my $template_content;
         if ($f =~ /^\_.*$/) {
@@ -187,8 +189,13 @@ sub read_templated_schema_file {
             $f =~ s/^\'|\'$//g;
             $template_content = $f;
         }
-        $content =~ s/\[_$c\]/$template_content/g;
-    }
+        return $template_content;
+    };
+
+    # Expand parameters in the form [_nnn] in the content.
+    # They are numbered 1 onwards;  [_1] wants the value in [0], etc...
+    $content =~ s{\[_(\d+)\]}{$expand->($1-1)}eg;
+
     return $content;
 }
 
