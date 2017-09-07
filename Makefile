@@ -15,7 +15,7 @@ v3_3:
 	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(8\|9\)')
 
 json_schema_1:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: proposal.conf
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/proposal.t
 
 json_schema_2:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/assets.t
