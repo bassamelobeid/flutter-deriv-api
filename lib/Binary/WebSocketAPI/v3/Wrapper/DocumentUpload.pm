@@ -50,7 +50,6 @@ sub document_upload {
         return upload($c, $upload_info) if $upload_info->{chunk_size} != 0;
 
         send_upload_successful($c, $upload_info, 'success');
-        delete_upload_info($c, $upload_info);
     }
     catch {
         warn "UploadError: $_";
@@ -83,6 +82,8 @@ sub get_upload_info {
 sub send_upload_failure {
     my ($c, $upload_info, $reason) = @_;
 
+    delete_upload_info($c, $upload_info);
+
     $upload_info = {
         req_id      => '1',
         passthrough => {}} if not defined $upload_info;
@@ -105,6 +106,8 @@ sub send_upload_failure {
 
 sub send_upload_successful {
     my ($c, $upload_info, $status) = @_;
+
+    delete_upload_info($c, $upload_info);
 
     my $upload_finished = {
         size      => $upload_info->{received_bytes},
@@ -216,6 +219,7 @@ sub remove_echo_req {
 
 sub delete_upload_info {
     my ($c, $upload_info) = @_;
+    return unless defined $upload_info;
     my $stash = $c->stash('document_upload');
     delete $stash->{$upload_info->{upload_id}}
 };
