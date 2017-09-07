@@ -280,7 +280,7 @@ sub get_real_account_siblings_information {
     validate_make_new_account($client, $account_type, $request_data)
 
     Make several checks based on $client and $account type.
-    Updates $request_data(hashref, if provided) with $client's sensetive data.
+    Updates $request_data(hashref) with $client's sensitive data.
 
 =cut
 
@@ -352,7 +352,7 @@ sub validate_make_new_account {
     }
 
     # we have real account, and going to create another one
-    # So, lets populate all sensetive data from current client, ignoring provided input
+    # So, lets populate all sensitive data from current client, ignoring provided input
     # this logic should gone after we separate new_account with new_currency for account
     $request_data->{$_} = $client->$_ for qw/first_name last_name residence address_city phone date_of_birth/;
 
