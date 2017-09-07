@@ -221,7 +221,7 @@ sub delete_upload_info {
     my ($c, $upload_info) = @_;
     return unless defined $upload_info;
     my $stash = $c->stash('document_upload');
-    delete $stash->{$upload_info->{upload_id}}
-};
+    delete $stash->{$upload_info->{upload_id}};
+}
 
 1;
