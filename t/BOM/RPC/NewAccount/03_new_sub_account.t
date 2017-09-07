@@ -164,8 +164,10 @@ subtest $method => sub {
 
         $params->{token} = $token;
         $result = $rpc_ct->call_ok('authorize', $params)->has_no_system_error->result;
-        is $result->{allow_omnibus}, 1, 'Allow omnibus not set';
-        is $result->{sub_accounts}->[1]->{loginid}, $sub_client->loginid, 'Correct sub account for omnibus';
+        is $result->{allow_omnibus}, 1, 'Allow omnibus set';
+        is scalar @{$result->{sub_accounts}}, 2, 'Correct number of sub accounts';
+        my $match = grep { $_->{loginid} eq $sub_client->loginid } @{$result->{sub_accounts}};
+        ok $match, 'Correct sub account for omnibus';
         is_deeply([sort keys %{$result->{sub_accounts}->[0]}], ['currency', 'loginid'], 'correct structure');
     };
 
