@@ -1,15 +1,29 @@
-# The Format of this file is as follows:
-# [%next if time>1000%]!landing_company_details/test_send.json,landing_company_details/test_receive_costarica.json, 'virtual'
-# you can define a test that must fail by adding an exclamation mark at the start of the line:
-# !send_file,receive_file,template_function
-# if ! is at the start of line test must fail
-# To set language just start a line in the following format
-# [XX]
-# Note: Changing language will create a new websocket session. This means authorization and setup for previous session will be lost.
-# To start a new websocket connection (in case rate limit is reached etc) use {reset}
-# To start a stream use '{start_stream:any_not_exists_key}balance/test_send_subscribe.json,balance/test_receive.json'
-# To test a last stream message use '{test_last_stream_message:any_exists_key}balance/test_stream_message_1.json'
+use strict;
+use warnings;
+use Test::Most;
+use Dir::Self;
+use FindBin qw/$Bin/;
+use lib "$Bin/../../lib";
+use lib "$Bin";
 
+use BOM::Test::Suite;
+
+my $dir_path = __DIR__;
+my $suite = BOM::Test::Suite->new(
+    title             => "proposal.t",
+    test_app          => 'Binary::WebSocketAPI',
+    suite_schema_path => $dir_path . '/config/',
+);
+while (defined(my $line = <DATA>)) {
+    chomp $line;
+    next if ($line =~ /^(#.*|)$/);
+    $suite->exec_line($line, $.);
+}
+$suite->finish;
+done_testing();
+
+BEGIN { DATA->input_line_number(__LINE__ + 1) }    # ensure that $. reports physical line
+__DATA__
 # Reconnect in English
 [EN]
 
