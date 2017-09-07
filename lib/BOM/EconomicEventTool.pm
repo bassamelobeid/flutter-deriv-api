@@ -109,6 +109,8 @@ sub delete_by_id {
         %$to_delete
     });
 
+    _regenerate($ee->get_economic_events_calendar);
+
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
 
     human_readable_date($to_delete);
@@ -158,11 +160,14 @@ sub restore_by_id {
 
     return _err('Economic event not found with [' . $args->{id} . ']') unless $to_restore;
 
-    Quant::Framework::EconomicEventCalendar->new({
-            recorded_date    => Date::Utility->new,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-        })->save_new($to_restore);
+    my $ee = Quant::Framework::EconomicEventCalendar->new({
+        recorded_date    => Date::Utility->new,
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
+    $ee->save_new($to_restore);
+
+    _regenerate($ee->get_economic_events_calendar);
 
     my $new_info = get_info($to_restore);
 
