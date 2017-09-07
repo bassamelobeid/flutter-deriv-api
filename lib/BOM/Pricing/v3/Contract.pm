@@ -316,7 +316,7 @@ sub get_bid {
 
     try {
         my $is_valid_to_sell = $contract->is_valid_to_sell($params->{validation_params});
-        my $validation_error = $contract->primary_validation_error ? $contract->primary_validation_error->message_to_client : [];
+        my $validation_error = $contract->primary_validation_error ? $contract->primary_validation_error->message_to_client : '';
         $params->{validation_params}->{landing_company} = $landing_company;
         $response = {
             is_valid_to_sell => $is_valid_to_sell,
@@ -343,8 +343,7 @@ sub get_bid {
             # generate shortcode, it depends on correct barriers, which, in turn, on tick
             # XXX: maybe just uncoditionally return $short_code? Why bother generating it again?
             (
-                (ref($validation_error) eq 'ARRAY')
-                    && $validation_error->[0] && $validation_error->[0] =~ /Waiting for entry tick/
+                  (ref($validation_error) eq 'ARRAY') && $validation_error->[0] =~ /Waiting for entry tick/
                 ? (shortcode => $short_code)
                 : (shortcode => $contract->shortcode),
             ),
