@@ -66,7 +66,7 @@ my $request_files_upload_url = request()->url_for('backoffice/f_bbdl_upload_requ
 print '<LI><b>Upload the request files<b> ';
 print qq~<br><form method=post action=$request_files_upload_url>
     <select name=frequency>
-            <option value='daily'>Daily (Normal)</option>
+            <option value='scheduled'>Scheduled (Normal)</option>
             <option value='oneshot'>Oneshot</option>
         </select>
         <select name=type>
