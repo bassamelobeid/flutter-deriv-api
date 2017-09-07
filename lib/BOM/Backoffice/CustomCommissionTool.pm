@@ -28,13 +28,12 @@ my $static_config = {
         floor_rate    => '',
         center_offset => '',
         width         => '',
-    }
-};
+    }};
 
 sub generate_commission_form {
     my $url = shift;
 
-    my @config = map {_get_info($_)} @{_qc()->get_config('commission')};
+    my @config = map { _get_info($_) } @{_qc()->get_config('commission')};
     return BOM::Backoffice::Request::template->process(
         'backoffice/custom_commission_form.html.tt',
         {
@@ -50,7 +49,8 @@ sub save_commission {
 
     my $result = try {
         _get_info(_qc()->save_config('commission', $args));
-    } catch {
+    }
+    catch {
         _err($_);
     };
 
@@ -62,7 +62,8 @@ sub delete_commission {
 
     my $result = try {
         _qc()->delete_config('commission', $name);
-    } catch {
+    }
+    catch {
         _err($_);
     };
 
@@ -74,13 +75,13 @@ sub get_chart_params {
 
     my @data;
     my @delta;
-    for (my $delta=0;$delta<=1;$delta+=0.05) {
-        push @data, BOM::Product::Pricing::Engine::Intraday::Forex::calculate_commission($delta,$args);
+    for (my $delta = 0; $delta <= 1; $delta += 0.05) {
+        push @data, BOM::Product::Pricing::Engine::Intraday::Forex::calculate_commission($delta, $args);
         push @delta, $delta;
     }
 
     return {
-        data => \@data,
+        data  => \@data,
         delta => \@delta,
     };
 }
@@ -88,6 +89,7 @@ sub get_chart_params {
 sub _err {
     return {error => 'ERR: ' . shift};
 }
+
 sub _qc {
     return BOM::Platform::QuantsConfig->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
@@ -96,7 +98,7 @@ sub _qc {
 }
 
 sub _get_info {
-    my $config= shift;
+    my $config = shift;
 
     return {
         name => delete $config->{name},
