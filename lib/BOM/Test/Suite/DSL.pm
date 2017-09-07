@@ -42,8 +42,8 @@ sub test_sendrecv {
 sub test_sendrecv_params {
     my ($send_file, $recv_file, @params) = @_;
     test_sendrecv($send_file, $recv_file,
-        template_func => [map { "'$_'" } @params],
-        linenum       => (caller)[2],
+        template_values => \@params,
+        linenum         => (caller)[2],
     );
 }
 
@@ -58,9 +58,9 @@ sub fail_test_sendrecv {
 sub fail_test_sendrecv_params {
     my ($send_file, $recv_file, @params) = @_;
     test_sendrecv($send_file, $recv_file,
-        expect_fail   => 1,
-        template_func => [map { "'$_'" } @params],
-        linenum       => (caller)[2],
+        expect_fail     => 1,
+        template_values => \@params,
+        linenum         => (caller)[2],
     );
 }
 

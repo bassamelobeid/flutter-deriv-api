@@ -160,13 +160,16 @@ sub read_schema_file {
 sub read_templated_schema_file {
     my ($self, $relpath, %args) = @_;
 
-    my @template_func = @{ $args{template_func} };
+    my @template_func   = @{ $args{template_func}   // [] };
+    my @template_values = @{ $args{template_values} // [] };
 
     my $content = $self->read_schema_file($relpath);
 
     # TODO(leonerd): use 'my sub ...' when we can use 5.18+
     my $expand = sub {
         my ($idx) = @_;
+
+        return $template_values[$idx] if defined $template_values[$idx];
 
         my $f = $template_func[$idx];
         $f =~ s/^\s+|\s+$//g;
@@ -189,6 +192,8 @@ sub read_templated_schema_file {
             $f =~ s/^\'|\'$//g;
             $template_content = $f;
         }
+        # Memoise it for next time
+        $template_values[$idx] = $template_content;
         return $template_content;
     };
 
@@ -277,7 +282,7 @@ sub exec_test {
     my $start_stream_id = $args{start_stream_id};
     my $expect_fail     = $args{expect_fail};
     my $linenum         = $args{linenum};
-    # plus 'template_func'
+    # plus 'template_func', 'template_values'
 
     # we are setting the time two seconds ahead for every step to ensure time
     # sensitive tests (pricing tests) always start at a consistent time.
@@ -291,21 +296,30 @@ sub exec_test {
 
     my $t0 = [gettimeofday];
     if ($test_stream_id) {
-        my $content = $self->read_templated_schema_file($receive_file, template_func => $args{template_func});
+        my $content = $self->read_templated_schema_file($receive_file,
+            template_func   => $args{template_func},
+            template_values => $args{template_values},
+        );
 
         $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $expect_fail);
     } else {
         $send_file =~ /^(.*)\//;
         my $call = $test_app->{call} = $1;
 
-        my $content = $self->read_templated_schema_file($send_file, template_func => $args{template_func});
+        my $content = $self->read_templated_schema_file($send_file,
+            template_func   => $args{template_func},
+            template_values => $args{template_values},
+        );
         my $req_params = JSON::from_json($content);
 
         $req_params = $test_app->adjust_req_params($req_params, {language => $self->{language}});
 
         die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
 
-        $content = $self->read_templated_schema_file($receive_file, template_func => $args{template_func});
+        $content = $self->read_templated_schema_file($receive_file,
+            template_func   => $args{template_func},
+            template_values => $args{template_values},
+        );
 
         my $result = $test_app->test_schema($req_params, $content, $receive_file, $expect_fail);
         $response->{$call} = $result;
