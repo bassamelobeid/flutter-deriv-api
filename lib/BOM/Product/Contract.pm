@@ -928,10 +928,10 @@ sub extra_info {
 sub pricing_details {
     my ($self, $action) = @_;
     # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
-    my $iv   = $self->pricing_vol;
+    my $iv = $self->is_after_expiry ? 0 : $self->pricing_vol;
     my $iv_2 = 0;
 
-    if ($self->pricing_vol_for_two_barriers) {
+    if (not $self->is_after_expiry and $self->pricing_vol_for_two_barriers) {
         $iv   = $self->pricing_vol_for_two_barriers->{high_barrier_vol};
         $iv_2 = $self->pricing_vol_for_two_barriers->{low_barrier_vol};
     }
