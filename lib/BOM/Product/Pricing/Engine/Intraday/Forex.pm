@@ -320,7 +320,7 @@ sub economic_events_volatility_risk_markup {
             contract_type     => $self->bet->code,
             underlying_symbol => $self->bet->underlying->symbol
         });
-    my $theo    = $self->base_probability->amount;
+    my $delta    = $self->base_probability->peek_amount('intraday_delta');
     my @markups = (0);
 
     foreach (@$commissions) {
@@ -330,8 +330,8 @@ sub economic_events_volatility_risk_markup {
         my $cap           = $_->{cap_rate};
         my $center_offset = $_->{center_offset};
 
-        if ($theo >= $support->[0] && $theo <= $support->[1]) {
-            my $calculated_markup = $cap - ($cap - $floor) * (1 - (2 / $width * abs($theo - 0.5 - $center_offset))**3)**3;
+        if ($delta >= $support->[0] && $delta <= $support->[1]) {
+            my $calculated_markup = $cap - ($cap - $floor) * (1 - (2 / $width * abs($delta - 0.5 - $center_offset))**3)**3;
             push @markups, min($cap, $calculated_markup);
         }
     }
