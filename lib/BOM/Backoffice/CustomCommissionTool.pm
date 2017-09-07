@@ -15,13 +15,25 @@ my $static_config = {
         floor_rate    => 0.1,
         center_offset => 0,
         width         => 0.5,
+        support_from  => 0.25,
+        support_to    => 0.75,
     },
-    high => {
+    medium => {
         cap_rate      => 0.25,
-        floor_rate    => 0.1,
+        floor_rate    => 0.05,
         center_offset => 0,
         width         => 0.5,
+        support_from  => 0.4,
+        support_to    => 0.6,
     },
+    default => {
+        cap_rate      => '',
+        floor_rate    => '',
+        center_offset => '',
+        width         => '',
+        support_from  => '',
+        support_to    => '',
+    }
 };
 
 sub generate_commission_form {
@@ -32,7 +44,7 @@ sub generate_commission_form {
         'backoffice/custom_commission_form.html.tt',
         {
             upload_url    => $url,
-            static_config => $static_config,
+            static_config => to_json($static_config),
             config        => to_json(\@config),
         },
     ) || die BOM::Backoffice::Request::template->error;

@@ -1,6 +1,7 @@
 <p><b>Add new custom commission with the tool below: </b></p>
 
 <table id='custom_commission_form'>
+    <tr><td>Preset</td><td> : <select onchange="fillForm(this.value, '[% static_config %]')"><option value="default">Default</option><option value="medium">Medium</option><option value="high">High</option></select></td></tr>
     <tr><td>Name</td><td> : <input type="text" name="name"></td></tr>
     <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol"></td></tr>
     <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol"></td></tr>
@@ -17,6 +18,15 @@
 </div>
 
 <script>
+    function fillForm(value, static) {
+        var static_obj = \$.parseJSON(static);
+        var to_fill = static_obj[value];
+        var el = \$('table#custom_commission_form');
+
+        \$.each(to_fill, function(k,v) {
+            el.find('input[name="'+k+'"]').val(v);
+        });
+    }
     function saveCustom() {
         var el = \$('table#custom_commission_form');
         var result = el.find('.result');
