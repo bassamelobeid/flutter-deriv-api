@@ -8,6 +8,7 @@ use BOM::Platform::QuantsConfig;
 use BOM::Platform::Chronicle;
 use JSON qw(to_json);
 use Try::Tiny;
+use BOM::Product::Pricing::Engine::Intraday::Forex;
 
 my $static_config = {
     high => {
@@ -15,24 +16,18 @@ my $static_config = {
         floor_rate    => 0.1,
         center_offset => 0,
         width         => 0.5,
-        support_from  => 0.25,
-        support_to    => 0.75,
     },
     medium => {
         cap_rate      => 0.25,
         floor_rate    => 0.05,
         center_offset => 0,
         width         => 0.5,
-        support_from  => 0.4,
-        support_to    => 0.6,
     },
     default => {
         cap_rate      => '',
         floor_rate    => '',
         center_offset => '',
         width         => '',
-        support_from  => '',
-        support_to    => '',
     }
 };
 
@@ -72,6 +67,22 @@ sub delete_commission {
     };
 
     return $result;
+}
+
+sub get_chart_params {
+    my $args = shift;
+
+    my @data;
+    my @delta;
+    for (my $delta=0;$delta<=1;$delta+=0.05) {
+        push @data, BOM::Product::Pricing::Engine::Intraday::Forex::calculate_commission($delta,$args);
+        push @delta, $delta;
+    }
+
+    return {
+        data => \@data,
+        delta => \@delta,
+    };
 }
 
 sub _err {

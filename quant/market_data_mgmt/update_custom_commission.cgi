@@ -11,23 +11,26 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::CustomCommissionTool;
 BOM::Backoffice::Sysinit::init();
 
+my $args = {
+    name              => request()->param('name'),
+    currency_symbol   => request()->param('currency_symbol'),
+    underlying_symbol => request()->param('underlying_symbol'),
+    contract_type     => request()->param('contract_type'),
+    cap_rate          => request()->param('cap_rate'),
+    floor_rate        => request()->param('floor_rate'),
+    width             => request()->param('width'),
+    center_offset     => request()->param('center_offset'),
+    flat              => request()->param('flat'),
+};
+
 if (request()->param('save_config')) {
-    my $args = {
-        name              => request()->param('name'),
-        currency_symbol   => request()->param('currency_symbol'),
-        underlying_symbol => request()->param('underlying_symbol'),
-        support_from      => request()->param('support_from'),
-        support_to        => request()->param('support_to'),
-        contract_type     => request()->param('contract_type'),
-        cap_rate          => request()->param('cap_rate'),
-        floor_rate        => request()->param('floor_rate'),
-        width             => request()->param('width'),
-        center_offset     => request()->param('center_offset'),
-        flat              => request()->param('flat'),
-    };
     print to_json(BOM::Backoffice::CustomCommissionTool::save_commission($args));
 }
 
+if (request()->param('draw_chart')) {
+    print to_json(BOM::Backoffice::CustomCommissionTool::get_chart_params($args));
+}
+
 if (request()->param('delete_config')) {
-    print to_json(BOM::Backoffice::CustomCommissionTool::delete_commission(request()->param('name')));
+    print to_json(BOM::Backoffice::CustomCommissionTool::delete_commission($args->{name}));
 }

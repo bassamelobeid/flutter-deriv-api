@@ -1,3 +1,10 @@
+<p>README:</p>
+<ul>
+    <li>max adjustment : maximum adjustment to markup</li>
+    <li>min adjustment : minimum adjustment to markup</li>
+    <li>width : width between the delats having max adjustment (0.6 means delats of 0.2 and 0.8 will get max adjustment)</li>
+    <li>centre offset : offset the point of min adjustment from centre (0 means 0.5 delta point will be the min adjustment point)</li>
+</ul>
 <p><b>Add new custom commission with the tool below: </b></p>
 
 <table id='custom_commission_form'>
@@ -7,18 +14,64 @@
     <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol"></td></tr>
     <tr><td>Contract Type</td><td> : <input type="text" name="contract_type"></td></tr>
     <tr><td>Flat</td><td> : <input type="checkbox" name="flat" value="1"></td></tr>
-    <tr><td>Support</td><td> : <input type="text" name="support_from"></td> <td>to <input type="text" name="support_to"></td></tr>
-    <tr><td>Cap rate</td><td> : <input type="text" name="cap_rate"></td></tr>
-    <tr><td>Floor rate</td><td> : <input type="text" name="floor_rate"></td></tr>
+    <tr><td>Max adjustment</td><td> : <input type="text" name="cap_rate"></td></tr>
+    <tr><td>Min adjustment</td><td> : <input type="text" name="floor_rate"></td></tr>
     <tr><td>Width</td><td> : <input type="text" name="width"></td></tr>
-    <tr><td>Center Offset</td><td> : <input type="text" name="center_offset"></td></tr>
-    <tr><td></td><td><button onclick="saveCustom()">Save</td><td class='save_result'></td><td class="result"></td></tr>
+    <tr><td>Centre Offset</td><td> : <input type="text" name="center_offset"></td></tr>
+    <tr><td></td><td><button onclick="drawChart()">Chart it</button><button onclick="saveCustom()">Save</button></td><td class='save_result'></td><td class="result"></td></tr>
 </table>
+
+<div id='highchart'>
+</div>
 
 <div id='custom_commission_table'>
 </div>
 
 <script>
+    function drawChart() {
+        var el = \$('table#custom_commission_form');
+        \$.ajax({
+                url: "[% upload_url | none %]",
+                data: {
+                    draw_chart: "1",
+                    cap_rate: el.find('input[name="cap_rate"]').val(),
+                    floor_rate: el.find('input[name="floor_rate"]').val(),
+                    width: el.find('input[name="width"]').val(),
+                    center_offset: el.find('input[name="center_offset"]').val(),
+                    flat: el.find('input[name="flat"]:checked').val()
+                },
+                success: function(data){
+                    var config = \$.parseJSON(data);
+                    if (config.error) {
+                        result.text('Failed: '+ config.error).css('color', 'red');
+                    } else {
+                        var numbers = [];
+                        for (i=0;i<config.data.length;i++) {
+                            numbers[i] = parseFloat(config.data[i]);
+                        }
+                        \$('div#highchart').highcharts({
+                            chart: {
+                                height: 300,
+                                width: 500
+                            },
+                            title: {
+                                text: 'commission across delta'
+                            },
+                            xAxis: {
+                                title: {text: 'delta'},
+                                categories: config.delta
+                            },
+                            yAxis: {
+                                title: {text: 'commission'},
+                                min: 0,
+                                max: 0.5
+                            },
+                            series: [{name: 'commission', data: numbers}]
+                        });
+                    }
+                }
+        });
+    }
     function fillForm(value, static) {
         var static_obj = \$.parseJSON(static);
         var to_fill = static_obj[value];
@@ -39,8 +92,6 @@
                     name: el.find('input[name="name"]').val(),
                     underlying_symbol: el.find('input[name="underlying_symbol"]').val(),
                     currency_symbol: el.find('input[name="currency_symbol"]').val(),
-                    support_from: el.find('input[name="support_from"]').val(),
-                    support_to: el.find('input[name="support_to"]').val(),
                     contract_type: el.find('input[name="contract_type"]').val(),
                     cap_rate: el.find('input[name="cap_rate"]').val(),
                     floor_rate: el.find('input[name="floor_rate"]').val(),
