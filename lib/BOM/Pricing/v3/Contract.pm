@@ -137,7 +137,19 @@ sub _get_ask {
     };
     return $response if $response;
 
-    return handle_batch_contract($contract, $args_copy) if $contract->isa('BOM::Product::Contract::Batch');
+    if ($contract->isa('BOM::Product::Contract::Batch')) {
+        my $batch_response = try {
+            handle_batch_contract($contract, $args_copy);
+        }
+        catch {
+            my $message_to_client = _get_error_message($_, $args_copy);
+            BOM::Pricing::v3::Utility::create_error({
+                    code              => 'ContractCreationFailure',
+                    message_to_client => localize(@$message_to_client)});
+        };
+
+        return $batch_response;
+    }
 
     try {
         $contract_parameters = {%$args_copy, %{contract_metadata($contract)}};
