@@ -347,8 +347,7 @@ sub proposal_open_contract {
 
     # send error early if whole RPC call returns error - for example 'InvalidToken'
     if ($response->{error}) {
-        $c->send({json => $c->new_error('proposal_open_contract', $response->{error}{code}, $c->l($response->{error}{message_to_client}))},
-            $req_storage);
+        $c->send({json => $c->new_error('proposal_open_contract', $response->{error}{code}, $response->{error}{message_to_client})}, $req_storage);
         return;
     }
 
