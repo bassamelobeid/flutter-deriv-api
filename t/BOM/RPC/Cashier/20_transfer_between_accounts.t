@@ -8,14 +8,15 @@ use Test::FailWarnings;
 use Test::Warn;
 
 use MojoX::JSON::RPC::Client;
-use Data::Dumper;
 use POSIX qw/ ceil /;
+use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
+
+use Client::Account;
 
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token;
-use Client::Account;
 
 use utf8;
 
@@ -333,7 +334,90 @@ subtest $method => sub {
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
         is($result->{error}{message_to_client}, 'The maximum amount you may transfer is: EUR -10.00.', 'error for limit');
         is($result->{error}{code}, 'TransferBetweenAccountsError', 'error code for limit');
-        }
+    };
+};
+
+subtest 'transfer with fees' => sub {
+    my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+    $mocked_CurrencyConverter->mock(
+        'in_USD',
+        sub {
+            my $price         = shift;
+            my $from_currency = shift;
+
+            $from_currency eq 'BTC' and return 4000 * $price;
+            $from_currency eq 'USD' and return 1 * $price;
+
+            return 0;
+        });
+    $email     = 'new__transfer_email' . rand(999) . '@sample.com';
+    $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+
+    $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+
+    $client_cr->set_default_account('USD');
+    $client_cr1->set_default_account('BTC');
+
+    $user = BOM::Platform::User->create(
+        email    => $email,
+        password => BOM::Platform::Password::hashpw('jskjd8292922'));
+    $user->email_verified(1);
+
+    $user->add_loginid({loginid => $client_cr->loginid});
+    $user->add_loginid({loginid => $client_cr1->loginid});
+    $user->save;
+
+    $client_cr->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+    cmp_ok $client_cr->default_account->load->balance, '==', 1000, 'correct balance';
+
+    $client_cr1->payment_free_gift(
+        currency => 'BTC',
+        amount   => 1,
+        remark   => 'free gift',
+    );
+    cmp_ok $client_cr1->default_account->load->balance, '==', 1, 'correct balance';
+
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token omnibus');
+    my $amount = 10;
+    $params->{args} = {
+        "account_from" => $client_cr->loginid,
+        "account_to"   => $client_cr1->loginid,
+        "currency"     => "USD",
+        "amount"       => $amount
+    };
+    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{client_to_loginid}, $client_cr1->loginid, 'Transaction successful';
+
+    # fiat to crypto to is 1% and exchange rate is 4000 for BTC
+    my $transfer_amount = ($amount - $amount * 1 / 100) / 4000;
+    my $current_balance = $client_cr1->default_account->load->balance;
+    cmp_ok $current_balance, '==', 1 + $transfer_amount, 'correct balance after transfer including fees';
+    cmp_ok $client_cr->default_account->load->balance, '==', 1000 - $amount, 'correct balance, exact amount deducted';
+
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token omnibus');
+    $amount          = 0.1;
+    $params->{args}  = {
+        "account_from" => $client_cr1->loginid,
+        "account_to"   => $client_cr->loginid,
+        "currency"     => "BTC",
+        "amount"       => $amount
+    };
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{client_to_loginid}, $client_cr->loginid, 'Transaction successful';
+
+    $transfer_amount = ($amount - $amount * 0.5 / 100) * 4000;
+    cmp_ok $client_cr->default_account->load->balance, '==', 990 + $transfer_amount, 'correct balance after transfer including fees';
+    cmp_ok $client_cr1->default_account->load->balance, '==', $current_balance - $amount, 'correct balance after transfer including fees';
 };
 
 subtest 'Sub account transfer' => sub {
