@@ -94,6 +94,12 @@ sub validate_trx_buy {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
+    # If contract has 'primary_validation_error'(which is checked inside)
+    # we should not do any other checks and shoulr return error.
+    # additionally this check will be done inside _is_valid_to_buy check, but we will not return an error from there
+    $res = $self->transaction->contract->is_valid_to_buy();
+    return $res if $res;
+
     my @client_validation_method = qw/ check_trade_status _validate_client_status _validate_available_currency _validate_currency /;
     push @client_validation_method,
         qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_self_exclusion)
