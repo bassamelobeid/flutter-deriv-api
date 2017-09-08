@@ -106,7 +106,21 @@ subtest 'call params validation' => sub {
     is $result->{error}->{code},              'TransferBetweenAccountsError', 'Correct error code for invalid amount';
     is $result->{error}->{message_to_client}, 'Please provide valid amount.', 'Correct error message for invalid amount';
 
-    $params->{args}->{amount} = 1;
+    $params->{args}->{amount} = 0.5;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for invalid amount';
+    like $result->{error}->{message_to_client},
+        qr/Provided amount is not within permissible limits. Minimum transfer amount for provided currency is/,
+        'Correct error message for invalid amount';
+
+    $params->{args}->{amount}   = 1;
+    $params->{args}->{currency} = 'XXX';
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code},              'TransferBetweenAccountsError',   'Correct error code for invalid currency';
+    is $result->{error}->{message_to_client}, 'Please provide valid currency.', 'Correct error message for invalid amount';
+
+    $params->{args}->{currency} = 'EUR';
 };
 
 subtest 'validation' => sub {
@@ -212,10 +226,18 @@ subtest 'validation' => sub {
     $cr_dummy->set_default_account('BTC');
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $params->{args}->{amount}       = 0.0002;
     $params->{args}->{currency}     = 'BTC';
     $params->{args}->{account_from} = $client_cr->loginid;
     $params->{args}->{account_to}   = $cr_dummy->loginid;
 
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
+    like $result->{error}->{message_to_client},
+        qr/Provided amount is not within permissible limits. Minimum transfer amount for provided currency is/,
+        'Correct error message for invalid amount';
+
+    $params->{args}->{amount} = 0.002;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
     is $result->{error}->{message_to_client}, 'Account transfer is not available within accounts with cryptocurrency as default currency.',
@@ -285,7 +307,7 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
             ->error_message_is('Please provide valid amount.', 'Correct error message for transfering invalid amount');
 
-        $params->{args}->{amount} = 0.01;
+        $params->{args}->{amount} = 1;
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
             ->error_message_is('The maximum amount you may transfer is: EUR 0.00.', 'Correct error message for transfering invalid amount');
     };

@@ -17,7 +17,7 @@ use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use YAML::XS qw(LoadFile);
 use Scope::Guard qw/guard/;
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber financialrounding/;
 
 use Brands;
 use Client::Account;
@@ -1029,7 +1029,7 @@ sub transfer_between_accounts {
     };
     return $res if $res;
 
-    $res = _validate_transfer_between_account($client_from, $client_to, $currency, $siblings);
+    $res = _validate_transfer_between_account($client_from, $client_to, $currency, $amount, $siblings);
     return $res if $res;
 
     my $to_currency = $siblings->{$client_to->loginid}->{currency};
@@ -1121,7 +1121,7 @@ sub transfer_between_accounts {
             $remark .=
                   " Includes $currency "
                 . formatnumber('amount', $currency, $fees) . " ("
-                . BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->$currency_type
+                . BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->fees->$currency_type
                 . "%) as fees.";
         }
         $response = $client_from->payment_account_transfer(
@@ -1205,7 +1205,7 @@ sub _get_amount_and_count {
 }
 
 sub _validate_transfer_between_account {
-    my ($client_from, $client_to, $currency, $siblings) = @_;
+    my ($client_from, $client_to, $currency, $amount, $siblings) = @_;
 
     return BOM::RPC::v3::Utility::permission_error() if ($client_from->is_virtual or $client_to->is_virtual);
 
@@ -1217,6 +1217,17 @@ sub _validate_transfer_between_account {
             ($message) ? (message => $message) : (),
         });
     };
+
+    my $from_currency_type = LandingCompany::Registry::get_currency_type($currency);
+    return $error_sub->(localize('Please provide valid currency.')) unless $from_currency_type;
+
+    my $min_allowed_amount = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->amount->$from_currency_type->min;
+    if ($amount < $min_allowed_amount or $amount != financialrounding('amount', $currency, $amount)) {
+        return $error_sub->(
+            localize(
+                'Provided amount is not within permissible limits. Minimum transfer amount for provided currency is [_1].',
+                formatnumber('amount', $currency, $min_allowed_amount)));
+    }
 
     # error out if one of the client is not defined, i.e.
     # loginid provided is wrong or not in siblings
@@ -1249,8 +1260,7 @@ sub _validate_transfer_between_account {
     return $error_sub->(localize('Please set the currency for your existing account [_1].', $client_to->loginid))
         unless $to_currency;
 
-    my $from_currency_type = LandingCompany::Registry::get_currency_type($currency);
-    my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
+    my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
 
     # we don't allow fiat to fiat if they are different
     return $error_sub->(localize('Account transfer is not available for accounts with different default currency.'))
@@ -1288,7 +1298,7 @@ sub _calculate_to_amount_with_fees {
             # no fees for authenticate payment agent
             $fees = 0;
         } else {
-            $fees = ($amount) * (BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->$from_currency_type / 100);
+            $fees = ($amount) * (BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->fees->$from_currency_type / 100);
         }
 
         $amount -= $fees;
