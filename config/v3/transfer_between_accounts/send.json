@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Transfer Between Accounts Request",
-  "description": "This call allows transfers between accounts held by a given user. Fees structure: from fiat currency to cryptocurrency: 1% fee, from cryptocurrency to fiat currency: 0.5% fee and for an approved payment agent there is no fees for cryptocurrecncy to fiat only.",
+  "description": "This call allows transfers between accounts held by a given user. Transfer funds between your fiat and cryptocurrency accounts for a fee: - From fiat to cryptocurrency: 1% transfer fee, - From cryptocurrency to fiat: 0.5% transfer fee. Authorised payment agents can transfer funds from a cryptocurrency account to a fiat account for free.",
   "properties": {
     "transfer_between_accounts": {
       "type":"integer",
