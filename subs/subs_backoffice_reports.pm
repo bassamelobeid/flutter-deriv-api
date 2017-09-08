@@ -67,7 +67,7 @@ sub DailyTurnOverReport {
         }
     }
 
-    code_exit_BO('No TurnOver data in redis yet');
+    code_exit_BO('No TurnOver data in redis yet') unless $latest_time;
 
     # get latest cache
     my $cache_query = Cache::RedisDB->get($cache_prefix, $latest_time->db_timestamp);
