@@ -1205,12 +1205,6 @@ sub _build_pricing_comment {
     # To always reproduce ask price, we would want to record the slippage allowed during transaction.
     push @comment_fields, map { defined $args->{$_} ? ($_ => $args->{$_}) : () } qw/price_slippage requested_price recomputed_price/;
 
-    for (my $i = 0; $i < @comment_fields; $i += 2) {
-        unless (looks_like_number($comment_fields[$i + 1])) {
-            warn "_build_pricing_comment: $comment_fields[$i] is $comment_fields[$i+1]";
-            $comment_fields[$i + 1] = 0;
-        }
-    }
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
 
     push @comment_fields, (binaryico_auction_status => $contract->binaryico_auction_status) if $contract->is_binaryico;
