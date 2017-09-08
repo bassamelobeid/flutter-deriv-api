@@ -252,7 +252,7 @@ sub _get_values {
 
     my $expand = sub {
         my ($idx) = @_;
-        my $f = $template_funcs->[$idx-1];    # templates are 1-based
+        my $f = $template_funcs->[$idx - 1];    # templates are 1-based
         if (!defined $f) {
             warn "No template function defined for template parameter [_$idx]";
             return "[MISSING VALUE FOR PARAMETER $idx]";
