@@ -252,11 +252,10 @@ sub _get_values {
 
     my $expand = sub {
         my ($idx) = @_;
-        my $f = $template_funcs->[$idx];
+        my $f = $template_funcs->[$idx-1];    # templates are 1-based
         if (!defined $f) {
-            my $idx1 = $idx + 1;
-            warn "No template function defined for template parameter [_$idx1]";
-            return "[MISSING VALUE FOR PARAMETER $idx1]";
+            warn "No template function defined for template parameter [_$idx]";
+            return "[MISSING VALUE FOR PARAMETER $idx]";
         }
         $f =~ s/^\s+|\s+$//g;
         my $template_content;
@@ -282,8 +281,8 @@ sub _get_values {
     };
 
     # Expand templates in the form [_nnn] by using the functions given in
-    # @$template_funcs. Template numbers are 1-based.
-    $content =~ s{\[_(\d+)\]}{$expand->($1-1)}eg;
+    # @$template_funcs.
+    $content =~ s{\[_(\d+)\]}{$expand->($1)}eg;
 
     return $content;
 }
