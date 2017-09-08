@@ -354,7 +354,7 @@ sub validate_make_new_account {
     # we have real account, and going to create another one
     # So, lets populate all sensitive data from current client, ignoring provided input
     # this logic should gone after we separate new_account with new_currency for account
-    $request_data->{$_} = $client->$_ for qw/first_name last_name residence address_city phone date_of_birth/;
+    $request_data->{$_} = $client->$_ for qw/first_name last_name residence address_city phone date_of_birth address_line_1/;
 
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
