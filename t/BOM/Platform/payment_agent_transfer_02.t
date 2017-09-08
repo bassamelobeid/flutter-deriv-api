@@ -25,6 +25,9 @@ subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
         $clientdb->getall_arrayref('select * from payment_v1.get_today_client_payment_agent_transfer_total_amount(?)', [$pa_client->loginid])->[0]
         ->{amount};
     is($pa_total_amount, 0);
+
+    $client->set_default_account('USD');
+    $pa_client->set_default_account('USD');
     $client->payment_account_transfer(
         toClient => $pa_client,
         currency => 'USD',
