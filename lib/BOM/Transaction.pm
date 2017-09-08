@@ -11,7 +11,6 @@ use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
-use Scalar::Util qw(looks_like_number);
 
 use Brands;
 use Client::Account;
