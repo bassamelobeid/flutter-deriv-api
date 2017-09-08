@@ -39,6 +39,19 @@ my $params = {
 
 my ($method, $email, $client_cr, $client_cr1, $client_mlt, $client_mf, $user) = ('transfer_between_accounts');
 
+my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+$mocked_CurrencyConverter->mock(
+    'in_USD',
+    sub {
+        my $price         = shift;
+        my $from_currency = shift;
+
+        $from_currency eq 'BTC' and return 4000 * $price;
+        $from_currency eq 'USD' and return 1 * $price;
+
+        return 0;
+    });
+
 subtest 'call params validation' => sub {
     $email     = 'dummy' . rand(999) . '@binary.com';
     $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -338,19 +351,7 @@ subtest $method => sub {
 };
 
 subtest 'transfer with fees' => sub {
-    my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
-    $mocked_CurrencyConverter->mock(
-        'in_USD',
-        sub {
-            my $price         = shift;
-            my $from_currency = shift;
-
-            $from_currency eq 'BTC' and return 4000 * $price;
-            $from_currency eq 'USD' and return 1 * $price;
-
-            return 0;
-        });
-    $email     = 'new__transfer_email' . rand(999) . '@sample.com';
+    $email     = 'new_transfer_email' . rand(999) . '@sample.com';
     $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email
@@ -418,6 +419,101 @@ subtest 'transfer with fees' => sub {
     $transfer_amount = ($amount - $amount * 0.5 / 100) * 4000;
     cmp_ok $client_cr->default_account->load->balance, '==', 990 + $transfer_amount, 'correct balance after transfer including fees';
     cmp_ok $client_cr1->default_account->load->balance, '==', $current_balance - $amount, 'correct balance after transfer including fees';
+};
+
+subtest 'paymentagent transfer' => sub {
+    $email     = 'new_pa_email' . rand(999) . '@sample.com';
+    $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+
+    $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+
+    $client_cr->set_default_account('USD');
+    $client_cr->payment_agent({
+        payment_agent_name    => 'Joe',
+        url                   => 'http://www.example.com/',
+        email                 => 'joe@example.com',
+        phone                 => '+12345678',
+        information           => 'Test Info',
+        summary               => 'Test Summary',
+        commission_deposit    => 0,
+        commission_withdrawal => 0,
+        is_authenticated      => 'f',
+        currency_code         => 'USD',
+        currency_code_2       => 'USD',
+        target_country        => 'id',
+    });
+    $client_cr->save;
+
+    $client_cr1->set_default_account('BTC');
+
+    $user = BOM::Platform::User->create(
+        email    => $email,
+        password => BOM::Platform::Password::hashpw('jskjd8292922'));
+    $user->email_verified(1);
+
+    $user->add_loginid({loginid => $client_cr->loginid});
+    $user->add_loginid({loginid => $client_cr1->loginid});
+    $user->save;
+
+    $client_cr->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+    cmp_ok $client_cr->default_account->load->balance, '==', 1000, 'correct balance';
+
+    $client_cr1->payment_free_gift(
+        currency => 'BTC',
+        amount   => 1,
+        remark   => 'free gift',
+    );
+    cmp_ok $client_cr1->default_account->load->balance, '==', 1, 'correct balance';
+
+    my $amount = 0.1;
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token omnibus');
+    $params->{args} = {
+        "account_from" => $client_cr1->loginid,
+        "account_to"   => $client_cr->loginid,
+        "currency"     => "BTC",
+        "amount"       => $amount
+    };
+    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{client_to_loginid}, $client_cr->loginid, 'Transaction successful';
+
+    my $transfer_amount = ($amount - $amount * 0.5 / 100) * 4000;
+    cmp_ok $client_cr1->default_account->load->balance, '==', 1 - $amount, 'correct balance after transfer including fees';
+    my $current_balance = $client_cr->default_account->load->balance;
+    cmp_ok $current_balance, '==', 1000 + $transfer_amount, 'correct balance after transfer including fees as payment agent is not authenticated';
+
+    $client_cr->payment_agent({
+        payment_agent_name    => 'Joe',
+        url                   => 'http://www.example.com/',
+        email                 => 'joe@example.com',
+        phone                 => '+12345678',
+        information           => 'Test Info',
+        summary               => 'Test Summary',
+        commission_deposit    => 0,
+        commission_withdrawal => 0,
+        is_authenticated      => 't',
+        currency_code         => 'USD',
+        currency_code_2       => 'USD',
+        target_country        => 'id',
+    });
+    $client_cr->save;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{client_to_loginid}, $client_cr->loginid, 'Transaction successful';
+
+    $transfer_amount = ($amount - $amount * 0 / 100) * 4000;
+    cmp_ok $client_cr1->default_account->load->balance, '==', 0.9 - $amount, 'correct balance after transfer including fees';
+    cmp_ok $client_cr->default_account->load->balance, '==', $current_balance + $transfer_amount,
+        'correct balance after transfer excluding fees as payment agent is authenticated';
 };
 
 subtest 'Sub account transfer' => sub {

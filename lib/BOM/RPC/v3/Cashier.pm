@@ -1284,10 +1284,13 @@ sub _calculate_to_amount_with_fees {
     # currency type
     my $fees = 0;
     if (($from_currency_type ne $to_currency_type) and ($from_currency ne $to_currency)) {
-        # no fees for authenticate payment agent
-        return ($amount, $fees) if ($from_currency_type eq 'crypto' and $is_authenticated_pa);
+        if ($from_currency_type eq 'crypto' and $is_authenticated_pa) {
+            # no fees for authenticate payment agent
+            $fees = 0;
+        } else {
+            $fees = ($amount) * (BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->$from_currency_type / 100);
+        }
 
-        $fees = ($amount) * (BOM::Platform::Runtime->instance->app_config->payments->transfer_fees->$from_currency_type / 100);
         $amount -= $fees;
         $amount = amount_from_to_currency($amount, $from_currency, $to_currency);
     }
