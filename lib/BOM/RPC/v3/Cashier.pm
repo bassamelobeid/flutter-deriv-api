@@ -966,21 +966,12 @@ sub transfer_between_accounts {
 
     my ($client, $source) = @{$params}{qw/client source/};
 
-    my $error_sub = sub {
-        my ($message_to_client, $message) = @_;
-        BOM::RPC::v3::Utility::create_error({
-            code              => 'TransferBetweenAccountsError',
-            message_to_client => ($message_to_client // localize('Account transfer is not available for your account.')),
-            ($message) ? (message => $message) : (),
-        });
-    };
-
     if (BOM::Platform::Client::CashierValidation::is_system_suspended() or BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
-        return $error_sub->(localize('Payments are suspended.'));
+        return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 
     if ($client->get_status('disabled') or $client->get_status('cashier_locked') or $client->get_status('withdrawal_locked')) {
-        return $error_sub->(localize('Account transfer is not available for your account: [_1].', $client->loginid));
+        return _transfer_between_accounts_error(localize('Account transfer is not available for your account: [_1].', $client->loginid));
     }
 
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
@@ -991,7 +982,7 @@ sub transfer_between_accounts {
     my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client, 1);
     unless (keys %$siblings) {
         warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
-        return $error_sub->(localize('Internal server error'));
+        return _transfer_between_accounts_error(localize('Internal server error'));
     }
 
     my ($loginid_from, $loginid_to) = @{$args}{qw/account_from account_to/};
@@ -1014,8 +1005,8 @@ sub transfer_between_accounts {
         };
     }
 
-    return $error_sub->(localize('Please provide valid currency.')) unless $currency;
-    return $error_sub->(localize('Please provide valid amount.')) if (not looks_like_number($amount) or $amount <= 0);
+    return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $currency;
+    return _transfer_between_accounts_error(localize('Please provide valid amount.')) if (not looks_like_number($amount) or $amount <= 0);
 
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same client
@@ -1025,7 +1016,7 @@ sub transfer_between_accounts {
         $client_to   = Client::Account->new({loginid => $siblings->{$loginid_to}->{loginid}});
     }
     catch {
-        $res = $error_sub->();
+        $res = _transfer_between_accounts_error();
     };
     return $res if $res;
 
@@ -1043,7 +1034,7 @@ sub transfer_between_accounts {
         BOM::Platform::AuditLog::log("Account Transfer FAILED, $err");
 
         $client_message ||= localize('An error occurred while processing request. Please try again after one minute.');
-        return $error_sub->($client_message);
+        return _transfer_between_accounts_error($client_message);
     };
 
     my $fm_client_db = BOM::Database::ClientDB->new({
@@ -1204,26 +1195,26 @@ sub _get_amount_and_count {
     return ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
 }
 
+sub _transfer_between_accounts_error {
+    my ($message_to_client, $message) = @_;
+    return BOM::RPC::v3::Utility::create_error({
+        code              => 'TransferBetweenAccountsError',
+        message_to_client => ($message_to_client // localize('Account transfer is not available for your account.')),
+        ($message) ? (message => $message) : (),
+    });
+}
+
 sub _validate_transfer_between_account {
     my ($client_from, $client_to, $currency, $amount, $siblings) = @_;
 
     return BOM::RPC::v3::Utility::permission_error() if ($client_from->is_virtual or $client_to->is_virtual);
 
-    my $error_sub = sub {
-        my ($message_to_client, $message) = @_;
-        BOM::RPC::v3::Utility::create_error({
-            code              => 'TransferBetweenAccountsError',
-            message_to_client => ($message_to_client // localize('Account transfer is not available for your account.')),
-            ($message) ? (message => $message) : (),
-        });
-    };
-
     my $from_currency_type = LandingCompany::Registry::get_currency_type($currency);
-    return $error_sub->(localize('Please provide valid currency.')) unless $from_currency_type;
+    return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $from_currency_type;
 
     my $min_allowed_amount = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->amount->$from_currency_type->min;
     if ($amount < $min_allowed_amount or $amount != financialrounding('amount', $currency, $amount)) {
-        return $error_sub->(
+        return _transfer_between_accounts_error(
             localize(
                 'Provided amount is not within permissible limits. Minimum transfer amount for provided currency is [_1].',
                 formatnumber('amount', $currency, $min_allowed_amount)));
@@ -1231,43 +1222,44 @@ sub _validate_transfer_between_account {
 
     # error out if one of the client is not defined, i.e.
     # loginid provided is wrong or not in siblings
-    return $error_sub->() if (not $client_from or not $client_to);
+    return _transfer_between_accounts_error() if (not $client_from or not $client_to);
 
     # error out if from and to loginid are same
-    return $error_sub->(localize('Account transfer is not available within same account.')) if ($client_from->loginid eq $client_to->loginid);
+    return _transfer_between_accounts_error(localize('Account transfer is not available within same account.'))
+        if ($client_from->loginid eq $client_to->loginid);
 
     my ($lc_from, $lc_to) = ($client_from->landing_company, $client_to->landing_company);
     # error if landing companies are different with exception
     # of maltainvest and malta as we allow transfer between them
-    return $error_sub->()
+    return _transfer_between_accounts_error()
         if (($lc_from->short ne $lc_to->short) and ($lc_from->short !~ /^(?:malta|maltainvest)$/ or $lc_to->short !~ /^(?:malta|maltainvest)$/));
 
     # error if currency is not legal for landing company
-    return $error_sub->(localize('Currency provided is not valid for your account.'))
+    return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
         if (not $lc_from->is_currency_legal($currency) or not $lc_to->is_currency_legal($currency));
 
     my ($from_currency, $to_currency) = ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
     # error out if from account has no currency set
-    return $error_sub->(localize('Please deposit to your account.')) unless $from_currency;
+    return _transfer_between_accounts_error(localize('Please deposit to your account.')) unless $from_currency;
 
     # error if currency provided is not same as from account default currency
-    return $error_sub->(localize('Currency provided is different from account currency.'))
+    return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
         if ($from_currency ne $currency);
 
     # error out if to account has no currency set, we should
     # not set it from currency else client will be able to
     # set same crypto for multiple account
-    return $error_sub->(localize('Please set the currency for your existing account [_1].', $client_to->loginid))
+    return _transfer_between_accounts_error(localize('Please set the currency for your existing account [_1].', $client_to->loginid))
         unless $to_currency;
 
     my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
 
     # we don't allow fiat to fiat if they are different
-    return $error_sub->(localize('Account transfer is not available for accounts with different default currency.'))
+    return _transfer_between_accounts_error(localize('Account transfer is not available for accounts with different default currency.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'fiat') and ($currency ne $to_currency));
 
     # we don't allow crypto to crypto transfer
-    return $error_sub->(localize('Account transfer is not available within accounts with cryptocurrency as default currency.'))
+    return _transfer_between_accounts_error(localize('Account transfer is not available within accounts with cryptocurrency as default currency.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
 
     return undef;
