@@ -203,8 +203,8 @@ sub get_settings_by_group {
                 payments.payment_limits
                 payments.transfer_between_accounts.fees.fiat
                 payments.transfer_between_accounts.fees.crypto
-                payments.transfer_between_accounts.amount.fiat
-                payments.transfer_between_accounts.amount.crypto
+                payments.transfer_between_accounts.amount.fiat.min
+                payments.transfer_between_accounts.amount.crypto.min
                 )]};
 
     my $settings;
