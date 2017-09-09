@@ -1024,7 +1024,7 @@ sub transfer_between_accounts {
     return $res if $res;
 
     my $to_currency = $siblings->{$client_to->loginid}->{currency};
-    my ($to_amount, $fees) = _calculate_to_amount_with_fees($client, $client_from, $client_to, $amount, $currency, $to_currency);
+    my ($to_amount, $fees, $fees_percent) = _calculate_to_amount_with_fees($client, $client_from, $client_to, $amount, $currency, $to_currency);
 
     BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
@@ -1108,12 +1108,7 @@ sub transfer_between_accounts {
     try {
         my $remark = 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to . '.';
         if ($fees) {
-            my $currency_type = LandingCompany::Registry::get_currency_type($currency);
-            $remark .=
-                  " Includes $currency "
-                . formatnumber('amount', $currency, $fees) . " ("
-                . BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->fees->$currency_type
-                . "%) as fees.";
+            $remark .= " Includes $currency " . formatnumber('amount', $currency, $fees) . " ($fees_percent%) as fees.";
         }
         $response = $client_from->payment_account_transfer(
             currency          => $currency,
@@ -1284,20 +1279,21 @@ sub _calculate_to_amount_with_fees {
     # need to calculate fees only when currency type are different and
     # currencies are different, we don't allow transfer between same
     # currency type
-    my $fees = 0;
+    my ($fees, $fees_percent) = (0, 0);
     if (($from_currency_type ne $to_currency_type) and ($from_currency ne $to_currency)) {
         if ($from_currency_type eq 'crypto' and $is_authenticated_pa) {
             # no fees for authenticate payment agent
             $fees = 0;
         } else {
-            $fees = ($amount) * (BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->fees->$from_currency_type / 100);
+            $fees_percent = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->fees->$from_currency_type;
+            $fees = ($amount) * ($fees_percent / 100);
         }
 
         $amount -= $fees;
         $amount = amount_from_to_currency($amount, $from_currency, $to_currency);
     }
 
-    return ($amount, $fees);
+    return ($amount, $fees, $fees_percent);
 }
 
 1;
