@@ -99,17 +99,17 @@ payments:
           contains:
             fiat:
               isa: section
-              description: 'Minimum amount for transfering from fiat currency'
               contains:
                 min:
+                  description: 'Minimum amount for transfering from fiat currency'
                   isa: Num
                   default: 1
                   global: 1
             crypto:
               isa: section
-              description: 'Minimum amount for transfering from crypto currency'
               contains:
                 min:
+                  description: 'Minimum amount for transfering from crypto currency'
                   isa: Num
                   default: 0.002
                   global: 1
