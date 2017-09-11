@@ -470,10 +470,14 @@ sub startup {
             return "rate_limits::authorised::$app_id/$login_id" if $login_id;
 
             my $ip = $c->client_ip;
-            if (!defined $ip) {
+            if ($ip) {
+                # Basic sanitisation: we expect IPv4/IPv6 addresses only, reject anything else
+                $ip =~ s{[^[:xdigit:]:.]+}{_}g;
+            } else {
                 $app->log->warn("cannot determine client IP-address");
                 $ip = 'UNKNOWN';
             }
+
             my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
             my $client_id = $ip . ':' . md5_hex($user_agent);
             return "rate_limits::unauthorised::$app_id/$client_id";
