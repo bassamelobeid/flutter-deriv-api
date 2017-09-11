@@ -1,7 +1,7 @@
 package BOM::Test::Time;
 use strict;
 use warnings;
-use Time::HiRes;
+use Time::HiRes qw/clock_nanosleep TIMER_ABSTIME CLOCK_REALTIME/;
 our $mocked_time_file;
 our $time_hires;
 # we need real time_hires
@@ -15,7 +15,7 @@ use Test::MockTime::HiRes;
 use Date::Utility;
 
 use Exporter qw( import );
-our @EXPORT_OK = qw( set_date set_date_from_file );
+our @EXPORT_OK = qw( set_date set_date_from_file sleep_till_next_second );
 
 =head
 
@@ -68,6 +68,11 @@ sub set_date_from_file {
     my $epoch = <$fh>;
     close $fh;
     set_fixed_time($epoch);
+    return;
+}
+
+sub sleep_till_next_second {
+    clock_nanosleep(CLOCK_REALTIME, (time + 1) * 1e9, TIMER_ABSTIME);
     return;
 }
 
