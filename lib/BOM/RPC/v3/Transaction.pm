@@ -5,6 +5,7 @@ use warnings;
 
 use Try::Tiny;
 use JSON::XS qw/encode_json/;
+use Scalar::Util qw(blessed);
 
 use Client::Account;
 use Format::Util::Numbers qw/formatnumber/;
