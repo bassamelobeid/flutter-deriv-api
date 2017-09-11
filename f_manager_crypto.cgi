@@ -262,7 +262,13 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
         }
     }
     # Assign USD equivalent value
-    $_->{usd_amount} = formatnumber('amount', 'USD', $_->{amount} * $exchange_rates{$_->{currency_code}}) for @$trxns;
+    for my $trx (@$trxns) {
+        unless (defined $exchange_rates{$trx->{currency_code}}) {
+            warn "exchange_rates for $trx->{currency_code} is undefined";
+            $exchange_rates{$trx->{currency_code}} = 0;
+        }
+        $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rates{$trx->{currency_code}});
+    }
 
     my %reversed = reverse %va_cmds;
 
