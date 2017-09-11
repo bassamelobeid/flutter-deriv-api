@@ -93,6 +93,8 @@ sub startup {
         before_dispatch => sub {
             my $c = shift;
 
+            return unless $c->tx;
+
             my $lang = defang($c->param('l'));
             if ($lang =~ /^\D{2}(_\D{2})?$/) {
                 $c->stash(language => uc $lang);
@@ -107,7 +109,6 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
-            return unless $c->tx;
             my $app_id = $c->app_id;
             return $c->render(
                 json   => {error => 'InvalidAppID'},
@@ -429,9 +430,9 @@ sub startup {
         ],
 
         ['copytrading_statistics'],
-        ['copy_start', {require_auth => 'trade'}],
-        ['copy_stop',  {require_auth => 'trade'}],
-    ];
+        ['copy_start',         {require_auth => 'trade'}],
+        ['copy_stop',          {require_auth => 'trade'}],
+        ['app_markup_details', {require_auth => 'admin'}]];
 
     for my $action (@$actions) {
         my $f             = '/home/git/regentmarkets/binary-websocket-api/config/v3/' . $action->[0];
@@ -450,7 +451,8 @@ sub startup {
 
     $app->helper(
         'app_id' => sub {
-            my $c               = shift;
+            my $c = shift;
+            return undef unless $c->tx;
             my $possible_app_id = $c->req->param('app_id');
             if (defined($possible_app_id) && $possible_app_id =~ /^(?!0)[0-9]{1,19}$/) {
                 return $possible_app_id;
@@ -460,21 +462,27 @@ sub startup {
 
     $app->helper(
         'rate_limitations_key' => sub {
-            my $c                  = shift;
-            my $login_id           = $c->stash('loginid');
-            my $app_id             = $c->app_id;
-            my $authorised_key     = $login_id ? "rate_limits::authorised::$app_id/$login_id" : undef;
-            my $non_authorised_key = do {
-                my $ip = $c->client_ip;
-                if (!defined $ip) {
-                    $app->log->warn("cannot determine client IP-address");
-                    $ip = 'unknown-IP';
-                }
-                my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
-                my $client_id = md5_hex($ip . ":" . $user_agent);
-                "rate_limits::non-authorised::$app_id/$client_id";
-            };
-            return $authorised_key // $non_authorised_key;
+            my $c = shift;
+            return "rate_limits::closed" unless $c && $c->tx;
+
+            my $app_id   = $c->app_id;
+            my $login_id = $c->stash('loginid');
+            return "rate_limits::authorised::$app_id/$login_id" if $login_id;
+
+            my $ip = $c->client_ip;
+            if ($ip) {
+                # Basic sanitisation: we expect IPv4/IPv6 addresses only, reject anything else
+                $ip =~ s{[^[:xdigit:]:.]+}{_}g;
+            } else {
+                $app->log->warn("cannot determine client IP-address");
+                $ip = 'UNKNOWN';
+            }
+
+            # We use empty string for the default UA since we'll be hashing anyway
+            # and our highly-trained devops team can spot an md5('') from orbit
+            my $user_agent = $c->req->headers->header('User-Agent') // '';
+            my $client_id = $ip . ':' . md5_hex($user_agent);
+            return "rate_limits::unauthorised::$app_id/$client_id";
         });
 
     $app->plugin(
