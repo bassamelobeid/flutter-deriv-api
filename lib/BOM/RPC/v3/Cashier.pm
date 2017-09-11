@@ -1202,7 +1202,15 @@ sub _transfer_between_accounts_error {
 sub _validate_transfer_between_account {
     my ($client_from, $client_to, $currency, $amount, $siblings) = @_;
 
+    # error out if one of the client is not defined, i.e.
+    # loginid provided is wrong or not in siblings
+    return _transfer_between_accounts_error() if (not $client_from or not $client_to);
+
     return BOM::RPC::v3::Utility::permission_error() if ($client_from->is_virtual or $client_to->is_virtual);
+
+    # error out if from and to loginid are same
+    return _transfer_between_accounts_error(localize('Account transfer is not available within same account.'))
+        if ($client_from->loginid eq $client_to->loginid);
 
     my $from_currency_type = LandingCompany::Registry::get_currency_type($currency);
     return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $from_currency_type;
@@ -1214,14 +1222,6 @@ sub _validate_transfer_between_account {
                 'Provided amount is not within permissible limits. Minimum transfer amount for provided currency is [_1].',
                 formatnumber('amount', $currency, $min_allowed_amount)));
     }
-
-    # error out if one of the client is not defined, i.e.
-    # loginid provided is wrong or not in siblings
-    return _transfer_between_accounts_error() if (not $client_from or not $client_to);
-
-    # error out if from and to loginid are same
-    return _transfer_between_accounts_error(localize('Account transfer is not available within same account.'))
-        if ($client_from->loginid eq $client_to->loginid);
 
     my ($lc_from, $lc_to) = ($client_from->landing_company, $client_to->landing_company);
     # error if landing companies are different with exception
