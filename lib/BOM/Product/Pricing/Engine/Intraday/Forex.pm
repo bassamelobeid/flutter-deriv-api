@@ -347,7 +347,7 @@ sub calculate_commission {
     die 'max adjustment is not defined' unless defined $cap;
     return $cap if $c->{flat};
 
-    if (my @missing = grep { defined $c->{$_} } qw(width floor_rate center_offset)) {
+    if (my @missing = grep { not defined $c->{$_} } qw(width floor_rate center_offset)) {
         die 'missing required parameters[' . (join ',', @missing) . '] to calculate commission';
     }
 
