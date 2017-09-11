@@ -10,7 +10,7 @@ __PACKAGE__->meta->setup(
 
     columns => [
         id     => { type => 'bigint' },
-        status => { type => 'enum', check_in => [ 'PRISTINE', 'NEW', 'REQUESTED', 'CONFIRMED', 'LOCKED', 'SENT', 'ERROR' ], db_type => 'payment.ctc_status', not_null => 1 },
+        status => { type => 'enum', check_in => [ 'NEW', 'PENDING', 'CONFIRMED', 'LOCKED', 'VERIFIED', 'REJECTED', 'PROCESSING', 'SENT', 'ERROR', 'RESOLVED', 'PERFORMING_BLOCKCHAIN_TXN', 'MIGRATED' ], db_type => 'payment.ctc_status', not_null => 1 },
         tmstmp => { type => 'timestamp', default => 'now()' },
     ],
 
