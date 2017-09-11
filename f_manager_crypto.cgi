@@ -30,8 +30,6 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
-BOM::Backoffice::Auth0::can_access(['Payments']);
-
 my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 # Currency is utilised in Deposit and Withdrawal views accordingly
@@ -307,17 +305,28 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
             or die 'failed to run ctc_bo_transactions_for_reconciliation'
     );
 
-    if (my $deposits = $rpc_client->listreceivedbyaddress(0)) {
-        $recon->from_blockchain_deposits($deposits);
-    } else {
-        print '<p style="color:red;">Unable to request deposits from RPC</p>';
-        code_exit_BO();
-    }
-    if (my $withdrawals = $rpc_client->listtransactions('', 10_000)) {
-        $recon->from_blockchain_withdrawals($withdrawals);
-    } else {
-        print '<p style="color:red;">Unable to request withdrawals from RPC</p>';
-        code_exit_BO();
+    {
+        # Apply date filtering. Note that this is currently BTC/LTC-specific, but
+        # once we have the information in the database we should pass the date range
+        # as a parameter instead.
+        my $filter = sub {
+            my ($transactions) = @_;
+            my $start_epoch    = $start_date->epoch;
+            my $end_epoch      = $end_date->epoch;
+            return [grep { (not exists $_->{time}) or ($_->{time} >= $start_epoch and $_->{time} <= $end_epoch) } @$transactions];
+        };
+        if (my $deposits = $rpc_client->listreceivedbyaddress(0)) {
+            $recon->from_blockchain_deposits($filter->($deposits));
+        } else {
+            print '<p style="color:red;">Unable to request deposits from RPC</p>';
+            code_exit_BO();
+        }
+        if (my $withdrawals = $rpc_client->listtransactions('', 10_000)) {
+            $recon->from_blockchain_withdrawals($filter->($withdrawals));
+        } else {
+            print '<p style="color:red;">Unable to request withdrawals from RPC</p>';
+            code_exit_BO();
+        }
     }
 
     # Go through the complete list of db/blockchain entries to make sure that

@@ -12,7 +12,6 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
-BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $currency_symbol         = request()->param('symbol');
 my $encoded_currency_symbol = encode_entities($currency_symbol);

@@ -25,7 +25,6 @@ BrokerPresentation('MARKETING TOOLS');
 
 my %input  = %{request()->params};
 my $broker = request()->broker_code;
-BOM::Backoffice::Auth0::can_access(['Marketing']);
 
 my $where = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/affiliates/' . $broker;
 if (not -d $where) {

@@ -18,13 +18,12 @@ sub DailyTurnOverReport {
     my ($args, $options) = @_;
 
     if ($args->{month} !~ /^\w{3}-\d{2}$/) {
-        print "<p>Invalid month $args->{month}</p>";
-        code_exit_BO();
+        code_exit_BO("<p>Invalid month $args->{month}</p>");
     }
 
     my $initial_note   = '(BUY-SELL represents the company profit)';
     my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-    my %rates          = map { $_ => in_USD(1, $_) } grep { $_ !~ /^ETC$/ } @all_currencies;
+    my %rates          = map { $_ => in_USD(1, $_) } grep { $_ !~ /^(?:ETC|BCH)$/ } @all_currencies;
 
     my %template = (
         initial_note => $initial_note,
@@ -67,6 +66,8 @@ sub DailyTurnOverReport {
             }
         }
     }
+
+    code_exit_BO('No TurnOver data in redis yet') unless $latest_time;
 
     # get latest cache
     my $cache_query = Cache::RedisDB->get($cache_prefix, $latest_time->db_timestamp);

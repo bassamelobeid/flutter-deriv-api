@@ -23,12 +23,11 @@ use Performance::Probability qw(get_performance_probability);
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
-my $loginID         = uc(request()->param('loginID'));
+my $loginID = uc(request()->param('loginID') // '');
 my $encoded_loginID = encode_entities($loginID);
 
 PrintContentType();
 BrokerPresentation($encoded_loginID . ' Contracts Analysis', '', '');
-my $staff = BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
     print "Error : wrong loginID ($encoded_loginID) could not get client instance";

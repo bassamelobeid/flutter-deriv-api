@@ -56,7 +56,6 @@ my $range             = delete $params{range};
 my $encoded_loginID   = encode_entities($loginID);
 my $encoded_toLoginID = encode_entities($toLoginID);
 
-BOM::Backoffice::Auth0::can_access(['Payments']);
 my $staff = BOM::Backoffice::Auth0::from_cookie();
 my $clerk = $staff->{nickname};
 
@@ -100,7 +99,7 @@ unless (looks_like_number($amount)) {
     code_exit_BO();
 }
 
-if ($amount < 0.001 || $amount > 200_000) {
+if ($amount < 0.00000001 || $amount > 200_000) {
     print "ERROR: amount $amount not in acceptable range .001-to-200,000";
     code_exit_BO();
 }

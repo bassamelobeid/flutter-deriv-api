@@ -14,7 +14,6 @@ my $language     = request()->language;
 my $show         = request()->param('show');
 my $encoded_show = encode_entities($show);
 PrintContentType();
-BOM::Backoffice::Auth0::can_access(['Accounts']);
 
 print "<HTML><HEAD><TITLE>File $show</TITLE></HEAD>
         <BODY BGCOLOR=#FFFFFF TEXT=#000000 LINK=#FF0000 VLINK=#800000>

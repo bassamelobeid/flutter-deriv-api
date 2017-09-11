@@ -27,7 +27,6 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Product Management');
-BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $staff            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $r                = request();

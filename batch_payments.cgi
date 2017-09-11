@@ -34,7 +34,6 @@ if (BOM::Platform::Runtime->instance->app_config->system->suspend->system) {
 
 my $cgi               = CGI->new;
 my $broker            = request()->broker_code;
-my $staff             = BOM::Backoffice::Auth0::can_access(['Payments']);
 my $clerk             = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $confirm           = $cgi->param('confirm');
 my $preview           = $cgi->param('preview');
@@ -213,7 +212,7 @@ read_csv_row_and_callback(
 
 $client_account_table .= '</table>';
 
-my $summary_table;
+my $summary_table = '';
 if (scalar @invalid_lines > 0) {
     $summary_table .=
           '<table border="1" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;margin-bottom:20px;color:red;">'

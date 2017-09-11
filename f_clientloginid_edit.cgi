@@ -66,7 +66,6 @@ my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
 
 my $broker         = $client->broker;
 my $encoded_broker = encode_entities($broker);
-my $staff          = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 if ($broker eq 'MF') {
@@ -220,10 +219,11 @@ if ($input{whattodo} eq 'uploadID') {
                 $submitted_date = Date::Utility->new($expiration_date);
             }
             catch {
-                $error = $_;
+                $error = (split "\n", $_)[0];    #handle Date::Utility's confess() call
             };
             if ($error) {
-                $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Expiration date error: $error</p><br />";
+                $result .=
+                    "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Expiration date($expiration_date) error: $error</p><br />";
                 next;
             } elsif ($submitted_date->is_before($current_date) || $submitted_date->is_same_as($current_date)) {
                 $result .=
@@ -307,14 +307,10 @@ if (my $check_str = $input{do_id_check}) {
 if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     #error checks
     unless ($client->is_virtual) {
-        if (length($input{'last_name'}) < 1) {
-            code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! LNAME field appears incorrect or empty.</p></p>");
-        }
-        if (length($input{'first_name'}) < 1) {
-            code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! FNAME field appears incorrect or empty.</p></p>");
-        }
-        if (length($input{'salutation'}) < 1) {
-            code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field appears to be empty.</p></p>");
+        foreach (qw/last_name first_name salutation/) {
+            if (length($input{$_}) < 1) {
+                code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! $_ field appears incorrect or empty.</p></p>");
+            }
         }
         if (!grep(/^$input{'salutation'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) {    ## no critic (RequireBlockGrep)
             code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field is invalid.</p></p>");
@@ -400,8 +396,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                     $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
                 }
                 catch {
-                    $_ = (split "\n", $_)[0];                                              #handle Date::Utility's confess() call
-                    print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $_</p>};
+                    my $err = (split "\n", $_)[0];                                         #handle Date::Utility's confess() call
+                    print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
                     next CLIENT_KEY;
                 };
             } elsif ($document_field eq 'comments') {
@@ -699,7 +695,7 @@ print qq[<form action="$self_post" method="POST">
     <input type="hidden" name="broker" value="$encoded_broker">
     <input type="hidden" name="loginID" value="$encoded_loginid">];
 
-print_client_details($client, $staff);
+print_client_details($client);
 
 print qq{<input type=submit value="Save Client Details"></form>};
 

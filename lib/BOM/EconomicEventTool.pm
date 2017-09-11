@@ -50,8 +50,8 @@ sub get_info {
             @{Volatility::Seasonality::categorize_events($symbol, [$event])};
         push @by_symbols, to_json(\%cat) if %cat;
     }
-    $event->{info}         = \@by_symbols;
-    $event->{release_date} = Date::Utility->new($event->{release_date})->datetime;
+    $event->{info} = \@by_symbols;
+    $event->{release_date} = Date::Utility->new($event->{release_date})->datetime if $event->{release_date};
 
     return $event;
 }
@@ -61,10 +61,16 @@ sub delete_by_id {
 
     return _err("ID is not found.") unless ($id);
 
-    my $deleted = Quant::Framework::EconomicEventCalendar->new(
+    my $ee = Quant::Framework::EconomicEventCalendar->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    )->delete_event({id => $id});
+    );
+
+    my $deleted = $ee->delete_event({
+        id   => $id,
+        type => 'scheduled'
+    });
+    _regenerate($ee->get_economic_events_calendar);
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
     return {id => $deleted};
@@ -101,10 +107,13 @@ sub update_by_id {
 sub save_new_event {
     my $args = shift;
 
-    if ($args->{is_tentative} and not $args->{estimated_release_date}) {
-        return _err('Must specify estimated announcement date for tentative events');
-    } elsif (not $args->{release_date}) {
-        return _err('Must specify announcement date for economic events');
+    my $today = Date::Utility->new->truncate_to_day->epoch;
+    if ($args->{is_tentative}) {
+        return _err('Must specify estimated announcement date for tentative events') if not $args->{estimated_release_date};
+        return _err('Estimated release date too old') if Date::Utility->new($args->{estimated_release_date})->epoch < $today;
+    } else {
+        return _err('Must specify announcement date for economic events') if not $args->{release_date};
+        return _err('Release date too old') if Date::Utility->new($args->{release_date})->epoch < $today;
     }
 
     $args->{release_date} = Date::Utility->new($args->{release_date})->epoch if $args->{release_date};
