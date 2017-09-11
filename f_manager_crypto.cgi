@@ -455,10 +455,9 @@ EOF
 
     Bar('Dual control code');
 
-    code_exit_BO("No address provided") unless $transtype;
-    code_exit_BO('Invalid loginid') unless $loginid_dcc;
+    code_exit_BO("No address provided")                              unless $transtype;
+    code_exit_BO('Invalid loginid')                                  unless $loginid_dcc;
     code_exit_BO("ERROR in amount: " . encode_entities($amount_dcc)) unless $amount_dcc =~ /^\d+\.?\d*$/;
-
 
     my $client_dcc = Client::Account::get_instance({'loginid' => uc($loginid_dcc)});
     code_exit_BO("ERROR: " . encode_entities($loginid_dcc) . " does not exist! Perhaps you made a typo?") unless $client_dcc;
