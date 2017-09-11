@@ -31,12 +31,14 @@ subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
     $client->payment_account_transfer(
         toClient => $pa_client,
         currency => 'USD',
-        amount   => 1000
+        amount   => 1000,
+        fees     => 0,
     );
     $pa_client->payment_account_transfer(
         toClient => $client,
         currency => 'USD',
-        amount   => 1000
+        amount   => 1000,
+        fees     => 0,
     );
     $pa_total_amount =
         $clientdb->getall_arrayref('select * from payment_v1.get_today_client_payment_agent_transfer_total_amount(?)', [$pa_client->loginid])->[0]
