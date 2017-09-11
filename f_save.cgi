@@ -65,6 +65,8 @@ $text =~ s/\n\r/\n/g;
 
 my @lines = split(/\n/, $text);
 
+my $ON_expiry_date;
+
 if ($filen eq 'editvol') {
     my $underlying = create_underlying($vol_update_symbol);
     my $market     = $underlying->market->name;
@@ -105,6 +107,8 @@ if ($filen eq 'editvol') {
             vol_spread => \%spread,
             ($expiry_date ? (expiry_date => $expiry_date) : ()),
         };
+
+        $ON_expiry_date = Date::Utility->new($expiry_date)->truncate_to_day if $day eq 'ON'; 
     }
     my %surface_args = (
         underlying       => $underlying,
@@ -135,7 +139,9 @@ if ($filen eq 'editvol') {
         print "<P> Difference between existing and new surface </p>";
         print @output;
 
-        if (!$surface->is_valid) {
+        if ( $ON_expiry_date->is_same_as(Date::Utility->new->trucate_to_day)) {
+	    print "<P> Overnigh expiry date cannot be the same date as today.</P>";
+        } elsif (!$surface->is_valid) {
             print "<P> " . encode_entities($surface->validation_error) . " </P>";
 
         } elsif ($big_differences) {
