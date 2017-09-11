@@ -30,6 +30,8 @@
 <script>
     function drawChart() {
         var el = \$('table#custom_commission_form');
+        var result = el.find('.result');
+        result.text('');
         \$.ajax({
                 url: "[% upload_url | none %]",
                 data: {

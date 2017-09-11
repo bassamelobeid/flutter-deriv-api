@@ -73,17 +73,23 @@ sub delete_commission {
 sub get_chart_params {
     my $args = shift;
 
-    my @data;
-    my @delta;
-    for (my $delta = 0; $delta <= 1; $delta += 0.05) {
-        push @data, BOM::Product::Pricing::Engine::Intraday::Forex::calculate_commission($delta, $args);
-        push @delta, $delta;
+    my $result = try {
+        my @data;
+        my @delta;
+        for (my $delta = 0; $delta <= 1; $delta += 0.05) {
+            push @data, BOM::Product::Pricing::Engine::Intraday::Forex::calculate_commission($delta, $args);
+            push @delta, $delta;
+        }
+        +{
+            data  => \@data,
+            delta => \@delta,
+        };
     }
-
-    return {
-        data  => \@data,
-        delta => \@delta,
+    catch {
+        _err($_);
     };
+
+    return $result;
 }
 
 sub _err {
