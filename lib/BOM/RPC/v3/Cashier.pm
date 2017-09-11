@@ -1011,7 +1011,16 @@ sub transfer_between_accounts {
     };
     return $res if $res;
 
-    $res = _validate_transfer_between_account($client_from, $client_to, $currency, $amount, $siblings);
+    $res = _validate_transfer_between_account(
+        $client,
+        $client_from,
+        $client_to,
+        {
+            currency      => $currency,
+            amount        => $amount,
+            from_currency => $siblings->{$client_from->loginid}->{currency},
+            to_currency   => $siblings->{$client_to->loginid}->{currency},
+        });
     return $res if $res;
 
     my $to_currency = $siblings->{$client_to->loginid}->{currency};
@@ -1188,7 +1197,7 @@ sub _transfer_between_accounts_error {
 }
 
 sub _validate_transfer_between_account {
-    my ($client_from, $client_to, $currency, $amount, $siblings) = @_;
+    my ($client, $client_from, $client_to, $args) = @_;
 
     # error out if one of the client is not defined, i.e.
     # loginid provided is wrong or not in siblings
@@ -1198,7 +1207,13 @@ sub _validate_transfer_between_account {
 
     # error out if from and to loginid are same
     return _transfer_between_accounts_error(localize('Account transfer is not available within same account.'))
-        if ($client_from->loginid eq $client_to->loginid);
+        unless ($client_from->loginid ne $client_to->loginid);
+
+    # error out if current logged in client and loginid from passed are not same
+    return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
+        unless ($client->loginid eq $client_from->loginid);
+
+    my ($currency, $amount, $from_currency, $to_currency) = @{$args}{qw/currency amount from_currency to_currency/};
 
     my $from_currency_type = LandingCompany::Registry::get_currency_type($currency);
     return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $from_currency_type;
@@ -1221,7 +1236,6 @@ sub _validate_transfer_between_account {
     return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
         if (not $lc_from->is_currency_legal($currency) or not $lc_to->is_currency_legal($currency));
 
-    my ($from_currency, $to_currency) = ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
     # error out if from account has no currency set
     return _transfer_between_accounts_error(localize('Please deposit to your account.')) unless $from_currency;
 
@@ -1238,7 +1252,7 @@ sub _validate_transfer_between_account {
     my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
 
     # we don't allow fiat to fiat if they are different
-    return _transfer_between_accounts_error(localize('Account transfer is not available for accounts with different default currency.'))
+    return _transfer_between_accounts_error(localize('Account transfer is not available for accounts with different currency.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'fiat') and ($currency ne $to_currency));
 
     # we don't allow crypto to crypto transfer
