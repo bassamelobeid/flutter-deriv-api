@@ -95,7 +95,7 @@ sub validate_trx_buy {
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
     # If contract has 'primary_validation_error'(which is checked inside)
-    # we should not do any other checks and shoulr return error.
+    # we should not do any other checks and should return an error.
     # additionally this check will be done inside _is_valid_to_buy check, but we will not return an error from there
     $res = $self->_is_valid_to_buy($self->transaction->client);
     return $res if $res;
