@@ -342,12 +342,19 @@ sub event_markup {
 sub calculate_commission {
     my ($delta, $c) = @_;
 
+    my $cap = $c->{cap_rate};
+
+    die 'max adjustment is not defined' unless defined $cap;
+    return $cap if $c->{flat};
+
+    if (my @missing = grep { defined $c->{$_} } qw(width floor_rate center_offset)) {
+        die 'missing required parameters[' . (join ',', @missing) . '] to calculate commission';
+    }
+
     my $width         = max(0.01, $c->{width});
     my $floor         = $c->{floor_rate};
-    my $cap           = $c->{cap_rate};
     my $center_offset = $c->{center_offset};
 
-    return $cap if $c->{flat};
     return min($cap, $cap - ($cap - $floor) * (1 - (2 / $width * abs($delta - 0.5 - $center_offset))**3)**3);
 }
 
