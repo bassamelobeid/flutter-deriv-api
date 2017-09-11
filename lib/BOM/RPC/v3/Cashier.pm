@@ -97,7 +97,7 @@ sub cashier {
     }
 
     ## if currency == BTC|ETH|LTC|ETC, use cryptocurrency cashier
-    if (grep { $currency eq $_ } ('BTC', 'ETH', 'LTC', 'ETC')) {
+    if (grep { $currency eq $_ } ('BTC', 'ETH', 'LTC', 'ETC', 'BCH')) {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
