@@ -29,8 +29,6 @@ use BOM::Platform::RedisReplicated;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Platform::Chronicle;
 
-
-
 use await;
 
 initialize_realtime_ticks_db();
@@ -202,29 +200,32 @@ cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time},       '==',
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
 
-SKIP: { 
+SKIP: {
     skip 'Forex test does not work on the weekends.', 1 if not $trading_calendar->is_open_at($underlying->exchange, Date::Utility->new);
-            
+
     # number of pricer subs
-    subtest "pricesrs subscriptions" => sub {
-        $t->await::proposal({
-            "proposal" => 1,
-            %contract
-        });
+    subtest "pricers subscriptions" => sub {
+
+        sub proposal {
+            my $expected_err = shift;
+            my $res          = $t->await::proposal({
+                "proposal" => 1,
+                %contract
+            });
+            is $res->{error}{message}, $expected_err, "proposal call was successfull";
+        }
+
+        proposal('You are already subscribed to proposal.');
         my $intro_conn = send_introspection_cmd('connections');
         cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
+
         $contract{amount} = 200;
-        $t->await::proposal({
-            "proposal" => 1,
-            %contract
-        });
+        proposal();
         $intro_conn = send_introspection_cmd('connections');
         cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
+
         $contract{duration} = 14;
-        $t->await::proposal({
-            "proposal" => 1,
-            %contract
-        });
+        proposal();
         $intro_conn = send_introspection_cmd('connections');
         cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 2, 'now 2 price subscription';
 
@@ -232,7 +233,7 @@ SKIP: {
         $intro_conn = send_introspection_cmd('connections');
         cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 0, 'no more price subscription';
     };
-};
+}
 
 done_testing;
 
