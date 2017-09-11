@@ -200,6 +200,49 @@ subtest 'check two contracts subscription' => sub {
     diag explain $buy_res if not is(scalar @{$data->{forget_all}}, 2, 'Correct number of subscription forget');
 };
 
+subtest 'rpc error' => sub {
+
+
+    my $proposal = $t->await::proposal({
+        "proposal"      => 1,
+        "subscribe"     => 1,
+        "amount"        => "2",
+        "basis"         => "payout",
+        "contract_type" => "CALL",
+        "currency"      => "USD",
+        "symbol"        => "R_50",
+        "duration"      => "2",
+        "duration_unit" => "m"
+    });
+
+    my $data = $t->await::buy({
+            buy   => $proposal->{proposal}->{id},
+            price => $proposal->{proposal}->{ask_price}});
+
+    diag explain $data unless ok($contract_id = $data->{buy}->{contract_id}, "got contract_id");
+
+    my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
+    $fake_rpc_response = Test::MockObject->new();
+    $fake_rpc_response->mock('is_error',      sub { 0 });
+    $fake_rpc_response->mock('result',        sub { +{ error => {
+                                                            code => 'InvalidToken',
+                                                            message_to_client => 'The token is invalid.'
+                                                }} });
+    $fake_rpc_response->mock('error_message', sub { 'error' });
+    $fake_rpc_client = Test::MockObject->new();
+    $fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
+    $rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
+    $rpc_client_mock->mock('new', sub { return $fake_rpc_client });
+
+
+    $data = $t->await::proposal_open_contract({
+        proposal_open_contract => 1,
+        subscribe              => 1
+    });
+    cmp_ok $data->{error}{code}, 'eq', 'InvalidToken', "Got prope error message";
+
+};
+
 $t->finish_ok;
 
 done_testing();
