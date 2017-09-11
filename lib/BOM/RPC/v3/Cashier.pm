@@ -1024,7 +1024,8 @@ sub transfer_between_accounts {
     return $res if $res;
 
     my $to_currency = $siblings->{$client_to->loginid}->{currency};
-    my ($to_amount, $fees, $fees_percent) = _calculate_to_amount_with_fees($client, $client_from, $client_to, $amount, $currency, $to_currency);
+    my ($to_amount, $fees, $fees_percent) =
+        BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($client_from->loginid, $amount, $from_currency, $to_currency);
 
     BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
@@ -1260,42 +1261,6 @@ sub _validate_transfer_between_account {
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
 
     return undef;
-}
-
-# From fiat currency to cryptocurrency: 1% fee
-# From cryptocurrency to fiat currency: 0.5% fee
-# for an approved PA, we don't need to charge any
-# % fee for converting BTC to USD only
-sub _calculate_to_amount_with_fees {
-    my ($client, $client_from, $client_to, $amount, $from_currency, $to_currency) = @_;
-
-    my $from_currency_type = LandingCompany::Registry::get_currency_type($from_currency);
-    my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
-    # as payment agent flag is not copied so need to check for payment agent
-    # in all loginids associated with transfer
-    my $is_authenticated_pa = (
-               ($client->payment_agent      and $client->payment_agent->is_authenticated)
-            or ($client_from->payment_agent and $client_from->payment_agent->is_authenticated)
-            or ($client_to->payment_agent   and $client_to->payment_agent->is_authenticated));
-
-    # need to calculate fees only when currency type are different and
-    # currencies are different, we don't allow transfer between same
-    # currency type
-    my ($fees, $fees_percent) = (0, 0);
-    if (($from_currency_type ne $to_currency_type) and ($from_currency ne $to_currency)) {
-        if ($from_currency_type eq 'crypto' and $is_authenticated_pa) {
-            # no fees for authenticate payment agent
-            $fees = 0;
-        } else {
-            $fees_percent = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->fees->$from_currency_type;
-            $fees = ($amount) * ($fees_percent / 100);
-        }
-
-        $amount -= $fees;
-        $amount = amount_from_to_currency($amount, $from_currency, $to_currency);
-    }
-
-    return ($amount, $fees, $fees_percent);
 }
 
 1;
