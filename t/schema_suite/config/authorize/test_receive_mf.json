@@ -44,7 +44,7 @@
     },
     "fullname": {
       "type": "string",
-      "pattern": "^Mrs Example First Name MLT Last Name Example$",
+      "pattern": "^Mrs Example First Name MLT Example Last Name$",
       "required": "1"
     },
     "scopes": {
