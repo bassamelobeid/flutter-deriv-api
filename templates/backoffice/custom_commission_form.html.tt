@@ -10,6 +10,8 @@
 <table id='custom_commission_form'>
     <tr><td>Preset</td><td> : <select onchange="fillForm(this.value, '[% static_config %]')"><option value="default">Default</option><option value="medium">Medium</option><option value="high">High</option></select></td></tr>
     <tr><td>Name</td><td> : <input type="text" name="name"></td></tr>
+    <tr><td>Start Time</td><td> : <input type="text" name="start_time"></td></tr>
+    <tr><td>End Time</td><td> : <input type="text" name="end_time"></td></tr>
     <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol"></td></tr>
     <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol"></td></tr>
     <tr><td>Contract Type</td><td> : <input type="text" name="contract_type"></td></tr>
@@ -99,7 +101,9 @@
                     floor_rate: el.find('input[name="floor_rate"]').val(),
                     width: el.find('input[name="width"]').val(),
                     center_offset: el.find('input[name="center_offset"]').val(),
-                    flat: el.find('input[name="flat"]').val()
+                    flat: el.find('input[name="flat"]').val(),
+                    start_time: el.find('input[name="start_time"]').val(),
+                    end_time: el.find('input[name="end_time"]').val()
                 },
                 success: function(data){
                     var config = \$.parseJSON(data);

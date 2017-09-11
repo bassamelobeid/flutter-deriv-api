@@ -21,6 +21,8 @@ my $args = {
     width             => request()->param('width'),
     center_offset     => request()->param('center_offset'),
     flat              => request()->param('flat'),
+    start_time        => request()->param('start_time'),
+    end_time          => request()->param('end_time'),
 };
 
 if (request()->param('save_config')) {
