@@ -92,7 +92,7 @@ sub new_account_virtual {
         currency      => 'USD',
         loginid       => $client->loginid,
         type          => 'newaccount',
-        amount        => 0,
+        amount        => 1,
         payment_agent => 0,
     );
     return {
@@ -252,7 +252,7 @@ sub new_account_real {
         currency      => 'USD',
         loginid       => $new_client->loginid,
         type          => 'newaccount',
-        amount        => 0,
+        amount        => 2,
         payment_agent => 0,
     );
     return {
@@ -337,7 +337,7 @@ sub new_account_maltainvest {
         currency      => 'USD',
         loginid       => $new_client->loginid,
         type          => 'newaccount',
-        amount        => 0,
+        amount        => 2,
         payment_agent => 0,
     );
     return {
@@ -413,7 +413,7 @@ sub new_account_japan {
         currency      => 'USD',
         loginid       => $new_client->loginid,
         type          => 'newaccount',
-        amount        => 0,
+        amount        => 2,
         payment_agent => 0,
     );
     return {
