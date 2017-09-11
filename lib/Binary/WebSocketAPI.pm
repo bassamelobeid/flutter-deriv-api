@@ -478,7 +478,9 @@ sub startup {
                 $ip = 'UNKNOWN';
             }
 
-            my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
+            # We use empty string for the default UA since we'll be hashing anyway
+            # and our highly-trained devops team can spot an md5('') from orbit
+            my $user_agent = $c->req->headers->header('User-Agent') // '';
             my $client_id = $ip . ':' . md5_hex($user_agent);
             return "rate_limits::unauthorised::$app_id/$client_id";
         });
