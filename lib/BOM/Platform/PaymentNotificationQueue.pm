@@ -67,9 +67,12 @@ sub add {
         stats_inc('payment.' . $args{type} . '.user_lookup.failure', {tag => ['source:' . $args{source}]});
     };
 
+    # No need to convert the currency if we're in USD already
+    $args{amount_usd} //= $args{amount} if $args{currency} eq 'USD';
+
     # If we don't have rates, that's not worth causing anything else to fail: just tell datadog and bail out.
     return unless try {
-        $args{amount_usd} = $args{amount} ? in_USD($args{amount} => $args{currency}) : 0.0;
+        $args{amount_usd} //= $args{amount} ? in_USD($args{amount} => $args{currency}) : 0.0;
         1
     }
     catch {
