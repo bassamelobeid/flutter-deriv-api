@@ -463,21 +463,20 @@ sub startup {
     $app->helper(
         'rate_limitations_key' => sub {
             my $c = shift;
-            return "rate_limitations_key: connection closed" unless $c->tx;
-            my $login_id           = $c->stash('loginid');
-            my $app_id             = $c->app_id // '';
-            my $authorised_key     = $login_id ? "rate_limits::authorised::$app_id/$login_id" : undef;
-            my $non_authorised_key = do {
-                my $ip = $c->client_ip;
-                if (!defined $ip) {
-                    $app->log->warn("cannot determine client IP-address");
-                    $ip = 'unknown-IP';
-                }
-                my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
-                my $client_id = md5_hex($ip . ":" . $user_agent);
-                "rate_limits::non-authorised::$app_id/$client_id";
-            };
-            return $authorised_key // $non_authorised_key;
+            return "rate_limits::closed" unless $c && $c->tx;
+
+            my $app_id   = $c->app_id;
+            my $login_id = $c->stash('loginid');
+            return "rate_limits::authorised::$app_id/$login_id" if $login_id;
+
+            my $ip = $c->client_ip;
+            if (!defined $ip) {
+                $app->log->warn("cannot determine client IP-address");
+                $ip = 'UNKNOWN';
+            }
+            my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
+            my $client_id = $ip . ':' . md5_hex($user_agent);
+            return "rate_limits::unauthorised::$app_id/$client_id";
         });
 
     $app->plugin(
