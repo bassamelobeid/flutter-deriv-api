@@ -316,7 +316,7 @@ sub get_account_status {
 
     # differentiate between social and password based accounts
     my $user = BOM::Platform::User->new({email => $client->email});
-    push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->not_allow_trade($client);
+    push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->check_trade_status($client);
 
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();

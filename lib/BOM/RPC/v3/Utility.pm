@@ -275,8 +275,17 @@ sub get_real_account_siblings_information {
             } BOM::Platform::User->new({email => $client->email})->clients(disabled_ok => 1)};
 }
 
+=head2 validate_make_new_account
+
+    validate_make_new_account($client, $account_type, $request_data)
+
+    Make several checks based on $client and $account type.
+    Updates $request_data(hashref) with $client's sensitive data.
+
+=cut
+
 sub validate_make_new_account {
-    my ($client, $account_type) = @_;
+    my ($client, $account_type, $request_data) = @_;
 
     my $residence = $client->residence;
     return create_error({
@@ -321,7 +330,6 @@ sub validate_make_new_account {
         # but we do allow them to open only financial account
         return;
     }
-
     # we don't allow virtual client to make this again and
     return permission_error() if $client->is_virtual;
 
@@ -342,6 +350,11 @@ sub validate_make_new_account {
         # maltainvest to landing company as client is upgrading
         $landing_company_name = 'maltainvest';
     }
+
+    # we have real account, and going to create another one
+    # So, lets populate all sensitive data from current client, ignoring provided input
+    # this logic should gone after we separate new_account with new_currency for account
+    $request_data->{$_} = $client->$_ for qw/first_name last_name residence address_city phone date_of_birth address_line_1/;
 
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
@@ -465,6 +478,7 @@ sub should_update_account_details {
     if ($allow_omnibus and $sibling_loginid ne $current_client->loginid) {
         return 0;
     }
+
     return 1;
 }
 

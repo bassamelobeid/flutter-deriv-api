@@ -4,7 +4,6 @@ use utf8;
 
 use Test::Most;
 use Test::Mojo;
-use Test::MockModule;
 use YAML::XS qw(LoadFile);
 
 use Format::Util::Numbers qw/formatnumber/;
