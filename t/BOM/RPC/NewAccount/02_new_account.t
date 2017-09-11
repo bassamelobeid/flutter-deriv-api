@@ -364,15 +364,24 @@ subtest $method => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token}               = $auth_token;
         $params->{args}->{residence}   = 'cz';
-        $params->{args}->{first_name}  = 'random';
 
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error;
-        my $new_loginid = $rpc_ct->result->{client_id};
+        # call with totally random values - our client still should have correct one
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
+        $params->{args}->{phone}         = '1234567890';
+        $params->{args}->{date_of_birth} = '1990-09-09';
+
+        my $result        = $rpc_ct->call_ok($method, $params)->result;
+        my $new_loginid   = $result->{client_id};
         my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
-        $rpc_ct->call_ok('get_settings', {token => $auth_token_mf});
-        is($rpc_ct->result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
-        $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf});
-        isnt(keys $rpc_ct->result, 0, 'MF client has financial assessment set');
+
+        # make sure data is same, as in first account, regardless of what we have provided
+        my $cl = Client::Account->new({loginid => $new_loginid});
+        is $client_mlt->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
+
+        $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
+        is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
+        $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
+        isnt(keys $result, 0, 'MF client has financial assessment set');
     };
 };
 
