@@ -146,7 +146,7 @@ subtest 'produce_batch_contract - error check' => sub {
         $batch->ask_prices;
     } catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier. ([_1])';
+        is $_->message_to_client->[0], 'Invalid barrier ([_1]).';
         like $_->message_to_client->[1], qr/Could not mixed single barrier and double barrier contracts/, 'correct error args';
     };
 
@@ -162,7 +162,7 @@ subtest 'produce_batch_contract - error check' => sub {
         $batch->ask_prices;
     } catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier. ([_1])';
+        is $_->message_to_client->[0], 'Invalid barrier ([_1]).';
         like $_->message_to_client->[1], qr/Single barrier input is expected/, 'correct error args';
     };
     $args->{bet_types} = ['RANGE', 'EXPIRYRANGE'];
@@ -171,7 +171,7 @@ subtest 'produce_batch_contract - error check' => sub {
         throws_ok { $batch->ask_prices } qr/BOM::Product::Exception/, 'throws error if bet_type-barrier mismatch';
     } catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier. ([_1])';
+        is $_->message_to_client->[0], 'Invalid barrier ([_1]).';
         like $_->message_to_client->[1], qr/Double barrier input is expected/, 'correct error args';
     };
 };
