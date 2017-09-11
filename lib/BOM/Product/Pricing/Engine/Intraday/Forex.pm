@@ -325,10 +325,16 @@ sub event_markup {
             underlying_symbol => $self->bet->underlying->symbol
         });
     my $delta   = $self->base_probability->peek_amount('intraday_delta');
+    my $c_start = $self->bet->effective_start->epoch;
+    my $c_end   = $self->bet->date_expiry->epoch;
     my @markups = (0);
 
     foreach my $c (@$commissions) {
-        push @markups, calculate_commission($delta, $c);
+        my $start_epoch = Date::Utility->new($c->{start_time})->epoch;
+        my $end_epoch   = Date::Utility->new($c->{end_time})->epoch;
+        if (($c_start >= $start_epoch && $c_start <= $end_epoch) || ($c_end >= $start_epoch && $c_end <= $end_epoch)) {
+            push @markups, calculate_commission($delta, $c);
+        }
     }
 
     return Math::Util::CalculatedValue::Validatable->new({
