@@ -599,6 +599,7 @@ sub paymentagent_transfer {
             toStaff  => $loginid_to,
             remark   => $comment,
             source   => $source,
+            fees     => 0,
         );
     }
     catch {
@@ -854,6 +855,7 @@ sub paymentagent_withdraw {
             toStaff  => $paymentagent_loginid,
             toClient => $pa_client,
             source   => $source,
+            fees     => 0,
         );
     }
     catch {
@@ -1009,7 +1011,7 @@ sub transfer_between_accounts {
     return _transfer_between_accounts_error(localize('Please provide valid amount.')) if (not looks_like_number($amount) or $amount <= 0);
 
     # create client from siblings so that we are sure that from and to loginid
-    # provided are for same client
+    # provided are for same user
     my ($client_from, $client_to, $res);
     try {
         $client_from = Client::Account->new({loginid => $siblings->{$loginid_from}->{loginid}});
