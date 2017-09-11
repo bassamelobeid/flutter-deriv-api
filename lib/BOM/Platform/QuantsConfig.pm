@@ -6,6 +6,20 @@ use Moose;
 
 BOM::Platform::QuantsConfig - A class to handle dynamic quants config
 
+=head1 USAGE
+
+    use BOM::Platform::QuantsConfig;
+    use Date::Utility;
+    use BOM::Platform::Chronicle;
+
+    my $qc = BOM::Platform::QuantsConfig->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+        recorded_date    => Date::Utility->new
+    );
+
+    $qc->save('test', +{test => 1});
+
 =cut
 
 use Date::Utility;
@@ -15,7 +29,7 @@ use List::Util qw(first);
 
 has [qw(chronicle_reader chronicle_writer)] => (is => 'ro');
 
-has for_date => (
+has [qw(recorded_date for_date)] => (
     is      => 'ro',
     default => undef,
 );
@@ -58,7 +72,7 @@ sub save_config {
 
     $existing_config->{$identifier} = \%args;
 
-    $self->chronicle_writer->set($namespace, $config_type, $existing_config, Date::Utility->new);
+    $self->chronicle_writer->set($namespace, $config_type, $existing_config, $self->recorded_date);
 
     return \%args;
 }
