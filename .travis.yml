@@ -24,6 +24,14 @@ env:
     - TEST_SUITE=SDEQ_benchmark_FTSE
     - TEST_SUITE=OVRA_benchmark
 
+notifications:
+    slack:
+        rooms:
+            - binary-group:6t92829RicGEft1kCkpKLPj9#test-failures
+        on_success: never
+        on_failure: always
+        on_pull_requests: false
+
 services:
     - redis-server
 cache: apt
