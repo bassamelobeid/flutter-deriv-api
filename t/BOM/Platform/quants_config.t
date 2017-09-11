@@ -14,6 +14,7 @@ use Date::Utility;
 my $qc = BOM::Platform::QuantsConfig->new(
     chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
     chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+    recorded_date    => Date::Utility->new
 );
 
 # clears data
