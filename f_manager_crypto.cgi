@@ -124,8 +124,7 @@ $tt2->process(
 code_exit_BO() unless ($view_action);
 
 if (not $currency or $currency !~ /^[A-Z]{3}$/) {
-    print "Invalid currency.";
-    code_exit_BO();
+    code_exit_BO("Invalid currency.");
 }
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
@@ -147,24 +146,20 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
         Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
         if ($address and $address !~ /^\w+$/) {
-            print "Invalid address.";
-            code_exit_BO();
+            code_exit_BO("Invalid address.");
         }
         if ($action and $action !~ /^[a-zA-Z]{4,15}$/) {
-            print "Invalid action.";
-            code_exit_BO();
+            code_exit_BO("Invalid action.");
         }
         if (not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|performing_blockchain_txn|sent|error)$/) {
-            print "Invalid selection to view type of transactions.";
-            code_exit_BO();
+            code_exit_BO("Invalid selection to view type of transactions.");
         }
 
         my $found;
         if ($action and $action =~ /^(?:verify|reject)$/) {
             my $dcc_code = request()->param('dual_control_code');
             unless ($dcc_code) {
-                print "ERROR: Please provide valid dual control code";
-                code_exit_BO();
+                code_exit_BO("ERROR: Please provide valid dual control code");
             }
 
             my $amount  = request()->param('amount');
@@ -175,22 +170,19 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
                     transactiontype => $address
                 })->validate_payment_control_code($dcc_code, $loginid, $currency, $amount);
             if ($error) {
-                print $error->get_mesg();
-                code_exit_BO();
+                code_exit_BO($error->get_mesg());
             }
 
             if ($action eq 'verify') {
                 ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency);
                 unless ($found) {
-                    print "ERROR: No record found. Please check with someone from IT team before proceeding.";
-                    code_exit_BO();
+                    code_exit_BO("ERROR: No record found. Please check with someone from IT team before proceeding.");
                 }
             }
             if ($action eq 'reject') {
                 ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency);
                 unless ($found) {
-                    print "ERROR: No record found. Please check with someone from IT team before proceeding.";
-                    code_exit_BO();
+                    code_exit_BO("ERROR: No record found. Please check with someone from IT team before proceeding.");
                 }
             }
         }
@@ -226,13 +218,11 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     } elsif ($view_action eq $va_cmds{deposits}) {
         Bar("LIST OF TRANSACTIONS - DEPOSITS");
         if (not $currency or $currency !~ /^[A-Z]{3}$/) {
-            print "Invalid currency.";
-            code_exit_BO();
+            code_exit_BO("Invalid currency.");
         }
         $view_type ||= 'new';
         if (not $view_type or $view_type !~ /^(?:new|pending|confirmed|error)$/) {
-            print "Invalid selection to view type of transactions.";
-            code_exit_BO();
+            code_exit_BO("Invalid selection to view type of transactions.");
         }
         # Fetch all deposit transactions matching specified currency and status
         $trxns = $dbh->selectall_arrayref(
@@ -257,8 +247,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
         ) if ($search_type eq 'loginid');
 
         unless (grep { $search_type eq $_ } qw/loginid address/) {
-            print "Invalid type of search request.";
-            code_exit_BO();
+            code_exit_BO("Invalid type of search request.");
         }
     }
     # Assign USD equivalent value
@@ -292,8 +281,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     Bar($currency . ' Reconciliation');
 
     if (not $currency or $currency !~ /^[A-Z]{3}$/) {
-        print "Invalid currency.";
-        code_exit_BO();
+        code_exit_BO("Invalid currency.");
     }
 
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
@@ -324,14 +312,12 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
         if (my $deposits = $rpc_client->listreceivedbyaddress(0)) {
             $recon->from_blockchain_deposits($filter->($deposits));
         } else {
-            print '<p style="color:red;">Unable to request deposits from RPC</p>';
-            code_exit_BO();
+            code_exit_BO('<p style="color:red;">Unable to request deposits from RPC</p>');
         }
         if (my $withdrawals = $rpc_client->listtransactions('', 10_000)) {
             $recon->from_blockchain_withdrawals($filter->($withdrawals));
         } else {
-            print '<p style="color:red;">Unable to request withdrawals from RPC</p>';
-            code_exit_BO();
+            code_exit_BO('<p style="color:red;">Unable to request withdrawals from RPC</p>');
         }
     }
 
@@ -468,26 +454,14 @@ EOF
     my $transtype   = request()->param('address_dcc') // '';
 
     Bar('Dual control code');
-    if (not $transtype) {
-        print "No address provided";
-        code_exit_BO();
-    }
 
-    if (not $amount_dcc or $amount_dcc !~ /^\d*\.?\d*$/) {
-        print "ERROR in amount: " . encode_entities($amount_dcc);
-        code_exit_BO();
-    }
+    code_exit_BO("No address provided") unless $transtype;
+    code_exit_BO('Invalid loginid') unless $loginid_dcc;
+    code_exit_BO("ERROR in amount: " . encode_entities($amount_dcc)) unless $amount_dcc =~ /^\d+\.?\d*$/;
 
-    if (not $loginid_dcc) {
-        print 'Invalid loginid';
-        code_exit_BO();
-    }
 
     my $client_dcc = Client::Account::get_instance({'loginid' => uc($loginid_dcc)});
-    if (not $client_dcc) {
-        print "ERROR: " . encode_entities($loginid_dcc) . " does not exist! Perhaps you made a typo?";
-        code_exit_BO();
-    }
+    code_exit_BO("ERROR: " . encode_entities($loginid_dcc) . " does not exist! Perhaps you made a typo?") unless $client_dcc;
 
     my $code = BOM::DualControl->new({
             staff           => $staff,
