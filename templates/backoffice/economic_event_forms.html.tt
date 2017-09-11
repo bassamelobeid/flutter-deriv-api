@@ -3,7 +3,7 @@
 <table id='economic_event_form'>
     <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
     <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z)</td></tr>
-    <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
+    <tr><td>Announcement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
     <INPUT type="hidden" name="source" value="binary">
     <tr><td>Impact</td>
         <td> : <select name=impact>
@@ -137,22 +137,24 @@
                     success: function(data){
                         var result = \$("td.save_result");
                         var obj = \$.parseJSON(data);
-                        if (obj.id) {
-                            var list_el = \$('table.economic_event_list');
-                            var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td id="binary_info">';
-                            if (obj.info) {
-                                \$.each(obj.info, function(i, item) {
-                                    to_append += '<p>'+item+'</p>';
-                                });
-                            }
-
-                            to_append += '<td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="result"></td>';
-                            to_append += '</td></tr>';
-                            list_el.append(to_append);
-                            list_el.find('tr#'+obj.id).css('color', 'green');
-                            result.text('Economic event saved. ID ' + obj.id).css('color', 'green');
-                        } else {
+                        if (obj.error) {
                             result.text(obj.error).css('color', 'red');
+                        } else if (obj.id) {
+                            if (obj.release_date !== 0) {
+                                var list_el = \$('table.economic_event_list');
+                                var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td id="binary_info">';
+                                if (obj.info) {
+                                    \$.each(obj.info, function(i, item) {
+                                        to_append += '<p>'+item+'</p>';
+                                    });
+                                }
+
+                                to_append += '<td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="result"></td>';
+                                to_append += '</td></tr>';
+                                list_el.append(to_append);
+                                list_el.find('tr#'+obj.id).css('color', 'green');
+                            }
+                            result.text('Economic event saved. ID ' + obj.id).css('color', 'green');
                         }
                     }
             });

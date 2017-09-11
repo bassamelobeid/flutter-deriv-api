@@ -21,7 +21,6 @@ Bar('PROMO CODE APPROVAL TOOL');
 
 my %input = %{request->params};
 
-BOM::Backoffice::Auth0::can_access(['Marketing']);
 my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my @approved = grep { /_promo$/ && $input{$_} eq 'A' } keys %input;

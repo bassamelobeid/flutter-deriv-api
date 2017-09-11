@@ -30,8 +30,6 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
-BOM::Backoffice::Auth0::can_access(['Payments']);
-
 my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 # Currency is utilised in Deposit and Withdrawal views accordingly
@@ -315,7 +313,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
             my ($transactions) = @_;
             my $start_epoch    = $start_date->epoch;
             my $end_epoch      = $end_date->epoch;
-            return [grep { $_->{time} >= $start_epoch and $_->{time} <= $end_epoch } @$transactions];
+            return [grep { (not exists $_->{time}) or ($_->{time} >= $start_epoch and $_->{time} <= $end_epoch) } @$transactions];
         };
         if (my $deposits = $rpc_client->listreceivedbyaddress(0)) {
             $recon->from_blockchain_deposits($filter->($deposits));

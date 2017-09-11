@@ -16,7 +16,6 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
 BrokerPresentation('Client Impersonate');
-BOM::Backoffice::Auth0::can_access(['CS']);
 
 Bar('Client Impersonate');
 
