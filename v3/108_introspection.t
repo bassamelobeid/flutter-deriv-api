@@ -206,26 +206,26 @@ SKIP: {
     # number of pricer subs
     subtest "pricers subscriptions" => sub {
 
-        sub proposal {
+        sub do_proposal {
             my $expected_err = shift;
             my $res          = $t->await::proposal({
                 "proposal" => 1,
                 %contract
             });
-            is $res->{error}{message}, $expected_err, "proposal call was successfull";
+            is $res->{error}{message}, $expected_err, 'got expected error for proposal call';
         }
 
-        proposal('You are already subscribed to proposal.');
+        do_proposal('You are already subscribed to proposal.');
         my $intro_conn = send_introspection_cmd('connections');
         cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
 
         $contract{amount} = 200;
-        proposal();
+        do_proposal();
         $intro_conn = send_introspection_cmd('connections');
         cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
 
         $contract{duration} = 14;
-        proposal();
+        do_proposal();
         $intro_conn = send_introspection_cmd('connections');
         cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 2, 'now 2 price subscription';
 
