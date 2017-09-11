@@ -1133,9 +1133,6 @@ sub transfer_between_accounts {
 
     BOM::Platform::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
-    $fm_client_db->unfreeze;
-    $to_client_db->unfreeze;
-
     return {
         status              => 1,
         transaction_id      => $response->{transaction_id},
