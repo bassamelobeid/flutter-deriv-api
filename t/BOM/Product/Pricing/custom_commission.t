@@ -15,9 +15,11 @@ use BOM::Platform::Chronicle;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
-my $qc = BOM::Platform::QuantsConfig->new(
+my $now = Date::Utility->new('2017-09-07');
+my $qc  = BOM::Platform::QuantsConfig->new(
     chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
     chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+    recorded_date    => $now->minus_time_interval('2h'),
 );
 
 $qc->save_config(
@@ -29,6 +31,8 @@ $qc->save_config(
         center_offset   => 0,
         width           => 0.5,
         currency_symbol => 'EUR',
+        start_time      => $now->epoch,
+        end_time        => $now->plus_time_interval('1h')->epoch,
     });
 $qc->save_config(
     'commission',
@@ -39,7 +43,9 @@ $qc->save_config(
         center_offset     => 0,
         width             => 0.5,
         underlying_symbol => 'frxUSDJPY',
-        currency_symbol   => 'AUD'
+        currency_symbol   => 'AUD',
+        start_time        => $now->epoch,
+        end_time          => $now->plus_time_interval('1h')->epoch,
     });
 
 $qc->save_config(
@@ -50,10 +56,11 @@ $qc->save_config(
         floor_rate    => 0.05,
         center_offset => 0,
         width         => 0.5,
-        contract_type => 'CALLE,ONETOUCH'
+        contract_type => 'CALLE,ONETOUCH',
+        start_time    => $now->epoch,
+        end_time      => $now->plus_time_interval('1h')->epoch,
     });
 
-my $now  = Date::Utility->new('2017-09-07');
 my $args = {
     bet_type     => 'CALL',
     barrier      => 'S0P',
@@ -64,19 +71,20 @@ my $args = {
     currency     => 'JPY',
 };
 
+my $mock = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
+$mock->mock(
+    'base_probability',
+    sub {
+        return Math::Util::CalculatedValue::Validatable->new(
+            name        => 'intraday_delta',
+            description => 'BS pricing based on realized vols',
+            set_by      => __PACKAGE__,
+            base_amount => 0.1
+        );
+    });
+
 subtest 'match/mismatch condition for commission adjustment' => sub {
     $args->{underlying} = 'frxGBPJPY';
-    my $mock = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
-    $mock->mock(
-        'base_probability',
-        sub {
-            return Math::Util::CalculatedValue::Validatable->new(
-                name        => 'intraday_delta',
-                description => 'BS pricing based on realized vols',
-                set_by      => __PACKAGE__,
-                base_amount => 0.1
-            );
-        });
     my $c = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0, 'zero markup if no matching config';
     $args->{bet_type} = 'CALLE';
@@ -88,6 +96,15 @@ subtest 'match/mismatch condition for commission adjustment' => sub {
     $args->{underlying} = 'frxEURJPY';
     $c = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0.45, '0.45 markup for matching both underlying & contract type config';
+};
+
+subtest 'out of period' => sub {
+    $args->{date_start} = $args->{date_pricing} = $now->plus_time_interval('1h1s');
+    my $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0, 'zero markup if contract start or expiry is not in timeframe';
+    $args->{date_start} = $args->{date_pricing} = $now->minus_time_interval('1h1s');
+    $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0, 'zero markup if contract start or expiry is not in timeframe';
 };
 
 done_testing();
