@@ -226,18 +226,35 @@ sub log_bo_access {
 sub _show_error_and_exit {
     my $error   = shift;
     my $timenow = Date::Utility->new->datetime;
-    warn "_show_error_and_exit: $error (IP: " . request()->client_ip . ')';
+    my $cookie  = BOM::Backoffice::Auth0::from_cookie();
+    warn "_show_error_and_exit: $error (IP: " . request()->client_ip . '), user: ' . ($cookie ? $cookie->{nickname} : '-');
     # this can be duplicated for ALARM message, but not an issue
     PrintContentType();
-    print '<div id="page_timeout_notice" class="aligncenter">'
-        . '<p class="normalfonterror">'
-        . $timenow . ' '
-        . localize($error) . '</p>'
-        . '<p class="normalfonterror">'
-        . '<a href="javascript:document.location.reload();"><b>'
-        . localize('Reload page')
-        . '</b></a> '
-        . '</div>';
+    if ($cookie) {
+        # user is logged in, but access is not enabled;
+        print '<div id="page_timeout_notice" class="aligncenter">'
+            . '<p class="normalfonterror">'
+            . $timenow . ' '
+            . localize($error) . '</p>'
+            . '<p class="normalfonterror">'
+            . '<a href="javascript:document.location.reload();"><b>'
+            . localize('Reload page')
+            . '</b></a> '
+            . '</div>';
+    } else {
+        # user is not logged in, redirect him to login page
+        my $login = request()->url_for("backoffice/f_broker_login.cgi", {_r => rand()});
+        print <<EOF;
+<script language=javascript>
+function redirect(){
+  window.location = "$login";
+}
+</script>
+<body onload="redirect()">
+redirecting...
+</body>
+EOF
+    }
     BOM::Backoffice::Request::request_completed();
     exit;
 }
