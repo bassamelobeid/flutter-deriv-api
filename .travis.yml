@@ -14,6 +14,14 @@ env:
     - TEST_SUITE=json_schema_1
     - TEST_SUITE=json_schema_2
 
+notifications:
+    slack:
+        rooms:
+            - binary-group:6t92829RicGEft1kCkpKLPj9#test-failures
+        on_success: never
+        on_failure: always
+        on_pull_requests: false
+
 before_install:
     - git clone ssh://git@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
     - /tmp/travis-scripts-init/clone_branch.sh regentmarkets/travis-scripts

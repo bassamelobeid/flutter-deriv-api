@@ -5,27 +5,28 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
-
 use Test::Exception;
+use Test::Mojo;
 
 use Client::Account;
 
 use BOM::Database::ClientDB;
-use BOM::Platform::Password;
-use BOM::Platform::Client::Utility;
-
-use BOM::Platform::Copier;
-use BOM::Database::DataMapper::Copier;
 use BOM::Database::DataMapper::Account;
-use Test::Mojo;
-use BOM::Test::RPC::Client;
-use Test::BOM::RPC::Contract;
+use BOM::Database::DataMapper::Copier;
 use BOM::Platform::Client::IDAuthentication;
+use BOM::Platform::Client::Utility;
+use BOM::Platform::Copier;
+use BOM::Platform::Password;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+use BOM::Test::Helper::Client qw( create_client top_up );
+use BOM::Test::RPC::Client;
+
+use Test::BOM::RPC::Contract;
 
 Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
 my $mock_rpc = Test::MockModule->new('BOM::Transaction::Validation');
@@ -48,76 +49,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 event_name   => 'FOMC',
             }]});
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-
-sub create_client {
-    my $is_mf = shift;
-    return Client::Account->register_and_return_new_client({
-        broker_code => ($is_mf ? 'MF' : 'CR'),
-        client_password  => BOM::Platform::Password::hashpw('12345678'),
-        salutation       => 'Mr',
-        last_name        => 'Doe',
-        first_name       => 'John' . time . '.' . int(rand 1000000000),
-        email            => 'john.doe' . time . '.' . int(rand 1000000000) . '@test.domain.nowhere',
-        residence        => 'in',
-        address_line_1   => '298b md rd',
-        address_line_2   => '',
-        address_city     => 'Place',
-        address_postcode => '65432',
-        address_state    => 'st',
-        phone            => '+9145257468',
-        secret_question  => 'What the f***?',
-        secret_answer    => BOM::Platform::Client::Utility::encrypt_secret_answer('is that'),
-        date_of_birth    => '1945-08-06',
-    });
-}
-
-sub top_up {
-    my ($c, $cur, $amount) = @_;
-
-    my $fdp = $c->is_first_deposit_pending;
-    my @acc = $c->account;
-
-    return if (@acc && $acc[0]->currency_code ne $cur);
-
-    if (not @acc) {
-        @acc = $c->add_account({
-            currency_code => $cur,
-            is_default    => 1
-        });
-    }
-
-    my $acc = $acc[0];
-    unless (defined $acc->id) {
-        $acc->save;
-        note 'Created account ' . $acc->id . ' for ' . $c->loginid . ' segment ' . $cur;
-    }
-
-    my ($pm) = $acc->add_payment({
-        amount               => $amount,
-        payment_gateway_code => "legacy_payment",
-        payment_type_code    => "ewallet",
-        status               => "OK",
-        staff_loginid        => "test",
-        remark               => __FILE__ . ':' . __LINE__,
-    });
-    $pm->legacy_payment({legacy_type => "ewallet"});
-    my ($trx) = $pm->add_transaction({
-        account_id    => $acc->id,
-        amount        => $amount,
-        staff_loginid => "test",
-        remark        => __FILE__ . ':' . __LINE__,
-        referrer_type => "payment",
-        action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
-        quantity      => 1,
-    });
-    $acc->save(cascade => 1);
-    $trx->load;    # to re-read (get balance_after)
-
-    BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
-        if $fdp;
-
-    note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
-}
 
 sub buy_one_bet {
     my ($acc, $args) = @_;
@@ -267,7 +198,7 @@ lives_ok {
 'following validation';
 
 lives_ok {
-    my $wrong_copier = create_client(1);
+    my $wrong_copier = create_client('MF');
     top_up $wrong_copier, 'EUR', 1000;
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
 
