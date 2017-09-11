@@ -1011,6 +1011,7 @@ sub transfer_between_accounts {
     };
     return $res if $res;
 
+    my ($from_currency, $to_currency) = ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
     $res = _validate_transfer_between_account(
         $client,
         $client_from,
@@ -1018,12 +1019,11 @@ sub transfer_between_accounts {
         {
             currency      => $currency,
             amount        => $amount,
-            from_currency => $siblings->{$client_from->loginid}->{currency},
-            to_currency   => $siblings->{$client_to->loginid}->{currency},
+            from_currency => $from_currency,
+            to_currency   => $to_currency,
         });
     return $res if $res;
 
-    my $to_currency = $siblings->{$client_to->loginid}->{currency};
     my ($to_amount, $fees, $fees_percent) =
         BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($client_from->loginid, $amount, $from_currency, $to_currency);
 
