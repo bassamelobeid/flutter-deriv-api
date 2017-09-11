@@ -139,8 +139,9 @@ if ($filen eq 'editvol') {
         print "<P> Difference between existing and new surface </p>";
         print @output;
 
-        if ( $ON_expiry_date->is_same_as(Date::Utility->new->trucate_to_day)) {
-	    print "<P> Overnigh expiry date cannot be the same date as today.</P>";
+        my $today = Date::Utility->new->truncate_to_day;
+        if ( $today->is_same_as($ON_expiry_date) {
+	    print "<P> Overnight expiry date cannot be the same date as today.</P>";
         } elsif (!$surface->is_valid) {
             print "<P> " . encode_entities($surface->validation_error) . " </P>";
 
