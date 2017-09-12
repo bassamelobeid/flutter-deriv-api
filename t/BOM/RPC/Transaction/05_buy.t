@@ -68,7 +68,7 @@ subtest 'buy' => sub {
             }
         };
         $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'ContractCreationFailure')
-            ->error_message_is('Cannot create contract', 'cannot create contract');
+            ->error_message_is('Missing required contract parameters (bet_type).', 'Missing required contract parameters (bet_type).');
 
     }
 
