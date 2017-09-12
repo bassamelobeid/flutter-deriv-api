@@ -50,7 +50,8 @@ sub save_config {
     my %args = %$args;
     my $existing_config = $self->chronicle_reader->get($namespace, $config_type) // {};
 
-    my $identifier = $args{name} // die 'name is required';
+    my $identifier = $args{name} || die 'name is required';
+    die 'Cannot use an identical name.' if $existing_config->{$identifier};
     die 'start_time is required' unless defined $args{start_time};
     die 'end_time is required'   unless defined $args{end_time};
     foreach my $key (keys %args) {
