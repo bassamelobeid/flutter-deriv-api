@@ -53,6 +53,14 @@ subtest 'get_config' => sub {
         name              => 'test'
     };
     ok $qc->save_config('commission', $config), 'config saved';
+    my $configs = $qc->get_config(
+        'commission',
+        {
+            underlying_symbol => 'frxEURUSD',
+            contract_type     => 'CALLE'
+        });
+    ok @$configs == 1, 'matched one config';
+    ok $configs->[0]->{reverse_delta}, 'parses reverse_delta flag';
     ok !@{
         $qc->get_config(
             'commission',
@@ -62,20 +70,24 @@ subtest 'get_config' => sub {
             })
         },
         'no config';
-    ok @{
-        $qc->get_config(
-            'commission',
-            {
-                underlying_symbol => 'frxEURJPY',
-                contract_type     => 'CALLE'
-            })} == 1, 'one config';
-    ok @{
-        $qc->get_config(
-            'commission',
-            {
-                underlying_symbol => 'frxUSDJPY',
-                contract_type     => 'CALLE'
-            })} == 1, 'one config';
+    $configs = $qc->get_config(
+        'commission',
+        {
+            underlying_symbol => 'frxEURJPY',
+            contract_type     => 'CALLE'
+        });
+    ok @$configs == 1, 'matched one config';
+    ok !$configs->[0]->{reverse_delta}, 'no reverse_delta flag';
+
+    $configs = $qc->get_config(
+        'commission',
+        {
+            underlying_symbol => 'frxUSDJPY',
+            contract_type     => 'CALLE'
+        });
+    ok @$configs == 1, 'matched one config';
+    ok !$configs->[0]->{reverse_delta}, 'no reverse_delta flag';
+
     my $new_config = {
         contract_type => 'CALLE',
         name          => 'test_ct',

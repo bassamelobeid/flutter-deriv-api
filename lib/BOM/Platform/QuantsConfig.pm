@@ -100,6 +100,10 @@ sub get_config {
         my $matched_ul     = ($config->{underlying_symbol} && first { $_ eq $args->{underlying_symbol} } @{$config->{underlying_symbol}});
         my $matched_curr   = ($config->{currency_symbol} && first { $args->{underlying_symbol} =~ /$_/ } @{$config->{currency_symbol}});
         if ($matched_ct && ($matched_all_ul || $matched_ul || $matched_curr)) {
+            if ($matched_curr) {
+                my ($quoted_currency_symbol) = $args->{underlying_symbol} =~ /^frx\w{3}(\w{3})$/;
+                $config->{reverse_delta} = 1 if first { $quoted_currency_symbol eq $_ } @{$config->{currency_symbol}};
+            }
             push @match, $config;
         }
     }
