@@ -1219,17 +1219,6 @@ sub _validate_transfer_between_accounts {
     my $from_currency_type = LandingCompany::Registry::get_currency_type($currency);
     return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $from_currency_type;
 
-    my $min_allowed_amount = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->amount->$from_currency_type->min;
-    return _transfer_between_accounts_error(
-        localize(
-            'Provided amount is not within permissible limits. Minimum transfer amount for provided currency is [_1].',
-            formatnumber('amount', $currency, $min_allowed_amount))) if $amount < $min_allowed_amount;
-
-    return _transfer_between_accounts_error(
-        localize(
-            'Invalid amount. Amount provided can not have more than [_1] decimal places',
-            Format::Util::Numbers::get_precision_config()->{amount}->{$currency})) if ($amount != financialrounding('amount', $currency, $amount));
-
     my ($lc_from, $lc_to) = ($client_from->landing_company, $client_to->landing_company);
     # error if landing companies are different with exception
     # of maltainvest and malta as we allow transfer between them
@@ -1252,6 +1241,17 @@ sub _validate_transfer_between_accounts {
     # set same crypto for multiple account
     return _transfer_between_accounts_error(localize('Please set the currency for your existing account [_1].', $client_to->loginid))
         unless $to_currency;
+
+    my $min_allowed_amount = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->amount->$from_currency_type->min;
+    return _transfer_between_accounts_error(
+        localize(
+            'Provided amount is not within permissible limits. Minimum transfer amount for provided currency is [_1].',
+            formatnumber('amount', $currency, $min_allowed_amount))) if $amount < $min_allowed_amount;
+
+    return _transfer_between_accounts_error(
+        localize(
+            'Invalid amount. Amount provided can not have more than [_1] decimal places',
+            Format::Util::Numbers::get_precision_config()->{amount}->{$currency})) if ($amount != financialrounding('amount', $currency, $amount));
 
     my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
 
