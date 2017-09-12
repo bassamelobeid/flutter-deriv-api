@@ -8,27 +8,32 @@ use BOM::Platform::QuantsConfig;
 use BOM::Platform::Chronicle;
 use JSON qw(to_json);
 use Try::Tiny;
+use List::Util qw(max);
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 
 my $static_config = {
     high => {
         cap_rate      => 0.3,
         floor_rate    => 0.1,
-        center_offset => 0,
+        centre_offset => 0,
         width         => 0.5,
+        flat          => 0,
     },
     medium => {
         cap_rate      => 0.25,
         floor_rate    => 0.05,
-        center_offset => 0,
+        centre_offset => 0,
         width         => 0.5,
+        flat          => 0,
     },
-    default => {
+    none => {
         cap_rate      => '',
         floor_rate    => '',
-        center_offset => '',
+        centre_offset => '',
         width         => '',
-    }};
+        flat          => '',
+    },
+};
 
 sub generate_commission_form {
     my $url = shift;
@@ -48,7 +53,9 @@ sub save_commission {
     my $args = shift;
 
     my $result = try {
-        _get_info(_qc()->save_config('commission', $args));
+        _break($args);
+        my $config = _get_info(_qc()->save_config('commission', $args));
+        $config;
     }
     catch {
         _err($_);
@@ -74,14 +81,19 @@ sub get_chart_params {
     my $args = shift;
 
     my $result = try {
-        my @data;
-        my @delta;
-        for (my $delta = 0; $delta <= 1; $delta += 0.05) {
-            push @data, BOM::Product::Pricing::Engine::Intraday::Forex::calculate_commission($delta, $args);
-            push @delta, $delta;
+        my %data;
+        _break($args);
+        foreach my $partition (@{$args->{partitions}}) {
+            my ($start, $end) = split '-', $partition->{partition_range};
+            for (my $delta = $start; $delta <= $end; $delta += 0.05) {
+                $data{$delta} =
+                    max($data{$delta} // 0, BOM::Product::Pricing::Engine::Intraday::Forex::calculate_event_adjustment($delta, $partition));
+            }
         }
+
+        my @delta = sort { $a <=> $b } keys %data;
         +{
-            data  => \@data,
+            data  => [map { $data{$_} } @delta],
             delta => \@delta,
         };
     }
@@ -92,6 +104,21 @@ sub get_chart_params {
     return $result;
 }
 
+sub _break {
+    my $args = shift;
+
+    my @to_break = qw(partition_range flat cap_rate floor_rate width centre_offset);
+    my %hash = map { $_ => [split ',', delete $args->{$_}] } @to_break;
+    my @partitions;
+    my $number_of_partitions = scalar(@{$hash{partition_range}});
+    for (1 .. $number_of_partitions) {
+        push @partitions, +{map { $_ => (shift @{$hash{$_}} // die 'unmatched partition ' . $_) } @to_break};
+    }
+
+    $args->{partitions} = \@partitions;
+    return $args;
+}
+
 sub _err {
     return {error => 'ERR: ' . shift};
 }
@@ -100,6 +127,7 @@ sub _qc {
     return BOM::Platform::QuantsConfig->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        recorded_date    => Date::Utility->new,
     );
 }
 
@@ -111,7 +139,7 @@ sub _get_info {
         (contract_type     => ($config->{contract_type})     ? join(',', @{delete $config->{contract_type}})     : 'none'),
         (underlying_symbol => ($config->{underlying_symbol}) ? join(',', @{delete $config->{underlying_symbol}}) : 'none'),
         (currency_symbol   => ($config->{currency_symbol})   ? join(',', @{delete $config->{currency_symbol}})   : 'none'),
-        config => $config,
+        config => $config->{partitions},
     };
 }
 

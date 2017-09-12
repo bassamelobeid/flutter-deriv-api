@@ -1,5 +1,6 @@
 <p>README:</p>
 <ul>
+    <li>partition range : holds value from 0 to 1 in delta space. Multiple partitions could be specified with 0-0.25,0.25-1. On overlapping point, we take the maximum of the values.</li>
     <li>max adjustment : maximum adjustment to markup</li>
     <li>min adjustment : minimum adjustment to markup</li>
     <li>width : width between the delats having max adjustment (0.6 means delats of 0.2 and 0.8 will get max adjustment)</li>
@@ -8,18 +9,19 @@
 <p><b>Add new custom commission with the tool below: </b></p>
 
 <table id='custom_commission_form'>
-    <tr><td>Preset</td><td> : <select onchange="fillForm(this.value, '[% static_config %]')"><option value="default">Default</option><option value="medium">Medium</option><option value="high">High</option></select></td></tr>
+    <tr><td>Mode</td><td> : <select onchange="fillForm(this.value, '[% static_config %]')"><option value="none">None</option><option value="medium">Medium</option><option value="high">High</option></select></td></tr>
     <tr><td>Name</td><td> : <input type="text" name="name"></td><td>(required)</td></tr>
     <tr><td>Start Time</td><td> : <input type="text" name="start_time"></td><td>(required)</td></tr>
     <tr><td>End Time</td><td> : <input type="text" name="end_time"></td><td>(required)</td></tr>
     <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol"></td></tr>
     <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol"></td></tr>
     <tr><td>Contract Type</td><td> : <input type="text" name="contract_type"></td></tr>
-    <tr><td>Flat</td><td> : <input type="checkbox" name="flat" value="1"></td></tr>
+    <tr><td>Partition Range</td><td> : <input type="text" name="partition_range"></td><td>(partitions in delta space. E.g. 0-1 or 0-0.5,0.5-1)</td></tr>
+    <tr><td>Flat</td><td> : <input type="text" name="flat"></td><td>(boolean flag. If set to 1, the partition will be set to max adjustment)</td></tr>
     <tr><td>Max adjustment</td><td> : <input type="text" name="cap_rate"></td></tr>
     <tr><td>Min adjustment</td><td> : <input type="text" name="floor_rate"></td></tr>
-    <tr><td>Width</td><td> : <input type="text" name="width"></td></tr>
-    <tr><td>Centre Offset</td><td> : <input type="text" name="center_offset"></td></tr>
+    <tr><td>Width</td><td> : <input type="text" name="width"></td><td>(the width of the slope from min to max adjustment)</td></tr>
+    <tr><td>Centre Offset</td><td> : <input type="text" name="centre_offset"></td></tr>
     <tr><td></td><td><button onclick="drawChart()">Chart it</button><button onclick="saveCustom()">Save</button></td><td class='save_result'></td><td class="result"></td></tr>
 </table>
 
@@ -41,8 +43,9 @@
                     cap_rate: el.find('input[name="cap_rate"]').val(),
                     floor_rate: el.find('input[name="floor_rate"]').val(),
                     width: el.find('input[name="width"]').val(),
-                    center_offset: el.find('input[name="center_offset"]').val(),
-                    flat: el.find('input[name="flat"]:checked').val()
+                    centre_offset: el.find('input[name="centre_offset"]').val(),
+                    flat: el.find('input[name="flat"]').val(),
+                    partition_range: el.find('input[name="partition_range"]').val()
                 },
                 success: function(data){
                     var config = \$.parseJSON(data);
@@ -100,8 +103,9 @@
                     cap_rate: el.find('input[name="cap_rate"]').val(),
                     floor_rate: el.find('input[name="floor_rate"]').val(),
                     width: el.find('input[name="width"]').val(),
-                    center_offset: el.find('input[name="center_offset"]').val(),
+                    centre_offset: el.find('input[name="centre_offset"]').val(),
                     flat: el.find('input[name="flat"]').val(),
+                    partition_range: el.find('input[name="partition_range"]').val(),
                     start_time: el.find('input[name="start_time"]').val(),
                     end_time: el.find('input[name="end_time"]').val()
                 },

@@ -19,10 +19,11 @@ my $args = {
     cap_rate          => request()->param('cap_rate'),
     floor_rate        => request()->param('floor_rate'),
     width             => request()->param('width'),
-    center_offset     => request()->param('center_offset'),
+    centre_offset     => request()->param('centre_offset'),
     flat              => request()->param('flat'),
     start_time        => request()->param('start_time'),
     end_time          => request()->param('end_time'),
+    partition_range   => request()->param('partition_range'),
 };
 
 if (request()->param('save_config')) {
