@@ -252,9 +252,9 @@ sub filter_siblings_by_landing_company {
 }
 
 sub get_real_account_siblings_information {
-    my ($client, $no_disabled) = @_;
+    my ($loginid, $no_disabled) = @_;
 
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::Platform::User->new({loginid => $loginid});
     # return empty if we are not able to find user, this should not
     # happen but added as additional check
     return {} unless $user;
@@ -321,7 +321,7 @@ sub validate_make_new_account {
             message_to_client => $error_map->{'invalid residence'}}) if ($countries_instance->restricted_country($residence));
 
     # get all real account siblings
-    my $siblings = get_real_account_siblings_information($client);
+    my $siblings = get_real_account_siblings_information($client->loginid);
 
     # if no real sibling is present then its virtual
     if (scalar(keys %$siblings) == 0) {
@@ -413,7 +413,7 @@ sub validate_make_new_account {
 sub validate_set_currency {
     my ($client, $currency) = @_;
 
-    my $siblings = get_real_account_siblings_information($client);
+    my $siblings = get_real_account_siblings_information($client->loginid);
 
     # is virtual check is already done in set account currency
     # but better to have it here as well so that this sub can
