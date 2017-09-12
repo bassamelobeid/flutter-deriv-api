@@ -222,6 +222,7 @@ sub delete_upload_info {
     return unless defined $upload_info;
     my $stash = $c->stash('document_upload');
     delete $stash->{$upload_info->{upload_id}};
+    return;
 }
 
 1;
