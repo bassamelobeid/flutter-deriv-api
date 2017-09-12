@@ -318,7 +318,7 @@ sub event_markup {
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
         for_date         => $for_date
     );
-    my $commissions = $qc->get_config(
+    my $event_markup = $qc->get_config(
         'commission',
         +{
             contract_type     => $self->bet->code,
@@ -329,12 +329,18 @@ sub event_markup {
     my $c_end   = $self->bet->date_expiry->epoch;
     my @markups = (0);
 
-    foreach my $c (@$commissions) {
+    foreach my $c (@$event_markup) {
+        my $start_epoch     = Date::Utility->new($c->{start_time})->epoch;
+        my $end_epoch       = Date::Utility->new($c->{end_time})->epoch;
+        my $valid_timeframe = ($c_start >= $start_epoch && $c_start <= $end_epoch)
+            || ($c_end >= $start_epoch && $c_end <= $end_epoch || ($c_start < $start_epoch && $c_end > $end_epoch));
         $delta = 1 - $delta if $c->{reverse_delta};
-        my $start_epoch = Date::Utility->new($c->{start_time})->epoch;
-        my $end_epoch   = Date::Utility->new($c->{end_time})->epoch;
-        if (($c_start >= $start_epoch && $c_start <= $end_epoch) || ($c_end >= $start_epoch && $c_end <= $end_epoch)) {
-            push @markups, calculate_commission($delta, $c);
+        foreach my $partition (@{$c->{partitions}}) {
+            my @delta_range = split '-', $partition->{partition_range};
+            my $valid_delta = ($delta >= $delta_range[0] && $delta <= $delta_range[1]);
+            if ($valid_timeframe && $valid_delta) {
+                push @markups, calculate_event_adjustment($delta, $partition);
+            }
         }
     }
 
@@ -346,7 +352,7 @@ sub event_markup {
     });
 }
 
-sub calculate_commission {
+sub calculate_event_adjustment {
     my ($delta, $c) = @_;
 
     my $cap = $c->{cap_rate};
@@ -354,15 +360,15 @@ sub calculate_commission {
     die 'max adjustment is not defined' unless defined $cap;
     return $cap if $c->{flat};
 
-    if (my @missing = grep { not defined $c->{$_} or $c->{$_} eq '' } qw(width floor_rate center_offset)) {
+    if (my @missing = grep { not defined $c->{$_} or $c->{$_} eq '' } qw(width floor_rate centre_offset)) {
         die 'missing required parameters[' . (join ',', @missing) . '] to calculate commission';
     }
 
     my $width         = max(0.01, $c->{width});
     my $floor         = $c->{floor_rate};
-    my $center_offset = $c->{center_offset};
+    my $centre_offset = $c->{centre_offset};
 
-    return min($cap, $cap - ($cap - $floor) * (1 - (2 / $width * abs($delta - 0.5 - $center_offset))**3)**3);
+    return min($cap, $cap - ($cap - $floor) * (1 - (2 / $width * abs($delta - 0.5 - $centre_offset))**3)**3);
 }
 
 sub economic_events_spot_risk_markup {
