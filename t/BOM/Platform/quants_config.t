@@ -25,18 +25,18 @@ subtest 'save_config' => sub {
         currency_symbol => 'USD,JPY',
         name            => 'test',
         contract_type   => 'CALLE,PUT,ONETOUCH',
-        cap_rate        => 0.3
+        partitions      => [{cap_rate => 0.3}],
     };
     ok $qc->save_config('commission', $args), 'config saved';
     my $saved = $qc->chronicle_reader->get('quants_config', 'commission')->{test};
     is_deeply $saved->{contract_type},   [split ',', $args->{contract_type}],   'contract_type matches';
     is_deeply $saved->{currency_symbol}, [split ',', $args->{currency_symbol}], 'currency_symbol matches';
-    is $saved->{cap_rate}, $args->{cap_rate}, 'cap_rate matches';
+    is_deeply $saved->{partitions}, $args->{partitions}, 'partitions matches';
     throws_ok { $qc->save_config('commission', +{%$args, contract_type => 'UNKNOWN,CALL'}) } qr/invalid input for contract_type \[UNKNOWN\]/,
         'throws if unknown contract type';
     throws_ok { $qc->save_config('commission', +{%$args, underlying_symbol => 'frxUSDJPY,CALL'}) } qr/invalid input for underlying_symbol \[CALL\]/,
         'throws if unknown underlying symbol';
-    throws_ok { $qc->save_config('commission', +{%$args, floor_rate => 'frxUSDJPY'}) } qr/invalid input for floor_rate \[frxUSDJPY\]/,
+    throws_ok { $qc->save_config('commission', +{%$args, partitions => [{floor_rate => 'frxUSDJPY'}]}) } qr/invalid input for floor_rate/,
         'throws if unknown floor rate is invalid';
 };
 

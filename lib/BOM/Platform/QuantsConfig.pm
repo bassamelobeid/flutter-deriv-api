@@ -24,8 +24,8 @@ BOM::Platform::QuantsConfig - A class to handle dynamic quants config
 
 use Date::Utility;
 use LandingCompany::Offerings qw(get_offerings_flyby);
-use Scalar::Util qw(looks_like_number);
 use List::Util qw(first);
+use Scalar::Util qw(looks_like_number);
 
 has [qw(chronicle_reader chronicle_writer)] => (is => 'ro');
 
@@ -65,8 +65,12 @@ sub save_config {
                 _validate($key, $_) or die "invalid input for $key [$_]" foreach @values;
             }
             $args{$key} = \@values;
-        } elsif (!looks_like_number($args{$key})) {
-            die "invalid input for $key [" . $args{$key} . ']';
+        } elsif ($key eq 'partitions') {
+            foreach my $partition (@{$args{$key}}) {
+                if (my $partition_key = first { !looks_like_number($partition->{$_}) } keys %$partition) {
+                    die "invalid input for $partition_key";
+                }
+            }
         }
     }
 
