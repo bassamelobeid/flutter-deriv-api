@@ -71,7 +71,7 @@ if (length($broker) < 2) {
 }
 
 my $cfg     = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
-my $url_cfg = YAML::XS::LoadFile('/home/git/regentmarkets/bom-backoffice/config/cryptocurrency_rpc.yml');
+my $url_cfg = YAML::XS::LoadFile('/home/git/regentmarkets/bom-backoffice/config/cryptocurrency_url.yml');
 
 my $currency_url = $url_cfg->{blockchain_url}{$currency}{BOM::Platform::Config::on_qa() ? 'testnet' : 'default'};
 code_exit_BO('No currency urls for ' . $currency) unless $currency_url->{transaction} and $currency_url->{address};
