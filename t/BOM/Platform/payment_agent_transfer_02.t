@@ -57,7 +57,8 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
             toClient => $pa_client,
             currency => 'USD',
             amount   => 999,
-            remark   => $remark
+            remark   => $remark,
+            fees     => 0,
         );
     }
     "OK with remark length = 800";
@@ -71,7 +72,8 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
             toClient => $pa_client,
             currency => 'USD',
             amount   => 999,
-            remark   => $remark
+            remark   => $remark,
+            fees     => 0,
         );
     }
     qr/value too long for type character varying\(800\)/, 'remark length cannot > 800';
