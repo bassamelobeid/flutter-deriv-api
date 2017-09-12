@@ -169,9 +169,13 @@ sub read_templated_schema_file {
     my $expand = sub {
         my ($idx) = @_;
 
-        return $template_values[$idx] if defined $template_values[$idx];
+        return $template_values[$idx - 1] if defined $template_values[$idx - 1];
 
-        my $f = $template_func[$idx];
+        my $f = $template_func[$idx - 1];    # templates are 1-based
+        if (!defined $f) {
+            warn "No template function defined for template parameter [_$idx]";
+            return "[MISSING VALUE FOR PARAMETER $idx]";
+        }
         $f =~ s/^\s+|\s+$//g;
         my $template_content;
         if ($f =~ /^\_.*$/) {
@@ -193,13 +197,13 @@ sub read_templated_schema_file {
             $template_content = $f;
         }
         # Memoise it for next time
-        $template_values[$idx] = $template_content;
+        $template_values[$idx - 1] = $template_content;
         return $template_content;
     };
 
-    # Expand parameters in the form [_nnn] in the content.
-    # They are numbered 1 onwards;  [_1] wants the value in [0], etc...
-    $content =~ s{\[_(\d+)\]}{$expand->($1-1)}eg;
+    # Expand templates in the form [_nnn] by using the functions given in
+    # @$template_funcs.
+    $content =~ s{\[_(\d+)\]}{$expand->($1)}eg;
 
     return $content;
 }
