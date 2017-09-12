@@ -330,6 +330,7 @@ sub event_markup {
     my @markups = (0);
 
     foreach my $c (@$commissions) {
+        $delta = 1 - $delta if $c->{reverse_delta};
         my $start_epoch = Date::Utility->new($c->{start_time})->epoch;
         my $end_epoch   = Date::Utility->new($c->{end_time})->epoch;
         if (($c_start >= $start_epoch && $c_start <= $end_epoch) || ($c_end >= $start_epoch && $c_end <= $end_epoch)) {
