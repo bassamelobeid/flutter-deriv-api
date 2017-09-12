@@ -755,7 +755,7 @@ sub process_ask_event {
         # log the instances when pricing server doesn't return theo probability
         # Also, don't send price update on this for any client, so we're ignoring this event from Redis.
         # this will look as a lag in pricing for clients
-        unless (defined $resp_theo_probability) {
+        unless (defined $theo_probability) {
             warn 'missing theo probability from pricer. First contract parameter dump '
                 . encode_json($stash_data->{cache}->{contract_parameters})
                 . ', pricer response: '
