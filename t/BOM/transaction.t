@@ -23,6 +23,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client qw(create_client);
+use BOM::Test::Time qw( sleep_till_next_second );
 use BOM::Platform::Client::IDAuthentication;
 
 use BOM::MarketData qw(create_underlying_db);
@@ -1342,6 +1343,8 @@ subtest 'max_turnover validation', sub {
     'survived';
 };
 
+sleep_till_next_second();
+
 subtest 'max_7day_turnover validation', sub {
     plan tests => 11;
     lives_ok {
@@ -1436,6 +1439,8 @@ subtest 'max_7day_turnover validation', sub {
     }
     'survived';
 };
+
+sleep_till_next_second();
 
 subtest 'max_30day_turnover validation', sub {
     plan tests => 11;
