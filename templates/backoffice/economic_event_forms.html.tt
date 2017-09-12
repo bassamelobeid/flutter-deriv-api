@@ -53,6 +53,52 @@
     [% END %]
 </table>
 
+<p><b>List of Deleted Economic Events: </b> </p>
+
+<table class='deleted_economic_event_list'>
+    <tr>
+        <td><b>Event ID</b></td>
+        <td><b>Event Name</b></td>
+        <td><b>Release Date</b></td>
+        <td><b>Impact (FF)</b></td>
+        <td><b>Symbol</b></td>
+        <td><b>Action</b></td>
+    </tr>
+    [% FOREACH row IN deleted_events %]
+        <tr id="[% row.id %]">
+            <td>[% row.id %]</td>
+            <td>[% row.event_name %]</td>
+            <td>[% row.release_date %]</td>
+            <td>[% row.impact %]</td>
+            <td>[% row.symbol %]</td>
+            <td><button onclick="restoreEvent( '[% row.id %]' )">Restore</button> </td>
+            <td style="display:none;" class='result'></td>
+        </tr>
+    [% END %]
+</table>
+
+<p><b>List of Unlisted Economic Events: </b> </p>
+
+<table class='unlisted_economic_event_list'>
+    <tr>
+        <td><b>Event ID</b></td>
+        <td><b>Event Name</b></td>
+        <td><b>Release Date</b></td>
+        <td><b>Impact (FF)</b></td>
+        <td><b>Symbol</b></td>
+    </tr>
+    [% FOREACH row IN unlisted_events %]
+        <tr id="[% row.id %]">
+            <td>[% row.id %]</td>
+            <td>[% row.event_name %]</td>
+            <td>[% row.release_date %]</td>
+            <td>[% row.impact %]</td>
+            <td>[% row.symbol %]</td>
+            <td style="display:none;" class='result'></td>
+        </tr>
+    [% END %]
+</table>
+
 <script>
     function updateTable(date) {
         if (date) {
@@ -110,6 +156,45 @@
             });
         }
     }
+    function restoreEvent(id) {
+	if (id) {
+
+            \$.ajax({
+                    url: "[% ee_upload_url | none %]",
+                    data: {
+                        restore_event: "1",
+                        event_id: id,
+                    },  
+                    success: function(data){
+                        var obj = \$.parseJSON(data);
+                        var result = \$("td.save_result");
+                        if (obj.id) {
+                            var list_el = \$('table.economic_event_list');
+                            var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td id="binary_info">';                            if (obj.info) {
+                                \$.each(obj.info, function(i, item) {
+                                    to_append += '<p>'+item+'</p>'; 
+                                }); 
+                            }   
+                            
+                            to_append += '</td><td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="result"></td>';                                    to_append += '</tr>';
+
+                            \$('tr#'+id).remove();                                                       
+                            
+                            if(obj.unlisted){
+	                      var unlisted_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td></tr>';
+                              \$('table.unlisted_economic_event_list').append(unlisted_append);
+                            }
+
+                            list_el.append(to_append);
+                            list_el.find('tr#'+obj.id).css('color', 'green');
+                            result.text('Economic event saved. ID ' + obj.id).css('color', 'green');
+                        } else {
+                            result.text(obj.error).css('color', 'red');
+                        }   
+                    }   
+            });             
+        }
+    }
     function saveEvent() {
         var el = \$('table#economic_event_form');
         if (el) {
@@ -149,12 +234,18 @@
                                     });
                                 }
 
-                                to_append += '<td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="result"></td>';
-                                to_append += '</td></tr>';
-                                list_el.append(to_append);
-                                list_el.find('tr#'+obj.id).css('color', 'green');
+                            to_append += '<td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="result"></td>';
+                            to_append += '</td></tr>';
+                            list_el.append(to_append);
+                            list_el.find('tr#'+obj.id).css('color', 'green');
+
+                            var unlisted_el = \$('table.unlisted_economic_event_list');
+
+		 	                      var unlisted_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td>'+'<td style="display:none;" class="result"></td></tr>';
+                            unlisted_el.append(unlisted_append);
                             }
                             result.text('Economic event saved. ID ' + obj.id).css('color', 'green');
+                            
                         }
                     }
             });
@@ -174,8 +265,19 @@
                         if(r.error) {
                             result.text('ERR: ' + r.error).css('color','red');
                         } else{
-                            \$('tr#'+ r.id).remove();
+                        
+			    var del_list = \$('table.deleted_economic_event_list');
+                            var to_append = '<tr id="'+ r.id +'"><td>'+r.id+'</td><td>'+r.event_name+'</td><td>'+r.release_date+'</td><td>'+r.impact+'</td><td>'+r.symbol+'</td>';
+			    to_append += '<td><button onclick="restoreEvent( \''+ r.id +'\' )">Restore</button> </td><td style="display:none;" class="result"></td></tr>';                            
+ 
+                            
+			    \$('.economic_event_list, .unlisted_economic_event_list').find('tr#' + r.id).remove();
+			    del_list.append(to_append);
+
+                            
+
                             result.text('Economic event deleted.').css('color','green');
+
                         }
                     }
             });
@@ -188,6 +290,16 @@
         border-collapse: collapse;
     }
     .economic_event_list td, .economic_event_list th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 4px;
+    }
+    .deleted_economic_event_list td, .deleted_economic_event_list th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 4px;
+    }
+    .unlisted_economic_event_list td, .unlisted_economic_event_list th {
         border: 1px solid #dddddd;
         text-align: left;
         padding: 4px;

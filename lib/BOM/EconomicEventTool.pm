@@ -14,6 +14,11 @@ use List::Util qw(first);
 use BOM::Backoffice::Request;
 use BOM::MarketDataAutoUpdater::Forex;
 
+use File::ShareDir;
+use YAML::XS qw(LoadFile);
+
+my $economic_event_categories = LoadFile(File::ShareDir::dist_file('Volatility-Seasonality', 'economic_event_categories.yml'));
+
 sub get_economic_events_for_date {
     my $date = shift;
 
@@ -30,14 +35,42 @@ sub generate_economic_event_tool {
     my $today  = Date::Utility->new->truncate_to_day;
     my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 6);
 
+    my @deleted_events = map { human_readable_date($_) } values _get_deleted_events();
+
+    my $unlisted_events = check_unlisted_events(\@events);
+
     return BOM::Backoffice::Request::template->process(
         'backoffice/economic_event_forms.html.tt',
         {
-            ee_upload_url => $url,
-            events        => \@events,
-            dates         => \@dates,
+            ee_upload_url   => $url,
+            events          => \@events,
+            dates           => \@dates,
+            deleted_events  => \@deleted_events,
+            unlisted_events => $unlisted_events,
         },
     ) || die BOM::Backoffice::Request::template->error;
+}
+
+sub check_unlisted_events {
+    my $events = shift;
+
+    my @unlisted_events;
+
+    foreach my $event (@$events) {
+        my $pattern = $event->{event_name};
+        $pattern =~ s/\s+/_/g;
+        my @matches = grep { /$pattern/ } keys %$economic_event_categories;
+        push @unlisted_events, $event if not scalar(@matches);
+    }
+    return \@unlisted_events;
+}
+
+sub human_readable_date {
+    my $event = shift;
+
+    $event->{release_date} = Date::Utility->new($event->{release_date})->datetime if $event->{release_date};
+
+    return $event;
 }
 
 # get the calibration magnitude and duration factor of the given economic event, if any.
@@ -61,19 +94,31 @@ sub delete_by_id {
 
     return _err("ID is not found.") unless ($id);
 
+    my $ref = BOM::Platform::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
+    my @existing = @{$ref->{events}};
+
+    my $to_delete = first { $_->{id} eq $id } @existing;
+
     my $ee = Quant::Framework::EconomicEventCalendar->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     );
 
     my $deleted = $ee->delete_event({
-        id   => $id,
-        type => 'scheduled'
+        id => $id,
+        %$to_delete
     });
+
     _regenerate($ee->get_economic_events_calendar);
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
-    return {id => $deleted};
+
+    human_readable_date($to_delete);
+
+    return {
+        id => $deleted,
+        %$to_delete
+    };
 }
 
 sub update_by_id {
@@ -102,6 +147,38 @@ sub update_by_id {
     } else {
         return _err('Did not find event with id: ' . $args->{id});
     }
+}
+
+sub restore_by_id {
+    my $args = shift;
+
+    return _err("ID is not found.") unless $args->{id};
+
+    my $deleted_events = _get_deleted_events();
+
+    my $to_restore = $deleted_events->{$args->{id}};
+
+    return _err('Economic event not found with [' . $args->{id} . ']') unless $to_restore;
+
+    my $ee = Quant::Framework::EconomicEventCalendar->new({
+        recorded_date    => Date::Utility->new,
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
+    $ee->save_new($to_restore);
+
+    _regenerate($ee->get_economic_events_calendar);
+
+    my $new_info = get_info($to_restore);
+
+    my $unlisted = check_unlisted_events([$to_restore]);
+    $to_restore->{unlisted} = 1 if scalar(@$unlisted);
+
+    return {
+        id       => $args->{id},
+        new_info => $new_info->{info},
+        %$to_restore
+    };
 }
 
 sub save_new_event {
@@ -164,6 +241,14 @@ sub _get_economic_events {
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
     );
     return $eec->list_economic_events_for_date($date) // [];
+}
+
+sub _get_deleted_events {
+
+    my $eec = Quant::Framework::EconomicEventCalendar->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+    );
+    return $eec->get_deleted_events() // [];
 }
 
 sub _err {
