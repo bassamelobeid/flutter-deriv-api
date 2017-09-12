@@ -306,7 +306,7 @@ sub add_brand {
 
 # XXX: this is temporary check for debug purposes. At the end this check will be inside before_dispatch
 sub check_useragent {
-    my ($c, $req_storage) = @_;
+    my ($c) = @_;
 
     if ((not $c->stash('user_agent')) and $c->stash('logged_requests') < 3) {
         $c->stash('logged_requests', $c->stash('logged_requests') + 1);
