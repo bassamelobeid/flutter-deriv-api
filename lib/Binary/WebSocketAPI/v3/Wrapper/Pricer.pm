@@ -804,6 +804,12 @@ sub _price_stream_results_adjustment {
 
     my $contract_parameters = $cache->{contract_parameters};
 
+    # log the instances when pricing server doesn't return theo probability
+    unless (defined $resp_theo_probability) {
+        warn 'missing theo probability from pricer. Contract parameter dump ' . encode_json($contract_parameters);
+        stats_inc('price_adjustment.missing_theo_probability');
+    }
+
     my $t = [gettimeofday];
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
