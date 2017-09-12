@@ -51,6 +51,8 @@ sub save_config {
     my $existing_config = $self->chronicle_reader->get($namespace, $config_type) // {};
 
     my $identifier = $args{name} // die 'name is required';
+    die 'start_time is required' unless defined $args{start_time};
+    die 'end_time is required'   unless defined $args{end_time};
     foreach my $key (keys %args) {
         next if $key eq 'name';
 
@@ -67,7 +69,7 @@ sub save_config {
             $args{$key} = \@values;
         } elsif ($key eq 'partitions') {
             foreach my $partition (@{$args{$key}}) {
-                if (my $partition_key = first { !looks_like_number($partition->{$_}) } keys %$partition) {
+                if (my $partition_key = first { !looks_like_number($partition->{$_}) } grep { $_ ne 'partition_range' } keys %$partition) {
                     die "invalid input for $partition_key";
                 }
             }
