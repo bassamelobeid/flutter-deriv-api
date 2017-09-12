@@ -68,6 +68,9 @@ print qq~<br><form method=post action=$request_files_upload_url>
     <select name=frequency>
             <option value='scheduled'>Scheduled (Normal)</option>
             <option value='oneshot'>Oneshot</option>
+            <option value='adhoc'>Adhoc</option>
+            <!-- The One-shot is a kind of scheduled request, which runs once. The request has a specific date and time supplied, and is never repeated. 
+            In ad hoc, request is serviced immediately, gathering the latest available data. -->
         </select>
         <select name=type>
             <option value=request>request file</option>
