@@ -114,6 +114,13 @@ subtest 'call params validation' => sub {
         qr/Provided amount is not within permissible limits. Minimum transfer amount for provided currency is/,
         'Correct error message for invalid amount';
 
+    $params->{args}->{amount} = 1.001;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for invalid amount';
+    like $result->{error}->{message_to_client},
+        qr/Invalid amount. Amount provided can not have more than/,
+        'Correct error message for amount with decimal places more than allowed per currency';
+
     $params->{args}->{amount}   = 1;
     $params->{args}->{currency} = 'XXX';
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;

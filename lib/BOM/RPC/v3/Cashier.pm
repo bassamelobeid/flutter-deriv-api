@@ -1012,7 +1012,7 @@ sub transfer_between_accounts {
     return $res if $res;
 
     my ($from_currency, $to_currency) = ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
-    $res = _validate_transfer_between_account(
+    $res = _validate_transfer_between_accounts(
         $client,
         $client_from,
         $client_to,
@@ -1197,7 +1197,7 @@ sub _transfer_between_accounts_error {
     });
 }
 
-sub _validate_transfer_between_account {
+sub _validate_transfer_between_accounts {
     my ($current_client, $client_from, $client_to, $args) = @_;
 
     # error out if one of the client is not defined, i.e.
@@ -1220,12 +1220,15 @@ sub _validate_transfer_between_account {
     return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $from_currency_type;
 
     my $min_allowed_amount = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->amount->$from_currency_type->min;
-    if ($amount < $min_allowed_amount or $amount != financialrounding('amount', $currency, $amount)) {
-        return _transfer_between_accounts_error(
-            localize(
-                'Provided amount is not within permissible limits. Minimum transfer amount for provided currency is [_1].',
-                formatnumber('amount', $currency, $min_allowed_amount)));
-    }
+    return _transfer_between_accounts_error(
+        localize(
+            'Provided amount is not within permissible limits. Minimum transfer amount for provided currency is [_1].',
+            formatnumber('amount', $currency, $min_allowed_amount))) if $amount < $min_allowed_amount;
+
+    return _transfer_between_accounts_error(
+        localize(
+            'Invalid amount. Amount provided can not have more than [_1] decimal places',
+            Format::Util::Numbers::get_precision_config()->{amount}->{$currency})) if ($amount != financialrounding('amount', $currency, $amount));
 
     my ($lc_from, $lc_to) = ($client_from->landing_company, $client_to->landing_company);
     # error if landing companies are different with exception
