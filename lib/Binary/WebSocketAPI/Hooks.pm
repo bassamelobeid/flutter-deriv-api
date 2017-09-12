@@ -304,10 +304,10 @@ sub add_brand {
     return;
 }
 
+# XXX: this is temporary check for debug purposes. At the end this check will be inside before_dispatch
 sub check_useragent {
     my ($c, $req_storage) = @_;
 
-    # check for user_agent, throw error if it's not there
     if ((not $c->stash('user_agent')) and $c->stash('log_requests') < 3) {
         $c->stash('log_requests', $c->stash('log_requests') + 1);
         try {
@@ -319,23 +319,6 @@ sub check_useragent {
                 "\n"
             );
         };
-#        return $c->new_error($req_storage->{name}, 'AccessForbidden',
-#            $c->l('App id is mandatory to access our api. Please register your application.'));
-    }
-    return;
-}
-
-sub check_app_id {
-    my ($c, $req_storage) = @_;
-
-    # check for app_id, throw error if it's not there
-    unless (defined $c->stash('source')) {
-        try {
-            Path::Tiny::path('/var/log/httpd/missing_app_id.log')
-                ->append('No app id, ip is ' . $c->stash('client_ip') . ' country is ' . $c->stash('country_code'));
-        };
-        return $c->new_error($req_storage->{name}, 'AccessForbidden',
-            $c->l('App id is mandatory to access our api. Please register your application.'));
     }
     return;
 }
