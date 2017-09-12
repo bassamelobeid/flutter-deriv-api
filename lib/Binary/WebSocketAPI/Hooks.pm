@@ -308,7 +308,7 @@ sub check_useragent {
     my ($c, $req_storage) = @_;
 
     # check for user_agent, throw error if it's not there
-    if ($c->stash('user_agent') and $c->stash('log_requests') < 3) {
+    if ((not $c->stash('user_agent')) and $c->stash('log_requests') < 3) {
         $c->stash('log_requests', $c->stash('log_requests') + 1);
         try {
             Path::Tiny::path('/var/log/httpd/missing_ua.log')->append((
