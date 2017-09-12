@@ -11,7 +11,8 @@
       "required": 1
     },
     "document_type": {
-      "type": "string",
+     "enum":["passport", "proofid", "driverslicense", "proofaddress", "bankstatement", "power_of_attorney", "amlglobalcheck", "docverification", "other"],
+     "type": "string",
       "description": "Document type (passport, driver's license, etc.)",
       "required": 1
     },
@@ -22,6 +23,7 @@
     },
     "document_id": {
       "type": "string",
+      "pattern":"^[\\w\\s-]{0,30}$",
       "description": "(Optional) Document ID (based on each document type)",
       "required": 0
     },
