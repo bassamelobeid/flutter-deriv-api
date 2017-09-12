@@ -304,6 +304,27 @@ sub add_brand {
     return;
 }
 
+sub check_useragent {
+    my ($c, $req_storage) = @_;
+
+    # check for user_agent, throw error if it's not there
+    if ($c->stash('user_agent') and $c->stash('log_requests') < 3) {
+        $c->stash('log_requests', $c->stash('log_requests') + 1);
+        try {
+            Path::Tiny::path('/var/log/httpd/missing_ua.log')->append((
+                    join ',',
+                    (map { $c->stash($_) } qw/ source client_ip landing_company_name brand log_requests /),
+                    JSON::to_json($c->stash('introspection')->{last_call_received})
+                ),
+                "\n"
+            );
+        };
+#        return $c->new_error($req_storage->{name}, 'AccessForbidden',
+#            $c->l('App id is mandatory to access our api. Please register your application.'));
+    }
+    return;
+}
+
 sub check_app_id {
     my ($c, $req_storage) = @_;
 
