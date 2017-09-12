@@ -34,7 +34,7 @@ my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 # Currency is utilised in Deposit and Withdrawal views accordingly
 # to distinguish information among supported cryptocurrencies.
-my $currency = encode_entities(request()->param('currency') // 'BTC');
+my $currency = request()->param('currency') // 'BTC';
 # Action is used for transaction verification purposes.
 my $action = request()->param('action');
 # Address is retrieved from Search view for `Address` option.
@@ -69,6 +69,10 @@ if (length($broker) < 2) {
         "We cannot process your request because it would seem that your browser is not configured to accept cookies.  Please check that the 'enable cookies' function is set if your browser, then please try again.";
     code_exit_BO();
 }
+code_exit_BO() unless ($view_action);
+
+code_exit_BO("Invalid currency.")
+    if $currency !~ /^[A-Z]{3}$/;
 
 my $cfg     = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
 my $url_cfg = YAML::XS::LoadFile('/home/git/regentmarkets/bom-backoffice/config/cryptocurrency_url.yml');
@@ -92,7 +96,6 @@ my $tt              = BOM::Backoffice::Request::template;
 ## CTC
 Bar("Actions");
 
-use POSIX ();
 my $now = Date::Utility->new;
 my $start_date = request()->param('start_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 1, $now->month - 1, $now->year - 1900);
 $start_date = Date::Utility->new($start_date) unless ref $start_date;
@@ -115,11 +118,6 @@ $tt2->process(
         now            => $now->datetime_ddmmmyy_hhmmss,
         staff          => $staff,
     }) || die $tt2->error();
-
-code_exit_BO() unless ($view_action);
-
-code_exit_BO("Invalid currency.")
-    if not $currency or $currency !~ /^[A-Z]{3}$/;
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbh = $clientdb->db->dbh;
@@ -170,17 +168,11 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
         }
 
         # Fetch transactions according to filter option
-        my $options = {
-            'sent'       => "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'SENT'::payment.CTC_STATUS, NULL, NULL)",
-            'verified'   => "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'VERIFIED'::payment.CTC_STATUS, NULL, NULL)",
-            'rejected'   => "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'REJECTED'::payment.CTC_STATUS, NULL, NULL)",
-            'processing' => "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'PROCESSING'::payment.CTC_STATUS, NULL, NULL)",
-            'performing_blockchain_txn' =>
-                "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'PERFORMING_BLOCKCHAIN_TXN'::payment.CTC_STATUS, NULL, NULL)",
-            'error'    => "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'ERROR'::payment.CTC_STATUS, NULL, NULL)",
-            '_default' => "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, 'LOCKED'::payment.CTC_STATUS, NULL, NULL)",
-        };
-        $trxns = $dbh->selectall_arrayref($options->{$view_type} // $options->{_default}, {Slice => {}}, $currency);
+        $trxns = $dbh->selectall_arrayref(
+            "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
+            {Slice => {}},
+            $currency, uc($view_type)
+        );
     } elsif ($view_action eq $va_cmds{deposits}) {
         Bar("LIST OF TRANSACTIONS - DEPOSITS");
         $view_type ||= 'new';
@@ -195,7 +187,7 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
     } elsif ($view_action eq $va_cmds{search}) {
         my $search_type  = request()->param('search_type');
         my $search_query = request()->param('search_query');
-        Bar("SEARCH RESULT FOR " . encode_entities($search_query));
+        Bar("SEARCH RESULT FOR $search_query");
 
         code_exit_BO("Invalid type of search request.")
             unless grep { $search_type eq $_ } qw/loginid address/;
