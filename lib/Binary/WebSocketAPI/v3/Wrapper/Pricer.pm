@@ -743,6 +743,7 @@ sub process_ask_event {
     return process_proposal_array_event($c, $response, $redis_channel, $pricing_channel) if exists $response->{proposals};
 
     my $theo_probability = delete $response->{theo_probability};
+
     for my $stash_data_key (keys %{$pricing_channel->{$redis_channel}}) {
         my $stash_data = $pricing_channel->{$redis_channel}{$stash_data_key};
         unless (ref($stash_data) eq 'HASH') {
@@ -751,6 +752,18 @@ sub process_ask_event {
             $pricing_channel_updated = 1;
             next;
         }
+        # log the instances when pricing server doesn't return theo probability
+        # Also, don't send price update on this for any client, so we're ignoring this event from Redis.
+        # this will look as a lag in pricing for clients
+        unless (defined $resp_theo_probability) {
+            warn 'missing theo probability from pricer. First contract parameter dump '
+                . encode_json($stash_data->{cache}->{contract_parameters})
+                . ', pricer response: '
+                . encode_json($response);
+            stats_inc('price_adjustment.missing_theo_probability');
+            return;
+        }
+
         my $results;
         if ($results = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
             stats_inc('price_adjustment.validation_for_type_failure', {tags => ['type:' . $type]});
@@ -790,12 +803,6 @@ sub _price_stream_results_adjustment {
     my ($c, undef, $cache, $results, $resp_theo_probability) = @_;
 
     my $contract_parameters = $cache->{contract_parameters};
-
-    # log the instances when pricing server doesn't return theo probability
-    unless (defined $resp_theo_probability) {
-        warn 'missing theo probability from pricer. Contract parameter dump ' . encode_json($contract_parameters);
-        stats_inc('price_adjustment.missing_theo_probability');
-    }
 
     my $t = [gettimeofday];
     # overrides the theo_probability which take the most calculation time.
