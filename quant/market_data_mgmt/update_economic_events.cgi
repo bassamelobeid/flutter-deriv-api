@@ -31,6 +31,14 @@ if (request()->param('update_event')) {
     print to_json(BOM::EconomicEventTool::update_by_id($args));
 }
 
+## Restore deleted economic event
+if (request()->param('restore_event')) {
+    my $args = {
+        id => request()->param('event_id'),
+    };
+    print to_json(BOM::EconomicEventTool::restore_by_id($args));
+}
+
 ## Add new economic event
 if (request()->param('save_event')) {
     my $param = {
