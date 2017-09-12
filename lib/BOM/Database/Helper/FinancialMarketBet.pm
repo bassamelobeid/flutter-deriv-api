@@ -144,7 +144,7 @@ SELECT (v_fmb).*, (v_trans).*
                         $6::NUMERIC, $7::TIMESTAMP, $8::TIMESTAMP, $9::TIMESTAMP, $10::BOOLEAN,
                         $11::VARCHAR(30), $12::VARCHAR(30), $13::VARCHAR(800), $14::VARCHAR(255), $15::BOOLEAN,
                         $16::INT, $17::JSON, $18::TIMESTAMP, $19::VARCHAR(24), $20::VARCHAR(800),
-                        $21::BIGINT, $22::NUMERIC, $23::JSON, $24::JSON)');
+                        $21::BIGINT, $22::NUMERIC, $23::JSON, $24::JSONB)');
 
         # This can die. The caller is supposed to catch at least the following:
         # * [BIXXX => $string] - where XXX is an arbitrary combination of digits
@@ -237,7 +237,7 @@ WITH
 acc(seq, loginid, limits) AS (VALUES
     '
                 . join(",\n    ",
-                map { '(' . $_ . '::INT, $' . ($_ * 2 + 23) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 24) . '::JSON)'; } 0 .. @acclim / 2 - 1)
+                map { '(' . $_ . '::INT, $' . ($_ * 2 + 23) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 24) . '::JSONB)'; } 0 .. @acclim / 2 - 1)
                 . ')
 SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
   FROM acc
