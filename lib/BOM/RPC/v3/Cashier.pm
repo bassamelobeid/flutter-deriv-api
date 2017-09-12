@@ -1198,7 +1198,7 @@ sub _transfer_between_accounts_error {
 }
 
 sub _validate_transfer_between_account {
-    my ($client, $client_from, $client_to, $args) = @_;
+    my ($current_client, $client_from, $client_to, $args) = @_;
 
     # error out if one of the client is not defined, i.e.
     # loginid provided is wrong or not in siblings
@@ -1212,7 +1212,7 @@ sub _validate_transfer_between_account {
 
     # error out if current logged in client and loginid from passed are not same
     return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
-        unless ($client->loginid eq $client_from->loginid);
+        unless ($current_client->loginid eq $client_from->loginid);
 
     my ($currency, $amount, $from_currency, $to_currency) = @{$args}{qw/currency amount from_currency to_currency/};
 
