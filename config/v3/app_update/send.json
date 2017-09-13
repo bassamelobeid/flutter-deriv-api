@@ -32,7 +32,7 @@
     },
     "github": {
       "type": "string",
-      "pattern": "^https?:\/\/(www\\.)?githubi\\.com\/\\S+$",
+      "pattern": "^https?:\/\/(www\\.)?github\\.com\/\\S+$",
       "description":"Application's GitHub page (for open-source projects)"
     },
     "appstore": {
