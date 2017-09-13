@@ -5,9 +5,15 @@ extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Vanilla', 'BOM::Product::Role::SingleBarrier';
 
 use BOM::Product::Pricing::Engine::BlackScholes;
+use BOM::Product::Exception;
 
 sub ticks_to_expiry {
-    die 'no ticks_to_expiry on a VANILLA_PUT contract';
+    my $self = shift;
+
+    return BOM::Product::Exception->throw(
+        error_code => 'InvalidTickExpiry',
+        error_args => [$self->code],
+    );
 }
 
 sub _build_pricing_engine_name {
