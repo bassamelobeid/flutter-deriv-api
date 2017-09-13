@@ -228,6 +228,19 @@ sub get_stashed {
     return _get_stashed($path) // "";
 }
 
+# Some side-effecting methods that test scripts might call
+sub set_allow_omnibus {
+    my ($self, $path) = @_;
+    _set_allow_omnibus($path);
+    return;
+}
+
+sub change_status {
+    my ($self, $loginid, $action, $status) = @_;
+    _change_status($loginid, $action, $status);
+    return;
+}
+
 sub exec_line {
     my ($self, $line, $linenum) = @_;
 
