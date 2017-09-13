@@ -203,112 +203,153 @@ test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test
 fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
     '(USD|EUR|JPY)', 3;
 
-while (defined(my $line = <DATA>)) {
-    chomp $line;
-    next if ($line =~ /^(#.*|)$/);
-    $suite->exec_line($line, $.);
-}
-
-finish;
-
-BEGIN { DATA->input_line_number(__LINE__ + 1) }    # ensure that $. reports physical line
-__DATA__
-
 # SUB ACCOUNT OPENING
-[% _set_allow_omnibus('new_account_real/new_account_real/client_id') %]new_sub_account/test_send.json,new_sub_account/test_receive.json
-new_sub_account/test_send_details.json,new_sub_account/test_receive.json
+$suite->set_allow_omnibus('new_account_real/new_account_real/client_id');
+test_sendrecv 'new_sub_account/test_send.json', 'new_sub_account/test_receive.json';
+test_sendrecv 'new_sub_account/test_send_details.json', 'new_sub_account/test_receive.json';
 
 # READ SCOPE CALLS (MLT) BEFORE CHANGE
-reality_check/test_send.json,reality_check/test_receive.json, ''
+test_sendrecv_params 'reality_check/test_send.json', 'reality_check/test_receive.json',
+    '';
 
 # PAYMENT SCOPE CALLS (MLT)
-set_account_currency/test_send.json,set_account_currency/test_receive.json, 'EUR'
-set_account_currency/test_send.json,set_account_currency/test_receive_error.json, 'GBP'
-payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, 'EUR', 1
-!payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, 'USD', 1
+test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
+    'EUR';
+test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive_error.json',
+    'GBP';
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    'EUR', 1;
+fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    'USD', 1;
 
 # READ SCOPE CALLS (MLT) AFTER CHANGE
-!reality_check/test_send.json,reality_check/test_receive.json, 'GBP'
-reality_check/test_send.json,reality_check/test_receive.json, 'EUR'
+fail_test_sendrecv_params 'reality_check/test_send.json', 'reality_check/test_receive.json',
+    'GBP';
+test_sendrecv_params 'reality_check/test_send.json', 'reality_check/test_receive.json',
+    'EUR';
 
 # FINANCIAL ACCOUNT OPENING (MF)
-new_account_maltainvest/test_send.json,new_account_maltainvest/test_receive_error.json, '0', 'Jack', 'dk'
-new_account_maltainvest/test_send.json,new_account_maltainvest/test_receive.json, '1', 'Jack', 'dk'
-authorize/test_send.json,authorize/test_receive_mf.json,_get_stashed('new_account_maltainvest/new_account_maltainvest/oauth_token'), 'test-mlt@binary.com', 'Jack'
-balance/test_send.json,balance/test_receive.json, '0\\.00', '', _get_stashed('authorize/authorize/loginid')
-payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, '(USD|EUR|GBP)', 3
-!payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, '(USD|EUR|JPY)', 3
+test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive_error.json',
+    '0', 'Jack', 'dk';
+test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json',
+    '1', 'Jack', 'dk';
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mf.json',
+    $suite->get_stashed('new_account_maltainvest/new_account_maltainvest/oauth_token'), 'test-mlt@binary.com', 'Jack';
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json',
+    '0\\\\.00', '', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    '(USD|EUR|GBP)', 3;
+fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    '(USD|EUR|JPY)', 3;
 
 # ADMIN SCOPE CALLS (MF)
-set_financial_assessment/test_send.json,set_financial_assessment/test_receive.json
-get_financial_assessment/test_send.json,get_financial_assessment/test_receive.json,_get_stashed('set_financial_assessment/set_financial_assessment/score')
+test_sendrecv 'set_financial_assessment/test_send.json', 'set_financial_assessment/test_receive.json';
+test_sendrecv_params 'get_financial_assessment/test_send.json', 'get_financial_assessment/test_receive.json',
+    $suite->get_stashed('set_financial_assessment/set_financial_assessment/score');
 
-!logout/test_send_to_fail.json,logout/test_receive.json
-logout/test_send.json,logout/test_receive.json
+fail_test_sendrecv 'logout/test_send_to_fail.json', 'logout/test_receive.json';
+test_sendrecv 'logout/test_send.json', 'logout/test_receive.json';
 
 # have to restart the websocket connection because rate limit of verify_email call is reached
-{reset}
+reset_suite;
 
 # VIRTUAL ACCOUNT OPENING (VRTJ TO FAIL KNOWLEDGE TEST)
-verify_email/test_send.json,verify_email/test_receive.json, 'test-jp@binary.com', 'account_opening'
-new_account_virtual/test_send.json,new_account_virtual/test_receive_vrtj.json,_get_token('test-jp@binary.com'), 'test-jp@binary.com', 'jp'
-authorize/test_send.json,authorize/test_receive_vrtj.json,_get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-jp@binary.com'
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json',
+    'test-jp@binary.com', 'account_opening';
+test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive_vrtj.json',
+    $suite->get_token('test-jp@binary.com'), 'test-jp@binary.com', 'jp';
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtj.json',
+    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-jp@binary.com';
 
 # READ SCOPE CALLS (VRTJ)
-balance/test_send.json,balance/test_receive.json, '1000000\\.00', 'JPY', _get_stashed('authorize/authorize/loginid')
-payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, 'JPY', 1
-!payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, 'USD', 1
-get_settings/test_send.json,get_settings/test_receive_vrtj_before.json
-get_account_status/test_send.json,get_account_status/test_receive.json
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json',
+    '1000000\\\\.00', 'JPY', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    'JPY', 1;
+fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    'USD', 1;
+test_sendrecv 'get_settings/test_send.json', 'get_settings/test_receive_vrtj_before.json';
+test_sendrecv 'get_account_status/test_send.json', 'get_account_status/test_receive.json';
 
 # TESTS TO RETURN ERROR (VRTJ)
-get_limits/test_send.json,get_limits/test_receive_error.json
-get_financial_assessment/test_send.json,get_financial_assessment/test_receive_vrt.json
+test_sendrecv 'get_limits/test_send.json', 'get_limits/test_receive_error.json';
+test_sendrecv 'get_financial_assessment/test_send.json', 'get_financial_assessment/test_receive_vrt.json';
 
 # REAL ACCOUNT OPENING (JP)
-new_account_japan/test_send.json,new_account_japan/test_receive.json, 'Susan'
-get_settings/test_send.json,get_settings/test_receive_vrtj_after.json, 'jp_knowledge_test_pending', 'test-jp@binary.com'
-jp_knowledge_test/test_send.json,jp_knowledge_test/test_receive.json, '8', 'fail'
-!jp_knowledge_test/test_send.json,jp_knowledge_test/test_receive_error.json, '230', 'succeed'
-get_settings/test_send.json,get_settings/test_receive_vrtj_fail.json
+test_sendrecv_params 'new_account_japan/test_send.json', 'new_account_japan/test_receive.json',
+    'Susan';
+test_sendrecv_params 'get_settings/test_send.json', 'get_settings/test_receive_vrtj_after.json',
+    'jp_knowledge_test_pending', 'test-jp@binary.com';
+test_sendrecv_params 'jp_knowledge_test/test_send.json', 'jp_knowledge_test/test_receive.json',
+    '8', 'fail';
+fail_test_sendrecv_params 'jp_knowledge_test/test_send.json', 'jp_knowledge_test/test_receive_error.json',
+    '230', 'succeed';
+test_sendrecv 'get_settings/test_send.json', 'get_settings/test_receive_vrtj_fail.json';
 
 # VIRTUAL ACCOUNT OPENING (VRTJ TO PASS KNOWLEDGE TEST)
-verify_email/test_send.json,verify_email/test_receive.json, 'test-jp2@binary.com', 'account_opening'
-new_account_virtual/test_send.json,new_account_virtual/test_receive_vrtj.json,_get_token('test-jp2@binary.com'), 'test-jp2@binary.com', 'jp'
-authorize/test_send.json,authorize/test_receive_vrtj.json,_get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-jp2@binary.com'
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json',
+    'test-jp2@binary.com', 'account_opening';
+test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive_vrtj.json',
+    $suite->get_token('test-jp2@binary.com'), 'test-jp2@binary.com', 'jp';
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtj.json',
+    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-jp2@binary.com';
 
 # REAL ACCOUNT OPENING (JP)
-new_account_japan/test_send.json,new_account_japan/test_receive_error.json, 'Susan'
-new_account_japan/test_send.json,new_account_japan/test_receive.json, 'Julie'
-jp_knowledge_test/test_send.json,jp_knowledge_test/test_receive.json, '12', 'pass'
-get_settings/test_send.json,get_settings/test_receive_vrtj_after.json, 'jp_activation_pending', 'test-jp2@binary.com'
+test_sendrecv_params 'new_account_japan/test_send.json', 'new_account_japan/test_receive_error.json',
+    'Susan';
+test_sendrecv_params 'new_account_japan/test_send.json', 'new_account_japan/test_receive.json',
+    'Julie';
+test_sendrecv_params 'jp_knowledge_test/test_send.json', 'jp_knowledge_test/test_receive.json',
+    '12', 'pass';
+test_sendrecv_params 'get_settings/test_send.json', 'get_settings/test_receive_vrtj_after.json',
+    'jp_activation_pending', 'test-jp2@binary.com';
 
 # VIRTUAL ACCOUNT OPENING FOR (MX)
-verify_email/test_send.json,verify_email/test_receive.json, 'test-mx@binary.com', 'account_opening'
-new_account_virtual/test_send.json,new_account_virtual/test_receive.json,_get_token('test-mx@binary.com'), 'test-mx@binary.com', 'gb'
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json',
+    'test-mx@binary.com', 'account_opening';
+test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
+    $suite->get_token('test-mx@binary.com'), 'test-mx@binary.com', 'gb';
 
 # REAL ACCOUNT OPENING (MX)
-authorize/test_send.json,authorize/test_receive_vrtc.json,_get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-mx@binary.com'
-new_account_real/test_send.json,new_account_real/test_receive_mx.json, 'John', 'gb'
-authorize/test_send.json,authorize/test_receive_mx.json,_get_stashed('new_account_real/new_account_real/oauth_token'), 'test-mx@binary.com', 'John'
-balance/test_send.json,balance/test_receive.json, '0\\.00', '', _get_stashed('authorize/authorize/loginid')
-payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, '(USD|GBP)', 2
-!payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, '(EUR|GBP)', 2
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
+    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-mx@binary.com';
+test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json',
+    'John', 'gb';
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mx.json',
+    $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test-mx@binary.com', 'John';
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json',
+    '0\\\\.00', '', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    '(USD|GBP)', 2;
+fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    '(EUR|GBP)', 2;
 
 # PAYMENT SCOPE CALLS (MX)
-cashier/test_send_deposit.json,cashier/test_receive_currency_error.json
-set_account_currency/test_send.json,set_account_currency/test_receive.json, 'GBP'
-payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, 'GBP', 1
-!payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, 'EUR', 1
-cashier/test_send_deposit.json,cashier/test_receive_ukgc_error.json
-tnc_approval/test_send_ukgc.json,tnc_approval/test_receive.json
-[% _change_status(_get_stashed('authorize/authorize/loginid'), 'set', 'age_verification'); _change_status(_get_stashed('authorize/authorize/loginid'), 'set', 'ukrts_max_turnover_limit_not_set') %]cashier/test_send_deposit.json,cashier/test_receive_max_turnover.json
+test_sendrecv 'cashier/test_send_deposit.json', 'cashier/test_receive_currency_error.json';
+test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
+    'GBP';
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    'GBP', 1;
+fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    'EUR', 1;
+test_sendrecv 'cashier/test_send_deposit.json', 'cashier/test_receive_ukgc_error.json';
+test_sendrecv 'tnc_approval/test_send_ukgc.json', 'tnc_approval/test_receive.json';
+$suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set', 'age_verification');
+$suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set', 'ukrts_max_turnover_limit_not_set');
+test_sendrecv 'cashier/test_send_deposit.json', 'cashier/test_receive_max_turnover.json';
 # set_self_exclusion for max_30day_turnover should remove ukrts_max_turnover_limit_not_set status
-set_self_exclusion/test_send.json,set_self_exclusion/test_receive.json
-balance/test_send.json,balance/test_receive.json, '0\\.00', 'GBP', _get_stashed('authorize/authorize/loginid')
+test_sendrecv 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json';
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json',
+    '0\\\\.00', 'GBP', $suite->get_stashed('authorize/authorize/loginid');
 
 # VIRTUAL ACCOUNT OPENING (VRTC)
-verify_email/test_send.json,verify_email/test_receive.json, 'test2@binary.com', 'account_opening'
-new_account_virtual/test_send.json,new_account_virtual/test_receive.json,_get_token('test2@binary.com'), 'test2@binary.com', 'au'
-verify_email/test_send.json,verify_email/test_receive.json, 'test2@binary.com', 'reset_password'
-reset_password/test_send_vrt.json,reset_password/test_receive.json,_get_token('test2@binary.com'), 'Abc123'
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json',
+    'test2@binary.com', 'account_opening';
+test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
+    $suite->get_token('test2@binary.com'), 'test2@binary.com', 'au';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json',
+    'test2@binary.com', 'reset_password';
+test_sendrecv_params 'reset_password/test_send_vrt.json', 'reset_password/test_receive.json',
+    $suite->get_token('test2@binary.com'), 'Abc123';
+
+finish;
