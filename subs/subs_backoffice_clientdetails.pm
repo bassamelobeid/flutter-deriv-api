@@ -525,7 +525,13 @@ sub get_untrusted_types {
             'linktype' => 'jptransactiondetail',
             'comments' => 'jp bank details stored',
             'code'     => 'jp_transaction_detail'
-        }];
+        },
+        {
+            'linktype' => 'duplicateaccount',
+            'comments' => 'Duplicate account',
+            'code'     => 'duplicate_account'
+        },
+    ];
 }
 
 1;
