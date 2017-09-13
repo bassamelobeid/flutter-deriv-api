@@ -17,27 +17,27 @@ my $qc = BOM::Platform::QuantsConfig->new(
     recorded_date    => Date::Utility->new
 );
 
-# clears data
-$qc->chronicle_writer->set('quants_config', 'commission', +{}, Date::Utility->new);
-
 subtest 'save_config' => sub {
+    clear_config();
     my $args = {
         currency_symbol => 'USD,JPY',
         name            => 'test',
         contract_type   => 'CALLE,PUT,ONETOUCH',
+        start_time      => time,
+        end_time        => time + 3600,
         partitions      => [{cap_rate => 0.3}],
     };
-    ok $qc->save_config('commission', $args), 'config saved';
-    my $saved = $qc->chronicle_reader->get('quants_config', 'commission')->{test};
-    is_deeply $saved->{contract_type},   [split ',', $args->{contract_type}],   'contract_type matches';
-    is_deeply $saved->{currency_symbol}, [split ',', $args->{currency_symbol}], 'currency_symbol matches';
-    is_deeply $saved->{partitions}, $args->{partitions}, 'partitions matches';
     throws_ok { $qc->save_config('commission', +{%$args, contract_type => 'UNKNOWN,CALL'}) } qr/invalid input for contract_type \[UNKNOWN\]/,
         'throws if unknown contract type';
     throws_ok { $qc->save_config('commission', +{%$args, underlying_symbol => 'frxUSDJPY,CALL'}) } qr/invalid input for underlying_symbol \[CALL\]/,
         'throws if unknown underlying symbol';
     throws_ok { $qc->save_config('commission', +{%$args, partitions => [{floor_rate => 'frxUSDJPY'}]}) } qr/invalid input for floor_rate/,
         'throws if unknown floor rate is invalid';
+    ok $qc->save_config('commission', $args), 'config saved';
+    my $saved = $qc->chronicle_reader->get('quants_config', 'commission')->{test};
+    is_deeply $saved->{contract_type},   [split ',', $args->{contract_type}],   'contract_type matches';
+    is_deeply $saved->{currency_symbol}, [split ',', $args->{currency_symbol}], 'currency_symbol matches';
+    is_deeply $saved->{partitions}, $args->{partitions}, 'partitions matches';
 };
 
 subtest 'delete_config' => sub {
@@ -45,12 +45,15 @@ subtest 'delete_config' => sub {
     ok $qc->delete_config('commission', 'test'), 'config deleted';
 };
 
-subtest 'get_config' => sub {
+subtest 'get_config without bias' => sub {
+    clear_config();
     my $config = {
         currency_symbol   => 'USD',
         underlying_symbol => 'frxEURJPY,frxGBPJPY',
         cap_rate          => 0.1,
-        name              => 'test'
+        name              => 'test',
+        start_time        => time,
+        end_time          => time + 3600,
     };
     ok $qc->save_config('commission', $config), 'config saved';
     my $configs = $qc->get_config(
@@ -60,7 +63,6 @@ subtest 'get_config' => sub {
             contract_type     => 'CALLE'
         });
     ok @$configs == 1, 'matched one config';
-    ok $configs->[0]->{reverse_delta}, 'parses reverse_delta flag';
     ok !@{
         $qc->get_config(
             'commission',
@@ -77,45 +79,68 @@ subtest 'get_config' => sub {
             contract_type     => 'CALLE'
         });
     ok @$configs == 1, 'matched one config';
-    ok !$configs->[0]->{reverse_delta}, 'no reverse_delta flag';
+};
 
+subtest 'get_config with bias' => sub {
+    clear_config();
+    my $config = {
+        currency_symbol   => 'USD',
+        underlying_symbol => 'frxEURJPY,frxGBPJPY',
+        cap_rate          => 0.1,
+        name              => 'test',
+        bias              => 'long',
+        start_time        => time,
+        end_time          => time + 3600,
+    };
+    ok $qc->save_config('commission', $config), 'config saved';
+    note('Bias is set to long');
+    my $configs = $qc->get_config(
+        'commission',
+        {
+            contract_type     => 'CALLE',
+            underlying_symbol => 'frxEURJPY'
+        });
+    ok @$configs == 1, 'one config for CALLE if config matches underlying symbol';
     $configs = $qc->get_config(
         'commission',
         {
-            underlying_symbol => 'frxUSDJPY',
-            contract_type     => 'CALLE'
+            contract_type     => 'PUT',
+            underlying_symbol => 'frxEURJPY'
         });
-    ok @$configs == 1, 'matched one config';
-    ok !$configs->[0]->{reverse_delta}, 'no reverse_delta flag';
-
-    my $new_config = {
-        contract_type => 'CALLE',
-        name          => 'test_ct',
-        cap_rate      => 0.5
-    };
-    ok $qc->save_config('commission', $new_config), 'new config saved';
-    ok @{
-        $qc->get_config(
-            'commission',
-            {
-                underlying_symbol => 'frxEURJPY',
-                contract_type     => 'CALLE'
-            })} == 2, 'two config';
-    ok @{
-        $qc->get_config(
-            'commission',
-            {
-                underlying_symbol => 'frxEURJPY',
-                contract_type     => 'ONETOUCH'
-            })} == 1, 'one config';
-    ok @{
-        $qc->get_config(
-            'commission',
-            {
-                underlying_symbol => 'frxAUDJPY',
-                contract_type     => 'CALLE'
-            })} == 1, 'one config';
-
+    ok !@$configs, 'no config for PUT if config matches underlying symbol';
+    $configs = $qc->get_config(
+        'commission',
+        {
+            contract_type     => 'CALL',
+            underlying_symbol => 'frxUSDJPY'
+        });
+    ok @$configs == 1, 'one config for CALL if config matches the foreign currency';
+    $configs = $qc->get_config(
+        'commission',
+        {
+            contract_type     => 'PUT',
+            underlying_symbol => 'frxUSDJPY'
+        });
+    ok !@$configs, 'no config for PUT if config matches foreign currency';
+    $configs = $qc->get_config(
+        'commission',
+        {
+            contract_type     => 'PUT',
+            underlying_symbol => 'frxEURUSD'
+        });
+    ok @$configs == 1, 'one config for PUT if config matches domestic currency';
+    $configs = $qc->get_config(
+        'commission',
+        {
+            contract_type     => 'cALLE',
+            underlying_symbol => 'frxEURUSD'
+        });
+    ok !@$configs, 'no config for CALLE if config matches domestic currency';
 };
+
+sub clear_config {
+    $qc->chronicle_writer->set('quants_config', 'commission', +{}, Date::Utility->new);
+
+}
 
 done_testing();
