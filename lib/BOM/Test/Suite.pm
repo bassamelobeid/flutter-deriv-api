@@ -208,6 +208,21 @@ sub read_templated_schema_file {
     return $content;
 }
 
+# Some helper methods that might be useful from test scripts to generate template parameters
+
+# fetch the token related to a specific email
+# e.g. $suite->get_token('test@binary.com')
+sub get_token {
+    my ($self, $email) = @_;
+    return _get_token($email) // '';    # never return 'undef'
+}
+
+# fetch a stashed value from a previous response
+sub get_stashed {
+    my ($self, $path) = @_;
+    return _get_stashed($path);
+}
+
 sub exec_line {
     my ($self, $line, $linenum) = @_;
 
