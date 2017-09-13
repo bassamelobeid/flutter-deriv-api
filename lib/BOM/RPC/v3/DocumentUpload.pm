@@ -37,7 +37,7 @@ sub upload {
 
     # Add new entry to database.
     if ($document_type && $document_format) {
-        my $newfilename = join '.', $document_id, time(), $document_format;
+        my $newfilename = join '.', $client->loginid, $document_type, time(), $document_format;
         my $upload = {
             document_type              => $document_type,
             document_format            => $document_format,
