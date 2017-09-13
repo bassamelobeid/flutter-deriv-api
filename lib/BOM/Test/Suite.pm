@@ -220,7 +220,7 @@ sub get_token {
 # fetch a stashed value from a previous response
 sub get_stashed {
     my ($self, $path) = @_;
-    return _get_stashed($path);
+    return _get_stashed($path) // "";
 }
 
 sub exec_line {
