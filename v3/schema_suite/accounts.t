@@ -251,7 +251,7 @@ fail_test_sendrecv 'logout/test_send_to_fail.json', 'logout/test_receive.json';
 test_sendrecv 'logout/test_send.json', 'logout/test_receive.json';
 
 # have to restart the websocket connection because rate limit of verify_email call is reached
-reset_suite;
+reset_app;
 
 # VIRTUAL ACCOUNT OPENING (VRTJ TO FAIL KNOWLEDGE TEST)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json',
