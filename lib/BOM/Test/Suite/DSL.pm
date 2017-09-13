@@ -40,16 +40,17 @@ sub set_language {
 sub test_sendrecv {
     my ($send_file, $receive_file, %args) = @_;
     $suite->exec_test(
-        send_file     => $send_file,
-        receive_file  => $receive_file,
-        linenum       => (caller)[2],
+        send_file    => $send_file,
+        receive_file => $receive_file,
+        linenum      => (caller)[2],
         %args,
     );
 }
 
 sub test_sendrecv_params {
     my ($send_file, $recv_file, @params) = @_;
-    test_sendrecv($send_file, $recv_file,
+    test_sendrecv(
+        $send_file, $recv_file,
         template_values => \@params,
         linenum         => (caller)[2],
     );
@@ -57,16 +58,18 @@ sub test_sendrecv_params {
 
 sub fail_test_sendrecv {
     my ($send_file, $receive_file, %args) = @_;
-    test_sendrecv($send_file, $receive_file,
-        expect_fail   => 1,
-        linenum       => (caller)[2],
+    test_sendrecv(
+        $send_file, $receive_file,
+        expect_fail => 1,
+        linenum     => (caller)[2],
         %args,
     );
 }
 
 sub fail_test_sendrecv_params {
     my ($send_file, $recv_file, @params) = @_;
-    test_sendrecv($send_file, $recv_file,
+    test_sendrecv(
+        $send_file, $recv_file,
         expect_fail     => 1,
         template_values => \@params,
         linenum         => (caller)[2],
@@ -85,7 +88,8 @@ sub test_last_stream {
 
 sub test_last_stream_params {
     my ($stream_id, $recv_file, @params) = @_;
-    test_last_stream($stream_id, $recv_file,
+    test_last_stream(
+        $stream_id, $recv_file,
         template_values => \@params,
         linenum         => (caller)[2],
     );

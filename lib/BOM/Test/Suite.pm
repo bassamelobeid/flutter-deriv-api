@@ -128,7 +128,7 @@ sub new {
 sub reset {
     my ($self) = @_;
     undef $self->{test_app};
-};
+}
 
 sub set_language {
     my ($self, $lang) = @_;
@@ -165,8 +165,8 @@ sub read_schema_file {
 sub read_templated_schema_file {
     my ($self, $relpath, %args) = @_;
 
-    my @template_func   = @{ $args{template_func}   // [] };
-    my @template_values = @{ $args{template_values} // [] };
+    my @template_func   = @{$args{template_func}   // []};
+    my @template_values = @{$args{template_values} // []};
 
     my $content = $self->read_schema_file($relpath);
 
@@ -184,8 +184,8 @@ sub read_templated_schema_file {
         $f =~ s/^\s+|\s+$//g;
         my $template_content;
         if ($f =~ /^\_.*$/) {
-            local $@;    # ensure we clear this first, to avoid false positive
-            $template_content = eval $f;    ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
+            local $@;                        # ensure we clear this first, to avoid false positive
+            $template_content = eval $f;     ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
 
             # we do not expect any exceptions from the eval, they could indicate
             # invalid Perl code or bug, either way we need to know about them
@@ -333,7 +333,8 @@ sub exec_test {
 
     my $t0 = [gettimeofday];
     if ($test_stream_id) {
-        my $content = $self->read_templated_schema_file($receive_file,
+        my $content = $self->read_templated_schema_file(
+            $receive_file,
             template_func   => $args{template_func},
             template_values => $args{template_values},
         );
@@ -343,7 +344,8 @@ sub exec_test {
         $send_file =~ /^(.*)\//;
         my $call = $test_app->{call} = $1;
 
-        my $content = $self->read_templated_schema_file($send_file,
+        my $content = $self->read_templated_schema_file(
+            $send_file,
             template_func   => $args{template_func},
             template_values => $args{template_values},
         );
@@ -353,7 +355,8 @@ sub exec_test {
 
         die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
 
-        $content = $self->read_templated_schema_file($receive_file,
+        $content = $self->read_templated_schema_file(
+            $receive_file,
             template_func   => $args{template_func},
             template_values => $args{template_values},
         );
