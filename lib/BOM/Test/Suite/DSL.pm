@@ -25,16 +25,19 @@ sub start {
     my %args = @_;
 
     $suite = BOM::Test::Suite->new(%args);
+    return $suite;
 }
 
 # Can't just call this 'reset' because there's a (little-used) core keyword of that name
 sub reset_suite {
     $suite->reset;
+    return;
 }
 
 sub set_language {
     my ($language) = @_;
     $suite->set_language($language);
+    return;
 }
 
 sub test_sendrecv {
@@ -45,6 +48,7 @@ sub test_sendrecv {
         linenum      => (caller)[2],
         %args,
     );
+    return;
 }
 
 sub test_sendrecv_params {
@@ -54,6 +58,7 @@ sub test_sendrecv_params {
         template_values => \@params,
         linenum         => (caller)[2],
     );
+    return;
 }
 
 sub fail_test_sendrecv {
@@ -64,6 +69,7 @@ sub fail_test_sendrecv {
         linenum     => (caller)[2],
         %args,
     );
+    return;
 }
 
 sub fail_test_sendrecv_params {
@@ -74,6 +80,7 @@ sub fail_test_sendrecv_params {
         template_values => \@params,
         linenum         => (caller)[2],
     );
+    return;
 }
 
 sub test_last_stream {
@@ -84,6 +91,7 @@ sub test_last_stream {
         linenum        => (caller)[2],
         %args,
     );
+    return;
 }
 
 sub test_last_stream_params {
@@ -93,11 +101,13 @@ sub test_last_stream_params {
         template_values => \@params,
         linenum         => (caller)[2],
     );
+    return;
 }
 
 sub finish {
     $suite->finish;
     done_testing();
+    return;
 }
 
 1;

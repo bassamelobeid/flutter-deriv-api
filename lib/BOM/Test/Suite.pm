@@ -128,12 +128,14 @@ sub new {
 sub reset {
     my ($self) = @_;
     undef $self->{test_app};
+    return;
 }
 
 sub set_language {
     my ($self, $lang) = @_;
     $self->{language} = $lang;
     undef $self->{test_app};
+    return;
 }
 
 sub test_app {
@@ -308,6 +310,7 @@ sub exec_line {
         expect_fail     => $fail,
         linenum         => $linenum,
     );
+    return;
 }
 
 sub exec_test {
@@ -372,6 +375,8 @@ sub exec_test {
     $self->{cumulative_elapsed} += $elapsed;
 
     print_test_diag($self->{title}, $linenum, $elapsed, ($test_stream_id || $start_stream_id), $send_file, $receive_file);
+
+    return;
 }
 
 sub finish {
