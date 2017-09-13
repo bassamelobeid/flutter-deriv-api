@@ -8,7 +8,7 @@ use BOM::Test::Suite;
 use Exporter 'import';
 our @EXPORT = qw(
     start
-    reset_suite
+    reset_app
     set_language
     test_sendrecv
     test_sendrecv_params
@@ -28,9 +28,8 @@ sub start {
     return $suite;
 }
 
-# Can't just call this 'reset' because there's a (little-used) core keyword of that name
-sub reset_suite {
-    $suite->reset;
+sub reset_app {
+    $suite->reset_app;
     return;
 }
 

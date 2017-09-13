@@ -125,7 +125,7 @@ sub new {
     return $self;
 }
 
-sub reset {
+sub reset_app {
     my ($self) = @_;
     undef $self->{test_app};
     return;
