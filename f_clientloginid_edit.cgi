@@ -460,6 +460,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                     $m->delete;
                 }
             }
+            if($input{$key} eq 'NEEDS_ACTION') {
+                $client->set_status('needs_action', $clerk, 'Documents uploaded');
+                $client->clr_status('under_review');
+            }
         }
         if ($key eq 'myaffiliates_token') {
             # $client->myaffiliates_token_registered(1);
