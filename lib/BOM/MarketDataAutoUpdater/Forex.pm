@@ -28,6 +28,7 @@ use List::Util qw( first );
 use Quant::Framework;
 use BOM::Platform::Chronicle;
 use VolSurface::IntradayFX;
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 has file => (
     is         => 'ro',
@@ -144,6 +145,7 @@ sub _build_surfaces_from_file {
             $surface = Bloomberg::VolSurfaces->new->parse_data_for($file);
         }
         foreach my $underlying (keys %{$surface}) {
+            # We request full volsurface every 4 hours, hence on other hours, we will only get ON and 1W vol. Hence the vol point we are receiving will be just  2.
             if (scalar keys %{$surface->{$underlying}->{surface}} == 2) {
                 $surface->{$underlying}->{surface} = _append_to_existing_surface($surface->{$underlying}->{surface}, $underlying);
             }
@@ -178,6 +180,9 @@ sub run {
     my $rollover_date           = NY1700_rollover_date_on(Date::Utility->new);
     my $one_hour_after_rollover = $rollover_date->plus_time_interval('1h');
     my $surfaces_from_file      = $self->surfaces_from_file;
+
+    my @non_atm_symbol = get_offerings_with_filter({barrier_category => [qw(euro_non_atm american)]}, 'underlying_symbol');
+
     foreach my $symbol (@{$self->symbols_to_update}) {
         my $quanto_only = 'NO';
         if (grep { $_ eq $symbol } (@quanto_currencies)) {
@@ -199,6 +204,20 @@ sub run {
             warn "Volatility Surface data missing from provider for " . $underlying->symbol;
             next;    # skipping it here else it will die in the next line.
         }
+
+        if (grep { $_ eq $symbol } (@non_atm_symbol)) {
+            #skip this symbol if it is non atm and rr , bb are undef.
+            if (exists $raw_volsurface->{rr_bf_status} and $raw_volsurface->{rr_bf_status}) {
+                $self->report->{$symbol} = {
+                    success => 0,
+                    reason  => "BF or RR is undef ",
+                };
+                next;
+            }
+        }
+
+        #Delete the flag since we do not need to save it into our system.
+        delete $raw_volsurface->{rr_bf_status};
 
         next
             if $raw_volsurface->{creation_date}->epoch >= $rollover_date->epoch
