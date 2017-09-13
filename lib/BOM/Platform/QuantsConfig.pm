@@ -99,19 +99,25 @@ sub get_config {
     my $existing_config = $self->chronicle_reader->$method($namespace, $config_type, $self->for_date) // {};
     return [values %$existing_config] unless $args;
 
+    my ($foreign_curr, $domestic_curr) = $args->{underlying_symbol} =~ /^frx(\w{3})(\w{3})$/;
     my @match;
     foreach my $key (keys %$existing_config) {
-        my $config         = $existing_config->{$key};
-        my $matched_ct     = (!$config->{contract_type} || first { $_ eq $args->{contract_type} } @{$config->{contract_type}});
-        my $matched_all_ul = (!$config->{underlying_symbol} && !$config->{currency_symbol});
-        my $matched_ul     = ($config->{underlying_symbol} && first { $_ eq $args->{underlying_symbol} } @{$config->{underlying_symbol}});
-        my $matched_curr   = ($config->{currency_symbol} && first { $args->{underlying_symbol} =~ /$_/ } @{$config->{currency_symbol}});
-        if ($matched_ct && ($matched_all_ul || $matched_ul || $matched_curr)) {
-            if ($matched_curr) {
-                my ($quoted_currency_symbol) = $args->{underlying_symbol} =~ /^frx\w{3}(\w{3})$/;
-                $config->{reverse_delta} = 1 if first { $quoted_currency_symbol eq $_ } @{$config->{currency_symbol}};
+        my $config = $existing_config->{$key};
+        my %underlying_hash = map { $_ => 1 } @{$config->{underlying_symbol} // []};
+
+        if (!$config->{bias}) {
+            push @match, $config
+                if ($underlying_hash{$args->{underlying_symbol}}
+                || ($config->{currency_symbol} && first { $args->{underlying_symbol} =~ /$_/ } @{$config->{currency_symbol}}));
+        } else {
+            my %currency_hash = map { $_ => 1 } @{$config->{currency_symbol} // []};
+            if ($underlying_hash{$args->{underlying_symbol}} || $currency_hash{$foreign_curr}) {
+                push @match, $config if ($config->{bias} eq 'long'  && $args->{contract_type} =~ /CALL/);
+                push @match, $config if ($config->{bias} eq 'short' && $args->{contract_type} =~ /PUT/);
+            } elsif ($currency_hash{$domestic_curr}) {
+                push @match, $config if ($config->{bias} eq 'long'  && $args->{contract_type} =~ /PUT/);
+                push @match, $config if ($config->{bias} eq 'short' && $args->{contract_type} =~ /CALL/);
             }
-            push @match, $config;
         }
     }
 
