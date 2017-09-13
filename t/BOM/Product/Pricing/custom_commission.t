@@ -22,58 +22,6 @@ my $qc  = BOM::Platform::QuantsConfig->new(
     recorded_date    => $now->minus_time_interval('4h'),
 );
 
-$qc->save_config(
-    'commission',
-    {
-        name            => 'test1',
-        currency_symbol => 'EUR',
-        start_time      => $now->epoch,
-        end_time        => $now->plus_time_interval('1h')->epoch,
-        partitions      => [{
-                partition_range => '0-1',
-                cap_rate        => 0.45,
-                floor_rate      => 0.05,
-                centre_offset   => 0,
-                width           => 0.5,
-                flat            => 0,
-            }
-        ],
-    });
-$qc->save_config(
-    'commission',
-    {
-        name              => 'test2',
-        underlying_symbol => 'frxUSDJPY',
-        currency_symbol   => 'AUD',
-        start_time        => $now->epoch,
-        end_time          => $now->plus_time_interval('1h')->epoch,
-        partitions        => [{
-                partition_range => '0-1',
-                cap_rate        => 0.25,
-                floor_rate      => 0.05,
-                centre_offset   => 0,
-                width           => 0.5,
-                flat            => 0
-            }
-        ],
-    });
-
-$qc->save_config(
-    'commission',
-    {
-        name          => 'test3',
-        contract_type => 'CALLE,ONETOUCH',
-        start_time    => $now->epoch,
-        end_time      => $now->plus_time_interval('1h')->epoch,
-        partitions    => [{
-                partition_range => '0-1',
-                cap_rate        => 0.15,
-                floor_rate      => 0.05,
-                centre_offset   => 0,
-                width           => 0.5,
-                flat            => 0
-            }]});
-
 my $args = {
     bet_type     => 'CALL',
     barrier      => 'S0P',
@@ -97,12 +45,46 @@ $mock->mock(
     });
 
 subtest 'match/mismatch condition for commission adjustment' => sub {
+    clear_config();
+    $qc->save_config(
+        'commission',
+        {
+            name            => 'test1',
+            currency_symbol => 'EUR',
+            start_time      => $now->epoch,
+            end_time        => $now->plus_time_interval('1h')->epoch,
+            partitions      => [{
+                    partition_range => '0-1',
+                    cap_rate        => 0.45,
+                    floor_rate      => 0.05,
+                    centre_offset   => 0,
+                    width           => 0.5,
+                    flat            => 0,
+                }
+            ],
+        });
+    $qc->save_config(
+        'commission',
+        {
+            name              => 'test2',
+            underlying_symbol => 'frxUSDJPY',
+            currency_symbol   => 'AUD',
+            start_time        => $now->epoch,
+            end_time          => $now->plus_time_interval('1h')->epoch,
+            partitions        => [{
+                    partition_range => '0-1',
+                    cap_rate        => 0.25,
+                    floor_rate      => 0.05,
+                    centre_offset   => 0,
+                    width           => 0.5,
+                    flat            => 0
+                }
+            ],
+        });
+
     $args->{underlying} = 'frxGBPJPY';
     my $c = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0, 'zero markup if no matching config';
-    $args->{bet_type} = 'CALLE';
-    $c = produce_contract($args);
-    is $c->pricing_engine->event_markup->amount, 0.15, '0.15 markup for matching contract type config';
     $args->{underlying} = 'frxUSDJPY';
     $c = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0.25, '0.25 markup for matching both underlying & contract type config';
@@ -124,8 +106,8 @@ subtest 'timeframe' => sub {
     ok $c->pricing_engine->event_markup->amount > 0, 'has markup if contract spans the timeframe';
 };
 
-subtest 'delta range & reverse delta' => sub {
-    $qc->chronicle_writer->set('quants_config', 'commission', {}, $now->minus_time_interval('4h'));
+subtest 'delta range' => sub {
+    clear_config();
     $qc->save_config(
         'commission',
         {
@@ -160,13 +142,6 @@ subtest 'delta range & reverse delta' => sub {
             0.71 => 0.15,
             0.92 => 0.15
         },
-        frxEURAUD => {
-            0.11 => 0.15,
-            0.23 => 0.15,
-            0.43 => 0.0484933967540396,
-            0.71 => 0.469595144157318,
-            0.92 => 0.5
-        },
     };
     foreach my $u_symbol (keys %$expected) {
         $args->{underlying} = $u_symbol;
@@ -187,4 +162,85 @@ subtest 'delta range & reverse delta' => sub {
     }
 };
 
+subtest 'bias long' => sub {
+    clear_config();
+    $qc->save_config(
+        'commission',
+        {
+            name            => 'test1',
+            currency_symbol => 'AUD',
+            start_time      => $now->epoch,
+            end_time        => $now->plus_time_interval('1h')->epoch,
+            bias            => 'long',
+            partitions      => [{
+                    partition_range => '0-1',
+                    cap_rate        => 0.5,
+                    floor_rate      => 0.05,
+                    centre_offset   => 0,
+                    width           => 0.5,
+                    flat            => 0,
+                },
+            ],
+        });
+    $args->{underlying} = 'frxAUDJPY';
+    $args->{bet_type}   = 'CALLE';
+    note('bias is set to long on AUD');
+    my $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0.5, '0.5 event markup for CALLE-frxAUDJPY';
+    $args->{bet_type} = 'PUT';
+    $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0, '0 event markup for PUT-frxAUDJPY';
+    $args->{underlying} = 'frxEURAUD';
+    $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0.5, '0.5 event markup for PUT-frxEURAUD';
+    $args->{bet_type} = 'CALL';
+    $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0, '0 event markup for CALL-frxEURAUD';
+    $qc->save_config(
+        'commission',
+        {
+            name            => 'test2',
+            currency_symbol => 'USD',
+            start_time      => $now->epoch,
+            end_time        => $now->plus_time_interval('1h')->epoch,
+            bias            => 'short',
+            partitions      => [{
+                    partition_range => '0-1',
+                    cap_rate        => 0.6,
+                    floor_rate      => 0.05,
+                    centre_offset   => 0,
+                    width           => 0.5,
+                    flat            => 0,
+                },
+            ],
+        });
+
+    $args->{underlying} = 'frxUSDJPY';
+    $args->{bet_type}   = 'CALLE';
+    note('bias is set to short on USD');
+    $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0, '0 event markup for CALLE-frxUSDJPY';
+    $args->{bet_type} = 'PUT';
+    $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0.6, '0.6 event markup for PUT-frxUSDJPY';
+    $args->{underlying} = 'frxEURUSD';
+    $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0, '0 event markup for PUT-frxEURUSD';
+    $args->{bet_type} = 'CALL';
+    $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0.6, '0.6 event markup for CALL-frxEURUSD';
+
+    $args->{underlying} = 'frxAUDUSD';
+    $args->{bet_type}   = 'PUT';
+    $c                  = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0, '0 event markup for PUT-frxAUDUSD';
+    $args->{bet_type} = 'CALL';
+    $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0.6, '0.6 event markup for CALL-frxAUDUSD';
+
+};
+
+sub clear_config {
+    $qc->chronicle_writer->set('quants_config', 'commission', {}, $now->minus_time_interval('4h'));
+}
 done_testing();
