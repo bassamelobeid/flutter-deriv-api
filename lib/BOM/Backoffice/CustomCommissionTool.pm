@@ -136,7 +136,7 @@ sub _get_info {
 
     return {
         name => delete $config->{name},
-        (bias              => $config->{bias} ? $config->{bias}: 'none'),
+        (bias => $config->{bias} ? $config->{bias} : 'none'),
         (underlying_symbol => ($config->{underlying_symbol}) ? join(',', @{delete $config->{underlying_symbol}}) : 'none'),
         (currency_symbol   => ($config->{currency_symbol})   ? join(',', @{delete $config->{currency_symbol}})   : 'none'),
         config => $config->{partitions},
