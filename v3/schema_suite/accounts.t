@@ -36,6 +36,173 @@ test_sendrecv_params 'get_settings/test_send.json', 'get_settings/test_receive_v
     'Indonesia', 'id';
 test_sendrecv 'get_account_status/test_send.json', 'get_account_status/test_receive.json';
 
+# TRADE SCOPE CALLS (VRTC)
+test_sendrecv 'topup_virtual/test_send.json', 'topup_virtual/test_receive_error.json';
+test_sendrecv 'balance/test_send_subscribe.json', 'balance/test_receive.json',
+    template_values => [ '10000\\\\.00', 'USD', $suite->get_stashed('authorize/authorize/loginid') ],
+    start_stream_id => 1;
+test_sendrecv 'proposal/test_send_buy.json', 'proposal/test_receive_buy.json';
+test_sendrecv_params 'buy/test_send.json', 'buy/test_receive.json',
+    $suite->get_stashed('proposal/proposal/id'), '99\\\\d{2}\\\\.\\\\d{2}';
+test_last_stream_params 1, 'balance/test_receive.json',
+    '99\\\\d{2}\\\\.\\\\d{2}', 'USD', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'buy/test_send_with_params.json', 'buy/test_receive_with_params.json',
+    'payout', '5.15', '10';
+test_sendrecv_params 'buy/test_send_with_params.json', 'buy/test_receive_with_params.json',
+    'stake', '10', '19.43';
+test_sendrecv_params 'buy_contract_for_multiple_accounts/test_send_invalid_token.json', 'buy_contract_for_multiple_accounts/test_receive_invalid_token.json',
+    $suite->get_stashed('proposal/id'), $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'dummy1234';
+
+# ADMIN SCOPE CALLS (GENERAL)
+test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json',
+    'test';
+test_sendrecv_params 'api_token/test_send.json', 'api_token/test_receive.json',
+    $suite->get_stashed('api_token/api_token/tokens/0/token');
+test_sendrecv_params 'api_token/test_send_delete.json', 'api_token/test_receive_delete.json',
+    $suite->get_stashed('api_token/api_token/tokens/0/token');
+test_sendrecv_params 'app_register/test_send.json', 'app_register/test_receive.json';
+test_sendrecv_params 'app_get/test_send.json', 'app_get/test_receive.json',
+    $suite->get_stashed('app_register/app_register/app_id');
+test_sendrecv_params 'app_update/test_send.json', 'app_update/test_receive.json',
+    $suite->get_stashed('app_register/app_register/app_id');
+fail_test_sendrecv_params 'app_list/test_send.json', 'app_list/test_receive_to_fail.json',
+    $suite->get_stashed('app_register/app_register/app_id');
+test_sendrecv_params 'app_delete/test_send.json', 'app_delete/test_receive.json',
+    $suite->get_stashed('app_register/app_register/app_id'), '1';
+test_sendrecv_params 'app_list/test_send.json', 'app_list/test_receive.json',
+    $suite->get_stashed('app_register/app_register/app_id');
+test_sendrecv_params 'oauth_apps/test_send.json', 'oauth_apps/test_receive.json';
+
+# TESTS TO RETURN ERROR (VRTC)
+test_sendrecv 'get_limits/test_send.json', 'get_limits/test_receive_error.json';
+test_sendrecv 'set_settings/test_send.json', 'set_settings/test_receive_error.json';
+test_sendrecv 'get_financial_assessment/test_send.json', 'get_financial_assessment/test_receive_vrt.json';
+
+# TESTS TO RETURN ERROR (GENERAL)
+test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json',
+    'test';
+test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_error.json',
+    'test';
+test_sendrecv_params 'app_delete/test_send.json', 'app_delete/test_receive.json',
+    $suite->get_stashed('app_register/app_register/app_id'), '0';
+test_sendrecv_params 'app_update/test_send.json', 'app_update/test_receive_error.json',
+    $suite->get_stashed('app_register/app_register/app_id');
+test_sendrecv_params 'app_get/test_send.json', 'app_get/test_receive_error.json',
+    $suite->get_stashed('app_register/app_register/app_id');
+test_sendrecv 'app_register/test_send.json', 'app_register/test_receive.json';
+test_sendrecv 'app_register/test_send.json', 'app_register/test_receive_error.json';
+fail_test_sendrecv 'login_history/test_send.json', 'login_history/test_receive_to_fail.json';
+
+# REAL ACCOUNT OPENING (CR)
+fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json',
+    'Peter', 'zq';
+test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json',
+    'Peter', 'id';
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_cr.json',
+    $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test@binary.com', 'Peter';
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json',
+    '0\\\\.00', '', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    '(USD|EUR|GBP|AUD|BTC|LTC)', 6;
+
+# READ SCOPE CALLS (CR) BEFORE CHANGE
+test_sendrecv 'get_limits/test_send.json', 'get_limits/test_receive_cr.json';
+test_sendrecv 'get_settings/test_send.json', 'get_settings/test_receive_cr_before.json';
+
+# ADMIN SCOPE CALLS (CR)
+test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
+    'USD';
+test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive_error.json',
+    'GBP';
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    'USD', 1;
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json',
+    '0\\\\.00', 'USD', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json';
+test_sendrecv 'set_settings/test_send.json', 'set_settings/test_receive.json';
+
+# READ SCOPE CALLS (CR) AFTER CHANGE
+test_sendrecv 'get_settings/test_send.json', 'get_settings/test_receive_cr_after.json';
+test_sendrecv 'get_self_exclusion/test_send.json', 'get_self_exclusion/test_receive.json';
+
+# READ SCOPE TESTS TO FAIL
+fail_test_sendrecv 'get_settings/test_send.json', 'get_settings/test_receive_cr_before.json';
+fail_test_sendrecv 'get_self_exclusion/test_send.json', 'get_self_exclusion/test_receive_to_fail.json';
+
+# TRADE SCOPE CALLS (CR)
+test_sendrecv 'topup_virtual/test_send.json', 'topup_virtual/test_receive_error.json';
+
+# PAYMENT SCOPE CALLS (CR)
+test_sendrecv_params 'cashier_password/test_send.json', 'cashier_password/test_receive.json',
+    '0';
+test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive.json',
+    '1', 'Abc1234';
+test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_error.json';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json',
+    'test@binary.com', 'payment_withdraw';
+test_sendrecv_params 'cashier/test_send_withdraw.json', 'cashier/test_receive_error.json',
+    $suite->get_token('test@binary.com');
+test_sendrecv_params 'cashier_password/test_send_lock.json','cashier_password/test_receive_error.json',
+    '', 'Abc1234';
+test_sendrecv_params 'cashier_password/test_send.json', 'cashier_password/test_receive.json',
+    '1';
+test_sendrecv_params 'cashier_password/test_send_unlock.json', 'cashier_password/test_receive.json',
+    '0', 'Abc1234';
+test_sendrecv_params 'cashier_password/test_send_unlock.json', 'cashier_password/test_receive_error.json',
+    '', 'Abc1234';
+test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive_password_error.json',
+    '', 'abc1234';
+test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive_error.json',
+    '', 'Abc123';
+
+test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json',
+    'Abc123', 'Abc123';
+test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json',
+    'Abc123', 'abc123';
+test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json',
+    'abc123', 'Abcd123';
+test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive.json',
+    'Abc123', 'Abcd1234';
+
+# as we created token for payment_withdraw which returned with error so token was not expired
+# so reset password is not allowed with that token
+fail_test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json',
+    $suite->get_token('test@binary.com'), 'Abc123';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json',
+    'test@binary.com', 'reset_password';
+test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json',
+    $suite->get_token('test@binary.com'), 'Abc123';
+# same token cannot be used twice
+fail_test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json',
+    $suite->get_token('test@binary.com'), 'Abc123';
+
+# TESTS TO RETURN ERROR (LOGGED OUT)
+test_sendrecv 'logout/test_send.json', 'logout/test_receive.json';
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_error.json',
+    $suite->get_stashed('new_account_real/new_account_real/oauth_token');
+test_sendrecv 'balance/test_send.json', 'balance/test_receive_error.json';
+test_sendrecv 'get_account_status/test_send.json', 'get_account_status/test_receive_error.json';
+
+# VIRTUAL ACCOUNT OPENING FOR (MLT)
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json',
+    'test-mlt@binary.com', 'account_opening';
+test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
+    $suite->get_token('test-mlt@binary.com'), 'test-mlt@binary.com', 'dk';
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
+    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-mlt@binary.com';
+
+# REAL ACCOUNT OPENING (MLT)
+test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json',
+    'Jack', 'dk';
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mlt.json',
+    $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test-mlt@binary.com', 'Jack';
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json',
+    '0\\\\.00', '', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    '(USD|EUR|GBP)', 3;
+fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
+    '(USD|EUR|JPY)', 3;
+
 while (defined(my $line = <DATA>)) {
     chomp $line;
     next if ($line =~ /^(#.*|)$/);
@@ -46,117 +213,6 @@ finish;
 
 BEGIN { DATA->input_line_number(__LINE__ + 1) }    # ensure that $. reports physical line
 __DATA__
-
-# TRADE SCOPE CALLS (VRTC)
-topup_virtual/test_send.json,topup_virtual/test_receive_error.json
-{start_stream:1}balance/test_send_subscribe.json,balance/test_receive.json, '10000\\.00', 'USD', _get_stashed('authorize/authorize/loginid')
-proposal/test_send_buy.json,proposal/test_receive_buy.json
-buy/test_send.json,buy/test_receive.json,_get_stashed('proposal/proposal/id'), '99\\d{2}\\.\\d{2}'
-{test_last_stream_message:1}balance/test_receive.json, '99\\d{2}\\.\\d{2}', 'USD', _get_stashed('authorize/authorize/loginid')
-buy/test_send_with_params.json,buy/test_receive_with_params.json, 'payout', '5.15', '10'
-buy/test_send_with_params.json,buy/test_receive_with_params.json, 'stake', '10', '19.43'
-buy_contract_for_multiple_accounts/test_send_invalid_token.json,buy_contract_for_multiple_accounts/test_receive_invalid_token.json,_get_stashed('proposal/id'),_get_stashed('new_account_real/new_account_real/oauth_token'),'dummy1234'
-
-# ADMIN SCOPE CALLS (GENERAL)
-api_token/test_send_create.json,api_token/test_receive_create.json, 'test'
-api_token/test_send.json,api_token/test_receive.json,_get_stashed('api_token/api_token/tokens/0/token')
-api_token/test_send_delete.json,api_token/test_receive_delete.json,_get_stashed('api_token/api_token/tokens/0/token')
-app_register/test_send.json,app_register/test_receive.json
-app_get/test_send.json,app_get/test_receive.json,_get_stashed('app_register/app_register/app_id')
-app_update/test_send.json,app_update/test_receive.json,_get_stashed('app_register/app_register/app_id')
-!app_list/test_send.json,app_list/test_receive_to_fail.json,_get_stashed('app_register/app_register/app_id')
-app_delete/test_send.json,app_delete/test_receive.json,_get_stashed('app_register/app_register/app_id'), '1'
-app_list/test_send.json,app_list/test_receive.json,_get_stashed('app_register/app_register/app_id')
-oauth_apps/test_send.json,oauth_apps/test_receive.json
-
-# TESTS TO RETURN ERROR (VRTC)
-get_limits/test_send.json,get_limits/test_receive_error.json
-set_settings/test_send.json,set_settings/test_receive_error.json
-get_financial_assessment/test_send.json,get_financial_assessment/test_receive_vrt.json
-
-# TESTS TO RETURN ERROR (GENERAL)
-api_token/test_send_create.json,api_token/test_receive_create.json, 'test'
-api_token/test_send_create.json,api_token/test_receive_error.json, 'test'
-app_delete/test_send.json,app_delete/test_receive.json,_get_stashed('app_register/app_register/app_id'), '0'
-app_update/test_send.json,app_update/test_receive_error.json,_get_stashed('app_register/app_register/app_id')
-app_get/test_send.json,app_get/test_receive_error.json,_get_stashed('app_register/app_register/app_id')
-app_register/test_send.json,app_register/test_receive.json
-app_register/test_send.json,app_register/test_receive_error.json
-!login_history/test_send.json,login_history/test_receive_to_fail.json
-
-# REAL ACCOUNT OPENING (CR)
-!new_account_real/test_send.json,new_account_real/test_receive_cr.json, 'Peter', 'zq'
-new_account_real/test_send.json,new_account_real/test_receive_cr.json, 'Peter', 'id'
-authorize/test_send.json,authorize/test_receive_cr.json,_get_stashed('new_account_real/new_account_real/oauth_token'),'test@binary.com','Peter'
-balance/test_send.json,balance/test_receive.json, '0\\.00', '', _get_stashed('authorize/authorize/loginid')
-payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, '(USD|EUR|GBP|AUD|BTC|LTC)', 6
-
-# READ SCOPE CALLS (CR) BEFORE CHANGE
-get_limits/test_send.json,get_limits/test_receive_cr.json
-get_settings/test_send.json,get_settings/test_receive_cr_before.json
-
-# ADMIN SCOPE CALLS (CR)
-set_account_currency/test_send.json,set_account_currency/test_receive.json, 'USD'
-set_account_currency/test_send.json,set_account_currency/test_receive_error.json, 'GBP'
-payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, 'USD', 1
-balance/test_send.json,balance/test_receive.json, '0\\.00', 'USD', _get_stashed('authorize/authorize/loginid')
-set_self_exclusion/test_send.json,set_self_exclusion/test_receive.json
-set_settings/test_send.json,set_settings/test_receive.json
-
-# READ SCOPE CALLS (CR) AFTER CHANGE
-get_settings/test_send.json,get_settings/test_receive_cr_after.json
-get_self_exclusion/test_send.json,get_self_exclusion/test_receive.json
-
-# READ SCOPE TESTS TO FAIL
-!get_settings/test_send.json,get_settings/test_receive_cr_before.json
-!get_self_exclusion/test_send.json,get_self_exclusion/test_receive_to_fail.json
-
-# TRADE SCOPE CALLS (CR)
-topup_virtual/test_send.json,topup_virtual/test_receive_error.json
-
-# PAYMENT SCOPE CALLS (CR)
-cashier_password/test_send.json,cashier_password/test_receive.json, '0'
-cashier_password/test_send_lock.json,cashier_password/test_receive.json, '1', 'Abc1234'
-cashier/test_send_deposit.json,cashier/test_receive_error.json
-verify_email/test_send.json,verify_email/test_receive.json, 'test@binary.com', 'payment_withdraw'
-cashier/test_send_withdraw.json,cashier/test_receive_error.json,_get_token('test@binary.com')
-cashier_password/test_send_lock.json,cashier_password/test_receive_error.json, '', 'Abc1234'
-cashier_password/test_send.json,cashier_password/test_receive.json, '1'
-cashier_password/test_send_unlock.json,cashier_password/test_receive.json, '0', 'Abc1234'
-cashier_password/test_send_unlock.json,cashier_password/test_receive_error.json, '', 'Abc1234'
-cashier_password/test_send_lock.json,cashier_password/test_receive_password_error.json, '', 'abc1234'
-cashier_password/test_send_lock.json,cashier_password/test_receive_error.json, '', 'Abc123'
-
-change_password/test_send.json,change_password/test_receive_error.json, 'Abc123', 'Abc123'
-change_password/test_send.json,change_password/test_receive_error.json, 'Abc123', 'abc123'
-change_password/test_send.json,change_password/test_receive_error.json, 'abc123', 'Abcd123'
-change_password/test_send.json,change_password/test_receive.json, 'Abc123', 'Abcd1234'
-
-# as we created token for payment_withdraw which returned with error so token was not expired
-# so reset password is not allowed with that token
-!reset_password/test_send_real.json,reset_password/test_receive.json,_get_token('test@binary.com'), 'Abc123'
-verify_email/test_send.json,verify_email/test_receive.json, 'test@binary.com', 'reset_password'
-reset_password/test_send_real.json,reset_password/test_receive.json,_get_token('test@binary.com'), 'Abc123'
-# same token cannot be used twice
-!reset_password/test_send_real.json,reset_password/test_receive.json,_get_token('test@binary.com'), 'Abc123'
-
-# TESTS TO RETURN ERROR (LOGGED OUT)
-logout/test_send.json,logout/test_receive.json
-authorize/test_send.json,authorize/test_receive_error.json,_get_stashed('new_account_real/new_account_real/oauth_token')
-balance/test_send.json,balance/test_receive_error.json
-get_account_status/test_send.json,get_account_status/test_receive_error.json
-
-# VIRTUAL ACCOUNT OPENING FOR (MLT)
-verify_email/test_send.json,verify_email/test_receive.json, 'test-mlt@binary.com', 'account_opening'
-new_account_virtual/test_send.json,new_account_virtual/test_receive.json,_get_token('test-mlt@binary.com'), 'test-mlt@binary.com', 'dk'
-authorize/test_send.json,authorize/test_receive_vrtc.json,_get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-mlt@binary.com'
-
-# REAL ACCOUNT OPENING (MLT)
-new_account_real/test_send.json,new_account_real/test_receive_mlt.json, 'Jack', 'dk'
-authorize/test_send.json,authorize/test_receive_mlt.json,_get_stashed('new_account_real/new_account_real/oauth_token'), 'test-mlt@binary.com', 'Jack'
-balance/test_send.json,balance/test_receive.json, '0\\.00', '', _get_stashed('authorize/authorize/loginid')
-payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, '(USD|EUR|GBP)', 3
-!payout_currencies/test_send.json,payout_currencies/test_receive_vrt.json, '(USD|EUR|JPY)', 3
 
 # SUB ACCOUNT OPENING
 [% _set_allow_omnibus('new_account_real/new_account_real/client_id') %]new_sub_account/test_send.json,new_sub_account/test_receive.json
