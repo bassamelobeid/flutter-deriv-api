@@ -6,7 +6,8 @@ use Test::Most;
 use BOM::Test::Suite;
 
 use Exporter 'import';
-our @EXPORT = qw(
+our @EXPORT =    ## no critic (ProhibitAutomaticExportation)
+    qw(
     start
     reset_app
     set_language
