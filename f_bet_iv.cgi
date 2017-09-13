@@ -77,8 +77,12 @@ print qq~<br><form method=post action=$request_files_upload_url>
             <option value=cancel>cancel file</option>
         </select>
     <input type=submit value='Upload Request files'>
-    <br><font color=gray>Note 1: If you select 'Convert all to oneshot' then the requests will be processed immediately, once only.
-    <br>Note 2: if you want to over-write existing scheduled requests, upload CANCEL requests first.</font>
+    <br><font color=gray>Note 1: Type of request options:
+    <br> Scheduled: Select this option if you would like those master request files to be run with scheduled program flag such as daily, weekday and weekend and repeatly based on the flag.
+    <br> Oneshot: Select this option if you just want to upload those master request files with program flag one shot and it will not repeat.
+    <br> Adhoc: Select this option if you just want to upload those master request files with program flag adhoc and it will not repeat.
+    <br> Note 1: The difference between oneshot and adhoc is the cost. For oneshot, it will be treated as scheduled, hence it will take into account the annual band fee while for adhoc, it is only charge on the month of request.    <br> Choose oneshot if you are certain that you are going to request the same ticker in coming future as it will avoid being double charge on the month of request. 
+    <br>Note 2: If you want to over-write existing scheduled requests, upload CANCEL requests first.</font>
     </form>~;
 
 my $single_file_upload_dir = request()->url_for('backoffice/f_bbdl_upload.cgi');
