@@ -257,7 +257,7 @@ sub exec_line {
         return;
     }
     if ($line =~ s/^\{(\w+)\}//) {
-        $self->reset;
+        $self->reset_app;
         return;
     }
 
