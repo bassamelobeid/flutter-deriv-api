@@ -49,9 +49,10 @@ sub test_sendrecv_params {
 
 sub fail_test_sendrecv {
     my ($send_file, $receive_file, %args) = @_;
-    test_sendrecv($send_file, $receive_file, %args,
+    test_sendrecv($send_file, $receive_file,
         expect_fail   => 1,
         linenum       => (caller)[2],
+        %args,
     );
 }
 
