@@ -125,6 +125,11 @@ sub new {
     return $self;
 }
 
+sub reset {
+    my ($self) = @_;
+    undef $self->{test_app};
+};
+
 sub set_language {
     my ($self, $lang) = @_;
     $self->{language} = $lang;
@@ -237,7 +242,7 @@ sub exec_line {
         return;
     }
     if ($line =~ s/^\{(\w+)\}//) {
-        undef $self->{test_app};
+        $self->reset;
         return;
     }
 
