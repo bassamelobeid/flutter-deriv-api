@@ -108,7 +108,7 @@ subtest 'max_feed_delay_seconds' => sub {
     $bet_params->{underlying} = 'frxUSDJPY';
     $bet_params->{duration} = '7d';
     my $c = produce_contract($bet_params);
-    is $c->maximum_feed_delay_seconds, 15, '15 seconds for major pairs';
+    is $c->maximum_feed_delay_seconds, 30, '30 seconds for major pairs';
     $bet_params->{underlying} = 'frxUSDNOK';
     $c = produce_contract($bet_params);
     is $c->maximum_feed_delay_seconds, 30, '30 seconds for minor pairs';
