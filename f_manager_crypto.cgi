@@ -69,7 +69,6 @@ if (length($broker) < 2) {
         "We cannot process your request because it would seem that your browser is not configured to accept cookies.  Please check that the 'enable cookies' function is set if your browser, then please try again.";
     code_exit_BO();
 }
-code_exit_BO() unless ($view_action);
 
 code_exit_BO("Invalid currency.")
     if $currency !~ /^[A-Z]{3}$/;
