@@ -123,15 +123,15 @@ subtest 'max_feed_delay_seconds' => sub {
     my $mock = Test::MockModule->new('BOM::Product::Contract');
     my $tick = {
         underlying => 'frxUSDJPY',
-        epoch      => $now->epoch - 15,
+        epoch      => $now->epoch - 30,
         quote      => 100
     };
     $mock->mock('current_tick', sub { Postgres::FeedDB::Spot::Tick->new($tick) });
     $c = produce_contract($bet_params);
-    ok !$c->_validate_feed, 'no event and feed is 15 seconds delay';
-    $tick->{epoch} = $now->epoch - 16;
+    ok !$c->_validate_feed, 'no event and feed is 30 seconds delay';
+    $tick->{epoch} = $now->epoch - 31;
     $mock->mock('current_tick', sub { Postgres::FeedDB::Spot::Tick->new($tick) });
-    ok $c->_validate_feed,  'invalid if feed is more than 15 seconds delay';
+    ok $c->_validate_feed,  'invalid if feed is more than 30 seconds delay';
     my $event = {
         event_name   => 'test',
         impact       => 5,
