@@ -49,7 +49,7 @@ my $show_new_addresses = request()->param('include_new');
 my $view_type = request()->param('view_type') // 'pending';
 # Currently, the controller renders page according to Deposit,
 # Withdrawal and Search actions.
-my $view_action = request()->param('view_action') // 'default';
+my $view_action = request()->param('view_action') // '';
 
 code_exit_BO("Invalid currency.")
     if $currency !~ /^[A-Z]{3}$/;
@@ -126,22 +126,21 @@ my $display_transactions = sub {
         }) || die $tt->error();
 };
 
-if ($view_action eq 'default') {
-    my $tt2 = BOM::Backoffice::Request::template;
-    $tt2->process(
-        'backoffice/account/crypto_control_panel.html.tt',
-        {
-            exchange_rates => $exchange_rates,
-            controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
-            currency       => $currency,
-            cmd            => request()->param('command') // '',
-            broker         => $broker,
-            start_date     => $start_date->date_yyyymmdd,
-            end_date       => $end_date->date_yyyymmdd,
-            now            => $now->datetime_ddmmmyy_hhmmss,
-            staff          => $staff,
-        }) || die $tt2->error();
-} elsif ($view_action eq 'withdrawals') {
+my $tt2 = BOM::Backoffice::Request::template;
+$tt2->process(
+    'backoffice/account/crypto_control_panel.html.tt',
+    {
+        exchange_rates => $exchange_rates,
+        controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
+        currency       => $currency,
+        cmd            => request()->param('command') // '',
+        broker         => $broker,
+        start_date     => $start_date->date_yyyymmdd,
+        end_date       => $end_date->date_yyyymmdd,
+        now            => $now->datetime_ddmmmyy_hhmmss,
+        staff          => $staff,
+    }) || die $tt2->error();
+if ($view_action eq 'withdrawals') {
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
     code_exit_BO("Invalid address.")
