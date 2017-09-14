@@ -176,11 +176,13 @@ if ($view_action eq 'withdrawals') {
             unless ($found);
     }
 
+    my $ctc_status = $view_type eq 'pending' ? 'LOCKED' : uc($view_type);
     # Fetch transactions according to filter option
     my $trxns = $dbh->selectall_arrayref(
         "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
         {Slice => {}},
-        $currency, uc($view_type));
+        $currency, $ctc_status
+    );
     $display_transactions->($trxns);
 } elsif ($view_action eq 'deposits') {
     Bar("LIST OF TRANSACTIONS - DEPOSITS");
