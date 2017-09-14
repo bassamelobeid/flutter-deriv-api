@@ -262,7 +262,7 @@ if ($ttype eq 'TRANSFER') {
 }
 print qq[<p class="success_message">$success_message</p>];
 
-Bar("Today's entries for $encoded_loginID");
+Bar("Today's entries for $loginID");
 
 my $after  = $today->datetime_yyyymmdd_hhmmss;
 my $before = $today->plus_time_interval('1d')->datetime_yyyymmdd_hhmmss;
