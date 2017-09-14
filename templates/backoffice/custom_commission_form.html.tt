@@ -1,6 +1,6 @@
 <p>README:</p>
 <ul>
-    <li><b>partition range</b> : holds value from 0 to 1 in delta space. Multiple partitions could be specified with 0-0.25,0.25-1. On overlapping point, we take the maximum of the values.Partition range could be use to introduce bias in the commission structure. E.g. we could set 0-0.5 & and 0.5-1 partition range to different max & min adjustment levels.</li>
+    <li><b>partition range</b> : holds value from 0 to 1 in delta space. Multiple partitions could be specified with 0-0.25,0.25-1. On overlapping point, we take the maximum of the values. Partition range could be use to introduce bias in the commission structure. E.g. we could set 0-0.5 & and 0.5-1 partition range to different max & min adjustment levels.</li>
     <li><b>bias</b> : could be introduced to currency symbol or/and underlying symbol. Accepts value of long or short. If we are <i>long</i> on <i>USD</i>, all USD currency pairs will be affected. For frxUSDXXX pairs, we will apply the commission structure on CALL/CALLE. For frxXXXUSD pairs, we will apply the commission structure to PUT/PUTE. If you are <i>long</i> on <i>frxAUDJPY</i>, the commission structure will be applied to CALL/CALLE on frxAUDJPY.</li>
     <li><b>max adjustment</b> : maximum adjustment to markup</li>
     <li><b>min adjustment</b> : minimum adjustment to markup</li>
@@ -114,7 +114,7 @@
                 success: function(data){
                     var config = \$.parseJSON(data);
                     if (config.error) {
-                        result.text('Failed: '+ config.error).css('color', 'red');
+                        result.text('Failed: '+ config.error).css('color', 'red').show();
                     } else {
                         appendTable('custom_commission_table',config);
                         result.hide();
