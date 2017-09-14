@@ -135,10 +135,12 @@ sub _get_info {
     my $config = shift;
 
     return {
-        name => delete $config->{name},
+        name       => $config->{name},
+        start_time => Date::Utility->new($config->{start_time})->datetime,
+        end_time   => Date::Utility->new($config->{end_time})->datetime,
         (bias => $config->{bias} ? $config->{bias} : 'none'),
-        (underlying_symbol => ($config->{underlying_symbol}) ? join(',', @{delete $config->{underlying_symbol}}) : 'none'),
-        (currency_symbol   => ($config->{currency_symbol})   ? join(',', @{delete $config->{currency_symbol}})   : 'none'),
+        (underlying_symbol => ($config->{underlying_symbol}) ? join(',', @{$config->{underlying_symbol}}) : 'none'),
+        (currency_symbol   => ($config->{currency_symbol})   ? join(',', @{$config->{currency_symbol}})   : 'none'),
         config => $config->{partitions},
     };
 }

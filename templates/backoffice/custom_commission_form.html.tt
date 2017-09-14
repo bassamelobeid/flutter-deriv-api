@@ -123,16 +123,16 @@
     function appendTable(id, config) {
         var table = \$('table#'+id);
         table.find('tr.none').remove();
-        var to_append = '<tr id="'+config.name+'"><td>'+config.name+'</td><td>'+config.underlying_symbol+'</td><td>'+config.currency_symbol+'</td><td>'+config.bias+'</td><td>'+JSON.stringify(config.config)+'</td><td><button onclick="deleteConfig(\''+config.name+'\')">Delete</button></td><td class="result"></td></tr>';
+        var to_append = '<tr id="'+config.name+'"><td>'+config.name+'</td><td>'+config.underlying_symbol+'</td><td>'+config.currency_symbol+'</td><td>'+config.bias+'</td><td>'+config.start_time+'</td><td>'+config.end_time+'</td><td>'+JSON.stringify(config.config)+'</td><td><button onclick="deleteConfig(\''+config.name+'\')">Delete</button></td><td class="result"></td></tr>';
         table.append(to_append);
     }
     function createTable(id, config) {
         var table = '<table id="'+id+'">';
-        table += '<tr><td>Name</td><td>Underlying Symbol</td><td>Currency Symbol</td><td>Bias</td><td>Config</td></tr>';
+        table += '<tr><td>Name</td><td>Underlying Symbol</td><td>Currency Symbol</td><td>Bias</td><td>Start</td><td>End</td><td>Config</td></tr>';
 
         if (config.length > 0) {
             for (var i=0; i < config.length; i++) {
-                table += '<tr id="'+config[i].name+'"><td>'+config[i].name+'</td><td>'+config[i].underlying_symbol+'</td><td>'+config[i].currency_symbol+'</td><td>'+config[i].bias+'</td><td>'+JSON.stringify(config[i].config)+'</td><td><button onclick="deleteConfig(\''+config[i].name+'\')">Delete</button></td><td class="result"></td></tr>';
+                table += '<tr id="'+config[i].name+'"><td>'+config[i].name+'</td><td>'+config[i].underlying_symbol+'</td><td>'+config[i].currency_symbol+'</td><td>'+config[i].bias+'</td><td>'+config[i].start_time+'</td><td>'+config[i].end_time+'</td><td>'+JSON.stringify(config[i].config)+'</td><td><button onclick="deleteConfig(\''+config[i].name+'\')">Delete</button></td><td class="result"></td></tr>';
             }
         } else {
             table += '<tr class="none"><td>None</td></tr>';
