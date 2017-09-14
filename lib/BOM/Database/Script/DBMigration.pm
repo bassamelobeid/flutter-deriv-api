@@ -68,9 +68,9 @@ sub options {
         },
         {
             name    => 'dbset',
-            dispaly => 'dbset=<dbset>',
+            display => 'dbset=<dbset>',
             documentation =>
-                'If dbset is rmg or feed or auth default directory,port and username will be set automactically <rmg|collector|report|feed|auth|users>',
+                'one of <rmg|collector|report|feed|auth|users> - for rmg, feed or auth, the default directory/port/username will be set automatically',
             option_type => 'string',
             default     => '',
         },
