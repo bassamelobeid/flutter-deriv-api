@@ -34,10 +34,10 @@ my $args = {
 
 my $mock = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
 $mock->mock(
-    'base_probability',
+    'intraday_vanilla_delta',
     sub {
         return Math::Util::CalculatedValue::Validatable->new(
-            name        => 'intraday_delta',
+            name        => 'intraday_vanilla_delta',
             description => 'BS pricing based on realized vols',
             set_by      => __PACKAGE__,
             base_amount => 0.1
@@ -147,10 +147,10 @@ subtest 'delta range' => sub {
         $args->{underlying} = $u_symbol;
         for my $delta (0.11, 0.23, 0.43, 0.71, 0.92) {
             $mock->mock(
-                'base_probability',
+                'intraday_vanilla_delta',
                 sub {
                     return Math::Util::CalculatedValue::Validatable->new(
-                        name        => 'intraday_delta',
+                        name        => 'intraday_vanilla_delta',
                         description => 'BS pricing based on realized vols',
                         set_by      => __PACKAGE__,
                         base_amount => $delta,

@@ -326,7 +326,7 @@ sub event_markup {
                 contract_type     => $self->bet->code,
                 underlying_symbol => $self->bet->underlying->symbol
             });
-        my $delta   = $self->base_probability->peek_amount('intraday_delta');
+        my $delta   = $self->intraday_vanilla_delta->amount;
         my $c_start = $self->bet->effective_start->epoch;
         my $c_end   = $self->bet->date_expiry->epoch;
 
