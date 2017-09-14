@@ -106,6 +106,7 @@ my $display_transactions = sub {
             warn "exchange_rates for $trx->{currency_code} is undefined";
             $exchange_rates->{$trx->{currency_code}} = 0;
         }
+        $trx->{amount} //= 0;    # it will be undef on newly generated addresses
         $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rates->{$trx->{currency_code}});
     }
 
