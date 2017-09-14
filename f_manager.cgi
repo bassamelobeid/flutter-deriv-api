@@ -28,7 +28,7 @@ my $today = Date::Utility->new->date_ddmmmyy;
 if ((request()->param('whattodo') // '') eq 'showdocs') {
     my $loginid = uc(request()->param('loginID'));
     my $client = Client::Account->new({loginid => $loginid});
-    Bar(encode_entities("SHOW CLIENT PAYMENT DOCS FOR $loginid " . $client->full_name));
+    Bar("SHOW CLIENT PAYMENT DOCS FOR $loginid " . $client->full_name);
     print "ID docs:";
     print show_client_id_docs($client, show_delete => 1);
     print "<hr>Payment docs:";

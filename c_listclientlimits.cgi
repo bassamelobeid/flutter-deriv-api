@@ -37,7 +37,7 @@ my $account_mapper = BOM::Database::DataMapper::Account->new({
 });
 my $bal = $account_mapper->get_balance();
 
-Bar($encoded_login . ' withdrawal limits for ' . $curr);
+Bar($login . ' withdrawal limits for ' . $curr);
 
 my $withdrawal_limits = $client->get_withdrawal_limits();
 
