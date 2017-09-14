@@ -4,9 +4,9 @@ use strict;
 use warnings;
 
 use Client::Account;
-use Data::Dumper;
 use Date::Utility;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
+use JSON::XS;
 use HTML::Entities;
 use List::UtilsBy qw(rev_nsort_by sort_by);
 use POSIX ();
@@ -374,7 +374,7 @@ EOF
             }
             print '</tbody></table>';
         } else {
-            print '<pre>' . encode_entities(Dumper $rslt) . '</pre>';
+            print '<pre>' . encode_entities(JSON::XS->new->allow_blessed->pretty(1)->encode($rslt)) . '</pre>';
         }
     } else {
         die 'Invalid ' . $currency . ' command: ' . $cmd;
