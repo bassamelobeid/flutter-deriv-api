@@ -59,6 +59,10 @@ my $encoded_toLoginID = encode_entities($toLoginID);
 my $staff = BOM::Backoffice::Auth0::from_cookie();
 my $clerk = $staff->{nickname};
 
+unless($curr =~ /^[A-Z]{3}$/) {
+    print "Invalid currency, please check: " . encode_entities($curr);
+    code_exit_BO();
+}
 my $client = eval { Client::Account->new({loginid => $loginID}) } || do {
     print "Error: no such client $encoded_loginID";
     code_exit_BO();
