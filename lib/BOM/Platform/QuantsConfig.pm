@@ -54,6 +54,9 @@ sub save_config {
     die 'Cannot use an identical name.' if $existing_config->{$identifier};
     die 'start_time is required' unless defined $args{start_time};
     die 'end_time is required'   unless defined $args{end_time};
+
+    $args->{$_} =~ s/^\s+|\s+$//g for (qw(start_time end_time));
+
     foreach my $key (keys %args) {
         next if $key eq 'name';
 
