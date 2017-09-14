@@ -315,7 +315,7 @@ sub check_useragent {
                     join ',',
                     (map { $c->stash($_) // '' } qw/ source client_ip landing_company_name brand log_requests /),
                     (map { $c->tx->req->headers->header($_) // '-' } qw/ Origin Referer /),
-                    JSON::to_json($c->stash('introspection')->{last_call_received})
+                    JSON::to_json($c->stash('introspection')->{last_call_received} // {})
                 ),
                 "\n"
             );
