@@ -3,18 +3,18 @@ package main;
 use strict;
 use warnings;
 
-use Bitcoin::RPC::Client;
 use Client::Account;
 use Data::Dumper;
 use Date::Utility;
-use Ethereum::RPC::Client;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 use HTML::Entities;
 use List::UtilsBy qw(rev_nsort_by sort_by);
 use POSIX ();
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
-use Text::CSV;
 use YAML::XS;
+
+use Bitcoin::RPC::Client;
+use Ethereum::RPC::Client;
 
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
@@ -47,28 +47,9 @@ my $show_new_addresses = request()->param('include_new');
 # Accessable on Withdrawal action only. By defaullt Withdrawal page
 # shows `pending` transactions.
 my $view_type = request()->param('view_type') // 'pending';
-# Shortcuts for view action commands to prevent descriptive submit text in template
-my %va_cmds = (
-    withdrawals         => 'Withdrawal Transactions',
-    deposits            => 'Deposit Transactions',
-    search              => 'Search',
-    run                 => 'Run',
-    new_deposit_address => 'Get New Deposit Address',
-    reconcil            => 'Reconciliation',
-    make_dcc            => 'Make Dual Control Code',
-);
 # Currently, the controller renders page according to Deposit,
 # Withdrawal and Search actions.
-my $view_action = request()->param('view_action') // '';
-# Assign descriptive message if comes from view_type filtering or
-# unless it is already.
-$view_action = $va_cmds{$view_action} // '' unless grep { $va_cmds{$_} eq $view_action } keys %va_cmds;
-
-if (length($broker) < 2) {
-    print
-        "We cannot process your request because it would seem that your browser is not configured to accept cookies.  Please check that the 'enable cookies' function is set if your browser, then please try again.";
-    code_exit_BO();
-}
+my $view_action = request()->param('view_action') // 'default';
 
 code_exit_BO("Invalid currency.")
     if $currency !~ /^[A-Z]{3}$/;
@@ -94,123 +75,39 @@ my $tt              = BOM::Backoffice::Request::template;
 ## CTC
 Bar("Actions");
 
-my $now = Date::Utility->new;
-my $start_date = request()->param('start_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 1, $now->month - 1, $now->year - 1900);
-$start_date = Date::Utility->new($start_date) unless ref $start_date;
-my $end_date = request()->param('end_date') || Date::Utility->new(POSIX::mktime 0, 0, 0, 0, $now->month, $now->year - 1900);
-$end_date = Date::Utility->new($end_date) unless ref $end_date;
-
-# Exchange rate should be populated according to supported cryptocurrencies.
-my %exchange_rates = map { $_ => in_USD(1.0, $_) } qw/BTC LTC ETH/;
-my $tt2 = BOM::Backoffice::Request::template;
-$tt2->process(
-    'backoffice/account/crypto_control_panel.html.tt',
-    {
-        exchange_rates => \%exchange_rates,
-        controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
-        currency       => $currency,
-        cmd            => request()->param('command') // '',
-        broker         => $broker,
-        start_date     => $start_date->date_yyyymmdd,
-        end_date       => $end_date->date_yyyymmdd,
-        now            => $now->datetime_ddmmmyy_hhmmss,
-        staff          => $staff,
-    }) || die $tt2->error();
+my $now        = Date::Utility->new;
+my $start_date = request()->param('start_date') || POSIX::mktime(0, 0, 0, 1, $now->month - 1, $now->year - 1900);
+my $end_date   = request()->param('end_date') || POSIX::mktime(0, 0, 0, 0, $now->month, $now->year - 1900);
+try {
+    $start_date = Date::Utility->new($start_date);
+    $end_date   = Date::Utility->new($end_date);
+}
+catch {
+    code_exit_BO($_);
+};
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbh = $clientdb->db->dbh;
 
-my %clients = (
+my $rpc_client_builders = {
     BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}},   timeout => 5)) },
     LTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{litecoin}},  timeout => 5)) },
     ETH => sub { Ethereum::RPC::Client->new((%{$cfg->{ethereum}}, timeout => 5)) },
-);
-my $rpc_client = ($clients{$currency} // die "no RPC client found for currency " . $currency)->();
+};
+my $rpc_client = ($rpc_client_builders->{$currency} // code_exit_BO("no RPC client found for currency " . $currency))->();
+# Exchange rate should be populated according to supported cryptocurrencies.
+my $exchange_rates = {map { $_ => in_USD(1.0, $_) } keys %$rpc_client_builders};
 
-# collect list of transactions and render in template.
-if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
-    my $trxns;
-    if ($view_action eq $va_cmds{withdrawals}) {
-        Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
-
-        code_exit_BO("Invalid address.")
-            if $address and $address !~ /^\w+$/;
-        code_exit_BO("Invalid action.")
-            if $action and $action !~ /^[a-zA-Z]{4,15}$/;
-        code_exit_BO("Invalid selection to view type of transactions.")
-            if not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|performing_blockchain_txn|sent|error)$/;
-
-        if ($action and $action =~ /^(?:verify|reject)$/) {
-            my $dcc_code = request()->param('dual_control_code');
-            code_exit_BO("ERROR: Please provide valid dual control code")
-                unless $dcc_code;
-
-            my $amount  = request()->param('amount');
-            my $loginid = request()->param('loginid');
-
-            my $error = BOM::DualControl->new({
-                    staff           => $staff,
-                    transactiontype => $address
-                })->validate_payment_control_code($dcc_code, $loginid, $currency, $amount);
-
-            code_exit_BO($error->get_mesg()) if $error;
-
-            my $found;
-            ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency)
-                if $action eq 'verify';
-            ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency)
-                if $action eq 'reject';
-
-            code_exit_BO("ERROR: No record found. Please check with someone from IT team before proceeding.")
-                unless ($found);
-        }
-
-        # Fetch transactions according to filter option
-        $trxns = $dbh->selectall_arrayref(
-            "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
-            {Slice => {}},
-            $currency, uc($view_type));
-    } elsif ($view_action eq $va_cmds{deposits}) {
-        Bar("LIST OF TRANSACTIONS - DEPOSITS");
-        $view_type ||= 'new';
-        code_exit_BO("Invalid selection to view type of transactions.") if $view_type !~ /^(?:new|pending|confirmed|error)$/;
-
-        # Fetch all deposit transactions matching specified currency and status
-        $trxns = $dbh->selectall_arrayref(
-            "SELECT * FROM payment.ctc_bo_get_deposit(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
-            {Slice => {}},
-            $currency, uc $view_type
-        );
-    } elsif ($view_action eq $va_cmds{search}) {
-        my $search_type  = request()->param('search_type');
-        my $search_query = request()->param('search_query');
-        Bar("SEARCH RESULT FOR $search_query");
-
-        code_exit_BO("Invalid type of search request.")
-            unless grep { $search_type eq $_ } qw/loginid address/;
-
-        # Fetch all transactions matching specified searching details
-        $trxns = (
-            $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, NULL, NULL, NULL, NULL)",    {Slice => {}}, $search_query),
-            $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query)
-        ) if ($search_type eq 'address');
-
-        $trxns = (
-            $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, NULL, NULL, NULL, NULL)",    {Slice => {}}, $search_query),
-            $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query)
-        ) if ($search_type eq 'loginid');
-
-    }
+my $display_transactions = sub {
+    my $trxns = shift;
     # Assign USD equivalent value
     for my $trx (@$trxns) {
-        unless (defined $exchange_rates{$trx->{currency_code}}) {
+        unless (defined $exchange_rates->{$trx->{currency_code}}) {
             warn "exchange_rates for $trx->{currency_code} is undefined";
-            $exchange_rates{$trx->{currency_code}} = 0;
+            $exchange_rates->{$trx->{currency_code}} = 0;
         }
-        $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rates{$trx->{currency_code}});
+        $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rates->{$trx->{currency_code}});
     }
-
-    my %reversed = reverse %va_cmds;
 
     # Render template page with transactions
     my $tt = BOM::Backoffice::Request::template;
@@ -222,13 +119,104 @@ if (grep { $view_action eq $va_cmds{$_} } qw/withdrawals deposits search/) {
             currency        => $currency,
             transaction_uri => $transaction_uri,
             address_uri     => $address_uri,
-            view_action     => $reversed{$view_action},
+            view_action     => $view_action,
             view_type       => $view_type,
-            va_cmds         => \%va_cmds,
             controller_url  => request()->url_for('backoffice/f_manager_crypto.cgi'),
             testnet         => BOM::Platform::Config::on_qa() ? 1 : 0,
         }) || die $tt->error();
-} elsif ($view_action eq $va_cmds{reconcil}) {
+};
+
+if ($view_action eq 'default') {
+    my $tt2 = BOM::Backoffice::Request::template;
+    $tt2->process(
+        'backoffice/account/crypto_control_panel.html.tt',
+        {
+            exchange_rates => $exchange_rates,
+            controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
+            currency       => $currency,
+            cmd            => request()->param('command') // '',
+            broker         => $broker,
+            start_date     => $start_date->date_yyyymmdd,
+            end_date       => $end_date->date_yyyymmdd,
+            now            => $now->datetime_ddmmmyy_hhmmss,
+            staff          => $staff,
+        }) || die $tt2->error();
+} elsif ($view_action eq 'withdrawals') {
+    Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
+
+    code_exit_BO("Invalid address.")
+        if $address and $address !~ /^\w+$/;
+    code_exit_BO("Invalid action.")
+        if $action and $action !~ /^[a-zA-Z]{4,15}$/;
+    code_exit_BO("Invalid selection to view type of transactions.")
+        if not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|performing_blockchain_txn|sent|error)$/;
+
+    if ($action and $action =~ /^(?:verify|reject)$/) {
+        my $dcc_code = request()->param('dual_control_code');
+        code_exit_BO("ERROR: Please provide valid dual control code")
+            unless $dcc_code;
+
+        my $amount  = request()->param('amount');
+        my $loginid = request()->param('loginid');
+
+        my $error = BOM::DualControl->new({
+                staff           => $staff,
+                transactiontype => $address
+            })->validate_payment_control_code($dcc_code, $loginid, $currency, $amount);
+
+        code_exit_BO($error->get_mesg()) if $error;
+
+        my $found;
+        ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency)
+            if $action eq 'verify';
+        ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency)
+            if $action eq 'reject';
+
+        code_exit_BO("ERROR: No record found. Please check with someone from IT team before proceeding.")
+            unless ($found);
+    }
+
+    # Fetch transactions according to filter option
+    my $trxns = $dbh->selectall_arrayref(
+        "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
+        {Slice => {}},
+        $currency, uc($view_type));
+    $display_transactions->($trxns);
+} elsif ($view_action eq 'deposits') {
+    Bar("LIST OF TRANSACTIONS - DEPOSITS");
+    $view_type ||= 'new';
+    code_exit_BO("Invalid selection to view type of transactions.") if $view_type !~ /^(?:new|pending|confirmed|error)$/;
+
+    # Fetch all deposit transactions matching specified currency and status
+    my $trxns = $dbh->selectall_arrayref(
+        "SELECT * FROM payment.ctc_bo_get_deposit(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
+        {Slice => {}},
+        $currency, uc $view_type
+    );
+    $display_transactions->($trxns);
+
+} elsif ($view_action eq 'search') {
+    my $search_type  = request()->param('search_type');
+    my $search_query = request()->param('search_query');
+    my $trxns;
+    Bar("SEARCH RESULT FOR $search_query");
+
+    code_exit_BO("Invalid type of search request.")
+        unless grep { $search_type eq $_ } qw/loginid address/;
+
+    # Fetch all transactions matching specified searching details
+    $trxns = (
+        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, NULL, NULL, NULL, NULL)",    {Slice => {}}, $search_query),
+        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query)
+    ) if ($search_type eq 'address');
+
+    $trxns = (
+        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, NULL, NULL, NULL, NULL)",    {Slice => {}}, $search_query),
+        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query)
+    ) if ($search_type eq 'loginid');
+    $display_transactions->($trxns);
+
+} elsif ($view_action eq 'reconcil') {
     Bar($currency . ' Reconciliation');
 
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
@@ -335,7 +323,7 @@ EOF
         print '</tr>';
     }
     print '</tbody></table>';
-} elsif ($view_action eq $va_cmds{run}) {
+} elsif ($view_action eq 'run') {
     my $cmd               = request()->param('command');
     my %valid_rpc_command = (
         getbalance           => 1,
@@ -387,15 +375,15 @@ EOF
             }
             print '</tbody></table>';
         } else {
-            print encode_entities(Dumper $rslt);
+            print '<pre>' . encode_entities(Dumper $rslt) . '</pre>';
         }
     } else {
         die 'Invalid ' . $currency . ' command: ' . $cmd;
     }
-} elsif ($view_action eq $va_cmds{new_deposit_address}) {
+} elsif ($view_action eq 'new_deposit_address') {
     my $rslt = $rpc_client->getnewaddress('manual');
     print '<p>New ' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
-} elsif ($view_action eq $va_cmds{make_dcc}) {
+} elsif ($view_action eq 'make_dcc') {
     my $amount_dcc  = request()->param('amount_dcc')  // 0;
     my $loginid_dcc = request()->param('loginid_dcc') // '';
     my $transtype   = request()->param('address_dcc') // '';
