@@ -140,8 +140,8 @@ if ($filen eq 'editvol') {
         print @output;
 
         my $today = Date::Utility->new->truncate_to_day;
-        if ($today->is_same_as($ON_expiry_date)) {
-            print "<P> Overnight expiry date cannot be the same date as today.</P>";
+        if ($market eq 'forex' and $today->is_same_as($ON_expiry_date)) {
+            print "<P> Overnight expiry date cannot be the same date as today for forex.</P>";
         } elsif (!$surface->is_valid) {
             print "<P> " . encode_entities($surface->validation_error) . " </P>";
 
