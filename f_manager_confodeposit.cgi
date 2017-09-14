@@ -117,6 +117,11 @@ if ($amount < $low || $amount > $high) {
 my $signed_amount = $amount;
 $signed_amount *= -1 if $ttype eq 'DEBIT';
 
+unless ($client->landing_company->is_currency_legal($curr)) {
+    printf "ERROR: Currency %s is not legal for this client's landing company", encode_entities($curr);
+    code_exit_BO();
+}
+
 my $email      = $client->email;
 my $salutation = $client->salutation;
 my $first_name = $client->first_name;
