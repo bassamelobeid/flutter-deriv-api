@@ -150,7 +150,7 @@ sub clients {
     my @bom_clients = sort { (($a->is_virtual ? 'V' : 'R') . $a->loginid) cmp(($b->is_virtual ? 'V' : 'R') . $b->loginid) }
         map { Client::Account->new({loginid => $_->loginid, db_operation => 'replica'}) } @bom_loginids;
 
-    my $all_status = Client::Account::client_status_types;
+    my $all_status = Client::Account::client_status_types();
     my @do_not_display_status = grep { not $all_status->{$_} } keys %$all_status;
 
     my @parts   = ();
