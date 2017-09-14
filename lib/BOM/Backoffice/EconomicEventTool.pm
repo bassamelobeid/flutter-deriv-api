@@ -4,8 +4,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use Quant::Framework::EconomicEvent::Scheduled;
-use Quant::Framework::EconomicEvent::Tentative;
+use Quant::Framework::EconomicEventCalendar;
 use Volatility::Seasonality;
 use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying_db);
@@ -21,17 +20,17 @@ sub get_economic_events_for_date {
     return _err('Date is undefined') unless $date;
     $date = Date::Utility->new($date);
 
-    my $ees             = _ees();
+    my $eec             = _eec();
     my $from            = $date->truncate_to_day;
     my $to              = $from->plus_time_interval('23h59m59s');
-    my $economic_events = $ees->get_latest_events_for_period({
+    my $economic_events = $eec->get_latest_events_for_period({
         from => $from,
         to   => $to,
     });
 
     my @events               = map  { get_info($_) } @$economic_events;
     my @uncategorized_events = grep { !is_categorized($_) } @$economic_events;
-    my @deleted_events       = map  { get_info($_) } (values %{$ees->_get_deleted()});
+    my @deleted_events       = map  { get_info($_) } (values %{$eec->_get_deleted()});
 
     return {
         categorized_events   => to_json(\@events),
@@ -87,15 +86,15 @@ sub delete_by_id {
 
     return _err("ID is not found.") unless ($id);
 
-    my $ees = _ees();
+    my $eec = _eec();
 
-    my $deleted = $ees->delete_event({
+    my $deleted = $eec->delete_event({
         id => $id,
     });
 
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
 
-    _regenerate($ees->get_all_events());
+    _regenerate($eec->get_all_events());
 
     return $deleted;
 }
@@ -106,12 +105,12 @@ sub update_by_id {
     return _err("ID is not found.") unless $args->{id};
     return _err("Custom magnitude is not provided.") unless exists $args->{custom_magnitude};
 
-    my $ees     = _ees();
-    my $updated = $ees->update_event($args);
+    my $eec     = _eec();
+    my $updated = $eec->update_event($args);
 
     return _err('Did not find event with id: ' . $args->{id}) unless $updated;
 
-    _regenerate($ees->get_all_events());
+    _regenerate($eec->get_all_events());
 
     return {
         is       => $updated->{id},
@@ -122,24 +121,18 @@ sub update_by_id {
 sub save_new_event {
     my $args = shift;
 
-    if ($args->{is_tentative} and not $args->{estimated_release_date}) {
-        return _err('Must specify estimated announcement date for tentative events');
-    }
-
-    if (not $args->{release_date} and not $args->{is_tentative}) {
+    if (not $args->{release_date}) {
         return _err('Must specify announcement date for economic events');
     }
 
     $args->{release_date} = Date::Utility->new($args->{release_date})->epoch if $args->{release_date};
-    $args->{estimated_release_date} = Date::Utility->new($args->{estimated_release_date})->truncate_to_day->epoch
-        if $args->{estimated_release_date};
 
-    my $ee_object = $args->{is_tentative} ? _eet() : _ees();
-    my $added = $ee_object->add_event($args);
+    my $eec   = _eec();
+    my $added = $eec->add_event($args);
 
     return _err('Identical event exists. Economic event not saved') unless $added;
 
-    _regenerate($ee_object->get_all_events()) if $ee_object->symbol eq 'scheduled';
+    _regenerate($eec->get_all_events());
 
     return get_info($added);
 }
@@ -147,13 +140,13 @@ sub save_new_event {
 sub restore_by_id {
     my ($id, $type) = @_;
 
-    my $ee_object = $type eq 'scheduled' ? _ees() : _eet();
+    my $eec = _eec();
 
-    my $restored = $ee_object->restore_event($id);
+    my $restored = $eec->restore_event($id);
 
     return _err('Failed to restore event.') unless $restored;
 
-    _regenerate($ee_object->get_all_events());
+    _regenerate($eec->get_all_events());
 
     return $restored;
 }
@@ -188,15 +181,8 @@ sub _get_affected_underlying_symbols {
     return @symbols;
 }
 
-sub _ees {
-    return Quant::Framework::EconomicEvent::Scheduled->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    );
-}
-
-sub _eet {
-    return Quant::Framework::EconomicEvent::Tentative->new(
+sub _eec {
+    return Quant::Framework::EconomicEventCalendar->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     );
