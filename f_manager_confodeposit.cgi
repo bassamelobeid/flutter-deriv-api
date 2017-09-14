@@ -60,7 +60,7 @@ my $encoded_toLoginID = encode_entities($toLoginID);
 my $staff = BOM::Backoffice::Auth0::from_cookie();
 my $clerk = $staff->{nickname};
 
-unless($curr =~ /^[A-Z]{3}$/ && LandingCompany::Registry::get_currency_type($curr)) {
+unless ($curr =~ /^[A-Z]{3}$/ && LandingCompany::Registry::get_currency_type($curr)) {
     print "Invalid currency, please check: " . encode_entities($curr);
     code_exit_BO();
 }
