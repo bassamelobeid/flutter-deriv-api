@@ -25,15 +25,20 @@ subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
         $clientdb->getall_arrayref('select * from payment_v1.get_today_client_payment_agent_transfer_total_amount(?)', [$pa_client->loginid])->[0]
         ->{amount};
     is($pa_total_amount, 0);
+
+    $client->set_default_account('USD');
+    $pa_client->set_default_account('USD');
     $client->payment_account_transfer(
         toClient => $pa_client,
         currency => 'USD',
-        amount   => 1000
+        amount   => 1000,
+        fees     => 0,
     );
     $pa_client->payment_account_transfer(
         toClient => $client,
         currency => 'USD',
-        amount   => 1000
+        amount   => 1000,
+        fees     => 0,
     );
     $pa_total_amount =
         $clientdb->getall_arrayref('select * from payment_v1.get_today_client_payment_agent_transfer_total_amount(?)', [$pa_client->loginid])->[0]
@@ -52,7 +57,8 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
             toClient => $pa_client,
             currency => 'USD',
             amount   => 999,
-            remark   => $remark
+            remark   => $remark,
+            fees     => 0,
         );
     }
     "OK with remark length = 800";
@@ -66,7 +72,8 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
             toClient => $pa_client,
             currency => 'USD',
             amount   => 999,
-            remark   => $remark
+            remark   => $remark,
+            fees     => 0,
         );
     }
     qr/value too long for type character varying\(800\)/, 'remark length cannot > 800';
