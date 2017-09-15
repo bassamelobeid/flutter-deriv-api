@@ -28,14 +28,12 @@ sub get_economic_events_for_date {
         to   => $to,
     });
 
-    my @events               = map  { get_info($_) } @$economic_events;
-    my @uncategorized_events = grep { !is_categorized($_) } @$economic_events;
-    my @deleted_events       = map  { get_info($_) } (values %{$eec->_get_deleted()});
+    my @events = map { get_info($_) } @$economic_events;
+    my @deleted_events = map { get_info($_) } (values %{$eec->_get_deleted()});
 
     return {
-        categorized_events   => to_json(\@events),
-        uncategorized_events => to_json(\@uncategorized_events),
-        deleted_events       => to_json(\@deleted_events),
+        categorized_events => to_json(\@events),
+        deleted_events     => to_json(\@deleted_events),
     };
 }
 
@@ -75,8 +73,9 @@ sub get_info {
             @{Volatility::Seasonality::categorize_events($symbol, [$event])};
         push @by_symbols, to_json(\%cat) if %cat;
     }
-    $event->{info}         = \@by_symbols;
-    $event->{release_date} = Date::Utility->new($event->{release_date})->datetime;
+    $event->{info}            = \@by_symbols;
+    $event->{release_date}    = Date::Utility->new($event->{release_date})->datetime;
+    $event->{not_categorized} = !is_categorized($event);
 
     return $event;
 }
