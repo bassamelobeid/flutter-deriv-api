@@ -172,6 +172,13 @@ sub clients {
     return @clients;
 }
 
+sub loginid_details {
+    my $self = shift;
+
+    return {map { $_->loginid => {loginid => $_->loginid, broker_code => ($_->loginid =~ /(^[a-zA-Z]+)/)} }
+            grep { $_->loginid !~ /^MT\d+$/ } $self->loginid};
+}
+
 sub mt5_logins {
     my $self = shift;
     my @mt5_logins = sort map { $_->loginid } grep { $_->loginid =~ /^MT\d+$/ } $self->loginid;
