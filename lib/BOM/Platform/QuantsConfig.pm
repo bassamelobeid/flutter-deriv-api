@@ -51,11 +51,15 @@ sub save_config {
     my $existing_config = $self->chronicle_reader->get($namespace, $config_type) // {};
 
     my $identifier = $args{name} || die 'name is required';
+    die 'name should only contain words and integers' unless $identified =~ /^([A-Za-z0-9]+ ?)*$/;
     die 'Cannot use an identical name.' if $existing_config->{$identifier};
-    die 'start_time is required' unless defined $args{start_time};
-    die 'end_time is required'   unless defined $args{end_time};
+    die 'start_time is required' unless $args{start_time};
+    die 'end_time is required'   unless $args{end_time};
 
-    $args->{$_} =~ s/^\s+|\s+$//g for (qw(start_time end_time));
+    for (qw(start_time end_time)) {
+        $args->{$_} =~ s/^\s+|\s+$//g;
+        $args->{$_} = Date::Utility->new($args->{$_})->epoch;
+    }
 
     foreach my $key (keys %args) {
         next if $key eq 'name';
