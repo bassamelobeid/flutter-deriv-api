@@ -8,7 +8,7 @@ use Digest::SHA1;
 
 use constant MAX_FILE_SIZE => 3 * 2**20;    # 3 MB
 
-my $fake_path = '/db/clientIDscans/';
+my $fake_path = '/tmp/db/clientIDscans/';
 
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
@@ -165,7 +165,12 @@ sub upload {
 
     # TODO: Stream through a cloud storage
 
-    open my $fh, '>>:raw', "$fake_path/$file_name" or die 'Unable to open file';
+    if (not -d $fake_path) {
+        system("mkdir -p $fake_path");
+    }
+
+    return send_upload_failure($c, $upload_info) unless open my $fh, '>>:raw', "$fake_path/$file_name";
+
     print $fh $data;
     close $fh;
     return;
