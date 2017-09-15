@@ -8,6 +8,8 @@ use Digest::SHA1;
 
 use constant MAX_FILE_SIZE => 3 * 2**20;    # 3 MB
 
+my $fake_path = '/db/clientIDscans/';
+
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
     my $args = $req_storage->{origin_args};
@@ -21,11 +23,12 @@ sub add_upload_info {
         %{$current_stash},
         $upload_id => {
             %{$call_params},
+            file_id        => $rpc_response->{file_id},
             file_name      => $rpc_response->{file_name},
             call_type      => $rpc_response->{call_type},
             sha1           => Digest::SHA1->new,
             received_bytes => 0,
-            document_path  => '/hostname/filehash',
+            document_path  => $fake_path,
         },
     };
 
@@ -124,7 +127,7 @@ sub send_upload_successful {
             args => {
                 req_id        => $upload_info->{req_id},
                 passthrough   => $upload_info->{passthrough},
-                file_name     => $upload_info->{file_name},
+                file_id       => $upload_info->{file_id},
                 document_path => $upload_info->{document_path},
                 %{$upload_finished},
             },
@@ -151,6 +154,7 @@ sub upload {
     my ($c, $upload_info) = @_;
     my $upload_id = $upload_info->{upload_id};
     my $data      = $upload_info->{data};
+    my $file_name = $upload_info->{file_name};
     my $stash     = $c->stash('document_upload');
 
     my $new_received_bytes = $stash->{$upload_id}->{received_bytes} + length $data;
@@ -161,6 +165,9 @@ sub upload {
 
     # TODO: Stream through a cloud storage
 
+    open my $fh, '>>:raw', "$fake_path/$file_name" or die 'Unable to open file';
+    print $fh $data;
+    close $fh;
     return;
 }
 
