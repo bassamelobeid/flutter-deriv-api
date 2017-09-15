@@ -584,7 +584,7 @@ print qq{<br/>
 </div>
 };
 
-Bar("$encoded_loginid STATUSES");
+Bar("$loginid STATUSES");
 if (my $statuses = build_client_warning_message($loginid)) {
     print $statuses;
 }
@@ -600,7 +600,7 @@ BOM::Backoffice::Request::template->process(
 
 # Show Self-Exclusion link if this client has self-exclusion settings.
 if ($client->self_exclusion) {
-    Bar("$encoded_loginid SELF-EXCLUSION SETTINGS");
+    Bar("$loginid SELF-EXCLUSION SETTINGS");
     print "$encoded_loginid has enabled <a id='self-exclusion' href=\""
         . request()->url_for(
         'backoffice/f_setting_selfexclusion.cgi',
@@ -610,7 +610,7 @@ if ($client->self_exclusion) {
         }) . "\">self-exclusion</a> settings.";
 }
 
-Bar("$encoded_loginid PAYMENT AGENT DETAILS");
+Bar("$loginid PAYMENT AGENT DETAILS");
 
 # Show Payment-Agent details if this client is also a Payment Agent.
 my $payment_agent = $client->payment_agent;
@@ -643,7 +643,7 @@ my $name = $client->first_name;
 $name .= ' ' if $name;
 $name .= $client->last_name;
 my $client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
-Bar("CLIENT " . encode_entities($client_info));
+Bar("CLIENT " . $client_info);
 
 my ($link_acc, $link_loginid);
 if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
@@ -723,7 +723,7 @@ if (not $client->is_virtual) {
     };
 }
 
-Bar("$encoded_loginid Tokens");
+Bar("$loginid Tokens");
 my @all_accounts = $user->clients;
 foreach my $l (@all_accounts) {
     my $tokens = BOM::Database::Model::AccessToken->new->get_all_tokens_by_loginid($l->loginid);
