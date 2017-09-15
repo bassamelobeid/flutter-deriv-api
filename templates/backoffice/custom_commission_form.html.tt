@@ -16,10 +16,10 @@
     <tr><td>End Time</td><td> : <input type="text" name="end_time"></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
     <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol"></td></tr>
     <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol"></td></tr>
-    <tr><td>Bias</td><td> : <input type="text" name="bias"></td><td>(Leave it empty if bias is not intended. Accepts values long or short)</td></tr>
-    <tr><td>Partition Range</td><td> : <input type="text" name="partition_range"></td><td>(partitions in delta space. E.g. 0-1 or 0-0.5,0.5-1)</td></tr>
-    <tr><td>Flat</td><td> : <input type="text" name="flat"></td><td>(boolean flag. If set to 1, the partition will be set to max adjustment. Set to 0 if we want to have variable commission structure across delta)</td></tr>
-    <tr><td>Max adjustment</td><td> : <input type="text" name="cap_rate"></td></tr>
+    <tr><td>Bias</td><td> : <input type="text" name="bias"></td><td>Leave it empty if bias is not intended. Accepts values long or short</td></tr>
+    <tr><td>Partition Range</td><td> : <input type="text" name="partition_range"></td><td>Partitions in delta space. E.g. 0-1 or 0-0.5,0.5-1 (required)</td></tr>
+    <tr><td>Flat</td><td> : <input type="text" name="flat"></td><td>Boolean flag. If set to 1, the partition will be set to max adjustment. Set to 0 if we want to have variable commission structure across delta (required)</td></tr>
+    <tr><td>Max adjustment</td><td> : <input type="text" name="cap_rate"></td><td>(required)</td></tr>
     <tr><td>Min adjustment</td><td> : <input type="text" name="floor_rate"></td></tr>
     <tr><td>Width</td><td> : <input type="text" name="width"></td></tr>
     <tr><td>Centre Offset</td><td> : <input type="text" name="centre_offset"></td></tr>
