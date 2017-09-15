@@ -11,9 +11,9 @@
 
 <table id='custom_commission_form'>
     <tr><td>Mode</td><td> : <select onchange="fillForm(this.value, '[% static_config %]')"><option value="none">None</option><option value="medium">Medium</option><option value="high">High</option></select></td></tr>
-    <tr><td>Name</td><td> : <input type="text" name="name"></td><td>(required)</td></tr>
-    <tr><td>Start Time</td><td> : <input type="text" name="start_time"></td><td>(required)</td></tr>
-    <tr><td>End Time</td><td> : <input type="text" name="end_time"></td><td>(required)</td></tr>
+    <tr><td>Name</td><td> : <input type="text" name="name"></td><td>Accepts only words and integers (required)</td></tr>
+    <tr><td>Start Time</td><td> : <input type="text" name="start_time"></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
+    <tr><td>End Time</td><td> : <input type="text" name="end_time"></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
     <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol"></td></tr>
     <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol"></td></tr>
     <tr><td>Bias</td><td> : <input type="text" name="bias"></td><td>(Leave it empty if bias is not intended. Accepts values long or short)</td></tr>
