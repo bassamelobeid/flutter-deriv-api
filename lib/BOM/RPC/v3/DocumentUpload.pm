@@ -13,8 +13,9 @@ sub upload {
     my ($document_type, $document_id, $document_format, $expiration_date, $document_path, $status, $file_id, $reason) =
         @{$params->{args}}{qw/document_type document_id document_format expiration_date document_path status file_id reason/};
 
+    my $loginid  = $client->loginid;
     my $clientdb = BOM::Database::ClientDB->new({broker_code => $client->broker_code});
-    my $dbh = $clientdb->db->dbh;
+    my $dbh      = $clientdb->db->dbh;
 
     return create_error('UploadError', $reason) if defined $status and $status eq 'failure';
 
@@ -44,13 +45,14 @@ sub upload {
         my ($id) = $dbh->selectrow_array(
             "SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?)",
             {Slice => {}},
-            $client->loginid, $document_type, $document_format, '', $expiration_date, 'ID_DOCUMENT', $document_id || '',
+            $loginid, $document_type, $document_format, '', $expiration_date, 'ID_DOCUMENT', $document_id || '',
             '', 'uploading'
         );
 
         return create_error('UploadError') if !$id;
 
         return {
+            file_name => join('.', $loginid, $document_type, $id, $document_format),
             file_id   => $id,
             call_type => 1,
         };
@@ -63,7 +65,7 @@ sub upload {
         # Return if document is not present in db.
         return create_error('UploadDenied', localize("Document not found.")) unless defined($doc);
 
-        $doc->{file_name}     = join '.', $client->loginid, $doc->{document_type}, $doc->{id}, $doc->{document_format};
+        $doc->{file_name}     = join '.', $loginid, $doc->{document_type}, $doc->{id}, $doc->{document_format};
         $doc->{status}        = "uploaded";
         $doc->{document_path} = $document_path;
 
