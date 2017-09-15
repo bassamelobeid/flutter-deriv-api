@@ -44,7 +44,7 @@ foreach my $client_hash (@{$client_dup_list}) {
     my $client  = Client::Account::get_instance({loginid => $loginid});
     my $user    = BOM::Platform::User->new({email => $client->email});
 
-    my $siblings = {map { $_->loginid => 1 } @{$user->loginid}};
+    my $siblings = {map { $_->loginid => 1 } @{$user->clients}};
     my @duplicate_clients = map {
         # SQL function returns an array, every element is loginid and client status, joined by /
         # Status can be an empty string
