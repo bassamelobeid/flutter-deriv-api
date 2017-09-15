@@ -37,9 +37,9 @@ unless ($broker) {
 }
 
 if ($depositswithdrawalsonly eq 'yes') {
-    Bar($encoded_loginID . ' (DEPO & WITH ONLY)');
+    Bar($loginID . ' (DEPO & WITH ONLY)');
 } else {
-    Bar($encoded_loginID);
+    Bar($loginID);
 }
 
 my $client = Client::Account::get_instance({'loginid' => $loginID});
