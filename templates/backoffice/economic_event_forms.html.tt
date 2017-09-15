@@ -13,26 +13,11 @@
 
 <p>If you wish to delete an economic event, click on the <b>Delete</b> button. The event will be removed from the table and it will be listed under the <b>Deleted Economic Events</b> table. To restore the deleted event, Click on the <b>Restore</b> button.</p>
 
-<p>Please follow these steps to add a tentative economic event:</p>
-<ul>
-    <li>Enter 'Symbol'. Symbol should be the currency symbol that the event has an impact on.</li>
-    <li>Enter 'Estimated Announcement Date'. Set to the date of which you want to add the event.</li>
-    <li>Enter 'Annoucement Name'. The name of the event. This is important please copy and paste to avoid typo.</li>
-    <li>Enter 'Impact'. The raw impact (1: low, 3: medium, 5: high) of the event. This will not be the impact used to scale volatility.</li>
-    <li>Check the 'Tentative' box.</li>
-</ul>
-
-<p>Once completed, click the <b>Save</b> button. The tentative event will be listed in the <b>Tentative events list</b> table.</p>
-
-<p>Now the tentative event is added into the system but it has no impact in contract pricing yet. To enable barrier shift for tentative event, enter the desired period and shift amount. Please note that by setting this, the tentative event will be added into the list of events that's used to scale pricing volatility. Please do this with caution! If you wish to set the release date for the tentative event, enter it in 'Release Datetime' or leave it blank and it will be set to the mid point of the desired period.</p>
-
-<p>To delete the tentative event, click on the <b>Delete</b> button.</p>
-
-<p><b>Add new economic event or tentative event manually with the tool below: </b></p>
+<p><b>Add new economic event manually with the tool below: </b></p>
 
 <table id='economic_event_form'>
     <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
-    <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z. Do NOT set this for tentative event!)</td></tr>
+    <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. epoch or 2012-11-14 01:15:00.)</td></tr>
     <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
     <INPUT type="hidden" name="source" value="binary">
     <tr><td>Impact</td>
@@ -42,11 +27,6 @@
                 <option value=5>5</option>
               </select>
         </td></tr>
-    <tr>
-        <td>Tentative</td>
-        <td> : <input type="checkbox" name="is_tentative" value="1"\> </td>
-    </tr>
-    <tr><td>Estimated Announcement Date</td><td> : <INPUT type="text" name="estimated_release_date"></td><td>(e.g. 2012-11-14)</td></tr>
     <tr><td></td><td><button onclick="saveEvent()">Save</td><td class='save_result'></td></tr>
 
 </table>
@@ -151,8 +131,6 @@
             var symbol = el.find('input[name="symbol"]').val();
             var impact = el.find('select[name="impact"]').val();
             var custom_impact = el.find('input[name="custom_magnitude"]').val();
-            var is_tentative = el.find('input[name="is_tentative"]:checked').val();
-            var estimated_release_date = el.find('input[name="estimated_release_date"]').val();
             var event_source = el.find('input[name="source"]').val();
             \$.ajax({
                     url: "[% ee_upload_url | none %]",
@@ -164,8 +142,6 @@
                         impact: impact,
                         source: event_source,
                         custom_magnitude: custom_impact,
-                        is_tentative: is_tentative,
-                        estimated_release_date: estimated_release_date
                     },
                     success: function(data){
                         var event = \$.parseJSON(data);
