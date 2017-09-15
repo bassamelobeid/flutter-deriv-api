@@ -60,7 +60,7 @@ sub is_categorized {
     my $event = shift;
 
     $event->{event_name} =~ s/\s/_/g;
-    my @categories = keys %{_vs()->get_economic_event_categories()};
+    my @categories = keys %{Volatility::Seasonality::get_economic_event_categories()};
     return 1 if first { $_ =~ /$event->{event_name}/ } @categories;
     return 0;
 }
@@ -72,7 +72,7 @@ sub get_info {
     my @by_symbols;
     foreach my $symbol (_get_affected_underlying_symbols()) {
         my %cat = map { $symbol => 'magnitude: ' . int($_->{magnitude}) . ' duration: ' . int($_->{duration}) . 's' }
-            @{_vs()->categorize_events($symbol, [$event])};
+            @{Volatility::Seasonality::categorize_events($symbol, [$event])};
         push @by_symbols, to_json(\%cat) if %cat;
     }
     $event->{info}         = \@by_symbols;
@@ -155,7 +155,7 @@ sub _regenerate {
     my $events = shift;
 
     # update economic events impact curve with the newly added economic event
-    _vs()->generate_economic_event_seasonality({
+    Volatility::Seasonality::generate_economic_event_seasonality({
         underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
         economic_events    => $events,
         chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
@@ -183,13 +183,6 @@ sub _get_affected_underlying_symbols {
 
 sub _eec {
     return Quant::Framework::EconomicEventCalendar->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    );
-}
-
-sub _vs {
-    return Volatility::Seasonality->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     );
