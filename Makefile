@@ -24,10 +24,10 @@ json_schema_3:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/accounts.t
 
 json_schema_4:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: copytrading.conf
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/copytrading.t
 
 json_schema_5:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: multiple_account.conf
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/multiple_account.t
 
 loadtest:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/loadtest.t
