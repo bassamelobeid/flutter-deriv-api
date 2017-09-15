@@ -51,7 +51,7 @@ sub save_config {
     my $existing_config = $self->chronicle_reader->get($namespace, $config_type) // {};
 
     my $identifier = $args{name} || die 'name is required';
-    die 'name should only contain words and integers' unless $identified =~ /^([A-Za-z0-9]+ ?)*$/;
+    die 'name should only contain words and integers' unless $identifier =~ /^([A-Za-z0-9]+ ?)*$/;
     die 'Cannot use an identical name.' if $existing_config->{$identifier};
     die 'start_time is required' unless $args{start_time};
     die 'end_time is required'   unless $args{end_time};
