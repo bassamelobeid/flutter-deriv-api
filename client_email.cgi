@@ -89,7 +89,8 @@ if ($email ne $new_email) {
         $user->email($new_email);
         $user->save;
 
-        foreach my $client_obj ($user->clients(disabled_ok => 1)) {
+        foreach my $lid ($user->loginid) {
+            my $client_obj = Client::Account->new({loginid => $lid});
             $client_obj->email($new_email);
             $client_obj->save;
         }

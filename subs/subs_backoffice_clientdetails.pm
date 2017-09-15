@@ -66,7 +66,7 @@ sub print_client_details {
             search_option => 'ProveID_KYC'
         );
         my $user = BOM::Platform::User->new({email => $client->email});
-        my @siblings = $user->clients(disabled_ok => 1);
+        my $siblings = $user->loginid;
 
         $show_uploaded_documents .= show_client_id_docs($_, show_delete => 1) for $client;
 
@@ -75,7 +75,7 @@ sub print_client_details {
             $_,
             show_delete => 1,
             no_edit     => 1
-        ) for grep { $_->loginid ne $client->loginid } @siblings;
+        ) for grep { $_->loginid ne $client->loginid } @$siblings;
 
         $show_uploaded_documents .= 'To edit following documents please select corresponding user<br>' . $siblings_docs
             if $siblings_docs;
