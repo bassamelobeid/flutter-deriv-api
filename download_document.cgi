@@ -39,7 +39,7 @@ if ($category eq '192_result') {
 } elsif ($category eq 'temp') {
     $full_path = get_tmp_path_or_die() . $path;
 } else {
-    $full_path = "$dbloc/clientIDscans/$path";
+    $full_path = $path;
 }
 
 local $\ = "";

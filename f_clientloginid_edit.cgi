@@ -268,7 +268,7 @@ if ($input{whattodo} eq 'uploadID') {
         my $upload_submission = {
             document_type              => $doctype,
             document_format            => $docformat,
-            document_path              => $new_document_path,
+            document_path              => $path,
             file_name                  => $new_file_name,
             authentication_method_code => 'ID_DOCUMENT',
             expiration_date            => $expiration_date,
@@ -460,7 +460,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                     $m->delete;
                 }
             }
-            if($input{$key} eq 'NEEDS_ACTION') {
+            if ($input{$key} eq 'NEEDS_ACTION') {
                 $client->set_status('needs_action', $clerk, 'Documents uploaded');
                 $client->clr_status('under_review');
             }
