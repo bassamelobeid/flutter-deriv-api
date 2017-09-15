@@ -660,23 +660,22 @@ if ($link_acc) {
 }
 
 my $user      = BOM::Platform::User->new({email => $client->email});
-my @siblings  = @{$user->loginid};
+my $siblings  = $user->loginid_details;
 my @mt_logins = $user->mt5_logins;
 
 if (@siblings > 1 or @mt_logins > 0) {
     print "<p>Corresponding accounts: </p><ul>";
 
     # show all BOM loginids for user, include disabled acc
-    foreach my $sibling (@siblings) {
-        my ($broker_code) = $sibling->broker_code =~ /(^[a-zA-Z]+)/;
-        next if ($sibling->loginid eq $client->loginid);
+    foreach my $lid (sort keys %$siblings) {
+        next if ($lid eq $client->loginid);
         my $link_href = request()->url_for(
             'backoffice/f_clientloginid_edit.cgi',
             {
-                broker  => $broker_code,
-                loginID => $sibling->loginid,
+                broker  => $siblings->{$lid}->{broker_code},
+                loginID => $lid,
             });
-        print "<li><a href='$link_href'>" . encode_entities($sibling->loginid) . "</a></li>";
+        print "<li><a href='$link_href'>" . encode_entities($lid) . "</a></li>";
     }
 
     # show MT5 a/c
@@ -718,12 +717,11 @@ if (not $client->is_virtual) {
 }
 
 Bar("$encoded_loginid Tokens");
-my $all_accounts = $user->loginid;
-foreach my $l (@$all_accounts) {
-    my $tokens = BOM::Database::Model::AccessToken->new->get_all_tokens_by_loginid($l->loginid);
+foreach my $l (sort keys %$siblings) {
+    my $tokens = BOM::Database::Model::AccessToken->new->get_all_tokens_by_loginid($l);
     foreach my $t (@$tokens) {
         $t =~ /(.{4})$/;
-        print "Access Token [" . $l->loginid . "]: $1 <br\>";
+        print "Access Token [" . $l . "]: $1 <br\>";
     }
 }
 
