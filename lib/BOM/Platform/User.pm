@@ -175,8 +175,10 @@ sub clients {
 sub loginid_details {
     my $self = shift;
 
-    return {map { $_->loginid => {loginid => $_->loginid, broker_code => ($_->loginid =~ /(^[a-zA-Z]+)/)} }
-            grep { $_->loginid !~ /^MT\d+$/ } $self->loginid};
+    return {
+        map { $_->loginid => {loginid => $_->loginid, broker_code => ($_->loginid =~ /(^[a-zA-Z]+)/)} }
+        grep { $_->loginid !~ /^MT\d+$/ } $self->loginid
+    };
 }
 
 sub mt5_logins {
