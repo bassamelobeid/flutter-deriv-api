@@ -60,26 +60,26 @@ $args->{document_type}   = "passport";
 $args->{document_id}     = "ABCD1234";
 $args->{document_format} = "jpg";
 my $result = $c->call_ok($method, $params)->result;
-my ($doc) = $test_client->find_client_authentication_document(query => [file_name => $result->{file_name}]);
+my ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 # Succesfully retrieved object from database.
 is($doc->document_id, $args->{document_id}, 'document is saved in db');
 is($doc->status,      'uploading',          'document status is set to uploading');
 
 # Document with no expiration_date
-$args->{expiration_date} = ''; # Document with no expiration_date
+$args->{expiration_date} = '';    # Document with no expiration_date
 $c->call_ok($method, $params)->result;
 
 $args = {
     document_path => 'some-where.in.cloud/file',
     status        => 'success',
-    file_name     => $result->{file_name}};
+    file_id       => $result->{file_id}};
 $params->{args} = $args;
 $result = $c->call_ok($method, $params)->result;
-($doc) = $test_client->find_client_authentication_document(query => [file_name => $result->{file_name}]);
+($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 is($doc->status,                                     'uploaded',           'document\'s status changed');
 is($test_client->get_status('under_review')->reason, 'Documents uploaded', 'client\'s status changed');
 
-$args->{file_name} = "garbage";
+$args->{file_id} = 1231531;
 $c->call_ok($method, $params)->has_error->error_message_is('Document not found.', 'error if document is not present');
 
 done_testing();
