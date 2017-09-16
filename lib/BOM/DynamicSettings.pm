@@ -201,8 +201,10 @@ sub get_settings_by_group {
         ],
         payments => [qw(
                 payments.payment_limits
-                payments.transfer_fees.fiat
-                payments.transfer_fees.crypto
+                payments.transfer_between_accounts.fees.fiat
+                payments.transfer_between_accounts.fees.crypto
+                payments.transfer_between_accounts.amount.fiat.min
+                payments.transfer_between_accounts.amount.crypto.min
                 )]};
 
     my $settings;
