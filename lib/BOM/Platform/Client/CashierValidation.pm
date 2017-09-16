@@ -15,9 +15,11 @@ use warnings;
 
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
+use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
 use Brands;
 use Client::Account;
+use LandingCompany::Registry;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw/request localize/;
@@ -184,6 +186,41 @@ sub pre_withdrawal_validation {
     }
 
     return;
+}
+
+# From fiat currency to cryptocurrency: 1% fee
+# From cryptocurrency to fiat currency: 0.5% fee
+# for an approved PA, we don't need to charge any
+# % fee for converting BTC to USD only
+sub calculate_to_amount_with_fees {
+    my ($loginid, $amount, $from_currency, $to_currency) = @_;
+
+    my $from_currency_type = LandingCompany::Registry::get_currency_type($from_currency);
+    my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
+
+    # need to calculate fees only when currency type are different and
+    # currencies are different, we don't allow transfer between same
+    # currency type
+    my ($fees, $fees_percent) = (0, 0);
+    if (($from_currency_type ne $to_currency_type) and ($from_currency ne $to_currency)) {
+        my $client = Client::Account->new({
+                loginid      => $loginid,
+                db_operation => 'replica'
+            }) or return ();
+
+        if ($from_currency_type eq 'crypto' and $client->payment_agent and $client->payment_agent->is_authenticated) {
+            # no fees for authenticate payment agent
+            $fees = 0;
+        } else {
+            $fees_percent = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->fees->$from_currency_type;
+            $fees = ($amount) * ($fees_percent / 100);
+        }
+
+        $amount -= $fees;
+        $amount = amount_from_to_currency($amount, $from_currency, $to_currency);
+    }
+
+    return ($amount, $fees, $fees_percent);
 }
 
 sub _withdrawal_validation_period {
