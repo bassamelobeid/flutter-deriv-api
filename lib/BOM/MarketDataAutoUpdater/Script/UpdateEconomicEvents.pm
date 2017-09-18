@@ -45,7 +45,6 @@ sub script_run {
             recorded_date    => Date::Utility->new,
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-            %args,
         )->save;
 
         print "stored " . (scalar @$events_received) . "\n";
