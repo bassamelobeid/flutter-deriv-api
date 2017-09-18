@@ -19,13 +19,11 @@
     "expiration_date": {
       "type": "string",
       "description": "(Optional) Document expiration date",
-      "required": 0
     },
     "document_id": {
       "type": "string",
       "pattern":"^[\\w\\s-]{0,30}$",
       "description": "(Optional) Document ID (based on each document type)",
-      "required": 0
     },
     "document_format": {
       "enum":["PNG","JPG","JPEG","GIF","PDF"],
