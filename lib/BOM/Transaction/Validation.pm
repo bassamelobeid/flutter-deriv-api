@@ -378,31 +378,33 @@ sub _invalid_contract {
     my $contract          = $self->transaction->contract;
     my $message_to_client = localize($contract->primary_validation_error->message_to_client);
     #Record failed transaction here.
-    for my $c (@{$self->clients}) {
-        my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
-                login_id => $c->loginid,
-                ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
-                shortcode   => $contract->shortcode,
-                action_type => $p->{action},
-                reason      => $message_to_client,
-                details     => JSON::to_json({
-                        current_tick_epoch => $contract->current_tick->epoch,
-                        pricing_epoch      => $contract->date_pricing->epoch,
-                        option_type        => $contract->code,
-                        currency_pair      => $contract->underlying->symbol,
-                        ($self->transaction->trading_period_start) ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
-                        : (),
-                        ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
-                        : (barriers => $contract->barrier->as_absolute),
-                        expiry => $contract->date_expiry->db_timestamp,
-                        payout => $contract->payout
-                    }
-                ),
-                db => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
-            });
-        $rejected_trade->record_fail_txn();
+    if (not $contract->is_binaryico) {
+        for my $c (@{$self->clients}) {
+            my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
+                    login_id => $c->loginid,
+                    ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
+                    shortcode   => $contract->shortcode,
+                    action_type => $p->{action},
+                    reason      => $message_to_client,
+                    details     => JSON::to_json({
+                            current_tick_epoch => $contract->current_tick->epoch,
+                            pricing_epoch      => $contract->date_pricing->epoch,
+                            option_type        => $contract->code,
+                            currency_pair      => $contract->underlying->symbol,
+                            ($self->transaction->trading_period_start)
+                            ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
+                            : (),
+                            ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
+                            : (barriers => $contract->barrier->as_absolute),
+                            expiry => $contract->date_expiry->db_timestamp,
+                            payout => $contract->payout
+                        }
+                    ),
+                    db => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
+                });
+            $rejected_trade->record_fail_txn();
+        }
     }
-
     return Error::Base->cuss(
         -type => ($p->{action} eq 'buy' ? 'InvalidtoBuy' : 'InvalidtoSell'),
         -mesg => $contract->primary_validation_error->message,
