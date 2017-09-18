@@ -51,7 +51,7 @@ my $clientdb = BOM::Database::ClientDB->new({
     client_loginid => $client->loginid,
 });
 
-Bar($encoded_loginID . " - Contracts");
+Bar($loginID . " - Contracts");
 my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
     client_loginid => $client->loginid,
     currency_code  => $client->currency,
