@@ -39,53 +39,6 @@
 <p><b>List of Deleted Economic Events</b></p>
 <div id='deleted_event_list'></div>
 
-
-<p><b>List of Deleted Economic Events: </b> </p>
-
-<table class='deleted_economic_event_list'>
-    <tr>
-        <td><b>Event ID</b></td>
-        <td><b>Event Name</b></td>
-        <td><b>Release Date</b></td>
-        <td><b>Impact (FF)</b></td>
-        <td><b>Symbol</b></td>
-        <td><b>Action</b></td>
-    </tr>
-    [% FOREACH row IN deleted_events %]
-        <tr id="[% row.id %]">
-            <td>[% row.id %]</td>
-            <td>[% row.event_name %]</td>
-            <td>[% row.release_date %]</td>
-            <td>[% row.impact %]</td>
-            <td>[% row.symbol %]</td>
-            <td><button onclick="restoreEvent( '[% row.id %]' )">Restore</button> </td>
-            <td style="display:none;" class='result'></td>
-        </tr>
-    [% END %]
-</table>
-
-<p><b>List of Unlisted Economic Events: </b> </p>
-
-<table class='unlisted_economic_event_list'>
-    <tr>
-        <td><b>Event ID</b></td>
-        <td><b>Event Name</b></td>
-        <td><b>Release Date</b></td>
-        <td><b>Impact (FF)</b></td>
-        <td><b>Symbol</b></td>
-    </tr>
-    [% FOREACH row IN unlisted_events %]
-        <tr id="[% row.id %]">
-            <td>[% row.id %]</td>
-            <td>[% row.event_name %]</td>
-            <td>[% row.release_date %]</td>
-            <td>[% row.impact %]</td>
-            <td>[% row.symbol %]</td>
-            <td style="display:none;" class='result'></td>
-        </tr>
-    [% END %]
-</table>
-
 <script>
     function createTable(events, id) {
 
