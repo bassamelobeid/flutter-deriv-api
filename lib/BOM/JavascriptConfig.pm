@@ -25,7 +25,7 @@ sub bo_js_files_for {
         push @js_files, 'external/select2.min.js' if /promocode_edit/;
         push @js_files, 'external/jstree/jquery.jstree.js', 'pricing_details.js',
             'external/highcharts/highstock.js', 'external/highcharts/export-csv.js', 'external/highcharts/highstock-exporting.js',
-            if /bpot/;
+            if /(bpot|f_bet_iv)/;
         push @js_files, 'external/jstree/jquery.jstree.js',
             'external/highcharts/highstock.js', 'external/highcharts/export-csv.js', 'external/highcharts/highstock-exporting.js',
             if /dailyico/;
