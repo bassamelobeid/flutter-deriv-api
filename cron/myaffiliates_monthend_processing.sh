@@ -6,4 +6,4 @@
 cd /home/git/regentmarkets/bom-myaffiliates
 /etc/rmg/bin/perl -I/lib cron/myaffiliates_token_import.pl 1> /tmp/myaffiliates_token_import
 
-echo 'myaffiliates_commission run processed: '$(psql regentmarkets -Xt -v ON_ERROR_STOP=1 <<<'SELECT data_collection.calculate_affiliate_commission()')
+echo 'myaffiliates_commission run processed: '$(psql service=collector01 -Xt -v ON_ERROR_STOP=1 <<<'SELECT data_collection.calculate_affiliate_commission()')
