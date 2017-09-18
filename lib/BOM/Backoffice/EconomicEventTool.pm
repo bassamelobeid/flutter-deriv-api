@@ -142,7 +142,7 @@ sub save_new_event {
 }
 
 sub restore_by_id {
-    my ($id, $type) = @_;
+    my $id = shift;
 
     my $eec = _eec();
 
