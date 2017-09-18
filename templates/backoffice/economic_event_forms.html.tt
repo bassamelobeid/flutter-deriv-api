@@ -43,7 +43,7 @@
     function createTable(events, id) {
 
         var table = '<table id="'+id+'" class="economic_event_table">';
-        table += '<tr> <td><b>Event Name</b></td> <td><b>Release Date</b></td> <td><b>Impact (FF)</b></td> <td><b>Symbol</b></td> <td><b>Binary\'s Category (numbers are rounded)</b></td> <td><b>Custom Magnitude</b></td> <td><b>Action</b></td> </tr>';
+        table += '<tr> <th>Event Name</th> <th>Release Date</th> <th>Impact (FF)</th> <th>Symbol</th> <th>Binary\'s Category (numbers are rounded)</th> <th>Direct Pairs</th> <th>Indirect Pairs</th> </tr>';
 
         var eco_events = events;
         if (eco_events.length > 0) {
@@ -63,7 +63,7 @@
                     table += '<p>'+ row.info[y] +'</p>';
                 }
 
-                table += '</td> <td><INPUT type="text" name="custom_magnitude" size="10"></td>';
+                table += '</td> <td><div class="input_field">Magnitude: <INPUT type="text" name="custom_magnitude_direct" size="10"></div><td><div class="input_field">Magnitude: <input size="10" type="text" name="custom_magnitude_indirect"></div> <div class="input_field">Underliying List: <input size="10" type="text" name="custom_magnitude_indirect_list"></div></td></td>';
                 if (id === 'deleted_event_list') {
                     table += '<td><button onclick="restoreEvent(\''+ row.id +'\')">Retore</button></td> <td style="display:none;" class="update_result"></td></tr>';
                 } else {
@@ -99,12 +99,13 @@
             var result = el.find('td.update_result');
 
             result.text('processing ...').show();
-            var custom_magnitude = el.find('input[name="custom_magnitude"]').val();
             \$.ajax({
                     url: "[% ee_upload_url | none %]",
                     data: {
                         update_event: "1",
-                        custom_magnitude: custom_magnitude,
+                        custom_magnitude_direct: el.find('input[name="custom_magnitude_direct"]').val(),
+                        custom_magnitude_indirect: el.find('input[name="custom_magnitude_indirect"]').val(),
+                        custom_magnitude_indirect_list: el.find('input[name="custom_magnitude_indirect_list"]').val(),
                         event_id: id,
                     },
                     success: function(data){
@@ -123,45 +124,6 @@
             });
         }
     }
-    function restoreEvent(id) {
-	if (id) {
-
-            \$.ajax({
-                    url: "[% ee_upload_url | none %]",
-                    data: {
-                        restore_event: "1",
-                        event_id: id,
-                    },  
-                    success: function(data){
-                        var obj = \$.parseJSON(data);
-                        var result = \$("td.save_result");
-                        if (obj.id) {
-                            var list_el = \$('table.economic_event_list');
-                            var to_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td><td id="binary_info">';                            if (obj.info) {
-                                \$.each(obj.info, function(i, item) {
-                                    to_append += '<p>'+item+'</p>'; 
-                                }); 
-                            }   
-                            
-                            to_append += '</td><td><INPUT type="text" name="custom_magnitude" size="10"></td><td><button onclick="deleteEvent( \''+ obj.id +'\' )">Delete</button> <button onclick="update(\''+ obj.id +'\')">Update</button></td><td style="display:none;" class="result"></td>';                                    to_append += '</tr>';
-
-                            \$('tr#'+id).remove();                                                       
-                            
-                            if(obj.unlisted){
-	                      var unlisted_append = '<tr id="'+ obj.id +'"><td>'+obj.id+'</td><td>'+obj.event_name+'</td><td>'+obj.release_date+'</td><td>'+obj.impact+'</td><td>'+obj.symbol+'</td></tr>';
-                              \$('table.unlisted_economic_event_list').append(unlisted_append);
-                            }
-
-                            list_el.append(to_append);
-                            list_el.find('tr#'+obj.id).css('color', 'green');
-                            result.text('Economic event saved. ID ' + obj.id).css('color', 'green');
-                        } else {
-                            result.text(obj.error).css('color', 'red');
-                        }   
-                    }   
-            });             
-        }
-    }
     function saveEvent() {
         var el = \$('table#economic_event_form');
         if (el) {
@@ -171,7 +133,6 @@
             var release_date = el.find('input[name="release_date"]').val();
             var symbol = el.find('input[name="symbol"]').val();
             var impact = el.find('select[name="impact"]').val();
-            var custom_impact = el.find('input[name="custom_magnitude"]').val();
             var event_source = el.find('input[name="source"]').val();
             \$.ajax({
                     url: "[% ee_upload_url | none %]",
@@ -182,7 +143,6 @@
                         release_date: release_date,
                         impact: impact,
                         source: event_source,
-                        custom_magnitude: custom_impact,
                     },
                     success: function(data){
                         var event = \$.parseJSON(data);
@@ -212,7 +172,7 @@
             });
         }
 
-        to_append += '</td><td><INPUT type="text" name="custom_magnitude" size="10"></td>';
+        to_append += '</td> <td><div class="input_field">Magnitude: <INPUT type="text" name="custom_magnitude_direct" size="10"></div><td><div class="input_field">Magnitude: <input size="10" type="text" name="custom_magnitude_indirect"></div> <div class="input_field">Underliying List: <input size="10" type="text" name="custom_magnitude_indirect_list"></div></td></td>';
         if (table_id === 'deleted_event_list') {
             to_append += '<td><button onclick="restoreEvent(\''+ event.id +'\')">Retore</button></td> <td style="display:none;" class="update_result"></td></tr>';
         } else {
@@ -285,11 +245,6 @@
         vertical-align: top;
     }
     .deleted_economic_event_list td, .deleted_economic_event_list th {
-        border: 1px solid #dddddd;
-        text-align: left;
-        padding: 4px;
-    }
-    .unlisted_economic_event_list td, .unlisted_economic_event_list th {
         border: 1px solid #dddddd;
         text-align: left;
         padding: 4px;
