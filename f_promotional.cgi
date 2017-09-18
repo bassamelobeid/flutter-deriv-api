@@ -8,7 +8,9 @@ use Locale::Country;
 use DateTime;
 use JSON;
 use File::stat qw( stat );
+
 use Brands;
+use LandingCompany::Registry;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
@@ -25,7 +27,6 @@ BrokerPresentation('MARKETING TOOLS');
 
 my %input  = %{request()->params};
 my $broker = request()->broker_code;
-BOM::Backoffice::Auth0::can_access(['Marketing']);
 
 my $where = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/affiliates/' . $broker;
 if (not -d $where) {
@@ -214,6 +215,9 @@ my @clients = Client::Account->by_promo_code(
 foreach my $client (@clients) {
     my $client_login = $client->loginid;
     next unless ($client->promo_code_status || '') eq 'APPROVAL';
+    # bail out before if client currency is crypto
+    next
+        if ((LandingCompany::Registry::get_currency_type($client->currency) // '') eq 'crypto');
     my $dodgy =
            $client->get_status('disabled')
         || $client->get_status('cashier_locked')
@@ -264,6 +268,9 @@ foreach my $client (@clients) {
     if ($currency eq 'ALL') {
         $currency = $client->currency;
     }
+    # check if currency passed is not crypto, client currency is checked before as well
+    # but better to have check for promo code currency as well
+    next if ((LandingCompany::Registry::get_currency_type($currency) // '') eq 'crypto');
 
     my $total_turnover;
     my $txn_mapper = BOM::Database::DataMapper::Transaction->new({

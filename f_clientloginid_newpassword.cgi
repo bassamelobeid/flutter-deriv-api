@@ -23,8 +23,6 @@ PrintContentType();
 my $loginID = request()->param('show');
 BrokerPresentation('ISSUE NEW PASSWORD TO ' . $loginID);
 
-BOM::Backoffice::Auth0::can_access(['CS']);
-
 # Issue new password to client
 if (not $loginID) {
     print 'Invalid loginID: please set loginID';
@@ -69,7 +67,7 @@ BOM::Backoffice::Request::template->process(
 );
 
 # email link to client
-Bar('emailing change password link to ' . encode_entities($loginID));
+Bar('emailing change password link to ' . $loginID);
 
 print '<p class="success_message">Emailing change password link to ' . encode_entities($client_name) . ' at ' . encode_entities($email) . ' ...</p>';
 

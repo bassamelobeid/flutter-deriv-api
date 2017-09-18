@@ -58,13 +58,14 @@ unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::nod
 }
 
 my $broker = request()->broker_code;
-my $staff  = BOM::Backoffice::Auth0::can_access(['Quants']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 $text =~ s/\r\n/\n/g;
 $text =~ s/\n\r/\n/g;
 
 my @lines = split(/\n/, $text);
+
+my $ON_expiry_date;
 
 if ($filen eq 'editvol') {
     my $underlying = create_underlying($vol_update_symbol);
@@ -106,6 +107,8 @@ if ($filen eq 'editvol') {
             vol_spread => \%spread,
             ($expiry_date ? (expiry_date => $expiry_date) : ()),
         };
+
+        $ON_expiry_date = Date::Utility->new($expiry_date)->truncate_to_day if $day eq 'ON';
     }
     my %surface_args = (
         underlying       => $underlying,
@@ -136,7 +139,10 @@ if ($filen eq 'editvol') {
         print "<P> Difference between existing and new surface </p>";
         print @output;
 
-        if (!$surface->is_valid) {
+        my $today = Date::Utility->new->truncate_to_day;
+        if (($market eq 'forex' or $market eq 'commodities') and $today->is_same_as($ON_expiry_date)) {
+            print "<P> Overnight expiry date cannot be the same date as today for forex.</P>";
+        } elsif (!$surface->is_valid) {
             print "<P> " . encode_entities($surface->validation_error) . " </P>";
 
         } elsif ($big_differences) {

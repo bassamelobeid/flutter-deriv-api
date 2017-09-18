@@ -12,7 +12,6 @@ use Format::Util::Numbers qw(commas);
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
-BOM::Backoffice::Auth0::can_access(['Accounts', 'Quants', 'IT']);
 
 my $args = request()->params;
 $args->{broker}   ||= 'FOG';

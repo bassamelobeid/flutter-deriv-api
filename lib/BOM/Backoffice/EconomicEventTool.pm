@@ -14,6 +14,11 @@ use List::Util qw(first);
 use BOM::Backoffice::Request;
 use BOM::MarketDataAutoUpdater::Forex;
 
+use File::ShareDir;
+use YAML::XS qw(LoadFile);
+
+my $economic_event_categories = LoadFile(File::ShareDir::dist_file('Volatility-Seasonality', 'economic_event_categories.yml'));
+
 sub get_economic_events_for_date {
     my $date = shift;
 

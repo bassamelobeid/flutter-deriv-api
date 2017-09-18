@@ -25,7 +25,7 @@ sub get_currency_options {
 
 sub print_client_details {
 
-    my ($client, $staff) = @_;
+    my ($client) = @_;
 
     # IDENTITY sECTION
     my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
@@ -68,7 +68,17 @@ sub print_client_details {
         my $user = BOM::Platform::User->new({email => $client->email});
         my @siblings = $user->clients(disabled_ok => 1);
 
-        $show_uploaded_documents .= show_client_id_docs($_, show_delete => 1) for @siblings;
+        $show_uploaded_documents .= show_client_id_docs($_, show_delete => 1) for $client;
+
+        my $siblings_docs = '';
+        $siblings_docs .= show_client_id_docs(
+            $_,
+            show_delete => 1,
+            no_edit     => 1
+        ) for grep { $_->loginid ne $client->loginid } @siblings;
+
+        $show_uploaded_documents .= 'To edit following documents please select corresponding user<br>' . $siblings_docs
+            if $siblings_docs;
     }
 
     # COMMUNICATION ADDRESSES
@@ -93,7 +103,11 @@ sub print_client_details {
 
     my $stateoptionlist = BOM::Platform::Locale::get_state_option($client->residence);
     my $stateoptions    = '<option value=""></option>';
-    $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>| for @$stateoptionlist;
+    my $state_name      = '';
+    for (@$stateoptionlist) {
+        $state_name = $_->{text} if $_->{value} eq $client->state;
+        $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>|;
+    }
     my $tnc_status = $client->get_status('tnc_approval');
 
     my @crs_tin_array = ();
@@ -105,32 +119,36 @@ sub print_client_details {
     }
 
     my $template_param = {
-        client                 => $client,
-        client_phone_country   => $client_phone_country,
-        client_tnc_version     => $tnc_status ? $tnc_status->reason : '',
-        countries              => \@countries,
-        country_codes          => $country_codes,
-        csr_tin_information    => \@crs_tin_array,
-        dob_day_options        => $dob_day_options,
-        dob_month_options      => $dob_month_options,
-        dob_year_options       => $dob_year_options,
-        financial_risk_status  => $client->get_status('financial_risk_approval'),
-        has_social_signup      => defined $client->get_status('social_signup'),
-        is_vip                 => $client->is_vip,
-        lang                   => request()->language,
-        language_options       => \@language_options,
-        mifir_config           => $Finance::MIFIR::CONCAT::config,
-        promo_code_access      => $promo_code_access,
-        proveID                => $proveID,
+        client                => $client,
+        client_phone_country  => $client_phone_country,
+        client_tnc_version    => $tnc_status ? $tnc_status->reason : '',
+        countries             => \@countries,
+        country_codes         => $country_codes,
+        csr_tin_information   => \@crs_tin_array,
+        dob_day_options       => $dob_day_options,
+        dob_month_options     => $dob_month_options,
+        dob_year_options      => $dob_year_options,
+        financial_risk_status => $client->get_status('financial_risk_approval'),
+        has_social_signup     => defined $client->get_status('social_signup'),
+        is_vip                => $client->is_vip,
+        lang                  => request()->language,
+        language_options      => \@language_options,
+        mifir_config          => $Finance::MIFIR::CONCAT::config,
+        promo_code_access     => $promo_code_access,
+        currency_type => (LandingCompany::Registry::get_currency_type($client->currency) // ''),
+        proveID => $proveID,
         salutation_options     => \@salutation_options,
         secret_answer          => $secret_answer,
         self_exclusion_enabled => $self_exclusion_enabled,
-        show_allow_omnibus => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0,
+        show_allow_omnibus     => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of)
+        ? 1
+        : 0,
         show_funds_message => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
         show_uploaded_documents => $show_uploaded_documents,
         state_options           => set_selected_item($client->state, $stateoptions),
+        client_state            => $state_name,
         tnc_approval_status     => $tnc_status,
         ukgc_funds_status       => $client->get_status('ukgc_funds_protection'),
         vip_since               => $client->vip_since,
@@ -306,6 +324,7 @@ sub get_untrusted_client_reason {
 sub show_client_id_docs {
     my ($client, %args) = @_;
     my $show_delete = $args{show_delete};
+    my $extra       = $args{no_edit} ? 'disabled' : '';
     my $folder      = $args{folder};
     my $links       = '';
     my $loginid     = $client->loginid;
@@ -337,15 +356,15 @@ sub show_client_id_docs {
             $date = Date::Utility->new($date)->date_yyyymmdd if $date;
             my $comments    = $doc->comments;
             my $document_id = $doc->document_id;
-            $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date">};
-            $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments">};
-            $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id">};
+            $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
+            $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
+            $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
         }
         my $file_size = -s $document_file || next;
         my $file_age  = int(-M $document_file);
         my $url       = request()->url_for("backoffice/download_document.cgi?path=$download_file");
         $links .= qq{<tr><td><a href="$url">$file_name</a> $file_size bytes, $file_age days old</td><td>$input};
-        if ($show_delete) {
+        if ($show_delete && !$args{no_edit}) {
             $url .= qq{&loginid=$loginid&doc_id=$id&deleteit=yes};
             my $onclick = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
             $links .= qq{[<a onclick="$onclick" href="$url">Delete</a>]};

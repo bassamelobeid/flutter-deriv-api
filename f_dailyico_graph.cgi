@@ -20,7 +20,6 @@ use BOM::Backoffice::Request;
 use BOM::Backoffice::Sysinit ();
 use JSON qw(to_json);
 BOM::Backoffice::Sysinit::init();
-BOM::Backoffice::Auth0::can_access(['Quants']);
 use BOM::RiskReporting::BinaryIco;
 use BOM::Platform::Runtime;
 

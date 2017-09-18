@@ -35,7 +35,6 @@ if ($outputtype eq 'csv') {
 
 my $broker         = request()->broker_code;
 my $encoded_broker = encode_entities($broker);
-BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^$broker/) {
     print "Error : wrong loginID $encoded_loginID";
@@ -50,7 +49,7 @@ if (not $client) {
 
 my $client_email = $client->email;
 
-Bar("$encoded_loginID ($client_email) Portfolio");
+Bar("$loginID ($client_email) Portfolio");
 
 print "<form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_clientloginid_edit.cgi') . "\" METHOD=POST>";
 print "<input type=hidden name=broker value=$encoded_broker>";

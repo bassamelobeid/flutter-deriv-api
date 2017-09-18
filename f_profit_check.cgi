@@ -19,7 +19,6 @@ my $loginID         = uc(request()->param('loginID'));
 my $encoded_loginID = encode_entities($loginID);
 PrintContentType();
 BrokerPresentation($encoded_loginID . ' Profit Analysis', '', '');
-BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
     print "Error : wrong loginID ($encoded_loginID) could not get client instance";
@@ -42,7 +41,7 @@ my $db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
     })->db;
 
-Bar($encoded_loginID . " - Profit between " . $startdate->datetime . " and " . $enddate->datetime);
+Bar($loginID . " - Profit between " . $startdate->datetime . " and " . $enddate->datetime);
 
 my $txn_dm = BOM::Database::DataMapper::Transaction->new({
     client_loginid => $client->loginid,
