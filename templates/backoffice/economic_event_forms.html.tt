@@ -63,7 +63,7 @@
                     table += '<p>'+ row.info[y] +'</p>';
                 }
 
-                table += '</td> <td><div class="input_field">Magnitude: <INPUT type="text" name="custom_magnitude_direct" size="10"></div><td><div class="input_field">Magnitude: <input size="10" type="text" name="custom_magnitude_indirect"></div> <div class="input_field">Underliying List: <input size="10" type="text" name="custom_magnitude_indirect_list"></div></td></td>';
+                table += '</td> <td><div class="input_field">Magnitude: <INPUT type="text" name="custom_magnitude_direct" size="10"></div><td><div class="input_field">Magnitude: <input size="10" type="text" name="custom_magnitude_indirect"></div> <div class="input_field">Underlying: <input size="10" type="text" name="custom_magnitude_indirect_list"></div></td></td>';
                 if (id === 'deleted_event_list') {
                     table += '<td><button onclick="restoreEvent(\''+ row.id +'\')">Retore</button></td> <td style="display:none;" class="update_result"></td></tr>';
                 } else {
@@ -115,8 +115,8 @@
                         } else {
                             result.text("ok").css('color','green');
                             var text = '';
-                            for (i=0;i < r.new_info.length; i++) {
-                                text += "<p>" + r.new_info[i] + "</p>";
+                            for (i=0;i < r.info.length; i++) {
+                                text += "<p>" + r.info[i] + "</p>";
                             }
                             el.find('td#binary_info').html(text);
                         }
@@ -149,13 +149,13 @@
                         if (event.error) {
                             result.text(event.error).css('color', 'red');
                         } else {
-                            appendTable(event, 'scheduled_event_list');
+                            appendEvent(event, 'scheduled_event_list');
                         }
                     }
             });
         }
     }
-    function appendTable (event, table_id) {
+    function appendEvent (event, table_id) {
         var table = \$('table#' + table_id);
         var to_append = '<tr id="'+ event.id +'">';
 
@@ -172,7 +172,7 @@
             });
         }
 
-        to_append += '</td> <td><div class="input_field">Magnitude: <INPUT type="text" name="custom_magnitude_direct" size="10"></div><td><div class="input_field">Magnitude: <input size="10" type="text" name="custom_magnitude_indirect"></div> <div class="input_field">Underliying List: <input size="10" type="text" name="custom_magnitude_indirect_list"></div></td></td>';
+        to_append += '</td> <td><div class="input_field">Magnitude: <INPUT type="text" name="custom_magnitude_direct" size="10"></div><td><div class="input_field">Magnitude: <input size="10" type="text" name="custom_magnitude_indirect"></div> <div class="input_field">Underlying: <input size="10" type="text" name="custom_magnitude_indirect_list"></div></td></td>';
         if (table_id === 'deleted_event_list') {
             to_append += '<td><button onclick="restoreEvent(\''+ event.id +'\')">Retore</button></td> <td style="display:none;" class="update_result"></td></tr>';
         } else {
@@ -183,7 +183,6 @@
     }
     function deleteEvent(id) {
         if (id) {
-            alert('Confirm?');
             var el = \$('tr#'+id);
             var result = el.find("td.update_result");
             result.text('processing ...').show();
@@ -199,7 +198,7 @@
                             result.text('ERR: ' + event.error).css('color','red');
                         } else{
                             \$('tr#'+ event.id).remove();
-                            appendTable(event, 'deleted_event_list');
+                            appendEvent(event, 'deleted_event_list');
                         }
                     }
             });
@@ -222,7 +221,7 @@
                         if(event.error) {
                             result.text('ERR: ' + event.error).css('color','red');
                         } else {
-                            appendTable(event, 'scheduled_event_list');
+                            appendEvent(event, 'scheduled_event_list');
                             el.remove();
                         }
                     }

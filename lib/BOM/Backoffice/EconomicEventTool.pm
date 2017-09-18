@@ -100,14 +100,21 @@ sub delete_by_id {
 
     _regenerate($eec->get_all_events());
 
-    return $deleted;
+    return get_info($deleted);
 }
 
 sub update_by_id {
     my $args = shift;
 
     return _err("ID is not found.") unless $args->{id};
-    return _err("Custom magnitude is not provided.") unless exists $args->{custom_magnitude};
+
+    if ($args->{custom_magnitude_indirect_list} && !$args->{custom_magnitude_indirect}) {
+        return _err('Please specify magnitude for indirect underlying pairs');
+    }
+
+    unless (exists $args->{custom_magnitude_direct} || exists $args->{custom_magnitude_indirect}) {
+        return _err('Please specify magnitude to update');
+    }
 
     my $eec     = _eec();
     my $updated = $eec->update_event($args);
@@ -116,10 +123,7 @@ sub update_by_id {
 
     _regenerate($eec->get_all_events());
 
-    return {
-        is       => $updated->{id},
-        new_info => get_info($updated),
-    };
+    return get_info($updated);
 }
 
 sub save_new_event {
@@ -152,7 +156,7 @@ sub restore_by_id {
 
     _regenerate($eec->get_all_events());
 
-    return $restored;
+    return get_info($restored);
 }
 
 sub _regenerate {
