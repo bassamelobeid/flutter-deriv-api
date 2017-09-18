@@ -149,7 +149,7 @@ sub clients {
         map { Client::Account->new({loginid => $_->loginid, db_operation => 'replica'}) } @bom_loginids;
 
     my $all_status = Client::Account::client_status_types();
-    my @do_not_display_status = grep { not $all_status->{$_} } keys %$all_status;
+    my @do_not_display_status = grep { $all_status->{$_} == 0 } keys %$all_status;
 
     my @parts   = ();
     my @clients = ();
