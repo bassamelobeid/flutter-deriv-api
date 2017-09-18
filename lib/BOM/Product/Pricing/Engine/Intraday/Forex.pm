@@ -13,10 +13,11 @@ use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use Finance::Exchange;
+use BOM::Platform::QuantsConfig;
+use BOM::Platform::Chronicle;
 
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
-use Pricing::Engine::Markup::TentativeEvents;
 
 =head2 tick_source
 
@@ -136,43 +137,13 @@ sub economic_events_markup {
         name        => 'economic_events_markup',
         description => 'the maximum of spot or volatility risk markup of economic events',
         set_by      => __PACKAGE__,
-        base_amount => max($self->economic_events_volatility_risk_markup->amount, $self->economic_events_spot_risk_markup->amount),
+        base_amount => max($self->event_markup->amount, $self->economic_events_spot_risk_markup->amount),
     });
 
-    $markup->include_adjustment('info', $self->economic_events_volatility_risk_markup);
+    $markup->include_adjustment('info', $self->event_markup);
     $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
 
     return $markup;
-}
-
-sub _tentative_events_markup {
-    my $self = shift;
-    my $bet  = $self->bet;
-
-    # Don't calculate tentative event shfit if contract is ATM
-    # In this case, economic events markup will be calculated using normal formula
-    if ($bet->is_atm_bet) {
-        return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'economic_events_volatility_risk_markup',
-            description => 'markup to account for volatility risk of economic events',
-            set_by      => __PACKAGE__,
-            base_amount => 0,
-        });
-    }
-
-    my $pricing_args = $bet->_pricing_args;
-    return Pricing::Engine::Markup::TentativeEvents->new(
-        tentative_events       => $bet->tentative_events,
-        ticks                  => $self->ticks_for_trend,
-        barrier                => $pricing_args->{barrier1},
-        contract_type          => $bet->pricing_code,
-        underlying_symbol      => $bet->underlying->symbol,
-        asset_symbol           => $bet->underlying->asset_symbol,
-        quoted_currency_symbol => $bet->underlying->quoted_currency_symbol,
-        long_term_prediction   => $self->long_term_prediction->amount,
-        vol                    => $pricing_args->{iv},
-        map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)
-    )->markup;
 }
 
 has ticks_for_trend => (
@@ -339,20 +310,66 @@ sub _build_risk_markup {
     return $risk_markup;
 }
 
-sub economic_events_volatility_risk_markup {
+sub event_markup {
     my $self = shift;
 
-    # Tentative event markup takes precedence
-    if ((my $tentative_events_markup = $self->_tentative_events_markup)->amount) {
-        return $tentative_events_markup;
+    my @markups = (0);
+    if ($self->bet->category_code eq 'callput') {
+        my $for_date = $self->bet->underlying->for_date;
+        my $qc       = BOM::Platform::QuantsConfig->new(
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
+            for_date         => $for_date
+        );
+        my $event_markup = $qc->get_config(
+            'commission',
+            +{
+                contract_type     => $self->bet->code,
+                underlying_symbol => $self->bet->underlying->symbol
+            });
+        my $delta   = $self->intraday_vanilla_delta->amount;
+        my $c_start = $self->bet->effective_start->epoch;
+        my $c_end   = $self->bet->date_expiry->epoch;
+
+        foreach my $c (@$event_markup) {
+            my $start_epoch     = Date::Utility->new($c->{start_time})->epoch;
+            my $end_epoch       = Date::Utility->new($c->{end_time})->epoch;
+            my $valid_timeframe = ($c_start >= $start_epoch && $c_start <= $end_epoch)
+                || ($c_end >= $start_epoch && $c_end <= $end_epoch || ($c_start < $start_epoch && $c_end > $end_epoch));
+            foreach my $partition (@{$c->{partitions}}) {
+                my @delta_range = split '-', $partition->{partition_range};
+                my $valid_delta = ($delta >= $delta_range[0] && $delta <= $delta_range[1]);
+                if ($valid_timeframe && $valid_delta) {
+                    push @markups, calculate_event_adjustment($delta, $partition);
+                }
+            }
+        }
     }
 
     return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_volatility_risk_markup',
+        name        => 'event_markup',
         description => 'markup to account for volatility risk of economic events',
         set_by      => __PACKAGE__,
-        base_amount => 0,
+        base_amount => max(@markups),
     });
+}
+
+sub calculate_event_adjustment {
+    my ($delta, $c) = @_;
+
+    my $cap = $c->{cap_rate};
+
+    die 'max adjustment is not defined' unless defined $cap;
+    return $cap if $c->{flat};
+
+    if (my @missing = grep { not defined $c->{$_} or $c->{$_} eq '' } qw(width floor_rate centre_offset)) {
+        die 'missing required parameters[' . (join ',', @missing) . '] to calculate commission';
+    }
+
+    my $width         = max(0.01, $c->{width});
+    my $floor         = $c->{floor_rate};
+    my $centre_offset = $c->{centre_offset};
+
+    return min($cap, $cap - ($cap - $floor) * (1 - (2 / $width * abs($delta - 0.5 - $centre_offset))**3)**3);
 }
 
 sub economic_events_spot_risk_markup {

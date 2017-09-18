@@ -102,7 +102,7 @@ sub test_economic_events_markup {
 
     my $amount;
     like(
-        warning { $amount = $bet->pricing_engine->economic_events_volatility_risk_markup->amount },
+        warning { $amount = $bet->pricing_engine->event_markup->amount },
         qr/No basis tick for/,
         'Got warning for no basis tick'
     );
