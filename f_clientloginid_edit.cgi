@@ -274,6 +274,7 @@ if ($input{whattodo} eq 'uploadID') {
             expiration_date            => $expiration_date,
             document_id                => $document_id,
             comments                   => $comments,
+            status                     => 'uploaded',
         };
 
         #needed because CR based submissions don't return a result when an empty string is submitted in expiration_date;
