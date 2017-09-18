@@ -23,7 +23,7 @@
     <tr><td>Min adjustment</td><td> : <input type="text" name="floor_rate"></td></tr>
     <tr><td>Width</td><td> : <input type="text" name="width"></td></tr>
     <tr><td>Centre Offset</td><td> : <input type="text" name="centre_offset"></td></tr>
-    <tr><td></td><td><button onclick="drawChart()">Chart it</button><button onclick="saveCustom()">Save</button></td><td class="result"></td></tr>
+    <tr><td></td><td><button onclick="drawChart()">Chart it</button><button onclick="saveCustom()" style="margin-left: 20px;">Save</button></td><td class="result"></td></tr>
 </table>
 
 <div id='highchart'>
@@ -90,7 +90,6 @@
         });
     }
     function saveCustom() {
-        alert('Do you want to save?');
         var el = \$('table#custom_commission_form');
         var result = el.find('.result');
         result.text('processing...');
