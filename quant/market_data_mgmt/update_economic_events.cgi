@@ -28,8 +28,10 @@ if (request()->param('restore_event')) {
 ## Update with custom magnitude
 if (request()->param('update_event')) {
     my $args = {
-        id               => request()->param('event_id'),
-        custom_magnitude => request()->param('custom_magnitude'),
+        id                             => request()->param('event_id'),
+        custom_magnitude_direct        => request()->param('custom_magnitude_direct'),
+        custom_magnitude_indirect      => request()->param('custom_magnitude_indirect'),
+        custom_magnitude_indirect_list => request()->param('custom_magnitude_indirect_list'),
     };
     print to_json(BOM::Backoffice::EconomicEventTool::update_by_id($args));
 }
