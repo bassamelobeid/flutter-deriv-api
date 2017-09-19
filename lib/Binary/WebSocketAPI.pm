@@ -132,6 +132,7 @@ sub startup {
                 ua_fingerprint       => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
                 ($app_id) ? (source => $app_id) : (),
                 brand => (($brand =~ /^\w{1,10}$/) ? $brand : 'binary'),
+                logged_requests => 0,
             );
         });
 
@@ -491,8 +492,8 @@ sub startup {
 
             # action hooks
             before_forward => [
-                \&Binary::WebSocketAPI::Hooks::check_app_id, \&Binary::WebSocketAPI::Hooks::before_forward,
-                \&Binary::WebSocketAPI::Hooks::get_rpc_url,  \&Binary::WebSocketAPI::Hooks::introspection_before_forward
+                \&Binary::WebSocketAPI::Hooks::before_forward,               \&Binary::WebSocketAPI::Hooks::get_rpc_url,
+                \&Binary::WebSocketAPI::Hooks::introspection_before_forward, \&Binary::WebSocketAPI::Hooks::check_useragent,
             ],
             before_call => [
                 \&Binary::WebSocketAPI::Hooks::add_app_id,   \&Binary::WebSocketAPI::Hooks::add_brand,
