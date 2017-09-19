@@ -59,13 +59,14 @@ sub print_client_details {
     }
 
     my ($proveID, $show_uploaded_documents) = ('', '');
+    my $user = BOM::Platform::User->new({loginid => $client->loginid});
+    
     unless ($client->is_virtual) {
         # KYC/IDENTITY VERIFICATION SECTION
         $proveID = BOM::Platform::ProveID->new(
             client        => $client,
             search_option => 'ProveID_KYC'
         );
-        my $user = BOM::Platform::User->new({email => $client->email});
         my @siblings = $user->clients(disabled_ok => 1);
 
         $show_uploaded_documents .= show_client_id_docs($_, show_delete => 1) for $client;
