@@ -36,7 +36,7 @@ sub authorize {
     my $app         = $oauth_model->verify_app($app_id);
     return $c->_bad_request('the request was missing valid app_id') unless $app;
 
-	my $request_country_code = $c->{stash}->{request}->{country_code};
+    my $request_country_code = $c->{stash}->{request}->{country_code};
 
     # setup oneall callback url
     my $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
@@ -65,8 +65,7 @@ sub authorize {
         }
     }
 
-    my $brand_name   = $c->stash('brand')->name;
-    my $request_country_code = $c->{stash}->{request}->{country_code};
+    my $brand_name = $c->stash('brand')->name;
 
     # show error when no client found in session
     # show login form
@@ -75,8 +74,8 @@ sub authorize {
         layout       => $brand_name,
         app          => $app,
         error        => delete $c->session->{_oneall_error} || '',
-        r            => $c->stash('request'),
         csrftoken    => $c->csrf_token,
+        r            => $c->stash('request'),
         country_code => $request_country_code,
     ) unless $client;
 
@@ -85,12 +84,12 @@ sub authorize {
     # show error if stash brand name is not in the list
     # of allowed brands for landing company
     return $c->render(
-        template  => _get_login_template_name($brand_name),
-        layout    => $brand_name,
-        app       => $app,
-        error     => localize('This account is unavailable.'),
-        r         => $c->stash('request'),
-        csrftoken => $c->csrf_token,
+        template     => _get_login_template_name($brand_name),
+        layout       => $brand_name,
+        app          => $app,
+        error        => localize('This account is unavailable.'),
+        r            => $c->stash('request'),
+        csrftoken    => $c->csrf_token,
         country_code => $request_country_code,
     ) if (grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands});
 
@@ -172,9 +171,9 @@ sub _login {
 
     my ($user, $client, @clients, $last_login, $err);
 
-    my $email    = defang($c->param('email'));
-    my $password = $c->param('password');
-    my $brand    = $c->stash('brand');
+    my $email                = defang($c->param('email'));
+    my $password             = $c->param('password');
+    my $brand                = $c->stash('brand');
     my $request_country_code = $c->{stash}->{request}->{country_code};
     LOGIN:
     {
@@ -223,7 +222,7 @@ sub _login {
 
         # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
         @clients = $user->clients;
-        $client = $clients[0];
+        $client  = $clients[0];
 
         # get 1st loginid, which is not currently self-excluded until
         if (exists $result->{self_excluded}) {

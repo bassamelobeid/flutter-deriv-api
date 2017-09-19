@@ -105,8 +105,8 @@ sub __create_virtual_user {
             },
         });
     die $acc->{error} if $acc->{error};
-   
-    # set social signup flag 
+
+    # set social signup flag
     my $user = $acc->{user};
     $user->has_social_signup(1);
     $user->save;
