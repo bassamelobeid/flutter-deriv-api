@@ -398,10 +398,9 @@ sub change_password {
     $user->save;
 
     my $oauth = BOM::Database::Model::OAuth->new;
-    foreach my $obj (@clients) {
+    for my $obj (@clients) {
         $obj->password($new_password);
         $obj->save;
-
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
@@ -565,7 +564,7 @@ sub reset_password {
     return BOM::RPC::v3::Utility::create_error({
             code              => "SocialBased",
             message_to_client => localize('Sorry, you cannot reset your password because you logged in using a social network.'),
-        }) if $client->get_status('social_signup');
+        }) if $user->has_social_signup;
 
     unless ($client->is_virtual) {
         unless ($args->{date_of_birth}) {
@@ -590,10 +589,9 @@ sub reset_password {
     $user->save;
 
     my $oauth = BOM::Database::Model::OAuth->new;
-    foreach my $obj (@clients) {
+    for my $obj (@clients) {
         $obj->password($new_password);
         $obj->save;
-
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
