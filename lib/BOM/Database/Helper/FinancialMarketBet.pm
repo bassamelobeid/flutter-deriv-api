@@ -9,8 +9,7 @@ use JSON::XS ();
 use Carp;
 
 has 'account_data' => (
-    is  => 'rw',
-    isa => 'HashRef|ArrayRef',
+    is  => 'rw',    isa => 'HashRef|ArrayRef',
 );
 
 # this will end up being either a BOM::Database::Model::FinancialMarketBetOpen or a BOM::Database::Model::FinancialMarketBet
@@ -296,7 +295,9 @@ sub sell_bet {
     if ($self->bet) {
         $bet->{$_} //= $self->bet->$_ for (qw/id sell_price sell_time/);
     }
-
+    use Data::Dumper;
+    warn "bet data is :-------------------\n";
+    warn Dumper($bet);
     @param = (
         # FMB stuff
         @{$self->account_data}{qw/client_loginid currency_code/},
@@ -319,7 +320,7 @@ sub sell_bet {
 SELECT (s.v_fmb).*, (s.v_trans).*, t.id
   FROM bet_v1.sell_bet( $1::VARCHAR(12), $2::VARCHAR(3), $3::BIGINT, $4::NUMERIC, $5::TIMESTAMP,
                         $6::JSON, $7::TIMESTAMP, $8::VARCHAR(24), $9::VARCHAR(800), $10::BIGINT,
-                        $11::JSON) s
+                        $11::JSON, $12::BOOLEAN) s
   LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(s.v_fmb).id AND t.action_type=$$buy$$');
         $stmt->execute(@param);
 
