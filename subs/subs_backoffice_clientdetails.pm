@@ -130,7 +130,7 @@ sub print_client_details {
         dob_month_options     => $dob_month_options,
         dob_year_options      => $dob_year_options,
         financial_risk_status => $client->get_status('financial_risk_approval'),
-        has_social_signup     => defined $client->get_status('social_signup'),
+        has_social_signup     => $user->has_social_signup,
         is_vip                => $client->is_vip,
         lang                  => request()->language,
         language_options      => \@language_options,
