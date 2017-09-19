@@ -60,7 +60,7 @@ sub print_client_details {
 
     my ($proveID, $show_uploaded_documents) = ('', '');
     my $user = BOM::Platform::User->new({loginid => $client->loginid});
-    
+
     unless ($client->is_virtual) {
         # KYC/IDENTITY VERIFICATION SECTION
         $proveID = BOM::Platform::ProveID->new(
