@@ -49,7 +49,7 @@
       },
       "googleplay": {
         "type": "string",
-        "pattern": "^https\\:\/\/play\\.google\\.com\/test_app$",
+        "pattern": "^https:\/\/play\\.google\\.com\/store\/apps\/details\\?id=x\\.y\\.z$",
         "required": "1"
       },
       "app_markup_percentage": {
