@@ -42,8 +42,8 @@ sub upload {
 
     # Check documentID and expiration date for passport, driverslicense, proofid
     if (defined($document_type) && $document_type =~ /^(passport|proofid|driverslicense)$/) {
-        return create_error('UploadDenied', localize("Expiration date is required.")) unless $expiration_date ne '' or defined($expiration_date);
-        return create_error('UploadDenied', localize("Document ID is required."))     unless $document_id ne ''     or defined($document_id);
+        return create_error('UploadDenied', localize("Expiration date is required.")) unless $expiration_date;
+        return create_error('UploadDenied', localize("Document ID is required."))     unless $document_id;
     }
 
     # Add new entry to database.
