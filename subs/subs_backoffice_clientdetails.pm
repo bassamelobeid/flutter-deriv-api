@@ -308,7 +308,6 @@ sub get_untrusted_client_reason {
         'Fraudulent account',
         'Incomplete/false details',
         'Duplicate account',
-        'Multiple accounts (deprecated use Duplicate account)',
         'Multiple IPs',
         'Pending investigation',
         'Pending proof of age',
