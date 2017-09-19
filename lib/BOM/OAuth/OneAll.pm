@@ -57,14 +57,12 @@ sub callback {
         # Registered users who have email/password based account are forbidden
         # from social signin. As only one login method
         # is allowed (either email/password or social login).
-        if (my @clients = $user->clients) {
+        if ($user->has_social_signup) {
             # Redirect client to login page if social signup flag is not found.
             # As the main purpose of this package is to serve
             # clients with social login only.
-            unless ($clients[0]->get_status('social_signup')) {
-                $c->session('_oneall_error', localize("Invalid login attempt. Please log in with your email and password instead."));
-                return $c->redirect_to($redirect_uri);
-            }
+            $c->session('_oneall_error', localize("Invalid login attempt. Please log in with your email and password instead."));
+            return $c->redirect_to($redirect_uri);
         }
         # create user based on email by fly if account does not exist yet
         $user = $c->__create_virtual_user($email) unless $user;
@@ -108,9 +106,9 @@ sub __create_virtual_user {
         });
     die $acc->{error} if $acc->{error};
 
-    # set social_signup flag
-    $acc->{client}->set_status('social_signup', 'system', '1');
-    $acc->{client}->save;
+    $acc->has_social_signup(1);
+
+    $acc->save;
 
     return $acc->{user};
 }

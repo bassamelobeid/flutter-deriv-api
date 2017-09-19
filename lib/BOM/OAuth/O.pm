@@ -203,15 +203,12 @@ sub _login {
                 last;
             }
             # Prevent login if social signup flag is found.
-            # As the main purpose of this package is to serve
+            # As the main purpose of this controller is to serve
             # clients with email/password only.
-            if (my @clients = $user->clients) {
-                if ($clients[0]->get_status('social_signup')) {
-                    $err = localize('Invalid login attempt. Please log in with a social network instead.');
-                    last;
-                }
+            if ($user->has_social_signup) {
+                $err = localize('Invalid login attempt. Please log in with a social network instead.');
+                last;
             }
-
         }
 
         # get last login before current login to get last record
