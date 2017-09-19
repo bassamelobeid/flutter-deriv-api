@@ -167,7 +167,7 @@ subtest 'Send two files one by one' => sub {
             document_upload => 1,
             document_id     => '124568',
             document_format => 'PNG',
-            document_type   => 'license',
+            document_type   => 'driverslicense',
             expiration_date => '2020-01-01',
         },
         'Goodbye!'
@@ -181,7 +181,7 @@ subtest 'Maximum file size' => sub {
         document_upload => 1,
         document_id     => '124568',
         document_format => 'PNG',
-        document_type   => 'license',
+        document_type   => 'driverslicense',
         expiration_date => '2020-01-01',
     };
 
