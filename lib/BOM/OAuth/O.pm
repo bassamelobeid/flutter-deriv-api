@@ -22,7 +22,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 
 use constant {
-	SOCIAL_LOGIN_MODE => 0,
+    SOCIAL_LOGIN_MODE => 0,
 };
 
 sub _oauth_model {
@@ -81,7 +81,7 @@ sub authorize {
         csrftoken    => $c->csrf_token,
         r            => $c->stash('request'),
         country_code => $request_country_code,
-		social_login => SOCIAL_LOGIN_MODE,
+        social_login => SOCIAL_LOGIN_MODE,
     ) unless $client;
 
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
@@ -96,7 +96,7 @@ sub authorize {
         r            => $c->stash('request'),
         csrftoken    => $c->csrf_token,
         country_code => $request_country_code,
-		social_login => SOCIAL_LOGIN_MODE,
+        social_login => SOCIAL_LOGIN_MODE,
     ) if grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands};
 
     my $redirect_uri = $app->{redirect_uri};
