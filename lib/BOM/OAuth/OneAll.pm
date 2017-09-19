@@ -57,7 +57,7 @@ sub callback {
         # Registered users who have email/password based account are forbidden
         # from social signin. As only one login method
         # is allowed (either email/password or social login).
-        if ($user->has_social_signup) {
+        if ($user and $user->has_social_signup) {
             # Redirect client to login page if social signup flag is not found.
             # As the main purpose of this package is to serve
             # clients with social login only.
@@ -105,12 +105,13 @@ sub __create_virtual_user {
             },
         });
     die $acc->{error} if $acc->{error};
+   
+    # set social signup flag 
+    my $user = $acc->{user};
+    $user->has_social_signup(1);
+    $user->save;
 
-    $acc->has_social_signup(1);
-
-    $acc->save;
-
-    return $acc->{user};
+    return $user;
 }
 
 1;
