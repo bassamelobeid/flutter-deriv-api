@@ -47,6 +47,7 @@
                     "properties": {
                         "BTC": { "$ref": "#/definitions/currency_config" },
                         "LTC": { "$ref": "#/definitions/currency_config" },
+                        "ETH": { "$ref": "#/definitions/currency_config" },
                         "GBP": { "$ref": "#/definitions/currency_config" },
                         "AUD": { "$ref": "#/definitions/currency_config" },
                         "EUR": { "$ref": "#/definitions/currency_config" },

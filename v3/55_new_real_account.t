@@ -318,6 +318,10 @@ subtest 'new_real_account with currency provided' => sub {
     $res = $t->await::new_account_real(\%details);
     $compiled_checks->($res, \%details);
 
+    $details{currency} = 'ETH';
+    $res = $t->await::new_account_real(\%details);
+    $compiled_checks->($res, \%details);
+
     $details{currency} = 'XXX';
     $res = $t->await::new_account_real(\%details);
     is($res->{error}->{code}, 'InvalidCurrency', 'Try to create account with incorrect currency');
