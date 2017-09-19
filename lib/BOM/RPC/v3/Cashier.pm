@@ -97,7 +97,7 @@ sub cashier {
     }
 
     ## if currency is a cryptocurrency, use cryptocurrency cashier
-    if (LandingCompany::Registry::get('costarica')->legal_allowed_currencies->{$currency}) eq 'crypto') {
+    if (LandingCompany::Registry::get('costarica')->legal_allowed_currencies->{$currency} eq 'crypto') {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
