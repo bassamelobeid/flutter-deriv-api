@@ -16,11 +16,11 @@
 
 <div class="container">
     <div id="inline">
-        <% if ($country_code ne 'jp') { %>
-            <div class="center-text" style="display:none">
+        <% if ($social_login && $country_code ne 'jp') { %>
+            <div class="center-text">
                 <div id="oa_social_login_container"></div>
             </div>
-            <div class="separators" style="display:none">
+            <div class="separators">
                 <div class="vertical-separator"></div>
                 <div class="circle-separator"><%= l('or') %></div>
                 <div class="vertical-separator"></div>
@@ -37,12 +37,6 @@
                 <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
                 <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
             </form>
-            <% if ($app->{id} eq 1) { %>
-                <div class="center-text links">
-                    <p><a id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a></p>
-                    <p><%= l('Don\'t have a Binary.com account?') %> <a id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Create one') %></a> <%= l('now.') %></p>
-                </div>
-            <% } %>
         </div>
     </div>
     <% if ($app->{id} eq 1) { %>
