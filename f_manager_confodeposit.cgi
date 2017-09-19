@@ -220,6 +220,7 @@ try {
             toClient => $toClient,
             amount   => $amount,
             staff    => $clerk,
+            fees     => 0,
         );
         $client_pa_exp = $toClient;
     }
