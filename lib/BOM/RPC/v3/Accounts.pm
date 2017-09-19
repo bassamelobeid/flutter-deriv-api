@@ -381,7 +381,7 @@ sub change_password {
     return BOM::RPC::v3::Utility::create_error({
             code              => "SocialBased",
             message_to_client => localize("Sorry, your account does not allow passwords because you use social media to log in.")}
-    ) if $client->get_status('social_signup');
+    ) if $user->has_social_signup;
 
     if (
         my $pass_error = BOM::RPC::v3::Utility::_check_password({
