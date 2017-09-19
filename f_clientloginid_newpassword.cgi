@@ -38,33 +38,20 @@ if (not $email) {
     code_exit_BO();
 }
 
-my $lang = request()->language;
+my $lang = lc request()->language;
 
-my $link;
 my $token = BOM::Platform::Token->new({
         email       => $email,
         expires_in  => 3600,
         created_for => 'reset_password'
     })->token;
 
-# don't want to touch url_for for this only, need this change else reset password url will have backoffice.binary.com if send from production
-if (BOM::Platform::Config::on_production) {
-    $link = 'https://www.binary.com/' . lc $lang . '/user/reset_passwordws.html';
-} else {
-    $link = request()->url_for('/user/reset_passwordws');
-}
+my $link = "https://www.binary.com/en/redirect.html?action=reset_password&lang=$lang&code=$token";
 
 my $lost_pass_email;
 my $brand = Brands->new(name => request()->brand);
-BOM::Backoffice::Request::template->process(
-    "email/lost_password.html.tt",
-    {
-        'link'     => $link,
-        'token'    => $token,
-        'helpdesk' => $brand->emails('support')
-    },
-    \$lost_pass_email
-);
+
+BOM::Backoffice::Request::template->process("email/lost_password.html.tt", {link => $link}, \$lost_pass_email);
 
 # email link to client
 Bar('emailing change password link to ' . $loginID);
