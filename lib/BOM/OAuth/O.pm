@@ -36,6 +36,8 @@ sub authorize {
     my $app         = $oauth_model->verify_app($app_id);
     return $c->_bad_request('the request was missing valid app_id') unless $app;
 
+	my $request_country_code = $c->{stash}->{request}->{country_code};
+
     # setup oneall callback url
     my $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
     $c->stash('oneall_callback' => $oneall_callback);
@@ -54,7 +56,7 @@ sub authorize {
         $client = $c->_get_client;
     } elsif ($c->session('_oneall_user_id')) {
         # Prevent Japan IP access social login feature.
-        if ($c->{stash}->{request}->{country_code} ne 'jp') {
+        if ($request_country_code ne 'jp') {
             # Get client from Oneall Social Login.
             my $oneall_user_id = $c->session('_oneall_user_id');
             $client = $c->_login($app, $oneall_user_id) or return;
@@ -74,7 +76,7 @@ sub authorize {
         error        => $c->session->{_oneall_error} ? delete $c->session->{_oneall_error} : '',
         r            => $c->stash('request'),
         csrftoken    => $c->csrf_token,
-        country_code => $c->{stash}->{request}->{country_code},
+        country_code => $request_country_code,
     ) unless $client;
 
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
@@ -82,13 +84,13 @@ sub authorize {
     # show error if stash brand name is not in the list
     # of allowed brands for landing company
     return $c->render(
-        template     => _get_login_template_name($brand_name),
-        layout       => $brand_name,
-        app          => $app,
-        error        => localize('This account is unavailable.'),
-        r            => $c->stash('request'),
-        csrftoken    => $c->csrf_token,
-        country_code => $c->{stash}->{request}->{country_code},
+        template  => _get_login_template_name($brand_name),
+        layout    => $brand_name,
+        app       => $app,
+        error     => localize('This account is unavailable.'),
+        r         => $c->stash('request'),
+        csrftoken => $c->csrf_token,
+        country_code => $request_country_code,
     ) if (grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands});
 
     my $redirect_uri = $app->{redirect_uri};
@@ -252,7 +254,7 @@ sub _login {
             error        => $err,
             r            => $c->stash('request'),
             csrftoken    => $c->csrf_token,
-            country_code => $c->{stash}->{request}->{country_code},
+            country_code => $request_country_code,
         );
         return;
     }
