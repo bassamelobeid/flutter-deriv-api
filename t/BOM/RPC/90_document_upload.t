@@ -57,8 +57,13 @@ $c->call_ok($method, $params)
     ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
 
 $args->{document_type}   = "passport";
-$args->{document_id}     = "ABCD1234";
 $args->{document_format} = "jpg";
+
+# Error for no document_id
+$c->call_ok($method, $params)
+    ->has_error->error_message_is('Document ID is required.', 'document_id is required');
+
+$args->{document_id} = "ABCD1234";
 my $result = $c->call_ok($method, $params)->result;
 my ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 # Succesfully retrieved object from database.
