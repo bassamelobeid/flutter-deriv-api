@@ -15,9 +15,12 @@ __PACKAGE__->meta->setup(
         status   => { type => 'text' },
         email    => { type => 'text' },
         tags     => { type => 'text' },
+        stamp    => { type => 'timestamp', default => 'now()', remarks => 'When was this row created. Note: for rows that are NULL, they preexisted the addition of this column.' },
     ],
 
     primary_key_columns => [ 'token' ],
+
+    allow_inline_column_values => 1,
 );
 
 1;
