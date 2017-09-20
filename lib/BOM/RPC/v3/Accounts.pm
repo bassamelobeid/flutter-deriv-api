@@ -371,14 +371,16 @@ sub change_password {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    # Fetch user by loginid, if the user doesn't exist or 
+    # Fetch user by loginid, if the user doesn't exist or
     # has no associated clients then throw exception
     my $user = BOM::Platform::User->new({loginid => $client->loginid});
     my @clients;
     if (not $user or not @clients = $user->clients) {
         return BOM::RPC::v3::Utility::create_error({
-            code              => "InternalServerError",
-            message_to_client => localize("Sorry, an error occurred while processing your account.")}),
+                code              => "InternalServerError",
+                message_to_client => localize("Sorry, an error occurred while processing your account.")}
+            ),
+            ;
     }
 
     # do not allow social based clients to reset password
@@ -558,8 +560,10 @@ sub reset_password {
     my @clients = ();
     if (not $user or not @clients = $user->clients) {
         return BOM::RPC::v3::Utility::create_error({
-            code              => "InternalServerError",
-            message_to_client => localize("Sorry, an error occurred while processing your account.")}),
+                code              => "InternalServerError",
+                message_to_client => localize("Sorry, an error occurred while processing your account.")}
+            ),
+            ;
     }
 
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
