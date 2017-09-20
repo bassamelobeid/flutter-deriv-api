@@ -15,6 +15,7 @@ use Try::Tiny;
 use namespace::autoclean;
 use JSON qw(from_json);
 use List::Util qw(first);
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 has _eec                      => (is => 'rw');
 has _symbols_to_perform_check => (is => 'rw');
@@ -60,6 +61,7 @@ sub iterate {
             }
             catch {
                 warn "exception caught while performing feed jump checks for $_";
+                stats_inc('bom.marketdata.feedjump.exception');
             };
         });
 
@@ -112,6 +114,7 @@ sub _perform_checks {
                         }
                     ],
                 });
+            stats_inc('bom.marketdata.feedjump.commission.added', {tags => ['symbol:' . $tick->{symbol}]});
         }
     }
 
@@ -128,8 +131,10 @@ sub _perform_checks {
         my ($self, $epoch, $underlying_symbol) = @_;
 
         my $events;
-        if ($cache{events} && time - 5 * 60 < $cache{epoch}) {
+        my $start = Time::HiRes::time;
+        if ($cache{events} && $start - 5 * 60 < $cache{epoch}) {
             $events = $cache{events};
+            stats_inc('bom.marketdata.feedjump.events.cache.hit', {tags => ['symbol:' . $underlying_symbol]});
         } else {
             my $quotes = $self->_last_5_quotes->{$underlying_symbol} // [];
             # if we don't have 5 ticks, then look back 10 seconds
@@ -139,8 +144,10 @@ sub _perform_checks {
                 to   => $epoch
             });
             $events = $cache{events} = $e;
-            $cache{epoch} = time;
-
+            $cache{epoch} = $start;
+            my $elapsed = Time::HiRes::time - $start;
+            stats_inc('bom.marketdata.feedjump.events.cache.miss', {tags => ['symbol:' . $underlying_symbol]});
+            stats_timing('bom.marketdata.feedjump.events.cache.elapsed', int(1000.0 * $elapsed), {tags => ['symbol:' . $underlying_symbol]});
         }
 
         return first { $underlying_symbol =~ /$_->{symbol}/ && $_->{impact} > 1 } @$events;
