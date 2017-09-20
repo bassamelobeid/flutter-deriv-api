@@ -54,6 +54,7 @@ subtest 'binary metadata should be correctly sent' => sub {
         document_id     => '12456',
         document_format => 'JPEG',
         document_type   => 'passport',
+        file_size       => 1,
         expiration_date => '2020-01-01',
     };
 
@@ -97,6 +98,9 @@ subtest 'binary metadata should be correctly sent' => sub {
 };
 
 subtest 'sending two files concurrently' => sub {
+    my $data = 'Some text';
+    my $length = length $data;
+
     my $req1 = {
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
@@ -104,6 +108,7 @@ subtest 'sending two files concurrently' => sub {
         document_id     => '12456',
         document_format => 'JPEG',
         document_type   => 'passport',
+        file_size       => $length,
         expiration_date => '2020-01-01',
     };
 
@@ -114,10 +119,9 @@ subtest 'sending two files concurrently' => sub {
         document_id     => '12456',
         document_format => 'JPEG',
         document_type   => 'passport',
+        file_size       => $length,
         expiration_date => '2022-01-01',
     };
-
-    my $data = 'Some text';
 
     $t = $t->send_ok({json => $req1})->message_ok;
     my $res1       = decode_json($t->message->[1]);
@@ -128,8 +132,6 @@ subtest 'sending two files concurrently' => sub {
     my $res2       = decode_json($t->message->[1]);
     my $upload_id2 = $res2->{document_upload}->{upload_id};
     my $call_type2 = $res2->{document_upload}->{call_type};
-
-    my $length = length $data;
 
     my @frames1 = gen_frames($data, $call_type1, $upload_id1);
     my @frames2 = gen_frames($data, $call_type2, $upload_id2);
@@ -153,21 +155,29 @@ subtest 'sending two files concurrently' => sub {
 };
 
 subtest 'Send two files one by one' => sub {
+    my $data = 'Hello world!';
+    my $length = length $data;
+
     document_upload_ok({
             document_upload => 1,
             document_id     => '12456',
             document_format => 'JPEG',
             document_type   => 'passport',
+            file_size       => $length,
             expiration_date => '2020-01-01',
         },
-        'Hello world!'
+        $data
     );
+
+    $data = 'Goodbye!';
+    $length = length $data;
 
     document_upload_ok({
             document_upload => 1,
             document_id     => '124568',
             document_format => 'PNG',
             document_type   => 'driverslicense',
+            file_size       => $length,
             expiration_date => '2020-01-01',
         },
         'Goodbye!'
@@ -177,11 +187,30 @@ subtest 'Send two files one by one' => sub {
 subtest 'Maximum file size' => sub {
     my $max_size = 2**20 * 3 + 1;
 
+    my $req = {
+        req_id          => ++$req_id,
+        passthrough     => $PASSTHROUGH,
+        document_upload => 1,
+        document_id     => '12456',
+        document_format => 'PNG',
+        document_type   => 'passport',
+        file_size       => $max_size,
+        expiration_date => '2020-01-01',
+    };
+
+    $t = $t->send_ok({json => $req})->message_ok;
+    my $res = decode_json($t->message->[1]);
+    ok $res->{error}, 'Error for max size';
+
+    is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
+    is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
+
     my $metadata = {
         document_upload => 1,
         document_id     => '124568',
         document_format => 'PNG',
         document_type   => 'driverslicense',
+        file_size       => $max_size - 1,
         expiration_date => '2020-01-01',
     };
 
@@ -197,6 +226,9 @@ subtest 'Maximum file size' => sub {
     $CHUNK_SIZE = $previous_chunk_size;
 
     is $error->{code}, 'UploadError', 'Upload should be failed';
+
+# ignore extra chunk
+    $t = $t->message_ok;
 };
 
 subtest 'Invalid document_format' => sub {
@@ -207,6 +239,7 @@ subtest 'Invalid document_format' => sub {
         document_id     => '12456',
         document_format => 'INVALID',
         document_type   => 'passport',
+        file_size       => 1,
         expiration_date => '2020-01-01',
     };
 
@@ -216,12 +249,12 @@ subtest 'Invalid document_format' => sub {
 
     is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
-
-# catch extra error message because of the EOF
-    $t = $t->message_ok;
 };
 
 subtest 'sending extra data after EOF chunk' => sub {
+    my $data = 'Some text is here';
+    my $size = length $data;
+
     my $req = {
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
@@ -229,10 +262,9 @@ subtest 'sending extra data after EOF chunk' => sub {
         document_id     => '12456',
         document_format => 'JPEG',
         document_type   => 'passport',
+        file_size       => $size,
         expiration_date => '2020-01-01',
     };
-
-    my $data = 'Some text is here';
 
     $t = $t->send_ok({json => $req})->message_ok;
 
