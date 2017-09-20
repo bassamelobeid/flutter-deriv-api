@@ -85,10 +85,21 @@ sub save_config {
     }
 
     $existing_config->{$identifier} = \%args;
+    $self->_cleanup($existing_config);
 
     $self->chronicle_writer->set($namespace, $config_type, $existing_config, $self->recorded_date);
 
     return \%args;
+}
+
+sub _cleanup {
+    my ($self, $existing_configs) = @_;
+
+    foreach my $name (keys %$existing_configs) {
+        delete $existing_configs->{$name} if ($existing_configs->{$name}->{end_time} < time);
+    }
+
+    return;
 }
 
 =head2 get_config
