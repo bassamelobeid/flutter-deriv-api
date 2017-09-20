@@ -11,28 +11,28 @@ reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $time = time;
 
-my $redis = BOM::Platform::RedisReplicated::redis_write();
-my $undec_key   = "DECIMATE_frxUSDJPY" . "_31m_FULL";
-my $encoder = Sereal::Encoder->new({
-        canonical => 1,
-    });
+my $redis     = BOM::Platform::RedisReplicated::redis_write();
+my $undec_key = "DECIMATE_frxUSDJPY" . "_31m_FULL";
+my $encoder   = Sereal::Encoder->new({
+    canonical => 1,
+});
 my %defaults = (
-    symbol     => 'frxUSDJPY',
-    epoch      => $time,
+    symbol => 'frxUSDJPY',
+    epoch  => $time,
     quote  => '108.222',
     bid    => '108.223',
     ask    => '108.224',
-    count      => 1,
+    count  => 1,
 );
 $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
 my $cache = BOM::Market::DataDecimate->new();
 
 my $rtick = $cache->_get_num_data_from_cache({
-        symbol => 'frxUSDJPY',
-        num    => 1,
-        end_epoch => $time,
-    });
+    symbol    => 'frxUSDJPY',
+    num       => 1,
+    end_epoch => $time,
+});
 
 eq_or_diff $rtick->[0],
     {
