@@ -16,7 +16,6 @@ use namespace::autoclean;
 use JSON qw(from_json);
 use List::Util qw(first);
 
-has _quants_config            => (is => 'rw');
 has _eec                      => (is => 'rw');
 has _symbols_to_perform_check => (is => 'rw');
 
@@ -27,12 +26,6 @@ has _jump_threshold => (
 
 sub BUILD {
     my $self = shift;
-
-    my $qc = BOM::Platform::QuantsConfig->new(
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-    );
-    $self->_quants_config($qc);
 
     my $eec = Quant::Framework::EconomicEventCalendar->new(
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
@@ -97,7 +90,12 @@ sub _perform_checks {
             # If sudden jump is caused by economic event, the we will add commission to ITM and OTM contracts.
             # Else we will just add commission to ITM contracts.
             my $partition_range = $self->_has_events_for_last_5_ticks($tick->{epoch}, $tick->{symbol}) ? '0-1' : '0.5-1';
-            $self->_quants_config->save_config(
+            my $quants_config = BOM::Platform::QuantsConfig->new(
+                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+                recorded_date    => Date::Utility->new
+            );
+            $quants_config->save_config(
                 'commission',
                 +{
                     name              => "feed jump $tick->{symbol} $tick->{epoch}",
