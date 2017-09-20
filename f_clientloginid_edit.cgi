@@ -593,7 +593,7 @@ BOM::Backoffice::Request::template->process(
     'backoffice/account/untrusted_form.html.tt',
     {
         edit_url => request()->url_for('backoffice/untrusted_client_edit.cgi'),
-        reasons  => [get_untrusted_client_reason()],
+        reasons  => get_untrusted_client_reason(),
         broker   => $broker,
         clientid => $loginid,
         actions  => get_untrusted_types(),
@@ -666,24 +666,23 @@ if ($link_acc) {
     print $link_acc;
 }
 
-my $user = BOM::Platform::User->new({email => $client->email});
-my @siblings = $user->clients(disabled_ok => 1);
+my $user      = BOM::Platform::User->new({email => $client->email});
+my $siblings  = $user->loginid_details;
 my @mt_logins = $user->mt5_logins;
 
-if (@siblings > 1 or @mt_logins > 0) {
+if ($siblings or @mt_logins > 0) {
     print "<p>Corresponding accounts: </p><ul>";
 
     # show all BOM loginids for user, include disabled acc
-    foreach my $sibling (@siblings) {
-        my $sibling_id = $sibling->loginid;
-        next if ($sibling_id eq $client->loginid);
+    foreach my $lid (sort keys %$siblings) {
+        next if ($lid eq $client->loginid);
         my $link_href = request()->url_for(
             'backoffice/f_clientloginid_edit.cgi',
             {
-                broker  => $sibling->broker_code,
-                loginID => $sibling_id,
+                broker  => $siblings->{$lid}->{broker_code},
+                loginID => $lid,
             });
-        print "<li><a href='$link_href'>" . encode_entities($sibling_id) . "</a></li>";
+        print "<li><a href='$link_href'>" . encode_entities($lid) . "</a></li>";
     }
 
     # show MT5 a/c
@@ -725,12 +724,11 @@ if (not $client->is_virtual) {
 }
 
 Bar("$loginid Tokens");
-my @all_accounts = $user->clients;
-foreach my $l (@all_accounts) {
-    my $tokens = BOM::Database::Model::AccessToken->new->get_all_tokens_by_loginid($l->loginid);
+foreach my $l (sort keys %$siblings) {
+    my $tokens = BOM::Database::Model::AccessToken->new->get_all_tokens_by_loginid($l);
     foreach my $t (@$tokens) {
         $t =~ /(.{4})$/;
-        print "Access Token [" . $l->loginid . "]: $1 <br\>";
+        print "Access Token [" . $l . "]: $1 <br\>";
     }
 }
 
