@@ -40,7 +40,7 @@
             [ 'cash_transfer',      'Western Union' ],
             [ 'arbitrary_markup',   'Arbitrary Markup Payment' ],
             [ 'bitcoin_deposit',    'Bitcoin Deposit' ],
-            [ 'test_account_credit','Test Account Credit' ],
+            [ 'test_account',       'Test Account' ],
             [ 'commission_paid',    'Commission Paid' ],
         ];
     %]
