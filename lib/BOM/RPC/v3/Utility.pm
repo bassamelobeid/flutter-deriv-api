@@ -261,18 +261,13 @@ sub get_real_account_siblings_information {
 
     my @clients = ();
     if ($no_disabled) {
-        @clients = grep { not $_->is_virtual } $user->clients;
+        @clients = $user->clients;
     } else {
-        # we don't need to consider disabled client that have reason
-        # as 'migration to single email login', because we moved to single
-        # currency per account in past and mark duplicate clients as disabled
-        # with that reason itself
-        # TODO: create new status for migrated clients
-        @clients = grep {
-                    not($_->get_status('disabled') and $_->get_status('disabled')->reason =~ /^migration to single email login$/)
-                and not $_->is_virtual
-        } $user->clients(disabled_ok => 1);
+        @clients = $user->clients(disabled_ok => 1);
     }
+
+    # filter out virtual clients
+    @clients = grep { not $_->is_virtual } @clients;
 
     my $siblings;
     foreach my $cl (@clients) {
