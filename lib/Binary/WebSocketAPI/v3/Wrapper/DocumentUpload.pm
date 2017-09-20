@@ -198,8 +198,6 @@ sub upload_chunk {
 
     push $upload_info->{pending_futures}, $f = $loop->new_future unless $f;
 
-    return unless not $f->is_ready;
-
     $f->done($data);
 
     return;
