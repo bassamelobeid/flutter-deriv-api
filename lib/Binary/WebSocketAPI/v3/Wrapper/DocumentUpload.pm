@@ -6,9 +6,20 @@ use warnings;
 use Try::Tiny;
 use Digest::SHA1;
 
-use constant MAX_FILE_SIZE => 3 * 2**20;    # 3 MB
+use IO::Async::Loop::Mojo;
+use Net::Async::Webservice::S3;
 
-my $fake_path = '/tmp/db/clientIDscans/';
+my $loop = IO::Async::Loop::Mojo->new();
+
+my $s3_bucket = 'qa-upload-test';
+
+my $s3 = Net::Async::Webservice::S3->new(
+        access_key => $ENV{AWS_KEY},
+        secret_key => $ENV{AWS_SECRET},
+        bucket     => $s3_bucket,
+        );
+
+$loop->add( $s3 );
 
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
@@ -19,17 +30,36 @@ sub add_upload_info {
     my $current_stash = $c->stash('document_upload') || {};
     my $upload_id     = generate_upload_id();
     my $call_params   = create_call_params($args);
-    my $stash         = {
-        %{$current_stash},
-        $upload_id => {
+    my $file_name     = $rpc_response->{file_name};
+    my $file_size     = $args->{file_size};
+
+    my @pending_futures = ();
+
+    my $upload_info = {
             %{$call_params},
             file_id        => $rpc_response->{file_id},
-            file_name      => $rpc_response->{file_name},
             call_type      => $rpc_response->{call_type},
+            file_name      => $file_name,
+            file_size      => $file_size,
             sha1           => Digest::SHA1->new,
             received_bytes => 0,
-            document_path  => $fake_path,
+            document_path  => "$s3_bucket/$file_name",
+            pending_futures=> \@pending_futures,
+        };
+
+    my $put_f = $s3->put_object(
+       key   => $file_name,
+       value => sub {
+            my $f = shift @pending_futures;
+            push $upload_info->{pending_futures}, $f = $loop->new_future unless $f;
+            return $f;
         },
+       value_length => $file_size,
+    );
+
+    my $stash         = {
+        %{$current_stash},
+        $upload_id => $upload_info,
     };
 
     $c->stash(document_upload => $stash);
@@ -158,21 +188,20 @@ sub upload {
     my $stash     = $c->stash('document_upload');
 
     my $new_received_bytes = $stash->{$upload_id}->{received_bytes} + length $data;
-    return send_upload_failure($c, $upload_info, 'max_size') if $new_received_bytes > MAX_FILE_SIZE;
+    
+    return send_upload_failure($c, $upload_info, 'size_mismatch') if $new_received_bytes > $upload_info->{file_size};
 
     $stash->{$upload_id}->{sha1}->add($data);
     $stash->{$upload_id}->{received_bytes} = $new_received_bytes;
 
-    # TODO: Stream through a cloud storage
+    my ($f) = grep { not $_->is_ready } @{$upload_info->{pending_futures}};
 
-    if (not -d $fake_path) {
-        system("mkdir -p $fake_path");
-    }
+    push $upload_info->{pending_futures}, $f = $loop->new_future unless $f;
 
-    return send_upload_failure($c, $upload_info) unless open my $fh, '>>:raw', "$fake_path/$file_name";
+    return unless not $f->is_ready;
 
-    print $fh $data;
-    close $fh;
+    $f->done($data);
+
     return;
 }
 
@@ -180,12 +209,7 @@ sub create_error {
     my ($call_params, $rpc_response) = @_;
     return {
         %{create_call_params($call_params)},
-        error => exists($rpc_response->{error})
-        ? $rpc_response->{error}
-        : {
-            code    => 'UploadError',
-            message => 'Sorry, we cannot process your upload request',
-        },
+        error => $rpc_response->{error}
     };
 }
 
