@@ -371,11 +371,15 @@ sub change_password {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my ($user, @clients) = BOM::Platform::User->new({email => $client->email});
-
-    return BOM::RPC::v3::Utility::create_error({
+    # Fetch user by loginid, if the user doesn't exist or 
+    # has no associated clients then throw exception
+    my $user = BOM::Platform::User->new({loginid => $client->loginid});
+    my @clients;
+    if (not $user or not @clients = $user->clients) {
+        return BOM::RPC::v3::Utility::create_error({
             code              => "InternalServerError",
-            message_to_client => localize("Sorry, an error occurred while processing your account.")}) unless $user and @clients = $user->clients;
+            message_to_client => localize("Sorry, an error occurred while processing your account.")}),
+    }
 
     # do not allow social based clients to reset password
     return BOM::RPC::v3::Utility::create_error({
@@ -550,12 +554,13 @@ sub reset_password {
                 message_to_client => $err->{message_to_client}});
     }
 
-    my ($user, @clients);
-    $user = BOM::Platform::User->new({email => $email});
-
-    return BOM::RPC::v3::Utility::create_error({
+    my $user = BOM::Platform::User->new({email => $email});
+    my @clients = ();
+    if (not $user or not @clients = $user->clients) {
+        return BOM::RPC::v3::Utility::create_error({
             code              => "InternalServerError",
-            message_to_client => localize("Sorry, an error occurred while processing your account.")}) unless $user and @clients = $user->clients;
+            message_to_client => localize("Sorry, an error occurred while processing your account.")}),
+    }
 
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     my $client = $clients[0];
