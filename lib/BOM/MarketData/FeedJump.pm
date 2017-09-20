@@ -54,8 +54,7 @@ sub iterate {
     # Set up the handler to be called on each Redis published quote notification
     $redis->on(
         pmessage => sub {
-            my ($redis, $value, $key) = @_;
-            my $tick = $value;
+            my ($redis, $tick) = @_;
             try {
                 $self->_perform_checks(from_json($tick));
             }
