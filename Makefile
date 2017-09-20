@@ -7,10 +7,10 @@ test:
 	@$(PROVE) $$(ls -1d t/BOM)
 
 json_schema_1:
-	@$(PROVE) /home/git/regentmarkets/bom-rpc/t/schema_suite/suite.t :: suite01.conf
+	@$(PROVE) /home/git/regentmarkets/bom-rpc/t/schema_suite/suite01.t
 
 json_schema_2:
-	@$(PROVE) /home/git/regentmarkets/bom-rpc/t/schema_suite/suite.t :: suite02.conf
+	@$(PROVE) /home/git/regentmarkets/bom-rpc/t/schema_suite/suite02.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
