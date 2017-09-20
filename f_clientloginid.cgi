@@ -121,7 +121,7 @@ BOM::Backoffice::Request::template->process(
     {
         selected_untrusted_action => request()->param('untrusted_action_type'),
         edit_url                  => request()->url_for('backoffice/untrusted_client_edit.cgi'),
-        reasons                   => [get_untrusted_client_reason()],
+        reasons                   => get_untrusted_client_reason(),
         broker                    => $broker,
         clientid                  => $client_login,
         actions                   => get_untrusted_types(),
