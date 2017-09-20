@@ -148,11 +148,35 @@ sub clients {
     my @bom_clients = sort { (($a->is_virtual ? 'V' : 'R') . $a->loginid) cmp(($b->is_virtual ? 'V' : 'R') . $b->loginid) }
         map { Client::Account->new({loginid => $_->loginid, db_operation => 'replica'}) } @bom_loginids;
 
-    # generate the string needed by the loginid_list cookie (but remove the loginid_list cookie next!)
-    my @parts = map { join ':', $_->loginid, $_->is_virtual ? 'V' : 'R', $_->get_status('disabled') ? 'D' : 'E' } @bom_clients;
+    my $all_status = Client::Account::client_status_types();
+    my @do_not_display_status = grep { $all_status->{$_} == 0 } keys %$all_status;
+
+    my @parts   = ();
+    my @clients = ();
+    foreach my $cl (@bom_clients) {
+        # don't include clients that we don't want to show
+        next if grep { $cl->get_status($_) } @do_not_display_status;
+
+        my $is_disabled = $cl->get_status('disabled');
+        push @parts, join(':', $cl->loginid, $cl->is_virtual ? 'V' : 'R', $is_disabled ? 'D' : 'E');
+
+        next if (not $args{disabled_ok} and $is_disabled);
+
+        push @clients, $cl;
+    }
+
     $self->{_cookie_val} = join('+', @parts);
 
-    return grep { $args{disabled_ok} || !$_->get_status('disabled') } @bom_clients;
+    return @clients;
+}
+
+sub loginid_details {
+    my $self = shift;
+
+    return {
+        map { $_->loginid => {loginid => $_->loginid, broker_code => ($_->loginid =~ /(^[a-zA-Z]+)/)} }
+        grep { $_->loginid !~ /^MT\d+$/ } $self->loginid
+    };
 }
 
 sub mt5_logins {
