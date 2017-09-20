@@ -21,7 +21,7 @@ sub _remote_ip {
     # Note that we will need to change this if switching to a different provider.
     my @candidates = (
         # https://support.cloudflare.com/hc/en-us/articles/202494830-Pseudo-IPv4-Supporting-IPv6-addresses-in-legacy-IPv4-applications
-        ($headers->header('cf-pseudo-ipv4') // ()),
+        ($headers->header('cf-pseudo-ipv4')   // ()),
         ($headers->header('cf-connecting-ip') // ()),
         # https://support.cloudflare.com/hc/en-us/articles/206776727-What-is-True-Client-IP-
         ($headers->header('true-client-ip') // ()),
