@@ -25,7 +25,7 @@ sub get_currency_options {
 
 sub print_client_details {
 
-    my ($client) = @_;
+    my $client = shift;
 
     # IDENTITY sECTION
     my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
@@ -67,16 +67,18 @@ sub print_client_details {
             client        => $client,
             search_option => 'ProveID_KYC'
         );
-        my @siblings = $user->clients(disabled_ok => 1);
 
-        $show_uploaded_documents .= show_client_id_docs($_, show_delete => 1) for $client;
+        my $user = BOM::Platform::User->new({email => $client->email});
+        my $siblings = $user->loginid;
+
+        $show_uploaded_documents .= show_client_id_docs($_->loginid, show_delete => 1) for $client;
 
         my $siblings_docs = '';
         $siblings_docs .= show_client_id_docs(
-            $_,
+            $_->loginid,
             show_delete => 1,
             no_edit     => 1
-        ) for grep { $_->loginid ne $client->loginid } @siblings;
+        ) for grep { $_->loginid ne $client->loginid } @$siblings;
 
         $show_uploaded_documents .= 'To edit following documents please select corresponding user<br>' . $siblings_docs
             if $siblings_docs;
@@ -301,19 +303,21 @@ sub build_client_warning_message {
 #
 ##############################################################
 sub get_untrusted_client_reason {
-    return (
-        'Account closure',
-        'Bonus code abuse',
-        'Compact state probably',
-        'Docs requested',
-        'Fraudulent account',
-        'Incomplete/false details',
-        'Multiple accounts',
-        'Multiple IPs',
-        'Pending investigation',
-        'Pending proof of age',
-        'Others',
-    );
+    return {
+        Disabled => [
+            'Account closure',
+            'Bonus code abuse',
+            'Compact state probably',
+            'Docs requested',
+            'Fraudulent account',
+            'Incomplete/false details',
+            'Multiple IPs',
+            'Pending investigation',
+            'Pending proof of age',
+            'Others'
+        ],
+        Duplicate => ['Duplicate account'],
+    };
 }
 
 ## show_client_id_docs #######################################
@@ -323,12 +327,19 @@ sub get_untrusted_client_reason {
 # Otherwise it's a request to show the client's authentication docs.
 ##############################################################
 sub show_client_id_docs {
-    my ($client, %args) = @_;
+    my ($loginid, %args) = @_;
     my $show_delete = $args{show_delete};
     my $extra       = $args{no_edit} ? 'disabled' : '';
     my $folder      = $args{folder};
     my $links       = '';
-    my $loginid     = $client->loginid;
+
+    return unless $loginid;
+
+    my $client = Client::Account->new({
+        loginid      => $loginid,
+        db_operation => 'replica',
+    });
+
     my @docs;
     if ($folder) {
         my $path = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/clientIDscans/" . $client->broker . "/$folder";
@@ -526,7 +537,13 @@ sub get_untrusted_types {
             'linktype' => 'jptransactiondetail',
             'comments' => 'jp bank details stored',
             'code'     => 'jp_transaction_detail'
-        }];
+        },
+        {
+            'linktype' => 'duplicateaccount',
+            'comments' => 'Duplicate account',
+            'code'     => 'duplicate_account'
+        },
+    ];
 }
 
 1;
