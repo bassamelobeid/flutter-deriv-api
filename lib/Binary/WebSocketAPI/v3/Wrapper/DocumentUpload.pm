@@ -80,7 +80,7 @@ sub document_upload {
     try {
         $upload_info = get_upload_info($c, $frame);
 
-        return upload($c, $upload_info) if $upload_info->{chunk_size} != 0;
+        return upload_chunk($c, $upload_info) if $upload_info->{chunk_size} != 0;
 
         send_upload_successful($c, $upload_info, 'success');
     }
@@ -180,7 +180,7 @@ sub send_upload_successful {
     return;
 }
 
-sub upload {
+sub upload_chunk {
     my ($c, $upload_info) = @_;
     my $upload_id = $upload_info->{upload_id};
     my $data      = $upload_info->{data};
