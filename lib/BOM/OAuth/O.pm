@@ -175,7 +175,7 @@ sub authorize {
 sub _login {
     my ($c, $app, $oneall_user_id) = @_;
 
-    my ($user, $client, @clients, $last_login, $err);
+    my ($user, $last_login, $err);
 
     my $email                = defang($c->param('email'));
     my $password             = $c->param('password');
@@ -227,8 +227,8 @@ sub _login {
         last if ($err = $result->{error});
 
         # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
-        @clients = $user->clients;
-        $client  = $clients[0];
+        my @clients = $user->clients;
+        my $client  = $clients[0];
 
         # get 1st loginid, which is not currently self-excluded until
         if (exists $result->{self_excluded}) {
