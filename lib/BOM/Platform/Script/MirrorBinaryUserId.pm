@@ -11,14 +11,16 @@ use IO::Select;
 use Try::Tiny;
 use POSIX qw/strftime/;
 
-our $DEBUG //= 1;
+our $DEBUG //= 1;               ## no critic
 use constant TMOUT => 10;
 
-select +(select(STDERR), $| = 1)[0];
+STDERR->autoflush(1);
 sub log_msg {
     my ($level, $msg) = @_;
     print STDERR strftime('%F %T', localtime), ": (PID $$) ", $msg, "\n"
         if $DEBUG >= $level;
+
+    return;
 }
 
 sub userdb {
@@ -120,6 +122,8 @@ sub run {
             sleep TMOUT;
         };
     }
+
+    return;
 }
 
 1;
