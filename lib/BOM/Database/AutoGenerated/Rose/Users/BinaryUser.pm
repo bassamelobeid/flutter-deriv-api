@@ -19,7 +19,7 @@ __PACKAGE__->meta->setup(
         app_id            => { type => 'bigint', remarks => 'Refers to the values found in oauth.apps.id' },
         email_consent     => { type => 'boolean' },
         gclid_url         => { type => 'text', remarks => '(Google Click Identifier) to track source' },
-        has_social_signup => { type => 'boolean', default => 'false' },
+        has_social_signup => { type => 'boolean' },
     ],
 
     primary_key_columns => [ 'id' ],
