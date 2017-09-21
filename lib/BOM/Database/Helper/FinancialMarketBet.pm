@@ -295,9 +295,6 @@ sub sell_bet {
     if ($self->bet) {
         $bet->{$_} //= $self->bet->$_ for (qw/id sell_price sell_time is_expired/);
     }
-    use Data::Dumper;
-    warn "bet data is :-------------------\n";
-    warn Dumper($bet);
     @param = (
         # FMB stuff
         @{$self->account_data}{qw/client_loginid currency_code/},
@@ -383,11 +380,12 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, t.id, (b.v_fmb).*, (b.v_trans).
  $3::NUMERIC,
  $4::TIMESTAMP,
  $5::JSON,
- $6::TIMESTAMP,
- $7::VARCHAR(24),
- $8::VARCHAR(800),
- $9::BIGINT,
- $10::JSON
+ $6::BOOLEAN,
+ $7::TIMESTAMP,
+ $8::VARCHAR(24),
+ $9::VARCHAR(800),
+ $10::BIGINT,
+ $11::JSON
 
 ) b
 LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AND t.action_type=$$buy$$
@@ -398,15 +396,16 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
             $shortcode,                       # -- 3
             $self->bet_data->{sell_price},    # -- 4
             $self->bet_data->{sell_time},     # -- 5
+            $self->bet_data->{is_expired},    # -- 6
             $self->bet_data->{absolute_barrier}
             ? JSON::XS::encode_json(+{absolute_barrier => $self->bet_data->{absolute_barrier}})
-            : undef,                           # -- 6
-            $transdata->{transaction_time},    # -- 7
-            $transdata->{staff_loginid} ? ('#' . $transdata->{staff_loginid}) : undef,    # -- 8
-            $transdata->{remark} // '',                                                   # -- 9
-            $transdata->{source},                                                         # -- 10
-            $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,    # -- 11
-            map { $_->{client_loginid} } @{$self->account_data}                                                       # -- 12...
+            : undef,                           # -- 7
+            $transdata->{transaction_time},    # -- 8
+            $transdata->{staff_loginid} ? ('#' . $transdata->{staff_loginid}) : undef,    # -- 9
+            $transdata->{remark} // '',                                                   # -- 10
+            $transdata->{source},                                                         # -- 11
+            $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,    # -- 12
+            map { $_->{client_loginid} } @{$self->account_data}                                                       # -- 13...
         );
         my $all_rows = $stmt->fetchall_arrayref;
         $stmt->finish;
@@ -486,23 +485,25 @@ bets(id, sell_price, sell_time, chld, transaction_time, staff_loginid, remark, s
         ",\n    ",
         map {
                   '($'
-                . ($_ * 9 + 3)
+                . ($_ * 10 + 3)
                 . '::BIGINT,' . ' $'
-                . ($_ * 9 + 4)
+                . ($_ * 10 + 4)
                 . '::NUMERIC,' . ' $'
-                . ($_ * 9 + 5)
+                . ($_ * 10 + 5)
                 . '::TIMESTAMP,' . ' $'
-                . ($_ * 9 + 6)
+                . ($_ * 10 + 6)
                 . '::JSON,' . ' $'
-                . ($_ * 9 + 7)
+                . ($_ * 10 + 7)
+                . '::BOOLEAN,' . ' $'
+                . ($_ * 10 + 8)
                 . '::TIMESTAMP,' . ' $'
-                . ($_ * 9 + 8)
+                . ($_ * 10 + 9)
                 . '::VARCHAR(24),' . ' $'
-                . ($_ * 9 + 9)
+                . ($_ * 10 + 10)
                 . '::VARCHAR(800),' . ' $'
-                . ($_ * 9 + 10)
+                . ($_ * 10 + 11)
                 . '::BIGINT,' . ' $'
-                . ($_ * 9 + 11)
+                . ($_ * 10 + 12)
                 . '::JSON)';
         } 0 .. $#$bets
         )
@@ -516,6 +517,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
                                     b.sell_price,
                                     b.sell_time,
                                     b.chld,
+                                    b.is_expired,
                                     b.transaction_time,
                                     b.staff_loginid,
                                     b.remark,
@@ -537,6 +539,8 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
 
             # FMB child table
             $bet->{absolute_barrier} ? JSON::XS::encode_json(+{absolute_barrier => $bet->{absolute_barrier}}) : undef,
+
+            $bet->{is_expired},
 
             # transaction table
             @{$transdata || {}}{qw/transaction_time staff_loginid remark source/},
