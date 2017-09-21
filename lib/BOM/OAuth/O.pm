@@ -21,9 +21,7 @@ use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 
-use constant {
-    SOCIAL_LOGIN_MODE => 0,
-};
+use constant SOCIAL_LOGIN_MODE => 0;
 
 sub _oauth_model {
     return BOM::Database::Model::OAuth->new;
@@ -183,7 +181,7 @@ sub _login {
     my $request_country_code = $c->{stash}->{request}->{country_code};
 
     my $client = undef;
-    
+
     # TODO get rid of LOGIN label
     LOGIN:
     {
@@ -264,6 +262,7 @@ sub _login {
             r            => $c->stash('request'),
             csrftoken    => $c->csrf_token,
             country_code => $request_country_code,
+            social_login => SOCIAL_LOGIN_MODE,
         );
         return;
     }
