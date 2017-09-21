@@ -321,8 +321,8 @@ sub sell_bet {
         my $stmt = $_->prepare('
 SELECT (s.v_fmb).*, (s.v_trans).*, t.id
   FROM bet_v1.sell_bet( $1::VARCHAR(12), $2::VARCHAR(3), $3::BIGINT, $4::NUMERIC, $5::TIMESTAMP,
-                        $6::JSON, $7::TIMESTAMP, $8::VARCHAR(24), $9::VARCHAR(800), $10::BIGINT,
-                        $11::JSON, $12::BOOLEAN) s
+                        $6::JSON, $7::BOOLEAN, $8::TIMESTAMP, $9::VARCHAR(24), $10::VARCHAR(800), $11::BIGINT,
+                        $12::JSON) s
   LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(s.v_fmb).id AND t.action_type=$$buy$$');
         $stmt->execute(@param);
 
