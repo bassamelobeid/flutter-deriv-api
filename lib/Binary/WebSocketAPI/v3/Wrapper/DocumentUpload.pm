@@ -47,7 +47,7 @@ sub add_upload_info {
             pending_futures=> \@pending_futures,
         };
 
-    my $put_f = $s3->put_object(
+    my $put_future = $s3->put_object(
        key   => $file_name,
        value => sub {
             my $f = shift @pending_futures;
@@ -56,6 +56,8 @@ sub add_upload_info {
         },
        value_length => $file_size,
     );
+
+    $upload_info->{put_future} = $put_future;
 
     my $stash         = {
         %{$current_stash},
