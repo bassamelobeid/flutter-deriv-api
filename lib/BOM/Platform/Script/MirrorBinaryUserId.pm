@@ -11,13 +11,14 @@ use IO::Select;
 use Try::Tiny;
 use POSIX qw/strftime/;
 
-our $DEBUG = 1;
+our $DEBUG //= 1;
 use constant TMOUT => 10;
 
 select +(select(STDERR), $| = 1)[0];
 sub log_msg {
     my ($level, $msg) = @_;
-    print STDERR strftime('%F %T: ', localtime), $msg, "\n" if $DEBUG >= $level;
+    print STDERR strftime('%F %T', localtime), ": (PID $$) ", $msg, "\n"
+        if $DEBUG >= $level;
 }
 
 sub userdb {
@@ -46,7 +47,7 @@ sub update_clientdb {
 SELECT betonmarkets.update_binary_user_id(?::VARCHAR(12), ?::BIGINT)
 SQL
         unless ($res[0]) {
-            warn "loginid $loginid has binary_user_id $binary_user_id but does not exist in clientdb\n";
+            log_msg 0, "loginid $loginid has binary_user_id $binary_user_id but does not exist in clientdb\n";
         }
         1;
     }
@@ -115,7 +116,7 @@ sub run {
             }
         }
         catch {
-            warn "$0 ($$): saw exception: $_";
+            log_msg 0, "saw exception: $_";
             sleep TMOUT;
         };
     }
