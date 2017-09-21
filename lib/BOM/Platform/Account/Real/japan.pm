@@ -24,6 +24,7 @@ sub create_account {
     my ($from_client, $user, $country, $details, $financial_data, $agreement_input) =
         @{$args}{'from_client', 'user', 'country', 'details', 'financial_data', 'agreement'};
 
+    return { error => 'social login user is prohibited' };
     my $daily_loss_limit = delete $details->{daily_loss_limit};
 
     if (my $error = _validate($args)) {
