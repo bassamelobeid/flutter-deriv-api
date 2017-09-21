@@ -9,6 +9,7 @@ use BOM::Database::ClientDB;
 use DBI;
 use IO::Select;
 use Try::Tiny;
+use POSIX qw/strftime/;
 
 our $DEBUG = 1;
 use constant TMOUT => 10;
