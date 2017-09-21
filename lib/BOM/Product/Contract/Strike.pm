@@ -67,7 +67,7 @@ sub _build_supplied_type {
     my $barrier_string = $self->supplied_barrier;
 
     return
-          ($barrier_string =~ /^S-?\d+P$/i) ? 'relative'
+          ($barrier_string =~ /^S[+-]?\d+P$/i) ? 'relative'
         : ($barrier_string =~ /^[+-](?:\d+\.?\d{0,12})/ or (looks_like_number($barrier_string) and $barrier_string == 0)) ? 'difference'
         :                                                                                                                   'absolute';
 }
