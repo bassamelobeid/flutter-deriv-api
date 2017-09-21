@@ -1,4 +1,4 @@
-ackage BOM::MarketData::FeedJump;
+package BOM::MarketData::FeedJump;
 
 use strict;
 use warnings;
