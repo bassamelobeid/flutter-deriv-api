@@ -57,8 +57,8 @@ sub save_config {
     die 'end_time is required'   unless $args{end_time};
 
     for (qw(start_time end_time)) {
-        $args->{$_} =~ s/^\s+|\s+$//g;
-        $args->{$_} = Date::Utility->new($args->{$_})->epoch;
+        $args{$_} =~ s/^\s+|\s+$//g;
+        $args{$_} = Date::Utility->new($args->{$_})->epoch;
     }
 
     foreach my $key (keys %args) {
