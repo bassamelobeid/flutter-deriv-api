@@ -243,6 +243,12 @@ sub change_status {
     return;
 }
 
+sub free_gift {
+    my ($self, $loginid) = @_;
+    _free_gift($loginid);
+    return;
+}
+
 sub exec_line {
     my ($self, $line, $linenum) = @_;
 
