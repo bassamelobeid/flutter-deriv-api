@@ -181,6 +181,10 @@ sub _login {
     my $password             = $c->param('password');
     my $brand                = $c->stash('brand');
     my $request_country_code = $c->{stash}->{request}->{country_code};
+
+    my $client = undef;
+    
+    # TODO get rid of LOGIN label
     LOGIN:
     {
         if ($oneall_user_id) {
