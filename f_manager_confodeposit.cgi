@@ -22,6 +22,7 @@ use BOM::ContractInfo;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
+use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -59,6 +60,10 @@ my $encoded_toLoginID = encode_entities($toLoginID);
 my $staff = BOM::Backoffice::Auth0::from_cookie();
 my $clerk = $staff->{nickname};
 
+unless ($curr =~ /^[A-Z]{3}$/ && LandingCompany::Registry::get_currency_type($curr)) {
+    print "Invalid currency, please check: " . encode_entities($curr);
+    code_exit_BO();
+}
 my $client = eval { Client::Account->new({loginid => $loginID}) } || do {
     print "Error: no such client $encoded_loginID";
     code_exit_BO();
@@ -111,6 +116,11 @@ if ($amount < $low || $amount > $high) {
 }
 my $signed_amount = $amount;
 $signed_amount *= -1 if $ttype eq 'DEBIT';
+
+unless ($client->landing_company->is_currency_legal($curr)) {
+    printf "ERROR: Currency %s is not legal for this client's landing company", encode_entities($curr);
+    code_exit_BO();
+}
 
 my $email      = $client->email;
 my $salutation = $client->salutation;
@@ -210,6 +220,7 @@ try {
             toClient => $toClient,
             amount   => $amount,
             staff    => $clerk,
+            fees     => 0,
         );
         $client_pa_exp = $toClient;
     }
@@ -261,7 +272,7 @@ if ($ttype eq 'TRANSFER') {
 }
 print qq[<p class="success_message">$success_message</p>];
 
-Bar("Today's entries for $encoded_loginID");
+Bar("Today's entries for $loginID");
 
 my $after  = $today->datetime_yyyymmdd_hhmmss;
 my $before = $today->plus_time_interval('1d')->datetime_yyyymmdd_hhmmss;
