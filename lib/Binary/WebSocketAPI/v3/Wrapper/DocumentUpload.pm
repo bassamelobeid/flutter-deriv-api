@@ -47,17 +47,15 @@ sub add_upload_info {
             pending_futures=> \@pending_futures,
         };
 
-    my $put_future = $s3->put_object(
+    $upload_info->{put_future} = $s3->put_object(
        key   => $file_name,
        value => sub {
-            my $f = shift @pending_futures;
-            push $upload_info->{pending_futures}, $f = $loop->new_future unless $f;
+            my $f = shift @{$upload_info->{pending_futures}};
+            push @{$upload_info->{pending_futures}}, $f = $loop->new_future unless $f;
             return $f;
         },
        value_length => $file_size,
     );
-
-    $upload_info->{put_future} = $put_future;
 
     my $stash         = {
         %{$current_stash},
@@ -257,7 +255,12 @@ sub delete_upload_info {
     my ($c, $upload_info) = @_;
     return unless defined $upload_info;
     my $stash = $c->stash('document_upload');
+
     delete $stash->{$upload_info->{upload_id}};
+
+    delete $upload_info->{put_future};
+    delete $upload_info->{pending_futures};
+
     return;
 }
 
