@@ -326,7 +326,8 @@ sub event_markup {
                 contract_type     => $self->bet->code,
                 underlying_symbol => $self->bet->underlying->symbol
             });
-        my $delta   = $self->intraday_vanilla_delta->amount;
+        my $delta = $self->intraday_vanilla_delta->amount;
+        $delta = 1 - $delta if $self->bet->pricing_code =~ /PUT/;
         my $c_start = $self->bet->effective_start->epoch;
         my $c_end   = $self->bet->date_expiry->epoch;
 

@@ -240,6 +240,46 @@ subtest 'bias long' => sub {
 
 };
 
+subtest 'ITM check on callput' => sub {
+    clear_config();
+    $mock->mock(
+        'intraday_vanilla_delta',
+        sub {
+            return Math::Util::CalculatedValue::Validatable->new(
+                name        => 'intraday_vanilla_delta',
+                description => 'BS pricing based on realized vols',
+                set_by      => __PACKAGE__,
+                base_amount => 0.9
+            );
+        });
+    $qc->save_config(
+        'commission',
+        {
+            name              => 'test1',
+            underlying_symbol => 'frxUSDJPY',
+            start_time        => $now->epoch,
+            end_time          => $now->plus_time_interval('1h')->epoch,
+            bias              => 'long',
+            partitions        => [{
+                    partition_range => '0.5-1',
+                    cap_rate        => 0.5,
+                    floor_rate      => 0.05,
+                    centre_offset   => 0,
+                    width           => 0.5,
+                    flat            => 0,
+                },
+            ],
+        });
+    $args->{date_start} = $args->{date_pricing} = $now->epoch;
+    $args->{underlying} = 'frxUSDJPY';
+    $args->{bet_type}   = 'CALLE';
+    my $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0.5, 'charged commission for ITM CALLE';
+    $args->{bet_type} = 'PUT';
+    $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0, 'does not charge for OTM PUT';
+};
+
 sub clear_config {
     $qc->chronicle_writer->set('quants_config', 'commission', {}, $now->minus_time_interval('4h'));
 }
