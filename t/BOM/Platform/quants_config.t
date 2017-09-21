@@ -136,6 +136,13 @@ subtest 'get_config with bias' => sub {
             underlying_symbol => 'frxEURUSD'
         });
     ok !@$configs, 'no config for CALLE if config matches domestic currency';
+    $configs = $qc->get_config(
+        'commission',
+        {
+            contract_type     => 'CALL',
+            underlying_symbol => 'WLDUSD'
+        });
+    ok !@$configs, 'no config for WLDUSD, no warnings as well';
 };
 
 subtest '_cleanup' => sub {
