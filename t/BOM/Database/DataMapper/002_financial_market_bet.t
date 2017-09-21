@@ -330,8 +330,9 @@ subtest 'digits' => sub {
 
             isnt scalar sell({
                     id         => shift(@fmb_id),
-                    sell_price => 2.5
-                }
+                    sell_price => 2.5,
+                    is_expired => 1,
+                 }
                 ),
                 undef, 'sell';
             cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 1, 'check qty open bet = 0');
