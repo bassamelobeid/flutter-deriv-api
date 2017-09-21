@@ -295,6 +295,7 @@ sub sell_bet {
     if ($self->bet) {
         $bet->{$_} //= $self->bet->$_ for (qw/id sell_price sell_time is_expired/);
     }
+    $bet->{is_expired} // die "is_expired needed";
     @param = (
         # FMB stuff
         @{$self->account_data}{qw/client_loginid currency_code/},
@@ -390,7 +391,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, t.id, (b.v_fmb).*, (b.v_trans).
 ) b
 LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AND t.action_type=$$buy$$
  ORDER BY acc.seq');
-
+        $self->bet_data->{is_expired} // die "is_expired needed";
         $stmt->execute(
             $currency,                        # -- 2
             $shortcode,                       # -- 3
@@ -532,7 +533,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
         my $bet       = $bets->[$i];
         my $qv        = $qvs->[$i];
         my $transdata = $txns->[$i];
-
+        $bet->{is_expired} // die "is_expired needed";
         push @param, (
             # FMB stuff
             @{$bet}{qw/id sell_price sell_time/},
