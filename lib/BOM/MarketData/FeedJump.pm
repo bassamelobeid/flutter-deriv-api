@@ -108,7 +108,7 @@ sub _perform_checks {
                             partition_range => $partition_range,
                             flat            => 0,
                             cap_rate        => 0.3,
-                            floor_rate      => 0.05,
+                            floor_rate      => 0.01,
                             width           => 0.5,
                             centre_offset   => 0,
                         }
