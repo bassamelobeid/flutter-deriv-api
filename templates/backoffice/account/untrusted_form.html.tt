@@ -13,9 +13,15 @@ Action :-
 </select>
 <br>
 Reason : <select id="untrusted_reasonlist" name="untrusted_reason">
+<optgroup label="select">
 <option>--------------------SELECT A REASON--------------------</option>
-[% FOREACH r IN reasons %]
-    <option value="[% r %]">[% r %]</option>
+</optgroup>
+[% FOREACH opt IN reasons.keys %]
+    <optgroup label="[% opt %]">
+    [% FOREACH r IN reasons.$opt %]
+        <option value="[% r %]">[% r %]</option>
+    [% END %]
+    </optgroup>
 [% END %]
 </select>
 <br />

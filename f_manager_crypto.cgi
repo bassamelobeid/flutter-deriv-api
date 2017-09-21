@@ -349,6 +349,8 @@ EOF
                 print '<tr><th scope="row">' . encode_entities($k) . '</th><td>' . encode_entities($amount) . '</td></tr>' . "\n";
             }
             print '</table>';
+        } elsif ($cmd eq 'getbalance') {
+            print 'Current balance: <pre>' . encode_entities($rslt) . '</pre>';
         } elsif ($cmd eq 'listtransactions') {
             my @hdr = ('Account', 'Transaction ID', 'Amount', 'Transaction date', 'Confirmations', 'Address');
             print '<table><thead><tr>';
