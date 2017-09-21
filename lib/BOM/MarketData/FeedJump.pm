@@ -1,4 +1,4 @@
-package BOM::MarketData::FeedJump;
+ackage BOM::MarketData::FeedJump;
 
 use strict;
 use warnings;
@@ -9,7 +9,6 @@ use Mojo::Redis2;
 use BOM::Platform::QuantsConfig;
 use BOM::Platform::Chronicle;
 use Quant::Framework::EconomicEventCalendar;
-use BOM::MarketData qw(create_underlying_db);
 
 use Try::Tiny;
 use namespace::autoclean;
@@ -34,7 +33,7 @@ sub BUILD {
     );
     $self->_eec($eec);
 
-    my %symbols = map { $_ => 1 } create_underlying_db->symbols_for_intraday_fx;
+    my %symbols = map { $_ => 1 } qw(frxAUDJPY frxAUDUSD frxEURGBP frxEURJPY frxEURUSD frxGBPJPY frxGBPUSD frxUSDCAD frxUSDJPY);
     $self->_symbols_to_perform_check(\%symbols);
 
     return;
