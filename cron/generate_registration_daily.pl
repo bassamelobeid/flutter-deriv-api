@@ -18,7 +18,7 @@ sub run {
     GetOptions('to=s' => \$to);
 
     my $result = BOM::MyAffiliates::GenerateRegistrationDaily->new->run;
-    my $brand = Brands->new();
+    my $brand  = Brands->new();
     send_email({
         from    => $brand->emails('system'),
         to      => $brand->emails('affiliates'),

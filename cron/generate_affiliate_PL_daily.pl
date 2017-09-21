@@ -56,7 +56,7 @@ while ($to_date->days_between($processing_date) >= 0) {
 
     my $fh = FileHandle->new('>' . $output_filename);
 
-    # Date, Player, P&L, Deposits, RBTO, IDTO, OTO
+    # Date, Player, P&L, Deposits, Runbet Turnover, Intraday Turnover, Other Turnover
     foreach my $line (@csv) {
         chomp $line;
         print $fh $line . "\n" if $line;
