@@ -106,7 +106,8 @@ sub get_config {
     my $existing_config = $self->chronicle_reader->$method($namespace, $config_type, $self->for_date) // {};
     return [values %$existing_config] unless $args;
 
-    my ($foreign_curr, $domestic_curr) = $args->{underlying_symbol} =~ /^frx(\w{3})(\w{3})$/;
+    my ($foreign_curr, $domestic_curr) = $args->{underlying_symbol} =~ /^(?:frx|(?=WLD))(\w{3})(\w{3})$/;
+
     my @match;
     foreach my $key (keys %$existing_config) {
         my $config = $existing_config->{$key};
