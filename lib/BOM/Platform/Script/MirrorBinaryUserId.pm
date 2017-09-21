@@ -11,10 +11,11 @@ use IO::Select;
 use Try::Tiny;
 use POSIX qw/strftime/;
 
-our $DEBUG //= 1;               ## no critic
+our $DEBUG //= 1;    ## no critic
 use constant TMOUT => 10;
 
 STDERR->autoflush(1);
+
 sub log_msg {
     my ($level, $msg) = @_;
     print STDERR strftime('%F %T', localtime), ": (PID $$) ", $msg, "\n"
@@ -27,8 +28,7 @@ sub userdb {
     my $ip = shift;
     return DBI->connect(
         "dbi:Pg:service=user01;application_name=MirrorBinaryUserId",
-        undef,
-        undef,
+        undef, undef,
         {
             AutoCommit => 1,
             RaiseError => 1,
@@ -43,8 +43,8 @@ sub update_clientdb {
     log_msg 2, "setting binary_user_id=$binary_user_id for $loginid";
     return try {
         my $dbh = BOM::Database::ClientDB->new({
-            client_loginid => $loginid,
-        })->db->dbh;
+                client_loginid => $loginid,
+            })->db->dbh;
         my @res = @{$dbh->selectcol_arrayref(<<'SQL', undef, $loginid, $binary_user_id)};
 SELECT betonmarkets.update_binary_user_id(?::VARCHAR(12), ?::BIGINT)
 SQL
@@ -101,7 +101,7 @@ sub run {
             $sel->add($dbh->{pg_socket});
 
             $dbh->do('LISTEN "q.add_loginid"');
-            $dbh->do('NOTIFY "q.add_loginid"'); # trigger first round
+            $dbh->do('NOTIFY "q.add_loginid"');    # trigger first round
 
             log_msg 1, "started";
 
