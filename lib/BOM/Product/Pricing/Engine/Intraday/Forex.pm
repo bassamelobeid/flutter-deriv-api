@@ -314,7 +314,7 @@ sub event_markup {
     my $self = shift;
 
     my @markups = (0);
-    if ($self->bet->category_code eq 'callput') {
+    if ($self->bet->category_code eq 'callput' && !$self->bet->is_atm_bet) {
         my $for_date = $self->bet->underlying->for_date;
         my $qc       = BOM::Platform::QuantsConfig->new(
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
