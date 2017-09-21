@@ -150,7 +150,8 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell 1 bet & test
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 20
+        sell_price => 20,
+        is_expired => 1,
     }
     ),
     undef, 'sell 1 bet';
@@ -159,7 +160,8 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell the other bet too
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 20
+        sell_price => 20,
+        is_expired => 1,
     }
     ),
     undef, 'sell 1 bet';
@@ -191,7 +193,8 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell it
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 2
+        sell_price => 2,
+        is_expired => 1,
     }
     ),
     undef, 'sell 1 bet';
@@ -223,7 +226,8 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell it
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 2
+        sell_price => 2,
+        is_expired => 1,
     }
     ),
     undef, 'sell 1 bet';
@@ -256,7 +260,8 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell it
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 2.5
+        sell_price => 2.5,
+        is_expired => 1,
     }
     ),
     undef, 'sell 1 bet';
@@ -289,7 +294,8 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell it
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 2.5
+        sell_price => 2.5,
+        is_expired => 1,
     }
     ),
     undef, 'sell 1 bet';
