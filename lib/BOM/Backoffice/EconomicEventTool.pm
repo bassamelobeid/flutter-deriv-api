@@ -3,21 +3,17 @@ package BOM::Backoffice::EconomicEventTool;
 use strict;
 use warnings;
 
-use Date::Utility;
-use Quant::Framework::EconomicEventCalendar;
-use Volatility::Seasonality;
 use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying_db);
-use LandingCompany::Offerings qw(get_offerings_flyby);
-use JSON qw(to_json);
-use List::Util qw(first);
 use BOM::Backoffice::Request;
 use BOM::MarketDataAutoUpdater::Forex;
 
-use File::ShareDir;
-use YAML::XS qw(LoadFile);
-
-my $economic_event_categories = LoadFile(File::ShareDir::dist_file('Volatility-Seasonality', 'economic_event_categories.yml'));
+use Quant::Framework::EconomicEventCalendar;
+use Volatility::Seasonality;
+use LandingCompany::Offerings qw(get_offerings_flyby);
+use Date::Utility;
+use JSON qw(to_json);
+use List::Util qw(first);
 
 sub get_economic_events_for_date {
     my $date = shift;
