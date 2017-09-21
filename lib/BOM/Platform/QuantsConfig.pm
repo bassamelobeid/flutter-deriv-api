@@ -96,7 +96,7 @@ sub _cleanup {
     my ($self, $existing_configs) = @_;
 
     foreach my $name (keys %$existing_configs) {
-        delete $existing_configs->{$name} if ($existing_configs->{$name}->{end_time} < time);
+        delete $existing_configs->{$name} if ($existing_configs->{$name}->{end_time} < $self->recorded_date->epoch);
     }
 
     return;
