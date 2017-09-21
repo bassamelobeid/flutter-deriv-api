@@ -24,7 +24,7 @@ my $qc  = BOM::Platform::QuantsConfig->new(
 
 my $args = {
     bet_type     => 'CALL',
-    barrier      => 'S0P',
+    barrier      => 'S10P',
     date_start   => $now,
     date_pricing => $now,
     duration     => '1h',
@@ -278,6 +278,10 @@ subtest 'ITM check on callput' => sub {
     $args->{bet_type} = 'PUT';
     $c = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0, 'does not charge for OTM PUT';
+    $args->{bet_type} = 'CALLE';
+    $args->{barrier} = 'S0P';
+    $c = produce_contract($args);
+    is $c->pricing_engine->event_markup->amount, 0, 'does not charge for ATM contracts';
 };
 
 sub clear_config {
