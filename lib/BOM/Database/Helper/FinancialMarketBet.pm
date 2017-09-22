@@ -295,7 +295,7 @@ sub sell_bet {
     if ($self->bet) {
         $bet->{$_} //= $self->bet->$_ for (qw/id sell_price sell_time/);
     }
-    $bet->{is_expired} //= 1;
+
     @param = (
         # FMB stuff
         @{$self->account_data}{qw/client_loginid currency_code/},
@@ -304,7 +304,7 @@ sub sell_bet {
         # FMB child table
         $bet->{absolute_barrier} ? JSON::XS::encode_json(+{absolute_barrier => $bet->{absolute_barrier}}) : undef,
 
-        $bet->{is_expired},
+        $bet->{is_expired} // 1,
 
         # transaction table
         @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source/},
@@ -540,7 +540,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
             # FMB child table
             $bet->{absolute_barrier} ? JSON::XS::encode_json(+{absolute_barrier => $bet->{absolute_barrier}}) : undef,
 
-            $bet->{is_expired} // 1;
+            $bet->{is_expired} // 1,
 
             # transaction table
             @{$transdata || {}}{qw/transaction_time staff_loginid remark source/},
