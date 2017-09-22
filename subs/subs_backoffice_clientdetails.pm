@@ -59,10 +59,10 @@ sub print_client_details {
     }
 
     my ($proveID, $show_uploaded_documents) = ('', '');
-    my $user;
-    $user = BOM::Platform::User->new({loginid => $client->loginid}) // do {
-        print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>" and die;
-    }
+    my $user = BOM::Platform::User->new({loginid => $client->loginid});
+
+    # User should be accessable from client by loginid
+    print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>" and die unless $user;
 
     unless ($client->is_virtual) {
         # KYC/IDENTITY VERIFICATION SECTION
