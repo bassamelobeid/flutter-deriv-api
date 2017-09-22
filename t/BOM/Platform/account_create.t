@@ -236,7 +236,7 @@ subtest 'create account' => sub {
             my $vr_acc = create_vr_acc(\%social_login_user_details);
             ($vr_client, $social_login_user) = @{$vr_acc}{qw/client user/};
         }
-        'create VR acc with social signup';
+        'create VR account with social signup';
 
         my %details = (
             %real_client_details,
@@ -261,8 +261,9 @@ subtest 'create account' => sub {
             }
             "create $broker_code account OK, after verify email";
 
-            ($real_client, $social_login_user) = @{$real_acc}{'client', 'user'};
-            is($real_client->broker, $broker_code, 'Successfully create real acc ' . $real_client->loginid . ' with social signup');
+            ($real_client, $social_login_user) = @{$real_acc}{qw/client user/};
+            is(exists $social_login_user, 1,            "Social login user with residence $social_login_user->residence has been created");
+            is($real_client->broker,      $broker_code, "Successfully created real account $real_client->loginid");
         } elsif ($broker_code eq 'JP') {
             #Social login user isn't able to create JP account
             $real_acc = BOM::Platform::Account::Real::japan::create_account({
@@ -273,7 +274,7 @@ subtest 'create account' => sub {
                 financial_data => \%jp_acc_financial_data,
                 agreement      => \%jp_agreement,
             });
-            is($real_acc->{error}, 'social login user is prohibited', 'Socail login user cannot create JP account');
+            is($real_acc->{error}, 'social login user is prohibited', 'Social login user cannot create JP account');
         } else {
             # Social login user may create default account
             lives_ok {
@@ -286,8 +287,9 @@ subtest 'create account' => sub {
             }
             "create $broker_code account OK, after verify email";
 
-            ($real_client, $social_login_user) = @{$real_acc}{'client', 'user'};
-            is($real_client->broker, $broker_code, 'Successfully create real acc ' . $real_client->loginid . ' with social signup');
+            ($real_client, $social_login_user) = @{$real_acc}{qw/client user/};
+            is(exists $social_login_user, 1,            "Social login user with residence $social_login_user->residence has been created");
+            is($real_client->broker,      $broker_code, "Successfully created real account $real_client->loginid");
         }
     }
 };
