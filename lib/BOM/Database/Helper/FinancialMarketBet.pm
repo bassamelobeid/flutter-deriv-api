@@ -391,13 +391,13 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, t.id, (b.v_fmb).*, (b.v_trans).
 ) b
 LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AND t.action_type=$$buy$$
  ORDER BY acc.seq');
-        $self->bet_data->{is_expired} // die "is_expired needed";
+
         $stmt->execute(
             $currency,                        # -- 2
             $shortcode,                       # -- 3
             $self->bet_data->{sell_price},    # -- 4
             $self->bet_data->{sell_time},     # -- 5
-            $self->bet_data->{is_expired},    # -- 6
+            $self->bet_data->{is_expired} // 1,    # -- 6
             $self->bet_data->{absolute_barrier}
             ? JSON::XS::encode_json(+{absolute_barrier => $self->bet_data->{absolute_barrier}})
             : undef,                           # -- 7
@@ -533,7 +533,6 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
         my $bet       = $bets->[$i];
         my $qv        = $qvs->[$i];
         my $transdata = $txns->[$i];
-        $bet->{is_expired} // die "is_expired needed";
         push @param, (
             # FMB stuff
             @{$bet}{qw/id sell_price sell_time/},
@@ -541,7 +540,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
             # FMB child table
             $bet->{absolute_barrier} ? JSON::XS::encode_json(+{absolute_barrier => $bet->{absolute_barrier}}) : undef,
 
-            $bet->{is_expired},
+            $bet->{is_expired} // 1;
 
             # transaction table
             @{$transdata || {}}{qw/transaction_time staff_loginid remark source/},
