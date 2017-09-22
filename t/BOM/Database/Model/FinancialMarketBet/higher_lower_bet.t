@@ -121,7 +121,11 @@ lives_ok {
 
     my $higher_lower_helper = BOM::Database::Helper::FinancialMarketBet->new({
         %account_data,
-        bet => $higher_lower,
+        bet_data => {
+            id         => $higher_lower_id,
+            sell_price => 40,
+            is_expired => 1,
+            },
         db  => $connection_builder->db,
     });
 
