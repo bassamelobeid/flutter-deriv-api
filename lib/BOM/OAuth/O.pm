@@ -173,14 +173,12 @@ sub authorize {
 sub _login {
     my ($c, $app, $oneall_user_id) = @_;
 
-    my ($user, $last_login, $err);
+    my ($user, $last_login, $err, $client);
 
     my $email                = defang($c->param('email'));
     my $password             = $c->param('password');
     my $brand                = $c->stash('brand');
     my $request_country_code = $c->{stash}->{request}->{country_code};
-
-    my $client = undef;
 
     # TODO get rid of LOGIN label
     LOGIN:
@@ -230,7 +228,7 @@ sub _login {
 
         # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
         my @clients = $user->clients;
-        my $client  = $clients[0];
+        $client  = $clients[0];
 
         # get 1st loginid, which is not currently self-excluded until
         if (exists $result->{self_excluded}) {
