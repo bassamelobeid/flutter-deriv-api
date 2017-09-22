@@ -228,7 +228,7 @@ subtest 'create account' => sub {
     foreach my $broker_code (keys $vr_details) {
         my %social_login_user_details = (
             %{$vr_details->{$broker_code}},
-            email => 'social+' . $broker_code . '@binary.com',
+            email             => 'social+' . $broker_code . '@binary.com',
             has_social_signup => 1,
         );
         my ($vr_client, $real_client, $social_login_user, $real_acc);
@@ -260,11 +260,10 @@ subtest 'create account' => sub {
                 });
             }
             "create $broker_code account OK, after verify email";
-            
+
             ($real_client, $social_login_user) = @{$real_acc}{'client', 'user'};
-            is($real_client->broker, $broker_code,
-                'Successfully create real acc ' . $real_client->loginid . ' with social signup');
-        } elsif ($broker_code eq 'JP') { 
+            is($real_client->broker, $broker_code, 'Successfully create real acc ' . $real_client->loginid . ' with social signup');
+        } elsif ($broker_code eq 'JP') {
             #Social login user isn't able to create JP account
             $real_acc = BOM::Platform::Account::Real::japan::create_account({
                 from_client    => $vr_client,
@@ -286,10 +285,9 @@ subtest 'create account' => sub {
                 });
             }
             "create $broker_code account OK, after verify email";
-            
+
             ($real_client, $social_login_user) = @{$real_acc}{'client', 'user'};
-            is($real_client->broker, $broker_code,
-                'Successfully create real acc ' . $real_client->loginid . ' with social signup');
+            is($real_client->broker, $broker_code, 'Successfully create real acc ' . $real_client->loginid . ' with social signup');
         }
     }
 };
