@@ -312,8 +312,7 @@ sub sell_bet {
         # data_collection.quants_bet_variables
         $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
     );
-    use Data::Dumper;
-    warn "param is " . Dumper(\@param);
+
     my $dbic_code = sub {
         # NOTE, the parens around v_fmb and v_trans in the SQL statement
         #       are necessary.
