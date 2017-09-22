@@ -59,7 +59,10 @@ sub print_client_details {
     }
 
     my ($proveID, $show_uploaded_documents) = ('', '');
-    my $user = BOM::Platform::User->new({loginid => $client->loginid});
+    my $user;
+    $user = BOM::Platform::User->new({loginid => $client->loginid}) // do {
+        print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>" and die;
+    }
 
     unless ($client->is_virtual) {
         # KYC/IDENTITY VERIFICATION SECTION
@@ -120,8 +123,6 @@ sub print_client_details {
         }
     }
 
-    my $has_social_signup = $user ? $user->has_social_signup : -1;
-
     my $template_param = {
         client                => $client,
         client_phone_country  => $client_phone_country,
@@ -133,7 +134,7 @@ sub print_client_details {
         dob_month_options     => $dob_month_options,
         dob_year_options      => $dob_year_options,
         financial_risk_status => $client->get_status('financial_risk_approval'),
-        has_social_signup     => $has_social_signup,
+        has_social_signup     => $user->has_social_signup,
         is_vip                => $client->is_vip,
         lang                  => request()->language,
         language_options      => \@language_options,
