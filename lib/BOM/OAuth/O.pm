@@ -228,7 +228,7 @@ sub _login {
 
         # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
         my @clients = $user->clients;
-        $client  = $clients[0];
+        $client = $clients[0];
 
         # get 1st loginid, which is not currently self-excluded until
         if (exists $result->{self_excluded}) {
