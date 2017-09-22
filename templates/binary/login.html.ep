@@ -16,7 +16,7 @@
 
 <div class="container">
     <div id="inline">
-        <% if ($social_login && $country_code ne 'jp') { %>
+        <% if ($social_login) { %>
             <div class="center-text">
                 <div id="oa_social_login_container"></div>
             </div>
