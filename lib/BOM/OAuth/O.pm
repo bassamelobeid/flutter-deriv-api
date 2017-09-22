@@ -47,7 +47,7 @@ sub authorize {
     my $client;
     # try to retrieve client from session
     if (    $c->req->method eq 'POST'
-        and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
+        and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
         and defang($c->param('login')))
     {
         $client = $c->_login($app) or return;
@@ -76,7 +76,7 @@ sub authorize {
         layout       => $brand_name,
         app          => $app,
         error        => delete $c->session->{_oneall_error} || '',
-        csrftoken    => $c->csrf_token,
+        csrf_token    => $c->csrf_token,
         r            => $c->stash('request'),
         social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
     ) unless $client;
@@ -91,7 +91,7 @@ sub authorize {
         app          => $app,
         error        => localize('This account is unavailable.'),
         r            => $c->stash('request'),
-        csrftoken    => $c->csrf_token,
+        csrf_token    => $c->csrf_token,
         social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
     ) if grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands};
 
@@ -100,7 +100,7 @@ sub authorize {
     # confirm scopes
     my $is_all_approved = 0;
     if (    $c->req->method eq 'POST'
-        and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
+        and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
         and (defang($c->param('cancel_scopes')) || defang($c->param('confirm_scopes'))))
     {
         if (defang($c->param('confirm_scopes'))) {
@@ -130,7 +130,7 @@ sub authorize {
         client    => $client,
         scopes    => \@{$app->{scopes}},
         r         => $c->stash('request'),
-        csrftoken => $c->csrf_token,
+        csrf_token => $c->csrf_token,
     ) unless $is_all_approved;
 
     # setting up client ip
@@ -255,7 +255,7 @@ sub _login {
             app          => $app,
             error        => $err,
             r            => $c->stash('request'),
-            csrftoken    => $c->csrf_token,
+            csrf_token    => $c->csrf_token,
             social_login => (SOCIAL_LOGIN_MODE and $c->{stash}->{request}->{country_code} ne 'jp'),
         );
         return;

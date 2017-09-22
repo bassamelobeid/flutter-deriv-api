@@ -9,7 +9,7 @@
             <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
             <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
             <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
-            <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
+            <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
         </form>
     </div>
     <p class="center-text">
