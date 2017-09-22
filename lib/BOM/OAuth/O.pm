@@ -76,7 +76,7 @@ sub authorize {
         layout       => $brand_name,
         app          => $app,
         error        => delete $c->session->{_oneall_error} || '',
-        csrf_token    => $c->csrf_token,
+        csrf_token   => $c->csrf_token,
         r            => $c->stash('request'),
         social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
     ) unless $client;
@@ -91,7 +91,7 @@ sub authorize {
         app          => $app,
         error        => localize('This account is unavailable.'),
         r            => $c->stash('request'),
-        csrf_token    => $c->csrf_token,
+        csrf_token   => $c->csrf_token,
         social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
     ) if grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands};
 
@@ -124,12 +124,12 @@ sub authorize {
     # show scope confirms if not yet approved
     # do not show the scope confirm screen if APP ID is 1
     return $c->render(
-        template  => $brand_name . '/scope_confirms',
-        layout    => $brand_name,
-        app       => $app,
-        client    => $client,
-        scopes    => \@{$app->{scopes}},
-        r         => $c->stash('request'),
+        template   => $brand_name . '/scope_confirms',
+        layout     => $brand_name,
+        app        => $app,
+        client     => $client,
+        scopes     => \@{$app->{scopes}},
+        r          => $c->stash('request'),
         csrf_token => $c->csrf_token,
     ) unless $is_all_approved;
 
@@ -255,7 +255,7 @@ sub _login {
             app          => $app,
             error        => $err,
             r            => $c->stash('request'),
-            csrf_token    => $c->csrf_token,
+            csrf_token   => $c->csrf_token,
             social_login => (SOCIAL_LOGIN_MODE and $c->{stash}->{request}->{country_code} ne 'jp'),
         );
         return;

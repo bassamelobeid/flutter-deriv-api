@@ -70,9 +70,9 @@ my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
 ok $csrf_token, 'csrf_token is there';
 $t->post_ok(
     "/authorize?app_id=$app_id" => form => {
-        login     => 1,
-        email     => $email,
-        password  => $password,
+        login      => 1,
+        email      => $email,
+        password   => $password,
         csrf_token => $csrf_token
     });
 
@@ -85,7 +85,7 @@ ok $csrf_token, 'csrf_token is there';
 $t->post_ok(
     "/authorize?app_id=$app_id" => form => {
         confirm_scopes => 1,
-        csrf_token      => $csrf_token
+        csrf_token     => $csrf_token
     });
 
 ok $t->tx->res->headers->location =~ 'https://www.example.com/', 'redirect to example';
@@ -100,9 +100,9 @@ $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
 $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
 $t->post_ok(
     "/authorize?app_id=$app_id" => form => {
-        login     => 1,
-        email     => $email,
-        password  => $password,
+        login      => 1,
+        email      => $email,
+        password   => $password,
         csrf_token => $csrf_token
     });
 
