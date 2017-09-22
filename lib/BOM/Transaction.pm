@@ -821,7 +821,7 @@ sub sell_by_shortcode {
     my $stats_data = $self->stats_start('sell');
 
     my ($error_status, $bet_data) = $self->prepare_sell($options{skip});
-
+    $bet_data->{bet_data}{is_expired} = $self->contract->is_expired;
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
