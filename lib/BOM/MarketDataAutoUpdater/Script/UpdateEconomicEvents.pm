@@ -14,7 +14,6 @@ use BOM::Platform::Chronicle;
 use Try::Tiny;
 use List::Util qw(first uniq max);
 use Sys::Info;
-use Parallel::ForkManager;
 use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::VolSurface::Delta;
 use Volatility::Seasonality;
