@@ -295,7 +295,7 @@ sub sell_bet {
     if ($self->bet) {
         $bet->{$_} //= $self->bet->$_ for (qw/id sell_price sell_time/);
     }
-    $bet->{is_expired} // die "is_expired needed";
+    $bet->{is_expired} //= 1;
     @param = (
         # FMB stuff
         @{$self->account_data}{qw/client_loginid currency_code/},
