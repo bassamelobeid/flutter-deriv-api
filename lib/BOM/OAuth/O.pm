@@ -78,7 +78,7 @@ sub authorize {
         error        => delete $c->session->{_oneall_error} || '',
         csrftoken    => $c->csrf_token,
         r            => $c->stash('request'),
-        social_login => SOCIAL_LOGIN_MODE and $request_country_code ne 'jp',
+        social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
     ) unless $client;
 
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
@@ -92,7 +92,7 @@ sub authorize {
         error        => localize('This account is unavailable.'),
         r            => $c->stash('request'),
         csrftoken    => $c->csrf_token,
-        social_login => SOCIAL_LOGIN_MODE and $request_country_code ne 'jp',
+        social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
     ) if grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands};
 
     my $redirect_uri = $app->{redirect_uri};
@@ -257,7 +257,7 @@ sub _login {
             error        => $err,
             r            => $c->stash('request'),
             csrftoken    => $c->csrf_token,
-            social_login => SOCIAL_LOGIN_MODE and $request_country_code ne 'jp',
+            social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
         );
         return;
     }
