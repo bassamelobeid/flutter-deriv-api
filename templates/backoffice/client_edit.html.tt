@@ -51,7 +51,15 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">Social Signup</td>
-        <td>: <b>[% IF has_social_signup  %]YES[% ELSE %]NO[% END %]</b></td>
+        <td>: <b>
+            [% IF has_social_signup == -1 %] 
+                <p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>
+            [% ELSIF has_social_signup  %]
+                YES
+            [% ELSE %]
+                NO
+            [% END %]
+        </b></td>
     </tr>
     <tr>
         <td class="label">BROKER</td>
