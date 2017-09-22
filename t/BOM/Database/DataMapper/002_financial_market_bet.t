@@ -150,8 +150,7 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell 1 bet & test
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 20,
-        is_expired => 1,
+        sell_price => 20
     }
     ),
     undef, 'sell 1 bet';
@@ -160,8 +159,7 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell the other bet too
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 20,
-        is_expired => 1,
+        sell_price => 20
     }
     ),
     undef, 'sell 1 bet';
@@ -193,8 +191,7 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell it
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 2,
-        is_expired => 1,
+        sell_price => 2
     }
     ),
     undef, 'sell 1 bet';
@@ -226,8 +223,7 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell it
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 2,
-        is_expired => 1,
+        sell_price => 2
     }
     ),
     undef, 'sell 1 bet';
@@ -260,8 +256,7 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell it
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 2.5,
-        is_expired => 1,
+        sell_price => 2.5
     }
     ),
     undef, 'sell 1 bet';
@@ -294,8 +289,7 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell it
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 2.5,
-        is_expired => 1,
+        sell_price => 2.5
     }
     ),
     undef, 'sell 1 bet';
@@ -336,9 +330,8 @@ subtest 'digits' => sub {
 
             isnt scalar sell({
                     id         => shift(@fmb_id),
-                    sell_price => 2.5,
-                    is_expired => 1,
-                 }
+                    sell_price => 2.5
+                }
                 ),
                 undef, 'sell';
             cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 1, 'check qty open bet = 0');

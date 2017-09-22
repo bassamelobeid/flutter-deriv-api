@@ -116,7 +116,6 @@ lives_ok {
         bet_data => {
             id         => $digit_id,
             sell_price => 40,
-            is_expired => 1,
         },
         transaction_data => {
             staff_loginid => 'AUTOSELL',
