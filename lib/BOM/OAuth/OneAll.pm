@@ -107,9 +107,7 @@ sub __create_virtual_user {
         });
     die $acc->{error} if $acc->{error};
 
-    my $user = $acc->{user};
-
-    return $user;
+    return $acc->{user};
 }
 
 1;
