@@ -173,10 +173,9 @@ sub _login {
 
     my ($user, $last_login, $err, $client);
 
-    my $email                = defang($c->param('email'));
-    my $password             = $c->param('password');
-    my $brand                = $c->stash('brand');
-    my $request_country_code = $c->{stash}->{request}->{country_code};
+    my $email    = defang($c->param('email'));
+    my $password = $c->param('password');
+    my $brand    = $c->stash('brand');
 
     # TODO get rid of LOGIN label
     LOGIN:
@@ -257,7 +256,7 @@ sub _login {
             error        => $err,
             r            => $c->stash('request'),
             csrftoken    => $c->csrf_token,
-            social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
+            social_login => (SOCIAL_LOGIN_MODE and $c->{stash}->{request}->{country_code} ne 'jp'),
         );
         return;
     }
