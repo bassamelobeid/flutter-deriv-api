@@ -68,7 +68,6 @@ sub print_client_details {
             search_option => 'ProveID_KYC'
         );
 
-        my $user = BOM::Platform::User->new({email => $client->email});
         my $siblings = $user->loginid;
 
         $show_uploaded_documents .= show_client_id_docs($_->loginid, show_delete => 1) for $client;
