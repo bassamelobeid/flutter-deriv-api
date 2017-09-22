@@ -27,7 +27,6 @@ use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 use List::Util qw( first );
 use Quant::Framework;
 use BOM::Platform::Chronicle;
-use VolSurface::IntradayFX;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 has file => (
