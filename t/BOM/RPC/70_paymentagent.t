@@ -179,6 +179,17 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
             }});
     is $res->{status}, 2, 'paymentagent_withdraw dry_run ok';
 
+    my $client_db = BOM::Database::ClientDB->new({
+        client_loginid => $client->loginid,
+    });
+
+    my $pa_client_db = BOM::Database::ClientDB->new({
+        client_loginid => $pa_client->loginid,
+    });
+
+    # freeze so that it throws error
+    $client_db->freeze;
+
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
             client => $client,
             args   => {
@@ -190,18 +201,6 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
             }});
     ok $res->{error}->{message_to_client} =~ /An error occurred while processing request/, 'An error occurred while processing request';
 
-    my $client_db = BOM::Database::ClientDB->new({
-        client_loginid => $client->loginid,
-    });
-
-    my $pa_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $pa_client->loginid,
-    });
-
-    # need unfreeze client after withdraw error
-    $client_db->unfreeze;
-    $pa_client_db->unfreeze;
-
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
             client => $client,
             args   => {
@@ -212,9 +211,6 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 verification_code     => $code
             }});
     ok $res->{error}->{message_to_client} =~ /Request too frequent. Please try again later./, 'Too many attempts';
-
-    $client_db->unfreeze;
-    $pa_client_db->unfreeze;
 
     # sleep for 3 seconds as we have limit for 2 seconds
     sleep 3;
@@ -370,6 +366,17 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
             }});
     is $res->{status}, 2, 'paymentagent_transfer dry_run ok';
 
+    my $client_db = BOM::Database::ClientDB->new({
+        client_loginid => $client->loginid,
+    });
+
+    my $pa_client_db = BOM::Database::ClientDB->new({
+        client_loginid => $pa_client->loginid,
+    });
+
+    # freeze so that it throws error
+    $client_db->freeze;
+
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
             client => $pa_client,
             args   => {
@@ -379,17 +386,6 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 100,
             }});
     ok $res->{error}->{message_to_client} =~ /An error occurred while processing request/, 'An error occurred while processing request';
-    my $client_db = BOM::Database::ClientDB->new({
-        client_loginid => $client->loginid,
-    });
-
-    my $pa_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $pa_client->loginid,
-    });
-
-    # need unfreeze client after transfer error
-    $client_db->unfreeze;
-    $pa_client_db->unfreeze;
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
             client => $pa_client,
@@ -400,9 +396,6 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 100,
             }});
     ok $res->{error}->{message_to_client} =~ /Request too frequent. Please try again later./, 'Too many attempts';
-
-    $client_db->unfreeze;
-    $pa_client_db->unfreeze;
 
     # sleep for 3 seconds as we have limit for 2 seconds
     sleep 3;
@@ -431,9 +424,6 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
             }});
     ok $res->{error}->{message_to_client} =~ /Invalid amount. Maximum withdrawal allowed is 50./, 'Amount greater than max withdrawal';
 
-    $client_db->unfreeze;
-    $pa_client_db->unfreeze;
-
     sleep 3;
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
             client => $pa_client,
@@ -444,9 +434,6 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 10,
             }});
     ok $res->{error}->{message_to_client} =~ /Invalid amount. Minimum withdrawal allowed is 20./, 'Amount less than min withdrawal';
-
-    $client_db->unfreeze;
-    $pa_client_db->unfreeze;
 }
 
 done_testing();
