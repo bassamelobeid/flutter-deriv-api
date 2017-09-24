@@ -480,7 +480,7 @@ acc(account_id,currency_code)  AS (SELECT id, currency_code
                       WHERE client_loginid=$1
                         AND currency_code=$2
                         FOR UPDATE),
-bets(id, sell_price, sell_time, chld, transaction_time, staff_loginid, remark, source, qv) AS (VALUES
+bets(id, sell_price, sell_time, chld, is_expired, transaction_time, staff_loginid, remark, source, qv) AS (VALUES
     ' . join(
         ",\n    ",
         map {
@@ -517,7 +517,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
                                     b.sell_price,
                                     b.sell_time,
                                     b.chld,
-                                    a.is_expired,
+                                    b.is_expired,
                                     b.transaction_time,
                                     b.staff_loginid,
                                     b.remark,
