@@ -57,8 +57,8 @@ sub save_config {
     die 'end_time is required'   unless $args{end_time};
 
     for (qw(start_time end_time)) {
-        $args->{$_} =~ s/^\s+|\s+$//g;
-        $args->{$_} = Date::Utility->new($args->{$_})->epoch;
+        $args{$_} =~ s/^\s+|\s+$//g;
+        $args{$_} = Date::Utility->new($args->{$_})->epoch;
     }
 
     foreach my $key (keys %args) {
@@ -85,10 +85,21 @@ sub save_config {
     }
 
     $existing_config->{$identifier} = \%args;
+    $self->_cleanup($existing_config);
 
     $self->chronicle_writer->set($namespace, $config_type, $existing_config, $self->recorded_date);
 
     return \%args;
+}
+
+sub _cleanup {
+    my ($self, $existing_configs) = @_;
+
+    foreach my $name (keys %$existing_configs) {
+        delete $existing_configs->{$name} if ($existing_configs->{$name}->{end_time} < $self->recorded_date->epoch);
+    }
+
+    return;
 }
 
 =head2 get_config
