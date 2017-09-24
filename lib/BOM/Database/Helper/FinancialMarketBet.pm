@@ -391,7 +391,25 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, t.id, (b.v_fmb).*, (b.v_trans).
 ) b
 LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AND t.action_type=$$buy$$
  ORDER BY acc.seq');
+        use Data::Dumper;
 
+        warn "params are:" . Dumper([
+                                                 $currency,                        # -- 2
+            $shortcode,                       # -- 3
+            $self->bet_data->{sell_price},    # -- 4
+            $self->bet_data->{sell_time},     # -- 5
+            $self->bet_data->{is_expired} // 1,    # -- 6
+            $self->bet_data->{absolute_barrier}
+            ? JSON::XS::encode_json(+{absolute_barrier => $self->bet_data->{absolute_barrier}})
+            : undef,                           # -- 7
+            $transdata->{transaction_time},    # -- 8
+            $transdata->{staff_loginid} ? ('#' . $transdata->{staff_loginid}) : undef,    # -- 9
+            $transdata->{remark} // '',                                                   # -- 10
+            $transdata->{source},                                                         # -- 11
+            $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,    # -- 12
+            map { $_->{client_loginid} } @{$self->account_data}                                                       # -- 13...
+
+                                    ]);
         $stmt->execute(
             $currency,                        # -- 2
             $shortcode,                       # -- 3
