@@ -517,7 +517,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
                                     b.sell_price,
                                     b.sell_time,
                                     b.chld,
-                                    b.is_expired,
+                                    a.is_expired,
                                     b.transaction_time,
                                     b.staff_loginid,
                                     b.remark,
