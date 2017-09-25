@@ -358,7 +358,6 @@ sub get_bid {
             $response->{status} = 'sold';
         }
 
-
         if (not $contract->may_settle_automatically
             and $contract->missing_market_data)
         {
