@@ -1,5 +1,26 @@
 package BOM::MarketData::FeedJump;
 
+use utf8;
+
+=encoding UTF-8
+
+=head1 NAME
+
+BOM::MarketData::FeedJump
+
+=head1 DESCRIPTION
+
+This acts as a dæmon which runs continuously, monitoring the feed.
+
+A jump is defined as a change in +/- 0.05% in the spot
+price over the last 20 ticks.
+
+When a jump is detected, we insert extra commission which will last for
+20 minutes. This is intended to guard against market events that we don't
+cover in the existing economic events.
+
+=cut
+
 use strict;
 use warnings;
 
