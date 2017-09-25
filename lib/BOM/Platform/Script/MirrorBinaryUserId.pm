@@ -49,7 +49,7 @@ sub update_clientdb {
 SELECT betonmarkets.update_binary_user_id(?::VARCHAR(12), ?::BIGINT)
 SQL
         unless ($res[0]) {
-            log_msg 0, "loginid $loginid has binary_user_id $binary_user_id but does not exist in clientdb\n";
+            log_msg 0, "loginid $loginid has binary_user_id $binary_user_id but does not exist in clientdb";
         }
         1;
     }
