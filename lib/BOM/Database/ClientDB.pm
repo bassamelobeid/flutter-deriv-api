@@ -74,7 +74,10 @@ sub _build_db {
     my $self = shift;
 
     my $domain = $environment->{$self->broker_code};
-    confess "No such domain with the broker code " . $self->broker_code . "\n" unless $domain;
+    # We are relying on the wording of this message in other places. If you are
+    # tempted to change anything here, please make sure to find those places and
+    # change them as well.
+    die "No such domain with the broker code " . $self->broker_code . "\n" unless $domain;
     my $type = $self->operation;
 
     my @db_params = (
