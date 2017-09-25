@@ -395,7 +395,6 @@ subtest 'sell a bet', sub {
                 barrier      => 'S0P',
         });
         my $txn;
-        warn "contract is_expired value is : " . $contract->is_expired;
         #note 'bid price: ' . $contract->bid_price;
         my $error = do {
             my $mocked           = Test::MockModule->new('BOM::Transaction');
