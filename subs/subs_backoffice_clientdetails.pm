@@ -544,7 +544,7 @@ sub get_s3_url {
 
     my $access_key = $document_auth_s3->{access_key};
     my $secret_key = $document_auth_s3->{secret_key};
-    my $region     = $document_auth_s3->{bucket_region};
+    my $region     = $document_auth_s3->{region};
     my $bucket     = $document_auth_s3->{bucket};
     my $expires_in = time + 60 * 5;
     my $method     = 'GET';
