@@ -350,14 +350,12 @@ sub get_bid {
             contract_type       => $contract->code,
         };
 
-        if ( !$is_sold ){
+        if (!$is_sold) {
             $response->{status} = 'open';
-          }
-        elsif($is_expired){
-          $response->{status} = $contract->value == $contract->payout ? "won" : "lost";
-        }
-        else{
-          $response->{status} = 'sold';
+        } elsif ($is_expired) {
+            $response->{status} = $contract->value == $contract->payout ? "won" : "lost";
+        } else {
+            $response->{status} = 'sold';
         }
 
 
