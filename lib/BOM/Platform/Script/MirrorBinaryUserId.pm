@@ -54,7 +54,12 @@ SQL
         1;
     }
     catch {
-        0;
+        # Certain loginids (like MT...) don't have a clientdb.
+        if (/^No such domain with the broker code /) {
+            1;
+        } else {
+            0;
+        }
     };
 }
 
