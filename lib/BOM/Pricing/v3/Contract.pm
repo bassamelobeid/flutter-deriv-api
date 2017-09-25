@@ -283,8 +283,8 @@ sub handle_batch_contract {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage, $landing_company) =
-        @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage landing_company/};
+    my ($short_code, $contract_id, $currency, $is_sold, $is_expired, $sell_time, $buy_price, $sell_price, $app_markup_percentage, $landing_company) =
+        @{$params}{qw/short_code contract_id currency is_sold is_expired sell_time buy_price sell_price app_markup_percentage landing_company/};
 
     my ($response, $contract, $bet_params);
     my $tv = [Time::HiRes::gettimeofday];
@@ -350,19 +350,16 @@ sub get_bid {
             contract_type       => $contract->code,
         };
 
-        if (   $is_sold
-            && $sell_price
-            && $sell_time
-            && $sell_price > 0
-            && $contract->payout > $sell_price
-            && $sell_time < $contract->date_expiry->epoch)
-        {
-            $response->{status} = 'sold';
-        } elsif ($contract->is_expired and $contract->is_settleable) {
-            $response->{status} = $contract->value == $contract->payout ? "won" : "lost";
-        } else {
+        if ( !$is_sold ){
             $response->{status} = 'open';
+          }
+        elsif($is_expired){
+          $response->{status} = $contract->value == $contract->payout ? "won" : "lost";
         }
+        else{
+          $response->{status} = 'sold';
+        }
+
 
         if (not $contract->may_settle_automatically
             and $contract->missing_market_data)
