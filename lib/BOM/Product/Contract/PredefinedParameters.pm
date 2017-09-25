@@ -363,15 +363,8 @@ sub _calculate_available_barriers {
     return $available_barriers;
 }
 
-sub _calculate_barriers {
-    my $args = shift;
-
-    my ($underlying, $trading_period) = @{$args}{qw(underlying trading_periods)};
-    my $key = join '_', ('barriers', $underlying->symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
-    my $cache = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
-
-    return from_json($cache) if $cache;
-
+sub _get_spot {
+    my ($underlying, $trading_period) = @_;
     my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
 
     unless ($tick) {
@@ -383,9 +376,21 @@ sub _calculate_barriers {
             . $underlying->symbol . ' at '
             . Date::Utility->new($trading_period->{date_start}->{epoch})->datetime;
     }
-    my $spot_at_start = $tick->quote;
+    return $tick->quote;
+}
+
+sub _calculate_barriers {
+    my $args = shift;
+
+    my ($underlying, $trading_period) = @{$args}{qw(underlying trading_periods)};
+    my $key = join '_', ('barriers', $underlying->symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
+    my $cache = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
+
+    return from_json($cache) if $cache;
+
     my $tiy = ($trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch}) / (365 * 86400);
 
+    my $spot_at_start = _get_spot($underlying, $trading_period);
     my @initial_barriers = map { _get_strike_from_call_bs_price($_, $tiy, $spot_at_start, 0.1) } (0.05, 0.95);
 
     # Split the boundaries barriers into 9 barriers by divided the distance of boundaries by 95 (45 each side) - to be used as increment.
