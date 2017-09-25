@@ -40,7 +40,7 @@ my @files;
 #regenerate request/cancel files
 if ($type eq 'request') {
     $request_file->generate_request_files($frequency);
-    my $file_identifier = ($frequency eq 'daily') ? 'd' : $frequency eq 'oneshot' ? 'os' : 'ad';
+    my $file_identifier = ($frequency eq 'scheduled') ? 'd' : $frequency eq 'oneshot' ? 'os' : 'ad';
     @files = map { $file_identifier . '_' . $_ } @{$request_file->master_request_files};
 } elsif ($type eq 'cancel') {
     $request_file->generate_cancel_files($frequency);
