@@ -37,8 +37,14 @@ sub add_upload_info {
     $upload_info->{put_future} = $c->s3->put_object(
        key   => $file_name,
        value => sub {
-            my $f = shift @{$upload_info->{pending_futures}};
+            my ($f) = @{$upload_info->{pending_futures}};
+
             push @{$upload_info->{pending_futures}}, $f = $c->loop->new_future unless $f;
+
+            $f->on_ready(sub {
+                shift @{$upload_info->{pending_futures}};
+            });
+
             return $f;
         },
        value_length => $file_size,
