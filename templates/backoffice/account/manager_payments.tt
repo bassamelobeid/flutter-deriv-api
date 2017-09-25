@@ -93,7 +93,7 @@
             <option value="adjustment"          >Adjustment</option>
             <option value="cash_transfer"       >Western Union</option>
             <option value="arbitrary_markup"    >Arbitrary Markup Payment</option>
-            <option value="bitcoin_deposit"     >Bitcoin Deposit</option>
+            <option value="crypto_deposit"      >Crypto Deposit</option>
             <option value="test_account"        >Test Account</option>
             <option value="commission_paid"     >Commission Paid</option>
         </select>
