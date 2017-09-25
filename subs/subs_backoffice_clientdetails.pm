@@ -6,6 +6,9 @@ use Encode;
 use Format::Util::Strings qw( set_selected_item );
 use Date::Utility;
 use Brands;
+use Digest::SHA qw/hmac_sha1_base64/;
+use URI::Encode;
+
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -326,7 +329,6 @@ sub show_client_id_docs {
     my $show_delete = $args{show_delete};
     my $extra       = $args{no_edit} ? 'disabled' : '';
     my $links       = '';
-    my $loginid     = $client->loginid;
 
     return unless $loginid;
 
@@ -361,7 +363,7 @@ sub show_client_id_docs {
         $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
         $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
 
-        my $url = request()->url_for("backoffice/download_document.cgi?path=$file_name");
+        my $url = get_s3_url($file_name);
         $links .= qq{<tr><td><a href="$url">$file_name</a></td><td>$input};
         if ($show_delete && !$args{no_edit}) {
             $url .= qq{&loginid=$loginid&doc_id=$id&deleteit=yes};
@@ -533,4 +535,31 @@ sub get_untrusted_types {
     ];
 }
 
+sub get_s3_url {
+    my $file_path = shift;
+
+    my $uri = URI::Encode->new( { encode_reserved => 1 } );
+
+    my $document_auth_s3 = BOM::Backoffice::Config::config->{document_auth_s3};
+
+    my $access_key = $document_auth_s3->{access_key};
+    my $secret_key = $document_auth_s3->{secret_key};
+    my $region = $document_auth_s3->{bucket_region};
+    my $bucket = $document_auth_s3->{bucket};
+    my $expires_in = time + 60 * 5;
+    my $method = 'GET';
+
+    my $signature = hmac_sha1_base64("$method\n\n\n$expires_in\n/$bucket/$file_path", $secret_key);
+
+    while (length($signature) % 4) {
+        $signature .= '=';
+    }
+
+    $access_key = $uri->encode($access_key);
+    $signature = $uri->encode($signature);
+
+    my $query = "AWSAccessKeyId=$access_key&Expires=$expires_in&Signature=$signature";
+
+    return "https://s3-$region.amazonaws.com/$bucket/$file_path?$query";
+}
 1;
