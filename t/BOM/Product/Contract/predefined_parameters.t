@@ -7,6 +7,7 @@ use Test::More;
 use Test::Deep;
 use Test::Warnings;
 
+use Cache::RedisDB;
 use List::Util qw(first);
 use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
@@ -273,6 +274,13 @@ sub setup_ticks {
             epoch      => $date->epoch,
             $quote ? (quote => $quote) : (),
         });
+        # simulate distributor work
+        if ($quote) {
+            Cache::RedisDB->set_nw('Distributor::QUOTE', $symbol, {
+                quote => $quote,
+                epcoh => $date->epoch,
+            });
+        }
     }
 }
 

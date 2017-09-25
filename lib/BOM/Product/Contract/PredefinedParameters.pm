@@ -365,18 +365,36 @@ sub _calculate_available_barriers {
 
 sub _get_spot {
     my ($underlying, $trading_period) = @_;
-    my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
-
-    unless ($tick) {
-        # If spot at requested time is not present, we will use current spot.
-        # This should not happen in production, it is for QA purposes.
-        warn "using current tick to calculate barrier for period [$trading_period->{date_start}->{date} - $trading_period->{date_expiry}->{date}]";
-        $tick = $underlying->spot_tick
-            or die 'Could not retrieve tick for '
-            . $underlying->symbol . ' at '
-            . Date::Utility->new($trading_period->{date_start}->{epoch})->datetime;
+    my $spot;
+    my $date_start = Date::Utility->new($trading_period->{date_start}->{epoch});
+    # special handling at for barriers, which start at Monday at 00:00:00
+    # caused by our tick storage misdesign: ticks are available only for
+    # trading hours, meanwhile we have ticks from providers sinse Sunday 22:00.
+    # So, ticks will be taken directly from feed-redis.
+    my $realtime = (time - $trading_period->{date_start}->{epoch} < 2);
+    my $take_from_distributor =
+           $realtime
+        && ($date_start->day_of_week == 1)
+        && ($date_start->time_hhmmss eq '00:00:00');
+    if ($take_from_distributor) {
+        if (my $tick = Cache::RedisDB->get('Distributor::QUOTE', $underlying->symbol)) {
+            $spot = $tick->{quote};
+        }
+    } else {
+        my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
+        unless ($tick) {
+            # If spot at requested time is not present, we will use current spot.
+            # This should not happen in production, it is for QA purposes.
+            warn
+                "using current tick to calculate barrier for period [$trading_period->{date_start}->{date} - $trading_period->{date_expiry}->{date}]";
+            $tick = $underlying->spot_tick;
+        }
+        $spot = $tick->quote if $tick;
     }
-    return $tick->quote;
+    if (!defined $spot) {
+        die 'Could not retrieve tick for ' . $underlying->symbol . ' at ' . $date_start->datetime;
+    }
+    return $spot;
 }
 
 sub _calculate_barriers {
