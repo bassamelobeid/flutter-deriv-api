@@ -262,8 +262,8 @@ subtest 'create account' => sub {
             "create $broker_code account OK, after verify email";
 
             ($real_client, $social_login_user) = @{$real_acc}{qw/client user/};
-            is($social_login_user,   1,            "Social login user with residence $social_login_user->residence has been created");
-            is($real_client->broker, $broker_code, "Successfully created real account $real_client->loginid");
+            is(defined $social_login_user, 1,            "Social login user with residence $social_login_user->residence has been created");
+            is($real_client->broker,       $broker_code, "Successfully created real account $real_client->loginid");
         } elsif ($broker_code eq 'JP') {
             #Social login user isn't able to create JP account
             $real_acc = BOM::Platform::Account::Real::japan::create_account({
@@ -288,8 +288,8 @@ subtest 'create account' => sub {
             "create $broker_code account OK, after verify email";
 
             ($real_client, $social_login_user) = @{$real_acc}{qw/client user/};
-            is($social_login_user,   1,            "Social login user with residence $social_login_user->residence has been created");
-            is($real_client->broker, $broker_code, "Successfully created real account $real_client->loginid");
+            is(defined $social_login_user, 1,            "Social login user with residence $social_login_user->residence has been created");
+            is($real_client->broker,       $broker_code, "Successfully created real account $real_client->loginid");
         }
     }
 };
