@@ -70,7 +70,8 @@ sub print_client_details {
             client        => $client,
             search_option => 'ProveID_KYC'
         );
-
+        
+        my $user = BOM::Platform::User->new({loginid => $client->loginid});
         my $siblings = $user->loginid;
 
         $show_uploaded_documents .= show_client_id_docs($_->loginid, show_delete => 1) for $client;
@@ -337,6 +338,8 @@ sub show_client_id_docs {
 
     return unless $loginid;
 
+    return '' if $loginid =~ /^MT/;
+
     my $client = Client::Account->new({
         loginid      => $loginid,
         db_operation => 'replica',
@@ -367,7 +370,14 @@ sub show_client_id_docs {
             ($file_name) = $document_file =~ m[clientIDscans/\w+/(.+)$];
             $download_file = $client->broker . "/$file_name";
             my $date = $doc->expiration_date || '';
-            $date = Date::Utility->new($date)->date_yyyymmdd if $date;
+            if ($date) {
+                eval {
+                    my $formatted = Date::Utility->new($date)->date_yyyymmdd;
+                    $date = $formatted;
+                } or do {
+                    warn "Invalid date, using original information: $date\n";
+                    }
+            }
             my $comments    = $doc->comments;
             my $document_id = $doc->document_id;
             $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
