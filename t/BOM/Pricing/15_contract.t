@@ -424,7 +424,7 @@ subtest 'get_bid' => sub {
             status
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
-    is($result->{status}, 'lost', 'get the right status');
+    is($result->{status}, 'open', 'get the right status');
     $contract = _create_contract();
 
     $params = {
@@ -437,7 +437,7 @@ subtest 'get_bid' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
 
     cmp_bag([sort keys %{$result}], [sort @expected_keys], 'keys of result is correct');
-    is($result->{status}, 'lost', 'get the right status');
+    is($result->{status}, 'open', 'get the right status');
 };
 
 subtest 'get_bid_skip_barrier_validation' => sub {
