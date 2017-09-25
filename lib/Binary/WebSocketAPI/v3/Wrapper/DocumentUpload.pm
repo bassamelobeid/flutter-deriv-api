@@ -6,21 +6,6 @@ use warnings;
 use Try::Tiny;
 use Digest::SHA1;
 
-use IO::Async::Loop::Mojo;
-use Net::Async::Webservice::S3;
-
-my $loop = IO::Async::Loop::Mojo->new();
-
-my $s3_bucket = 'qa-upload-test';
-
-my $s3 = Net::Async::Webservice::S3->new(
-        access_key => $ENV{AWS_KEY},
-        secret_key => $ENV{AWS_SECRET},
-        bucket     => $s3_bucket,
-        );
-
-$loop->add( $s3 );
-
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
     my $args = $req_storage->{origin_args};
@@ -35,6 +20,8 @@ sub add_upload_info {
 
     my @pending_futures = ();
 
+    my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
+
     my $upload_info = {
             %{$call_params},
             file_id        => $rpc_response->{file_id},
@@ -43,11 +30,11 @@ sub add_upload_info {
             file_size      => $file_size,
             sha1           => Digest::SHA1->new,
             received_bytes => 0,
-            document_path  => "$s3_bucket/$file_name",
+            document_path  => "$s3_config->{bucket}/$file_name",
             pending_futures=> \@pending_futures,
         };
 
-    $upload_info->{put_future} = $s3->put_object(
+    $upload_info->{put_future} = $c->{s3}->put_object(
        key   => $file_name,
        value => sub {
             my $f = shift @{$upload_info->{pending_futures}};
