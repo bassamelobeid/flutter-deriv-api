@@ -47,23 +47,24 @@ sub callback {
     my $user_connect  = BOM::Database::Model::UserConnect->new;
     my $user_id       = $user_connect->get_user_id_by_connect($provider_data);
 
+    my $email = _get_email($provider_data);
+    my $user  = try {
+        BOM::Platform::User->new({email => $email})
+    };
+    # Registered users who have email/password based account are forbidden
+    # from social signin. As only one login method
+    # is allowed (either email/password or social login).
+    if ($user and not $user->has_social_signup) {
+        # Redirect client to login page if social signup flag is not found.
+        # As the main purpose of this package is to serve
+        # clients with social login only.
+        $c->session('_oneall_error', localize("Invalid login attempt. Please log in with your email and password instead."));
+        return $c->redirect_to($redirect_uri);
+    }
+
     # Create virtual client if user not found
     # consequently initialize user_id and link account to social login.
     unless ($user_id) {
-        my $email = _get_email($provider_data);
-        my $user  = try {
-            BOM::Platform::User->new({email => $email})
-        };
-        # Registered users who have email/password based account are forbidden
-        # from social signin. As only one login method
-        # is allowed (either email/password or social login).
-        if ($user and not $user->has_social_signup) {
-            # Redirect client to login page if social signup flag is not found.
-            # As the main purpose of this package is to serve
-            # clients with social login only.
-            $c->session('_oneall_error', localize("Invalid login attempt. Please log in with your email and password instead."));
-            return $c->redirect_to($redirect_uri);
-        }
         # create user based on email by fly if account does not exist yet
         $user = $c->__create_virtual_user($email) unless $user;
         # connect oneall provider data to user identity
