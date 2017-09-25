@@ -9,7 +9,7 @@ use Mojo::Redis2;
 use BOM::Platform::QuantsConfig;
 use BOM::Platform::Chronicle;
 use Quant::Framework::EconomicEventCalendar;
-use BOM::MarketData qw(create_underlying_db);
+use LandingCompany::Offerings qw(get_offerings_flyby);
 
 use Try::Tiny;
 use namespace::autoclean;
@@ -34,7 +34,9 @@ sub BUILD {
     );
     $self->_eec($eec);
 
-    my %symbols = map { $_ => 1 } create_underlying_db->symbols_for_intraday_fx;
+    # we are only concern about the 9 forex pairs where we offer multi-barrier trading on.
+    my $fb = get_offerings_flyby({}, 'japan');
+    my %symbols = map { $_ => 1 } $fb->values_for_key('underlying_symbol');
     $self->_symbols_to_perform_check(\%symbols);
 
     return;
