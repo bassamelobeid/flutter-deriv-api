@@ -659,31 +659,34 @@ if ($link_acc) {
     print $link_acc;
 }
 
-my $user      = BOM::Platform::User->new({email => $client->email});
-my $siblings  = $user->loginid_details;
-my @mt_logins = $user->mt5_logins;
+my $user = BOM::Platform::User->new({loginid => $client->loginid});
+my $siblings;
+if ($user) {
+    $siblings = $user->loginid_details;
+    my @mt_logins = $user->mt5_logins;
 
-if ($siblings or @mt_logins > 0) {
-    print "<p>Corresponding accounts: </p><ul>";
+    if ($siblings or @mt_logins > 0) {
+        print "<p>Corresponding accounts: </p><ul>";
 
-    # show all BOM loginids for user, include disabled acc
-    foreach my $lid (sort keys %$siblings) {
-        next if ($lid eq $client->loginid);
-        my $link_href = request()->url_for(
-            'backoffice/f_clientloginid_edit.cgi',
-            {
-                broker  => $siblings->{$lid}->{broker_code},
-                loginID => $lid,
-            });
-        print "<li><a href='$link_href'>" . encode_entities($lid) . "</a></li>";
+        # show all BOM loginids for user, include disabled acc
+        foreach my $lid (sort keys %$siblings) {
+            next if ($lid eq $client->loginid);
+            my $link_href = request()->url_for(
+                'backoffice/f_clientloginid_edit.cgi',
+                {
+                    broker  => $siblings->{$lid}->{broker_code},
+                    loginID => $lid,
+                });
+            print "<li><a href='$link_href'>" . encode_entities($lid) . "</a></li>";
+        }
+
+        # show MT5 a/c
+        foreach my $mt_ac (@mt_logins) {
+            print "<li>" . encode_entities($mt_ac) . "</li>";
+        }
+
+        print "</ul>";
     }
-
-    # show MT5 a/c
-    foreach my $mt_ac (@mt_logins) {
-        print "<li>" . encode_entities($mt_ac) . "</li>";
-    }
-
-    print "</ul>";
 }
 
 my $log_args = {
