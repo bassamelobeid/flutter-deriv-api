@@ -318,6 +318,7 @@ sub get_account_status {
     my $user = BOM::Platform::User->new({email => $client->email});
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->check_trade_status($client);
 
+    push @status, 'social_signup' if $user->has_social_signup;
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();
     $financial_assessment = ref($financial_assessment) ? from_json($financial_assessment->data || '{}') : {};
