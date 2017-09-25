@@ -40,7 +40,7 @@ sub update_clientdb {
     my $row = shift;
     my ($binary_user_id, $loginid) = @$row;
 
-    log_msg 2, "setting binary_user_id=$binary_user_id for $loginid";
+    log_msg 2, "setting binary_user_id=" . ($binary_user_id // "NULL") . " for $loginid";
     return try {
         my $dbh = BOM::Database::ClientDB->new({
                 client_loginid => $loginid,
