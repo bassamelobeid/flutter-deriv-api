@@ -1,15 +1,13 @@
 package BOM::Backoffice::Script::Riskd;
 
 use Moose;
-with 'App::Base::Daemon';
+no indirect;
 
-use lib qw(/home/git/regentmarkets/bom-backoffice/lib/);
 use Time::Duration::Concise::Localize;
 use BOM::Platform::Runtime;
 
 use BOM::RiskReporting::Dashboard;
 use BOM::RiskReporting::MarkedToModel;
-no indirect;
 use Try::Tiny;
 
 has rest_period => (
@@ -22,11 +20,7 @@ sub _build_rest_period {
     return Time::Duration::Concise::Localize->new(interval => '37s');
 }
 
-sub documentation {
-    return qq/This daemon generates live risk reports./;
-}
-
-sub daemon_run {
+sub run {
     my $self = shift;
 
     while (1) {
@@ -57,12 +51,6 @@ sub rest {
     sleep($how_long->seconds);
 
     return;
-}
-
-sub handle_shutdown {
-    my $self = shift;
-    warn('Shutting down.');
-    return 0;
 }
 
 no Moose;

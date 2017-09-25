@@ -93,22 +93,34 @@ TK:
 - TSE_S
 AU:
 - AUD
+AR:
+- ARS
 BZ:
 - BRL
 CA:
 - CAD
+CH:
+- CNY
 CZ:
 - CZK
 EU:
 - EUR
+EC:
+- EUR
+FR:
+- EUR
 GB:
 - GBP
+GE:
+- EUR
 HK:
 - HKD
 ID:
 - IDR
 IN:
 - INR
+IT:
+- EUR
 JN:
 - JPY
 MX:
@@ -137,5 +149,7 @@ TU:
 - TRY
 UA:
 - AED
+UK:
+- GBP
 US:
 - USD
