@@ -70,7 +70,7 @@ sub print_client_details {
             client        => $client,
             search_option => 'ProveID_KYC'
         );
-        
+
         my $user = BOM::Platform::User->new({loginid => $client->loginid});
         my $siblings = $user->loginid;
 
