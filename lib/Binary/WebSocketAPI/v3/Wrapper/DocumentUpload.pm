@@ -34,11 +34,11 @@ sub add_upload_info {
             pending_futures=> \@pending_futures,
         };
 
-    $upload_info->{put_future} = $c->{s3}->put_object(
+    $upload_info->{put_future} = $c->s3->put_object(
        key   => $file_name,
        value => sub {
             my $f = shift @{$upload_info->{pending_futures}};
-            push @{$upload_info->{pending_futures}}, $f = $loop->new_future unless $f;
+            push @{$upload_info->{pending_futures}}, $f = $c->loop->new_future unless $f;
             return $f;
         },
        value_length => $file_size,
@@ -183,7 +183,7 @@ sub upload_chunk {
 
     my ($f) = grep { not $_->is_ready } @{$upload_info->{pending_futures}};
 
-    push $upload_info->{pending_futures}, $f = $loop->new_future unless $f;
+    push $upload_info->{pending_futures}, $f = $c->loop->new_future unless $f;
 
     $f->done($data);
 
