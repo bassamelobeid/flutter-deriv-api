@@ -12,26 +12,14 @@ Determine a value for our curent open positions at risk.
 
 use Moose;
 use BOM::Platform::Runtime;
-use lib qw(/home/git/regentmarkets/bom-backoffice/lib/ /home/git/regentmarkets/bom-market/lib/);
 use BOM::RiskReporting::ScenarioAnalysis;
-with 'App::Base::Script';
 
-sub script_run {
+sub run {
     my $self = shift;
 
     BOM::RiskReporting::ScenarioAnalysis->new->generate;
 
     return 0;
-}
-
-sub documentation {
-    return qq{
-This script creates  risk analysis scenarios for open contracts.
-    };
-}
-
-sub cli_template {
-    return $0;
 }
 
 no Moose;
