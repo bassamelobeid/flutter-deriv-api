@@ -9,7 +9,8 @@ use JSON::XS ();
 use Carp;
 
 has 'account_data' => (
-    is  => 'rw',    isa => 'HashRef|ArrayRef',
+    is  => 'rw',
+    isa => 'HashRef|ArrayRef',
 );
 
 # this will end up being either a BOM::Database::Model::FinancialMarketBetOpen or a BOM::Database::Model::FinancialMarketBet
