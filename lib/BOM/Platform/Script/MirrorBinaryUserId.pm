@@ -139,6 +139,8 @@ sub run {
             sleep TMOUT;
         };
     }
+
+    return;
 }
 
 1;
