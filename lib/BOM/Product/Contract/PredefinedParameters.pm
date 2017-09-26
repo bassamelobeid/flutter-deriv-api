@@ -377,10 +377,12 @@ sub _get_spot {
         && ($date_start->day_of_week == 1)
         && ($date_start->time_hhmmss eq '00:00:00');
     if ($take_from_distributor) {
-        if (my $tick = Cache::RedisDB->get('Distributor::QUOTE', $underlying->symbol)) {
-            $spot = $tick->{quote};
+        my $redis = BOM::Platform::RedisReplicated::redis_read();
+        if (my $tick_json = $redis->get('Distributor::QUOTE::' . $underlying->symbol)) {
+            $spot = decode_json($tick_json)->{quote};
         }
-    } else {
+    }
+    if ($take_from_distributor || !$spot) {
         my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
         unless ($tick) {
             # If spot at requested time is not present, we will use current spot.
