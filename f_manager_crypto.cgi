@@ -193,28 +193,30 @@ if ($view_action eq 'withdrawals') {
     my $trxns = $dbh->selectall_arrayref(
         "SELECT * FROM payment.ctc_bo_get_deposit(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
         {Slice => {}},
-        $currency, uc $view_type
+        $currency,
+        uc $view_type
+
     );
     $display_transactions->($trxns);
 
 } elsif ($view_action eq 'search') {
     my $search_type  = request()->param('search_type');
     my $search_query = request()->param('search_query');
-    my $trxns;
     Bar("SEARCH RESULT FOR $search_query");
 
     code_exit_BO("Invalid type of search request.")
         unless grep { $search_type eq $_ } qw/loginid address/;
 
+    my $trxns;
     # Fetch all transactions matching specified searching details
     $trxns = (
-        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, NULL, NULL, NULL, NULL)",    {Slice => {}}, $search_query),
-        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query)
+        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?)",    {Slice => {}}, $search_query),
+        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?)", {Slice => {}}, $search_query),
     ) if ($search_type eq 'address');
 
     $trxns = (
-        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, NULL, NULL, NULL, NULL)",    {Slice => {}}, $search_query),
-        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query)
+        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(?)",    {Slice => {}}, $search_query),
+        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?)", {Slice => {}}, $search_query),
     ) if ($search_type eq 'loginid');
     $display_transactions->($trxns);
 
