@@ -60,8 +60,7 @@ $args->{document_type}   = "passport";
 $args->{document_format} = "jpg";
 
 # Error for no document_id
-$c->call_ok($method, $params)
-    ->has_error->error_message_is('Document ID is required.', 'document_id is required');
+$c->call_ok($method, $params)->has_error->error_message_is('Document ID is required.', 'document_id is required');
 
 $args->{document_id} = "ABCD1234";
 my $result = $c->call_ok($method, $params)->result;
