@@ -396,7 +396,7 @@ user=write
 dbname=users_test
 CONF
 
-        write_file $pgpass_conf, <<<"CONF";
+        write_file $pgpass_conf, <<"CONF";
 $cfg->{ip}:5436:users_test:write:$cfg->{password}
 CONF
 
