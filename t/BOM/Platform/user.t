@@ -388,7 +388,7 @@ subtest 'MirrorBinaryUserId' => sub {
     my $pgpass_conf = "/tmp/pgpass.conf.$$";
     my $dbh;
     lives_ok {
-        write_file $pgservice_conf, <<<"CONF";
+        write_file $pgservice_conf, <<"CONF";
 [user01]
 host=$cfg->{ip}
 port=5436
