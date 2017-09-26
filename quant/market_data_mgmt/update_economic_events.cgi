@@ -39,13 +39,11 @@ if (request()->param('update_event')) {
 ## Add new economic event
 if (request()->param('save_event')) {
     my $param = {
-        symbol                 => request()->param('symbol'),
-        impact                 => request()->param('impact'),
-        event_name             => request()->param('event_name'),
-        source                 => request()->param('source'),
-        is_tentative           => request()->param('is_tentative'),
-        estimated_release_date => (request()->param('estimated_release_date') || 0),
-        release_date           => (request()->param('release_date') || 0),
+        symbol       => request()->param('symbol'),
+        impact       => request()->param('impact'),
+        event_name   => request()->param('event_name'),
+        source       => request()->param('source'),
+        release_date => (request()->param('release_date') || 0),
     };
     print to_json(BOM::Backoffice::EconomicEventTool::save_new_event($param));
 }
