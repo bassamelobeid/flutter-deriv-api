@@ -33,6 +33,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
+use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 BOM::Backoffice::Sysinit::init();
@@ -188,7 +189,6 @@ if ($input{whattodo} eq 'uploadID') {
     my $cgi            = CGI->new;
     my $docnationality = $cgi->param('docnationality');
     my $result         = "";
-    my $used_doctypes  = {};                              #we need to keep list of used doctypes to provide for them uniq filenames
 
     foreach my $i (1 .. 4) {
         my $doctype         = $cgi->param('doctype_' . $i);
@@ -250,43 +250,27 @@ if ($input{whattodo} eq 'uploadID') {
             next;
         }
 
-        my $path = "$dbloc/clientIDscans/$broker";
+        my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+        my $dbh = $clientdb->db->dbh;
 
-        if (not -d $path) {
-            system("mkdir -p $path");
-        }
+        my ($id) = $dbh->selectrow_array(
+            "SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            {Slice => {}},
+            $loginid, $doctype, $docformat, '', $expiration_date, 'ID_DOCUMENT', $document_id || '',
+            '', 'uploaded'
+        );
 
-        # we use N seconds after current time, where N is number of same type documents uploaded before
-        # we don't flag such files with anything different (like _1) for it not to affect any other legacy code
-        my $time = time() + $used_doctypes->{$doctype}++;
+        my ($doc) = $client->find_client_authentication_document(query => [id => $id]);
 
-        my $new_file_name     = "$loginid.$doctype.$time.$docformat";
-        my $new_document_path = "$path/$new_file_name";
-        copy($filetoupload, $new_document_path) or die "[$0] could not copy uploaded file to $new_document_path: $!";
-        my $filesize = (stat $new_document_path)[7];
+        my $new_file_name = "$loginid.$doctype.$id.$docformat";
 
-        my $upload_submission = {
-            document_type              => $doctype,
-            document_format            => $docformat,
-            document_path              => $path,
-            file_name                  => $new_file_name,
-            authentication_method_code => 'ID_DOCUMENT',
-            expiration_date            => $expiration_date,
-            document_id                => $document_id,
-            comments                   => $comments,
-            status                     => 'uploaded',
-        };
+        BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload) or die "Upload failed for $filetoupload";
 
-        #needed because CR based submissions don't return a result when an empty string is submitted in expiration_date;
-        if ($expiration_date eq '') {
-            delete $upload_submission->{'expiration_date'};
-        }
+        $doc->{file_name} = $new_file_name;
 
-        $client->add_client_authentication_document($upload_submission);
+        die "Cannot record uploaded file $filetoupload in the db" unless $doc->save();
 
-        $client->save;
-
-        $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_document_path is uploaded (filesize $filesize).</p><br />";
+        $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
     }
     print $result;
 }
