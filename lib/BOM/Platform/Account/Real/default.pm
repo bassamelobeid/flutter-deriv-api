@@ -131,12 +131,7 @@ sub after_register_client {
         $client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
         $client->save;
     }
-    # will bring social signup status to new client
-    #  when virtual client had created account with social login
-    if ($from_client and $from_client->get_status('social_signup')) {
-        $client->set_status('social_signup', 'system', '1');
-        $client->save;
-    }
+
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
 

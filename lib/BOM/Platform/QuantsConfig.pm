@@ -57,8 +57,8 @@ sub save_config {
     die 'end_time is required'   unless $args{end_time};
 
     for (qw(start_time end_time)) {
-        $args->{$_} =~ s/^\s+|\s+$//g;
-        $args->{$_} = Date::Utility->new($args->{$_})->epoch;
+        $args{$_} =~ s/^\s+|\s+$//g;
+        $args{$_} = Date::Utility->new($args->{$_})->epoch;
     }
 
     foreach my $key (keys %args) {
@@ -85,10 +85,21 @@ sub save_config {
     }
 
     $existing_config->{$identifier} = \%args;
+    $self->_cleanup($existing_config);
 
     $self->chronicle_writer->set($namespace, $config_type, $existing_config, $self->recorded_date);
 
     return \%args;
+}
+
+sub _cleanup {
+    my ($self, $existing_configs) = @_;
+
+    foreach my $name (keys %$existing_configs) {
+        delete $existing_configs->{$name} if ($existing_configs->{$name}->{end_time} < $self->recorded_date->epoch);
+    }
+
+    return;
 }
 
 =head2 get_config
@@ -106,7 +117,8 @@ sub get_config {
     my $existing_config = $self->chronicle_reader->$method($namespace, $config_type, $self->for_date) // {};
     return [values %$existing_config] unless $args;
 
-    my ($foreign_curr, $domestic_curr) = $args->{underlying_symbol} =~ /^frx(\w{3})(\w{3})$/;
+    my ($foreign_curr, $domestic_curr) = $args->{underlying_symbol} =~ /^(?:frx|(?=WLD))(\w{3})(\w{3})$/;
+
     my @match;
     foreach my $key (keys %$existing_config) {
         my $config = $existing_config->{$key};

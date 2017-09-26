@@ -136,6 +136,33 @@ subtest 'get_config with bias' => sub {
             underlying_symbol => 'frxEURUSD'
         });
     ok !@$configs, 'no config for CALLE if config matches domestic currency';
+    $configs = $qc->get_config(
+        'commission',
+        {
+            contract_type     => 'CALL',
+            underlying_symbol => 'WLDUSD'
+        });
+    ok !@$configs, 'no config for WLDUSD, no warnings as well';
+};
+
+subtest '_cleanup' => sub {
+    clear_config();
+    my $hour_before = time - 3600;
+    my $args        = {
+        underlying_symbol => 'frxUSDJPY',
+        name              => 'test',
+        start_time        => $hour_before,
+        end_time          => $hour_before + 3599,
+        partitions        => [{cap_rate => 0.3}],
+    };
+    $qc->save_config('commission', $args);
+    my $configs = $qc->get_config(
+        'commission',
+        {
+            underlying_symbol => 'frxUSDJPY',
+            contract_type     => 'CAlle'
+        });
+    ok !@$configs, 'it did not get saved';
 };
 
 sub clear_config {
