@@ -149,6 +149,7 @@
                         if (event.error) {
                             result.text(event.error).css('color', 'red');
                         } else {
+                            result.text('Event Saved. ID: '+event.id).css('color', 'green');
                             appendEvent(event, 'scheduled_event_list');
                         }
                     }
