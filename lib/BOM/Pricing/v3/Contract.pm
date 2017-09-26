@@ -283,8 +283,8 @@ sub handle_batch_contract {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold, $is_expired, $sell_time, $buy_price, $sell_price, $app_markup_percentage, $landing_company) =
-        @{$params}{qw/short_code contract_id currency is_sold is_expired sell_time buy_price sell_price app_markup_percentage landing_company/};
+    my ($short_code, $contract_id, $currency, $is_sold, $is_expired, $sell_time, $app_markup_percentage, $landing_company) =
+        @{$params}{qw/short_code contract_id currency is_sold is_expired sell_time app_markup_percentage landing_company/};
 
     my ($response, $contract, $bet_params);
     my $tv = [Time::HiRes::gettimeofday];
@@ -312,7 +312,7 @@ sub get_bid {
                 message_to_client => localize('Cannot create contract')});
     };
     return $response if $response;
-
+s
     if ($contract->is_legacy) {
         return BOM::Pricing::v3::Utility::create_error({
             message_to_client => localize($contract->longcode),
