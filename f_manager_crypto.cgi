@@ -208,13 +208,13 @@ if ($view_action eq 'withdrawals') {
 
     # Fetch all transactions matching specified searching details
     @trxns = (
-        @{$dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?)", {Slice => {}}, $search_query)},
-        @{$dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?)",    {Slice => {}}, $search_query)},
+        @{$dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, ?)", {Slice => {}}, $search_query, $currency)},
+        @{$dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, ?)",    {Slice => {}}, $search_query, $currency)},
     ) if ($search_type eq 'address');
 
     @trxns = (
-        @{$dbh->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_withdrawal(?)', {Slice => {}}, $search_query)},
-        @{$dbh->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_deposit(?)',    {Slice => {}}, $search_query)},
+        @{$dbh->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, ?)', {Slice => {}}, $search_query, $currency)},
+        @{$dbh->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, ?)',    {Slice => {}}, $search_query, $$currency)},
     ) if ($search_type eq 'loginid');
 
     $display_transactions->(\@trxns);
