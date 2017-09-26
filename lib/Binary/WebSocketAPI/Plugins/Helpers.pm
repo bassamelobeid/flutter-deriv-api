@@ -229,7 +229,11 @@ sub register {
         s3 => sub {
             my ($c) = @_;
             $c->stash->{s3} //= do {
-                $c->loop->add(my $s3 = Net::Async::Webservice::S3->new({%{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)}, max_retries => 1}));
+                $c->loop->add(
+                    my $s3 = Net::Async::Webservice::S3->new(
+                        %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)},
+                        max_retries => 1,
+                    ));
                 $s3;
                 }
         });
