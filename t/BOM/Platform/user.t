@@ -395,11 +395,11 @@ subtest 'MirrorBinaryUserId' => sub {
 host=$cfg->{ip}
 port=5436
 user=write
-dbname=users_test
+dbname=users$ENV{DB_POSTFIX}
 CONF
 
         write_file $pgpass_conf, <<"CONF";
-$cfg->{ip}:5436:users_test:write:$cfg->{password}
+$cfg->{ip}:5436:users$ENV{DB_POSTFIX}:write:$cfg->{password}
 CONF
         chmod 0400, $pgpass_conf;
 
