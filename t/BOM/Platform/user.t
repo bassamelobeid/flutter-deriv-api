@@ -7,7 +7,7 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 10;
+use Test::More tests => 11;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
 use Test::Warnings;
@@ -368,4 +368,44 @@ subtest 'Champion fx users' => sub {
         is $user_ch->email,    $email_ch, 'email ok';
         is $user_ch->password, $hash_pwd, 'password ok';
     };
+};
+
+sub write_file {
+    my ($name, $content) = @_;
+
+    open my $f, '>', $name or die "Cannot open $name for write: $!";
+    print $f $content or die "Cannot write $name: $!";
+    close $f die "Cannot write/close $name: $!";
+    return;
+}
+
+subtest 'MirrorBinaryUserId' => sub {
+    use YAML::XS qw/LoadFile/;
+    use BOM::Platform::Script::MirrorBinaryUserId;
+
+    my $cfg = LoadFile '/etc/rmg/userdb.yml';
+    my $pgservice_conf = "/tmp/pgservice.conf.$$";
+    my $pgpass_conf = "/tmp/pgpass.conf.$$";
+    my $dbh;
+    lives_ok {
+        write_file $pgservice_conf, <<<"CONF";
+[user01]
+host=$cfg->{ip}
+port=5436
+user=write
+dbname=users_test
+CONF
+
+        write_file $pgpass_conf, <<<"CONF";
+$cfg->{ip}:5436:users_test:write:$cfg->{password}
+CONF
+
+        @ENV{/PGSERVICEFILE PGPASSFILE/} = ($pgservice_conf, $pgpass_conf);
+
+        $dbh = BOM::Platform::Script::MirrorBinaryUserId::userdb;
+    }
+    'setup';
+
+
+    note explain $dbh->selectall_arrayref('SELECT * FROM q.add_loginid');
 };
