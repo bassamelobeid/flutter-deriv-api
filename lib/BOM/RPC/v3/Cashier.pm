@@ -507,6 +507,15 @@ sub paymentagent_transfer {
     my $fm_client_db = BOM::Database::ClientDB->new({
         client_loginid => $loginid_fm,
     });
+    my $to_client_db = BOM::Database::ClientDB->new({
+        client_loginid => $loginid_to,
+    });
+
+    my $guard_scope = guard {
+        $fm_client_db->unfreeze;
+        $to_client_db->unfreeze;
+    };
+
     if (not $fm_client_db->freeze) {
         return $error_sub->(
             localize('An error occurred while processing request. Please try again in one minute.'),
@@ -514,12 +523,7 @@ sub paymentagent_transfer {
         );
     }
 
-    my $to_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $loginid_to,
-    });
-
     if (not $to_client_db->freeze) {
-        $fm_client_db->unfreeze;
         return $error_sub->(
             localize('An error occurred while processing request. Please try again in one minute.'),
             "Account stuck in previous transaction $loginid_to"
@@ -551,23 +555,15 @@ sub paymentagent_transfer {
 
     # maximum amount USD 100000 per day
     if (($amount_transferred + $amount) >= 100000) {
-        $fm_client_db->unfreeze;
-        $to_client_db->unfreeze;
-
         return $error_sub->(localize('Sorry, you have exceeded the maximum allowable transfer amount for today.'));
     }
 
     # do not allow more than 1000 transactions per day
     if ($count > 1000) {
-        $fm_client_db->unfreeze;
-        $to_client_db->unfreeze;
-
         return $error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
 
     if ($client_to->default_account and $amount + $client_to->default_account->balance > $client_to->get_limit_for_account_balance) {
-        $fm_client_db->unfreeze;
-        $to_client_db->unfreeze;
         return $error_sub->(localize('Sorry, client balance will exceed limits with this payment.'));
     }
 
@@ -594,9 +590,6 @@ sub paymentagent_transfer {
     catch {
         $error = "Paymentagent Transfer failed to $loginid_to [$_]";
     };
-
-    $fm_client_db->unfreeze;
-    $to_client_db->unfreeze;
 
     if ($error) {
         # too many attempts
@@ -761,6 +754,15 @@ sub paymentagent_withdraw {
         client_loginid => $client_loginid,
     });
 
+    my $paymentagent_client_db = BOM::Database::ClientDB->new({
+        client_loginid => $paymentagent_loginid,
+    });
+
+    my $guard_scope = guard {
+        $client_db->unfreeze;
+        $paymentagent_client_db->unfreeze;
+    };
+
     # freeze loginID to avoid a race condition
     if (not $client_db->freeze) {
         return $error_sub->(
@@ -768,12 +770,7 @@ sub paymentagent_withdraw {
             "Account stuck in previous transaction $client_loginid"
         );
     }
-    my $paymentagent_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $paymentagent_loginid,
-    });
-
     if (not $paymentagent_client_db->freeze) {
-        $client_db->unfreeze;
         return $error_sub->(
             localize('An error occurred while processing request. Please try again in one minute.'),
             "Account stuck in previous transaction $paymentagent_loginid"
@@ -807,17 +804,11 @@ sub paymentagent_withdraw {
     my $daily_limit = (DateTime->now->day_of_week() > 5) ? 1500 : 5000;
 
     if (($amount_transferred + $amount) > $daily_limit) {
-        $client_db->unfreeze;
-        $paymentagent_client_db->unfreeze;
-
         return $error_sub->(localize('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit));
     }
 
     # do not allowed more than 20 transactions per day
     if ($count > 20) {
-        $client_db->unfreeze;
-        $paymentagent_client_db->unfreeze;
-
         return $error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
 
@@ -850,9 +841,6 @@ sub paymentagent_withdraw {
     catch {
         $error = "Paymentagent Withdraw failed to $paymentagent_loginid [$_]";
     };
-
-    $client_db->unfreeze;
-    $paymentagent_client_db->unfreeze;
 
     if ($error) {
         # too many attempts
