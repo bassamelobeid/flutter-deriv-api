@@ -148,15 +148,20 @@ subtest 'get_config with bias' => sub {
 subtest '_cleanup' => sub {
     clear_config();
     my $hour_before = time - 3600;
-    my $args = {
+    my $args        = {
         underlying_symbol => 'frxUSDJPY',
-        name            => 'test',
-        start_time      => $hour_before,
-        end_time        => $hour_before + 3599,
-        partitions      => [{cap_rate => 0.3}],
+        name              => 'test',
+        start_time        => $hour_before,
+        end_time          => $hour_before + 3599,
+        partitions        => [{cap_rate => 0.3}],
     };
     $qc->save_config('commission', $args);
-    my $configs = $qc->get_config('commission', {underlying_symbol => 'frxUSDJPY', contract_type => 'CAlle'});
+    my $configs = $qc->get_config(
+        'commission',
+        {
+            underlying_symbol => 'frxUSDJPY',
+            contract_type     => 'CAlle'
+        });
     ok !@$configs, 'it did not get saved';
 };
 
