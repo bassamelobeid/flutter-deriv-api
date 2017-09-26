@@ -113,7 +113,7 @@ my $display_transactions = sub {
     # Render template page with transactions
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
-        'backoffice/account/manage_crypto_transactions.tt',
+        'backoffice/crypto_cashier/manage_crypto_transactions.tt',
         {
             transactions    => $trxns,
             broker          => $broker,
@@ -129,7 +129,7 @@ my $display_transactions = sub {
 
 my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
-    'backoffice/account/crypto_control_panel.html.tt',
+    'backoffice/crypto_cashier/crypto_control_panel.html.tt',
     {
         exchange_rates => $exchange_rates,
         controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
