@@ -202,21 +202,22 @@ if ($view_action eq 'withdrawals') {
     my $search_query = request()->param('search_query');
     Bar("SEARCH RESULT FOR $search_query");
 
+    my @trxns = ();
     code_exit_BO("Invalid type of search request.")
         unless grep { $search_type eq $_ } qw/loginid address/;
 
-    my $trxns;
     # Fetch all transactions matching specified searching details
-    $trxns = (
-        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?)",    {Slice => {}}, $search_query),
-        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?)", {Slice => {}}, $search_query),
+    @trxns = (
+        @{$dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?)", {Slice => {}}, $search_query)},
+        @{$dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?)",    {Slice => {}}, $search_query)},
     ) if ($search_type eq 'address');
 
-    $trxns = (
-        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(?)",    {Slice => {}}, $search_query),
-        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?)", {Slice => {}}, $search_query),
+    @trxns = (
+        @{$dbh->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_withdrawal(?)', {Slice => {}}, $search_query)},
+        @{$dbh->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_deposit(?)',    {Slice => {}}, $search_query)},
     ) if ($search_type eq 'loginid');
-    $display_transactions->($trxns);
+
+    $display_transactions->(\@trxns);
 
 } elsif ($view_action eq 'reconcil') {
     Bar($currency . ' Reconciliation');
