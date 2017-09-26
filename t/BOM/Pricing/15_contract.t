@@ -475,6 +475,9 @@ subtest 'get_bid_skip_barrier_validation' => sub {
     $params->{is_sold}    = 1;
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is($result->{status}, 'sold', 'contract sold');
+    $params->{is_expired} = 1;
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    is($result->{status}, 'won', 'contract won');
     restore_time();
 };
 
