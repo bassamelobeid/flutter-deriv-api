@@ -65,7 +65,7 @@
 
                 table += '</td> <td><div class="input_field">Magnitude: <INPUT type="text" name="custom_magnitude_direct" size="10"></div><td><div class="input_field">Magnitude: <input size="10" type="text" name="custom_magnitude_indirect"></div> <div class="input_field">Underlying: <input size="10" type="text" name="custom_magnitude_indirect_list"></div></td></td>';
                 if (id === 'deleted_event_list') {
-                    table += '<td><button onclick="restoreEvent(\''+ row.id +'\')">Retore</button></td> <td style="display:none;" class="update_result"></td></tr>';
+                    table += '<td><button onclick="restoreEvent(\''+ row.id +'\')">Restore</button></td> <td style="display:none;" class="update_result"></td></tr>';
                 } else {
                     table += '<td> <button onclick="update( \''+ row.id +'\' )">Update</button> </br></br> <button onclick="deleteEvent( \''+ row.id +'\' )">Delete</button> </td> <td style="display:none;" class="update_result"></td> </tr>';
                 }
@@ -177,7 +177,7 @@
 
         to_append += '</td> <td><div class="input_field">Magnitude: <INPUT type="text" name="custom_magnitude_direct" size="10"></div><td><div class="input_field">Magnitude: <input size="10" type="text" name="custom_magnitude_indirect"></div> <div class="input_field">Underlying: <input size="10" type="text" name="custom_magnitude_indirect_list"></div></td></td>';
         if (table_id === 'deleted_event_list') {
-            to_append += '<td><button onclick="restoreEvent(\''+ event.id +'\')">Retore</button></td> <td style="display:none;" class="update_result"></td></tr>';
+            to_append += '<td><button onclick="restoreEvent(\''+ event.id +'\')">Restore</button></td> <td style="display:none;" class="update_result"></td></tr>';
         } else {
             to_append += '<td> <button onclick="update( \''+ event.id +'\' )">Update</button> </br></br> <button onclick="deleteEvent( \''+ event.id +'\' )">Delete</button> </td> <td style="display:none;" class="update_result"></td></tr>';
         }
