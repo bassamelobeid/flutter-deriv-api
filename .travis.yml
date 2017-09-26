@@ -1,3 +1,4 @@
+sudo: required
 dist: precise
 group: deprecated-2017Q1
 language: perl
@@ -6,6 +7,15 @@ perl:
 services:
     - redis-server
 cache: apt
+
+notifications:
+    slack:
+        rooms:
+            - binary-group:6t92829RicGEft1kCkpKLPj9#test-failures
+        on_success: never
+        on_failure: always
+        on_pull_requests: false
+
 before_install:
     - git clone ssh://git@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
     - /tmp/travis-scripts-init/clone_branch.sh regentmarkets/travis-scripts
