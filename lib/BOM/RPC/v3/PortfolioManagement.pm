@@ -143,8 +143,6 @@ sub proposal_open_contract {
                 app_markup_percentage => $params->{app_markup_percentage},
                 landing_company       => $lc_name,
             });
-        use Data::Dumper;
-        warn "get_bid is " . Dumper($bid);
 
         if (exists $bid->{error}) {
             $response->{$id} = $bid;
