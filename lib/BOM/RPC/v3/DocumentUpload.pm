@@ -19,8 +19,8 @@ sub upload {
     my $clientdb = BOM::Database::ClientDB->new({broker_code => $client->broker_code});
     my $dbh      = $clientdb->db->dbh;
 
-    return create_error('UploadError', 'max_size') if $file_size > MAX_FILE_SIZE;
-    return create_error('UploadError', $reason) if defined $status and $status eq 'failure';
+    return create_error('UploadError', 'max_size') if defined $file_size and $file_size > MAX_FILE_SIZE;
+    return create_error('UploadError', $reason)    if defined $status    and $status eq 'failure';
 
     # Early return for virtual accounts.
     return create_error('UploadDenied', localize("Virtual accounts don't require document uploads.")) if $client->is_virtual;
