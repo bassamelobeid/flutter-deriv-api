@@ -9,7 +9,7 @@
 
 <p>Once completed, click <b>Save</b> and wait until a message shows up next to the <b>Save</b> button with ID of the economic event. The added economic event would be displayed at the table below. The <b>Binary's Category</b> column shows the impact and duration of impact of the event on the currency pairs.</p>
 
-<p>If you wish to update the magnitude of an economic event, enter the magnitude in custom magnitude column and click on <b>Update</b>. Wait until a message shows up next to the button with 'ok'. This custom magnitude will be applied to direct currency pairs affected by the economic event.</p>
+<p>If you wish to update the magnitude of an economic event, enter the magnitude in custom magnitude column and click on <b>Update</b>. Wait until a message shows up next to the button with 'ok'. This custom magnitude will be applied to direct or indirect currency pairs affected by the economic event.</p>
 
 <p>If you wish to delete an economic event, click on the <b>Delete</b> button. The event will be removed from the table and it will be listed under the <b>Deleted Economic Events</b> table. To restore the deleted event, Click on the <b>Restore</b> button.</p>
 
