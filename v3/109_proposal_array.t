@@ -16,7 +16,12 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::RedisReplicated;
+use BOM::Platform::Chronicle;
+use BOM::MarketData qw(create_underlying);
+
 use Sereal::Encoder;
+use Quant::Framework;
+
 
 my $encoder   = Sereal::Encoder->new({
     canonical => 1,
@@ -126,23 +131,30 @@ my $proposal_array_req_tpl = {
     'passthrough' => {}
 };
 
-subtest 'allcombinations' => sub {
-    for my $key (keys %$proposal_array_variants) {
-        my ($ct1, $ct2) = split '_', $key;
-        my $data = $proposal_array_variants->{$key};
-        my $fbarriers = [];
-        if ($data->{barriers} == 2) {
-            $fbarriers = [map { {barrier2 => $_->[0], barrier => $_->[1]} } @{$data->{available_barriers}}]
-        } else {
-            $fbarriers = [map { {barrier=>$_} } @{$data->{available_barriers}}];
+my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+my $underlying       = create_underlying('frxUSDJPY');
+my $skip             = ! $trading_calendar->is_open_at($underlying->exchange, Date::Utility->new);
+
+SKIP: {
+    skip 'Forex test does not work on the weekends.', 1 if $skip;
+    subtest 'allcombinations' => sub {
+        for my $key (keys %$proposal_array_variants) {
+            my ($ct1, $ct2) = split '_', $key;
+            my $data = $proposal_array_variants->{$key};
+            my $fbarriers = [];
+            if ($data->{barriers} == 2) {
+                $fbarriers = [map { {barrier2 => $_->[0], barrier => $_->[1]} } @{$data->{available_barriers}}]
+            } else {
+                $fbarriers = [map { {barrier=>$_} } @{$data->{available_barriers}}];
+            }
+            $proposal_array_req_tpl->{barriers}                 = $fbarriers;
+            $proposal_array_req_tpl->{date_expiry}              = $data->{date_expiry};
+            $proposal_array_req_tpl->{trading_period_start}     = $data->{trading_period_start};
+            $proposal_array_req_tpl->{contract_type}            = [$ct1, $ct2];
+            my $response = $t->await::proposal_array($proposal_array_req_tpl);
+            test_schema('proposal_array', $response);
         }
-        $proposal_array_req_tpl->{barriers}                 = $fbarriers;
-        $proposal_array_req_tpl->{date_expiry}              = $data->{date_expiry};
-        $proposal_array_req_tpl->{trading_period_start}     = $data->{trading_period_start};
-        $proposal_array_req_tpl->{contract_type}            = [$ct1, $ct2];
-        my $response = $t->await::proposal_array($proposal_array_req_tpl);
-        test_schema('proposal_array', $response);
-    }
+    };
 };
 
 # Regenerate trading periods here to try avoid below bail out.
@@ -155,98 +167,104 @@ $contracts_for = $t->await::contracts_for( {
         "product_type"      => $pt,
 });
 
-
 my $put_array = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration} eq '2h15m'} @{$contracts_for->{contracts_for}{available}}];
-# Try avoid bail out below by using the latest window available for 2h15m.
+unless (scalar @$put_array) {
+    # fallback if there is no 2h15m contracts
+    $put_array = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration} eq '0d'} @{$contracts_for->{contracts_for}{available}}];
+}
+# Try avoid bail out below by using the latest window available for 2h15m contract duration.
 my $put = $put_array->[scalar(@{$put_array})-1];
 
 my $barriers = $put->{available_barriers};
 my $fixed_bars= [map {{barrier=>$_}} @$barriers];
 
-if ($put->{trading_period}{date_expiry}{epoch} - Date::Utility->new->epoch <= 900) {
-    BAIL_OUT( "Too close to the trading window border. Trading is not offered for this duration.");
-    done_testing();
-    exit;
-}
+SKIP: {
+   skip 'Forex test does not work on the weekends.', 1 if $skip;
 
-subtest "one barrier, one contract_type" => sub {
+    if ($put->{trading_period}{date_expiry}{epoch} - Date::Utility->new->epoch <= 900) {
+        BAIL_OUT( "Too close to the trading window border. Trading is not offered for this duration.");
+        done_testing();
+        exit;
+    }
 
-    $proposal_array_req_tpl->{barriers}                 = $fixed_bars;
-    $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch};
-    $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
-    $proposal_array_req_tpl->{contract_type}            = ['CALLE', 'PUT'];
+    subtest "one barrier, one contract_type" => sub {
 
-    $response = $t->await::proposal_array($proposal_array_req_tpl);
-    test_schema('proposal_array', $response);
+        $proposal_array_req_tpl->{barriers}                 = $fixed_bars;
+        $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch};
+        $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
+        $proposal_array_req_tpl->{contract_type}            = ['CALLE', 'PUT'];
 
-    $proposal_array_req_tpl->{barriers}                 = [{barrier => $put->{available_barriers}[0]}];
+        $response = $t->await::proposal_array($proposal_array_req_tpl);
+        test_schema('proposal_array', $response);
 
-    $response = $t->await::proposal_array($proposal_array_req_tpl);
-    test_schema('proposal_array', $response);
+        $proposal_array_req_tpl->{barriers}                 = [{barrier => $put->{available_barriers}[0]}];
 
-    $proposal_array_req_tpl->{barriers}                 = $fixed_bars,
-    $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
+        $response = $t->await::proposal_array($proposal_array_req_tpl);
+        test_schema('proposal_array', $response);
 
-    $response = $t->await::proposal_array($proposal_array_req_tpl);
-    test_schema('proposal_array', $response);
+        $proposal_array_req_tpl->{barriers}                 = $fixed_bars,
+        $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
 
-    $proposal_array_req_tpl->{barriers}                 = [{barrier => $put->{available_barriers}[0]}];
+        $response = $t->await::proposal_array($proposal_array_req_tpl);
+        test_schema('proposal_array', $response);
 
-    $response = $t->await::proposal_array($proposal_array_req_tpl);
-    test_schema('proposal_array', $response);
-};
+        $proposal_array_req_tpl->{barriers}                 = [{barrier => $put->{available_barriers}[0]}];
 
-subtest "various results" => sub {
+        $response = $t->await::proposal_array($proposal_array_req_tpl);
+        test_schema('proposal_array', $response);
+    };
+
+    subtest "various results" => sub {
 
 # We add 120 here because we want to increase the duration from 1 to 3 minutes.
-    $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch} + 120;
-    $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
+        $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch} + 120;
+        $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
 
 # And this line set amount to higher value to fix the minimum stake validation failure that seems to happen based
 # on the timing this test runs.
-    $proposal_array_req_tpl->{amount}                   = 1000;
-    $proposal_array_req_tpl->{barriers}                 = [{barrier => 97.1}];
-    $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
+        $proposal_array_req_tpl->{amount}                   = 1000;
+        $proposal_array_req_tpl->{barriers}                 = [{barrier => 111}];
+        $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
 
-    $response = $t->await::proposal_array($proposal_array_req_tpl);
-    test_schema('proposal_array', $response);
+        $response = $t->await::proposal_array($proposal_array_req_tpl);
+        test_schema('proposal_array', $response);
 
-    ok $response->{proposal_array}{proposals}{CALLE}[0]{ask_price}, "proposal is ok, price presented";
+        ok $response->{proposal_array}{proposals}{CALLE}[0]{ask_price}, "proposal is ok, price presented";
 
-    $proposal_array_req_tpl->{barriers}                 = [{barrier => 99}];
+        $proposal_array_req_tpl->{barriers}                 = [{barrier => 111}];
 # Here we reset the amount back to 100 to ensure we get the minimum stake error for the next test.
-    $proposal_array_req_tpl->{amount}                   = 100;
-    $response = $t->await::proposal_array($proposal_array_req_tpl);
-    test_schema('proposal_array', $response);
-    ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : Minimum stake of 35 and maximum payout of 100000.";
+        $proposal_array_req_tpl->{amount}                   = 100;
+        $response = $t->await::proposal_array($proposal_array_req_tpl);
+        test_schema('proposal_array', $response);
+        ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : Minimum stake of 35 and maximum payout of 100000.";
 
-    $proposal_array_req_tpl->{barriers}                 = [{barrier => 95}];
-    $response = $t->await::proposal_array($proposal_array_req_tpl);
-    test_schema('proposal_array', $response);
-    ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : This contract offers no return.";
+        $proposal_array_req_tpl->{barriers}                 = [{barrier => 109}];
+        $response = $t->await::proposal_array($proposal_array_req_tpl);
+        test_schema('proposal_array', $response);
+        ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : This contract offers no return.";
+    };
+
+    subtest 'subscriptions' => sub {
+        $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch};
+        $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
+
+        $proposal_array_req_tpl->{barriers}                 = [{barrier => 97}];
+        $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
+
+        $proposal_array_req_tpl->{subscribe}                = 1;
+
+        $response = $t->await::proposal_array($proposal_array_req_tpl);
+        test_schema('proposal_array', $response);
+
+        is(scalar keys %{$t->app->pricing_subscriptions()}, 1, "Subscription created");
+        my $channel = [keys %{$t->app->pricing_subscriptions()}]->[0];
+        is(refcount($t->app->pricing_subscriptions()->{$channel}), 1, "check refcount");
+        ok(redis_pricer->get($channel), "check redis subscription");
+
+        $response = $t->await::forget_all({forget_all => "proposal_array"});
+        is($t->app->pricing_subscriptions()->{$channel}, undef, "Forgotten");
+    };
 };
-
-subtest 'subscriptions' => sub {
-    $proposal_array_req_tpl->{date_expiry}              = $put->{trading_period}{date_expiry}{epoch};
-    $proposal_array_req_tpl->{trading_period_start}     = $put->{trading_period}{date_start}{epoch};
-
-    $proposal_array_req_tpl->{barriers}                 = [{barrier => 97}];
-    $proposal_array_req_tpl->{contract_type}            = ['CALLE'];
-
-    $proposal_array_req_tpl->{subscribe}                = 1;
-
-    $response = $t->await::proposal_array($proposal_array_req_tpl);
-    test_schema('proposal_array', $response);
-
-    is(scalar keys %{$t->app->pricing_subscriptions()}, 1, "Subscription created");
-    my $channel = [keys %{$t->app->pricing_subscriptions()}]->[0];
-    is(refcount($t->app->pricing_subscriptions()->{$channel}), 1, "check refcount");
-    ok(redis_pricer->get($channel), "check redis subscription");
-
-    $response = $t->await::forget_all({forget_all => "proposal_array"});
-    is($t->app->pricing_subscriptions()->{$channel}, undef, "Forgotten");
-};
-
 
 $t->finish_ok;
 

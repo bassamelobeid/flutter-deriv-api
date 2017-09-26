@@ -95,15 +95,6 @@ subtest 'MLT upgrade to MF account' => sub {
         my $client = Client::Account->new({loginid => $loginid});
         isnt($client->financial_assessment->data, undef, 'has financial assessment');
     };
-
-    subtest 'MLT details should be updated as per MF' => sub {
-        my $mlt_client = Client::Account->new({loginid => $mlt_loginid});
-        isnt($mlt_client->financial_assessment->data, undef, 'has financial assessment after MF account creation');
-
-        my $res = $t->await::get_settings({get_settings => 1});
-        ok($res->{get_settings});
-        is($res->{get_settings}->{address_line_1}, 'Test', 'address line 1 has been updated after MF account creation');
-    };
 };
 
 subtest 'VR upgrade to MF - Germany' => sub {

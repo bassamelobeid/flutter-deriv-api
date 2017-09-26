@@ -20,11 +20,14 @@ use Socket qw(PF_INET SOCK_STREAM pack_sockaddr_in inet_aton);
 use Try::Tiny;
 use Variable::Disposition qw(retain_future);
 
+use Quant::Framework;
+
 use BOM::Database::Model::OAuth;
 use BOM::MarketData qw(create_underlying);
 use BOM::Test::Helper qw/reconnect test_schema build_wsapi_test/;
 use BOM::Platform::RedisReplicated;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Platform::Chronicle;
 
 use await;
 
@@ -195,34 +198,42 @@ $intro_conn = send_introspection_cmd('connections');
 cmp_ok $intro_conn->{connections}[0]{messages_received_from_client}{time}, '==', 2, '2 time call';
 cmp_ok $intro_conn->{connections}[0]{messages_sent_to_client}{time},       '==', 2, '2 time reply';
 
-# number of pricer subs
-subtest "pricesrs subscriptions" => sub {
-    $t->await::proposal({
-        "proposal" => 1,
-        %contract
-    });
-    my $intro_conn = send_introspection_cmd('connections');
+my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
 
-    cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
-    $contract{amount} = 200;
-    $t->await::proposal({
-        "proposal" => 1,
-        %contract
-    });
-    $intro_conn = send_introspection_cmd('connections');
-    cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
-    $contract{duration} = 14;
-    $t->await::proposal({
-        "proposal" => 1,
-        %contract
-    });
-    $intro_conn = send_introspection_cmd('connections');
-    cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 2, 'now 2 price subscription';
+SKIP: {
+    skip 'Forex test does not work on the weekends.', 1 if not $trading_calendar->is_open_at($underlying->exchange, Date::Utility->new);
 
-    $t->await::forget_all({forget_all => 'proposal'});
-    $intro_conn = send_introspection_cmd('connections');
-    cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 0, 'no more price subscription';
-};
+    # number of pricer subs
+    subtest "pricers subscriptions" => sub {
+
+        sub do_proposal {
+            my $expected_err = shift;
+            my $res          = $t->await::proposal({
+                "proposal" => 1,
+                %contract
+            });
+            is $res->{error}{message}, $expected_err, 'got expected error for proposal call';
+        }
+
+        do_proposal('You are already subscribed to proposal.');
+        my $intro_conn = send_introspection_cmd('connections');
+        cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
+
+        $contract{amount} = 200;
+        do_proposal();
+        $intro_conn = send_introspection_cmd('connections');
+        cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 1, 'current 1 price subscription';
+
+        $contract{duration} = 14;
+        do_proposal();
+        $intro_conn = send_introspection_cmd('connections');
+        cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 2, 'now 2 price subscription';
+
+        $t->await::forget_all({forget_all => 'proposal'});
+        $intro_conn = send_introspection_cmd('connections');
+        cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 0, 'no more price subscription';
+    };
+}
 
 done_testing;
 

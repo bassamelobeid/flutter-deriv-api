@@ -16,7 +16,10 @@ use await;
 ## do not send email
 use Test::MockModule;
 my $client_mocked = Test::MockModule->new('Client::Account');
-$client_mocked->mock('add_note', sub { return 1 });
+$client_mocked->mock(add_note => sub { return 1 });
+# avoid currency conversion for payment notification
+my $pnq_mocked = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
+$pnq_mocked->mock(add => sub { return Future->done });
 
 my $t = build_wsapi_test();
 
@@ -105,13 +108,13 @@ subtest 'new JP real account' => sub {
         }
     };
 
-    subtest 'duplicate account - same email' => sub {
+    subtest 'multiple accounts not allowed even though account is disabled' => sub {
         my $res = $t->await::new_account_japan(\%client_details);
 
-        is $res->{new_account_japan}->{landing_company_shortcode}, 'japan', 'able to create multiple accounts';
+        is($res->{error}->{code}, 'PermissionDenied', 'as japan account is disabled so cannot create new one as disabled one is also considered');
     };
 
-    subtest 'no duplicate - Name + DOB' => sub {
+    subtest 'no duplicate allowed - Name + DOB + different email' => sub {
         my ($vr_client, $user) = create_vr_account({
             email           => 'test+test@binary.com',
             client_password => 'abc123',
@@ -121,7 +124,6 @@ subtest 'new JP real account' => sub {
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
         $t->await::authorize({authorize => $token});
 
-        # create CR acc
         my $res = $t->await::new_account_japan(\%client_details);
 
         is($res->{error}->{code}, 'duplicate name DOB', 'no duplicate account: same name + DOB');

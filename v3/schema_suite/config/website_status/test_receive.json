@@ -1,5 +1,27 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+        "currency_config": {
+            "type": "object",
+            "properties": {
+                "fractional_digits": {
+                    "type": "number",
+                    "pattern": "^\\d+$",
+                    "required": "1"
+                },
+                "type": {
+                    "type": "string",
+                    "pattern": "^(fiat|crypto)$",
+                    "required": "1"
+                },
+                "stake_default": {
+                    "type": "number",
+                    "minimum": "0",
+                    "required": "1"
+                }
+            }
+        }
+    },
     "type": "object",
     "properties": {
         "website_status": {
@@ -14,10 +36,22 @@
                     "required": "1"
                 },
                 "supported_languages": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "currencies_config": {
+                    "type": "object",
+                    "required": "1",
+                    "properties": {
+                        "BTC": { "$ref": "#/definitions/currency_config" },
+                        "LTC": { "$ref": "#/definitions/currency_config" },
+                        "GBP": { "$ref": "#/definitions/currency_config" },
+                        "AUD": { "$ref": "#/definitions/currency_config" },
+                        "EUR": { "$ref": "#/definitions/currency_config" },
+                        "USD": { "$ref": "#/definitions/currency_config" }
+                    }
                 },
                 "api_call_limits": {
                     "type": "object",
@@ -44,12 +78,12 @@
                             "properties": {
                                 "minutely": {
                                     "type": "number",
-                                    "pattern": "^60$",
+                                    "pattern": "^66$",
                                     "required": "1"
                                 },
                                 "hourly": {
                                     "type": "number",
-                                    "pattern": "^3600$",
+                                    "pattern": "^266$",
                                     "required": "1"
                                 },
                                 "applies_to": {
@@ -64,12 +98,12 @@
                             "properties": {
                                 "minutely": {
                                     "type": "number",
-                                    "pattern": "^60$",
+                                    "pattern": "^55$",
                                     "required": "1"
                                 },
                                 "hourly": {
                                     "type": "number",
-                                    "pattern": "^3600$",
+                                    "pattern": "^255$",
                                     "required": "1"
                                 },
                                 "applies_to": {
@@ -84,12 +118,12 @@
                             "properties": {
                                 "minutely": {
                                     "type": "number",
-                                    "pattern": "^240$",
+                                    "pattern": "^244$",
                                     "required": "1"
                                 },
                                 "hourly": {
                                     "type": "number",
-                                    "pattern": "^14400$",
+                                    "pattern": "^244$",
                                     "required": "1"
                                 },
                                 "applies_to": {
