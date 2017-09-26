@@ -527,7 +527,7 @@ subtest $method => sub {
         contract_id => $contract->id,
         currency    => 'USD',
         is_expired  => 0,
-        is_sold     => 1,
+        is_sold     => 0,
     };
     my $res = $c->call_ok('get_bid', $params)->result;
     my $expected_result = {
