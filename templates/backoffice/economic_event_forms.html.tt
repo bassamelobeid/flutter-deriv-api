@@ -40,7 +40,7 @@
 <div id='deleted_event_list'></div>
 
 <script>
-    function createTable(events, id) {
+    function createEcoTable(events, id) {
 
         var table = '<table id="'+id+'" class="economic_event_table">';
         table += '<tr> <th>Event Name</th> <th>Release Date</th> <th>Impact (FF)</th> <th>Symbol</th> <th>Binary\'s Category (numbers are rounded)</th> <th>Direct Pairs</th> <th>Indirect Pairs</th> </tr>';
@@ -87,8 +87,8 @@
                     },
                     success: function(data){
                         var r = JSON.parse(data);
-                        createTable(JSON.parse(r.categorized_events), 'scheduled_event_list');
-                        createTable(JSON.parse(r.deleted_events), 'deleted_event_list');
+                        createEcoTable(JSON.parse(r.categorized_events), 'scheduled_event_list');
+                        createEcoTable(JSON.parse(r.deleted_events), 'deleted_event_list');
                     }
             });
         }
@@ -230,8 +230,8 @@
         }
     }
 
-    createTable([% categorized_events | none %], 'scheduled_event_list');
-    createTable([% deleted_events | none %], 'deleted_event_list');
+    createEcoTable([% categorized_events | none %], 'scheduled_event_list');
+    createEcoTable([% deleted_events | none %], 'deleted_event_list');
 </script>
 
 <style>
