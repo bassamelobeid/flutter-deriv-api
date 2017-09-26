@@ -145,7 +145,7 @@ sub proposal_open_contract {
             });
         use Data::Dumper;
         warn "get_bid is " . Dumper($bid);
-        warn ""
+
         if (exists $bid->{error}) {
             $response->{$id} = $bid;
         } else {
