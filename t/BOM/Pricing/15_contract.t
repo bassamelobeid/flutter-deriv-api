@@ -526,8 +526,6 @@ subtest $method => sub {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => 'USD',
-        is_expired  => 0,
-        is_sold     => 0,
     };
     my $res = $c->call_ok('get_bid', $params)->result;
     my $expected_result = {
@@ -548,7 +546,7 @@ subtest $method => sub {
         'shortcode'       => 'CALL_FRXAUDCAD_156.47_1127287260_1127287660_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 1,
-        'status'          => 'won',
+        'status'          => 'open',
                           };
 
     foreach my $key (keys %$expected_result) {
