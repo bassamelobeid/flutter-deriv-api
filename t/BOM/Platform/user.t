@@ -375,7 +375,7 @@ sub write_file {
 
     open my $f, '>', $name or die "Cannot open $name for write: $!";
     print $f $content or die "Cannot write $name: $!";
-    close $f die "Cannot write/close $name: $!";
+    close $f or die "Cannot write/close $name: $!";
     return;
 }
 
