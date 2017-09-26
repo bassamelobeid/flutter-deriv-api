@@ -101,4 +101,21 @@ sub get_state_option {
     return \@options;
 }
 
+=head get_state_by_id
+
+Lookup full state name by state id and residence
+Returns undef when state is not found
+
+Usage: get_state_by_id('BA', 'id') => Bali
+
+=cut
+
+sub get_state_by_id {
+    my $id        = shift;
+    my $residence = shift;
+    my ($state_name) = sort map { $_->{text} } grep { $_->{value} eq $id } @{get_state_option($residence) || []};
+
+    return $state_name;
+}
+
 1;

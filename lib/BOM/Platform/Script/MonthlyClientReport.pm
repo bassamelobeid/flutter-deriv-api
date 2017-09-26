@@ -29,15 +29,11 @@ sub go {
     )->ymd;
     my $until_date = $start_date->clone->add(months => 1);
 
-    my $dep_wth = {
-        credit => 'deposit',
-        debit  => 'withdrawal'
-        }->{$crdr}
-        || die;
     my $buy_sell = {
         credit => 'sell',
         debit  => 'buy'
-    }->{$crdr};
+        }->{$crdr}
+        or die 'invalid crdr parameter to MonthlyClientReport';
     my $gt_lt = {
         credit => '>',
         debit  => '<'

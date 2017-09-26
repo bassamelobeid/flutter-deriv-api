@@ -24,6 +24,7 @@ sub create_account {
     my ($from_client, $user, $country, $details, $financial_data, $agreement_input) =
         @{$args}{'from_client', 'user', 'country', 'details', 'financial_data', 'agreement'};
 
+    return {error => 'social login user is prohibited'} if $user->has_social_signup;
     my $daily_loss_limit = delete $details->{daily_loss_limit};
 
     if (my $error = _validate($args)) {
@@ -61,9 +62,12 @@ sub create_account {
     $client->save;
 
     my $response = BOM::Platform::Account::Real::default::after_register_client({
-        client  => $client,
-        user    => $user,
-        details => $details,
+        client      => $client,
+        user        => $user,
+        details     => $details,
+        from_client => $from_client,
+        ip          => $args->{ip},
+        country     => $args->{country},
     });
 
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);

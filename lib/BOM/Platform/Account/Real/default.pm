@@ -7,7 +7,6 @@ use Date::Utility;
 use Try::Tiny;
 use Locale::Country;
 use List::MoreUtils qw(any);
-use Data::Validate::Sanctions;
 
 use Brands;
 use Client::Account;
@@ -18,11 +17,11 @@ use BOM::Platform::Config;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
+use BOM::Platform::Client::Sanctions;
 
 sub validate {
     my $args = shift;
     my ($from_client, $user) = @{$args}{'from_client', 'user'};
-    my $country = $args->{country} || '';
 
     my $details;
     my ($broker, $residence) = ('', '');
@@ -30,14 +29,10 @@ sub validate {
         ($broker, $residence) = @{$details}{'broker_code', 'residence'};
     }
 
-    my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], country[$country], residence[$residence], error: ";
+    my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], residence[$residence], error: ";
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         warn($msg . 'new account opening suspended');
-        return {error => 'invalid'};
-    }
-    if ($country and Brands->new(name => request()->brand)->countries_instance->restricted_country($country)) {
-        warn($msg . "restricted IP country [$country]");
         return {error => 'invalid'};
     }
     unless ($user->email_verified) {
@@ -63,11 +58,12 @@ sub validate {
         {
             return {error => 'invalid PO Box'};
         }
-        # check for duplicate email when sub_account_of is not present (omnibus)
-        if ((any { $_->loginid =~ qr/^($broker)\d+$/ } ($user->loginid)) and not $details->{sub_account_of}) {
-            return {error => 'duplicate email'};
-        }
-        if (BOM::Database::ClientDB->new({broker_code => $broker})->get_duplicate_client($details)) {
+        # we don't need to check for duplicate client on adding multiple currencies
+        # in that case, $from_client and $details will handle same data.
+        # when it's first registration - $from_client->first_name will be empty, as VRTC does not have it.
+        if ($details->{first_name} ne $from_client->first_name
+            && BOM::Database::ClientDB->new({broker_code => $broker})->get_duplicate_client($details))
+        {
             return {error => 'duplicate name DOB'};
         }
 
@@ -91,7 +87,7 @@ sub validate {
 
 sub create_account {
     my $args = shift;
-    my ($user, $details) = @{$args}{'user', 'details'};
+    my ($user, $details, $from_client) = @{$args}{'user', 'details', 'from_client'};
 
     if (my $error = validate($args)) {
         return $error;
@@ -100,9 +96,12 @@ sub create_account {
     return $register if ($register->{error});
 
     my $response = after_register_client({
-        client  => $register->{client},
-        user    => $user,
-        details => $details,
+        client      => $register->{client},
+        user        => $user,
+        details     => $details,
+        from_client => $from_client,
+        ip          => $args->{ip},
+        country     => $args->{country},
     });
 
     add_details_to_desk($register->{client}, $details);
@@ -127,34 +126,26 @@ sub register_client {
 
 sub after_register_client {
     my $args = shift;
-    my ($client, $user, $details) = @{$args}{'client', 'user', 'details'};
-
+    my ($client, $user, $details, $ip, $country, $from_client) = @{$args}{qw(client user details ip country from_client)};
     if (not $client->is_virtual) {
         $client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
         $client->save;
     }
+
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
 
+    BOM::Platform::Client::Sanctions->new({
+            client => $client,
+            brand  => Brands->new(name => request()->brand)})->check();
+
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
-    state $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Platform::Config::sanction_file);
-    if ($sanctions->is_sanctioned($client->first_name, $client->last_name)) {
-        $client->set_status('disabled', 'system', 'client disabled as marked as UNTERR');
-        $client->save;
-        $client->add_note('UNTERR', "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list.");
-        my $brand = Brands->new(name => request()->brand);
-        send_email({
-            from    => $brand->emails('support'),
-            to      => $brand->emails('compliance'),
-            subject => $client->loginid . ' marked as UNTERR',
-            message => ["UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list."],
-        });
-    }
 
     my $notemsg = "$client_loginid - Name and Address\n\n\n\t\t $client_name \n\t\t";
     my @address = map { $client->$_ } qw(address_1 address_2 city state postcode);
     $notemsg .= join("\n\t\t", @address, Locale::Country::code2country($client->residence));
+    $notemsg .= sprintf "\n\nIP was %s (country %s)", $ip // 'unknown', $country // 'unknown';
     $client->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$notemsg\n");
 
     if ($client->landing_company->short eq 'iom'
@@ -187,9 +178,12 @@ sub add_details_to_desk {
                 token_secret => BOM::Platform::Config::third_party->{desk}->{access_token_secret},
             });
 
-            $details->{loginid}  = $client->loginid;
-            $details->{language} = request()->language;
-            $desk_api->upload($details);
+            # we don't want to modify original details hence create
+            # copy for desk.com
+            my $copy = {%$details};
+            $copy->{loginid}  = $client->loginid;
+            $copy->{language} = request()->language;
+            $desk_api->upload($copy);
         }
         catch {
             warn("Unable to add loginid " . $client->loginid . "(" . $client->email . ") to desk.com API: $_");
@@ -279,6 +273,7 @@ sub get_financial_input_mapping {
                 'Tertiary'  => 3
             }
         },
+
         income_source => {
             'label'           => 'Income Source',
             'possible_answer' => {
@@ -335,7 +330,32 @@ sub get_financial_input_mapping {
                 'Armed Forces'                                              => 0,
                 'Government Officers'                                       => 0,
                 'Others'                                                    => 0
-            }}};
+            }
+        },
+        employment_status => {
+            label           => 'Employment Status',
+            possible_answer => {
+                'Employed'      => 0,
+                'Pensioner'     => 0,
+                'Self-Employed' => 0,
+                'Student'       => 0,
+                'Unemployed'    => 0,
+            },
+        },
+        source_of_wealth => {
+            'label'           => 'Source of wealth',
+            'possible_answer' => {
+                'Accumulation of Income/Savings' => 0,
+                'Cash Business'                  => 0,
+                'Company Ownership'              => 0,
+                'Divorce Settlement'             => 0,
+                'Inheritance'                    => 0,
+                'Investment Income'              => 0,
+                'Sale of Property'               => 0,
+                'Other'                          => 0,
+            },
+        },
+    };
     return $financial_mapping;
 }
 
@@ -395,7 +415,18 @@ sub validate_account_details {
 
     foreach my $key (get_account_fields($acc_type)) {
         my $value = $args->{$key};
-        $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
+        # as we are going to support multiple accounts per landing company
+        # so we need to copy secret question and answer from old clients
+        # if present else we will take the new one
+        $value = $client->secret_question || $value if ($key eq 'secret_question');
+
+        if ($key eq 'secret_answer') {
+            if (my $answer = $client->secret_answer) {
+                $value = $answer;
+            } elsif ($value) {
+                $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value);
+            }
+        }
 
         if (not $client->is_virtual) {
             $value ||= $client->$key;

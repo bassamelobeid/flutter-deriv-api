@@ -71,11 +71,6 @@ Returns a Data::Chronicle::Writer object.
 use strict;
 use warnings;
 
-# we cache connection to Redis, so we use state feature.
-use feature "state";
-
-# used for loading chronicle config file which contains connection information
-use YAML::XS;
 use JSON;
 use DBIx::Connector::Pg;
 use DateTime;
@@ -85,46 +80,30 @@ use BOM::Platform::RedisReplicated;
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
 
-# Used for any writes to the Chronicle DB
-my $writer_instance;
-# Historical instance will be used for fetching historical chronicle data (e.g. back-testing)
-my $historical_instance;
-# Live instance will be used for live pricing (normal website operations)
-my $live_instance;
-# NOTE - if you add other instances, see L</_dbh_changed>
-
 sub get_chronicle_writer {
-    state $redis = BOM::Platform::RedisReplicated::redis_write();
-
-    $writer_instance //= Data::Chronicle::Writer->new(
+    return Data::Chronicle::Writer->new(
         publish_on_set => 1,
-        cache_writer   => $redis,
+        cache_writer   => BOM::Platform::RedisReplicated::redis_write(),
         dbic           => dbic(),
     );
-
-    return $writer_instance;
 }
 
 sub get_chronicle_reader {
     #if for_date is specified, then this chronicle_reader will be used for historical data fetching, so it needs a database connection
     my $for_date = shift;
-    state $redis = BOM::Platform::RedisReplicated::redis_read();
+    my $redis    = BOM::Platform::RedisReplicated::redis_read();
 
     if ($for_date) {
-        $historical_instance //= Data::Chronicle::Reader->new(
+        return Data::Chronicle::Reader->new(
             cache_reader => $redis,
             dbic         => dbic(),
         );
-
-        return $historical_instance;
     }
 
     #if for_date is not specified, we are doing live_pricing, so no need to send database handler
-    $live_instance //= Data::Chronicle::Reader->new(
+    return Data::Chronicle::Reader->new(
         cache_reader => $redis,
     );
-
-    return $live_instance;
 }
 
 # According to discussions made, we are supposed to support "Redis only" installation where there is not Pg.
@@ -136,7 +115,7 @@ my $dbic;
 
 sub dbic {
     # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
-    return undef if not defined _config()->{chronicle};
+    return undef if not defined $ENV{PGSERVICEFILE} and not -e $ENV{HOME} . '/.pg_service.conf';
     $dbic //= DBIx::Connector::Pg->new(
         _dbh_dsn(),
         # User and password are part of the DSN
@@ -149,24 +128,13 @@ sub dbic {
     return $dbic;
 }
 
+sub clear_connections {
+    $dbic = undef;
+    return;
+}
+
 sub _dbh_dsn {
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
-    return "dbi:Pg:dbname=chronicle$db_postfix;port=6432;host=/var/run/postgresql;user=write";
-}
-
-my $config;
-
-BEGIN {
-    $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
-}
-
-sub _config {
-    return $config;
-}
-
-sub _redis_write {
-    warn "Chronicle::_redis_write is deprecated. Please, use RedisReplicated::redis_write";
-    return BOM::Platform::RedisReplicated::redis_write;
+    return "dbi:Pg:service=chronicle";
 }
 
 1;

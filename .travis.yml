@@ -1,3 +1,6 @@
+sudo: required
+dist: precise
+group: deprecated-2017Q1
 language: perl
 perl:
     - "5.14.2-thr"
@@ -9,6 +12,15 @@ env:
     - TEST_SUITE=unit_test_system
     - TEST_SUITE=leaktest
     - TEST_SUITE=syntax_lib
+
+notifications:
+    slack:
+        rooms:
+            - binary-group:6t92829RicGEft1kCkpKLPj9#test-failures
+        on_success: never
+        on_failure: always
+        on_pull_requests: false
+
 services:
     - redis-server
 cache: apt
