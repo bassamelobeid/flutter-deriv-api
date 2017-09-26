@@ -549,7 +549,6 @@ subtest $method => sub {
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 1,
         'status'          => 'won',
-                           'validation_error' => '',
                           };
 
     foreach my $key (keys %$expected_result) {
