@@ -193,9 +193,7 @@ if ($view_action eq 'withdrawals') {
     my $trxns = $dbh->selectall_arrayref(
         "SELECT * FROM payment.ctc_bo_get_deposit(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
         {Slice => {}},
-        $currency,
-        uc $view_type
-
+        $currency, uc $view_type
     );
     $display_transactions->($trxns);
 

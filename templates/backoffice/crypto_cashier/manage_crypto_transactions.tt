@@ -7,7 +7,7 @@
 [% END %]
 [% MACRO transaction_link BLOCK %]
 [% IF tx %]
-    <a href="[% transaction_uri _ tx %]" target="_blank">[% tx.substr(0,6) %]</a>
+    <a href="[% transaction_uri _ tx %]" target="_blank">[% tx.substr(0,6) %]...</a>
 [% ELSE %]
     &nbsp;
 [% END %]
@@ -76,7 +76,7 @@
 </table>
 <br/>
 [% IF transactions.size == 0 %]
-    <p>There are no [% view_type %] transactions.</p>
+    <p>There are no such transactions.</p>
 [% ELSE %]
     <table>
         <tr>
