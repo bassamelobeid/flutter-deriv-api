@@ -14,6 +14,7 @@ use Test::Warnings;
 
 use Cache::RedisDB;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
 use BOM::Platform::Password;

@@ -26,6 +26,9 @@ sub log_msg {
 
 sub userdb {
     my $ip = shift;
+
+    # We can't use BOM::Database::UserDB here because it connects
+    # through pgbouncer in transaction mode.
     return DBI->connect(
         "dbi:Pg:service=user01;application_name=MirrorBinaryUserId",
         undef, undef,
