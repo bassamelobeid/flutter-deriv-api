@@ -312,7 +312,7 @@ sub get_bid {
                 message_to_client => localize('Cannot create contract')});
     };
     return $response if $response;
-s
+
     if ($contract->is_legacy) {
         return BOM::Pricing::v3::Utility::create_error({
             message_to_client => localize($contract->longcode),
