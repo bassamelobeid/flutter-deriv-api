@@ -104,11 +104,6 @@ sub do_one {
 sub run_once {
     my $dbh = shift;
 
-    $dbh->do('LISTEN "q.add_loginid"');
-    $dbh->do('NOTIFY "q.add_loginid"');    # trigger first round
-
-    log_msg 1, "started";
-
     # check if there is at least one notification
     # otherwise done
     while ($dbh->pg_notifies) {
@@ -123,11 +118,17 @@ sub run_once {
 }
 
 sub run {
+    log_msg 1, "started";
+
     while (1) {
         try {
             my $dbh = userdb();
             my $sel = IO::Select->new;
             $sel->add($dbh->{pg_socket});
+
+            $dbh->do('LISTEN "q.add_loginid"');
+            $dbh->do('NOTIFY "q.add_loginid"');    # trigger first round
+
             while (1) {
                 run_once $dbh;
                 $sel->can_read(TMOUT);
