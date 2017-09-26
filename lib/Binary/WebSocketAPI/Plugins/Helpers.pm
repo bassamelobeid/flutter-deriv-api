@@ -225,10 +225,14 @@ sub register {
 
     $app->helper(loop => sub { my ($c) = @_; $c->stash->{loop} //= IO::Async::Loop::Mojo->new() });
 
-    $app->helper(s3 => sub {
-        my ($c) = @_; $c->stash->{s3} //= do { $c->loop->add(my $s3 = Net::Async::Webservice::S3->new(
-        %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)})); $s3 }
-            });
+    $app->helper(
+        s3 => sub {
+            my ($c) = @_;
+            $c->stash->{s3} //= do {
+                $c->loop->add(my $s3 = Net::Async::Webservice::S3->new({%{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)}, max_retries => 1}));
+                $s3;
+                }
+        });
 
     return;
 }

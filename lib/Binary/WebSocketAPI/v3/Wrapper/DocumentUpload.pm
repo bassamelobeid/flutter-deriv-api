@@ -23,34 +23,35 @@ sub add_upload_info {
     my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
 
     my $upload_info = {
-            %{$call_params},
-            file_id        => $rpc_response->{file_id},
-            call_type      => $rpc_response->{call_type},
-            file_name      => $file_name,
-            file_size      => $file_size,
-            sha1           => Digest::SHA1->new,
-            received_bytes => 0,
-            document_path  => "$s3_config->{bucket}/$file_name",
-            pending_futures=> \@pending_futures,
-        };
+        %{$call_params},
+        file_id         => $rpc_response->{file_id},
+        call_type       => $rpc_response->{call_type},
+        file_name       => $file_name,
+        file_size       => $file_size,
+        sha1            => Digest::SHA1->new,
+        received_bytes  => 0,
+        document_path   => "$s3_config->{bucket}/$file_name",
+        pending_futures => \@pending_futures,
+    };
 
     $upload_info->{put_future} = $c->s3->put_object(
-       key   => $file_name,
-       value => sub {
+        key   => $file_name,
+        value => sub {
             my ($f) = @{$upload_info->{pending_futures}};
 
             push @{$upload_info->{pending_futures}}, $f = $c->loop->new_future unless $f;
 
-            $f->on_ready(sub {
-                shift @{$upload_info->{pending_futures}};
-            });
+            $f->on_ready(
+                sub {
+                    shift @{$upload_info->{pending_futures}};
+                });
 
             return $f;
         },
-       value_length => $file_size,
+        value_length => $file_size,
     );
 
-    my $stash         = {
+    my $stash = {
         %{$current_stash},
         $upload_id => $upload_info,
     };
@@ -181,7 +182,7 @@ sub upload_chunk {
     my $stash     = $c->stash('document_upload');
 
     my $new_received_bytes = $stash->{$upload_id}->{received_bytes} + length $data;
-    
+
     return send_upload_failure($c, $upload_info, 'size_mismatch') if $new_received_bytes > $upload_info->{file_size};
 
     $stash->{$upload_id}->{sha1}->add($data);
@@ -198,10 +199,7 @@ sub upload_chunk {
 
 sub create_error {
     my ($call_params, $rpc_response) = @_;
-    return {
-        %{create_call_params($call_params)},
-        error => $rpc_response->{error}
-    };
+    return {%{create_call_params($call_params)}, error => $rpc_response->{error}};
 }
 
 sub create_call_params {
