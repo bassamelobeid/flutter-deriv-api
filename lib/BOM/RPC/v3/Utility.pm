@@ -9,6 +9,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use List::Util qw(any);
 use URI;
 use Domain::PublicSuffix;
+use Format::Util::Numbers qw/formatnumber/;
 
 use Brands;
 use LandingCompany::Registry;
@@ -251,28 +252,37 @@ sub filter_siblings_by_landing_company {
 }
 
 sub get_real_account_siblings_information {
-    my $client = shift;
+    my ($loginid, $no_disabled) = @_;
 
+    my $user = BOM::Platform::User->new({loginid => $loginid});
     # return empty if we are not able to find user, this should not
     # happen but added as additional check
-    return {} unless BOM::Platform::User->new({email => $client->email});
+    return {} unless $user;
 
-    # we don't need to consider disabled client that have reason
-    # as 'migration to single email login', because we moved to single
-    # currency per account in past and mark duplicate clients as disabled
-    # with that reason itself
-    # TODO: create new status for migrated clients
-    return {
-        map {
-            $_->loginid => {
-                currency => $_->default_account        ? ($_->default_account->currency_code) : (undef),
-                disabled => $_->get_status('disabled') ? ($_->get_status('disabled')->reason) : (undef),
-                landing_company_name => $_->landing_company->short
-                }
-            } grep {
-            not($_->get_status('disabled') and $_->get_status('disabled')->reason =~ /^migration to single email login$/)
-                and not $_->is_virtual
-            } BOM::Platform::User->new({email => $client->email})->clients(disabled_ok => 1)};
+    my @clients = ();
+    if ($no_disabled) {
+        @clients = $user->clients;
+    } else {
+        @clients = $user->clients(disabled_ok => 1);
+    }
+
+    # filter out virtual clients
+    @clients = grep { not $_->is_virtual } @clients;
+
+    my $siblings;
+    foreach my $cl (@clients) {
+        my $acc = $cl->default_account;
+
+        $siblings->{$cl->loginid} = {
+            loginid              => $cl->loginid,
+            landing_company_name => $cl->landing_company->short,
+            sub_account_of       => ($cl->sub_account_of // ''),
+            currency             => $acc ? $acc->currency_code : '',
+            balance              => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
+        };
+    }
+
+    return $siblings;
 }
 
 =head2 validate_make_new_account
@@ -306,7 +316,7 @@ sub validate_make_new_account {
             message_to_client => $error_map->{'invalid residence'}}) if ($countries_instance->restricted_country($residence));
 
     # get all real account siblings
-    my $siblings = get_real_account_siblings_information($client);
+    my $siblings = get_real_account_siblings_information($client->loginid);
 
     # if no real sibling is present then its virtual
     if (scalar(keys %$siblings) == 0) {
@@ -398,7 +408,7 @@ sub validate_make_new_account {
 sub validate_set_currency {
     my ($client, $currency) = @_;
 
-    my $siblings = get_real_account_siblings_information($client);
+    my $siblings = get_real_account_siblings_information($client->loginid);
 
     # is virtual check is already done in set account currency
     # but better to have it here as well so that this sub can
