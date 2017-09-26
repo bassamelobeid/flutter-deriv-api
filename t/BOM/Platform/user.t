@@ -411,12 +411,8 @@ CONF
 
     # at this point we have 9 rows in the queue: 2x VRTC, 4x CR, 2x MT and 1x VRCH
     my $queue = $dbh->selectall_arrayref('SELECT binary_user_id, loginid FROM q.add_loginid');
-    note explain $queue;
 
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 9, 'got expected number of queue entries';
-
-    $dbh->do('LISTEN "q.add_loginid"');
-    $dbh->do('NOTIFY "q.add_loginid"');    # trigger first round
 
     BOM::Platform::Script::MirrorBinaryUserId::run_once $dbh;
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';

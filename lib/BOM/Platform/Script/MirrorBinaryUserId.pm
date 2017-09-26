@@ -106,13 +106,13 @@ sub run_once {
 
     # check if there is at least one notification
     # otherwise done
-    while ($dbh->pg_notifies) {
+    do {
         # clear all notifications
         1 while $dbh->pg_notifies;
 
         # handle the queue until it becomes empty
         1 while do_one $dbh;
-    }
+    } while ($dbh->pg_notifies);
 
     return;
 }
