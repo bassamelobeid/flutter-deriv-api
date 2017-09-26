@@ -13,20 +13,20 @@ use URI::QueryParam;
 
 sub callback {
     my $c = shift;
-
-    # Microsoft Edge and Internet Exporer browsers implementation has a drawback
+    # Microsoft Edge and Internet Exporer browsers have a drawback
     # in carrying parameters through responses. Hence, we are retrieving the token
     # from the stash.
     # For optimization reason, the URI should be contructed afterwards
-    # if there is no token in request parameters found.
+    # checking for presence of connection token in request parameters.
     my $connection_token = $c->param('connection_token')
         // URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0])->query_param('provider_connection_token')
         // '';
-
     my $redirect_uri = $c->req->url->path('/oauth2/authorize')->to_abs;
     # Redirect client to authorize subroutine if there is no connection token provided
     # or request came from Japan.
-    return $c->redirect_to($redirect_uri) if $c->{stash}->{request}->{country_code} eq 'jp' or not $connection_token;
+    return $c->redirect_to($redirect_uri)
+        if $c->{stash}->{request}->{country_code} eq 'jp'
+        or not $connection_token;
 
     my $oneall = WWW::OneAll->new(
         subdomain   => 'binary',
@@ -47,14 +47,25 @@ sub callback {
     my $user_connect  = BOM::Database::Model::UserConnect->new;
     my $user_id       = $user_connect->get_user_id_by_connect($provider_data);
 
+    my $email = _get_email($provider_data);
+    my $user  = try {
+        BOM::Platform::User->new({email => $email})
+    };
+    # Registered users who have email/password based account are forbidden
+    # from social signin. As only one login method
+    # is allowed (either email/password or social login).
+    if ($user and not $user->has_social_signup) {
+        # Redirect client to login page if social signup flag is not found.
+        # As the main purpose of this package is to serve
+        # clients with social login only.
+        $c->session('_oneall_error', localize("Invalid login attempt. Please log in with your email and password instead."));
+        return $c->redirect_to($redirect_uri);
+    }
+
     # Create virtual client if user not found
     # consequently initialize user_id and link account to social login.
     unless ($user_id) {
-        my $email = _get_email($provider_data);
-        my $user  = try {
-            BOM::Platform::User->new({email => $email})
-        };
-        # create user based on email by fly unless already exists
+        # create user based on email by fly if account does not exist yet
         $user = $c->__create_virtual_user($email) unless $user;
         # connect oneall provider data to user identity
         $user_connect->insert_connect($user->id, $provider_data);
@@ -90,15 +101,12 @@ sub __create_virtual_user {
 
     my $acc = BOM::Platform::Account::Virtual::create_account({
             details => {
-                email           => $email,
-                client_password => rand(999999),    # random password so you can't login without password
+                email             => $email,
+                client_password   => rand(999999),    # random password so you can't login without password
+                has_social_signup => 1,
             },
         });
     die $acc->{error} if $acc->{error};
-
-    # set social_signup flag
-    $acc->{client}->set_status('social_signup', 'system', '1');
-    $acc->{client}->save;
 
     return $acc->{user};
 }
