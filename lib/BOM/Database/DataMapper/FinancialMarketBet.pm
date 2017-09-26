@@ -66,16 +66,19 @@ sub get_sold_bets_of_account {
         push @binds, $after->datetime_yyyymmdd_hhmmss;
     }
 
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare("
+    my $dbic = $self->db->dbic;
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare("
         SELECT fmb.*, t.id txn_id, t.source
         $sql
         ORDER BY fmb.purchase_time $sort_dir, fmb.id $sort_dir
         LIMIT ? OFFSET ?
     ");
-    $sth->execute(@binds, $limit, $offset);
+            $sth->execute(@binds, $limit, $offset);
 
-    return $sth->fetchall_arrayref({});
+            return $sth->fetchall_arrayref({});
+        });
 }
 
 =head2 get_fmb_by_id
@@ -181,23 +184,26 @@ sub get_sold {
     my $after  = $args->{after}  || '1970-01-01 00:00:00';
     my $limit  = $args->{limit}  || 50;
 
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
+    my $dbic = $self->db->dbic;
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
 
-    $sth->bind_param(1, $self->account->id);
-    $sth->bind_param(2, $before);
-    $sth->bind_param(3, $after);
-    $sth->bind_param(4, $limit);
+            $sth->bind_param(1, $self->account->id);
+            $sth->bind_param(2, $before);
+            $sth->bind_param(3, $after);
+            $sth->bind_param(4, $limit);
 
-    my $transactions = [];
-    if ($sth->execute()) {
-        while (my $row = $sth->fetchrow_hashref()) {
-            $row->{purchase_date} = Date::Utility->new($row->{purchase_time});
-            $row->{sale_date}     = Date::Utility->new($row->{sell_time});
-            push @$transactions, $row;
-        }
-    }
-    return $transactions;
+            my $transactions = [];
+            if ($sth->execute()) {
+                while (my $row = $sth->fetchrow_hashref()) {
+                    $row->{purchase_date} = Date::Utility->new($row->{purchase_time});
+                    $row->{sale_date}     = Date::Utility->new($row->{sell_time});
+                    push @$transactions, $row;
+                }
+            }
+            return $transactions;
+        });
 }
 
 # we need to get buy sell transactions id for particular contract
@@ -214,11 +220,14 @@ sub get_contract_details_with_transaction_ids {
             fmb.id = ?
     };
 
-    my $sth = $self->db->dbh->prepare($sql);
-    $sth->execute($contract_id);
+    my @fmbs = $self->db->dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($contract_id);
+            return @{$sth->fetchall_arrayref({})};
 
+        });
     my $response = [];
-    my @fmbs     = @{$sth->fetchall_arrayref({})};
 
     if (scalar @fmbs > 0) {
         # get only first record as all other fields are similar

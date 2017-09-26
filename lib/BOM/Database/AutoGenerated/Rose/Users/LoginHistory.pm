@@ -15,6 +15,8 @@ __PACKAGE__->meta->setup(
         history_date   => { type => 'timestamp', default => 'now()' },
         environment    => { type => 'varchar', length => 1024, not_null => 1 },
         successful     => { type => 'boolean', not_null => 1 },
+        ip             => { type => 'scalar' },
+        country        => { type => 'text' },
     ],
 
     primary_key_columns => [ 'id' ],

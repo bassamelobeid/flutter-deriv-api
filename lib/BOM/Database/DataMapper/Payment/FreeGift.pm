@@ -15,11 +15,12 @@ extends 'BOM::Database::DataMapper::Payment';
     return loginid, currency_code, balance and free_gift and freegift transaction time of clients that haven't used freegift
 
 =back
+
 =cut
 
 sub get_clients_with_only_one_freegift_transaction_and_inactive {
     my $self        = shift;
-    my $dbh         = $self->db->dbh;
+    my $dbic        = $self->db->dbic;
     my $broker_code = $self->broker_code;
     my $before_than = shift;
     $before_than = $before_than->datetime_yyyymmdd_hhmmss;
@@ -65,15 +66,18 @@ sub get_clients_with_only_one_freegift_transaction_and_inactive {
 
     my @no_used_gift_clients;
     try {
-        local $dbh->{'RaiseError'} = 1;
-
-        my $sth = $dbh->prepare($sql);
-        my @bind_value = ($before_than, $broker_code . "%");
-        $sth->execute(@bind_value);
-
-        while (my $txn_hashref = $sth->fetchrow_hashref) {
-            push @no_used_gift_clients, $txn_hashref;
-        }
+        push @no_used_gift_clients, $dbic->run(
+            sub {
+                my $sth = $_->prepare($sql);
+                my @bind_value = ($before_than, $broker_code . "%");
+                $sth->execute(@bind_value);
+                # A new variable is created. We don't want to affect outer environment for we are using 'fixup' mode of DBIx::Connector
+                my @inner_no_used_gift_clients;
+                while (my $txn_hashref = $sth->fetchrow_hashref) {
+                    push @inner_no_used_gift_clients, $txn_hashref;
+                }
+                return @inner_no_used_gift_clients;
+            });
     }
     catch {
         Carp::croak("BOM::Database::DataMapper::Payment::FreeGift -  [$_]");

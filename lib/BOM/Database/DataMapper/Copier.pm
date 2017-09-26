@@ -13,15 +13,14 @@ sub get_copiers_cnt {
     };
 
     my @binds = ($args->{trader_id});
-    return scalar(@{$self->db->dbh->selectcol_arrayref($sql, undef, @binds) || []});
+    return scalar(@{$self->db->dbic->run(sub { $_->selectcol_arrayref($sql, undef, @binds) || [] })});
 }
-
 
 sub get_trade_copiers {
     my ($self, $args) = @_;
     ### This SQL query can be written in more obvious way but this long query is faster.
     ### Please, check with DBA if you want to change it
-    return $self->db->dbh->selectcol_arrayref(<<'SQL', undef, @{$args}{qw/trader_id trade_type asset price/}) || [];
+    my $sql = <<'SQL';
 SELECT DISTINCT copier_id from (
     SELECT copier_id
       FROM betonmarkets.copiers AS copiers
@@ -66,6 +65,11 @@ SELECT DISTINCT copier_id from (
             (max_trade_stake is NULL OR $4 <= max_trade_stake))
 ) t
 SQL
+
+    return $self->db->dbic->run(
+        sub {
+            $_->selectcol_arrayref($sql, undef, @{$args}{qw/trader_id trade_type asset price/});
+        }) // [];
 }
 
 sub get_traders {
@@ -78,7 +82,7 @@ sub get_traders {
     };
 
     my @binds = ($args->{copier_id});
-    return $self->db->dbh->selectcol_arrayref($sql, undef, @binds);
+    return $self->db->dbic->run(sub { $_->selectcol_arrayref($sql, undef, @binds) });
 }
 
 no Moose;
