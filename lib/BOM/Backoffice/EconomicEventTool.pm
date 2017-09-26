@@ -60,7 +60,7 @@ sub is_categorized {
 
     $event->{event_name} =~ s/\s/_/g;
     my @categories = keys %{Volatility::Seasonality::get_economic_event_categories()};
-    return 1 if first { $_ =~ /$event->{event_name}/ } @categories;
+    return 1 if first { $_ =~ /$event->{event_name}$/ } @categories;
     return 0;
 }
 
