@@ -71,7 +71,7 @@
                 }
             }
         } else {
-            table += '<tr><td>Empty</td></tr>';
+            table += '<tr class="empty"><td>Empty</td></tr>';
         }
         table += '</table>';
         \$('#'+id).html(table);
@@ -158,6 +158,8 @@
     }
     function appendEvent (event, table_id) {
         var table = \$('table#' + table_id);
+        table.find('tr.empty').remove();
+
         var to_append = '<tr id="'+ event.id +'">';
 
         if (event.not_categorized) {
