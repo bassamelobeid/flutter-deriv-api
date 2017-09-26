@@ -30,7 +30,10 @@ sub get_economic_events_for_date {
     });
 
     my @events = map { get_info($_) } @$economic_events;
-    my @deleted_events = map { get_info($_) } (values %{$eec->_get_deleted()});
+    my @deleted_events =
+        map { get_info($_) }
+        grep { Date::Utility->new($_->{release_date})->epoch >= $from->epoch && Date::Utility->new($_->{release_date})->datetime <= $to->epoch }
+        (values %{$eec->_get_deleted()});
 
     return {
         categorized_events => to_json(\@events),
