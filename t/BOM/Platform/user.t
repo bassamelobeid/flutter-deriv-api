@@ -382,6 +382,7 @@ sub write_file {
 subtest 'MirrorBinaryUserId' => sub {
     use YAML::XS qw/LoadFile/;
     use BOM::Platform::Script::MirrorBinaryUserId;
+    use Client::Account;
 
     my $cfg = LoadFile '/etc/rmg/userdb.yml';
     my $pgservice_conf = "/tmp/pgservice.conf.$$";
@@ -408,7 +409,7 @@ CONF
     'setup';
 
     # at this point we have 9 rows in the queue: 2x VRTC, 4x CR, 2x MT and 1x VRCH
-    my $queue = $dbh->selectall_arrayref('SELECT * FROM q.add_loginid');
+    my $queue = $dbh->selectall_arrayref('SELECT binary_user_id, loginid FROM q.add_loginid');
     note explain $queue;
 
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 9, 'got expected number of queue entries';
@@ -418,4 +419,9 @@ CONF
 
     BOM::Platform::Script::MirrorBinaryUserId::run_once $dbh;
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';
+
+    for my $el (@$queue) {
+        my $client = Client::Account->new({loginid => $el->[1]});
+        is $client->binary_user_id, $el->[0], "$el->[1] has binary_user_id $el->[0]";
+    }
 };
