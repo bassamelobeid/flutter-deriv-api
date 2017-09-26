@@ -101,28 +101,36 @@ sub do_one {
     return $rows_removed;
 }
 
+sub run_once {
+    my $dbh = shift;
+
+    $dbh->do('LISTEN "q.add_loginid"');
+    $dbh->do('NOTIFY "q.add_loginid"');    # trigger first round
+
+    log_msg 1, "started";
+
+    # check if there is at least one notification
+    # otherwise done
+    while ($dbh->pg_notifies) {
+        # clear all notifications
+        1 while $dbh->pg_notifies;
+
+        # handle the queue until it becomes empty
+        1 while do_one $dbh;
+    }
+
+    return;
+}
+
 sub run {
     while (1) {
         try {
             my $dbh = userdb();
             my $sel = IO::Select->new;
             $sel->add($dbh->{pg_socket});
-
-            $dbh->do('LISTEN "q.add_loginid"');
-            $dbh->do('NOTIFY "q.add_loginid"');    # trigger first round
-
-            log_msg 1, "started";
-
             while (1) {
-                # check if there is at least one notification
-                # otherwise wait
-                $dbh->pg_notifies or $sel->can_read(TMOUT);
-
-                # clear all notifications
-                1 while $dbh->pg_notifies;
-
-                # handle the queue until it becomes empty
-                1 while do_one $dbh;
+                run_once $dbh;
+                $sel->can_read(TMOUT);
             }
         }
         catch {
@@ -130,8 +138,6 @@ sub run {
             sleep TMOUT;
         };
     }
-
-    return;
 }
 
 1;

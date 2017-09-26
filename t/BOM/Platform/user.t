@@ -399,13 +399,18 @@ CONF
         write_file $pgpass_conf, <<"CONF";
 $cfg->{ip}:5436:users_test:write:$cfg->{password}
 CONF
+        chmod 0400, $pgpass_conf;
 
-        @ENV{/PGSERVICEFILE PGPASSFILE/} = ($pgservice_conf, $pgpass_conf);
+        @ENV{qw/PGSERVICEFILE PGPASSFILE/} = ($pgservice_conf, $pgpass_conf);
 
         $dbh = BOM::Platform::Script::MirrorBinaryUserId::userdb;
     }
     'setup';
 
-
+    # at this point we have 9 rows in the queue: 2x VRTC, 4x CR, 2x MT and 1x VRCH
     note explain $dbh->selectall_arrayref('SELECT * FROM q.add_loginid');
+    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 9, 'got expected number of queue entries';
+
+    BOM::Platform::Script::MirrorBinaryUserId::run_once $dbh;
+    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';
 };
