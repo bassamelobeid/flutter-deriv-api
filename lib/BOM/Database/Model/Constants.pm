@@ -15,20 +15,20 @@ our $PAYMENT_GATEWAY_DATACASH  = 'datacash';
 our $PAYMENT_TYPE_CREDIT_DEBIT_CARD = 'credit_debit_card';
 our $PAYMENT_TYPE_FREE_GIFT         = 'free_gift';
 
-Readonly our $BET_CLASS_LEGACY_BET       => 'legacy_bet';
-Readonly our $BET_CLASS_RANGE_BET        => 'range_bet';
-Readonly our $BET_CLASS_HIGHER_LOWER_BET => 'higher_lower_bet';
-Readonly our $BET_CLASS_TOUCH_BET        => 'touch_bet';
-Readonly our $BET_CLASS_DIGIT_BET        => 'digit_bet';
-Readonly our $BET_CLASS_SPREAD_BET       => 'spread_bet';
-Readonly our $BET_CLASS_LOOKBACK_OPTION  => 'lookback_option';
-Readonly our $BET_CLASS_COINAUCTION_BET  => 'coinauction_bet';
+our $BET_CLASS_LEGACY_BET       => 'legacy_bet';
+our $BET_CLASS_RANGE_BET        => 'range_bet';
+our $BET_CLASS_HIGHER_LOWER_BET => 'higher_lower_bet';
+our $BET_CLASS_TOUCH_BET        => 'touch_bet';
+our $BET_CLASS_DIGIT_BET        => 'digit_bet';
+our $BET_CLASS_SPREAD_BET       => 'spread_bet';
+our $BET_CLASS_LOOKBACK_OPTION  => 'lookback_option';
+our $BET_CLASS_COINAUCTION_BET  => 'coinauction_bet';
 
 # Constant reference to volatile hash
 our $BET_CLASS_TO_TYPE_MAP = {
     'spread_bet'       => ['SPREADU', 'SPREADD'],
     'higher_lower_bet' => ['CALL',    'PUT', 'CALLE', 'PUTE', 'ASIANU', 'ASIAND'],
-    'coinauction_bet'  => ['BINARYICO'],
+    'coinauction_bet' => ['BINARYICO'],
 
     'legacy_bet' => [
         'CLUB',              'SPREADUP',          'SPREADDOWN',     'DOUBLEDBL',       'BEARSTOP',      'DOUBLECONTRA',
@@ -44,7 +44,7 @@ our $BET_CLASS_TO_TYPE_MAP = {
     'touch_bet' => ['ONETOUCH',   'NOTOUCH'],
     'digit_bet' => ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITODD', 'DIGITEVEN'],
     'lookback_option' => ['LBFIXEDCALL', 'LBFIXEDPUT', 'LBFLOATCALL', 'LBFLOATPUT', 'LBHIGHLOW'],
-    'INVALID'   => ['INVALID'],
+    'INVALID'         => ['INVALID'],
 };
 
 our $BET_TYPE_TO_CLASS_MAP = {
