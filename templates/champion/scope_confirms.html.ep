@@ -20,7 +20,7 @@
         </ul>
     </div>
     <form method="POST">
-        <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
+        <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
         <div>
             <button class="button" name="confirm_scopes" value="<%= l('Grant') %>" type="submit"><%= l('Grant') %></button>
             <button class="button button-secondary" name="cancel_scopes" value="<%= l('Cancel') %>" type="submit"><%= l('Cancel') %></button>

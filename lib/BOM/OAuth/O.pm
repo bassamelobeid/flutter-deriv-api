@@ -21,6 +21,8 @@ use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 
+use constant SOCIAL_LOGIN_MODE => 0;
+
 sub _oauth_model {
     return BOM::Database::Model::OAuth->new;
 }
@@ -36,6 +38,8 @@ sub authorize {
     my $app         = $oauth_model->verify_app($app_id);
     return $c->_bad_request('the request was missing valid app_id') unless $app;
 
+    my $request_country_code = $c->{stash}->{request}->{country_code};
+
     # setup oneall callback url
     my $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
     $c->stash('oneall_callback' => $oneall_callback);
@@ -43,7 +47,7 @@ sub authorize {
     my $client;
     # try to retrieve client from session
     if (    $c->req->method eq 'POST'
-        and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
+        and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
         and defang($c->param('login')))
     {
         $client = $c->_login($app) or return;
@@ -54,7 +58,7 @@ sub authorize {
         $client = $c->_get_client;
     } elsif ($c->session('_oneall_user_id')) {
         # Prevent Japan IP access social login feature.
-        if ($c->{stash}->{request}->{country_code} ne 'jp') {
+        if ($request_country_code ne 'jp') {
             # Get client from Oneall Social Login.
             my $oneall_user_id = $c->session('_oneall_user_id');
             $client = $c->_login($app, $oneall_user_id) or return;
@@ -66,24 +70,16 @@ sub authorize {
     my $brand_name = $c->stash('brand')->name;
 
     # show error when no client found in session
-    unless ($client) {
-        # taken error from oneall
-        my $error = '';
-        if ($error = $c->session('_oneall_error')) {
-            delete $c->session->{_oneall_error};
-        }
-
-        # show login form
-        return $c->render(
-            template     => _get_login_template_name($brand_name),
-            layout       => $brand_name,
-            app          => $app,
-            error        => $error,
-            r            => $c->stash('request'),
-            csrftoken    => $c->csrf_token,
-            country_code => $c->{stash}->{request}->{country_code},
-        );
-    }
+    # show login form
+    return $c->render(
+        template     => _get_login_template_name($brand_name),
+        layout       => $brand_name,
+        app          => $app,
+        error        => delete $c->session->{_oneall_error} || '',
+        csrf_token   => $c->csrf_token,
+        r            => $c->stash('request'),
+        social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
+    ) unless $client;
 
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
 
@@ -95,16 +91,16 @@ sub authorize {
         app          => $app,
         error        => localize('This account is unavailable.'),
         r            => $c->stash('request'),
-        csrftoken    => $c->csrf_token,
-        country_code => $c->{stash}->{request}->{country_code},
-    ) if (grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands});
+        csrf_token   => $c->csrf_token,
+        social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
+    ) if grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands};
 
     my $redirect_uri = $app->{redirect_uri};
 
     # confirm scopes
     my $is_all_approved = 0;
     if (    $c->req->method eq 'POST'
-        and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
+        and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
         and (defang($c->param('cancel_scopes')) || defang($c->param('confirm_scopes'))))
     {
         if (defang($c->param('confirm_scopes'))) {
@@ -128,13 +124,13 @@ sub authorize {
     # show scope confirms if not yet approved
     # do not show the scope confirm screen if APP ID is 1
     return $c->render(
-        template  => $brand_name . '/scope_confirms',
-        layout    => $brand_name,
-        app       => $app,
-        client    => $client,
-        scopes    => \@{$app->{scopes}},
-        r         => $c->stash('request'),
-        csrftoken => $c->csrf_token,
+        template   => $brand_name . '/scope_confirms',
+        layout     => $brand_name,
+        app        => $app,
+        client     => $client,
+        scopes     => \@{$app->{scopes}},
+        r          => $c->stash('request'),
+        csrf_token => $c->csrf_token,
     ) unless $is_all_approved;
 
     # setting up client ip
@@ -175,11 +171,13 @@ sub authorize {
 sub _login {
     my ($c, $app, $oneall_user_id) = @_;
 
-    my ($user, $client, $last_login, $err);
+    my ($user, $last_login, $err, $client);
 
     my $email    = defang($c->param('email'));
     my $password = $c->param('password');
     my $brand    = $c->stash('brand');
+
+    # TODO get rid of LOGIN label
     LOGIN:
     {
         if ($oneall_user_id) {
@@ -204,6 +202,13 @@ sub _login {
             $user = BOM::Platform::User->new({email => $email});
             unless ($user) {
                 $err = localize('Incorrect email or password.');
+                last;
+            }
+            # Prevent login if social signup flag is found.
+            # As the main purpose of this controller is to serve
+            # clients with email/password only.
+            if ($user->has_social_signup) {
+                $err = localize('Invalid login attempt. Please log in with a social network instead.');
                 last;
             }
         }
@@ -250,8 +255,8 @@ sub _login {
             app          => $app,
             error        => $err,
             r            => $c->stash('request'),
-            csrftoken    => $c->csrf_token,
-            country_code => $c->{stash}->{request}->{country_code},
+            csrf_token   => $c->csrf_token,
+            social_login => (SOCIAL_LOGIN_MODE and $c->{stash}->{request}->{country_code} ne 'jp'),
         );
         return;
     }
