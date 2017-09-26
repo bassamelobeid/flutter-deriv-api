@@ -380,6 +380,7 @@ sub write_file {
 }
 
 subtest 'MirrorBinaryUserId' => sub {
+    plan tests => 12;
     use YAML::XS qw/LoadFile/;
     use BOM::Platform::Script::MirrorBinaryUserId;
     use Client::Account;
@@ -421,7 +422,11 @@ CONF
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';
 
     for my $el (@$queue) {
-        my $client = Client::Account->new({loginid => $el->[1]});
-        is $client->binary_user_id, $el->[0], "$el->[1] has binary_user_id $el->[0]";
+        if ($el->[1] =~ /^MT/) {
+            ok 1, "survived MT account $el->[1]";
+        } else {
+            my $client = Client::Account->new({loginid => $el->[1]});
+            is $client->binary_user_id, $el->[0], "$el->[1] has binary_user_id $el->[0]";
+        }
     }
 };
