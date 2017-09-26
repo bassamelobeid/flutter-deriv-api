@@ -323,7 +323,6 @@ sub get_bid {
     try {
         $params->{validation_params}->{landing_company} = $landing_company;
         my $is_valid_to_sell = $contract->is_valid_to_sell($params->{validation_params});
-        warn "is_valid_to_sell is $is_valid_to_sell\n";
         $response = {
             is_valid_to_sell => $is_valid_to_sell,
             (
