@@ -15,12 +15,12 @@
       "properties":{
         "upload_id": {
           "type": "number",
-          "description": "Current upload ID",
+          "description": "Current upload ID, add this to your binary payload metadata",
           "required": 1
         },
         "call_type": {
           "type": "number",
-          "description": "Current call type",
+          "description": "Current call type, add this to your binary payload metadata",
           "required": 1
         },
         "size": {
