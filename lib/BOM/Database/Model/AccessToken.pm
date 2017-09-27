@@ -12,14 +12,6 @@ sub _build_dbic {
     return BOM::Database::AuthDB::rose_db->dbic;
 }
 
-# TODO chylli/dbix_connector
-# should remove this atribute after the whole dbix_connector project finished
-
-sub dbh {
-    my $self = shift;
-    return $self->dbic->dbh;
-}
-
 sub __parse_array {
     my ($array_string) = @_;
     return $array_string if ref($array_string) eq 'ARRAY';

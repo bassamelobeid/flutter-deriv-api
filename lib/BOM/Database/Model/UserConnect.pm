@@ -13,14 +13,6 @@ sub _build_dbic {
     return BOM::Database::UserDB::rose_db->dbic;
 }
 
-# TODO chylli/dbix_connector
-# should remove this atribute after the whole dbix_connector project finished
-
-sub dbh {
-    my $self = shift;
-    return $self->dbic->dbh;
-}
-
 sub insert_connect {
     my ($self, $user_id, $provider_data) = @_;
 
