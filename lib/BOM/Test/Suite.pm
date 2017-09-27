@@ -157,7 +157,6 @@ sub read_schema_file {
 sub read_templated_schema_file {
     my ($self, $relpath, %args) = @_;
 
-    my @template_func   = @{$args{template_func}   // []};
     my @template_values = @{$args{template_values} // []};
 
     my $content = $self->read_schema_file($relpath);
@@ -168,36 +167,12 @@ sub read_templated_schema_file {
 
         return $template_values[$idx - 1] if defined $template_values[$idx - 1];
 
-        my $f = $template_func[$idx - 1];    # templates are 1-based
-        if (!defined $f) {
-            warn "No template function defined for template parameter [_$idx]";
-            return "[MISSING VALUE FOR PARAMETER $idx]";
-        }
-        $f =~ s/^\s+|\s+$//g;
-        my $template_content;
-        if ($f =~ /^\_.*$/) {
-            local $@;                        # ensure we clear this first, to avoid false positive
-            $template_content = eval $f;     ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
-
-            # we do not expect any exceptions from the eval, they could indicate
-            # invalid Perl code or bug, either way we need to know about them
-            ok(!$@, "template content can eval successfully")
-                or diag "Possible exception on eval \"$f\": $@"
-                if $@;
-            # note that _get_token may return undef, the template implementation is not advanced
-            # enough to support JSON null so we fall back to an empty string
-            $template_content //= '';
-        } else {
-            $f =~ s/^\'|\'$//g;
-            $template_content = $f;
-        }
-        # Memoise it for next time
-        $template_values[$idx - 1] = $template_content;
-        return $template_content;
+        warn "No template value defined for template parameter [_$idx]";
+        return "[MISSING VALUE FOR PARAMETER $idx]";
     };
 
     # Expand templates in the form [_nnn] by using the functions given in
-    # @$template_funcs.
+    # @$template_values.
     $content =~ s{\[_(\d+)\]}{$expand->($1)}eg;
 
     return $content;
@@ -246,7 +221,7 @@ sub exec_test {
     my $start_stream_id = $args{start_stream_id};
     my $expect_fail     = $args{expect_fail};
     my $linenum         = $args{linenum};
-    # plus 'template_func', 'template_values'
+    # plus 'template_values'
 
     # we are setting the time two seconds ahead for every step to ensure time
     # sensitive tests (pricing tests) always start at a consistent time.
@@ -262,7 +237,6 @@ sub exec_test {
     if ($test_stream_id) {
         my $content = $self->read_templated_schema_file(
             $receive_file,
-            template_func   => $args{template_func},
             template_values => $args{template_values},
         );
 
@@ -273,7 +247,6 @@ sub exec_test {
 
         my $content = $self->read_templated_schema_file(
             $send_file,
-            template_func   => $args{template_func},
             template_values => $args{template_values},
         );
         my $req_params = JSON::from_json($content);
@@ -284,7 +257,6 @@ sub exec_test {
 
         $content = $self->read_templated_schema_file(
             $receive_file,
-            template_func   => $args{template_func},
             template_values => $args{template_values},
         );
 
