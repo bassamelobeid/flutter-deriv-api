@@ -178,7 +178,6 @@ sub upload_chunk {
     my ($c, $upload_info) = @_;
     my $upload_id = $upload_info->{upload_id};
     my $data      = $upload_info->{data};
-    my $file_name = $upload_info->{file_name};
     my $stash     = $c->stash('document_upload');
 
     my $new_received_bytes = $stash->{$upload_id}->{received_bytes} + length $data;
