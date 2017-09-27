@@ -18,11 +18,11 @@ sub upload {
     my $loginid  = $client->loginid;
     my $dbh = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db->dbh;
 
-    return create_error('UploadError', 'max_size') if defined $file_size and $file_size > MAX_FILE_SIZE;
-    return create_error('UploadError', $reason)    if defined $status    and $status eq 'failure';
+    return create_upload_error('UploadError', 'max_size') if defined $file_size and $file_size > MAX_FILE_SIZE;
+    return create_upload_error('UploadError', $reason)    if defined $status    and $status eq 'failure';
 
     # Early return for virtual accounts.
-    return create_error('UploadDenied', localize("Virtual accounts don't require document uploads.")) if $client->is_virtual;
+    return create_upload_error('UploadDenied', localize("Virtual accounts don't require document uploads.")) if $client->is_virtual;
 
     if (defined $expiration_date && $expiration_date ne '') {
         my ($current_date, $parsed_date, $error);
@@ -34,9 +34,9 @@ sub upload {
             $error = $_;
         };
         if ($error) {
-            return create_error('UploadDenied', localize("Invalid expiration_date."));
+            return create_upload_error('UploadDenied', localize("Invalid expiration_date."));
         } elsif ($parsed_date->is_before($current_date) || $parsed_date->is_same_as($current_date)) {
-            return create_error('UploadDenied', localize("expiration_date cannot be less than or equal to current date."));
+            return create_upload_error('UploadDenied', localize("expiration_date cannot be less than or equal to current date."));
         }
     } else {
         $expiration_date = undef;
@@ -44,8 +44,8 @@ sub upload {
 
     # Check documentID and expiration date for passport, driverslicense, proofid
     if (defined($document_type) && $document_type =~ /^(passport|proofid|driverslicense)$/) {
-        return create_error('UploadDenied', localize("Expiration date is required.")) unless $expiration_date;
-        return create_error('UploadDenied', localize("Document ID is required."))     unless $document_id;
+        return create_upload_error('UploadDenied', localize("Expiration date is required.")) unless $expiration_date;
+        return create_upload_error('UploadDenied', localize("Document ID is required."))     unless $document_id;
     }
 
     # Add new entry to database.
@@ -57,7 +57,7 @@ sub upload {
             '', 'uploading'
         );
 
-        return create_error('UploadError') if !$id;
+        return create_upload_error('UploadError') if !$id;
 
         return {
             file_name => join('.', $loginid, $document_type, $id, $document_format),
@@ -71,28 +71,28 @@ sub upload {
         my ($doc) = $client->find_client_authentication_document(query => [id => $file_id]);
 
         # Return if document is not present in db.
-        return create_error('UploadDenied', localize("Document not found.")) unless defined($doc);
+        return create_upload_error('UploadDenied', localize("Document not found.")) unless defined($doc);
 
         $doc->{file_name}     = join '.', $loginid, $doc->{document_type}, $doc->{id}, $doc->{document_format};
         $doc->{status}        = "uploaded";
 
         if (not $doc->save()) {
-            return create_error('UploadError');
+            return create_upload_error('UploadError');
         }
 
         # Change client's account status.
         $client->set_status('under_review', 'system', 'Documents uploaded');
         if (not $client->save()) {
-            return create_error('UploadError');
+            return create_upload_error('UploadError');
         }
 
         return $params->{args};
     }
 
-    return create_error('UploadError');
+    return create_upload_error('UploadError');
 }
 
-sub create_error {
+sub create_upload_error {
     my ($code, $reason) = @_;
 
     my $message = $code eq 'UploadError' ? get_error_details($reason) : $reason;
