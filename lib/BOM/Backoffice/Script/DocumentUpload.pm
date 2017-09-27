@@ -51,6 +51,8 @@ sub upload {
     my $file = read_file($original_filename, binmode => ':raw');
 
     $s3_bucket->add_key($filename, $file);
+
+    return;
 }
 
 1;
