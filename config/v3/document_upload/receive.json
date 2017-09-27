@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Request Customer Authentication",
-  "description": "Send documents for the authentication process",
+  "description": "Receive details of uploaded authentication documents",
   "properties": {
     "echo_req": {
       "title":"Echo request",
