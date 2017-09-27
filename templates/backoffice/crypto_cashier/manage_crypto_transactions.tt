@@ -81,7 +81,7 @@
     <table>
         <tr>
             [% IF view_action == 'search' %]
-                <th>Type</th>
+                <th>Status</th>
             [% END %]
             <th>BlockchainInfo</th>
             <th>PaymentInfo</th>
@@ -95,7 +95,7 @@
             <tr>
                 [% IF view_action == 'search' %]
                     <td><table><tbody>
-                        <b>[% trx.transaction_type FILTER ucfirst %]</b>
+                        <b>[% trx.transaction_type FILTER ucfirst %]: </b>[% trx.status %]
                     </tbody></table></td>
                 [% END %]
                 <td><table><tbody>
