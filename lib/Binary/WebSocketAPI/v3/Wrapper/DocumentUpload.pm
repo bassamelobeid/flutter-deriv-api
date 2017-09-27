@@ -244,6 +244,8 @@ sub remove_echo_req {
         req_id      => $args->{req_id},
         passthrough => $args->{passthrough},
     };
+
+    return;
 }
 
 sub delete_upload_info {
