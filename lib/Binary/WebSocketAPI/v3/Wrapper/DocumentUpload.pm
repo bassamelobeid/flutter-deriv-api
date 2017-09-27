@@ -92,8 +92,10 @@ sub get_upload_info {
 
     my ($call_type, $upload_id, $chunk_size, $data) = unpack "N3a*", $frame;
 
-    die "Unknown upload request" unless my $stash       = $c->stash('document_upload');
-    die "Unknown upload id"      unless my $upload_info = $stash->{$upload_id};
+    my ($stash, $upload_info);
+
+    die "Unknown upload request" unless $stash       = $c->stash('document_upload');
+    die "Unknown upload id"      unless $upload_info = $stash->{$upload_id};
     die "Unknown call type"      unless $call_type == $upload_info->{call_type};
     die "Incorrect data size"    unless $chunk_size == length $data;
 
@@ -155,9 +157,9 @@ sub send_upload_successful {
                 token => $c->stash('token'),
             },
             args => {
-                req_id        => $upload_info->{req_id},
-                passthrough   => $upload_info->{passthrough},
-                file_id       => $upload_info->{file_id},
+                req_id      => $upload_info->{req_id},
+                passthrough => $upload_info->{passthrough},
+                file_id     => $upload_info->{file_id},
                 %{$upload_finished},
             },
             response => sub {
