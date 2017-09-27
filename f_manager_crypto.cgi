@@ -113,7 +113,7 @@ my $display_transactions = sub {
     # Render template page with transactions
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
-        'backoffice/account/manage_crypto_transactions.tt',
+        'backoffice/crypto_cashier/manage_crypto_transactions.tt',
         {
             transactions    => $trxns,
             broker          => $broker,
@@ -129,7 +129,7 @@ my $display_transactions = sub {
 
 my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
-    'backoffice/account/crypto_control_panel.html.tt',
+    'backoffice/crypto_cashier/crypto_control_panel.html.tt',
     {
         exchange_rates => $exchange_rates,
         controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
@@ -206,33 +206,24 @@ if ($view_action eq 'withdrawals') {
 } elsif ($view_action eq 'search') {
     my $search_type  = request()->param('search_type');
     my $search_query = request()->param('search_query');
-    my $trxns;
     Bar("SEARCH RESULT FOR $search_query");
 
+    my @trxns = ();
     code_exit_BO("Invalid type of search request.")
         unless grep { $search_type eq $_ } qw/loginid address/;
 
     # Fetch all transactions matching specified searching details
-    $trxns = (
-        $dbic->run(
-            sub { $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query) }
-        ),
-        $dbic->run(
-            sub {
-                $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query);
-            }
-        ),
+    @trxns = (
+        @{$dbic->run(sub{$_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, ?)", {Slice => {}}, $search_query, $currency)}}),
+        @{$dbic->run(sub{$_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, ?)",    {Slice => {}}, $search_query, $currency)}}),
     ) if ($search_type eq 'address');
 
-    $trxns = (
-        $dbic->run(
-            sub { $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query) }
-        ),
-        $dbic->run(
-            sub {
-                $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query);
-            })) if ($search_type eq 'loginid');
-    $display_transactions->($trxns);
+    @trxns = (
+        @{$dbic->run(sub{$_->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, ?)', {Slice => {}}, $search_query, $currency)}}),
+        @{$dbh->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, ?)',    {Slice => {}}, $search_query, $currency)},
+    ) if ($search_type eq 'loginid');
+
+    $display_transactions->(\@trxns);
 
 } elsif ($view_action eq 'reconcil') {
     Bar($currency . ' Reconciliation');
