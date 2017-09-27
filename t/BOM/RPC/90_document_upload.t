@@ -45,11 +45,11 @@ $params->{upload} = "some_id";
 my $args = {expiration_date => "asdaas-asd-asd"};
 
 $params->{args} = $args;    # Invalid date
-$c->call_ok($method, $params)->has_error->error_message_is('Invalid expiration_date.', 'check invalid expiration_date');
+$c->call_ok($method, $params)->has_error->error_message_is('Invalid expiration date.', 'check invalid expiration_date');
 
 $args->{expiration_date} = "2017-08-09";    # Expired documents.
 $c->call_ok($method, $params)
-    ->has_error->error_message_is('expiration_date cannot be less than or equal to current date.', 'check expiration_date is before current date');
+    ->has_error->error_message_is('Expiration date cannot be less than or equal to current date.', 'check expiration_date is before current date');
 
 # Unsuccessful finished upload
 $args->{expiration_date} = "2117-08-11";    # 100 years is all I give you, humanity!
