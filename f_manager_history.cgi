@@ -16,7 +16,6 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
-BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $loginID = uc(request()->param('loginID') // '');
 $loginID =~ s/\s//g;
@@ -38,9 +37,9 @@ unless ($broker) {
 }
 
 if ($depositswithdrawalsonly eq 'yes') {
-    Bar($encoded_loginID . ' (DEPO & WITH ONLY)');
+    Bar($loginID . ' (DEPO & WITH ONLY)');
 } else {
-    Bar($encoded_loginID);
+    Bar($loginID);
 }
 
 my $client = Client::Account::get_instance({'loginid' => $loginID});

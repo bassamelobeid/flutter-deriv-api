@@ -31,13 +31,12 @@ my $broker = request()->broker_code;
 
 BrokerPresentation('STAFF LOGIN PAGE');
 
-if ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
+if ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}}) && !BOM::Platform::Config::on_qa()) {
     print "<table border=0 width=97%><tr><td width=97% bgcolor=#FFFFEE>
         <b><center><font size=+1>YOU ARE ON THE MASTER LIVE SERVER</font>
         <br>This is the server on which to edit most system files (except those that are specifically to do with a specific broker code).
         </b></font></td></tr></table>";
 }
-
 print "<center>";
 
 my $allbrokercodes = '<option>' . join("<option>", LandingCompany::Registry::all_broker_codes);

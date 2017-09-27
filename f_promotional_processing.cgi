@@ -21,7 +21,6 @@ Bar('PROMO CODE APPROVAL TOOL');
 
 my %input = %{request->params};
 
-BOM::Backoffice::Auth0::can_access(['Marketing']);
 my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my @approved = grep { /_promo$/ && $input{$_} eq 'A' } keys %input;
@@ -66,12 +65,11 @@ foreach my $loginid (@approved, @rejected) {
         BOM::Backoffice::Request::template->process(
             'email/bonus_approve.html.tt',
             {
-                name          => $client_name,
-                currency      => $currency,
-                amount        => $amount,
-                support_email => Brands->new(name => request()->brand)->emails('support'),
-                tac_url       => $tac_url,
-                website_name  => 'Binary.com',
+                name         => $client_name,
+                currency     => $currency,
+                amount       => $amount,
+                tac_url      => $tac_url,
+                website_name => 'Binary.com',
             },
             \$email_content
             )
@@ -107,7 +105,6 @@ foreach my $loginid (@approved, @rejected) {
             email_content_is_html => 1,
             use_email_template    => 1,
         });
-        $client->add_note($email_subject, $email_content);
     }
 }
 

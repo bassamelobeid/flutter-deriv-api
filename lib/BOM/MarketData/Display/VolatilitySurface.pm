@@ -42,12 +42,11 @@ Output the volatility surface in table format.
 sub rmg_table_format {
     my ($self, $args) = @_;
 
-    my $volsurface       = $self->surface;
-    my $atm_spread_point = $volsurface->atm_spread_point;
-    my $dates            = (defined $args->{historical_dates}) ? $args->{historical_dates} : [];
-    my $tab_id           = (defined $args->{tab_id}) ? $args->{tab_id} : undef;
-    my $greeks           = (defined $args->{greeks}) ? $args->{greeks} : undef;
-    my $content_only     = (defined $args->{content_only}) ? $args->{content_only} : undef;
+    my $volsurface   = $self->surface;
+    my $dates        = (defined $args->{historical_dates}) ? $args->{historical_dates} : [];
+    my $tab_id       = (defined $args->{tab_id}) ? $args->{tab_id} : undef;
+    my $greeks       = (defined $args->{greeks}) ? $args->{greeks} : undef;
+    my $content_only = (defined $args->{content_only}) ? $args->{content_only} : undef;
 
     my $dates_tt;
     foreach my $date (@{$dates}) {
@@ -67,8 +66,8 @@ sub rmg_table_format {
     }
 
     my @headers  = ('days');
-    my $hour_age = sprintf('%.2f', (Date::Utility->new->epoch - $volsurface->recorded_date->epoch) / 3600);
-    my $title    = $volsurface->recorded_date->datetime . ' (' . $hour_age . ' hours ago)';
+    my $hour_age = sprintf('%.2f', (Date::Utility->new->epoch - $volsurface->creation_date->epoch) / 3600);
+    my $title    = $volsurface->creation_date->datetime . ' (' . $hour_age . ' hours ago)';
 
     my $forward_vols = $self->get_forward_vol();
     my @surface;
@@ -84,57 +83,24 @@ sub rmg_table_format {
     } elsif ($volsurface->type eq 'flat') {
         push @headers, qw(tenor date flat_vol flat_atm_spread);
         @surface =
-            map { [$volsurface->flat_vol, $volsurface->flat_atm_spread] } @days;
+            map { [$volsurface->flat_vol, $volsurface->atm_spread_point] } @days;
     } elsif ($volsurface->type eq 'delta') {
-        my @deltas = (sort { $a <=> $b } @{$volsurface->deltas});
+        my @deltas = @{$volsurface->smile_points};
         my @vol_spreads_points;
 
         foreach my $delta (@{$volsurface->spread_points}) {
             if ($delta =~ /^\d+/) {
-                push @vol_spreads_points, $delta . 'D_spread' . '</th>';
+                push @vol_spreads_points, $delta . 'D_spread';
             } else {
                 push @vol_spreads_points, $delta;
             }
         }
 
-        foreach (@deltas) {
-            push @headers, $_;
-        }
-
         @headers = ('days', 'tenor', 'date', @deltas, @vol_spreads_points, '1-day Forward Vol', 'RR', '2vBF', '1vBF', 'Skew', 'Kurtosis');
 
-        for (my $i = 0; $i < scalar @days; $i++) {
-            my $day    = $days[$i];
-            my $smile  = $volsurface->get_smile($day);
+        foreach my $day (@days) {
+            my $smile  = $volsurface->get_surface_smile($day);
             my $spread = $volsurface->get_smile_spread($day);
-
-            if ($atm_spread_point ne 'atm_spread') {
-                $spread = $spread->{'vol_spread'};
-            }
-
-            my @row;
-            for (my $j = 0; $j < scalar @deltas; $j++) {
-                my $delta = $deltas[$j];
-
-                # display as %
-                push @row, sprintf('%.3f', $smile->{$delta} * 100);
-
-            }
-
-            foreach (@{$volsurface->spread_points}) {
-                my $spread_point = $_;
-
-                # display as %
-                push @row, sprintf('%.3f', $spread->{$spread_point} * 100);
-
-            }
-
-            # Forward Vol
-            my $fv;
-            if (grep { $day == $_ } @{$volsurface->original_term_for_smile}) {
-                $fv = sprintf('%.3f', $forward_vols->{$day} * 100);
-            }
-            push @row, $fv;
 
             # rr, 2vBF
             my $rr_bf = $volsurface->get_rr_bf_for_smile($smile);
@@ -154,16 +120,17 @@ sub rmg_table_format {
                 premium_adjusted => $underlying->{market_convention}->{delta_premium_adjusted},
                 bf_style         => '2_vol',
             });
-            foreach ($rr_bf->{RR_25}, $rr_bf->{BF_25}, $bf_1vol) {
-                push @row, sprintf('%.3f', ($_ * 100));
-            }
 
-            # skew, kurtosis
-            my $skew = $self->get_skew_kurtosis($rr_bf);
-            foreach ($skew->{skew}, $skew->{kurtosis}) {
-                push @row, sprintf('%.3f', (($_) ? $_ : "0"));
-            }
-            push @surface, [@row];
+            push @surface, [
+                map { defined $_ ? sprintf('%.3f', $_) : '—' } (
+                    (map { $smile->{$_} * 100 } @deltas),
+                    (map { ($spread->{$_} // 0) * 100 } @{$volsurface->spread_points}),
+                    # Forward Vol
+                    ((grep { $day == $_ } @{$volsurface->original_term_for_smile}) ? ($forward_vols->{$day} * 100) : undef),
+                    (map { $_ * 100 } ($rr_bf->{RR_25}, $rr_bf->{BF_25}, $bf_1vol)),
+                    # skew, kurtosis
+                    (map { $_ // 0 } @{$self->get_skew_kurtosis($rr_bf)}{qw/skew kurtosis/}),
+                )];
         }
     }
 
@@ -173,7 +140,7 @@ sub rmg_table_format {
         my $day  = $_;
         my $date = 'n/a';
         if (grep { $day eq $_ } @{$volsurface->original_term_for_smile}) {
-            $date = Date::Utility->new($volsurface->recorded_date->epoch + $day * 86400)->date;
+            $date = Date::Utility->new($volsurface->creation_date->epoch + $day * 86400)->date;
         }
         $date;
     } @days;
@@ -236,16 +203,15 @@ sub get_forward_vol {
     my @days = @{$volsurface->original_term_for_smile};
 
     my %implied_vols;
+
     foreach my $day (@days) {
-        my $smile = $volsurface->get_smile($day);
+        my $smile = $volsurface->get_surface_smile($day);
         $implied_vols{$day} = $smile->{$atm_key};
     }
 
-    my $trading_calendar =
-        Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($volsurface->for_date), $volsurface->for_date);
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
-        $weights{$i} = $trading_calendar->weight_on($volsurface->underlying, $volsurface->recorded_date->epoch + $i * 86400);
+        $weights{$i} = $volsurface->weight_on($volsurface->creation_date->epoch + $i * 86400);
     }
 
     my $forward_vols;
@@ -331,6 +297,8 @@ sub rmg_text_format {
             $row .= $self->_field_separator . roundcommon(0.0001, $spread->{$spread_point});
         }
 
+        $row .= $self->_field_separator . $volsurface->surface->{$day}{expiry_date} if $volsurface->surface->{$day}{expiry_date};
+
         push @surface, $row;
     }
 
@@ -344,12 +312,8 @@ sub _construct_smile_line {
 
     my $volsurface = $self->surface;
 
-    my @surface_vol_point = @{$volsurface->smile_points};
-
-    my %deltas_to_use = map { $_ => 1 } @surface_vol_point;
-
+    my %deltas_to_use = map { $_ => 1 } @{$volsurface->smile_points};
     $day = $volsurface->surface->{$day}->{tenor} || $day;
-
     my @smile_line = ($day);
 
     foreach my $point (sort { $a <=> $b } keys %{$smile_ref}) {
@@ -583,8 +547,8 @@ sub calculate_moneyness_vol_for_display {
         my %delta_smile = map {
             $_ => $volsurface->get_volatility({
                     delta => $_,
-                    from  => $volsurface->recorded_date,
-                    to    => $volsurface->recorded_date->plus_time_interval($term . 'd')})
+                    from  => $volsurface->creation_date,
+                    to    => $volsurface->creation_date->plus_time_interval($term . 'd')})
         } qw(25 50 75);
         my $rr_bf = $volsurface->get_rr_bf_for_smile(\%delta_smile);
         push @row, roundcommon(0.0001, $rr_bf->{RR_25});

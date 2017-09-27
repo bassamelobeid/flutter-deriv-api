@@ -16,16 +16,16 @@ use HTML::Entities;
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
 use BOM::BloombergCalendar;
-use BOM::TentativeEvents;
+use BOM::EconomicEventTool;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::CustomCommissionTool;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('I.V. DATABASE');
 my $broker = request()->broker_code;
-my $staff  = BOM::Backoffice::Auth0::can_access(['Quants']);
 
 Bar("Update volatilities");
 my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;
@@ -66,16 +66,23 @@ my $request_files_upload_url = request()->url_for('backoffice/f_bbdl_upload_requ
 print '<LI><b>Upload the request files<b> ';
 print qq~<br><form method=post action=$request_files_upload_url>
     <select name=frequency>
-            <option value='daily'>Daily (Normal)</option>
+            <option value='scheduled'>Scheduled (Normal)</option>
             <option value='oneshot'>Oneshot</option>
+            <option value='adhoc'>Adhoc</option>
+            <!-- The One-shot is a kind of scheduled request, which runs once. The request has a specific date and time supplied, and is never repeated. 
+            In ad hoc, request is serviced immediately, gathering the latest available data. -->
         </select>
         <select name=type>
             <option value=request>request file</option>
             <option value=cancel>cancel file</option>
         </select>
     <input type=submit value='Upload Request files'>
-    <br><font color=gray>Note 1: If you select 'Convert all to oneshot' then the requests will be processed immediately, once only.
-    <br>Note 2: if you want to over-write existing scheduled requests, upload CANCEL requests first.</font>
+    <br><font color=gray>Note 1: Type of request options:
+    <br> Scheduled: Select this option if you would like those master request files to be run with scheduled program flag such as daily, weekday and weekend and repeatly based on the flag.
+    <br> Oneshot: Select this option if you just want to upload those master request files with program flag one shot and it will not repeat.
+    <br> Adhoc: Select this option if you just want to upload those master request files with program flag adhoc and it will not repeat.
+    <br> Note 1: The difference between oneshot and adhoc is the cost. For oneshot, it will be treated as scheduled, hence it will take into account the annual band fee while for adhoc, it is only charge on the month of request.    <br> Choose oneshot if you are certain that you are going to request the same ticker in coming future as it will avoid being double charge on the month of request. 
+    <br>Note 2: If you want to over-write existing scheduled requests, upload CANCEL requests first.</font>
     </form>~;
 
 my $single_file_upload_dir = request()->url_for('backoffice/f_bbdl_upload.cgi');
@@ -127,18 +134,11 @@ print generate_correlations_upload_form({
 });
 
 Bar("Update the news events database");
+print BOM::EconomicEventTool::generate_economic_event_tool(request()->url_for('backoffice/quant/market_data_mgmt/update_economic_events.cgi'));
 
-BOM::Backoffice::Request::template->process(
-    'backoffice/economic_event_forms.html.tt',
-    {
-        ee_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
-    },
-) || die BOM::Backoffice::Request::template->error;
-
-Bar("Update the tentative events");
-print BOM::TentativeEvents::generate_tentative_events_form({
-    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_tentative_events.cgi'),
-});
+Bar("Custom Commission Tool");
+print BOM::Backoffice::CustomCommissionTool::generate_commission_form(
+    request()->url_for('backoffice/quant/market_data_mgmt/update_custom_commission.cgi'));
 
 code_exit_BO();
 

@@ -18,7 +18,6 @@ use String::UTF8::MD5;
 BOM::Backoffice::Sysinit::init;
 PrintContentType();
 BrokerPresentation("Plot Graph");
-BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $market = request()->param('market');
 
@@ -165,7 +164,7 @@ print qq~
 my $override_findfullfeed;
 # DAILY CHART
 if ($daily) {
-    Bar(encode_entities("Daily Graph for $daily"));
+    Bar("Daily Graph for $daily");
 
     #link to intraday charts
     print "Other Intraday Charts : <a href=\""
@@ -248,7 +247,7 @@ if ($daily) {
 
 # OVERLAY TWO OR MORE MARKETS (INTRADAY) - show intraday-graph separately
 elsif (scalar @overlay and not $merge) {
-    Bar(encode_entities("Intraday Graph for $overlay"));
+    Bar("Intraday Graph for $overlay");
 
     my $now = Date::Utility->new;
     for (my $i = 0; $i < $count; $i++) {
@@ -396,7 +395,7 @@ elsif (scalar @overlay and not $merge) {
 }
 # OVERLAY TWO OR MORE MARKETS (INTRADAY) - merge intraday-graph into single graph
 elsif (scalar @overlay and $merge) {
-    Bar(encode_entities("Intraday Graph (Merge) for $overlay"));
+    Bar("Intraday Graph (Merge) for $overlay");
 
     my $graphs_gnuplot = BOM::Backoffice::GNUPlot->new({
         'top_title'        => "Merge Intraday Chart - $overlay",
@@ -528,7 +527,7 @@ elsif (scalar @overlay and $merge) {
 }
 # GRAPH ALL MARKETS
 else {
-    Bar(encode_entities("Market Chart for $market"));
+    Bar("Market Chart for $market");
 
     print "<center>&nbsp;<br>";
 

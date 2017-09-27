@@ -60,7 +60,7 @@ foreach my $broker (keys %{$total_pl}) {
 my $brand = Brands->new(name => request()->brand);
 send_email({
     'from'    => $brand->emails('system'),
-    'to'      => $brand->emails('accounting'),
+    'to'      => 'i-payments@binary.com',
     'subject' => 'Daily Outstanding Bets Profit / Lost [' . $run_for->date . ']',
     'message' => \@mail_msg,
 });

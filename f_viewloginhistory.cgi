@@ -12,20 +12,20 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
-BOM::Backoffice::Auth0::can_access(['CS']);
 
 if (my $email_list = request()->param('email')) {
     BrokerPresentation("USER LOGIN HISTORY");
 
     foreach my $email (split(/\s+/, lc($email_list))) {
-        Bar(encode_entities($email) . " Login History");
+        Bar($email . " Login History");
         my $user = BOM::Platform::User->new({email => $email});
-        my $limit = 100;
+        no warnings 'numeric';    ## no critic (ProhibitNoWarnings)
+        my $limit = int(request()->param('limit')) // 100;
         my $history;
         if ($user) {
             $history = $user->find_login_history(
                 sort_by => 'history_date desc',
-                limit   => $limit
+                $limit > 0 ? (limit => $limit) : (),
             );
         }
         BOM::Backoffice::Request::template->process(

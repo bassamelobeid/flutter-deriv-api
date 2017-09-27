@@ -1,0 +1,61 @@
+<p>
+[% FOREACH rate IN exchange_rates.pairs %]
+[% rate.key %]/USD: <strong>[% rate.value %]</strong>[% UNLESS loop.last %],&nbsp;[% END %]
+[% END %]
+</p>
+<form action="[% controller_url %]" method="POST">
+    <select name="currency">
+      <option value="BTC"[% IF currency == 'BTC' %] selected="selected"[% END %]>Bitcoin</option>
+      <option value="LTC"[% IF currency == 'LTC' %] selected="selected"[% END %]>Litecoin</option>
+      <option value="ETH"[% IF currency == 'ETH' %] selected="selected"[% END %]>Ethereum</option>
+    </select>
+<!-- Manual wallet functions -->
+        <input type="hidden" name="wallet_command" value="getnewaddress">
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <button type="submit" name="view_action" value="new_deposit_address">Get New Deposit Address</button>
+    <br>
+    <br>
+    <br>
+    <input type="hidden" name="broker" value="[% broker %]">
+<!-- Make Dual Control Code -->
+    Loginid of the client: <input type="text" size="12" name="loginid_dcc" />
+    Blockchain address: <input type="text" size="50" name="address_dcc" placeholder="Will be considered as transaction type"/>
+    Amount: <input type="text" name="amount_dcc" size=15/>
+    <button type="submit" name="view_action" value="make_dcc">Make Dual Control Code</button>
+    ([% staff %])
+    <br>
+<!-- Recon -->
+        <button type="submit" name="view_action" value="reconcil">Reconciliation</button>
+        <input type="text" name="start_date" class="datepick" value="[% start_date %]">
+        <input type="text" name="end_date" class="datepick" value="[% end_date %]">
+        <input type="checkbox" name="include_new"><label for="include_new">Show new addresses</label>
+    <br>
+<!-- Search -->
+        <button type="submit" name="view_action" value="search">Search</button>
+        <select name="search_type">
+            <option value="loginid">Loginid</option>
+            <option value="address">Address</option>
+        </select>
+        <input type="text" name="search_query">
+    <br>
+<!-- Deposit -->
+    <button type="submit" name="view_action" value="deposits">Deposit Transactions</button>
+    <br>
+<!-- Withdrawal -->
+    <button type="submit" name="view_action" value="withdrawals">Withdrawal Transactions</button>
+    <br>
+    <br>
+<!-- Tools -->
+        <button type="submit" name="view_action" value="run">Run</button>
+        <select name="command">
+        <option value="getbalance" [% IF cmd == "getbalance" %] selected="selected" [% END %]>Get balance</option>
+        <option value="listtransactions" [% IF cmd == "listtransactions" %] selected="selected" [% END %]>List withdrawal transactions</option>
+        <option value="listaddressgroupings" [% IF cmd == "listaddressgroupings" %] selected="selected" [% END %]>List address groupings</option>
+        <option value="..." disabled="disabled">---</option>
+        <option value="getinfo" [% IF cmd == "getinfo" %] selected="selected" [% END %]>Get info</option>
+        <option value="getpeerinfo" [% IF cmd == "getpeerinfo" %] selected="selected" [% END %]>Get peer info</option>
+        <option  value="getnetworkinfo" [% IF cmd == "getnetworkinfo" %] selected="selected" [% END %] >Get network info</option>
+        </select>
+    <br>
+</form>

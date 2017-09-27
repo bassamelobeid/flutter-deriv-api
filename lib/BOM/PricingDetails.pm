@@ -91,12 +91,15 @@ sub debug_link {
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     });
     my $events = $EEC->get_latest_events_for_period({
-        from => $bet->date_start,
-        to   => $bet->date_start->plus_time_interval('6d'),
-    });
+            from => $bet->date_start,
+            to   => $bet->date_start->plus_time_interval('6d'),
+        },
+        $bet->underlying->for_date
+    );
     Volatility::Seasonality::generate_economic_event_seasonality({
         underlying_symbols => [$bet->underlying->symbol],
         economic_events    => $events,
+        date               => $bet->date_start,
         chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
     });
 
@@ -278,8 +281,6 @@ sub _get_volsurface {
         warn "Failed to fetch historical surface data (usually just a timeout): $_";
     };
 
-    my $tabs;
-
     # master vol surface
     my $master_vol_url         = 'mv';
     my $master_display         = BOM::MarketData::Display::VolatilitySurface->new(surface => $self->master_surface);
@@ -287,24 +288,8 @@ sub _get_volsurface {
         historical_dates => $dates,
         tab_id           => $bet->id . $master_vol_url,
     });
-    push @{$tabs},
-        {
-        label   => 'master surface',
-        url     => $master_vol_url,
-        content => $master_surface_content,
-        };
 
-    my $vol_content;
-    BOM::Backoffice::Request::template->process(
-        'backoffice/price_debug/vol_tab.html.tt',
-        {
-            bet_id => $bet->id,
-            tabs   => $tabs,
-        },
-        \$vol_content
-    ) || die BOM::Backoffice::Request::template->error;
-
-    return $vol_content;
+    return $master_surface_content;
 }
 
 sub _get_price {

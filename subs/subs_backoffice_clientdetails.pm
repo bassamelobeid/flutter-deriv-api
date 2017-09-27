@@ -13,6 +13,7 @@ use BOM::Platform::Client::Utility ();
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::Backoffice::FormAccounts;
+use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 sub get_currency_options {
     my $currency_options;
@@ -24,13 +25,14 @@ sub get_currency_options {
 
 sub print_client_details {
 
-    my ($client, $staff) = @_;
+    my $client = shift;
 
     # IDENTITY sECTION
-    my @mrms_options = BOM::Backoffice::FormAccounts::GetSalutations();
+    my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
 
     # Extract year/month/day if we have them
-    my ($dob_year, $dob_month, $dob_day) = ($client->date_of_birth // '') =~ /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
+    # after client->save we have T00:00:00 in date_of_birth, so handle this
+    my ($dob_year, $dob_month, $dob_day) = ($client->date_of_birth // '') =~ /^(\d\d\d\d)-(\d\d)-(\d\d)/;
     # make dob_day as numeric values because there is no prefix '0' in dob_daylist
     $dob_day += 0;
 
@@ -56,14 +58,33 @@ sub print_client_details {
         $country_codes->{$country_name} = $countries_instance->code_from_country($country_name);
     }
 
-    my ($proveID, $show_uploaded_documents);
+    my ($proveID, $show_uploaded_documents) = ('', '');
+    my $user = BOM::Platform::User->new({loginid => $client->loginid});
+
+    # User should be accessable from client by loginid
+    print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>" and die unless $user;
+
     unless ($client->is_virtual) {
         # KYC/IDENTITY VERIFICATION SECTION
         $proveID = BOM::Platform::ProveID->new(
             client        => $client,
             search_option => 'ProveID_KYC'
         );
-        $show_uploaded_documents = show_client_id_docs($client, show_delete => 1);
+
+        my $user = BOM::Platform::User->new({loginid => $client->loginid});
+        my $siblings = $user->loginid;
+
+        $show_uploaded_documents .= show_client_id_docs($_->loginid, show_delete => 1) for $client;
+
+        my $siblings_docs = '';
+        $siblings_docs .= show_client_id_docs(
+            $_->loginid,
+            show_delete => 1,
+            no_edit     => 1
+        ) for grep { $_->loginid ne $client->loginid } @$siblings;
+
+        $show_uploaded_documents .= 'To edit following documents please select corresponding user<br>' . $siblings_docs
+            if $siblings_docs;
     }
 
     # COMMUNICATION ADDRESSES
@@ -88,7 +109,11 @@ sub print_client_details {
 
     my $stateoptionlist = BOM::Platform::Locale::get_state_option($client->residence);
     my $stateoptions    = '<option value=""></option>';
-    $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>| for @$stateoptionlist;
+    my $state_name      = '';
+    for (@$stateoptionlist) {
+        $state_name = $_->{text} if $_->{value} eq $client->state;
+        $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>|;
+    }
     my $tnc_status = $client->get_status('tnc_approval');
 
     my @crs_tin_array = ();
@@ -100,33 +125,39 @@ sub print_client_details {
     }
 
     my $template_param = {
-        client                  => $client,
-        self_exclusion_enabled  => $self_exclusion_enabled,
-        lang                    => request()->language,
-        mrms_options            => \@mrms_options,
-        dob_day_options         => $dob_day_options,
-        dob_month_options       => $dob_month_options,
-        dob_year_options        => $dob_year_options,
-        countries               => \@countries,
-        country_codes           => $country_codes,
-        proveID                 => $proveID,
-        show_uploaded_documents => $show_uploaded_documents,
-        client_phone_country    => $client_phone_country,
-        language_options        => \@language_options,
-        secret_answer           => $secret_answer,
-        promo_code_access       => $promo_code_access,
-        is_vip                  => $client->is_vip,
-        vip_since               => $client->vip_since,
-        state_options           => set_selected_item($client->state, $stateoptions),
-        show_funds_message      => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
-        ukgc_funds_status       => $client->get_status('ukgc_funds_protection'),
-        show_tnc_status => ($client->is_virtual) ? 0 : 1,
-        tnc_approval_status   => $tnc_status,
-        show_risk_approval    => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
-        financial_risk_status => $client->get_status('financial_risk_approval'),
+        client                => $client,
+        client_phone_country  => $client_phone_country,
         client_tnc_version    => $tnc_status ? $tnc_status->reason : '',
-        show_allow_omnibus    => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0,
-        csr_tin_information   => \@crs_tin_array
+        countries             => \@countries,
+        country_codes         => $country_codes,
+        csr_tin_information   => \@crs_tin_array,
+        dob_day_options       => $dob_day_options,
+        dob_month_options     => $dob_month_options,
+        dob_year_options      => $dob_year_options,
+        financial_risk_status => $client->get_status('financial_risk_approval'),
+        has_social_signup     => $user->has_social_signup,
+        is_vip                => $client->is_vip,
+        lang                  => request()->language,
+        language_options      => \@language_options,
+        mifir_config          => $Finance::MIFIR::CONCAT::config,
+        promo_code_access     => $promo_code_access,
+        currency_type => (LandingCompany::Registry::get_currency_type($client->currency) // ''),
+        proveID => $proveID,
+        salutation_options     => \@salutation_options,
+        secret_answer          => $secret_answer,
+        self_exclusion_enabled => $self_exclusion_enabled,
+        show_allow_omnibus     => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of)
+        ? 1
+        : 0,
+        show_funds_message => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
+        show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
+        show_tnc_status => ($client->is_virtual) ? 0 : 1,
+        show_uploaded_documents => $show_uploaded_documents,
+        state_options           => set_selected_item($client->state, $stateoptions),
+        client_state            => $state_name,
+        tnc_approval_status     => $tnc_status,
+        ukgc_funds_status       => $client->get_status('ukgc_funds_protection'),
+        vip_since               => $client->vip_since,
     };
 
     return BOM::Backoffice::Request::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
@@ -275,19 +306,21 @@ sub build_client_warning_message {
 #
 ##############################################################
 sub get_untrusted_client_reason {
-    return (
-        'Account closure',
-        'Bonus code abuse',
-        'Compact state probably',
-        'Docs requested',
-        'Fraudulent account',
-        'Incomplete/false details',
-        'Multiple accounts',
-        'Multiple IPs',
-        'Pending investigation',
-        'Pending proof of age',
-        'Others',
-    );
+    return {
+        Disabled => [
+            'Account closure',
+            'Bonus code abuse',
+            'Compact state probably',
+            'Docs requested',
+            'Fraudulent account',
+            'Incomplete/false details',
+            'Multiple IPs',
+            'Pending investigation',
+            'Pending proof of age',
+            'Others'
+        ],
+        Duplicate => ['Duplicate account'],
+    };
 }
 
 ## show_client_id_docs #######################################
@@ -297,11 +330,21 @@ sub get_untrusted_client_reason {
 # Otherwise it's a request to show the client's authentication docs.
 ##############################################################
 sub show_client_id_docs {
-    my ($client, %args) = @_;
+    my ($loginid, %args) = @_;
     my $show_delete = $args{show_delete};
+    my $extra       = $args{no_edit} ? 'disabled' : '';
     my $folder      = $args{folder};
     my $links       = '';
-    my $loginid     = $client->loginid;
+
+    return unless $loginid;
+
+    return '' if $loginid =~ /^MT/;
+
+    my $client = Client::Account->new({
+        loginid      => $loginid,
+        db_operation => 'replica',
+    });
+
     my @docs;
     if ($folder) {
         my $path = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/clientIDscans/" . $client->broker . "/$folder";
@@ -313,35 +356,46 @@ sub show_client_id_docs {
     } else {
         @docs = $client->client_authentication_document;
     }
-    foreach my $doc (@docs) {
-        my ($doc_id, $document_file, $file_name, $download_file, $input);
+    foreach my $doc (sort { $a->id <=> $b->id } @docs) {
+        my ($id, $document_file, $file_name, $download_file, $input);
         if ($folder) {
-            $doc_id        = 0;
+            $id            = 0;
             $document_file = $doc;
             ($file_name) = $document_file =~ m[clientIDscans/\w+/\w+/(.+)$];
             $download_file = $client->broker . "/$folder/$file_name";
             $input         = '';
         } else {
-            $doc_id        = $doc->id;
+            $id            = $doc->id;
             $document_file = $doc->document_path;
             ($file_name) = $document_file =~ m[clientIDscans/\w+/(.+)$];
             $download_file = $client->broker . "/$file_name";
             my $date = $doc->expiration_date || '';
-            $date = Date::Utility->new($date)->date_yyyymmdd if $date;
-            my $comments = $doc->comments;
-            $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$doc_id" value="$date">};
-            $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$doc_id" value="$comments">};
+            if ($date) {
+                eval {
+                    my $formatted = Date::Utility->new($date)->date_yyyymmdd;
+                    $date = $formatted;
+                } or do {
+                    warn "Invalid date, using original information: $date\n";
+                    }
+            }
+            my $comments    = $doc->comments;
+            my $document_id = $doc->document_id;
+            $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
+            $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
+            $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
         }
         my $file_size = -s $document_file || next;
         my $file_age  = int(-M $document_file);
         my $url       = request()->url_for("backoffice/download_document.cgi?path=$download_file");
-        $links .= qq{<br/><a href="$url">$file_name</a>($file_size bytes, $file_age days old, $input)};
-        if ($show_delete) {
-            $url .= qq{&loginid=$loginid&doc_id=$doc_id&deleteit=yes};
+        $links .= qq{<tr><td><a href="$url">$file_name</a> $file_size bytes, $file_age days old</td><td>$input};
+        if ($show_delete && !$args{no_edit}) {
+            $url .= qq{&loginid=$loginid&doc_id=$id&deleteit=yes};
             my $onclick = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
             $links .= qq{[<a onclick="$onclick" href="$url">Delete</a>]};
         }
+        $links .= "</td></tr>";
     }
+    $links = "<table>$links</table>" if $links;
     return $links;
 }
 
@@ -382,6 +436,9 @@ sub client_statement_summary {
         # bank wire
         $payment_system = $1 if $transaction->{payment_remark} =~ /Wire\s+payment\s+from\s+([\S]+\s[\d\-]+) on/;
         $payment_system = $1 if $transaction->{payment_remark} =~ /Wire\s+deposit\s+.+\s+Recieved\s+by\s+([\S]+\s[\d\-]+)/;
+
+        # transfer between accounts
+        $payment_system = "internal_transfer" if $transaction->{payment_remark} =~ /Account transfer from /;
 
         $summary->{$k}{$payment_system} += $transaction->{amount};
     }
@@ -492,7 +549,13 @@ sub get_untrusted_types {
             'linktype' => 'jptransactiondetail',
             'comments' => 'jp bank details stored',
             'code'     => 'jp_transaction_detail'
-        }];
+        },
+        {
+            'linktype' => 'duplicateaccount',
+            'comments' => 'Duplicate account',
+            'code'     => 'duplicate_account'
+        },
+    ];
 }
 
 1;

@@ -1,22 +1,26 @@
 <br />
 <form enctype="multipart/form-data" ACTION="[% self_post %]" method="POST">
-  <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence, updates only with passport upload)</label>
+  <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence, updates only with Passport and Proof ID upload)</label>
   <select id="docnationalityselect" name="docnationality">
     <option value="">Please select</option>
     [% FOREACH c IN countries.all_country_names.sort %]
         [% cc = countries.code_from_country(c) %]
         <option value="[% cc %]">[% c %]</option>
     [% END %]
+[% IF broker == 'JP' -%]
+    <option value="Unknown" selected="selected">Unknown</option>
+[% END -%]
   </select>
   <br>
 [% FOR n IN [1..4] %]
- File [% n %]: 
+ File [% n %]:
   <select name="doctype_[% n %]">
     <option value="passport">Passport</option>
     <option value="proofid">ID</option>
     <option value="driverslicense">Drivers License</option>
     <option value="proofaddress">Proof of Address</option>
     <option value="bankstatement">Bank statement</option>
+    <option value="power_of_attorney">Power of attorney</option>
     <option value="amlglobalcheck">AML Global Check</option>
     <option value="docverification">Doc Verification (Autodoc)</option>
     <option value="vf_face_id">Video Verification Screenshot - Face & ID</option>
@@ -40,6 +44,7 @@
   </select>
   <input type="FILE" name="FILE_[% n %]">
   Expiration date:<input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD">
+  Document ID:<input type="text" size=11 name="document_id_[% n %]" placeholder="Document ID">
   Comments:<input type="text" size=20 name="comments_[% n %]" placeholder="optional, up to 255 characters">
     <br>
   [% END %]

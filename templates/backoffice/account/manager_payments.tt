@@ -1,6 +1,7 @@
 <script>
     \$(document).ready(function() {
         \$('.datepick').datepicker({dateFormat: "yy-mm-dd"}).datepicker('setDate', new Date());
+        \$('#ui-datepicker-div').hide();
         \$('#mdc_credit').click(function(){\$('#payment_debit_credit').text('CONFIRM CREDIT')});
         \$('#mdc_debit' ).click(function(){\$('#payment_debit_credit').text('CONFIRM DEBIT')});
         \$('.all_payment_types').hide();
@@ -99,13 +100,13 @@
     <td class="all_payment_types external_cashier"><input type="text" name="payment_processor" insist/></td>
     <td class="all_payment_types bank_money_transfer">
         <select name="bom_bank_info">
-            <option value="RBSI 5880-58269864"            >RBSI 5880-58269864</option>
-            <option value="RBSI 5880-58321386"            >RBSI 5880-58321386</option>
-            <option value="RBSI 5880-58442434"            >RBSI 5880-58442434</option>
-            <option value="WB21 1902057146"               >WB21 1902057146</option>
-            <option value="WB21 1902531831"               >WB21 1902531831</option>
-            <option value="Sparkasse 10000030588040"      >Sparkasse 10000030588040</option>
-            <option value="Cayman National Bank 24942-003">Cayman National Bank 24942-003</option>
+            <option value="RBSI 5880-58269864"      >RBSI 5880-58269864</option>
+            <option value="RBSI 5880-58321386"      >RBSI 5880-58321386</option>
+            <option value="RBSI 5880-58442434"      >RBSI 5880-58442434</option>
+            <option value="WB21 1902057146"         >WB21 1902057146</option>
+            <option value="WB21 1902531831"         >WB21 1902531831</option>
+            <option value="Sparkasse 10000030588040">Sparkasse 10000030588040</option>
+            <option value="NBG 12901091"            >NBG 12901091</option>
         </select>
     </td>
     <td class="all_payment_types "><input type="text" name="payment_processor" insist/></td>

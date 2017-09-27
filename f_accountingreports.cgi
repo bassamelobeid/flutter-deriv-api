@@ -21,7 +21,6 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('ACCOUNTING REPORTS');
-BOM::Backoffice::Auth0::can_access(['Accounts']);
 my $broker           = request()->broker_code;
 my $all_currencies   = request()->available_currencies;
 my $currency_options = get_currency_options();
@@ -124,16 +123,16 @@ print "<form action=\""
     . "\" method=post>"
     . "<input type=hidden name=broker value=$encoded_broker>"
     . "List of accounts: <input type=text size=60 name=listaccounts value='CBET1020,CBET1021'> (separate with commas)"
-    . "<br />Message: <input type=text size=65 name=message value='Account closed. Please contact customer support for assistance.'> "
+    . "<br />Message: <input type=text size=65 name=message value='Account closed.'> "
     . "<br /><select name=whattodo><option>Simulate<option>Do it for real !</select>"
     . " <input type=submit value='Rescind these accounts!'>"
     . "</form>";
 
 Bar("USEFUL EXCHANGE RATES");
 
-print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . "<ul>";
+print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . ")" . "<ul>";
 
-foreach my $curr (qw(GBPUSD EURUSD USDHKD USDCNY AUDUSD GBPHKD AUDHKD EURHKD)) {
+foreach my $curr (qw(GBPUSD EURUSD USDHKD USDCNY AUDUSD GBPHKD AUDHKD EURHKD BTCUSD)) {
     my $underlying = create_underlying('frx' . $curr);
     print "<li>$curr: " . $underlying->spot . "</li>";
 }

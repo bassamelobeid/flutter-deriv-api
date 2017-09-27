@@ -9,6 +9,7 @@ BEGIN {
 
 use BOM::Backoffice::Sysinit ();
 use BOM::Database::DataMapper::CollectorReporting;
+use BOM::Platform::User;
 use Client::Account;
 
 BOM::Backoffice::Sysinit::init();
@@ -35,18 +36,25 @@ The following client opened an account on $check_date but has the same name and 
 my $dup_unique;
 foreach my $client_hash (@{$client_dup_list}) {
     # avoid sending multiple emails for same client with multiple duplicate loginids
-    my $client_str = join(',', $client_hash->{first_name}, $client_hash->{last_name}, $client_hash->{date_of_birth});
+    my $client_str = join(',', $client_hash->{first_name} // '', $client_hash->{last_name} // '', $client_hash->{date_of_birth} // '');
     next if (defined $dup_unique and exists $dup_unique->{$client_str});
     $dup_unique->{$client_str} = 1;
 
-    my $loginid           = $client_hash->{new_loginid};
-    my $client            = Client::Account::get_instance({loginid => $loginid});
+    my $loginid = $client_hash->{new_loginid};
+    my $client  = Client::Account::get_instance({loginid => $loginid});
+    my $user    = BOM::Platform::User->new({email => $client->email});
+
+    my $siblings = {map { $_->loginid => 1 } $user->clients};
     my @duplicate_clients = map {
+        # SQL function returns an array, every element is loginid and client status, joined by /
+        # Status can be an empty string
         my ($lid, $status) = split '/', $_, 2;
-        $lid eq $loginid     ? ()
+        $lid eq $loginid || exists $siblings->{$lid} ? ()
             : length $status ? "$lid(\u$status)"
             :                  $lid;
     } @{$client_hash->{loginids}};
+
+    next unless @duplicate_clients;
 
     my $note_content = $note_header;
     $note_content .= $loginid . '(' . $client_hash->{first_name} . ' ' . $client_hash->{last_name} . ")\n";

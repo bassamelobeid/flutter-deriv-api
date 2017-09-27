@@ -168,7 +168,11 @@ sub get_settings_by_group {
                 system.suspend.trading
                 system.suspend.payments
                 system.suspend.payment_agents
+                system.suspend.cryptocashier
+                system.suspend.cryptocurrencies
                 system.suspend.new_accounts
+                system.suspend.is_auction_ended
+                system.suspend.ico_final_price
                 system.suspend.all_logins
                 system.suspend.logins
                 system.suspend.system
@@ -197,8 +201,10 @@ sub get_settings_by_group {
         ],
         payments => [qw(
                 payments.payment_limits
-                payments.doughflow.location
-                payments.doughflow.passcode
+                payments.transfer_between_accounts.fees.fiat
+                payments.transfer_between_accounts.fees.crypto
+                payments.transfer_between_accounts.amount.fiat.min
+                payments.transfer_between_accounts.amount.crypto.min
                 )]};
 
     my $settings;

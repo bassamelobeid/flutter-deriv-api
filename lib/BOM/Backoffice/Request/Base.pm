@@ -123,8 +123,7 @@ sub _build_available_currencies {
         print $err;
         die $err;
     }
-    # This is for temporary only until we enable crypto currencies
-    return [grep { $_ !~ /^(?:BTC|LTC|ETH)$/ } @{$landing_company->legal_allowed_currencies}];
+    return [keys %{$landing_company->legal_allowed_currencies}];
 }
 
 sub _build_http_method {

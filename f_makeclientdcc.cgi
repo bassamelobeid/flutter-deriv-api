@@ -16,7 +16,6 @@ use Client::Account;
 
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");
-BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk = BOM::Backoffice::Cookie::get_staff();
 
 Bar("Make client dual control code");
@@ -50,16 +49,15 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
     my $code = BOM::DualControl->new({
             staff           => $clerk,
             transactiontype => $input->{'transtype'}})->client_control_code($input->{'clientemail'});
-    my $current_timestamp = $now->datetime_ddmmmyy_hhmmss;
-
-    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
     my $message =
           "The dual control code created by $clerk  (for a "
         . $input->{'transtype'}
         . ") for "
         . $input->{'clientemail'}
-        . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
+        . " is: $code This code is valid for 1 hour (from "
+        . $now->datetime_ddmmmyy_hhmmss
+        . ") only.";
 
     BOM::Platform::AuditLog::log($message, '', $clerk);
 

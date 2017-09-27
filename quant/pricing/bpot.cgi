@@ -31,7 +31,6 @@ use LandingCompany::Registry;
 
 PrintContentType();
 BrokerPresentation('Bet Price Over Time');
-BOM::Backoffice::Auth0::can_access();
 
 Bar("Bet Parameters");
 
@@ -76,22 +75,28 @@ if ($bet) {
     $timestep = Time::Duration::Concise::Localize->new(interval => int($duration / 100))
         if ($duration / $timestep->seconds > 100);    # Don't let them go crazy asking for hundreds of points.
 
-    my $start_bet = make_similar_contract(
-        $bet,
-        {
-            priced_at       => 'start',
-            landing_company => $landing_company
-        });
-    $debug_link = BOM::PricingDetails->new({bet => $start_bet})->debug_link;
+    try {
+        my $start_bet = make_similar_contract(
+            $bet,
+            {
+                priced_at       => 'start',
+                landing_company => $landing_company
+            });
+        $debug_link = BOM::PricingDetails->new({bet => $start_bet})->debug_link;
+    }
+    catch {
+        code_exit_BO("<pre>$_</pre>");
+    };
 }
 
 BOM::Backoffice::Request::template->process(
     'backoffice/bpot.html.tt',
     {
-        bet        => $bet,
-        start      => $start ? $start->datetime : '',
-        end        => $end ? $end->datetime : '',
-        timestep   => $timestep ? $timestep->as_concise_string : '',
+        longcode => $bet      ? localize($bet->longcode)     : '',
+        bet      => $bet,
+        start    => $start    ? $start->datetime             : '',
+        end      => $end      ? $end->datetime               : '',
+        timestep => $timestep ? $timestep->as_concise_string : '',
         debug_link => $debug_link,
     }) || die BOM::Backoffice::Request::template->error;
 

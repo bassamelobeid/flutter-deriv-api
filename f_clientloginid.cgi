@@ -17,7 +17,6 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("CLIENT LOGINID ADMIN");
 
-my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
 my $broker = request()->broker_code;
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
@@ -122,7 +121,7 @@ BOM::Backoffice::Request::template->process(
     {
         selected_untrusted_action => request()->param('untrusted_action_type'),
         edit_url                  => request()->url_for('backoffice/untrusted_client_edit.cgi'),
-        reasons                   => [get_untrusted_client_reason()],
+        reasons                   => get_untrusted_client_reason(),
         broker                    => $broker,
         clientid                  => $client_login,
         actions                   => get_untrusted_types(),

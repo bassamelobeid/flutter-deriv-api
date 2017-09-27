@@ -33,8 +33,7 @@ if (request()->param('action') ne 'DOWNLOAD CSV') {
 }
 
 my $broker = encode_entities(request()->broker_code // "");
-my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
-my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my $home_link = request()->url_for('backoffice/f_viewclientsubset.cgi');
 
@@ -476,7 +475,7 @@ sub RecoverFromClientAccount {
     $client->payment_legacy_payment(
         currency     => $client->currency,
         amount       => -$bal,
-        remark       => 'Inactive Account closed. Please contact customer support for assistance.',
+        remark       => 'Inactive Account closed.',
         payment_type => 'closed_account',
         staff        => $clerk,
     );

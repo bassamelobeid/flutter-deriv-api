@@ -18,7 +18,6 @@ PrintContentType();
 BrokerPresentation("UNTRUSTED/DISABLE CLIENT");
 
 my $broker = request()->broker_code;
-my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my $clientID           = uc request()->param('login_id');
@@ -127,6 +126,14 @@ foreach my $login_id (split(/\s+/, $clientID)) {
             $printline = 'Adding new status not allowed for this, only system can add one.';
         } elsif ($action eq 'remove_data') {
             $client->clr_status('jp_transaction_detail');
+            $printline = $client->save ? $remove_success_msg : $remove_error_msg;
+        }
+    } elsif ($client_status_type eq 'duplicateaccount') {
+        if ($action eq 'insert_data') {
+            $client->set_status('duplicate_account', $clerk, $reason);
+            $printline = $client->save ? $insert_success_msg : $insert_error_msg;
+        } elsif ($action eq 'remove_data') {
+            $client->clr_status('duplicate_account');
             $printline = $client->save ? $remove_success_msg : $remove_error_msg;
         }
     }

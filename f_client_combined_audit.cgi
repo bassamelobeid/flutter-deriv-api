@@ -30,9 +30,16 @@ my $encoded_loginid = encode_entities($loginid);
 # get client complete transaction statements
 my $client = Client::Account::get_instance({'loginid' => $loginid});
 if (not $client) {
-    print "Error : wrong loginID ($encoded_loginid) could not get client instance";
-    code_exit_BO();
+    code_exit_BO("Error : wrong loginID ($encoded_loginid) could not get client instance");
 }
+
+try {
+    $startdate = Date::Utility->new($startdate)->date;
+    $enddate   = Date::Utility->new($enddate)->date;
+}
+catch {
+    code_exit_BO("Cannot parse dates: $startdate or $enddate: $_");
+};
 
 my $currency = $client->currency;
 

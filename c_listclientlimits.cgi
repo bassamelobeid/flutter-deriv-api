@@ -19,7 +19,6 @@ my $login         = request()->param('login');
 my $encoded_login = encode_entities($login);
 
 BrokerPresentation('CLIENT LIMITS FOR ' . $encoded_login);
-BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $broker = request()->broker_code;
 
@@ -38,7 +37,7 @@ my $account_mapper = BOM::Database::DataMapper::Account->new({
 });
 my $bal = $account_mapper->get_balance();
 
-Bar($encoded_login . ' withdrawal limits for ' . $curr);
+Bar($login . ' withdrawal limits for ' . $curr);
 
 my $withdrawal_limits = $client->get_withdrawal_limits();
 

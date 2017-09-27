@@ -5,6 +5,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::MockModule;
+use Test::Warnings qw/warning/;
 use Email::Folder::Search;
 use File::Spec;
 use Path::Tiny;
@@ -46,6 +47,27 @@ my %date_string = (
 );
 
 initialize_realtime_ticks_db();
+
+create_underlying('frxBTCUSD')->set_combined_realtime({
+    epoch => time,
+    quote => 100
+});
+
+create_underlying('frxLTCUSD')->set_combined_realtime({
+    epoch => time,
+    quote => 100
+});
+
+create_underlying('frxETHUSD')->set_combined_realtime({
+    epoch => time,
+    quote => 100
+});
+
+create_underlying('frxETCUSD')->set_combined_realtime({
+    epoch => time,
+    quote => 100
+});
+
 foreach my $symbol (keys %date_string) {
     my @dates = @{$date_string{$symbol}};
     foreach my $date (@dates) {
@@ -153,7 +175,9 @@ subtest 'realtime report generation' => sub {
     my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
     $mailbox->init;
     $mailbox->clear;
-    lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
+    warning {
+        lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
+    };
 
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');

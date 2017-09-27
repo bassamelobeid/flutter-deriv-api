@@ -15,6 +15,8 @@ use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use Try::Tiny;
 
 use Brands;
+use LandingCompany::Registry;
+
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
@@ -31,6 +33,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
+use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 BOM::Backoffice::Sysinit::init();
 
@@ -56,16 +59,38 @@ my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
         warn("Error: $err");
         print "<p>(Support: details in errorlog)</p>";
     }
-    print qq[<form action="$self_post" method="post">
+    code_exit_BO(
+        qq[<form action="$self_post" method="post">
                 Try Again: <input type="text" name="loginID" value="$encoded_loginid"></input>
-              </form>];
-    code_exit_BO();
+              </form>]
+    );
 };
 
 my $broker         = $client->broker;
 my $encoded_broker = encode_entities($broker);
-my $staff          = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+
+if ($broker eq 'MF') {
+    if ($input{mifir_reset}) {
+        $client->mifir_id('');
+        $client->save;
+    }
+    if ($input{mifir_set_concat}) {
+        use POSIX qw(locale_h);
+        use locale;
+        my $old_locale = setlocale(LC_CTYPE);
+        setlocale(LC_CTYPE, 'C.UTF-8');
+        $client->mifir_id(
+            mifir_concat({
+                    cc         => $client->residence,
+                    date       => $client->date_of_birth,
+                    first_name => $client->first_name,
+                    last_name  => $client->last_name,
+                }));
+        $client->save;
+        setlocale(LC_CTYPE, $old_locale);
+    }
+}
 
 # sync authentication status to Doughflow
 if ($input{whattodo} eq 'sync_to_DF') {
@@ -161,20 +186,26 @@ if ($input{whattodo} eq 'uploadID') {
     local $CGI::DISABLE_UPLOADS = 0;              # enable uploads
 
     my $cgi            = CGI->new;
-    my $broker_code    = $cgi->param('broker');
     my $docnationality = $cgi->param('docnationality');
     my $result         = "";
     my $used_doctypes  = {};                              #we need to keep list of used doctypes to provide for them uniq filenames
+
     foreach my $i (1 .. 4) {
         my $doctype         = $cgi->param('doctype_' . $i);
         my $filetoupload    = $cgi->param('FILE_' . $i);
         my $docformat       = $cgi->param('docformat_' . $i);
         my $expiration_date = $cgi->param('expiration_date_' . $i);
+        my $document_id     = substr(encode_entities($cgi->param('document_id_' . $i)), 0, 30);
         my $comments        = substr(encode_entities($cgi->param('comments_' . $i)), 0, 255);
 
         if (not $filetoupload) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />"
                 if ($i == 1);
+            next;
+        }
+
+        if ($doctype =~ /passport|proofid|driverslicense/ && $document_id eq '') {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Missing document_id for $doctype</p><br />";
             next;
         }
 
@@ -190,10 +221,11 @@ if ($input{whattodo} eq 'uploadID') {
                 $submitted_date = Date::Utility->new($expiration_date);
             }
             catch {
-                $error = $_;
+                $error = (split "\n", $_)[0];    #handle Date::Utility's confess() call
             };
             if ($error) {
-                $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Expiration date error: $error</p><br />";
+                $result .=
+                    "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Expiration date($expiration_date) error: $error</p><br />";
                 next;
             } elsif ($submitted_date->is_before($current_date) || $submitted_date->is_same_as($current_date)) {
                 $result .=
@@ -203,13 +235,19 @@ if ($input{whattodo} eq 'uploadID') {
 
         }
 
-        if ($doctype =~ /passport|proofid/) {
-            if ($docnationality && $docnationality =~ /[a-z]{2}/) {
+        if ($broker eq 'JP') {
+            $client->citizen($docnationality) if $docnationality and ($docnationality =~ /^[a-z]{2}$/i or $docnationality eq 'Unknown');
+        } elsif ($doctype =~ /passport|proofid/) {    # citizenship may only be changed when uploading passport or proofid
+            if ($docnationality and $docnationality =~ /^[a-z]{2}$/i) {
                 $client->citizen($docnationality);
             } else {
                 $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality</p><br />";
                 next;
             }
+        } elsif (!$client->citizen) {                 # client citizenship presents when uploading docs (for all broker codes)
+            $result .=
+                "<br /><p style=\"color:red; font-weight:bold;\">Error: Please update client citizenship before uploading documents.</p><br />";
+            next;
         }
 
         my $path = "$dbloc/clientIDscans/$broker";
@@ -232,6 +270,7 @@ if ($input{whattodo} eq 'uploadID') {
             document_path              => $newfilename,
             authentication_method_code => 'ID_DOCUMENT',
             expiration_date            => $expiration_date,
+            document_id                => $document_id,
             comments                   => $comments,
         };
 
@@ -260,30 +299,23 @@ if (my $check_str = $input{do_id_check}) {
         $result = /ProveID/ ? $id_auth->_do_proveid() : die("unknown IDAuthentication method $_");
     }
     my $encoded_check_str = encode_entities($check_str);
-    print qq[<p><b>"$encoded_check_str" completed</b></p>
-             <p><a href="$self_href">&laquo;Return to Client Details<a/></p>];
-    code_exit_BO();
+    code_exit_BO(
+        qq[<p><b>"$encoded_check_str" completed</b></p>
+             <p><a href="$self_href">&laquo;Return to Client Details<a/></p>]
+    );
 }
 
 # SAVE DETAILS
 if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     #error checks
     unless ($client->is_virtual) {
-        if (length($input{'last_name'}) < 1) {
-            print "<p style=\"color:red; font-weight:bold;\">ERROR ! LNAME field appears incorrect or empty.</p></p>";
-            code_exit_BO();
+        foreach (qw/last_name first_name salutation/) {
+            if (length($input{$_}) < 1) {
+                code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! $_ field appears incorrect or empty.</p></p>");
+            }
         }
-        if (length($input{'first_name'}) < 1) {
-            print "<p style=\"color:red; font-weight:bold;\">ERROR ! FNAME field appears incorrect or empty.</p></p>";
-            code_exit_BO();
-        }
-        if (length($input{'mrms'}) < 1) {
-            print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field appears to be empty.</p></p>";
-            code_exit_BO();
-        }
-        if (!grep(/^$input{'mrms'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) {    ## no critic (RequireBlockGrep)
-            print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field is invalid.</p></p>";
-            code_exit_BO();
+        if (!grep(/^$input{'salutation'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) {    ## no critic (RequireBlockGrep)
+            code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field is invalid.</p></p>");
         }
     }
 
@@ -291,19 +323,21 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 
         if (my $promo_code = uc $input{promo_code}) {
-            my $encoded_promo_code = encode_entities($promo_code);
-            my %pcargs             = (
-                code   => $promo_code,
-                broker => $broker
-            );
-            if (!BOM::Database::AutoGenerated::Rose::PromoCode->new(%pcargs)->load(speculative => 1)) {
-                print "<p style=\"color:red; font-weight:bold;\">ERROR: invalid promocode $encoded_promo_code</p>";
-                code_exit_BO;
+            if ((LandingCompany::Registry::get_currency_type($client->currency) // '') eq 'crypto') {
+                code_exit_BO('<p style="color:red; font-weight:bold;">ERROR: Promo code cannot be added to crypto currency accounts</p>');
+            } else {
+                my $encoded_promo_code = encode_entities($promo_code);
+                my %pcargs             = (
+                    code   => $promo_code,
+                    broker => $broker
+                );
+                if (!BOM::Database::AutoGenerated::Rose::PromoCode->new(%pcargs)->load(speculative => 1)) {
+                    code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR: invalid promocode $encoded_promo_code</p>");
+                }
+                # add or update client promo code
+                $client->promo_code($promo_code);
+                $client->promo_code_status($input{promo_code_status} || 'NOT_CLAIM');
             }
-            # add or update client promo code
-            $client->promo_code($promo_code);
-            $client->promo_code_status($input{promo_code_status} || 'NOT_CLAIM');
-
         } elsif ($client->promo_code) {
             $client->set_promotion->delete;
         }
@@ -311,136 +345,81 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
     $client->payment_agent_withdrawal_expiration_date($input{payment_agent_withdrawal_expiration_date} || undef);
 
+    my @simple_updates = qw/last_name
+        first_name
+        phone
+        secret_question
+        is_vip
+        tax_residence
+        tax_identification_number
+        allow_omnibus
+        citizen
+        address_1
+        address_2
+        city
+        state
+        postcode
+        residence
+        place_of_birth
+        restricted_ip_address
+        cashier_setting_password
+        salutation
+        /;
+    exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
+
+    my @number_updates = qw/
+        custom_max_acbal
+        custom_max_daily_turnover
+        custom_max_payout
+        /;
+    foreach my $key (@number_updates) {
+        if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
+            $client->$key($input{$key});
+        } else {
+            code_exit_BO(qq{<p style="color:red">ERROR: Invalid $key, minimum value is 1 and it can be integer only</p>});
+        }
+    }
+
     CLIENT_KEY:
     foreach my $key (keys %input) {
-
-        if ($key eq 'mrms') {
-            $client->salutation($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'first_name') {
-            $client->first_name($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'last_name') {
-            $client->last_name($input{$key});
-            next CLIENT_KEY;
-        }
         if ($key eq 'dob_day') {
             my $date_of_birth;
-            if (    $input{'dob_day'}
-                and $input{'dob_month'}
-                and $input{'dob_year'})
-            {
-                my $day_number =
-                    ($input{'dob_day'} < 10)
-                    ? "0$input{'dob_day'}"
-                    : $input{'dob_day'};
-                $date_of_birth = $input{'dob_year'} . '-' . $input{'dob_month'} . '-' . $day_number;
-            }
+            $date_of_birth = sprintf "%04d-%02d-%02d", $input{'dob_year'}, $input{'dob_month'}, $input{'dob_day'}
+                if $input{'dob_day'} && $input{'dob_month'} && $input{'dob_year'};
 
             $client->date_of_birth($date_of_birth);
             next CLIENT_KEY;
         }
-        if ($key eq 'citizen') {
-            $client->citizen($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'address_1') {
-            $client->address_1($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'address_2') {
-            $client->address_2($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'city') {
-            $client->city($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'state') {
-            $client->state($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'postcode') {
-            $client->postcode($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'residence') {
-            $client->residence($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'place_of_birth') {
-            $client->place_of_birth($input{$key});
-            next CLIENT_KEY;
-        }
-        if (my ($id) = $key =~ /^comments_([0-9]+)$/) {
-            my $val = $input{$key};
-            my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
-            my $comments = substr(encode_entities($val), 0, 255);
-            next CLIENT_KEY unless $doc;
-            next CLIENT_KEY if $comments eq $doc->comments();
-            unless (eval { $doc->comments($comments); 1 }) {
-                my $err = $@;
-                print qq{<p style="color:red">ERROR: Could not set comments for doc $id: $err</p>};
-                code_exit_BO();
-            }
-            $doc->db($client->set_db('write'));
-            $doc->save;
-            next CLIENT_KEY;
-        }
-        if (my ($id) = $key =~ /^expiration_date_([0-9]+)$/) {
-            my $val = $input{$key} || next CLIENT_KEY;
+
+        if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
+            my $val = encode_entities($input{$key} // '') || next CLIENT_KEY;
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
             next CLIENT_KEY unless $doc;
-            my $date;
-            if ($val ne 'clear') {
-                $date = Date::Utility->new($val);
-                next CLIENT_KEY if $date->is_same_as(Date::Utility->new($doc->expiration_date));
-                $date = $date->date_yyyymmdd;
+            my $new_value;
+            if ($document_field eq 'expiration_date') {
+                try {
+                    $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
+                }
+                catch {
+                    my $err = (split "\n", $_)[0];                                         #handle Date::Utility's confess() call
+                    print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
+                    next CLIENT_KEY;
+                };
+            } elsif ($document_field eq 'comments') {
+                $new_value = substr($val, 0, 255);
+            } elsif ($document_field eq 'document_id') {
+                $new_value = substr($val, 0, 30);
             }
-            unless (eval { $doc->expiration_date($date); 1 }) {
-                my $err = $@;
-                print qq{<p style="color:red">ERROR: Could not set expiry date for doc $id: $err</p>};
-                code_exit_BO();
+            next CLIENT_KEY if $new_value eq $doc->$document_field();
+            try {
+                $doc->$document_field($new_value);
             }
+            catch {
+                print qq{<p style="color:red">ERROR: Could not set $document_field for doc $id with $val: $_</p>};
+                next CLIENT_KEY;
+            };
             $doc->db($client->set_db('write'));
             $doc->save;
-            next CLIENT_KEY;
-        }
-        if ($key eq 'custom_max_acbal') {
-            if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
-                $client->custom_max_acbal($input{$key});
-                next CLIENT_KEY;
-            } else {
-                print qq{<p style="color:red">ERROR: Invalid max account balance, minimum value is 1 and it can be integer only</p>};
-                code_exit_BO();
-            }
-        }
-        if ($key eq 'custom_max_daily_turnover') {
-            if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
-                $client->custom_max_daily_turnover($input{$key});
-                next CLIENT_KEY;
-            } else {
-                print qq{<p style="color:red">ERROR: Invalid daily turnover limit, minimum value is 1 and it can be integer only</p>};
-                code_exit_BO();
-            }
-        }
-        if ($key eq 'custom_max_payout') {
-            if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
-                $client->custom_max_payout($input{$key});
-                next CLIENT_KEY;
-            } else {
-                print qq{<p style="color:red">ERROR: Invalid max payout, minimum value is 1 and it can be integer only</p>};
-                code_exit_BO();
-            }
-        }
-        if ($key eq 'phone') {
-            $client->phone($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'secret_question') {
-            $client->secret_question($input{$key});
             next CLIENT_KEY;
         }
         if ($key eq 'secret_answer') {
@@ -454,22 +433,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer($input{$key}))
                 if ($input{$key} ne $secret_answer);
 
-            next CLIENT_KEY;
-        }
-        if ($key eq 'ip_security') {
-            $client->restricted_ip_address($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'cashier_lock_password') {
-            $client->cashier_setting_password($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'last_environment') {
-            $client->latest_environment($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'is_vip') {
-            $client->is_vip($input{$key});
             next CLIENT_KEY;
         }
 
@@ -501,20 +464,19 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->myaffiliates_token($input{$key}) if $input{$key};
         }
 
-        if ($key eq 'tax_residence') {
-            $client->tax_residence($input{$key});
+        if ($input{mifir_id} and $client->mifir_id eq '' and $broker eq 'MF') {
+            if (length($input{mifir_id}) > 35) {
+                code_exit_BO(
+                    "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p></p>"
+                );
+            }
+            $client->mifir_id($input{mifir_id});
         }
 
-        if ($key eq 'tax_identification_number') {
-            $client->tax_identification_number($input{$key});
-        }
-
-        $client->allow_omnibus($input{allow_omnibus});
     }
 
     if (not $client->save) {
-        print "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid</p></p>";
-        code_exit_BO();
+        code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid</p></p>");
     }
 
     print "<p style=\"color:#eeee00; font-weight:bold;\">Client details saved</p>";
@@ -616,7 +578,7 @@ print qq{<br/>
 </div>
 };
 
-Bar("$encoded_loginid STATUSES");
+Bar("$loginid STATUSES");
 if (my $statuses = build_client_warning_message($loginid)) {
     print $statuses;
 }
@@ -624,7 +586,7 @@ BOM::Backoffice::Request::template->process(
     'backoffice/account/untrusted_form.html.tt',
     {
         edit_url => request()->url_for('backoffice/untrusted_client_edit.cgi'),
-        reasons  => [get_untrusted_client_reason()],
+        reasons  => get_untrusted_client_reason(),
         broker   => $broker,
         clientid => $loginid,
         actions  => get_untrusted_types(),
@@ -632,7 +594,7 @@ BOM::Backoffice::Request::template->process(
 
 # Show Self-Exclusion link if this client has self-exclusion settings.
 if ($client->self_exclusion) {
-    Bar("$encoded_loginid SELF-EXCLUSION SETTINGS");
+    Bar("$loginid SELF-EXCLUSION SETTINGS");
     print "$encoded_loginid has enabled <a id='self-exclusion' href=\""
         . request()->url_for(
         'backoffice/f_setting_selfexclusion.cgi',
@@ -642,7 +604,7 @@ if ($client->self_exclusion) {
         }) . "\">self-exclusion</a> settings.";
 }
 
-Bar("$encoded_loginid PAYMENT AGENT DETAILS");
+Bar("$loginid PAYMENT AGENT DETAILS");
 
 # Show Payment-Agent details if this client is also a Payment Agent.
 my $payment_agent = $client->payment_agent;
@@ -675,7 +637,7 @@ my $name = $client->first_name;
 $name .= ' ' if $name;
 $name .= $client->last_name;
 my $client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
-Bar("CLIENT " . encode_entities($client_info));
+Bar("CLIENT " . $client_info);
 
 my ($link_acc, $link_loginid);
 if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
@@ -697,32 +659,34 @@ if ($link_acc) {
     print $link_acc;
 }
 
-my $user = BOM::Platform::User->new({email => $client->email});
-my @siblings = $user->clients(disabled_ok => 1);
-my @mt_logins = $user->mt5_logins;
+my $user = BOM::Platform::User->new({loginid => $client->loginid});
+my $siblings;
+if ($user) {
+    $siblings = $user->loginid_details;
+    my @mt_logins = $user->mt5_logins;
 
-if (@siblings > 1 or @mt_logins > 0) {
-    print "<p>Corresponding accounts: </p><ul>";
+    if ($siblings or @mt_logins > 0) {
+        print "<p>Corresponding accounts: </p><ul>";
 
-    # show all BOM loginids for user, include disabled acc
-    foreach my $sibling (@siblings) {
-        my $sibling_id = $sibling->loginid;
-        next if ($sibling_id eq $client->loginid);
-        my $link_href = request()->url_for(
-            'backoffice/f_clientloginid_edit.cgi',
-            {
-                broker  => $sibling->broker_code,
-                loginID => $sibling_id,
-            });
-        print "<li><a href='$link_href'>" . encode_entities($sibling_id) . "</a></li>";
+        # show all BOM loginids for user, include disabled acc
+        foreach my $lid (sort keys %$siblings) {
+            next if ($lid eq $client->loginid);
+            my $link_href = request()->url_for(
+                'backoffice/f_clientloginid_edit.cgi',
+                {
+                    broker  => $siblings->{$lid}->{broker_code},
+                    loginID => $lid,
+                });
+            print "<li><a href='$link_href'>" . encode_entities($lid) . "</a></li>";
+        }
+
+        # show MT5 a/c
+        foreach my $mt_ac (@mt_logins) {
+            print "<li>" . encode_entities($mt_ac) . "</li>";
+        }
+
+        print "</ul>";
     }
-
-    # show MT5 a/c
-    foreach my $mt_ac (@mt_logins) {
-        print "<li>" . encode_entities($mt_ac) . "</li>";
-    }
-
-    print "</ul>";
 }
 
 my $log_args = {
@@ -738,7 +702,7 @@ print qq[<form action="$self_post" method="POST">
     <input type="hidden" name="broker" value="$encoded_broker">
     <input type="hidden" name="loginID" value="$encoded_loginid">];
 
-print_client_details($client, $staff);
+print_client_details($client);
 
 print qq{<input type=submit value="Save Client Details"></form>};
 
@@ -755,13 +719,12 @@ if (not $client->is_virtual) {
     };
 }
 
-Bar("$encoded_loginid Tokens");
-my @all_accounts = $user->clients;
-foreach my $l (@all_accounts) {
-    my $tokens = BOM::Database::Model::AccessToken->new->get_all_tokens_by_loginid($l->loginid);
+Bar("$loginid Tokens");
+foreach my $l (sort keys %$siblings) {
+    my $tokens = BOM::Database::Model::AccessToken->new->get_all_tokens_by_loginid($l);
     foreach my $t (@$tokens) {
         $t =~ /(.{4})$/;
-        print "Access Token [" . $l->loginid . "]: $1 <br\>";
+        print "Access Token [" . $l . "]: $1 <br\>";
     }
 }
 
@@ -781,11 +744,29 @@ BOM::Backoffice::Request::template->process(
         countries => Brands->new(name => request()->brand)->countries_instance->countries,
     });
 
+Bar("Financial Assessment");
+print qq{
+   <form action="$self_post" method="post">
+            <input type="hidden" name="whattodo" value="update_professional_status">
+                <select name="professional_status">
+                <option value=1>YES</option>
+                <option value=0>NO</option>
+             </select>
+             <input type="submit" value="Update professional status">
+    <input type="hidden" name="broker" value="$encoded_broker">
+    <input type="hidden" name="loginID" value="$encoded_loginid">
+        </form>
+   };
+
+if ($input{whattodo} eq 'update_professional_status') {
+    $client->financial_assessment({is_professional => $input{professional_status}});
+    $client->save;
+
+}
 my $financial_assessment = $client->financial_assessment();
 if ($financial_assessment) {
     my $user_data_json = $financial_assessment->data;
     my $is_professional = $financial_assessment->is_professional ? 'yes' : 'no';
-    Bar("Financial Assessment");
     print qq{<table class="collapsed">
         <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
         . encode_entities($user_data_json) . qq{</textarea></td></tr>
@@ -793,6 +774,7 @@ if ($financial_assessment) {
         <tr><td>Is professional</td><td>$is_professional</td></tr>
         </table>
     };
+
 }
 
 Bar($user->email . " Login history");
@@ -810,7 +792,6 @@ BOM::Backoffice::Request::template->process(
         history => $login_history,
         limit   => $limit
     });
-
 code_exit_BO();
 
 1;

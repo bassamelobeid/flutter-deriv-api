@@ -14,7 +14,6 @@ PrintContentType();
 BrokerPresentation('BACKOFFICE ACCOUNTS');
 my $broker           = request()->broker_code;
 my $encoded_broker   = encode_entities($broker);
-my $staff            = BOM::Backoffice::Auth0::can_access(['Payments']);
 my $clerk            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $currency_options = get_currency_options();
 
@@ -29,7 +28,7 @@ my $today = Date::Utility->new->date_ddmmmyy;
 if ((request()->param('whattodo') // '') eq 'showdocs') {
     my $loginid = uc(request()->param('loginID'));
     my $client = Client::Account->new({loginid => $loginid});
-    Bar(encode_entities("SHOW CLIENT PAYMENT DOCS FOR $loginid " . $client->full_name));
+    Bar("SHOW CLIENT PAYMENT DOCS FOR $loginid " . $client->full_name);
     print "ID docs:";
     print show_client_id_docs($client, show_delete => 1);
     print "<hr>Payment docs:";
@@ -102,36 +101,9 @@ Bar("BATCH CREDIT/DEBIT CLIENTS ACCOUNT: DOUGHFLOW");
 
 $tt->process('backoffice/account/manager_batch_doughflow.tt') || die $tt->error();
 
-## CTC
-Bar("BTC withdrawal list");
+Bar("Crypto cashier");
 
-use BOM::Database::ClientDB;
-my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-my $dbic = $clientdb->db->dbic;
-
-if (request()->param('ctc_sent')) {
-    my ($found) = $dbic->run(sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_sent(?, ?)', undef, request()->param('ctc_sent'), 'BTC') });
-    # TODO: print warning if not $found
-}
-
-my $btc_trxs;
-my $ctc_view_type;
-if (request()->param('ctc_recent_sent')) {
-    $btc_trxs = $dbic->run(
-        sub { $_->selectall_arrayref(q{SELECT * FROM payment.ctc_bo_get_withdrawal('BTC', 'SENT'::payment.CTC_STATUS, 50, NULL)}, {Slice => {}}) });
-    $ctc_view_type = 'recent_sent';
-} else {
-    $btc_trxs = $dbic->run(
-        sub { $_->selectall_arrayref(q{SELECT * FROM payment.ctc_bo_get_withdrawal('BTC', 'LOCKED'::payment.CTC_STATUS, NULL, NULL)}, {Slice => {}}) }
-    );
-    $ctc_view_type = 'locked';
-}
-$tt->process(
-    'backoffice/account/manager_btc_trxs.tt',
-    {
-        trxs      => $btc_trxs,
-        broker    => $broker,
-        view_type => $ctc_view_type,
-    }) || die $tt->error();
+print '<a href="f_manager_crypto.cgi">Go to crypto cashier management page</a>';
 
 code_exit_BO();
+

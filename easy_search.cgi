@@ -22,8 +22,6 @@ my %params = %{request()->params};
 my $broker = $params{broker} || request()->broker_code;
 BrokerPresentation("EASY SEARCH: $broker");
 
-my $staff = BOM::Backoffice::Auth0::can_access(['CS']);
-
 my $stash = {now => DateTime->now};
 
 my $tt = BOM::Backoffice::Request::template();
@@ -76,7 +74,7 @@ if (my $search = $params{search}) {
     my $href_args = {loginID => $loginid};
     $stash->{client_href} = request()->url_for("backoffice/f_clientloginid_edit.cgi", $href_args);
 
-    Bar("Client " . encode_entities($client));
+    Bar("Client " . $client);
 }
 
 $tt->process('backoffice/easy_search.html.tt', $stash)

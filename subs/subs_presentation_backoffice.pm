@@ -10,6 +10,7 @@ use strict;
 use warnings;
 no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
+use BOM::Platform::Config;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
 use Mojo::URL;
@@ -85,7 +86,7 @@ sub BrokerPresentation {
 sub Bar {
     my ($bartext) = @_;
 
-    $bartext = uc($bartext);
+    $bartext = uc(encode_entities($bartext));
 
     BarEnd();    #see sub below
 
@@ -116,6 +117,13 @@ sub ServerWarningBar {
  </td><td>~;
 
     my $ipmessage = "Your IP: $ENV{'REMOTE_ADDR'}";
+
+    if (BOM::Platform::Config::on_qa()) {
+        my $url = request()->url_for('backoffice/login.cgi?backprice=');
+        my ($c, $h) = BOM::Backoffice::Cookie::get_cookie('backprice') ? ('YES', $url . '0') : ('NO', $url . '1');
+
+        $ipmessage .= qq{, backprice config: <a href="$h">$c</a>};
+    }
 
     my $topbarbackground;
     my $systemisoff;
@@ -301,6 +309,8 @@ sub vk_BObottomPRES {
 }
 
 sub code_exit_BO {
+    my ($message) = @_;
+    print $message if $message;
     if ($vk_BarIsDoneOnce) { BarEnd(); }             #backoffice closing bar output (must be before vk_BObottomPRES)
     if ($vk_didBOtopPRES)  { vk_BObottomPRES(); }    #backoffice closing presentation
     no strict "refs";                                ## no critic (ProhibitNoStrict, ProhibitProlongedStrictureOverride)
