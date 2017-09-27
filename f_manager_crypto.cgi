@@ -108,7 +108,6 @@ my $display_transactions = sub {
         }
         $trx->{amount} //= 0;    # it will be undef on newly generated addresses
         $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rates->{$trx->{currency_code}});
-        $trx->{status} = 'PENDING' if $trx->{status} eq 'LOCKED';
     }
 
     # Render template page with transactions
