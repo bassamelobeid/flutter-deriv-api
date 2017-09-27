@@ -30,7 +30,6 @@ sub add_upload_info {
         file_size       => $file_size,
         sha1            => Digest::SHA1->new,
         received_bytes  => 0,
-        document_path   => "$s3_config->{bucket}/$file_name",
         pending_futures => \@pending_futures,
     };
 
@@ -159,7 +158,6 @@ sub send_upload_successful {
                 req_id        => $upload_info->{req_id},
                 passthrough   => $upload_info->{passthrough},
                 file_id       => $upload_info->{file_id},
-                document_path => $upload_info->{document_path},
                 %{$upload_finished},
             },
             response => sub {
