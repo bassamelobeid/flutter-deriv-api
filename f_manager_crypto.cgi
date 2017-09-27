@@ -87,7 +87,7 @@ catch {
 };
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
-my $dbh = $clientdb->db->dbh;
+my $dbic = $clientdb->db->dbic;
 
 my $rpc_client_builders = {
     BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}},   timeout => 5)) },
@@ -167,10 +167,10 @@ if ($view_action eq 'withdrawals') {
         code_exit_BO($error->get_mesg()) if $error;
 
         my $found;
-        ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency)
-            if $action eq 'verify';
-        ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency)
-            if $action eq 'reject';
+        ($found) = $dbic->run(sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency) });
+        if $action eq 'verify';
+        ($found) = $dbic->run(sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency) });
+        if $action eq 'reject';
 
         code_exit_BO("ERROR: No record found. Please check with someone from IT team before proceeding.")
             unless ($found);
@@ -178,11 +178,14 @@ if ($view_action eq 'withdrawals') {
 
     my $ctc_status = $view_type eq 'pending' ? 'LOCKED' : uc($view_type);
     # Fetch transactions according to filter option
-    my $trxns = $dbh->selectall_arrayref(
-        "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
-        {Slice => {}},
-        $currency, $ctc_status
-    );
+    my $trxns = $dbic->run(
+        sub {
+            $_->selectall_arrayref(
+                "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
+                {Slice => {}},
+                $currency, $ctc_status
+            );
+        });
     $display_transactions->($trxns);
 } elsif ($view_action eq 'deposits') {
     Bar("LIST OF TRANSACTIONS - DEPOSITS");
@@ -190,11 +193,14 @@ if ($view_action eq 'withdrawals') {
     code_exit_BO("Invalid selection to view type of transactions.") if $view_type !~ /^(?:new|pending|confirmed|error)$/;
 
     # Fetch all deposit transactions matching specified currency and status
-    my $trxns = $dbh->selectall_arrayref(
-        "SELECT * FROM payment.ctc_bo_get_deposit(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
-        {Slice => {}},
-        $currency, uc $view_type
-    );
+    my $trxns = $dbic->run(
+        sub {
+            $_->selectall_arrayref(
+                "SELECT * FROM payment.ctc_bo_get_deposit(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
+                {Slice => {}},
+                $currency, uc $view_type
+            );
+        });
     $display_transactions->($trxns);
 
 } elsif ($view_action eq 'search') {
@@ -208,14 +214,24 @@ if ($view_action eq 'withdrawals') {
 
     # Fetch all transactions matching specified searching details
     $trxns = (
-        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, NULL, NULL, NULL, NULL)",    {Slice => {}}, $search_query),
-        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query)
+        $dbic->run(
+            sub { $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query) }
+        ),
+        $dbic->run(
+            sub {
+                $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query);
+            }
+        ),
     ) if ($search_type eq 'address');
 
     $trxns = (
-        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, NULL, NULL, NULL, NULL)",    {Slice => {}}, $search_query),
-        $dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query)
-    ) if ($search_type eq 'loginid');
+        $dbic->run(
+            sub { $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query) }
+        ),
+        $dbic->run(
+            sub {
+                $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, NULL, NULL, NULL, NULL)", {Slice => {}}, $search_query);
+            })) if ($search_type eq 'loginid');
     $display_transactions->($trxns);
 
 } elsif ($view_action eq 'reconcil') {
@@ -228,11 +244,14 @@ if ($view_action eq 'withdrawals') {
 
     # First, we get a mapping from address to database transaction information
     $recon->from_database_items(
-        $dbh->selectall_arrayref(
-            q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
-            {Slice => {}},
-            $currency, $start_date->iso8601, $end_date->iso8601
-            )
+        $dbic->run(
+            sub {
+                $_->selectall_arrayref(
+                    q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
+                    {Slice => {}},
+                    $currency, $start_date->iso8601, $end_date->iso8601
+                );
+            })
             or die 'failed to run ctc_bo_transactions_for_reconciliation'
     );
 
