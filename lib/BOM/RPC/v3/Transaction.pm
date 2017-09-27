@@ -5,6 +5,7 @@ use warnings;
 
 use Try::Tiny;
 use JSON::XS qw/encode_json/;
+use Scalar::Util qw(blessed);
 
 use Client::Account;
 use Format::Util::Numbers qw/formatnumber/;
@@ -97,10 +98,16 @@ sub buy {
         }
     }
     catch {
-        warn __PACKAGE__ . " buy buy failed, parameters: " . encode_json($contract_parameters);
+        my $message_to_client;
+        if (blessed($_) && $_->isa('BOM::Product::Exception')) {
+            $message_to_client = $_->message_to_client;
+        } else {
+            $message_to_client = ['Cannot create contract'];
+            warn __PACKAGE__ . " buy buy failed, parameters: " . encode_json($contract_parameters);
+        }
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+                message_to_client => BOM::Platform::Context::localize(@$message_to_client)});
     };
     return $response if $response;
 
@@ -191,7 +198,9 @@ sub buy_contract_for_multiple_accounts {
         }
     }
     catch {
-        warn __PACKAGE__ . " buy_contract_for_multiple_accounts failed, parameters: " . encode_json($contract_parameters);
+        warn __PACKAGE__
+            . " buy_contract_for_multiple_accounts failed with error [$_], parameters: "
+            . (eval { encode_json($contract_parameters) } // 'could not encode, ' . $@);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
@@ -324,7 +333,7 @@ sub sell_contract_for_multiple_accounts {
                 transaction_id => $row->{tnx}{id},
                 reference_id   => $row->{buy_tr_id},
                 balance_after  => formatnumber('amount', $client->currency, $row->{tnx}{balance_after}),
-                sell_price     => abs($row->{fmb}{sell_price}),
+                sell_price     => formatnumber('price', $client->currency, $row->{fmb}{sell_price}),
                 contract_id    => $row->{tnx}{financial_market_bet_id},
                 sell_time      => $row->{fmb}{sell_time},
             };
@@ -398,7 +407,7 @@ sub sell {
         reference_id   => $trx->reference_id,                                                   ### buy transaction ID
         contract_id    => $id,
         balance_after  => formatnumber('amount', $client->currency, $trx_rec->balance_after),
-        sold_for       => abs($trx_rec->amount),
+        sold_for       => formatnumber('price', $client->currency, $trx_rec->amount),
     };
 }
 

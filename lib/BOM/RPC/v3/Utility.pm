@@ -6,8 +6,13 @@ use warnings;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use List::MoreUtils qw(any);
+use List::Util qw(any);
+use URI;
+use Domain::PublicSuffix;
+use Format::Util::Numbers qw/formatnumber/;
+
 use Brands;
+use LandingCompany::Registry;
 
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
@@ -80,7 +85,6 @@ my $rates_file_last_load = 0;
 my $rates_file_content;
 
 sub site_limits {
-
     my $now = time;
     if ($now - $rates_file_last_load > RATES_FILE_CACHE_TIME) {
         $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
@@ -235,30 +239,196 @@ sub error_map {
         'InsufficientAccountDetails' => localize('Please provide complete details for account opening.')};
 }
 
-sub get_real_acc_opening_type {
-    my $args        = shift;
-    my $from_client = $args->{from_client};
+=head2 filter_siblings_by_landing_company
 
-    return unless ($from_client->residence);
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-    my $gaming_company     = $countries_instance->gaming_company_for_country($from_client->residence);
-    my $financial_company  = $countries_instance->financial_company_for_country($from_client->residence);
+This returns sibling per landing company i.e
+filters out different landing company siblings
 
-    if ($from_client->is_virtual) {
-        return 'real' if ($gaming_company);
+=cut
 
-        if ($financial_company) {
-            # Eg: Germany, Japan
-            return $financial_company if (any { $_ eq $financial_company } qw(maltainvest japan));
+sub filter_siblings_by_landing_company {
+    my ($landing_company_name, $siblings) = @_;
+    return {map { $_ => $siblings->{$_} } grep { $siblings->{$_}->{landing_company_name} eq $landing_company_name } keys %$siblings};
+}
 
-            # Eg: Singapore has no gaming_company
-            return 'real';
-        }
+sub get_real_account_siblings_information {
+    my ($loginid, $no_disabled) = @_;
+
+    my $user = BOM::Platform::User->new({loginid => $loginid});
+    # return empty if we are not able to find user, this should not
+    # happen but added as additional check
+    return {} unless $user;
+
+    my @clients = ();
+    if ($no_disabled) {
+        @clients = $user->clients;
     } else {
-        # MLT upgrade to MF
-        return $financial_company if ($financial_company eq 'maltainvest');
+        @clients = $user->clients(disabled_ok => 1);
     }
-    return;
+
+    # filter out virtual clients
+    @clients = grep { not $_->is_virtual } @clients;
+
+    my $siblings;
+    foreach my $cl (@clients) {
+        my $acc = $cl->default_account;
+
+        $siblings->{$cl->loginid} = {
+            loginid              => $cl->loginid,
+            landing_company_name => $cl->landing_company->short,
+            sub_account_of       => ($cl->sub_account_of // ''),
+            currency             => $acc ? $acc->currency_code : '',
+            balance              => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
+        };
+    }
+
+    return $siblings;
+}
+
+=head2 validate_make_new_account
+
+    validate_make_new_account($client, $account_type, $request_data)
+
+    Make several checks based on $client and $account type.
+    Updates $request_data(hashref) with $client's sensitive data.
+
+=cut
+
+sub validate_make_new_account {
+    my ($client, $account_type, $request_data) = @_;
+
+    my $residence = $client->residence;
+    return create_error({
+            code              => 'NoResidence',
+            message_to_client => localize('Please set your country of residence.')}) unless $residence;
+
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    my $gaming_company     = $countries_instance->gaming_company_for_country($residence);
+    my $financial_company  = $countries_instance->financial_company_for_country($residence);
+
+    my $error_map = error_map();
+    return create_error({
+            code              => 'InvalidAccount',
+            message_to_client => $error_map->{'invalid'}}) unless ($gaming_company or $financial_company);
+
+    return create_error({
+            code              => 'InvalidResidence',
+            message_to_client => $error_map->{'invalid residence'}}) if ($countries_instance->restricted_country($residence));
+
+    # get all real account siblings
+    my $siblings = get_real_account_siblings_information($client->loginid);
+
+    # if no real sibling is present then its virtual
+    if (scalar(keys %$siblings) == 0) {
+        if ($account_type eq 'real') {
+            return undef if $gaming_company;
+            # send error as account opening for maltainvest and japan has separate call
+            return create_error({
+                    code              => 'InvalidAccount',
+                    message_to_client => $error_map->{'invalid'}}) if ($financial_company and any { $_ eq $financial_company } qw(maltainvest japan));
+        } elsif ($account_type eq 'financial' and ($financial_company and $financial_company ne 'maltainvest')) {
+            return create_error({
+                    code              => 'InvalidAccount',
+                    message_to_client => $error_map->{'invalid'}});
+        } elsif ($account_type eq 'japan' and ($financial_company and $financial_company ne 'japan')) {
+            return create_error({
+                    code              => 'InvalidAccount',
+                    message_to_client => $error_map->{'invalid'}});
+        }
+
+        # some countries don't have gaming company like Singapore
+        # but we do allow them to open only financial account
+        return;
+    }
+    # we don't allow virtual client to make this again and
+    return permission_error() if $client->is_virtual;
+
+    my $landing_company_name = $client->landing_company->short;
+
+    # as maltainvest can be opened in few ways, upgrade from malta,
+    # directly from virtual for Germany as residence
+    # or from maltainvest itself as we support multiple account now
+    # so upgrade is only allow once
+    if (($account_type and $account_type eq 'maltainvest') and $landing_company_name eq 'malta') {
+        # return error if client already has maltainvest account
+        return create_error({
+                code              => 'FinancialAccountExists',
+                message_to_client => localize('You already have a financial money account. Please switch accounts to trade financial products.')}
+        ) if (grep { $siblings->{$_}->{landing_company_name} eq 'maltainvest' } keys %$siblings);
+
+        # if from malta and account type is maltainvest, assign
+        # maltainvest to landing company as client is upgrading
+        $landing_company_name = 'maltainvest';
+    }
+
+    # we have real account, and going to create another one
+    # So, lets populate all sensitive data from current client, ignoring provided input
+    # this logic should gone after we separate new_account with new_currency for account
+    $request_data->{$_} = $client->$_ for qw/first_name last_name residence address_city phone date_of_birth address_line_1/;
+
+    # filter siblings by landing company as we don't want to check cross
+    # landing company siblings, for example MF should check only its
+    # corresponding siblings not MLT one
+    $siblings = filter_siblings_by_landing_company($landing_company_name, $siblings);
+
+    # return if any one real client has not set account currency
+    if (my ($loginid_no_curr) = grep { not $siblings->{$_}->{currency} } keys %$siblings) {
+        return create_error({
+                code => 'SetExistingAccountCurrency',
+                message_to_client =>
+                    localize('Please set the currency for your existing account [_1], in order to create more accounts.', $loginid_no_curr)});
+    }
+
+    # check if all currencies are exhausted i.e.
+    # - if client has one type of fiat currency don't allow them to open another
+    # - if client has all of allowed cryptocurrency
+
+    # check if client has fiat currency, if not then return as we
+    # allow them to open new account
+    return undef unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
+
+    my $error = create_error({
+            code              => 'NewAccountLimitReached',
+            message_to_client => localize('You have created all accounts available to you.')});
+
+    my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
+    my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
+    # check if landing company supports crypto currency
+    # else return error as client exhausted fiat currency
+    return $error unless $lc_num_crypto;
+
+    # send error if number of crypto account of client is same
+    # as number of crypto account supported by landing company
+    my $client_num_crypto = (grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'crypto' } keys %$siblings) // 0;
+    return $error if ($lc_num_crypto eq $client_num_crypto);
+
+    return undef;
+}
+
+sub validate_set_currency {
+    my ($client, $currency) = @_;
+
+    my $siblings = get_real_account_siblings_information($client->loginid);
+
+    # is virtual check is already done in set account currency
+    # but better to have it here as well so that this sub can
+    # be pluggable
+    return undef if (scalar(keys %$siblings) == 0);
+
+    $siblings = filter_siblings_by_landing_company($client->landing_company->short, $siblings);
+
+    # check if currency is fiat or crypto
+    my $type  = LandingCompany::Registry::get_currency_type($currency);
+    my $error = create_error({
+            code              => 'CurrencyTypeNotAllowed',
+            message_to_client => localize('Please note that you are limited to one account per currency type.')});
+    # if fiat then check if client has already any fiat, if yes then don't allow
+    return $error
+        if ($type eq 'fiat' and grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings);
+    # if crypto check if client has same crypto, if yes then don't allow
+    return $error if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
+
+    return undef;
 }
 
 sub paymentagent_default_min_max {
@@ -266,6 +436,60 @@ sub paymentagent_default_min_max {
         minimum => 10,
         maximum => 2000
     };
+}
+
+sub validate_uri {
+    my $original_url = shift;
+    my $url          = URI->new($original_url);
+
+    if ($original_url =~ /[^[:ascii:]]/) {
+        return localize('Unicode is not allowed in URL');
+    }
+    if (not defined $url->scheme or ($url->scheme ne 'http' and $url->scheme ne 'https')) {
+        return localize('The given URL is not http(s)');
+    }
+    if ($url->userinfo) {
+        return localize('URL should not have user info');
+    }
+    if ($url->port != 80 && $url->port != 443) {
+        return localize('Only ports 80 and 443 are allowed');
+    }
+    if ($url->fragment) {
+        return localize('URL should not have fragment');
+    }
+    if ($url->query) {
+        return localize('URL should not have query');
+    }
+    my $host = $url->host;
+    if (!$host || $original_url =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
+        return localize('Invalid URL');
+    }
+    my $suffix = Domain::PublicSuffix->new();
+    if (!$suffix->get_root_domain($host)) {
+        return localize('Unknown domain name');
+    }
+
+    return undef;
+}
+
+# FIXME: remove this sub when move of client details to user db is done
+sub should_update_account_details {
+    my ($current_client, $sibling_loginid) = @_;
+
+    my $allow_omnibus = $current_client->{allow_omnibus};
+    if (!$allow_omnibus) {
+        my $sub_account_of = $current_client->sub_account_of;
+        if ($sub_account_of) {
+            my $client = Client::Account->new({loginid => $sub_account_of});
+            $allow_omnibus = $client->allow_omnibus;
+        }
+    }
+
+    if ($allow_omnibus and $sibling_loginid ne $current_client->loginid) {
+        return 0;
+    }
+
+    return 1;
 }
 
 1;

@@ -50,6 +50,18 @@ sub mt5_login_list {
     return \@array;
 }
 
+# limit number of requests to once per minute
+sub _throttle {
+    my $loginid = shift;
+    my $key     = 'MT5ACCOUNT::THROTTLE::' . $loginid;
+
+    return 1 if BOM::Platform::RedisReplicated::redis_read()->get($key);
+
+    BOM::Platform::RedisReplicated::redis_write()->set($key, 1, 'EX', 60);
+
+    return 0;
+}
+
 sub mt5_new_account {
     my $params = shift;
 
@@ -129,6 +141,10 @@ sub mt5_new_account {
         $group .= "_$mt5_account_type" if $account_type eq 'financial';
         $group .= "_$residence" if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
     }
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'MT5CreateUserError',
+            message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
 
     # client can have only 1 MT demo & 1 MT real a/c
     my $user = BOM::Platform::User->new({email => $client->email});
@@ -413,8 +429,7 @@ sub mt5_deposit {
         client_loginid => $fm_loginid,
     });
     if (not $fm_client_db->freeze) {
-        return $error_sub->(localize('If this error persists, please contact customer support.'),
-            "Account stuck in previous transaction $fm_loginid");
+        return $error_sub->(localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid");
     }
     scope_guard {
         $fm_client_db->unfreeze;
@@ -537,7 +552,7 @@ sub mt5_withdrawal {
     # as of now we only support gaming for binary brand, in future if we
     # support for champion please revisit this
     if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated) {
-        return $error_sub->(localize('Client is not fully authenticated.'));
+        return $error_sub->(localize('Please authenticate your account.'));
     }
 
     if ($to_client->currency ne 'USD') {
@@ -555,8 +570,7 @@ sub mt5_withdrawal {
         client_loginid => $to_loginid,
     });
     if (not $to_client_db->freeze) {
-        return $error_sub->(localize('If this error persists, please contact customer support.'),
-            "Account stuck in previous transaction $to_loginid");
+        return $error_sub->(localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid");
     }
     scope_guard {
         $to_client_db->unfreeze;
