@@ -106,7 +106,7 @@ sub new {
         reset_time => $start_date + 20,
 
         # TODO(leonerd): what are these for?
-        test_app    => undef,
+        test_app => undef,
 
         test_app_class    => $args{test_app},
         suite_schema_path => $args{suite_schema_path},
