@@ -15,9 +15,6 @@ sub upload {
     my ($document_type, $document_id, $document_format, $expiration_date, $status, $file_id, $file_size, $reason) =
         @{$params->{args}}{qw/document_type document_id document_format expiration_date status file_id file_size reason/};
 
-    my $loginid = $client->loginid;
-    my $dbh = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db->dbh;
-
     return create_upload_error('UploadError', 'max_size') if defined $file_size and $file_size > MAX_FILE_SIZE;
     return create_upload_error('UploadError', $reason)    if defined $status    and $status eq 'failure';
 
@@ -48,8 +45,12 @@ sub upload {
         return create_upload_error('UploadDenied', localize("Document ID is required."))     unless $document_id;
     }
 
+    my $loginid = $client->loginid;
+
     # Add new entry to database.
     if ($document_type && $document_format) {
+        my $dbh = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db->dbh;
+
         my ($id) = $dbh->selectrow_array(
             "SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?)",
             {Slice => {}},
