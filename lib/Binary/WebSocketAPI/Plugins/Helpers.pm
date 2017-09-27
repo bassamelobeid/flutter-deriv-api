@@ -233,6 +233,7 @@ sub register {
                     my $s3 = Net::Async::Webservice::S3->new(
                         %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)},
                         max_retries => 1,
+                        timeout => 60,
                     ));
                 $s3;
                 }
