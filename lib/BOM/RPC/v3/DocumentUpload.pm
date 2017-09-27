@@ -16,8 +16,7 @@ sub upload {
         @{$params->{args}}{qw/document_type document_id document_format expiration_date status file_id file_size reason/};
 
     my $loginid  = $client->loginid;
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => $client->broker_code});
-    my $dbh      = $clientdb->db->dbh;
+    my $dbh = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db->dbh;
 
     return create_error('UploadError', 'max_size') if defined $file_size and $file_size > MAX_FILE_SIZE;
     return create_error('UploadError', $reason)    if defined $status    and $status eq 'failure';
