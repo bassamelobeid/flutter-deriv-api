@@ -171,16 +171,16 @@ sub get_turnover_limit_parameters {
             my $config = BOM::Platform::Runtime->instance->get_offerings_config;
 
             if ($_->{market}) {
-                $params->{symbols} = [map { {n => $_} } get_offerings_with_filter($config, 'underlying_symbol', {market => $_->{market}})];
+                $params->{symbols} = [get_offerings_with_filter($config, 'underlying_symbol', {market => $_->{market}})];
             } elsif ($_->{submarket}) {
-                $params->{symbols} = [map { {n => $_} } get_offerings_with_filter($config, 'underlying_symbol', {submarket => $_->{submarket}})];
+                $params->{symbols} = [get_offerings_with_filter($config, 'underlying_symbol', {submarket => $_->{submarket}})];
             } elsif ($_->{underlying_symbol}) {
-                $params->{symbols} = [{n => $_->{underlying_symbol}}];
+                $params->{symbols} = [$_->{underlying_symbol}];
             }
 
             if ($_->{contract_category}) {
                 $params->{bet_type} =
-                    [map { {n => $_} } get_offerings_with_filter($config, 'contract_type', {contract_category => $_->{contract_category}})];
+                    [get_offerings_with_filter($config, 'contract_type', {contract_category => $_->{contract_category}})];
             }
 
             $params;
