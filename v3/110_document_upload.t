@@ -11,6 +11,10 @@ use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
+$ENV{DOCUMENT_AUTH_S3_ACCESS} = 'FakeS3Access';
+$ENV{DOCUMENT_AUTH_S3_SECRET} = 'FakeS3Secret';
+$ENV{DOCUMENT_AUTH_S3_BUCKET} = 'FakeS3Bucket';
+
 my $t = build_wsapi_test();
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, 'CR0021');
@@ -98,7 +102,7 @@ subtest 'binary metadata should be correctly sent' => sub {
 };
 
 subtest 'sending two files concurrently' => sub {
-    my $data = 'Some text';
+    my $data   = 'Some text';
     my $length = length $data;
 
     my $req1 = {
@@ -155,7 +159,7 @@ subtest 'sending two files concurrently' => sub {
 };
 
 subtest 'Send two files one by one' => sub {
-    my $data = 'Hello world!';
+    my $data   = 'Hello world!';
     my $length = length $data;
 
     document_upload_ok({
@@ -169,7 +173,7 @@ subtest 'Send two files one by one' => sub {
         $data
     );
 
-    $data = 'Goodbye!';
+    $data   = 'Goodbye!';
     $length = length $data;
 
     document_upload_ok({
