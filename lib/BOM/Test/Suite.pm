@@ -41,15 +41,6 @@ $ENV{BOM_TEST_RATE_LIMITATIONS} =    ## no critic (Variables::RequireLocalizedPu
 # all tests start from this date
 my $start_date = Date::Utility->new('2016-08-09 11:59:00')->epoch;
 
-# Read entire contents of file as a list of lines
-sub read_file_lines {
-    my $path = shift;
-    open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
-    my @lines = <$fh>;
-    close $fh;
-    return @lines;
-}
-
 my $ticks_inserted;
 
 sub new {
@@ -390,29 +381,6 @@ sub finish {
 
     diag "Cumulative elapsed time for all steps was $self->{cumulative_elapsed}s";
     return $self->{cumulative_elapsed};
-}
-
-sub run {
-    my ($class, $args) = @_;
-
-    my $path = delete $args->{test_conf_path};
-    my ($title) = ($path =~ /\/(.+?)$/);
-
-    my $self = $class->new(
-        %$args,
-        title => $title,
-    );
-
-    my $linenum = 0;
-    foreach my $line (read_file_lines($path)) {
-        $linenum++;
-        chomp $line;
-        next if ($line =~ /^(#.*|)$/);
-
-        $self->exec_line($line, $linenum);
-    }
-
-    return $self->finish;
 }
 
 sub print_test_diag {
