@@ -10,8 +10,8 @@
     </head>
     <body class="oauth">
         <div>
-            <div id="topbar" class="primary-color-dark"></div>
-            <div id="header" class="primary-color">
+            <div id="topbar" class="primary-bg-color-dark"></div>
+            <div id="header" class="primary-bg-color">
                 <div class="center-text">
                     <div class="logo-wrapper">
                         <a href="https://www.champion-fx.com" class="logo-parent">

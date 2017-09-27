@@ -1,5 +1,7 @@
 package BOM::OAuth::O;
 
+use strict;
+
 use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
 use Try::Tiny;
@@ -19,6 +21,8 @@ use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 
+use constant SOCIAL_LOGIN_MODE => 0;
+
 sub _oauth_model {
     return BOM::Database::Model::OAuth->new;
 }
@@ -26,129 +30,110 @@ sub _oauth_model {
 sub authorize {
     my $c = shift;
 
-    my ($app_id, $state, $response_type) = map { defang($c->param($_)) // undef } qw/ app_id state response_type /;
-
-    # $response_type ||= 'code';    # default to Authorization Code
-    $response_type = 'token';    # only support token
-
-    $app_id or return $c->_bad_request('the request was missing app_id');
-
+    # APP_ID verification logic
+    my ($app_id, $state) = map { defang($c->param($_)) // undef } qw/ app_id state /;
+    return $c->_bad_request('the request was missing app_id') unless $app_id;
     return $c->_bad_request('the request was missing valid app_id') if ($app_id !~ /^\d+$/);
-
     my $oauth_model = _oauth_model();
     my $app         = $oauth_model->verify_app($app_id);
-    unless ($app) {
-        return $c->_bad_request('the request was missing valid app_id');
-    }
+    return $c->_bad_request('the request was missing valid app_id') unless $app;
 
-    my @scopes          = @{$app->{scopes}};
-    my $redirect_uri    = $app->{redirect_uri};
-    my $redirect_handle = sub {
-        my ($response_type, $error, $state) = @_;
+    my $request_country_code = $c->{stash}->{request}->{country_code};
 
-        my $uri = Mojo::URL->new($redirect_uri);
-        $uri .= '#error=' . $error;
-        $uri .= '&state=' . $state if defined $state;
-        return $uri;
-    };
-
-    ## setup oneall callback url
+    # setup oneall callback url
     my $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
     $c->stash('oneall_callback' => $oneall_callback);
 
     my $client;
+    # try to retrieve client from session
     if (    $c->req->method eq 'POST'
-        and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
+        and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
         and defang($c->param('login')))
     {
         $client = $c->_login($app) or return;
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
     } elsif ($c->req->method eq 'POST' and $c->session('_is_logined')) {
-        # get loginid from Mojo Session
+        # Get loginid from Mojo Session
         $client = $c->_get_client;
     } elsif ($c->session('_oneall_user_id')) {
-        ## from Oneall Social Login
-        my $oneall_user_id = $c->session('_oneall_user_id');
-        $client = $c->_login($app, $oneall_user_id) or return;
-        $c->session('_is_logined', 1);
-        $c->session('_loginid',    $client->loginid);
+        # Prevent Japan IP access social login feature.
+        if ($request_country_code ne 'jp') {
+            # Get client from Oneall Social Login.
+            my $oneall_user_id = $c->session('_oneall_user_id');
+            $client = $c->_login($app, $oneall_user_id) or return;
+            $c->session('_is_logined', 1);
+            $c->session('_loginid',    $client->loginid);
+        }
     }
 
     my $brand_name = $c->stash('brand')->name;
-    ## check user is logined
-    unless ($client) {
-        ## taken error from oneall
-        my $error = '';
-        if ($error = $c->session('_oneall_error')) {
-            delete $c->session->{_oneall_error};
-        }
 
-        ## show login form
-        return $c->render(
-            template  => _get_login_template_name($brand_name),
-            layout    => $brand_name,
-            app       => $app,
-            error     => $error,
-            r         => $c->stash('request'),
-            csrftoken => $c->csrf_token,
-        );
-    }
+    # show error when no client found in session
+    # show login form
+    return $c->render(
+        template     => _get_login_template_name($brand_name),
+        layout       => $brand_name,
+        app          => $app,
+        error        => delete $c->session->{_oneall_error} || '',
+        csrf_token   => $c->csrf_token,
+        r            => $c->stash('request'),
+        social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
+    ) unless $client;
 
-    my $loginid = $client->loginid;
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
 
-    my $lc = $client->landing_company;
-    if (grep { $brand_name ne $_ } @{$lc->allowed_for_brands}) {
-        return $c->render(
-            template  => _get_login_template_name($brand_name),
-            layout    => $brand_name,
-            app       => $app,
-            error     => localize('This account is unavailable. For any questions please contact Customer Support.'),
-            r         => $c->stash('request'),
-            csrftoken => $c->csrf_token,
-        );
-    }
+    # show error if stash brand name is not in the list
+    # of allowed brands for landing company
+    return $c->render(
+        template     => _get_login_template_name($brand_name),
+        layout       => $brand_name,
+        app          => $app,
+        error        => localize('This account is unavailable.'),
+        r            => $c->stash('request'),
+        csrf_token   => $c->csrf_token,
+        social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
+    ) if grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands};
 
-    ## confirm scopes
+    my $redirect_uri = $app->{redirect_uri};
+
+    # confirm scopes
     my $is_all_approved = 0;
     if (    $c->req->method eq 'POST'
-        and ($c->csrf_token eq (defang($c->param('csrftoken')) // ''))
+        and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
         and (defang($c->param('cancel_scopes')) || defang($c->param('confirm_scopes'))))
     {
         if (defang($c->param('confirm_scopes'))) {
-            ## approval on all loginids
+            # approval on all loginids
             foreach my $c1 ($user->clients) {
                 $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
             }
         } elsif ($c->param('cancel_scopes')) {
-            my $uri = $redirect_handle->($response_type, 'scope_denied', $state);
-            ## clear session for oneall login when scope is canceled
+            my $uri = Mojo::URL->new($redirect_uri);
+            $uri .= '#error=scope_denied';
+            $uri .= '&state=' . $state if defined $state;
+            # clear session for oneall login when scope is canceled
             delete $c->session->{_oneall_user_id};
             return $c->redirect_to($uri);
         }
     }
 
-    ## if app_id=1 we do not show the scope confirm screen
-    if ($app_id eq '1') {
-        $is_all_approved = 1;
-    }
-
-    ## check if it's confirmed
+    my $loginid = $client->loginid;
+    $is_all_approved = 1 if $app_id eq '1';
     $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid);
-    unless ($is_all_approved) {
-        ## show scope confirms
-        return $c->render(
-            template  => $brand_name . '/scope_confirms',
-            layout    => $brand_name,
-            app       => $app,
-            client    => $client,
-            scopes    => \@scopes,
-            r         => $c->stash('request'),
-            csrftoken => $c->csrf_token,
-        );
-    }
+    # show scope confirms if not yet approved
+    # do not show the scope confirm screen if APP ID is 1
+    return $c->render(
+        template   => $brand_name . '/scope_confirms',
+        layout     => $brand_name,
+        app        => $app,
+        client     => $client,
+        scopes     => \@{$app->{scopes}},
+        r          => $c->stash('request'),
+        csrf_token => $c->csrf_token,
+    ) unless $is_all_approved;
 
+    # setting up client ip
     my $client_ip = $c->client_ip;
     if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
         $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
@@ -156,12 +141,11 @@ sub authorize {
 
     my $ua_fingerprint = md5_hex($app_id . ($client_ip // '') . ($c->req->headers->header('User-Agent') // ''));
 
-    ## create tokens for all loginids
+    # create tokens for all loginids
     my $i = 1;
     my @params;
     foreach my $c1 ($user->clients) {
         my ($access_token) = $oauth_model->store_access_token_only($app_id, $c1->loginid, $ua_fingerprint);
-
         push @params,
             (
             'acct' . $i  => $c1->loginid,
@@ -176,7 +160,7 @@ sub authorize {
     my $uri = Mojo::URL->new($redirect_uri);
     $uri->query(\@params);
 
-    ## clear session
+    # clear login session
     delete $c->session->{_is_logined};
     delete $c->session->{_loginid};
     delete $c->session->{_oneall_user_id};
@@ -187,11 +171,13 @@ sub authorize {
 sub _login {
     my ($c, $app, $oneall_user_id) = @_;
 
-    my ($user, $client, $last_login, $err);
+    my ($user, $last_login, $err, $client);
 
     my $email    = defang($c->param('email'));
     my $password = $c->param('password');
     my $brand    = $c->stash('brand');
+
+    # TODO get rid of LOGIN label
     LOGIN:
     {
         if ($oneall_user_id) {
@@ -218,6 +204,13 @@ sub _login {
                 $err = localize('Incorrect email or password.');
                 last;
             }
+            # Prevent login if social signup flag is found.
+            # As the main purpose of this controller is to serve
+            # clients with email/password only.
+            if ($user->has_social_signup) {
+                $err = localize('Invalid login attempt. Please log in with a social network instead.');
+                last;
+            }
         }
 
         # get last login before current login to get last record
@@ -241,7 +234,7 @@ sub _login {
 
         my $lc = $client->landing_company;
         if (grep { $brand->name ne $_ } @{$lc->allowed_for_brands}) {
-            $err = localize('This account is unavailable. For any questions please contact Customer Support.');
+            $err = localize('This account is unavailable.');
         } elsif (
             grep {
                 $client->loginid =~ /^$_/
@@ -249,7 +242,7 @@ sub _login {
         {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         } elsif ($client->get_status('disabled')) {
-            $err = localize('This account is unavailable. For any questions please contact Customer Support.');
+            $err = localize('This account has been disabled.');
         } elsif (my $self_exclusion_dt = $client->get_self_exclusion_until_dt) {
             $err = localize('Sorry, you have excluded yourself until [_1].', $self_exclusion_dt);
         }
@@ -257,12 +250,13 @@ sub _login {
 
     if ($err) {
         $c->render(
-            template  => _get_login_template_name($brand->name),
-            layout    => $brand->name,
-            app       => $app,
-            error     => $err,
-            r         => $c->stash('request'),
-            csrftoken => $c->csrf_token,
+            template     => _get_login_template_name($brand->name),
+            layout       => $brand->name,
+            app          => $app,
+            error        => $err,
+            r            => $c->stash('request'),
+            csrf_token   => $c->csrf_token,
+            social_login => (SOCIAL_LOGIN_MODE and $c->{stash}->{request}->{country_code} ne 'jp'),
         );
         return;
     }
@@ -312,14 +306,14 @@ sub _login {
                     my $message;
                     if ($app->{id} eq '1') {
                         $message = localize(
-                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
+                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, please contact our Customer Support team.',
                             $client->email,
                             $r->client_ip,
                             $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
                             encode_entities($user_agent));
                     } else {
                         $message = localize(
-                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
+                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, please contact our Customer Support team.',
                             $client->email, $r->client_ip, $country_code, encode_entities($user_agent), $app->{name});
                     }
 

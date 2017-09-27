@@ -66,26 +66,26 @@ $t->json_like('/error_description', qr/valid app_id/);
 
 $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
 
-my $csrftoken = $t->tx->res->dom->at('input[name=csrftoken]')->val;
-ok $csrftoken, 'csrftoken is there';
+my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
+ok $csrf_token, 'csrf_token is there';
 $t->post_ok(
     "/authorize?app_id=$app_id" => form => {
-        login     => 1,
-        email     => $email,
-        password  => $password,
-        csrftoken => $csrftoken
+        login      => 1,
+        email      => $email,
+        password   => $password,
+        csrf_token => $csrf_token
     });
 
 # confirm_scopes after login
 $t = $t->content_like(qr/confirm_scopes/);
 
-$csrftoken = $t->tx->res->dom->at('input[name=csrftoken]')->val;
-ok $csrftoken, 'csrftoken is there';
+$csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
+ok $csrf_token, 'csrf_token is there';
 
 $t->post_ok(
     "/authorize?app_id=$app_id" => form => {
         confirm_scopes => 1,
-        csrftoken      => $csrftoken
+        csrf_token     => $csrf_token
     });
 
 ok $t->tx->res->headers->location =~ 'https://www.example.com/', 'redirect to example';
@@ -97,13 +97,13 @@ ok $code, 'got access code for another loginid';
 ## second time we'll see login again and POST will not require confirm scopes
 $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
 
-$csrftoken = $t->tx->res->dom->at('input[name=csrftoken]')->val;
+$csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
 $t->post_ok(
     "/authorize?app_id=$app_id" => form => {
-        login     => 1,
-        email     => $email,
-        password  => $password,
-        csrftoken => $csrftoken
+        login      => 1,
+        email      => $email,
+        password   => $password,
+        csrf_token => $csrf_token
     });
 
 ok $t->tx->res->headers->location =~ 'https://www.example.com/', 'redirect to example w/o confirm scopes';
