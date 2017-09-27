@@ -126,6 +126,13 @@ sub send_upload_failure {
                 reason      => $reason,
                 status      => 'failure',
             },
+            response => sub {
+                my ($rpc_response, $api_response, $req_storage) = @_;
+
+                remove_echo_req($req_storage);
+
+                return $api_response;
+            },
         });
 
     return;
@@ -156,7 +163,9 @@ sub send_upload_successful {
                 %{$upload_finished},
             },
             response => sub {
-                my $api_response = $_[1];
+                my (undef, $api_response, $req_storage) = @_;
+
+                remove_echo_req($req_storage);
 
                 return create_error($upload_info, $api_response) if exists($api_response->{error});
 
@@ -168,7 +177,7 @@ sub send_upload_successful {
                         %{$upload_finished},
                         upload_id => $upload_info->{upload_id},
                     }};
-            }
+            },
         });
 
     return;
@@ -227,18 +236,14 @@ sub generate_upload_id {
 }
 
 sub remove_echo_req {
-    my (undef, $req_storage, undef) = @_;
+    my $req_storage = shift;
 
     my $args = $req_storage->{args};
-
-    return unless exists($req_storage->{msg_type}) and $req_storage->{msg_type} eq 'document_upload' and exists($args->{status});
 
     $req_storage->{args} = {
         req_id      => $args->{req_id},
         passthrough => $args->{passthrough},
     };
-
-    return;
 }
 
 sub delete_upload_info {
