@@ -7,6 +7,8 @@ use Dir::Self;
 use Cwd qw/abs_path/;
 use POSIX qw/setsid/;
 
+use await;
+
 =head1 NAME
 
 BOM::Test - Do things before test
@@ -74,7 +76,8 @@ BEGIN {
         # Cache redis server
         $ENV{REDIS_CACHE_SERVER} = $ENV{BOM_CACHE_SERVER} = '127.0.1.3:6385';
 
-        $ENV{DB_POSTFIX} = '_test';
+        $ENV{DB_POSTFIX}    = '_test';
+        $ENV{PGSERVICEFILE} = '/home/nobody/.pg_service_test.conf';
     }
     $ENV{TEST_DATABASE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
 }

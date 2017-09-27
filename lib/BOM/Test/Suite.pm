@@ -41,23 +41,19 @@ $ENV{BOM_TEST_RATE_LIMITATIONS} =    ## no critic (Variables::RequireLocalizedPu
 # all tests start from this date
 my $start_date = Date::Utility->new('2016-08-09 11:59:00')->epoch;
 
-# Return entire contents of file as string
-sub read_file {
+# Read entire contents of file as a list of lines
+sub read_file_lines {
     my $path = shift;
     open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
-    local $/;
-    my $content = <$fh>;
+    my @lines = <$fh>;
     close $fh;
-    return $content;
+    return @lines;
 }
 
 my $ticks_inserted;
 
-sub run {
-    my ($class, $args) = @_;
-
-    my $path              = $args->{test_conf_path};
-    my $suite_schema_path = $args->{suite_schema_path};
+sub new {
+    my ($class, %args) = @_;
 
     # When using remapped email addresses, ensure that each call to ->run increments the counter
     ++$global_test_iteration;
@@ -104,141 +100,94 @@ sub run {
         BAIL_OUT($@);
     };
 
-    my @lines = do {
-        my $path = $path;
-        open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
-        my @lines = <$fh>;
-        close $fh;
-        @lines;
-    };
+    my $self = bless {
+        title => $args{title},
 
-    my $test_app;
-    my $lang = '';
-    my ($last_lang, $reset);
+        # The current language
+        language => '',
 
-    # Track how long our steps take - we're resetting time so we do this as a sanity
-    # check that our clock reset gives us sensible numbers.
-    my $cumulative_elapsed = 0;
+        # Track how long our steps take - we're resetting time so we do this as a sanity
+        # check that our clock reset gives us sensible numbers.
+        cumulative_elapsed => 0,
 
-    # 30s ahead of test start, minus 10 seconds for the initial ticks
-    # we cannot rely on time here, previous jobs can take different number of seconds
-    my $reset_time = $start_date + 20;
-    my $counter    = 0;
-    foreach my $line (@lines) {
-        ++$counter;    # slightly more informative name, for use in log messages at the end of the loop
-        chomp $line;
-        next if ($line =~ /^(#.*|)$/);
+        # 30s ahead of test start, minus 10 seconds for the initial ticks
+        # we cannot rely on time here, previous jobs can take different number of seconds
+        reset_time => $start_date + 20,
 
-        # arbitrary perl code
-        if ($line =~ s/^\[%(.*?)%\]//) {
-            eval $1;    ## no critic (RequireCheckingReturnValueOfEval, ProhibitStringyEval)
-            die $@ if $@;
-        }
+        # TODO(leonerd): what are these for?
+        test_app    => undef,
+        placeholder => undef,
 
-        if ($line =~ s/^\[(\w+)\]//) {
-            $lang = $1;
-            next;
-        }
-        if ($line =~ s/^\{(\w+)\}//) {
-            $reset = $1;
-            next;
-        }
-        if ($lang || !$test_app || $reset) {
-            my $new_lang = $lang || $last_lang;
-            ok(defined($new_lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
-            ok(length($new_lang),  'have a valid language')   or diag "invalid [LANG] tag in config or broken test?";
-            $test_app = BOM::Test::App->new({
-                    language => $new_lang,
-                    app      => $args->{test_app}});
-            $test_app->{language} = $last_lang = $new_lang;
-            $lang                 = '';
-            $reset                = '';
-        }
+        test_app_class    => $args{test_app},
+        suite_schema_path => $args{suite_schema_path},
+    }, $class;
 
-        my $fail;
-        if ($line =~ s/^!//) {
-            $fail = 1;
-        }
-
-        my $start_stream_id;
-        if ($test_app->is_websocket && $line =~ s/^\{start_stream:(.+?)\}//) {
-            $start_stream_id = $1;
-        }
-        my $test_stream_id;
-        if ($test_app->is_websocket && $line =~ s/^\{test_last_stream_message:(.+?)\}//) {
-            $test_stream_id = $1;
-        }
-        # we are setting the time two seconds ahead for every step to ensure time
-        # sensitive tests (pricing tests) always start at a consistent time.
-        # Note that we have seen problems when resetting the time backwards:
-        # symptoms include account balance going negative when buying
-        # a contract.
-        set_date($reset_time);
-        $reset_time += 2;
-
-        my $t0 = [gettimeofday];
-        my ($send_file, $receive_file, @template_func);
-        if ($test_stream_id) {
-            ($receive_file, @template_func) = split(',', $line);
-
-            my $content = read_file($suite_schema_path . $receive_file);
-            $content = _get_values($content, @template_func);
-
-            $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $fail);
-        } else {
-            ($send_file, $receive_file, @template_func) = split(',', $line);
-
-            $send_file =~ /^(.*)\//;
-            my $call = $test_app->{call} = $1;
-
-            my $content = read_file($suite_schema_path . $send_file);
-            $content = _get_values($content, @template_func);
-            my $req_params = JSON::from_json($content);
-
-            $req_params = $test_app->adjust_req_params($req_params, {language => $last_lang});
-
-            die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
-
-            $content = read_file($suite_schema_path . $receive_file);
-            $content = _get_values($content, @template_func);
-
-            my $result = $test_app->test_schema($req_params, $content, $receive_file, $fail);
-            $response->{$call} = $result;
-
-            if ($start_stream_id) {
-                $test_app->start_stream($start_stream_id, $result->{$call}->{id}, $call);
-            }
-        }
-        my $elapsed = tv_interval($t0, [gettimeofday]);
-        $cumulative_elapsed += $elapsed;
-
-        print_test_diag($path, $counter, $elapsed, ($test_stream_id || $start_stream_id), $send_file, $receive_file);
-    }
-    diag "Cumulative elapsed time for all steps was ${cumulative_elapsed}s";
-    return $cumulative_elapsed;
+    return $self;
 }
 
-sub print_test_diag {
-    my ($path, $counter, $elapsed, $stream_id, $send_file, $receive_file) = @_;
-
-    $stream_id = "stream:" . $stream_id if $stream_id;
-
-    # Stream ID and/or send_file may be undef
-    my ($test_conf_file) = ($path =~ /\/(.+?)$/);
-    diag(sprintf "%s:%d [%s] - %.3fs", $test_conf_file, $counter, join(',', grep { defined } ($stream_id, $send_file, $receive_file)), $elapsed);
+sub reset_app {
+    my ($self) = @_;
+    undef $self->{test_app};
     return;
 }
 
-sub _get_values {
-    my ($content, @template_func) = @_;
-    my $c = 0;
-    foreach my $f (@template_func) {
-        $c++;
+sub set_language {
+    my ($self, $lang) = @_;
+    $self->{language} = $lang;
+    undef $self->{test_app};
+    return;
+}
+
+sub test_app {
+    my ($self) = @_;
+    return $self->{test_app} //= do {
+        my $lang = $self->{language};
+        ok(defined($lang), 'have a defined language') or diag "missing [LANG] tag in config before tests?";
+        ok(length($lang),  'have a valid language')   or diag "invalid [LANG] tag in config or broken test?";
+
+        my $test_app = BOM::Test::App->new({
+                language => $lang,
+                app      => $self->{test_app_class}});
+        $test_app->{language} = $lang;
+        $test_app;
+    };
+}
+
+sub read_schema_file {
+    my ($self, $relpath) = @_;
+    my $path = $self->{suite_schema_path} . $relpath;
+
+    open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
+    local $/;
+    my $content = <$fh>;
+    close $fh;
+    return $content;
+}
+
+sub read_templated_schema_file {
+    my ($self, $relpath, %args) = @_;
+
+    my @template_func   = @{$args{template_func}   // []};
+    my @template_values = @{$args{template_values} // []};
+
+    my $content = $self->read_schema_file($relpath);
+
+    # TODO(leonerd): use 'my sub ...' when we can use 5.18+
+    my $expand = sub {
+        my ($idx) = @_;
+
+        return $template_values[$idx - 1] if defined $template_values[$idx - 1];
+
+        my $f = $template_func[$idx - 1];    # templates are 1-based
+        if (!defined $f) {
+            warn "No template function defined for template parameter [_$idx]";
+            return "[MISSING VALUE FOR PARAMETER $idx]";
+        }
         $f =~ s/^\s+|\s+$//g;
         my $template_content;
         if ($f =~ /^\_.*$/) {
-            local $@;    # ensure we clear this first, to avoid false positive
-            $template_content = eval $f;    ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
+            local $@;                        # ensure we clear this first, to avoid false positive
+            $template_content = eval $f;     ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
 
             # we do not expect any exceptions from the eval, they could indicate
             # invalid Perl code or bug, either way we need to know about them
@@ -248,13 +197,232 @@ sub _get_values {
             # note that _get_token may return undef, the template implementation is not advanced
             # enough to support JSON null so we fall back to an empty string
             $template_content //= '';
+        } elsif ($f eq 'placeholder') {
+            $template_content = $self->{placeholder};
         } else {
             $f =~ s/^\'|\'$//g;
             $template_content = $f;
         }
-        $content =~ s/\[_$c\]/$template_content/g;
-    }
+        # Memoise it for next time
+        $template_values[$idx - 1] = $template_content;
+        return $template_content;
+    };
+
+    # Expand templates in the form [_nnn] by using the functions given in
+    # @$template_funcs.
+    $content =~ s{\[_(\d+)\]}{$expand->($1)}eg;
+
     return $content;
+}
+
+# Some helper methods that might be useful from test scripts to generate template parameters
+
+# fetch the token related to a specific email
+# e.g. $suite->get_token('test@binary.com')
+sub get_token {
+    my ($self, $email) = @_;
+    return _get_token($email) // '';    # never return 'undef'
+}
+
+# fetch a stashed value from a previous response
+sub get_stashed {
+    my ($self, $path) = @_;
+    return _get_stashed($path) // "";
+}
+
+# Some side-effecting methods that test scripts might call
+sub set_allow_omnibus {
+    my ($self, $path) = @_;
+    _set_allow_omnibus($path);
+    return;
+}
+
+sub change_status {
+    my ($self, $loginid, $action, $status) = @_;
+    _change_status($loginid, $action, $status);
+    return;
+}
+
+sub free_gift {
+    my ($self, $loginid) = @_;
+    _free_gift($loginid);
+    return;
+}
+
+sub exec_line {
+    my ($self, $line, $linenum) = @_;
+
+    # arbitrary perl code
+    if ($line =~ s/^\[%(.*?)%\]//) {
+        eval $1;    ## no critic (RequireCheckingReturnValueOfEval, ProhibitStringyEval)
+        die $@ if $@;
+    }
+
+    if ($line =~ s/^\[(\w+)\]//) {
+        $self->set_language($1);
+        return;
+    }
+    if ($line =~ s/^\{(\w+)\}//) {
+        $self->reset_app;
+        return;
+    }
+
+    # |placeholder=_get_stashed('new_account_real/new_account_real/oauth_token')|
+    if ($line =~ s/^\|.*\=(.*)\|$//) {
+        my $func = $1;
+        local $@;    # ensure we clear this first, to avoid false positive
+        $self->{placeholder} = eval $func;    ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
+
+        # we do not expect any exceptions from the eval, they could indicate
+        # invalid Perl code or bug, either way we need to know about them
+        ok(!$@, "template content can eval successfully")
+            or diag "Possible exception on eval \"$func\": $@"
+            if $@;
+        # note that _get_token may return undef, the template implementation is not advanced
+        # enough to support JSON null so we fall back to an empty string
+        $self->{placeholder} //= '';
+        return;
+    }
+
+    my $fail;
+    if ($line =~ s/^!//) {
+        $fail = 1;
+    }
+
+    my $test_app = $self->test_app;
+
+    # Finish parsing $line here to keep the test logic separated from it
+
+    my $start_stream_id;
+    if ($test_app->is_websocket && $line =~ s/^\{start_stream:(.+?)\}//) {
+        $start_stream_id = $1;
+    }
+
+    my ($test_stream_id, $send_file, $receive_file, @template_func);
+    if ($test_app->is_websocket && $line =~ s/^\{test_last_stream_message:(.+?)\}//) {
+        $test_stream_id = $1;
+        # there is no $send_file here
+        ($receive_file, @template_func) = split(',', $line);
+    } else {
+        ($send_file, $receive_file, @template_func) = split(',', $line);
+    }
+
+    $self->exec_test(
+        send_file       => $send_file,
+        receive_file    => $receive_file,
+        test_stream_id  => $test_stream_id,
+        start_stream_id => $start_stream_id,
+        template_func   => \@template_func,
+        expect_fail     => $fail,
+        linenum         => $linenum,
+    );
+    return;
+}
+
+sub exec_test {
+    my ($self, %args) = @_;
+
+    my $send_file       = $args{send_file};
+    my $receive_file    = $args{receive_file} or Carp::croak('Require a receive_file');
+    my $test_stream_id  = $args{test_stream_id};
+    my $start_stream_id = $args{start_stream_id};
+    my $expect_fail     = $args{expect_fail};
+    my $linenum         = $args{linenum};
+    # plus 'template_func', 'template_values'
+
+    # we are setting the time two seconds ahead for every step to ensure time
+    # sensitive tests (pricing tests) always start at a consistent time.
+    # Note that we have seen problems when resetting the time backwards:
+    # symptoms include account balance going negative when buying
+    # a contract.
+    set_date($self->{reset_time});
+    $self->{reset_time} += 2;
+
+    my $test_app = $self->test_app;
+
+    my $t0 = [gettimeofday];
+    if ($test_stream_id) {
+        my $content = $self->read_templated_schema_file(
+            $receive_file,
+            template_func   => $args{template_func},
+            template_values => $args{template_values},
+        );
+
+        $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $expect_fail);
+    } else {
+        $send_file =~ /^(.*)\//;
+        my $call = $test_app->{call} = $1;
+
+        my $content = $self->read_templated_schema_file(
+            $send_file,
+            template_func   => $args{template_func},
+            template_values => $args{template_values},
+        );
+        my $req_params = JSON::from_json($content);
+
+        $req_params = $test_app->adjust_req_params($req_params, {language => $self->{language}});
+
+        die 'wrong stream parameters' if $start_stream_id && !$req_params->{subscribe};
+
+        $content = $self->read_templated_schema_file(
+            $receive_file,
+            template_func   => $args{template_func},
+            template_values => $args{template_values},
+        );
+
+        my $result = $test_app->test_schema($req_params, $content, $receive_file, $expect_fail);
+        $response->{$call} = $result;
+
+        if ($start_stream_id) {
+            $test_app->start_stream($start_stream_id, $result->{$call}->{id}, $call);
+        }
+    }
+    my $elapsed = tv_interval($t0, [gettimeofday]);
+    $self->{cumulative_elapsed} += $elapsed;
+
+    print_test_diag($self->{title}, $linenum, $elapsed, ($test_stream_id || $start_stream_id), $send_file, $receive_file);
+
+    return;
+}
+
+sub finish {
+    my ($self) = @_;
+
+    diag "Cumulative elapsed time for all steps was $self->{cumulative_elapsed}s";
+    return $self->{cumulative_elapsed};
+}
+
+sub run {
+    my ($class, $args) = @_;
+
+    my $path = delete $args->{test_conf_path};
+    my ($title) = ($path =~ /\/(.+?)$/);
+
+    my $self = $class->new(
+        %$args,
+        title => $title,
+    );
+
+    my $linenum = 0;
+    foreach my $line (read_file_lines($path)) {
+        $linenum++;
+        chomp $line;
+        next if ($line =~ /^(#.*|)$/);
+
+        $self->exec_line($line, $linenum);
+    }
+
+    return $self->finish;
+}
+
+sub print_test_diag {
+    my ($title, $linenum, $elapsed, $stream_id, $send_file, $receive_file) = @_;
+
+    $stream_id = "stream:" . $stream_id if $stream_id;
+
+    # Stream ID and/or send_file may be undef
+    diag(sprintf "%s:%d [%s] - %.3fs", $title, $linenum, join(',', grep { defined } ($stream_id, $send_file, $receive_file)), $elapsed);
+    return;
 }
 
 # fetch the token related to a specific email

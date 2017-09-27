@@ -1,16 +1,19 @@
 package BOM::Test::Data::Utility::UnitTestDatabase;
 
-use MooseX::Singleton;
-use BOM::Database::ClientDB;
+use strict;
+use warnings;
+
 use Client::Account;
+use Date::Utility;
+use MooseX::Singleton;
+use Postgres::FeedDB;
+
+use BOM::Database::ClientDB;
 use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;
 use BOM::Database::Model::FinancialMarketBet::SpreadBet;
 use BOM::Database::Model::FinancialMarketBet::TouchBet;
 use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Helper::FinancialMarketBet;
-use Postgres::FeedDB;
-
-use Date::Utility;
 
 use BOM::Test;
 
@@ -67,16 +70,19 @@ sub _post_import_operations {
     return;
 }
 
-=head2 create_client({ broker_code => $broker_code})
+=head2 create_client({ broker_code => $broker_code}, auth)
 
     Use this to create a new client object for testing. broker_code is required.
     Additional args to the hashref can be specified which will update the
     relavant client attribute
 
+    If auth is defined and broker need authentication, do it
+
 =cut
 
 sub create_client {
     my $args = shift;
+    my $auth = shift;
 
     die "broker code required" if !exists $args->{broker_code};
 
@@ -117,6 +123,10 @@ sub create_client {
 
     for (keys %$client_data) {
         $client->$_($client_data->{$_});
+    }
+    if ($auth && $broker_code =~ /(?:MF|MLT|MX)/) {
+        $client->set_status('age_verification');
+        $client->set_authentication('ID_DOCUMENT')->status('pass') if $broker_code eq 'MF';
     }
     $client->save;
 

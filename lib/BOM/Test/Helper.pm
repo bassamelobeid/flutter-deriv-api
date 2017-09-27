@@ -62,7 +62,10 @@ sub build_mojo_test {
 sub launch_redis {
     my $redis_port   = empty_port;
     my $redis_server = Mojo::Redis2::Server->new;
-    $redis_server->start(port => $redis_port);
+    $redis_server->start(
+        port    => $redis_port,
+        logfile => '/tmp/redis.log'
+    );
     my $tmp_dir = tempdir(CLEANUP => 1);
     my $ws_redis_path = path($tmp_dir, "ws-redis.yml");
     my $ws_redis_config = {
