@@ -35,23 +35,14 @@ sub get_open_bet_overviews {
     my $last_generated = $self->get_last_generated_historical_marked_to_market_time;
     my $from_historical = ($last_generated and $before_date->is_before(Date::Utility->new($last_generated))) ? 1 : undef;
 
-    my $sql;
-    if ($from_historical) {
-        $sql = q{ SELECT * FROM accounting.get_historical_open_bets_overview(?) };
-    } else {
-        $sql = q{ SELECT * FROM accounting.get_open_bets_overview() };
-    }
 
     return $self->db->dbic->run(
         sub {
-            my $sth = $_->prepare($sql);
             if ($from_historical) {
-                $sth->execute($before_date->db_timestamp);
+                return $_->selectcol_arrayref(q{ SELECT id FROM accounting.get_historical_open_bets_overview(?) }, undef, $before_date->db_timestamp);
             } else {
-                $sth->execute;
+                return $_->selectcol_arrayref(q{ SELECT id FROM accounting.get_open_bets_overview() });
             }
-
-            return [values %{$sth->fetchall_hashref('id')}];
         });
 
 }
