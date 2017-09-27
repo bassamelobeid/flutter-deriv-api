@@ -178,11 +178,9 @@ subtest 'Send two files one by one' => sub {
 
     document_upload_ok({
             document_upload => 1,
-            document_id     => '124568',
             document_format => 'PNG',
-            document_type   => 'driverslicense',
+            document_type   => 'bankstatement',
             file_size       => $length,
-            expiration_date => '2020-01-01',
         },
         'Goodbye!'
     );
