@@ -7,7 +7,7 @@ use File::ShareDir;
 use YAML::XS qw(LoadFile);
 use JSON::XS;
 use LandingCompany::Registry;
-
+use Try::Tiny;
 use Carp;
 
 has broker_code => (
@@ -124,7 +124,14 @@ sub getall_arrayref {
             return $sth->fetchall_arrayref([0]);
         });
 
-    my @result = map { JSON::XS::decode_json($_->[0]) } @$result;
+    my @result;
+    try {
+        @result = map { JSON::XS::decode_json($_->[0]) } @$result;
+    }
+    catch {
+        die "Result must be always rows of JSON";
+    };
+
     return \@result;
 }
 
