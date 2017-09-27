@@ -80,6 +80,9 @@
 [% ELSE %]
     <table>
         <tr>
+            [% IF view_action == 'search' %]
+                <th>Type</th>
+            [% END %]
             <th>BlockchainInfo</th>
             <th>PaymentInfo</th>
             <th>Date</th>
@@ -90,6 +93,11 @@
         </tr>
         [% FOREACH trx IN transactions %]
             <tr>
+                [% IF view_action == 'search' %]
+                    <td><table><tbody>
+                        <b>[% trx.transaction_type FILTER ucfirst %]</b>
+                    </tbody></table></td>
+                [% END %]
                 <td><table><tbody>
                     <tr><td>
                         <b>Address</b>: 
