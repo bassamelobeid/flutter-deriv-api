@@ -15,7 +15,7 @@ sub upload {
     my ($document_type, $document_id, $document_format, $expiration_date, $status, $file_id, $file_size, $reason) =
         @{$params->{args}}{qw/document_type document_id document_format expiration_date status file_id file_size reason/};
 
-    my $loginid  = $client->loginid;
+    my $loginid = $client->loginid;
     my $dbh = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db->dbh;
 
     return create_upload_error('UploadError', 'max_size') if defined $file_size and $file_size > MAX_FILE_SIZE;
@@ -34,9 +34,9 @@ sub upload {
             $error = $_;
         };
         if ($error) {
-            return create_upload_error('UploadDenied', localize("Invalid expiration_date."));
+            return create_upload_error('UploadDenied', localize("Invalid expiration date."));
         } elsif ($parsed_date->is_before($current_date) || $parsed_date->is_same_as($current_date)) {
-            return create_upload_error('UploadDenied', localize("expiration_date cannot be less than or equal to current date."));
+            return create_upload_error('UploadDenied', localize("Expiration date cannot be less than or equal to current date."));
         }
     } else {
         $expiration_date = undef;
@@ -73,8 +73,8 @@ sub upload {
         # Return if document is not present in db.
         return create_upload_error('UploadDenied', localize("Document not found.")) unless defined($doc);
 
-        $doc->{file_name}     = join '.', $loginid, $doc->{document_type}, $doc->{id}, $doc->{document_format};
-        $doc->{status}        = "uploaded";
+        $doc->{file_name} = join '.', $loginid, $doc->{document_type}, $doc->{id}, $doc->{document_format};
+        $doc->{status} = "uploaded";
 
         if (not $doc->save()) {
             return create_upload_error('UploadError');
@@ -106,7 +106,7 @@ sub create_upload_error {
 sub get_error_details {
     my $reason = shift || 'unkown';
 
-    return localize('Maximum file size reached') if $reason eq 'max_size';
+    return localize('Maximum file size reached. Maximum allowed is [_1]', MAX_FILE_SIZE) if $reason eq 'max_size';
     return localize('Sorry, an error occurred while processing your request.');
 }
 

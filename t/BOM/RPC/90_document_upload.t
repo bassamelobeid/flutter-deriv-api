@@ -74,8 +74,8 @@ $args->{expiration_date} = '';    # Document with no expiration_date
 $c->call_ok($method, $params)->result;
 
 $args = {
-    status        => 'success',
-    file_id       => $result->{file_id}};
+    status  => 'success',
+    file_id => $result->{file_id}};
 $params->{args} = $args;
 $result = $c->call_ok($method, $params)->result;
 ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
