@@ -107,7 +107,6 @@ sub new {
 
         # TODO(leonerd): what are these for?
         test_app    => undef,
-        placeholder => undef,
 
         test_app_class    => $args{test_app},
         suite_schema_path => $args{suite_schema_path},
@@ -188,8 +187,6 @@ sub read_templated_schema_file {
             # note that _get_token may return undef, the template implementation is not advanced
             # enough to support JSON null so we fall back to an empty string
             $template_content //= '';
-        } elsif ($f eq 'placeholder') {
-            $template_content = $self->{placeholder};
         } else {
             $f =~ s/^\'|\'$//g;
             $template_content = $f;
