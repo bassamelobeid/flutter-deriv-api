@@ -15,14 +15,14 @@ our $PAYMENT_GATEWAY_DATACASH  = 'datacash';
 our $PAYMENT_TYPE_CREDIT_DEBIT_CARD = 'credit_debit_card';
 our $PAYMENT_TYPE_FREE_GIFT         = 'free_gift';
 
-our $BET_CLASS_LEGACY_BET       => 'legacy_bet';
-our $BET_CLASS_RANGE_BET        => 'range_bet';
-our $BET_CLASS_HIGHER_LOWER_BET => 'higher_lower_bet';
-our $BET_CLASS_TOUCH_BET        => 'touch_bet';
-our $BET_CLASS_DIGIT_BET        => 'digit_bet';
-our $BET_CLASS_SPREAD_BET       => 'spread_bet';
-our $BET_CLASS_LOOKBACK_OPTION  => 'lookback_option';
-our $BET_CLASS_COINAUCTION_BET  => 'coinauction_bet';
+our $BET_CLASS_LEGACY_BET       = 'legacy_bet';
+our $BET_CLASS_RANGE_BET        = 'range_bet';
+our $BET_CLASS_HIGHER_LOWER_BET = 'higher_lower_bet';
+our $BET_CLASS_TOUCH_BET        = 'touch_bet';
+our $BET_CLASS_DIGIT_BET        = 'digit_bet';
+our $BET_CLASS_SPREAD_BET       = 'spread_bet';
+our $BET_CLASS_LOOKBACK_OPTION  = 'lookback_option';
+our $BET_CLASS_COINAUCTION_BET  = 'coinauction_bet';
 
 # Constant reference to volatile hash
 our $BET_CLASS_TO_TYPE_MAP = {
