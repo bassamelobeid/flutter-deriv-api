@@ -74,7 +74,6 @@ $args->{expiration_date} = '';    # Document with no expiration_date
 $c->call_ok($method, $params)->result;
 
 $args = {
-    document_path => 'some-where.in.cloud/file',
     status        => 'success',
     file_id       => $result->{file_id}};
 $params->{args} = $args;

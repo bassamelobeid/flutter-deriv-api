@@ -12,8 +12,8 @@ use constant MAX_FILE_SIZE => 3 * 2**20;
 sub upload {
     my $params = shift;
     my $client = $params->{client};
-    my ($document_type, $document_id, $document_format, $expiration_date, $document_path, $status, $file_id, $file_size, $reason) =
-        @{$params->{args}}{qw/document_type document_id document_format expiration_date document_path status file_id file_size reason/};
+    my ($document_type, $document_id, $document_format, $expiration_date, $status, $file_id, $file_size, $reason) =
+        @{$params->{args}}{qw/document_type document_id document_format expiration_date status file_id file_size reason/};
 
     my $loginid  = $client->loginid;
     my $clientdb = BOM::Database::ClientDB->new({broker_code => $client->broker_code});
@@ -76,7 +76,6 @@ sub upload {
 
         $doc->{file_name}     = join '.', $loginid, $doc->{document_type}, $doc->{id}, $doc->{document_format};
         $doc->{status}        = "uploaded";
-        $doc->{document_path} = $document_path;
 
         if (not $doc->save()) {
             return create_error('UploadError');
