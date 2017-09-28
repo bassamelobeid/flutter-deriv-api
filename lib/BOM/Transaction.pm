@@ -341,13 +341,13 @@ sub calculate_limits {
         if ($contract->is_atm_bet) {
             $limits{atm_specific_open_position_payout} = [{
                     name     => 'ATM open position payout limit',
-                    symbols  => [{n => $contract->underlying->symbol}],
-                    bet_type => [map { {n => $_} } @{$contract->category->available_types}],
+                    symbols  => [$contract->underlying->symbol],
+                    bet_type => [@{$contract->category->available_types}],
                     limit    => $static_config->{bet_limits}{open_positions_payout_per_symbol_limit}{atm}{$currency},
                 }];
         } else {
             my $categories = Finance::Contract::Category::get_all_contract_categories();
-            my @bet_type_list = map { {n => $_} } map { @{$_->{available_types}} } values %$categories;
+            my @bet_type_list = map { @{$_->{available_types}} } values %$categories;
             my ($limit_name, $which_limit) =
                 $contract->timeindays->amount <= 7
                 ? ('max_7day_specific_open_position_payout', 'less_than_seven_days')
@@ -355,7 +355,7 @@ sub calculate_limits {
 
             $limits{$limit_name} = [{
                     name     => $limit_name,
-                    symbols  => [{n => $contract->underlying->symbol}],
+                    symbols  => [$contract->underlying->symbol],
                     bet_type => [@bet_type_list],
                     limit    => $static_config->{bet_limits}{open_positions_payout_per_symbol_limit}->{non_atm}{$which_limit}{$currency},
                 }];
