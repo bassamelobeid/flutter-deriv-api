@@ -150,29 +150,30 @@ sub register_tokens {
         my $connection_builder = BOM::Database::ClientDB->new({
             broker_code => $broker,
         });
-        my $dbh = $connection_builder->db->dbh;
+        my $dbic = $connection_builder->db->dbic;
 
-        my $sql;
         foreach my $token_data (@matched_tokens) {
-            my $statement;
+            my ($sql, $bind_param);
+
             if ($token_data->{is_creative} or $token_data->{signup_override}) {
                 $sql = q{
                     UPDATE betonmarkets.client_affiliate_exposure
                     SET myaffiliates_token_registered = TRUE
-                    WHERE id = $1
+                    WHERE id = ?
                 };
-                $statement = $dbh->prepare($sql);
-                $statement->bind_param(1, $token_data->{'id'});
+                $bind_param = $token_data->{'id'};
             } else {
                 $sql = q{
                     UPDATE betonmarkets.client
                     SET myaffiliates_token_registered = TRUE
-                    WHERE loginid = $1
+                    WHERE loginid = ?
                 };
-                $statement = $dbh->prepare($sql);
-                $statement->bind_param(1, $token_data->{'loginid'});
+                $bind_param = $token_data->{'loginid'};
             }
-            $statement->execute();
+            $dbic->run(
+                sub {
+                    $_->do($sql, undef, $bind_param);
+                });
             push @results_for_broker,
                   $token_data->{'date_joined'} . ' '
                 . $token_data->{'loginid'} . ' '
