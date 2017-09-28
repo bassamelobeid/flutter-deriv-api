@@ -84,7 +84,8 @@ bet_limits:
       AUD: 10000
       GBP: 10000
       JPY: 200000 # 200 lots for JPY on < 7 days
-      BTC: 1
+      BTC: 2
+      BCH: 5
       ETH: 10
       LTC: 50
       ETC: 50
@@ -95,7 +96,8 @@ bet_limits:
         AUD: 3000
         GBP: 3000
         JPY: 200000 # 200 lots for JPY on < 7 days
-        BTC: 1
+        BTC: 2
+        BCH: 5
         ETH: 10
         LTC: 50
         ETC: 50
@@ -105,7 +107,8 @@ bet_limits:
         AUD: 10000
         GBP: 10000
         JPY: 200000 # 200 lots for JPY on > 7 days
-        BTC: 1
+        BTC: 2
+        BCH: 5
         ETH: 10
         LTC: 50
         ETC: 50
