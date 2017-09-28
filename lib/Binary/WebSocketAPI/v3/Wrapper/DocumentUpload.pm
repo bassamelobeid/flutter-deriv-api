@@ -12,8 +12,8 @@ sub add_upload_info {
 
     return create_error($args, $rpc_response) if $rpc_response->{error};
 
-    my $current_stash = $c->stash('document_upload') || {};
-    my $upload_id     = generate_upload_id();
+    my $current_stash = $c->stash('document_upload') || {last_upload_id => 0};
+    my $upload_id     = generate_upload_id($current_stash);
     my $call_params   = create_call_params($args);
     my $file_name     = $rpc_response->{file_name};
     my $file_size     = $args->{file_size};
@@ -111,8 +111,9 @@ sub send_upload_failure {
     delete_upload_info($c, $upload_info);
 
     $upload_info = {
+        echo_req    => {},
         req_id      => '1',
-        passthrough => {}} if not defined $upload_info;
+        passthrough => {}} unless $upload_info;
 
     $c->call_rpc({
             method      => 'document_upload',
@@ -126,11 +127,11 @@ sub send_upload_failure {
                 status      => 'failure',
             },
             response => sub {
-                my ($rpc_response, $api_response, $req_storage) = @_;
+                my (undef, $api_response, $req_storage) = @_;
 
-                remove_echo_req($req_storage);
+                sanitize_echo_req($upload_info, $req_storage);
 
-                return $api_response;
+                return create_error($upload_info, $api_response)
             },
         });
 
@@ -163,14 +164,14 @@ sub send_upload_successful {
             response => sub {
                 my (undef, $api_response, $req_storage) = @_;
 
-                remove_echo_req($req_storage);
+                sanitize_echo_req($upload_info, $req_storage);
 
                 return create_error($upload_info, $api_response) if exists($api_response->{error});
 
+                my $call_params = create_call_params($upload_info);
+
                 return {
-                    %{$api_response},
-                    req_id          => $upload_info->{req_id},
-                    passthrough     => $upload_info->{passthrough},
+                    %{$call_params},
                     document_upload => {
                         %{$upload_finished},
                         upload_id => $upload_info->{upload_id},
@@ -215,6 +216,7 @@ sub create_call_params {
         msg_type    => 'document_upload',
         req_id      => $params->{req_id} || 0,
         passthrough => $params->{passthrough} || {},
+        echo_req    => $params->{echo_req} || $params,
     };
 }
 
@@ -227,23 +229,17 @@ sub create_response {
     };
 }
 
-my $last_upload_id = 0;
+sub sanitize_echo_req {
+    my ($upload_info, $req_storage) = @_;
 
-sub generate_upload_id {
-    return $last_upload_id = ($last_upload_id + 1) % (1 << 32);
-}
-
-sub remove_echo_req {
-    my $req_storage = shift;
-
-    my $args = $req_storage->{args};
-
-    $req_storage->{args} = {
-        req_id      => $args->{req_id},
-        passthrough => $args->{passthrough},
-    };
+    $req_storage->{args} = $upload_info->{echo_req};
 
     return;
+}
+
+sub generate_upload_id {
+    my $stash = shift;
+    return $stash->{last_upload_id} = ($stash->{last_upload_id} + 1) % (1 << 32);
 }
 
 sub delete_upload_info {
