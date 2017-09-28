@@ -16,8 +16,7 @@ my $connection_builder = BOM::Database::ClientDB->new({
     operation   => 'collector',
 });
 
-my $sth = $connection_builder->db->dbh->prepare(
-    q{
+my $sql = q{
     WITH all_tokens AS (
         SELECT
             distinct(t.myaffiliates_token) as myaffiliates_token
@@ -41,9 +40,12 @@ my $sth = $connection_builder->db->dbh->prepare(
         all_tokens t
     WHERE
         NOT EXISTS (SELECT 1 FROM data_collection.myaffiliates_token_details WHERE token = t.myaffiliates_token)
-});
-$sth->execute;
+};
 
+my $myaffiliates_tokens = $connection_builder->db->dbic->run(
+    sub {
+        return $_->selectall_arrayref($sql, {Slice => {}});
+    });
 my $i    = 0;
 my $ua   = LWP::UserAgent->new(ssl_opts => {verify_hostname => 0});
 my $user = BOM::Platform::Config::third_party->{myaffiliates}->{user};
@@ -51,7 +53,7 @@ my $pass = BOM::Platform::Config::third_party->{myaffiliates}->{pass};
 my $host = BOM::Platform::Config::third_party->{myaffiliates}->{host};
 $host =~ s/(https?:\/\/)(.*)/$1$user:$pass\@$2/g;
 
-while (my $row = $sth->fetchrow_hashref) {
+for my $row (@$myaffiliates_tokens) {
     my $token = $row->{myaffiliates_token};
     next if (not $token);
     print $token;
