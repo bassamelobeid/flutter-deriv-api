@@ -51,7 +51,7 @@ sub get_trading_activity {
             my $sth = $_->prepare($sql);
             $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ);
 
-            return $sth->fetchall_hashref('loginid');
+            return $sth->fetchall_arrayref;
         });
 }
 
