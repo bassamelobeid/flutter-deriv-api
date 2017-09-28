@@ -290,13 +290,20 @@ sub get_limits {
     my $landing_company = LandingCompany::Registry::get_by_broker($client->broker)->short;
     my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency);
 
+    my $op_limits                              = BOM::Platform::Config::quants->{bet_limits}{open_positions_payout_per_symbol_limit};
+    my $open_positions_payout_per_symbol_limit = {
+        atm     => formatnumber('price', $currency, $op_limits->{atm}{$currency}),
+        non_atm => {
+            less_than_seven_days => formatnumber('price', $currency, $op_limits->{non_atm}{less_than_seven_days}{$currency}),
+            more_than_seven_days => formatnumber('price', $currency, $op_limits->{non_atm}{more_than_seven_days}{$currency}),
+        },
+    };
+
     my $limit = +{
-        account_balance                     => formatnumber('amount', $currency, $client->get_limit_for_account_balance),
-        payout                              => formatnumber('price',  $currency, $client->get_limit_for_payout),
-        payout_per_symbol_and_contract_type => formatnumber(
-            'price', $currency, BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency}
-        ),
-        open_positions => $client->get_limit_for_open_positions,
+        account_balance   => formatnumber('amount', $currency, $client->get_limit_for_account_balance),
+        payout            => formatnumber('price',  $currency, $client->get_limit_for_payout),
+        payout_per_symbol => $open_positions_payout_per_symbol_limit,
+        open_positions    => $client->get_limit_for_open_positions,
     };
 
     $limit->{market_specific} = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
