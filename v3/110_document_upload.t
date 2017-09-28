@@ -50,6 +50,46 @@ subtest 'Send binary data without requesting document_upload' => sub {
     ok $res->{error}, 'Should ask for document_upload first';
 };
 
+subtest 'Invalid s3 config' => sub {
+    my $data   = 'text';
+    my $length = length $data;
+
+    my $req = {
+        req_id          => ++$req_id,
+        passthrough     => $PASSTHROUGH,
+        document_upload => 1,
+        document_id     => '12456',
+        document_format => 'JPEG',
+        document_type   => 'passport',
+        file_size       => $length,
+        expiration_date => '2020-01-01',
+    };
+
+    $t = $t->send_ok({json => $req})->message_ok;
+    my $res       = decode_json($t->message->[1]);
+    my $upload_id = $res->{document_upload}->{upload_id};
+    my $call_type = $res->{document_upload}->{call_type};
+
+    my @frames = gen_frames($data, $call_type, $upload_id);
+
+    # Valid bucket name to cause error
+    $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'ValidBucket';
+
+    $t   = $t->send_ok({binary => $frames[0]});
+    $t   = $t->message_ok;
+    $res = decode_json($t->message->[1]);
+
+    my $error = $res->{error};
+
+    is $error->{code}, 'UploadError', 'Upload should fail for invalid s3 config';
+
+    is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
+    is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
+
+# revert bucket name
+    $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'FakeS3Bucket';
+};
+
 subtest 'binary metadata should be correctly sent' => sub {
     my $req = {
         req_id          => ++$req_id,
