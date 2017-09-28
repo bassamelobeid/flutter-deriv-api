@@ -48,6 +48,15 @@ sub add_upload_info {
         value_length => $file_size,
     );
 
+    $upload_info->{put_future}->on_fail(
+        sub {
+            my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
+
+            return if $s3_config->{bucket} eq 'FakeS3Bucket';
+
+            send_upload_failure($c, $upload_info, 'unknown');
+        });
+
     my $stash = {
         %{$current_stash},
         $upload_id => $upload_info,
