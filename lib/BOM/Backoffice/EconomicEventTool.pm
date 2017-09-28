@@ -6,7 +6,6 @@ use warnings;
 use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Backoffice::Request;
-use BOM::MarketDataAutoUpdater::Forex;
 
 use Quant::Framework::EconomicEventCalendar;
 use Volatility::Seasonality;
@@ -167,9 +166,6 @@ sub _regenerate {
         economic_events    => $events,
         chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
     });
-
-    # refresh intradayfx cache to to use new economic events impact curve
-    BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
 
     return;
 }
