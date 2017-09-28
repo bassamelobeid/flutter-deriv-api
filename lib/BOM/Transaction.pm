@@ -337,6 +337,8 @@ sub calculate_limits {
     if (not $contract->tick_expiry) {
         $limits{max_open_bets}        = $client->get_limit_for_open_positions;
         $limits{max_payout_open_bets} = $client->get_limit_for_payout;
+        $limits{max_payout_per_symbol_and_bet_type} =
+            $static_config->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
 
         if ($contract->is_atm_bet) {
             $limits{atm_specific_open_position_payout} = [{
