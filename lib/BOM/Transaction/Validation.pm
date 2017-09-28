@@ -10,16 +10,39 @@ use YAML::XS qw(LoadFile);
 
 use Format::Util::Numbers qw/formatnumber/;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
-
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Context qw(localize request);
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use Geo::Region;
+use Geo::Region::Constant qw( :all );
+use BOM::Database::ClientDB;
+use Date::Utility;
 
 has clients => (
     is       => 'ro',
     required => 1
 );
 has transaction => (is => 'ro');
+
+=head2 $self->_open_ico_for_european_country
+
+This is to get the number of unique users that have place ICO in a European Union country
+
+=cut
+
+sub _open_ico_for_european_country {
+    my ($self, $client_residence) = @_;
+
+    my $db = BOM::Database::ClientDB->new({
+            broker_code => 'FOG',
+            operation   => 'collector'
+        })->db;
+    my $number_of_unique_client_per_eu_country =
+        $db->dbh->selectcol_arrayref(q{ SELECT cnt FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', ARRAY[?]::VARCHAR[]) },
+        undef, $client_residence)->[0];
+
+    return $number_of_unique_client_per_eu_country // 0;
+}
 
 ################ Client and transaction validation ########################
 
@@ -30,10 +53,19 @@ sub validate_trx_sell {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
+    my @client_validation_method = qw/ check_trade_status _validate_available_currency _validate_currency /;
+    # For ico, there is no need to be restricted by with the withdrawal limit imposed on IOM region
+    push @client_validation_method, '_validate_iom_withdrawal_limit' unless $self->transaction->contract->is_binaryico;
+
+    my @contract_validation_method = qw/_is_valid_to_sell/;
+    # For ICO, there is no need to have slippage, date pricing validation
+    push @contract_validation_method, qw(_validate_sell_pricing_adjustment _validate_date_pricing)
+        unless $self->transaction->contract->is_binaryico;
+
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
-        for (qw/ check_trade_status _validate_iom_withdrawal_limit _validate_available_currency _validate_currency /) {
-            my $res = $self->$_($c->{client});
+        foreach my $method (@client_validation_method) {
+            my $res = $self->$method($c->{client});
             next unless $res;
             if ($self->transaction && $self->transaction->multiple) {
                 $c->{code}  = $res->get_type;
@@ -43,17 +75,12 @@ sub validate_trx_sell {
             return $res;
         }
     }
-    for (qw/ _is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing /) {
-        my $res = $self->$_();
+
+    foreach my $c_method (@contract_validation_method) {
+        my $res = $self->$c_method();
         return $res if $res;
     }
     return;
-}
-
-sub validate_trx_sell_ico {
-    my $self = shift;
-
-    return $self->_is_valid_to_sell();
 }
 
 sub validate_trx_buy {
@@ -67,23 +94,24 @@ sub validate_trx_buy {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
+    # If contract has 'primary_validation_error'(which is checked inside)
+    # we should not do any other checks and should return an error.
+    # additionally this check will be done inside _is_valid_to_buy check, but we will not return an error from there
+    $res = $self->_is_valid_to_buy($self->transaction->client);
+    return $res if $res;
+
+    my @client_validation_method = qw/ check_trade_status _validate_client_status _validate_available_currency _validate_currency /;
+    push @client_validation_method,
+        qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_self_exclusion)
+        unless $self->transaction->contract->is_binaryico;
+    push @client_validation_method, qw(_validate_ico_jurisdictional_restrictions _validate_ico_european_restrictions)
+        if $self->transaction->contract->is_binaryico;
+    push @client_validation_method, '_is_valid_to_buy';    # do this is as last of the validation
+
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
-        for (
-            qw/
-            check_trade_status
-            validate_tnc
-            _validate_iom_withdrawal_limit
-            _validate_available_currency
-            _validate_currency
-            _validate_jurisdictional_restrictions
-            _validate_client_status
-            _validate_client_self_exclusion
-            _is_valid_to_buy
-            /
-            )
-        {
-            $res = $self->$_($c->{client});
+        foreach my $method (@client_validation_method) {
+            $res = $self->$method($c->{client});
             next unless $res;
 
             if ($self->transaction && $self->transaction->multiple) {
@@ -197,6 +225,7 @@ sub _validate_sell_pricing_adjustment {
         $final_value = $recomputed_amount;
     } elsif ($move < -$allowed_move) {
         return $self->_write_to_rejected({
+            type              => 'slippage',
             action            => 'sell',
             amount            => $amount,
             recomputed_amount => $recomputed_amount
@@ -252,6 +281,7 @@ sub _validate_trade_pricing_adjustment {
         $final_value = $recomputed_amount;
     } elsif ($move < -$allowed_move) {
         return $self->_write_to_rejected({
+            type              => 'slippage',
             action            => 'buy',
             amount            => $amount,
             recomputed_amount => $recomputed_amount
@@ -288,7 +318,7 @@ sub _validate_trade_pricing_adjustment {
     return;
 }
 
-sub _write_to_rejected {
+sub _slippage {
     my ($self, $p) = @_;
 
     my $what_changed = $p->{action} eq 'sell' ? 'sell price' : undef;
@@ -342,15 +372,63 @@ sub _write_to_rejected {
     );
 }
 
+sub _invalid_contract {
+    my ($self, $p) = @_;
+
+    my $contract          = $self->transaction->contract;
+    my $message_to_client = localize($contract->primary_validation_error->message_to_client);
+    #Record failed transaction here.
+    if (not $contract->is_binaryico) {
+        for my $c (@{$self->clients}) {
+            my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
+                    login_id => $c->loginid,
+                    ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
+                    shortcode   => $contract->shortcode,
+                    action_type => $p->{action},
+                    reason      => $message_to_client,
+                    details     => JSON::to_json({
+                            current_tick_epoch => $contract->current_tick->epoch,
+                            pricing_epoch      => $contract->date_pricing->epoch,
+                            option_type        => $contract->code,
+                            currency_pair      => $contract->underlying->symbol,
+                            ($self->transaction->trading_period_start)
+                            ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
+                            : (),
+                            ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
+                            : (barriers => $contract->barrier->as_absolute),
+                            expiry => $contract->date_expiry->db_timestamp,
+                            payout => $contract->payout
+                        }
+                    ),
+                    db => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
+                });
+            $rejected_trade->record_fail_txn();
+        }
+    }
+    return Error::Base->cuss(
+        -type => ($p->{action} eq 'buy' ? 'InvalidtoBuy' : 'InvalidtoSell'),
+        -mesg => $contract->primary_validation_error->message,
+        -message_to_client => $message_to_client,
+    );
+}
+
+sub _write_to_rejected {
+    my ($self, $p) = @_;
+
+    my $method = '_' . $p->{type};
+    return $self->$method($p);
+}
+
 sub _is_valid_to_buy {
-    my ($self, $client) = (shift, shift);
+    my ($self, $client) = @_;
+
     my $contract = $self->transaction->contract;
 
     unless ($contract->is_valid_to_buy({landing_company => $client->landing_company->short})) {
-        return Error::Base->cuss(
-            -type              => 'InvalidtoBuy',
-            -mesg              => $contract->primary_validation_error->message,
-            -message_to_client => localize($contract->primary_validation_error->message_to_client));
+        return $self->_write_to_rejected({
+            type   => 'invalid_contract',
+            action => 'buy',
+        });
     }
 
     return;
@@ -361,10 +439,10 @@ sub _is_valid_to_sell {
     my $contract = $self->transaction->contract;
 
     if (not $contract->is_valid_to_sell) {
-        return Error::Base->cuss(
-            -type              => 'InvalidtoSell',
-            -mesg              => $contract->primary_validation_error->message,
-            -message_to_client => localize($contract->primary_validation_error->message_to_client));
+        return $self->_write_to_rejected({
+            type   => 'invalid_contract',
+            action => 'sell',
+        });
     }
 
     return;
@@ -522,9 +600,6 @@ sub _validate_jurisdictional_restrictions {
 
     my $contract = $self->transaction->contract;
 
-    #TO DO: we need to set the jurisdictional check for ICO.
-    # The following check include check of market name which is not something we want , so I skip for here first.
-    return if $contract->is_binaryico;
     my $residence   = $client->residence;
     my $market_name = $contract->market->name;
 
@@ -583,6 +658,85 @@ sub _validate_jurisdictional_restrictions {
             -type              => 'NotLegalUnderlying',
             -mesg              => 'Clients are not allowed to trade on this underlying as its restricted for this landing company',
             -message_to_client => localize('Please switch accounts to trade this underlying.'),
+        );
+    }
+
+    return;
+}
+
+=head2 $self->_validate_ico_european_restrictions
+
+Note that under the EU Prospectus Directive we can only offer the token to up to 150 persons per European Union country.
+Therefore, we need to count the bids placed by persons in EU countries and not accept any more bids if there are already 150 outstanding bidder.
+
+=cut
+
+sub _validate_ico_european_restrictions {
+    my ($self, $client) = (shift, shift);
+
+    my $residence      = $client->residence;
+    my $european_union = Geo::Region->new(EUROPEAN_UNION);
+
+    if ($european_union->contains($residence)) {
+
+        # We notice that the open_ico_for_european_country from db does not update realtime enough, hence we limit it at 145
+        if ($self->_open_ico_for_european_country($residence) > 145) {
+            return Error::Base->cuss(
+                -type => 'ExceedEuIcoLimit',
+                -mesg => 'We are exceeding the limit that EU imposed on ICO ',
+                -message_to_client =>
+                    localize('Sorry, but due to regulatory restrictions, we are no longer accepting any bids from residents of your country.'),
+            );
+
+        }
+
+    }
+    return;
+
+}
+
+=head2 $self->_validate_ico_jurisdictional_restrictions
+
+Validates whether a client fullfill ICO jurisdicrtional restrictions
+
+=cut
+
+sub _validate_ico_jurisdictional_restrictions {
+    my ($self, $client) = (shift, shift);
+
+    my $residence = $client->residence;
+    my $loginid   = $client->loginid;
+
+    if (!$residence || $loginid =~ /^VR/) {
+        return Error::Base->cuss(
+            -type              => 'NoResidenceCountry',
+            -mesg              => 'Client cannot place ico as we do not know their residence.',
+            -message_to_client => localize(
+                'In order to participate in the ICO, we need to know your country of residence. Please update your account settings accordingly.'),
+        );
+    }
+
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    if ($countries_instance->ico_restricted_country($residence)) {
+        return Error::Base->cuss(
+            -type              => 'IcoRestrictedCountry',
+            -mesg              => 'Clients are not allowed to bid for ICO  as their country is restricted.',
+            -message_to_client => localize('Sorry, but the ICO is not available in your country of residence.'),
+        );
+    }
+
+    my $is_professional = $client->financial_assessment && $client->financial_assessment->is_professional ? 1 : 0;
+
+    # For certain country, only professional investor is allow to place ico
+    if ($countries_instance->ico_restricted_professional_only_country($residence)
+        && !$is_professional)
+    {
+        return Error::Base->cuss(
+            -type              => 'IcoProfessionalRestrictedCountry',
+            -mesg              => 'Clients are not allowed to place ICO  as it is restricted to offer only to professional in the relevant country.',
+            -message_to_client => localize(
+                'The ICO is only available to professional investors in your country of residence. If you are a professional investor, please contact our customer support team to verify your account status.'
+            ),
         );
     }
 
@@ -685,13 +839,39 @@ sub check_tax_information {
     return;
 }
 
-# don't allow to trade for unwelcome_clients
-# and for MLT and MX we don't allow trading without confirmed age
+=head2 check_trade_status
+
+Check if client is allowed to trade.
+
+Here we have any uncommon business logic check.
+
+Common checks (unwelcome & disabled) are done _validate_client_status.
+
+Don't allow to trade for:
+- MLT, MX and MF without confirmed age
+- MF without fully_authentication
+
+=cut
+
 sub check_trade_status {
     my ($self, $client) = (shift, shift);
 
     return if $client->is_virtual;
-    return $self->not_allow_trade($client);
+
+    if ((
+                ($client->landing_company->short =~ /^(?:maltainvest|malta|iom)$/)
+            and not $client->get_status('age_verification')
+            and $client->has_deposits
+        )
+        or ($client->landing_company->short eq 'maltainvest' and not $client->client_fully_authenticated))
+    {
+        return Error::Base->cuss(
+            -type              => 'PleaseAuthenticate',
+            -mesg              => 'Please authenticate your account to continue',
+            -message_to_client => localize('Please authenticate your account to continue.'),
+        );
+    }
+    return;
 }
 
 =head2 allow_paymentagent_withdrawal
@@ -712,33 +892,6 @@ sub allow_paymentagent_withdrawal {
         my $payment_mapper = BOM::Database::DataMapper::Payment->new({'client_loginid' => $client->loginid});
         my $doughflow_count = $payment_mapper->get_client_payment_count_by({payment_gateway_code => 'doughflow'});
         return 1 if $doughflow_count == 0;
-    }
-    return;
-}
-
-=head2 not_allow_trade
-
-Check if client is allowed to trade.
-
-Don't allow to trade for unwelcome_clients and for MLT and MX without confirmed age
-
-=cut
-
-sub not_allow_trade {
-    my ($self, $client) = (shift, shift);
-
-    if (($client->landing_company->short =~ /^(?:malta|iom)$/) and not $client->get_status('age_verification') and $client->has_deposits) {
-        return Error::Base->cuss(
-            -type              => 'PleaseAuthenticate',
-            -mesg              => 'Please authenticate your account to continue',
-            -message_to_client => localize('Please authenticate your account to continue.'),
-        );
-    } elsif ($client->get_status('unwelcome') or $client->get_status('disabled')) {
-        return Error::Base->cuss(
-            -type              => 'AccountUnavailable',
-            -mesg              => 'This acccount is unavailable.',
-            -message_to_client => localize('This acccount is unavailable.'),
-        );
     }
     return;
 }

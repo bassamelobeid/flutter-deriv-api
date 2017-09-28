@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 23;
+use Test::More;
 use Test::Warnings;
 use Test::Exception;
 use Guard;
@@ -22,6 +22,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client qw(create_client);
+use BOM::Test::Time qw( sleep_till_next_second );
 use BOM::Platform::Client::IDAuthentication;
 
 use BOM::MarketData qw(create_underlying_db);
@@ -124,30 +126,6 @@ sub db {
         })->db;
 }
 
-sub create_client {
-    my $broker = shift;
-    $broker ||= 'CR';
-
-    return Client::Account->register_and_return_new_client({
-        broker_code      => $broker,
-        client_password  => BOM::Platform::Password::hashpw('12345678'),
-        salutation       => 'Ms',
-        last_name        => 'Doe',
-        first_name       => 'Jane' . time . '.' . int(rand 1000000000),
-        email            => 'jane.doe' . time . '.' . int(rand 1000000000) . '@test.domain.nowhere',
-        residence        => 'in',
-        address_line_1   => '298b md rd',
-        address_line_2   => '',
-        address_city     => 'Place',
-        address_postcode => '65432',
-        address_state    => 'st',
-        phone            => '+9145257468',
-        secret_question  => 'What the f***?',
-        secret_answer    => BOM::Platform::Client::Utility::encrypt_secret_answer('is that'),
-        date_of_birth    => '1945-08-06',
-    });
-}
-
 sub top_up {
     my ($c, $cur, $amount) = @_;
 
@@ -181,57 +159,6 @@ sub top_up {
         remark               => __FILE__ . ':' . __LINE__,
     });
     $pm->legacy_payment({legacy_type => "ewallet"});
-    my ($trx) = $pm->add_transaction({
-        account_id    => $acc->id,
-        amount        => $amount,
-        staff_loginid => "test",
-        remark        => __FILE__ . ':' . __LINE__,
-        referrer_type => "payment",
-        action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
-        quantity      => 1,
-    });
-    $acc->save(cascade => 1);
-    $trx->load;    # to re-read (get balance_after)
-
-    BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
-        if $fdp;
-
-    note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
-}
-
-sub free_gift {
-    my ($c, $cur, $amount) = @_;
-
-    my $fdp = $c->is_first_deposit_pending;
-    my @acc = $c->account;
-    if (@acc) {
-        @acc = grep { $_->currency_code eq $cur } @acc;
-        @acc = $c->add_account({
-                currency_code => $cur,
-                is_default    => 0
-            }) unless @acc;
-    } else {
-        @acc = $c->add_account({
-            currency_code => $cur,
-            is_default    => 1
-        });
-    }
-
-    my $acc = $acc[0];
-    unless (defined $acc->id) {
-        $acc->save;
-        note 'Created account ' . $acc->id . ' for ' . $c->loginid . ' segment ' . $cur;
-    }
-
-    my ($pm) = $acc->add_payment({
-        amount               => $amount,
-        payment_gateway_code => "free_gift",
-        payment_type_code    => "free_gift",
-        status               => "OK",
-        staff_loginid        => "test",
-        remark               => __FILE__ . ':' . __LINE__,
-    });
-    $pm->free_gift({reason => "test"});
     my ($trx) = $pm->add_transaction({
         account_id    => $acc->id,
         amount        => $amount,
@@ -313,7 +240,8 @@ lives_ok {
     $cl = create_client;
 
     #make sure client can trade
-    ok(!BOM::Transaction::Validation->new({clients => [$cl]})->not_allow_trade($cl), "client can trade");
+    ok(!BOM::Transaction::Validation->new({clients => [$cl]})->check_trade_status($cl),      "client can trade: check_trade_status");
+    ok(!BOM::Transaction::Validation->new({clients => [$cl]})->_validate_client_status($cl), "client can trade: _validate_client_status");
 
     top_up $cl, 'USD', 5000;
 
@@ -1415,6 +1343,8 @@ subtest 'max_turnover validation', sub {
     'survived';
 };
 
+sleep_till_next_second();
+
 subtest 'max_7day_turnover validation', sub {
     plan tests => 11;
     lives_ok {
@@ -1510,6 +1440,8 @@ subtest 'max_7day_turnover validation', sub {
     'survived';
 };
 
+sleep_till_next_second();
+
 subtest 'max_30day_turnover validation', sub {
     plan tests => 11;
     lives_ok {
@@ -1548,7 +1480,7 @@ subtest 'max_30day_turnover validation', sub {
             price         => 5.20,
             payout        => $contract_up->payout,
             amount_type   => 'payout',
-            purchase_date => Date::Utility->new(),
+            purchase_date => $contract_up->date_start,
         });
 
         my $error = do {
@@ -1562,7 +1494,7 @@ subtest 'max_30day_turnover validation', sub {
                     price         => 5.20,
                     payout        => $contract_up->payout,
                     amount_type   => 'payout',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $contract_up->date_start,
                 })->buy, undef, 'CALL bet bought';
 
             is +BOM::Transaction->new({
@@ -1571,7 +1503,7 @@ subtest 'max_30day_turnover validation', sub {
                     price         => 5.20,
                     payout        => $contract_down->payout,
                     amount_type   => 'payout',
-                    purchase_date => Date::Utility->new(),
+                    purchase_date => $contract_down->date_start,
                 })->buy, undef, 'PUT bet bought';
 
             $txn->buy;

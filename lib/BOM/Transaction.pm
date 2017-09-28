@@ -614,7 +614,7 @@ sub batch_buy {
     return Error::Base->cuss(
         -type              => 'DoNotSupportICO',
         -mesg              => 'Client is not allow to place ICO via batch buy',
-        -message_to_client => BOM::Platform::Context::localize('Sorry, placement of ICO is not support for this service.'),
+        -message_to_client => BOM::Platform::Context::localize('Sorry, the ICO is not available for copy trading.'),
     ) if $self->contract->is_binaryico;
 
     my $stats_data = $self->stats_start('batch_buy');
@@ -757,17 +757,10 @@ sub prepare_sell {
         @clients = map { $_->{client} } grep { ref $_->{client} } @{$self->multiple};
     }
 
-    my $error_status =
-        !$self->contract->is_binaryico
-        ? BOM::Transaction::Validation->new({
+    my $error_status = BOM::Transaction::Validation->new({
             transaction => $self,
             clients     => \@clients,
-        }
-        )->validate_trx_sell()
-        : BOM::Transaction::Validation->new({
-            transaction => $self,
-            clients     => $self->client
-        })->validate_trx_sell_ico();
+        })->validate_trx_sell();
 
     return $error_status if $error_status;
 
@@ -1221,45 +1214,24 @@ sub format_error {
 sub _build_pricing_comment {
     my $args = shift;
 
-    my ($contract, $price, $action, $price_slippage, $requested_price, $recomputed_price, $trading_period_start) =
-        @{$args}{'contract', 'price', 'action', 'price_slippage', 'requested_price', 'recomputed_price', 'trading_period_start'};
+    my ($contract, $price, $action) = @{$args}{qw/contract price action/};
 
     my @comment_fields = @{$contract->pricing_details($action)};
 
     #NOTE The handling of sell whether the bid is sucess or not will be handle in next card
     # only manual sell and buy has a price
-    if ($price) {
-        push @comment_fields, (trade => $price);
-    }
+    push @comment_fields, (trade => $price) if $price;
 
-    # Record price slippage in quants bet variable.
+    # Record price slippage, requested_price and recomputed_price in quants bet variable.
     # To always reproduce ask price, we would want to record the slippage allowed during transaction.
-    if (defined $price_slippage) {
-        push @comment_fields, (price_slippage => $price_slippage);
-    }
-
-    # Record requested price in quants bet variable.
-    if (defined $requested_price) {
-        push @comment_fields, (requested_price => $requested_price);
-    }
-
-    # Record recomputed price in quants bet variable.
-    if (defined $recomputed_price) {
-        push @comment_fields, (recomputed_price => $recomputed_price);
-    }
+    push @comment_fields, map { defined $args->{$_} ? ($_ => $args->{$_}) : () } qw/price_slippage requested_price recomputed_price/;
 
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
 
-    if ($contract->is_binaryico) {
-        push @comment_fields, (binaryico_auction_status => $contract->binaryico_auction_status);
-    }
-    if (defined $trading_period_start) {
-        push @comment_fields, (trading_period_start => $trading_period_start);
-    }
+    push @comment_fields, (binaryico_auction_status => $contract->binaryico_auction_status) if $contract->is_binaryico;
+    push @comment_fields, map { defined $args->{$_} ? ($_ => $args->{$_}) : () } qw/trading_period_start/;
 
-    my %comment_hash = map { $_ } @comment_fields;
-
-    return [$comment_str, \%comment_hash];
+    return [$comment_str, {@comment_fields}];
 }
 
 =head2 sell_expired_contracts
@@ -1330,6 +1302,7 @@ sub sell_expired_contracts {
 
         my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code}
             or warn "No logging class found for contract type " . $contract->code;
+        $logging_class //= 'INVALID';
         $stats_attempt{$logging_class}++;
         if (not $contract->is_settleable) {
             $stats_failure{$logging_class}{'NotExpired'}++;
