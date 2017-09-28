@@ -20,8 +20,6 @@ sub add_upload_info {
 
     my @pending_futures = ();
 
-    my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
-
     my $upload_info = {
         %{$call_params},
         file_id         => $rpc_response->{file_id},
