@@ -16,7 +16,7 @@ mini:
                 max: 0.0389
             RANGE:
                 avg: 0.0147
-                max: 0.1411
+                max: 0.1414
         BASE:
             UPORDOWN:
                 avg: 0.0131
@@ -31,42 +31,42 @@ mini:
                 avg: 0.0109
                 max: 0.0777
             RANGE:
-                avg: 0.0129
-                max: 0.1409
+                avg: 0.0135
+                max: 0.1412
     sdfx:
         MAJOR_BASE:
             ONETOUCH:
-                avg: 0.0134
-                max: 0.0968
+                avg: 0.014
+                max: 0.1002
             NOTOUCH:
                 avg: 0.0206
-                max: 0.0992
+                max: 0.1002
             CALL:
                 avg: 0.0062
                 max: 0.0202
             PUT:
-                avg: 0.0079
+                avg: 0.008
                 max: 0.1366
             RANGE:
                 avg: 0.0288
                 max: 0.1366
         MAJOR_NUM:
             ONETOUCH:
-                avg: 0.0131
-                max: 0.0962
+                avg: 0.0138
+                max: 0.0996
             CALL:
                 avg: 0.0071
                 max: 0.0248
             PUT:
                 avg: 0.0084
-                max: 0.0587
+                max: 0.0594
         MINOR_BASE:
             UPORDOWN:
-                avg: 0.0233
-                max: 0.1267
+                avg: 0.0239
+                max: 0.1367
             ONETOUCH:
-                avg: 0.0175
-                max: 0.1042
+                avg: 0.0177
+                max: 0.1123
             NOTOUCH:
                 avg: 0.013
                 max: 0.0519
@@ -74,21 +74,21 @@ mini:
                 avg: 0.0059
                 max: 0.0279
             PUT:
-                avg: 0.0112
-                max: 0.0558
+                avg: 0.012
+                max: 0.0569
             RANGE:
                 avg: 0.0231
                 max: 0.0469
         MINOR_NUM:
             ONETOUCH:
-                avg: 0.0174
-                max: 0.1036
+                avg: 0.0176
+                max: 0.1115
             CALL:
                 avg: 0.0089
                 max: 0.0354
             PUT:
-                avg: 0.0113
-                max: 0.0574
+                avg: 0.0121
+                max: 0.0584
     sdeq:
         DJI:
             ONETOUCH:
@@ -132,7 +132,7 @@ mini:
                 avg: 0.0065
                 max: 0.1183
             Digital:
-                avg: 0.0056
+                avg: 0.0057
                 max: 0.0806
             OT:
                 avg: 0.0133
@@ -148,7 +148,7 @@ mini:
                 avg: 0.0056
                 max: 0.0855
             Digital:
-                avg: 0.0056
+                avg: 0.0057
                 max: 0.0799
             OT:
                 avg: 0.0133

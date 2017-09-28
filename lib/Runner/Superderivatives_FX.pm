@@ -124,19 +124,18 @@ sub get_bet_results {
         next if $date_expiry->epoch - $date_start->epoch > 365 * 86400;
         next if $date_expiry->is_a_weekend or $date_start->is_a_weekend;
 
-       
         my $currency = ($base_or_num eq 'base') ? $record->{base_currency} : $record->{numeraire_currency};
         my $bet_type = $record->{bet_type};
         my $bet_args = {
-            underlying   => $underlying,
-            bet_type     => $bet_type,
-            date_start   => $date_start,
-            date_expiry  => $date_expiry,
-            volsurface   => $raw_surface,
-            payout       => $payout,
-            currency     => $currency,
-            date_pricing => $date_start,
-            current_spot => $spot,
+            underlying                => $underlying,
+            bet_type                  => $bet_type,
+            date_start                => $date_start,
+            date_expiry               => $date_expiry,
+            volsurface                => $raw_surface,
+            payout                    => $payout,
+            currency                  => $currency,
+            date_pricing              => $date_start,
+            current_spot              => $spot,
             uses_empirical_volatility => 0,
         };
 
@@ -156,15 +155,16 @@ sub get_bet_results {
             epoch => $date_start->epoch
         });
 
-
-        #force re-createion of surface 
+        #force re-createion of surface
         $record->{volsurface}->clear_surface;
         my $bet = produce_contract($bet_args);
 
-        my $bom_mid = $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability->amount;
-        my $bom_bs   = $bet->pricing_engine->can('_bs_probability') ? $bet->pricing_engine->_bs_probability : $bet->pricing_engine->bs_probability->amount;
+        my $bom_mid =
+            $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability->amount;
+        my $bom_bs =
+            $bet->pricing_engine->can('_bs_probability') ? $bet->pricing_engine->_bs_probability : $bet->pricing_engine->bs_probability->amount;
 
-        my $sd_mid   = $record->{sd_mid};
+        my $sd_mid = $record->{sd_mid};
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');
         next if $sd_mid < 0.05 or $sd_mid > 0.95;
 
@@ -173,7 +173,7 @@ sub get_bet_results {
 
         my $mid_diff = abs($sd_mid - $bom_mid);
 
-        #force re-createion of surface 
+        #force re-createion of surface
         $record->{volsurface}->clear_surface;
         $bet = produce_contract($bet_args);
 
