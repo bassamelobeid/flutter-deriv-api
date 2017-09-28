@@ -21,7 +21,7 @@ use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 
-use constant SOCIAL_LOGIN_MODE => 0;
+use constant SOCIAL_LOGIN_MODE => 1;
 
 sub _oauth_model {
     return BOM::Database::Model::OAuth->new;
