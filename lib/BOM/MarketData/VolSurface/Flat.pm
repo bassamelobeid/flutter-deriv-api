@@ -157,6 +157,9 @@ override is_valid => sub {
     return 1;
 };
 
+sub validation_error {
+    return '';
+}
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
