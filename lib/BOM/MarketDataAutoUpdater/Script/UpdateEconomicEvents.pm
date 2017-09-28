@@ -41,17 +41,14 @@ sub script_run {
     }
 
     try {
+        Quant::Framework::EconomicEventCalendar->new(
+            events           => $events_received,
+            recorded_date    => Date::Utility->new,
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        )->save;
 
-        my $tentative_count = grep { $_->{is_tentative} } @$events_received;
-
-        Quant::Framework::EconomicEventCalendar->new({
-                events           => $events_received,
-                recorded_date    => Date::Utility->new(),
-                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-            })->save;
-
-        print "stored " . (scalar @$events_received) . " events ($tentative_count are tentative events) in chronicle...\n";
+        print "stored " . (scalar @$events_received) . "\n";
 
         my @underlying_symbols = create_underlying_db->symbols_for_intraday_fx;
 
