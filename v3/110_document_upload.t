@@ -324,6 +324,7 @@ sub upload_ok {
 
     my $upload    = upload($metadata, $data);
     my $res       = $upload->{res};
+    my $req       = $upload->{req};
     my $upload_id = $upload->{upload_id};
     my $call_type = $upload->{call_type};
     my $success   = $res->{document_upload};
@@ -331,7 +332,7 @@ sub upload_ok {
     is $success->{upload_id}, $upload_id, 'upload id is correct';
     is $success->{call_type}, $call_type, 'call_type is correct';
 
-    ok((not exists($res->{echo_req}->{status})), 'status should not be present');
+    is_deeply $res->{echo_req}, $req, 'echo_req should contain the original request';
 
     return $success;
 }
@@ -370,6 +371,7 @@ sub upload {
     is_deeply $res->{passthrough}, $req->{passthrough}, 'binary payload passthrough is unchanged';
 
     return {
+        req       => $req,
         res       => decode_json($t->message->[1]),
         upload_id => $upload_id,
         call_type => $call_type,
