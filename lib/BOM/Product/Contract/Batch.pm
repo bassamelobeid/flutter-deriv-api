@@ -64,6 +64,7 @@ sub _build__contracts {
         current_tick => $first_contract->current_tick,
         q_rate       => $first_contract->q_rate,
         r_rate       => $first_contract->r_rate,
+        volsurface   => $first_contract->volsurface,
     );
 
     if ($first_contract->priced_with_intraday_model) {

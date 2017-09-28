@@ -317,7 +317,7 @@ sub _sample_bet {
 
     # Let's add a vol surface to DB so that the bet can be priced.
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
+        'volsurface_' . $underlying->volatility_surface_type,
         {
             underlying    => $underlying,
             recorded_date => $overrides{date_pricing},

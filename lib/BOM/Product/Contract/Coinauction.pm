@@ -3,6 +3,7 @@ package BOM::Product::Contract::Coinauction;
 use Moose;
 
 with 'MooseX::Role::Validatable';
+use BOM::MarketData::Types;
 use Quant::Framework::Underlying;
 extends 'Finance::Contract';
 use BOM::Product::Static qw(get_error_mapping);

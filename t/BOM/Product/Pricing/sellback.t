@@ -44,7 +44,7 @@ for my $type (qw(CALL PUT)) {
                 note "checking price for $shortcode at $back_time before expiry...";
 
                 ok defined $expectation->{$code}, "config file contains the required data";
-                price_contract_at($type, $underlying, $duration, $back_time, $expectation->{$code});
+                price_contract_at($type, $underlying, $duration, $back_time, $expectation->{$code}, $code);
             }
         }
     }
@@ -60,7 +60,7 @@ for my $type (qw(CALL PUT)) {
                 note "checking price for $shortcode at $back_time before expiry...";
 
                 ok defined $expectation->{$code}, "config file contains the required data";
-                price_contract_at($type, $underlying, $duration, $back_time, $expectation->{$code});
+                price_contract_at($type, $underlying, $duration, $back_time, $expectation->{$code}, $code);
             }
         }
     }
@@ -69,7 +69,7 @@ for my $type (qw(CALL PUT)) {
 done_testing;
 
 sub price_contract_at {
-    my ($bet_type, $underlying, $duration, $price_back, $expected_price) = @_;
+    my ($bet_type, $underlying, $duration, $price_back, $expected_price, $code) = @_;
 
     my $date_pricing = $start_time->plus_time_interval($duration)->minus_time_interval($price_back);
 
@@ -100,6 +100,6 @@ sub price_contract_at {
         }) if $bet_type eq 'CALL';
 
     my $c = produce_contract($bet_params);
-    is roundcommon(0.00001, $c->bid_price), roundcommon(0.00001, $expected_price);
+    is roundcommon(0.00001, $c->bid_price), roundcommon(0.00001, $expected_price), $code;
 }
 

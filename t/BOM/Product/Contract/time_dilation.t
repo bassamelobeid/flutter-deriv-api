@@ -384,8 +384,13 @@ for (my $time = $start->epoch; $time <= $end->epoch; $time += 300) {
 }
 
 foreach my $symbol (sort keys %previous) {
-    foreach my $wha (qw(date value)) {
-        is($previous{$symbol}->{$wha . '_changed'}, 2, $symbol . ' ' . $wha . ' changed twice.');
+    if ($symbol =~ /frx/) {
+        is($previous{$symbol}->{'date_changed'},  2,  $symbol . ' date changed twice.');
+        is($previous{$symbol}->{'value_changed'}, 12, $symbol . ' value changed 12 times due to pricing at different interval (seasonality affect).');
+    } else {
+        foreach my $wha (qw(date value)) {
+            is($previous{$symbol}->{$wha . '_changed'}, 2, $symbol . ' ' . $wha . ' changed twice.');
+        }
     }
 }
 

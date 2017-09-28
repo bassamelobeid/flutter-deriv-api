@@ -40,23 +40,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDJPY',
+        symbol        => $_,
         recorded_date => $now->minus_time_interval('10m'),
-    });
+    }) for qw(frxUSDJPY frxGBPJPY frxGBPUSD);
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_delta',
-    {
-        symbol        => 'frxGBPJPY',
-        recorded_date => $now->minus_time_interval('10m'),
-    });
-
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_delta',
-    {
-        symbol        => 'frxGBPUSD',
-        recorded_date => $now->minus_time_interval('10m'),
-    });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
     {
