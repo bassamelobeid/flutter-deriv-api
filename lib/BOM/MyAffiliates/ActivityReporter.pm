@@ -45,7 +45,7 @@ sub activity_for_date_as_csv {
         'operation'   => 'collector',
     });
 
-    $myaffiliates_data_mapper->db->dbh->do("SET statement_timeout TO " . 900_000);
+    $myaffiliates_data_mapper->db->dbic->run(sub { $_->do("SET statement_timeout TO " . 900_000) });
 
     my $activity = $myaffiliates_data_mapper->get_clients_activity({'date' => $when});
 
