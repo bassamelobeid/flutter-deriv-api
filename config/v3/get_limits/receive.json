@@ -32,7 +32,7 @@
         },
         "payout_per_symbol_and_contract_type": {
           "type": "number",
-          "description": "description": "Maximum aggregate payouts on open positions per symbol and contract type. This limit can be exceeded up to the overall payout limit if there is no prior open position."
+          "description": "Maximum aggregate payouts on open positions per symbol and contract type. This limit can be exceeded up to the overall payout limit if there is no prior open position."
         },
         "payout_per_symbol": {
           "type": "object",
