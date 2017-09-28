@@ -54,7 +54,7 @@
                 }
               }
             }
-          },
+          }
         },
         "lifetime_limit": {
           "type": "number",
