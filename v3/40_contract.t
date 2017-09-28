@@ -263,7 +263,8 @@ $res         = $t->await::buy({
     buy   => $proposal_id,
     price => 100000
 });
-
+use Data::Dumper;
+die Data::Dumper->Dumper($res);
 is $res->{buy}->{buy_price}, '1000.00';
 
 $t->finish_ok;
