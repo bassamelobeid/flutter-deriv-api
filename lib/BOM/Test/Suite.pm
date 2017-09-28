@@ -41,15 +41,6 @@ $ENV{BOM_TEST_RATE_LIMITATIONS} =    ## no critic (Variables::RequireLocalizedPu
 # all tests start from this date
 my $start_date = Date::Utility->new('2016-08-09 11:59:00')->epoch;
 
-# Read entire contents of file as a list of lines
-sub read_file_lines {
-    my $path = shift;
-    open my $fh, '<:encoding(UTF-8)', $path or die "Could not open $path - $!";
-    my @lines = <$fh>;
-    close $fh;
-    return @lines;
-}
-
 my $ticks_inserted;
 
 sub new {
@@ -115,8 +106,7 @@ sub new {
         reset_time => $start_date + 20,
 
         # TODO(leonerd): what are these for?
-        test_app    => undef,
-        placeholder => undef,
+        test_app => undef,
 
         test_app_class    => $args{test_app},
         suite_schema_path => $args{suite_schema_path},
@@ -167,7 +157,6 @@ sub read_schema_file {
 sub read_templated_schema_file {
     my ($self, $relpath, %args) = @_;
 
-    my @template_func   = @{$args{template_func}   // []};
     my @template_values = @{$args{template_values} // []};
 
     my $content = $self->read_schema_file($relpath);
@@ -178,38 +167,12 @@ sub read_templated_schema_file {
 
         return $template_values[$idx - 1] if defined $template_values[$idx - 1];
 
-        my $f = $template_func[$idx - 1];    # templates are 1-based
-        if (!defined $f) {
-            warn "No template function defined for template parameter [_$idx]";
-            return "[MISSING VALUE FOR PARAMETER $idx]";
-        }
-        $f =~ s/^\s+|\s+$//g;
-        my $template_content;
-        if ($f =~ /^\_.*$/) {
-            local $@;                        # ensure we clear this first, to avoid false positive
-            $template_content = eval $f;     ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
-
-            # we do not expect any exceptions from the eval, they could indicate
-            # invalid Perl code or bug, either way we need to know about them
-            ok(!$@, "template content can eval successfully")
-                or diag "Possible exception on eval \"$f\": $@"
-                if $@;
-            # note that _get_token may return undef, the template implementation is not advanced
-            # enough to support JSON null so we fall back to an empty string
-            $template_content //= '';
-        } elsif ($f eq 'placeholder') {
-            $template_content = $self->{placeholder};
-        } else {
-            $f =~ s/^\'|\'$//g;
-            $template_content = $f;
-        }
-        # Memoise it for next time
-        $template_values[$idx - 1] = $template_content;
-        return $template_content;
+        warn "No template value defined for template parameter [_$idx]";
+        return "[MISSING VALUE FOR PARAMETER $idx]";
     };
 
     # Expand templates in the form [_nnn] by using the functions given in
-    # @$template_funcs.
+    # @$template_values.
     $content =~ s{\[_(\d+)\]}{$expand->($1)}eg;
 
     return $content;
@@ -249,76 +212,6 @@ sub free_gift {
     return;
 }
 
-sub exec_line {
-    my ($self, $line, $linenum) = @_;
-
-    # arbitrary perl code
-    if ($line =~ s/^\[%(.*?)%\]//) {
-        eval $1;    ## no critic (RequireCheckingReturnValueOfEval, ProhibitStringyEval)
-        die $@ if $@;
-    }
-
-    if ($line =~ s/^\[(\w+)\]//) {
-        $self->set_language($1);
-        return;
-    }
-    if ($line =~ s/^\{(\w+)\}//) {
-        $self->reset_app;
-        return;
-    }
-
-    # |placeholder=_get_stashed('new_account_real/new_account_real/oauth_token')|
-    if ($line =~ s/^\|.*\=(.*)\|$//) {
-        my $func = $1;
-        local $@;    # ensure we clear this first, to avoid false positive
-        $self->{placeholder} = eval $func;    ## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
-
-        # we do not expect any exceptions from the eval, they could indicate
-        # invalid Perl code or bug, either way we need to know about them
-        ok(!$@, "template content can eval successfully")
-            or diag "Possible exception on eval \"$func\": $@"
-            if $@;
-        # note that _get_token may return undef, the template implementation is not advanced
-        # enough to support JSON null so we fall back to an empty string
-        $self->{placeholder} //= '';
-        return;
-    }
-
-    my $fail;
-    if ($line =~ s/^!//) {
-        $fail = 1;
-    }
-
-    my $test_app = $self->test_app;
-
-    # Finish parsing $line here to keep the test logic separated from it
-
-    my $start_stream_id;
-    if ($test_app->is_websocket && $line =~ s/^\{start_stream:(.+?)\}//) {
-        $start_stream_id = $1;
-    }
-
-    my ($test_stream_id, $send_file, $receive_file, @template_func);
-    if ($test_app->is_websocket && $line =~ s/^\{test_last_stream_message:(.+?)\}//) {
-        $test_stream_id = $1;
-        # there is no $send_file here
-        ($receive_file, @template_func) = split(',', $line);
-    } else {
-        ($send_file, $receive_file, @template_func) = split(',', $line);
-    }
-
-    $self->exec_test(
-        send_file       => $send_file,
-        receive_file    => $receive_file,
-        test_stream_id  => $test_stream_id,
-        start_stream_id => $start_stream_id,
-        template_func   => \@template_func,
-        expect_fail     => $fail,
-        linenum         => $linenum,
-    );
-    return;
-}
-
 sub exec_test {
     my ($self, %args) = @_;
 
@@ -328,7 +221,7 @@ sub exec_test {
     my $start_stream_id = $args{start_stream_id};
     my $expect_fail     = $args{expect_fail};
     my $linenum         = $args{linenum};
-    # plus 'template_func', 'template_values'
+    # plus 'template_values'
 
     # we are setting the time two seconds ahead for every step to ensure time
     # sensitive tests (pricing tests) always start at a consistent time.
@@ -344,7 +237,6 @@ sub exec_test {
     if ($test_stream_id) {
         my $content = $self->read_templated_schema_file(
             $receive_file,
-            template_func   => $args{template_func},
             template_values => $args{template_values},
         );
 
@@ -355,7 +247,6 @@ sub exec_test {
 
         my $content = $self->read_templated_schema_file(
             $send_file,
-            template_func   => $args{template_func},
             template_values => $args{template_values},
         );
         my $req_params = JSON::from_json($content);
@@ -366,7 +257,6 @@ sub exec_test {
 
         $content = $self->read_templated_schema_file(
             $receive_file,
-            template_func   => $args{template_func},
             template_values => $args{template_values},
         );
 
@@ -390,29 +280,6 @@ sub finish {
 
     diag "Cumulative elapsed time for all steps was $self->{cumulative_elapsed}s";
     return $self->{cumulative_elapsed};
-}
-
-sub run {
-    my ($class, $args) = @_;
-
-    my $path = delete $args->{test_conf_path};
-    my ($title) = ($path =~ /\/(.+?)$/);
-
-    my $self = $class->new(
-        %$args,
-        title => $title,
-    );
-
-    my $linenum = 0;
-    foreach my $line (read_file_lines($path)) {
-        $linenum++;
-        chomp $line;
-        next if ($line =~ /^(#.*|)$/);
-
-        $self->exec_line($line, $linenum);
-    }
-
-    return $self->finish;
 }
 
 sub print_test_diag {
