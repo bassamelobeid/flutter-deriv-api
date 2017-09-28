@@ -228,9 +228,6 @@ sub _regenerate {
         chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
     });
 
-    # refresh intradayfx cache to to use new economic events impact curve
-    BOM::MarketDataAutoUpdater::Forex->new()->warmup_intradayfx_cache();
-
     return;
 }
 
