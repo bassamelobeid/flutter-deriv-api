@@ -16,8 +16,7 @@ get different factors of clients activity needed for myaffiliates pl reports.
 =cut
 
 sub get_clients_activity {
-    my $self = shift;
-    my $args = shift;
+    my ($self, $args) = @_;
     my $dbic = $self->db->dbic;
 
     my $sql = q{
@@ -35,13 +34,12 @@ sub get_clients_activity {
 
 =item get_trading_activity
 
-get client trading activity for particular date
+get client trading activity for particular date for myaffiliates turnover reports.
 
 =cut
 
-sub get_trading {
-    my $self = shift;
-    my $args = shift;
+sub get_trading_activity {
+    my ($self, $args) = @_;
     my $dbic = $self->db->dbic;
 
     my $sql = q{
