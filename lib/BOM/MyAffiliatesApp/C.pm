@@ -16,6 +16,11 @@ sub registration {
     return $c->__send_file('registration');
 }
 
+sub turnover_report {
+    my $c = shift;
+    return $c->__send_file('turnover_report');
+}
+
 sub __send_file {
     my ($c, $type) = @_;
 
@@ -30,6 +35,8 @@ sub __send_file {
         $filename = 'pl_';
     } elsif ($type eq 'registration') {
         $filename = 'registrations_';
+    } elsif ($type eq 'turnover_report') {
+        $filename = 'turnover_';
     } else {
         return $c->__bad_request("Invalid request");
     }
