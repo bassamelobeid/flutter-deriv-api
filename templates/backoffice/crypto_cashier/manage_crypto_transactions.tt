@@ -7,7 +7,7 @@
 [% END %]
 [% MACRO transaction_link BLOCK %]
 [% IF tx %]
-    <a href="[% transaction_uri _ tx %]" target="_blank">[% tx.substr(0,6) %]</a>
+    <a href="[% transaction_uri _ tx %]" target="_blank">[% tx.substr(0,6) %]...</a>
 [% ELSE %]
     &nbsp;
 [% END %]
@@ -76,10 +76,13 @@
 </table>
 <br/>
 [% IF transactions.size == 0 %]
-    <p>There are no [% view_type %] transactions.</p>
+    <p>There are no such transactions.</p>
 [% ELSE %]
     <table>
         <tr>
+            [% IF view_action == 'search' %]
+                <th>Status</th>
+            [% END %]
             <th>BlockchainInfo</th>
             <th>PaymentInfo</th>
             <th>Date</th>
@@ -90,6 +93,12 @@
         </tr>
         [% FOREACH trx IN transactions %]
             <tr>
+                [% IF view_action == 'search' %]
+                    <td><table><tbody>
+                        <b>[% trx.transaction_type FILTER ucfirst %]: </b>
+                        [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
+                    </tbody></table></td>
+                [% END %]
                 <td><table><tbody>
                     <tr><td>
                         <b>Address</b>: 
@@ -105,8 +114,10 @@
                     <tr><td>Client: [% trx.client_loginid %]<td></tr>
                     <tr><td>Balance: [% trx.balance %]</td></tr>
                     <tr><td>Payment ID: [% trx.payment_id %]</td></tr>
-                    <tr><td>Estimated Fee: [% trx.estimated_fee %]</td></tr>
-                    <tr><td>Transaction Fee: [% trx.txn_fee %]</td></tr>
+                    [% IF trx.transaction_type == 'withdrawal'%]
+                        <tr><td>Estimated Fee: [% trx.estimated_fee %]</td></tr>
+                        <tr><td>Transaction Fee: [% trx.txn_fee %]</td></tr>
+                    [% END %]
                 </tbody></table></td>
                 <td><table><tbody>
                     <tr><td>Creation: [% trx.creation_date %]</td></tr>

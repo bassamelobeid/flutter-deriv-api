@@ -25,7 +25,7 @@ sub get_currency_options {
 
 sub print_client_details {
 
-    my ($client) = @_;
+    my $client = shift;
 
     # IDENTITY sECTION
     my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
@@ -59,12 +59,18 @@ sub print_client_details {
     }
 
     my ($proveID, $show_uploaded_documents) = ('', '');
+    my $user = BOM::Platform::User->new({loginid => $client->loginid});
+
+    # User should be accessable from client by loginid
+    print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>" and die unless $user;
+
     unless ($client->is_virtual) {
         # KYC/IDENTITY VERIFICATION SECTION
         $proveID = BOM::Platform::ProveID->new(
             client        => $client,
             search_option => 'ProveID_KYC'
         );
+
         my $user = BOM::Platform::User->new({loginid => $client->loginid});
         my $siblings = $user->loginid;
 
@@ -129,7 +135,7 @@ sub print_client_details {
         dob_month_options     => $dob_month_options,
         dob_year_options      => $dob_year_options,
         financial_risk_status => $client->get_status('financial_risk_approval'),
-        has_social_signup     => defined $client->get_status('social_signup'),
+        has_social_signup     => $user->has_social_signup,
         is_vip                => $client->is_vip,
         lang                  => request()->language,
         language_options      => \@language_options,
