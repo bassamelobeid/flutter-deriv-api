@@ -131,7 +131,7 @@ sub send_upload_failure {
 
                 sanitize_echo_req($upload_info, $req_storage);
 
-                return create_error($upload_info, $api_response)
+                return create_error($upload_info, $api_response);
             },
         });
 
