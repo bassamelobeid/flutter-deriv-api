@@ -255,16 +255,19 @@ sub app_markup_details {
         })->db;
 
     return {
-        transactions => $clientdb->dbh->selectall_arrayref(
-            'SELECT * FROM reporting.get_app_markup_details(?,?,?,?,?,?,?,?)',
-            {Slice => {}},
-            $app_ids, $time_from, $time_to,
-            $args->{offset}         || undef,
-            $args->{limit}          || undef,
-            $args->{client_loginid} || undef,
-            $args->{sort_fields}    || undef,
-            $args->{sort}           || undef
-        )};
+        transactions => $clientdb->dbic->run(
+            sub {
+                $_->selectall_arrayref(
+                    'SELECT * FROM reporting.get_app_markup_details(?,?,?,?,?,?,?,?)',
+                    {Slice => {}},
+                    $app_ids, $time_from, $time_to,
+                    $args->{offset}         || undef,
+                    $args->{limit}          || undef,
+                    $args->{client_loginid} || undef,
+                    $args->{sort_fields}    || undef,
+                    $args->{sort}           || undef
+                );
+            })};
 }
 
 1;
