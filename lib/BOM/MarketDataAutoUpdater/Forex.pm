@@ -27,7 +27,6 @@ use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 use List::Util qw( first );
 use Quant::Framework;
 use BOM::Platform::Chronicle;
-use VolSurface::IntradayFX;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 has file => (
@@ -253,7 +252,6 @@ sub run {
             }
         }
     }
-    $self->warmup_intradayfx_cache();
     $self->SUPER::run();
     return 1;
 }
@@ -299,35 +297,6 @@ sub passes_additional_check {
     }
 
     return !$volsurface->validation_error;
-}
-
-sub warmup_intradayfx_cache {
-    my $self = shift;
-
-    foreach my $symbol (create_underlying_db->symbols_for_intraday_fx) {
-        my $cr = BOM::Platform::Chronicle::get_chronicle_reader(1);
-        my $cw = BOM::Platform::Chronicle::get_chronicle_writer();
-        my $u  = create_underlying($symbol);
-        try {
-            my $vs = VolSurface::IntradayFX->new(
-                underlying       => $u,
-                chronicle_reader => $cr,
-                chronicle_writer => $cw,
-                warmup_cache     => 1,
-            );
-            $vs->get_volatility({
-                from => time,
-                to   => time + 900,
-            });
-            $vs->get_volatility({
-                    from                          => time,
-                    to                            => time + 900,
-                    include_economic_event_impact => 1,
-
-            });
-        }
-    }
-    return;
 }
 
 no Moose;
