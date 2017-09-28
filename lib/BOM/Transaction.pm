@@ -1213,12 +1213,14 @@ sub _build_pricing_comment {
 }
 
 =head2 sell_expired_contracts
+
 Static function: Sells expired contracts.
 For contracts with missing market data, settle them manually for real money accounts, but sell with purchase price for virtual account
 Returns: HashRef, with:
 'total_credited', total amount credited to Client
 'skip_contract', count for expired contracts that failed to be sold
 'failures', the failure information
+
 =cut
 
 my %source_to_sell_type = (
@@ -1349,8 +1351,8 @@ sub sell_expired_contracts {
             if ($err =~ /^Requesting for historical period data without a valid DB connection/) {
                 # seems an issue in /Quant/Framework/EconomicEventCalendar.pm get_latest_events_for_period:
                 # live pricing condition was not ok and get_for_period was called for
-                # Data::Chronicle::Reader without dbh
-                $err .= "Data::Chronicle::Reader get_for_period call without dbh: Details: contract shortcode: " . $contract->shortcode . "\n";
+                # Data::Chronicle::Reader without dbic
+                $err .= "Data::Chronicle::Reader get_for_period call without dbic: Details: contract shortcode: " . $contract->shortcode . "\n";
             }
             warn 'SellExpiredContract Exception: ' . __PACKAGE__ . ':(' . __LINE__ . '): ' . $err;    # log it
         };

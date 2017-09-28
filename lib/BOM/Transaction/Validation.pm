@@ -38,8 +38,8 @@ sub _open_ico_for_european_country {
             operation   => 'collector'
         })->db;
     my $number_of_unique_client_per_eu_country =
-        $db->dbh->selectcol_arrayref(q{ SELECT cnt FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', ARRAY[?]::VARCHAR[]) },
-        undef, $client_residence)->[0];
+        $db->dbic->run(sub{$_->selectcol_arrayref(q{ SELECT cnt FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', ARRAY[?]::VARCHAR[]) },
+        undef, $client_residence)})->[0];
 
     return $number_of_unique_client_per_eu_country // 0;
 }
