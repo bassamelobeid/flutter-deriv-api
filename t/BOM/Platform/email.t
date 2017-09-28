@@ -15,11 +15,11 @@ BEGIN { use_ok('BOM::Platform::Email', qw(send_email)); }
 my $transport      = Email::Sender::Transport::Test->new;
 my $mocked_stuffer = Test::MockModule->new('Email::Stuffer');
 $mocked_stuffer->mock(
-    'send',
+    'send_or_die',
     sub {
         my $self = shift;
         $self->transport($transport);
-        $mocked_stuffer->original('send')->($self, @_);
+        $mocked_stuffer->original('send_or_die')->($self, @_);
     });
 
 my $args = {};

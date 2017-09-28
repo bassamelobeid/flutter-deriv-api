@@ -185,8 +185,7 @@ subtest 'Cashier validation withdraw' => sub {
 
     my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for withdrawal locked';
-    is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals.',
-        'Correct error message for withdrawal locked';
+    is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals.', 'Correct error message for withdrawal locked';
 
     $cr_client->clr_status('withdrawal_locked');
     $cr_client->save();
@@ -203,7 +202,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
 
         $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
         is $res->{error}->{code}, 'ASK_AUTHENTICATE', 'Correct error code for not authenticated';
-        is $res->{error}->{message_to_client}, 'Client is not fully authenticated.', 'Correct error message for not authenticated';
+        is $res->{error}->{message_to_client}, 'Please authenticate your account.', 'Correct error message for not authenticated';
 
         my $mock_client = Test::MockModule->new('Client::Account');
         $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
@@ -335,7 +334,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
 
         $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 2000);
         is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-        is $res->{error}->{message_to_client}, 'Client is not fully authenticated.', 'Correct error message';
+        is $res->{error}->{message_to_client}, 'Please authenticate your account.', 'Correct error message';
         is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 1999), undef,
             'Amount less than allowed limit hence validation passed';
 
@@ -348,7 +347,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
 
         $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mx_client->loginid, 3000);
         is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-        is $res->{error}->{message_to_client}, 'Client is not fully authenticated.', 'Correct error message';
+        is $res->{error}->{message_to_client}, 'Please authenticate your account.', 'Correct error message';
 
         is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($cr_client->loginid, 10000), undef,
             'Not applicable for CR hence validation passed';

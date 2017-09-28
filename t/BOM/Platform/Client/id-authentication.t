@@ -118,7 +118,8 @@ subtest 'When auth not required' => sub {
             };
             ok !$v->client->client_fully_authenticated, 'client should not be fully authenticated';
             ok !$v->client->get_status('age_verification'), 'client should not be age verified';
-            ok $v->client->get_status('unwelcome'), 'client is now unwelcome';
+            ok !$v->client->get_status('unwelcome'),        'client is not unwelcome';
+            ok $v->client->get_status('cashier_locked'), 'client is now cashier_locked';
         };
         subtest 'for MX' => sub {
             my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -197,7 +198,7 @@ subtest 'proveid' => sub {
         ok $v->client->get_status('unwelcome'),        'client is now unwelcome';
     };
 
-    subtest 'director' => sub {
+    subtest 'deny' => sub {
         my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MX',
             residence   => 'ar',
@@ -214,6 +215,31 @@ subtest 'proveid' => sub {
         ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
         ok !$v->client->get_status('age_verification'), 'client not age verified';
         ok $v->client->get_status('unwelcome'), 'client now unwelcome';
+    };
+
+    subtest 'Director/CCJ' => sub {
+        my $types = {
+            Directors => {matches => [qw/Directors/]},
+            CCJ       => {CCJ     => 1},
+        };
+        foreach my $type (sort keys %$types) {
+            my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'MX',
+                residence   => 'ar',
+            });
+
+            my $v = IDAuthentication->new(client => $c);
+            Test::MockObject::Extends->new($v);
+
+            $v->mock(-_fetch_proveid, sub { return $types->{$type} });
+            do {
+                local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
+                $v->run_authentication;
+            };
+            ok !$v->client->client_fully_authenticated, 'client not fully authenticated: ' . $type;
+            ok !$v->client->get_status('age_verification'), 'client not age verified: ' . $type;
+            ok !$v->client->get_status('unwelcome'),        'client is not unwelcome: ' . $type;
+        }
     };
 
     subtest 'age verified' => sub {

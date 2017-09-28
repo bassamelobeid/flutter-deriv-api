@@ -75,6 +75,44 @@ payments:
       isa: json_string
       default: '{"jy":"99999"}'
       global: 1
+    transfer_between_accounts:
+      description: 'Transfer between accounts config'
+      isa: section
+      contains:
+        fees:
+          isa: section
+          description: 'Transfer fees for currency conversion'
+          contains:
+            fiat:
+              description: 'Fees for transfering from fiat currency to crypto currency in percentage'
+              isa: Num
+              default: 1
+              global: 1
+            crypto:
+              description: 'Fees for transfering from crypto currency to fiat currency in percentage'
+              isa: Num
+              default: 0.5
+              global: 1
+        amount:
+          isa: section
+          description: 'Transfer amount limits for currency conversion'
+          contains:
+            fiat:
+              isa: section
+              contains:
+                min:
+                  description: 'Minimum amount for transfering from fiat currency'
+                  isa: Num
+                  default: 1
+                  global: 1
+            crypto:
+              isa: section
+              contains:
+                min:
+                  description: 'Minimum amount for transfering from crypto currency'
+                  isa: Num
+                  default: 0.002
+                  global: 1
 quants:
   description: "Various quants' parameters"
   isa: section
@@ -206,6 +244,11 @@ system:
           description: "Suspend crypto cashier only"
           isa: Bool
           default: 0
+          global: 1
+        cryptocurrencies:
+          description: "Suspend comma-separated list of currencies"
+          isa: Str
+          default: ""
           global: 1
         new_accounts:
           description: "Suspend opening new accounts"

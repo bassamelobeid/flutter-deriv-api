@@ -1,8 +1,8 @@
 package BOM::Platform::Client::IDAuthentication;
 
 use Moose;
-
 use namespace::autoclean;
+use Try::Tiny;
 
 use Brands;
 use Client::Account;
@@ -50,6 +50,9 @@ sub run_authentication {
     return;
 }
 
+#
+# All logic in _do_proveid meet compliance requirements, which can be changed over time
+#
 sub _do_proveid {
     my $self   = shift;
     my $client = $self->client;
@@ -79,17 +82,19 @@ sub _do_proveid {
         if (($type) = grep { /(OFAC|BOE)/ } @{$prove_id_result->{matches}}) {
             $set_status->('disabled', "$type match", "$type match");
         }
-        # Director or Politically Exposed => unwelcome client
-        elsif ((($type) = grep { /(PEP|Directors)/ } @{$prove_id_result->{matches}})) {
+        # Director is ok, no unwelcome, no documents request
+        elsif ((($type) = grep { /(Directors)/ } @{$prove_id_result->{matches}})) {
+        }
+        # Politically Exposed => unwelcome client
+        elsif ((($type) = grep { /(PEP)/ } @{$prove_id_result->{matches}})) {
             $set_status->('unwelcome', "$type match", "$type match");
         } else {
             $set_status->('unwelcome', 'EXPERIAN PROVE ID RETURNED MATCH', join(', ', @{$prove_id_result->{matches}}));
         }
         $skip_request_for_id = 1;
     }
-    # County Court Judgement => unwelcome client
+    # County Court Judgement is ok, no unwelcome, no documents request
     elsif ($prove_id_result->{CCJ}) {
-        $set_status->('unwelcome', 'PROVE ID INDICATES CCJ', 'Client was flagged as CCJ by Experian Prove ID check');
         $skip_request_for_id = 1;
     }
     # result is AGE VERIFIED ONLY
@@ -109,8 +114,8 @@ sub _request_id_authentication {
     my $client = $self->client;
     my $status = 'cashier_locked';
 
-    # special case for MLT/MX: forbid them to trade before age_verified. cashier_locked enables to trade
-    $status = "unwelcome" if $client->landing_company->short eq 'malta' or $client->landing_company->short eq 'iom';
+    # special case for MX: forbid them to trade before age_verified. cashier_locked enables to trade
+    $status = "unwelcome" if $client->landing_company->short eq 'iom';
 
     $client->set_status($status, 'system', 'Experian id authentication failed on first deposit');
     $client->save;
@@ -165,13 +170,32 @@ sub _fetch_proveid {
     if ($premise =~ /^(\d+)/) {
         $premise = $1;
     }
-
-    return BOM::Platform::ProveID->new(
-        client        => $self->client,
-        search_option => 'ProveID_KYC',
-        premise       => $premise,
-        force_recheck => $self->force_recheck
-    )->get_result;
+    my $result = {};
+    try {
+        $result = BOM::Platform::ProveID->new(
+            client        => $self->client,
+            search_option => 'ProveID_KYC',
+            premise       => $premise,
+            force_recheck => $self->force_recheck
+        )->get_result;
+    }
+    catch {
+        my $brand    = Brands->new(name => request()->brand);
+        my $clientid = $self->client->loginid;
+        my $message  = <<EOM;
+There was an error during Experian request.
+Error is: $_
+Client: $clientid
+EOM
+        warn "Experian error in _fetch_proveid: ", $_;
+        send_email({
+            from    => $brand->emails('compliance'),
+            to      => $brand->emails('compliance'),
+            subject => 'Experian request error',
+            message => [$message],
+        });
+    };
+    return $result;
 }
 
 __PACKAGE__->meta->make_immutable;

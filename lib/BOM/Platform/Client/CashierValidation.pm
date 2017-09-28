@@ -15,9 +15,11 @@ use warnings;
 
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
+use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
 use Brands;
 use Client::Account;
+use LandingCompany::Registry;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw/request localize/;
@@ -62,16 +64,9 @@ sub validate {
             'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to [_1] to unlock your cashier.',
             Brands->new(name => request()->brand)->emails('support'))) if ($client->documents_expired);
 
-    # action specific validation
-    return _create_error(localize('Your account is restricted to withdrawals only.'))
-        if ($action eq 'deposit' and $client->get_status('unwelcome'));
-
-    return _create_error(localize('Your account is locked for withdrawals.'))
-        if ($action eq 'withdraw' and $client->get_status('withdrawal_locked'));
-
     # landing company or country specific validations
     if ($landing_company->short eq 'maltainvest') {
-        return _create_error(localize('Client is not fully authenticated.'), 'ASK_AUTHENTICATE') unless $client->client_fully_authenticated;
+        return _create_error(localize('Please authenticate your account.'), 'ASK_AUTHENTICATE') unless $client->client_fully_authenticated;
 
         return _create_error(localize('Financial Risk approval is required.'), 'ASK_FINANCIAL_RISK_APPROVAL')
             unless $client->get_status('financial_risk_approval');
@@ -102,6 +97,13 @@ sub validate {
         return _create_error(localize('Account needs age verification.'), 'ASK_AGE_VERIFICATION')
             if (not $client->get_status('age_verification') and not $client->has_valid_documents);
     }
+
+    # action specific validation should be last to be validated
+    return _create_error(localize('Your account is restricted to withdrawals only.'))
+        if ($action eq 'deposit' and $client->get_status('unwelcome'));
+
+    return _create_error(localize('Your account is locked for withdrawals.'))
+        if ($action eq 'withdraw' and $client->get_status('withdrawal_locked'));
 
     return;
 }
@@ -134,6 +136,20 @@ Returns whether crypto cashier is currently suspended or not
 
 sub is_crypto_cashier_suspended {
     return BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocashier;
+}
+
+=head2 is_crypto_currency_suspended {
+
+Returns true if the given currency is suspended in the crypto cashier. Only works for crypto currencies,
+this will return false for currencies such as USD / GBP.
+
+=cut
+
+sub is_crypto_currency_suspended {
+    my $currency = shift or die "expected currency parameter";
+    return 1 if BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocashier;
+    return 1 if grep { $currency eq $_ } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    return 0;
 }
 
 =head2 pre_withdrawal_validation
@@ -172,6 +188,41 @@ sub pre_withdrawal_validation {
     return;
 }
 
+# From fiat currency to cryptocurrency: 1% fee
+# From cryptocurrency to fiat currency: 0.5% fee
+# for an approved PA, we don't need to charge any
+# % fee for converting BTC to USD only
+sub calculate_to_amount_with_fees {
+    my ($loginid, $amount, $from_currency, $to_currency) = @_;
+
+    my $from_currency_type = LandingCompany::Registry::get_currency_type($from_currency);
+    my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
+
+    # need to calculate fees only when currency type are different and
+    # currencies are different, we don't allow transfer between same
+    # currency type
+    my ($fees, $fees_percent) = (0, 0);
+    if (($from_currency_type ne $to_currency_type) and ($from_currency ne $to_currency)) {
+        my $client = Client::Account->new({
+                loginid      => $loginid,
+                db_operation => 'replica'
+            }) or return ();
+
+        if ($from_currency_type eq 'crypto' and $client->payment_agent and $client->payment_agent->is_authenticated) {
+            # no fees for authenticate payment agent
+            $fees = 0;
+        } else {
+            $fees_percent = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->fees->$from_currency_type;
+            $fees = ($amount) * ($fees_percent / 100);
+        }
+
+        $amount -= $fees;
+        $amount = amount_from_to_currency($amount, $from_currency, $to_currency);
+    }
+
+    return ($amount, $fees, $fees_percent);
+}
+
 sub _withdrawal_validation_period {
     my $lc = shift;
 
@@ -193,8 +244,8 @@ sub _withdrawal_validation {
     my ($lc, $is_authenticated) = ($client->landing_company->short, $client->client_fully_authenticated);
 
     return _create_error(localize('Account needs age verification.')) if ($lc =~ /^(?:malta|iom)$/ and not $client->get_status('age_verification'));
-    return _create_error(localize('Client is not fully authenticated.')) if ($lc eq 'iom'   and not $is_authenticated and $total >= 3000);
-    return _create_error(localize('Client is not fully authenticated.')) if ($lc eq 'malta' and not $is_authenticated and $total >= 2000);
+    return _create_error(localize('Please authenticate your account.')) if ($lc eq 'iom'   and not $is_authenticated and $total >= 3000);
+    return _create_error(localize('Please authenticate your account.')) if ($lc eq 'malta' and not $is_authenticated and $total >= 2000);
 
     return;
 }

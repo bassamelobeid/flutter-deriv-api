@@ -1,3 +1,5 @@
+#!perl
+
 use utf8;
 binmode STDOUT, ':utf8';
 
@@ -5,7 +7,7 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
 use Test::Warnings;
@@ -170,6 +172,20 @@ subtest 'user / email from loginid not allowed' => sub {
         email => $vr_1,
     });
     isnt($user_2, "BOM::Platform::User", "Cannot create User using loginid");
+};
+
+subtest 'create user by loginid' => sub {
+    lives_ok {
+        my $user_2 = BOM::Platform::User->new({
+            loginid => $vr_1,
+        });
+        is $user_2->id, $user->id, 'found correct user by loginid';
+        $user_2 = BOM::Platform::User->new({
+            loginid => 'does not exist',
+        });
+        is $user_2, undef, 'looking up non-existent loginid results in undef';
+    }
+    'survived user lookup by loginid';
 };
 
 subtest 'User Login' => sub {

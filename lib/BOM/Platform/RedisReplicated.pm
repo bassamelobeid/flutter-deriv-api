@@ -4,55 +4,66 @@ package BOM::Platform::RedisReplicated;
 
 BOM::Platform::RedisReplicated - Provides read/write pair of redis client
 
+=head1 DESCRIPTION
+
+This module has functions to return RedisDB object, connected to appropriate Redis.
+
+Please note:
+Don't cache returned object for a long term. All needed caching is done inside
+here, so better always call needed function to get working connection.
+
 =cut
 
 use strict;
 use warnings;
-use feature "state";    # We use singletons for read and write redis instances
 
 use YAML::XS;
 use RedisDB;
+use Try::Tiny;
+
+my $config = {
+    replicated => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml'),
+    pricer     => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml'),
+};
+my $connections = {};
+
+# Initialize connection to redis, and store it in hash
+# for subsequent requests, if hash has a key, it checks existing connection, and reconnect, if needed.
+# Should avoid 'Server unexpectedly closed connection. Some data might have been lost.' error from RedisDB.pm
+
+sub _redis {
+    my ($redis_type, $access_type, $timeout) = @_;
+    $timeout //= 10;
+    my $key = join '_', ($redis_type, $access_type, $timeout);
+    my $connection_config = $config->{$redis_type}->{$access_type};
+    if ($access_type eq 'write' && $connections->{$key}) {
+        try {
+            $connections->{$key}->ping();
+        }
+        catch {
+            warn "RedisReplicated::_redis $key died: $_, reconnecting";
+            $connections->{$key} = undef;
+        };
+    }
+    $connections->{$key} //= RedisDB->new(
+        timeout => $timeout,
+        host    => $connection_config->{host},
+        port    => $connection_config->{port},
+        ($connection_config->{password} ? ('password' => $connection_config->{password}) : ()));
+
+    return $connections->{$key};
+}
 
 sub redis_write {
-    state $redis_write = do {
-        my $config = _config();
-        RedisDB->new(
-            timeout => 10,
-            host    => $config->{write}->{host},
-            port    => $config->{write}->{port},
-            ($config->{write}->{password} ? ('password', $config->{write}->{password}) : ()));
-    };
-    return $redis_write;
+    return _redis('replicated', 'write');
 }
 
 sub redis_read {
-    state $redis_read = do {
-        my $config = _config();
-        RedisDB->new(
-            timeout => 10,
-            host    => $config->{read}->{host},
-            port    => $config->{read}->{port},
-            ($config->{read}->{password} ? ('password', $config->{read}->{password}) : ()));
-    };
-    return $redis_read;
-}
-
-state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml');
-
-sub _config {
-    return $config;
+    return _redis('replicated', 'read');
 }
 
 sub redis_pricer {
-    state $redis_pricer = do {
-        my $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml');
-        RedisDB->new(
-            timeout => 3600,
-            host    => $config->{write}->{host},
-            port    => $config->{write}->{port},
-            ($config->{write}->{password} ? ('password', $config->{write}->{password}) : ()));
-    };
-    return $redis_pricer;
+    return _redis('pricer', 'write', 3600);
 }
 
 1;

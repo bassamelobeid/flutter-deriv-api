@@ -349,6 +349,7 @@ subtest 'survived notify batch_sell_bet', sub {
 };
 
 subtest 'survived notify payments', sub {
+    $client->set_default_account('USD');
     my $txn = $client->payment_legacy_payment(
         currency     => 'USD',
         amount       => '1000',
@@ -361,6 +362,8 @@ subtest 'survived notify payments', sub {
         testtype => 'payment_legacy_payment'
     });
 
+    # need to set default account before making payment
+    $pa_client->set_default_account('USD');
     my $txnid = $client->payment_account_transfer(
         amount   => 20.02,
         currency => 'USD',
@@ -368,6 +371,7 @@ subtest 'survived notify payments', sub {
         remark   => 'reference: #USD20.02#F72117379D1DD7B5#',
         fmRemark => 'from reference: #USD20.02#F72117379D1DD7B5#',
         toRemark => 'to reference: #USD20.02#F72117379D1DD7B5#',
+        fees     => 0,
     );
     $txn = BOM::Database::Model::Transaction->new({
         'data_object_params' => {'id' => $txnid->{transaction_id}},
@@ -387,6 +391,7 @@ subtest 'survived notify payments', sub {
         remark            => 'reference: #USD20.02#F72117379D1DD7B5#',
         fmRemark          => 'from reference: #USD20.02#F72117379D1DD7B5#',
         toRemark          => 'to reference: #USD20.02#F72117379D1DD7B5#',
+        fees              => 0,
         inter_db_transfer => 1,
     );
     $txn = BOM::Database::Model::Transaction->new({

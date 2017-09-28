@@ -16,6 +16,7 @@ use BOM::Platform::Client::Utility;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
+use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -60,6 +61,12 @@ my $vr_details = {
         residence       => 'gb',                  # UK
         salutation      => 'Mrs',
     },
+    JP => {
+        email           => 'foo+jp@binary.com',
+        client_password => 'foobar',
+        residence       => 'jp',                  # JAPAN
+        salutation      => 'Ms',
+    },
 };
 
 my %real_client_details = (
@@ -103,6 +110,36 @@ my %financial_data = (
     source_of_wealth                     => "Company Ownership",
 );
 
+my %jp_acc_financial_data = (
+    annual_income                               => '50-100 million JPY',
+    financial_asset                             => 'Over 100 million JPY',
+    daily_loss_limit                            => 100_000,
+    trading_experience_public_bond              => 'Over 5 years',
+    trading_experience_margin_fx                => 'Over 5 years',
+    trading_experience_equities                 => 'Over 5 years',
+    trading_experience_commodities              => 'Over 5 years',
+    trading_experience_foreign_currency_deposit => '3-5 years',
+    trading_experience_investment_trust         => '3-5 years',
+    trading_experience_option_trading           => 'Over 5 years',
+    trading_purpose                             => 'Hedging',
+    hedge_asset                                 => 'Foreign currency deposit',
+    hedge_asset_amount                          => 1_000_000,
+);
+
+my %jp_agreement = (
+    agree_use_electronic_doc             => 1,
+    agree_warnings_and_policies          => 1,
+    confirm_understand_own_judgment      => 1,
+    confirm_understand_trading_mechanism => 1,
+    confirm_understand_total_loss        => 1,
+    confirm_understand_judgment_time     => 1,
+    confirm_understand_sellback_loss     => 1,
+    confirm_understand_shortsell_loss    => 1,
+    confirm_understand_company_profit    => 1,
+    confirm_understand_expert_knowledge  => 1,
+    declare_not_fatca                    => 1,
+);
+
 subtest 'create account' => sub {
     foreach my $broker (keys %$vr_details) {
         my ($real_acc, $vr_client, $real_client, $user);
@@ -121,10 +158,6 @@ subtest 'create account' => sub {
         is($real_client->broker, $broker, 'Successfully create ' . $real_client->loginid);
         # test account_opening_reason
         is($real_client->account_opening_reason, $real_client_details{account_opening_reason}, "Account Opening Reason should be the same");
-
-        # duplicate acc
-        lives_ok { $real_acc = create_real_acc($vr_client, $user, $broker); } "Try create duplicate $broker acc";
-        is($real_acc->{error}, 'duplicate email', "Create duplicate $broker acc failed");
 
         # MF acc
         if ($broker eq 'MLT') {
@@ -190,6 +223,78 @@ subtest 'create account' => sub {
         my $expected = ($vr_details->{$broker}->{salutation} eq 'Mr') ? 'm' : 'f';
         is($real_client->gender, $expected, "$vr_details->{$broker}->{salutation} is $expected");
     };
+
+    # mock virtual account with social signup flag
+    foreach my $broker_code (keys $vr_details) {
+        my %social_login_user_details = (
+            %{$vr_details->{$broker_code}},
+            email             => 'social+' . $broker_code . '@binary.com',
+            social_signup => 1,
+        );
+        my ($vr_client, $real_client, $social_login_user, $real_acc);
+        lives_ok {
+            my $vr_acc = create_vr_acc(\%social_login_user_details);
+            ($vr_client, $social_login_user) = @{$vr_acc}{qw/client user/};
+        }
+        'create VR account';
+
+        is($social_login_user->has_social_signup, 1, 'social login user has social signup flag');
+
+        my %details = (
+            %real_client_details,
+            residence       => $social_login_user_details{residence},
+            broker_code     => $broker_code,
+            first_name      => 'foo+' . $broker_code,
+            client_password => $vr_client->password,
+            email           => $social_login_user_details{email},
+        );
+        # real acc
+        # MLT social login user is able to create client account
+        if ($broker_code eq 'MLT') {
+            lives_ok {
+                $real_acc = BOM::Platform::Account::Real::maltainvest::create_account({
+                    from_client    => $vr_client,
+                    user           => $social_login_user,
+                    details        => \%details,
+                    country        => $vr_client->residence,
+                    financial_data => \%financial_data,
+                    accept_risk    => 1,
+                });
+            }
+            "create $broker_code account OK, after verify email";
+
+            my ($client, $user) = @{$real_acc}{qw/client user/};
+            is(defined $user, 1,            "Social login user with residence $user->residence has been created");
+            is($client->broker,       $broker_code, "Successfully created real account $client->loginid");
+        } elsif ($broker_code eq 'JP') {
+            #Social login user isn't able to create JP account
+            $real_acc = BOM::Platform::Account::Real::japan::create_account({
+                from_client    => $vr_client,
+                user           => $social_login_user,
+                details        => \%details,
+                country        => $vr_client->residence,
+                financial_data => \%jp_acc_financial_data,
+                agreement      => \%jp_agreement,
+            });
+            my ($client, $user) = @{$real_acc}{qw/client user/};
+            is($real_acc->{error}, 'social login user is prohibited', 'Social login user cannot create JP account');
+        } else {
+            # Social login user may create default account
+            lives_ok {
+                $real_acc = BOM::Platform::Account::Real::default::create_account({
+                    from_client => $vr_client,
+                    user        => $social_login_user,
+                    details     => \%details,
+                    country     => $vr_client->residence,
+                });
+            }
+            "create $broker_code account OK, after verify email";
+
+            my ($client, $user) = @{$real_acc}{qw/client user/};
+            is(defined $user, 1,            "Social login user with residence $user->residence has been created");
+            is($client->broker,       $broker_code, "Successfully created real account $client->loginid");
+        }
+    }
 };
 
 sub create_vr_acc {
@@ -199,6 +304,7 @@ sub create_vr_acc {
                 email           => $args->{email},
                 client_password => $args->{client_password},
                 residence       => $args->{residence},
+                has_social_signup => $args->{social_signup},
             }});
 }
 

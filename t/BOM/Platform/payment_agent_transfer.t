@@ -117,6 +117,7 @@ sub transfer_from_client_to_pa {
         currency => $client_account->currency_code,
         toClient => $pa_client,
         remark   => 'Transfer from CR0010 to Payment Agent Paypal Transaction reference: #USD10#F72117379D1DD7B5# Timestamp: 22-Jul-11 08:36:49GMT',
+        fees     => 0,
     );
 }
 

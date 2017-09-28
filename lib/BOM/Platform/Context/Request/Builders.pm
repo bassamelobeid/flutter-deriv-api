@@ -10,6 +10,8 @@ use BOM::Platform::Context::Request;
 
 Attempt to extract the client's public-facing IP address from the environment or request.
 
+Note that this only supports IPv4 at the moment.
+
 =cut
 
 sub _remote_ip {
@@ -17,7 +19,13 @@ sub _remote_ip {
     my $headers = $request->headers;
     # CF-Connecting-IP is mentioned here: https://support.cloudflare.com/hc/en-us/articles/200170986-How-does-CloudFlare-handle-HTTP-Request-headers-
     # Note that we will need to change this if switching to a different provider.
-    my @candidates = ($headers->header('cf-connecting-ip') // ());
+    my @candidates = (
+        # https://support.cloudflare.com/hc/en-us/articles/202494830-Pseudo-IPv4-Supporting-IPv6-addresses-in-legacy-IPv4-applications
+        ($headers->header('cf-pseudo-ipv4')   // ()),
+        ($headers->header('cf-connecting-ip') // ()),
+        # https://support.cloudflare.com/hc/en-us/articles/206776727-What-is-True-Client-IP-
+        ($headers->header('true-client-ip') // ()),
+    );
     push @candidates, do {
         # In this header, we expect:
         # client internal IP,maybe client external IP,any upstream proxies,cloudflare

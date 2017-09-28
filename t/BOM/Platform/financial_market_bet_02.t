@@ -9,12 +9,14 @@ use Test::Exception;
 
 use Client::Account;
 
-use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::ClientDB;
-use BOM::Platform::Password;
-use BOM::Platform::Client::Utility;
+use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Model::FinancialMarketBet::Factory;
 use BOM::Platform::Client::IDAuthentication;
+use BOM::Platform::Client::Utility;
+use BOM::Platform::Password;
+
+use BOM::Test::Helper::Client qw( create_client top_up );
 
 Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
 
@@ -22,75 +24,6 @@ sub db {
     return BOM::Database::ClientDB->new({
             broker_code => 'CR',
         })->db;
-}
-
-sub create_client {
-    return Client::Account->register_and_return_new_client({
-        broker_code      => 'CR',
-        client_password  => BOM::Platform::Password::hashpw('12345678'),
-        salutation       => 'Mr',
-        last_name        => 'Doe',
-        first_name       => 'John' . time . '.' . int(rand 1000000000),
-        email            => 'john.doe' . time . '.' . int(rand 1000000000) . '@test.domain.nowhere',
-        residence        => 'in',
-        address_line_1   => '298b md rd',
-        address_line_2   => '',
-        address_city     => 'Place',
-        address_postcode => '65432',
-        address_state    => 'st',
-        phone            => '+9145257468',
-        secret_question  => 'What the f***?',
-        secret_answer    => BOM::Platform::Client::Utility::encrypt_secret_answer('is that'),
-        date_of_birth    => '1945-08-06',
-    });
-}
-
-sub top_up {
-    my ($c, $cur, $amount) = @_;
-
-    my $fdp = $c->is_first_deposit_pending;
-    my @acc = $c->account;
-
-    return if (@acc && $acc[0]->currency_code ne $cur);
-
-    if (not @acc) {
-        @acc = $c->add_account({
-            currency_code => $cur,
-            is_default    => 1
-        });
-    }
-
-    my $acc = $acc[0];
-    unless (defined $acc->id) {
-        $acc->save;
-        note 'Created account ' . $acc->id . ' for ' . $c->loginid . ' segment ' . $cur;
-    }
-
-    my ($pm) = $acc->add_payment({
-        amount               => $amount,
-        payment_gateway_code => "legacy_payment",
-        payment_type_code    => "ewallet",
-        status               => "OK",
-        staff_loginid        => "test",
-        remark               => __FILE__ . ':' . __LINE__,
-    });
-    $pm->legacy_payment({legacy_type => "ewallet"});
-    my ($trx) = $pm->add_transaction({
-        account_id    => $acc->id,
-        amount        => $amount,
-        staff_loginid => "test",
-        remark        => __FILE__ . ':' . __LINE__,
-        referrer_type => "payment",
-        action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
-        quantity      => 1,
-    });
-    $acc->save(cascade => 1);
-    $trx->load;    # to re-read (get balance_after)
-
-    BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
-        if $fdp;
-
-    note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
 }
 
 sub buy_one_bet {
@@ -615,24 +548,24 @@ SKIP: {
                     max_turnover             => 100 - 0.01,
                     max_losses               => 100 - 0.01,
                     specific_turnover_limits => [{    # fails
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            bet_type => [qw/CALL PUT DUMMY CLUB/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100 - 0.01,
                             name     => 'test1',
                         },
                         {    # passes
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            bet_type => [qw/CALL PUT DUMMY CLUB/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100,
                             name     => 'test2',
                         },
                         {    # fails (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
+                            bet_type => [qw/CALL PUT DUMMY/],
                             limit    => 80 - 0.01,
                             name     => 'test3',
                         },
                         {    # passes (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
+                            bet_type => [qw/CALL PUT DUMMY/],
                             limit    => 80,
                             name     => 'test4',
                         },
@@ -647,12 +580,12 @@ SKIP: {
                             name        => 'test6',
                         },
                         {    # fails (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [map { {n => $_} } qw/hugo fritz/],
+                            symbols => [qw/hugo fritz/],
                             limit   => 40 - 0.01,
                             name    => 'test7',
                         },
                         {    # passes  (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [map { {n => $_} } qw/hugo fritz/],
+                            symbols => [qw/hugo fritz/],
                             limit   => 40,
                             name    => 'test8',
                         },
@@ -673,24 +606,24 @@ SKIP: {
                     max_turnover             => 100,
                     max_losses               => 100 - 0.01,
                     specific_turnover_limits => [{    # fails
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            bet_type => [qw/CALL PUT DUMMY CLUB/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100 - 0.01,
                             name     => 'test1',
                         },
                         {    # passes
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            bet_type => [qw/CALL PUT DUMMY CLUB/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100,
                             name     => 'test2',
                         },
                         {    # fails (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
+                            bet_type => [qw/CALL PUT DUMMY/],
                             limit    => 80 - 0.01,
                             name     => 'test3',
                         },
                         {    # passes (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
+                            bet_type => [qw/CALL PUT DUMMY/],
                             limit    => 80,
                             name     => 'test4',
                         },
@@ -705,12 +638,12 @@ SKIP: {
                             name        => 'test6',
                         },
                         {    # fails (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [map { {n => $_} } qw/hugo fritz/],
+                            symbols => [qw/hugo fritz/],
                             limit   => 40 - 0.01,
                             name    => 'test7',
                         },
                         {    # passes  (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [map { {n => $_} } qw/hugo fritz/],
+                            symbols => [qw/hugo fritz/],
                             limit   => 40,
                             name    => 'test8',
                         },
@@ -731,24 +664,24 @@ SKIP: {
                     max_turnover             => 100,
                     max_losses               => 100,
                     specific_turnover_limits => [{    # fails
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            bet_type => [qw/CALL PUT DUMMY CLUB/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100 - 0.01,
                             name     => 'test1',
                         },
                         {    # passes
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            bet_type => [qw/CALL PUT DUMMY CLUB/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100,
                             name     => 'test2',
                         },
                         {    # fails (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
+                            bet_type => [qw/CALL PUT DUMMY/],
                             limit    => 80 - 0.01,
                             name     => 'test3',
                         },
                         {    # passes (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
+                            bet_type => [qw/CALL PUT DUMMY/],
                             limit    => 80,
                             name     => 'test4',
                         },
@@ -763,12 +696,12 @@ SKIP: {
                             name        => 'test6',
                         },
                         {    # fails (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [map { {n => $_} } qw/hugo fritz/],
+                            symbols => [qw/hugo fritz/],
                             limit   => 40 - 0.01,
                             name    => 'test7',
                         },
                         {    # passes  (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [map { {n => $_} } qw/hugo fritz/],
+                            symbols => [qw/hugo fritz/],
                             limit   => 40,
                             name    => 'test8',
                         },
@@ -790,15 +723,15 @@ SKIP: {
                     max_turnover             => 100,
                     max_losses               => 100,
                     specific_turnover_limits => [{    # fails
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            bet_type => [qw/CALL PUT DUMMY CLUB/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 20 - 0.01,
                             daily    => 1,
                             name     => 'test1',
                         },
                         {    # passes
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            bet_type => [qw/CALL PUT DUMMY CLUB/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 20,
                             daily    => 1,
                             name     => 'test2',
@@ -820,22 +753,22 @@ SKIP: {
                     max_turnover             => 100,
                     max_losses               => 100,
                     specific_turnover_limits => [{    # passes
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            bet_type => [qw/CALL PUT DUMMY CLUB/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100 - 0.01,
                             daily    => 1,
                             name     => 'test1',
                         },
                         {    # fails
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            bet_type => [qw/CALL PUT DUMMY CLUB/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100 - 0.01,
                             daily    => 0,
                             name     => 'test2',
                         },
                         {    # passes
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            bet_type => [qw/CALL PUT DUMMY CLUB/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100,
                             daily    => 0,
                             name     => 'test1',
@@ -857,13 +790,13 @@ SKIP: {
                     max_turnover             => 100,
                     max_losses               => 100,
                     specific_turnover_limits => [{    # passes
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            bet_type => [qw/CALL PUT DUMMY CLUB/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100,
                             name     => 'test2',
                         },
                         {    # passes (leave out the CLUB bet above)
-                            bet_type => [map { {n => $_} } qw/CALL PUT DUMMY/],
+                            bet_type => [qw/CALL PUT DUMMY/],
                             limit    => 80,
                             name     => 'test4',
                         },
@@ -873,7 +806,7 @@ SKIP: {
                             name        => 'test6',
                         },
                         {    # passes  (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [map { {n => $_} } qw/hugo fritz/],
+                            symbols => [qw/hugo fritz/],
                             limit   => 40,
                             name    => 'test8',
                         },

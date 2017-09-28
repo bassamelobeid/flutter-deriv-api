@@ -58,11 +58,12 @@ sub validate {
         {
             return {error => 'invalid PO Box'};
         }
-        # check for duplicate email when sub_account_of is not present (omnibus)
-        if ((any { $_->loginid =~ qr/^($broker)\d+$/ } ($user->loginid)) and not $details->{sub_account_of}) {
-            return {error => 'duplicate email'};
-        }
-        if (BOM::Database::ClientDB->new({broker_code => $broker})->get_duplicate_client($details)) {
+        # we don't need to check for duplicate client on adding multiple currencies
+        # in that case, $from_client and $details will handle same data.
+        # when it's first registration - $from_client->first_name will be empty, as VRTC does not have it.
+        if ($details->{first_name} ne $from_client->first_name
+            && BOM::Database::ClientDB->new({broker_code => $broker})->get_duplicate_client($details))
+        {
             return {error => 'duplicate name DOB'};
         }
 
@@ -86,7 +87,7 @@ sub validate {
 
 sub create_account {
     my $args = shift;
-    my ($user, $details) = @{$args}{'user', 'details'};
+    my ($user, $details, $from_client) = @{$args}{'user', 'details', 'from_client'};
 
     if (my $error = validate($args)) {
         return $error;
@@ -95,9 +96,12 @@ sub create_account {
     return $register if ($register->{error});
 
     my $response = after_register_client({
-        client  => $register->{client},
-        user    => $user,
-        details => $details,
+        client      => $register->{client},
+        user        => $user,
+        details     => $details,
+        from_client => $from_client,
+        ip          => $args->{ip},
+        country     => $args->{country},
     });
 
     add_details_to_desk($register->{client}, $details);
@@ -122,12 +126,12 @@ sub register_client {
 
 sub after_register_client {
     my $args = shift;
-    my ($client, $user, $details, $ip, $country) = @{$args}{qw(client user details ip country)};
-
+    my ($client, $user, $details, $ip, $country, $from_client) = @{$args}{qw(client user details ip country from_client)};
     if (not $client->is_virtual) {
         $client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
         $client->save;
     }
+
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
 
@@ -174,9 +178,12 @@ sub add_details_to_desk {
                 token_secret => BOM::Platform::Config::third_party->{desk}->{access_token_secret},
             });
 
-            $details->{loginid}  = $client->loginid;
-            $details->{language} = request()->language;
-            $desk_api->upload($details);
+            # we don't want to modify original details hence create
+            # copy for desk.com
+            my $copy = {%$details};
+            $copy->{loginid}  = $client->loginid;
+            $copy->{language} = request()->language;
+            $desk_api->upload($copy);
         }
         catch {
             warn("Unable to add loginid " . $client->loginid . "(" . $client->email . ") to desk.com API: $_");
@@ -408,7 +415,18 @@ sub validate_account_details {
 
     foreach my $key (get_account_fields($acc_type)) {
         my $value = $args->{$key};
-        $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
+        # as we are going to support multiple accounts per landing company
+        # so we need to copy secret question and answer from old clients
+        # if present else we will take the new one
+        $value = $client->secret_question || $value if ($key eq 'secret_question');
+
+        if ($key eq 'secret_answer') {
+            if (my $answer = $client->secret_answer) {
+                $value = $answer;
+            } elsif ($value) {
+                $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value);
+            }
+        }
 
         if (not $client->is_virtual) {
             $value ||= $client->$key;
