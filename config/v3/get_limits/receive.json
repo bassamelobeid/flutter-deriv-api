@@ -38,8 +38,8 @@
           "type": "object",
           "properties": {
             "atm": {
-              "type": "number",
-              "description": "Maximum aggregate payouts on open positions per symbol for contracts where barrier is same as entry spot"
+              "type": ["number", "null"],
+              "description": "Maximum aggregate payouts on open positions per symbol for contracts where barrier is same as entry spot. It will be 'null' for japan."
             },
             "non_atm": {
               "type": "object",
