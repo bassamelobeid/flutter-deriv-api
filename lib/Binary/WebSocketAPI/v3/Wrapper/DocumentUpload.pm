@@ -52,7 +52,7 @@ sub add_upload_info {
         sub {
             my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
 
-            return if $s3_config->{bucket} eq 'FakeS3Bucket';
+            return if $s3_config->{bucket} eq 'TestingS3Bucket';
 
             send_upload_failure($c, $upload_info, 'unknown');
         });
