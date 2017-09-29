@@ -122,8 +122,7 @@ sub send_upload_failure {
     $upload_info //= {
         echo_req    => {},
         req_id      => '1',
-        passthrough => {}
-    };
+        passthrough => {}};
 
     $c->call_rpc({
             method      => 'document_upload',
