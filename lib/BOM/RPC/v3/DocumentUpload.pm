@@ -4,116 +4,148 @@ use strict;
 use warnings;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
-use Try::Tiny;
 use Date::Utility;
 
 use constant MAX_FILE_SIZE => 3 * 2**20;
 
 sub upload {
     my $params = shift;
-    my $client = $params->{client};
-    my ($document_type, $document_id, $document_format, $expiration_date, $status, $file_id, $file_size, $reason) =
-        @{$params->{args}}{qw/document_type document_id document_format expiration_date status file_id file_size reason/};
+    my $args   = $params->{args};
+    my $status = $args->{status};
 
-    return create_upload_error('UploadError', 'max_size') if $file_size and $file_size > MAX_FILE_SIZE;
-    return create_upload_error('UploadError', $reason)    if $status    and $status eq 'failure';
+    my $error = validate_input($params);
+    return create_upload_error($error) if $error;
 
-    # Early return for virtual accounts.
-    return create_upload_error('UploadDenied', localize("Virtual accounts don't require document uploads.")) if $client->is_virtual;
+    return start_document_upload($params) if $args->{document_type} and $args->{document_format};
 
-    if ($expiration_date) {
-        my $current_date = Date::Utility->new;
+    return successful_upload($params) if $status and $status eq 'success';
 
-        my ($parsed_date, $error);
-        try {
-            $parsed_date = Date::Utility->new($expiration_date);
-        }
-        catch {
-            $error = $_;
-        };
+    return create_upload_error();
+}
 
-        if ($error) {
-            return create_upload_error('UploadDenied', localize("Invalid expiration date."));
-        } elsif ($parsed_date->is_before($current_date) || $parsed_date->is_same_as($current_date)) {
-            return create_upload_error('UploadDenied', localize("Expiration date cannot be less than or equal to current date."));
-        }
-    } else {
-        $expiration_date = undef;
-    }
+sub start_document_upload {
+    my $params          = shift;
+    my $client          = $params->{client};
+    my $args            = $params->{args};
+    my $document_type   = $args->{document_type};
+    my $document_format = $args->{document_format};
 
-    # Check documentID and expiration date for passport, driverslicense, proofid
-    if ($document_type and $document_type =~ /^passport|proofid|driverslicense$/) {
-        return create_upload_error('UploadDenied', localize("Expiration date is required.")) unless $expiration_date;
-        return create_upload_error('UploadDenied', localize("Document ID is required."))     unless $document_id;
-    }
-
+    my $dbh = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db->dbh;
     my $loginid = $client->loginid;
 
-    # Add new entry to database.
-    if ($document_type && $document_format) {
-        my $dbh = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db->dbh;
+    my ($id) = $dbh->selectrow_array(
+        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        undef, $loginid, $document_type, $document_format, '', $args->{expiration_date},
+        'ID_DOCUMENT', ($args->{document_id} || ''),
+        '', 'uploading'
+    );
 
-        my ($id) = $dbh->selectrow_array(
-            "SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            {Slice => {}},
-            $loginid, $document_type, $document_format, '', $expiration_date, 'ID_DOCUMENT', $document_id || '',
-            '', 'uploading'
-        );
-
-# ID should always be returned
-        warn 'betonmarkets.start_document_upload should return the ID' if !$id;
-
-        return create_upload_error('UploadError') if !$id;
-
-        return {
-            file_name => join('.', $loginid, $document_type, $id, $document_format),
-            file_id   => $id,
-            call_type => 1,
-        };
+# ID should always be returned by above call
+    if (!$id) {
+        warn 'betonmarkets.start_document_upload should return the ID';
+        return create_upload_error();
     }
 
-    # On success update the status of file to uploaded.
-    if ($status and $status eq "success") {
-        my ($doc) = $client->find_client_authentication_document(query => [id => $file_id]);
+    return {
+        file_name => join('.', $loginid, $document_type, $id, $document_format),
+        file_id   => $id,
+        call_type => 1,
+    };
+}
 
-        # Return if document is not present in db.
-        return create_upload_error('UploadDenied', localize("Document not found.")) unless $doc;
+sub successful_upload {
+    my $params = shift;
+    my $client = $params->{client};
+    my $args   = $params->{args};
 
-        $doc->{file_name} = join '.', $loginid, $doc->{document_type}, $doc->{id}, $doc->{document_format};
-        $doc->{status} = "uploaded";
+    my ($doc) = $client->find_client_authentication_document(query => [id => $args->{file_id}]);
 
-        if (not $doc->save()) {
-            return create_upload_error('UploadError');
-        }
+    return create_upload_error('doc_not_found') if not $doc;
 
-        # Change client's account status.
-        $client->set_status('under_review', 'system', 'Documents uploaded');
-        if (not $client->save()) {
-            return create_upload_error('UploadError');
-        }
+    $doc->{file_name} = join '.', $client->loginid, $doc->{document_type}, $doc->{id}, $doc->{document_format};
+    $doc->{status} = 'uploaded';
 
-        return $params->{args};
+    if (not $doc->save()) {
+        warn 'Unable to save upload information in the db';
+        return create_upload_error();
     }
 
-    return create_upload_error('UploadError');
+# Change client's account status.
+    $client->set_status('under_review', 'system', 'Documents uploaded');
+
+    if (not $client->save()) {
+        warn 'Unable to change client status';
+        return create_upload_error();
+    }
+
+    return $args;
+}
+
+sub validate_input {
+    my $params    = shift;
+    my $args      = $params->{args};
+    my $client    = $params->{client};
+    my $file_size = $args->{file_size};
+    my $status    = $args->{status};
+
+    return 'max_size'      if $file_size and $file_size > MAX_FILE_SIZE;
+    return $args->{reason} if $status    and $status eq 'failure';
+    return 'virtual'       if $client->is_virtual;
+
+    my $invalid_date = validate_expiration_date($args->{expiration_date});
+    return $invalid_date if $invalid_date;
+
+    return validate_id_and_exp_date($args);
+}
+
+sub validate_id_and_exp_date {
+    my $args          = shift;
+    my $document_type = $args->{document_type};
+
+    return if not $document_type or $document_type !~ /^passport|proofid|driverslicense$/;
+
+    return 'missing_exp_date' if not $args->{expiration_date};
+    return 'missing_doc_id'   if not $args->{document_id};
+}
+
+sub validate_expiration_date {
+    my $expiration_date = shift;
+
+    return if not $expiration_date;
+
+    my $current_date = Date::Utility->new;
+    my $parsed_date  = Date::Utility->new($expiration_date);
+
+    return 'already_expired' if $parsed_date->is_before($current_date) or $parsed_date->is_same_as($current_date);
 }
 
 sub create_upload_error {
-    my ($code, $reason) = @_;
+    my $reason = shift || 'unkown';
+    chomp $reason;
 
-    my $message = $code eq 'UploadError' ? get_error_details($reason) : $reason;
+    my $message;
+    if ($reason eq 'virtual') {
+        $message = localize("Virtual accounts don't require document uploads.");
+    } elsif ($reason eq 'already_expired') {
+        $message = localize('Expiration date cannot be less than or equal to current date.');
+    } elsif ($reason eq 'missing_exp_date') {
+        $message = localize('Expiration date is required.');
+    } elsif ($reason eq 'missing_doc_id') {
+        $message = localize('Document ID is required.');
+    } elsif ($reason eq 'doc_not_found') {
+        $message = localize('Document not found.');
+    } elsif ($reason eq 'doc_not_found') {
+        $message = localize('Document not found.');
+    } elsif ($reason eq 'max_size') {
+        $message = localize('Maximum file size reached. Maximum allowed is [_1]', MAX_FILE_SIZE);
+    } else {    # Default
+        $message = localize('Sorry, an error occurred while processing your request.');
+    }
 
     return BOM::RPC::v3::Utility::create_error({
-        code              => $code,
+        code              => 'UploadDenied',
         message_to_client => $message
     });
-}
-
-sub get_error_details {
-    my $reason = shift || 'unkown';
-
-    return localize('Maximum file size reached. Maximum allowed is [_1]', MAX_FILE_SIZE) if $reason eq 'max_size';
-    return localize('Sorry, an error occurred while processing your request.');
 }
 
 1;

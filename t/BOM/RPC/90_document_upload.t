@@ -42,10 +42,8 @@ $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $params->{token}  = $token;
 $params->{upload} = "some_id";
 
-my $args = {expiration_date => "asdaas-asd-asd"};
-
-$params->{args} = $args;    # Invalid date
-$c->call_ok($method, $params)->has_error->error_message_is('Invalid expiration date.', 'check invalid expiration_date');
+my $args = {};
+$params->{args} = $args;
 
 $args->{expiration_date} = "2017-08-09";    # Expired documents.
 $c->call_ok($method, $params)
