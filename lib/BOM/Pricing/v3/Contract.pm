@@ -14,7 +14,7 @@ use Time::HiRes;
 use Time::Duration::Concise::Localize;
 
 use Format::Util::Numbers qw/formatnumber/;
-use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -613,6 +613,7 @@ sub contracts_for {
 
     return;
 }
+
 sub _log_exception {
     my ($component, $err) = @_;
 

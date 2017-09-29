@@ -31,6 +31,7 @@ sub _set_cache {
         time  => time,
         value => $value,
     };
+    return;
 }
 
 sub _get_key {
