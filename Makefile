@@ -6,7 +6,7 @@ P=/etc/rmg/bin/prove --timer -v -rl
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 v3_1:
-	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(0\|1\|2\|4\)')
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/108_introspection.t
 
 v3_2:
 	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(5\|6\|7\)')
