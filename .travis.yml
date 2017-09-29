@@ -18,7 +18,6 @@ before_install:
     - . /tmp/travis-scripts/setup_perl.sh
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - /tmp/travis-scripts/fixHostName.sh
-    - sudo mkdir -p /home/git/regentmarkets
 
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom-test
@@ -36,9 +35,7 @@ install:
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
     - /tmp/travis-scripts/setup_clientdb.sh
-    - /tmp/travis-scripts/setup_authdb.sh
     - /tmp/travis-scripts/setup_usersdb.sh
-    - /tmp/travis-scripts/setup_chronicledb.sh
     - /tmp/travis-scripts/setup_feeddb.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
 
