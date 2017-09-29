@@ -121,7 +121,6 @@ sub validate_expiration_date {
 
 sub create_upload_error {
     my $reason = shift || 'unkown';
-    chomp $reason;
 
     my $message;
     if ($reason eq 'virtual') {
