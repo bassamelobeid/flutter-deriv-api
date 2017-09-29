@@ -44,13 +44,14 @@ sub upload {
     my $s3 = Amazon::S3->new({
         aws_access_key_id     => $access_key,
         aws_secret_access_key => $secret_key,
-        retry                 => 1
+        retry                 => 1,
+        timeout               => 60
     });
 
-    my $s3_bucket = $s3->bucket($bucket);
-    my $file = read_file($original_filename, binmode => ':raw');
+    my $s3_bucket = $s3->bucket($bucket) or die 'Could not retrieve the requested s3 bucket';
+    my $file = read_file($original_filename, binmode => ':raw') or die "Unable to read file: $original_filename";
 
-    $s3_bucket->add_key($filename, $file);
+    $s3_bucket->add_key($filename, $file) or die "Unable to upload the file to s3, " . $s3_bucket->err . ": " . $s3_bucket->errstr;
 
     return sha1_hex($file);
 }
