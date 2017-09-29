@@ -12,7 +12,7 @@ sub add_upload_info {
 
     return create_error($args, $rpc_response) if $rpc_response->{error};
 
-    my $current_stash = $c->stash->{document_upload} || {last_upload_id => 0};
+    my $current_stash = $c->stash->{document_upload} || {};
     my $upload_id     = generate_upload_id($current_stash);
     my $call_params   = create_call_params($args);
     my $file_name     = $rpc_response->{file_name};
@@ -246,7 +246,7 @@ sub replace_echo_req {
 
 sub generate_upload_id {
     my $stash = shift;
-    return $stash->{last_upload_id} = ($stash->{last_upload_id} + 1) % (1 << 32);
+    return $stash->{last_upload_id} = exists $stash->{last_upload_id} ? ($stash->{last_upload_id} + 1) % (1 << 32) : 1;
 }
 
 sub delete_stash {
