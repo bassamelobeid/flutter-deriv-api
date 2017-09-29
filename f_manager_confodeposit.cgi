@@ -241,7 +241,6 @@ if ($ttype eq 'CREDIT' and $params{payment_type} !~ /^affiliate_reward|arbitrary
     # we need to set paymentagent_expiration_date for manual deposit
     # check with compliance if you want to change this
     try {
-        warn "Expiration date: " . $client_pa_exp->loginid . ' for payment type ' . $params{payment_type} . "\n";
         $client_pa_exp->payment_agent_withdrawal_expiration_date($today->date_yyyymmdd);
         $client_pa_exp->save;
     }
