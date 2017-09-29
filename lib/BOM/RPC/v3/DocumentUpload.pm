@@ -34,7 +34,7 @@ sub start_document_upload {
     my $loginid = $client->loginid;
 
     my ($id) = $dbh->selectrow_array(
-        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?::status_type)',
         undef, $loginid, $document_type, $document_format, '', $args->{expiration_date},
         'ID_DOCUMENT', ($args->{document_id} || ''),
         '', 'uploading'
