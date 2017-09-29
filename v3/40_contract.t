@@ -261,7 +261,7 @@ $proposal_1 = $t->await::proposal({
 $proposal_id = $proposal_1->{proposal}->{id};
 $res         = $t->await::buy({
     buy   => $proposal_id,
-    price => 99999
+    price => 1500
 });
 use Data::Dumper;
 die Data::Dumper->Dumper($res);
