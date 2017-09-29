@@ -33,7 +33,7 @@ before_install:
     - /tmp/travis-scripts/setup_logs.sh
 
 install:
-    - export OAUTH_CONFIG=$PWD/oauth.conf.travis
+    - export OAUTH_CONFIG=$PWD/oauth.conf.example
     - source /tmp/travis-scripts/devbox_path.sh
     - /tmp/travis-scripts/devbox.sh *.yml
 
