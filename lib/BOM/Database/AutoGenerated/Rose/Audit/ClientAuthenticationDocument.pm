@@ -26,6 +26,7 @@ __PACKAGE__->meta->setup(
         document_id                => { type => 'varchar', default => '', length => 30, not_null => 1 },
         status                     => { type => 'varchar', length => 100 },
         file_name                  => { type => 'varchar', length => 100 },
+        checksum                   => { type => 'varchar', length => 40 },
     ],
 
     primary_key_columns => [ 'id' ],
