@@ -116,7 +116,7 @@ subtest 'binary metadata should be correctly sent' => sub {
                 binary => (pack 'N3A*', $call_type, 1111, 1, 'A'),
             })->message_ok;
     }
-    [qr/Unknown upload id/], 'Expected warning';
+    [qr/Unknown upload request/], 'Expected warning';
     $res = decode_json($t->message->[1]);
     ok $res->{error}, 'upload_id should be valid';
 
@@ -264,7 +264,7 @@ subtest 'Maximum file size' => sub {
     warning_like {
         $error = upload_error($metadata, $file);
     }
-    [qr/Unknown upload id/], 'Expected warning';
+    [qr/Unknown upload request/], 'Expected warning';
     $CHUNK_SIZE = $previous_chunk_size;
 
     is $error->{code}, 'UploadError', 'Upload should be failed';
@@ -332,7 +332,7 @@ subtest 'sending extra data after EOF chunk' => sub {
     warning_like {
         $t = $t->send_ok({binary => $frames[0]})->message_ok;
     }
-    [qr/Unknown upload id/], 'Expected warning';
+    [qr/Unknown upload request/], 'Expected warning';
     $res = decode_json($t->message->[1]);
 
     ok $res->{error}, 'Document no longer exists';
