@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use Digest::SHA1;
+use Digest::SHA;
 
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
@@ -26,7 +26,7 @@ sub add_upload_info {
         call_type       => $rpc_response->{call_type},
         file_name       => $file_name,
         file_size       => $file_size,
-        sha1            => Digest::SHA1->new,
+        sha1            => Digest::SHA->new,
         received_bytes  => 0,
         pending_futures => \@pending_futures,
     };
