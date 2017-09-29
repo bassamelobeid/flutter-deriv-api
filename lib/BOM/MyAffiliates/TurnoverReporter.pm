@@ -58,16 +58,15 @@ sub activity_for_date_as_csv {
         $csv           = Text::CSV->new;
         @output_fields = (
             # loginid
-            $activity->[0],
+            $obj->[0],
             # stake
-            financialrounding('price', 'USD', $activity->[1]),
+            financialrounding('price', 'USD', $obj->[1]),
             # payout
-            financialrounding('price', 'USD', $activity->[2]),
+            financialrounding('price', 'USD', $obj->[2]),
             # probability
-            $activity->[3],
+            $obj->[3],
             # contract reference id
-            $activity->[4]
-        );
+            $obj->[4]);
         $csv->combine(@output_fields);
         push @output, $csv->string;
     }
