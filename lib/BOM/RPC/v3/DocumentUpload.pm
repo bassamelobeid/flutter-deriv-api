@@ -15,21 +15,23 @@ sub upload {
     my ($document_type, $document_id, $document_format, $expiration_date, $status, $file_id, $file_size, $reason) =
         @{$params->{args}}{qw/document_type document_id document_format expiration_date status file_id file_size reason/};
 
-    return create_upload_error('UploadError', 'max_size') if defined $file_size and $file_size > MAX_FILE_SIZE;
-    return create_upload_error('UploadError', $reason)    if defined $status    and $status eq 'failure';
+    return create_upload_error('UploadError', 'max_size') if $file_size and $file_size > MAX_FILE_SIZE;
+    return create_upload_error('UploadError', $reason)    if $status    and $status eq 'failure';
 
     # Early return for virtual accounts.
     return create_upload_error('UploadDenied', localize("Virtual accounts don't require document uploads.")) if $client->is_virtual;
 
-    if (defined $expiration_date && $expiration_date ne '') {
-        my ($current_date, $parsed_date, $error);
-        $current_date = Date::Utility->new();
+    if ($expiration_date) {
+        my $current_date = Date::Utility->new;
+
+        my ($parsed_date, $error);
         try {
             $parsed_date = Date::Utility->new($expiration_date);
         }
         catch {
             $error = $_;
         };
+
         if ($error) {
             return create_upload_error('UploadDenied', localize("Invalid expiration date."));
         } elsif ($parsed_date->is_before($current_date) || $parsed_date->is_same_as($current_date)) {
@@ -40,7 +42,7 @@ sub upload {
     }
 
     # Check documentID and expiration date for passport, driverslicense, proofid
-    if (defined($document_type) && $document_type =~ /^(passport|proofid|driverslicense)$/) {
+    if ($document_type and $document_type =~ /^passport|proofid|driverslicense$/) {
         return create_upload_error('UploadDenied', localize("Expiration date is required.")) unless $expiration_date;
         return create_upload_error('UploadDenied', localize("Document ID is required."))     unless $document_id;
     }
@@ -58,6 +60,9 @@ sub upload {
             '', 'uploading'
         );
 
+# ID should always be returned
+        warn 'betonmarkets.start_document_upload should return the ID' if !$id;
+
         return create_upload_error('UploadError') if !$id;
 
         return {
@@ -68,11 +73,11 @@ sub upload {
     }
 
     # On success update the status of file to uploaded.
-    if (defined $status and $status eq "success") {
+    if ($status and $status eq "success") {
         my ($doc) = $client->find_client_authentication_document(query => [id => $file_id]);
 
         # Return if document is not present in db.
-        return create_upload_error('UploadDenied', localize("Document not found.")) unless defined($doc);
+        return create_upload_error('UploadDenied', localize("Document not found.")) unless $doc;
 
         $doc->{file_name} = join '.', $loginid, $doc->{document_type}, $doc->{id}, $doc->{document_format};
         $doc->{status} = "uploaded";
