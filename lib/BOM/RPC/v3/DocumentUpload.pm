@@ -107,6 +107,8 @@ sub validate_id_and_exp_date {
 
     return 'missing_exp_date' if not $args->{expiration_date};
     return 'missing_doc_id'   if not $args->{document_id};
+
+    return;
 }
 
 sub validate_expiration_date {
@@ -118,6 +120,8 @@ sub validate_expiration_date {
     my $parsed_date  = Date::Utility->new($expiration_date);
 
     return 'already_expired' if not $parsed_date->is_after($current_date);
+
+    return;
 }
 
 sub create_upload_error {
