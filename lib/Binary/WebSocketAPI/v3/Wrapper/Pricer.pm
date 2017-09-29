@@ -51,10 +51,18 @@ sub proposal {
     my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
+    my $cache = {};
+                $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
+                $cache->{contract_parameters}->{$_} = $args->{$_} for qw/amount basis/;
+                $cache->{contract_parameters}->{amount_type} = delete $cache->{contract_parameters}->{basis};
+                $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
+                return;
+
     $c->call_rpc({
             url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
             args        => $args,
             method      => 'send_ask',
+#            method      => 'longcode',
             msg_type    => 'proposal',
             call_params => {
                 language              => $c->stash('language'),
@@ -64,7 +72,7 @@ sub proposal {
             success => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
                 my $cache = {
-                    longcode            => $rpc_response->{longcode},
+                    longcode            => 'qwe'.$rpc_response->{longcode},
                     contract_parameters => delete $rpc_response->{contract_parameters},
                     payout              => $rpc_response->{payout},
                 };
@@ -78,6 +86,7 @@ sub proposal {
                 $api_response->{passthrough} = $req_storage->{args}->{passthrough};
                 if (my $uuid = $req_storage->{uuid}) {
                     $api_response->{proposal}->{id} = $uuid;
+#                    $api_response = undef;
                 } else {
                     $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
                 }
@@ -559,7 +568,6 @@ sub _create_pricer_channel {
     }
 
     my $uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
-
     # subscribe if it is not already subscribed
     if (    exists $args->{subscribe}
         and $args->{subscribe} == 1
@@ -789,7 +797,9 @@ sub process_ask_event {
 sub _price_stream_results_adjustment {
     my ($c, undef, $cache, $results, $resp_theo_probability) = @_;
 
-    my $contract_parameters = $cache->{contract_parameters};
+    my $contract_parameters = $results->{contract_parameters};
+    $contract_parameters->{$_} = $cache->{contract_parameters}{$_} for keys %{$cache->{contract_parameters}};
+#    my $contract_parameters=$cache->{contract_parameters};
 
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
@@ -812,8 +822,8 @@ sub _price_stream_results_adjustment {
         maximum     => 1,
     });
 
+#    die JSON::XS->new->allow_blessed->encode($contract_parameters);
     $contract_parameters->{theo_probability} = $theo_probability;
-
     my $price_calculator = Price::Calculator->new(%$contract_parameters);
     $cache->{payout} = $price_calculator->payout;
     if (my $error = $price_calculator->validate_price) {
