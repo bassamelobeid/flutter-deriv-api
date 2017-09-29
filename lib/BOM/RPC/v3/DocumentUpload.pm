@@ -116,7 +116,7 @@ sub validate_expiration_date {
     my $current_date = Date::Utility->new;
     my $parsed_date  = Date::Utility->new($expiration_date);
 
-    return 'already_expired' if $parsed_date->is_before($current_date) or $parsed_date->is_same_as($current_date);
+    return 'already_expired' if not $parsed_date->is_after($current_date);
 }
 
 sub create_upload_error {
