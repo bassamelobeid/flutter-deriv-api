@@ -212,7 +212,6 @@ SKIP: {
                 "proposal" => 1,
                 %contract
             });
-        warn Data::Dumper->Dumper($res) if $contract{duration} == 14;
             is $res->{error}{message}, $expected_err, 'got expected error for proposal call';
         }
 
