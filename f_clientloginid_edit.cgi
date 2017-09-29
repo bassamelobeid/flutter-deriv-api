@@ -264,9 +264,10 @@ if ($input{whattodo} eq 'uploadID') {
 
         my $new_file_name = "$loginid.$doctype.$id.$docformat";
 
-        BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload) or die "Upload failed for $filetoupload";
+        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload) or die "Upload failed for $filetoupload";
 
         $doc->{file_name} = $new_file_name;
+        $doc->{checksum}  = $checksum;
 
         die "Cannot record uploaded file $filetoupload in the db" unless $doc->save();
 

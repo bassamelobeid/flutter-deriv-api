@@ -3,7 +3,7 @@ package BOM::Backoffice::Script::DocumentUpload;
 use warnings;
 use strict;
 
-use Digest::SHA qw/hmac_sha1_base64/;
+use Digest::SHA qw/hmac_sha1_base64 sha1_hex/;
 use URI::Escape;
 use File::Slurp;
 
@@ -52,7 +52,7 @@ sub upload {
 
     $s3_bucket->add_key($filename, $file);
 
-    return;
+    return sha1_hex($file);
 }
 
 1;
