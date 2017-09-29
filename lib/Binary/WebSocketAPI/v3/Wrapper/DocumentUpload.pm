@@ -99,12 +99,10 @@ sub get_upload_info {
 
     my ($call_type, $upload_id, $chunk_size, $data) = unpack "N3a*", $frame;
 
-    my ($stash, $upload_info);
+    my $upload_info = $c->stash('document_upload')->{$upload_id} or die "Unknown upload request";
 
-    die "Unknown upload request" unless $stash       = $c->stash('document_upload');
-    die "Unknown upload id"      unless $upload_info = $stash->{$upload_id};
-    die "Unknown call type"      unless $call_type == $upload_info->{call_type};
-    die "Incorrect data size"    unless $chunk_size == length $data;
+    die "Unknown call type"   unless $call_type == $upload_info->{call_type};
+    die "Incorrect data size" unless $chunk_size == length $data;
 
     return {
         chunk_size => $chunk_size,
