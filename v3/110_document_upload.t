@@ -11,9 +11,9 @@ use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
-$ENV{DOCUMENT_AUTH_S3_ACCESS} = 'FakeS3Access';
-$ENV{DOCUMENT_AUTH_S3_SECRET} = 'FakeS3Secret';
-$ENV{DOCUMENT_AUTH_S3_BUCKET} = 'FakeS3Bucket';
+$ENV{DOCUMENT_AUTH_S3_ACCESS} = 'TestingS3Access';
+$ENV{DOCUMENT_AUTH_S3_SECRET} = 'TestingS3Secret';
+$ENV{DOCUMENT_AUTH_S3_BUCKET} = 'TestingS3Bucket';
 
 my $t = build_wsapi_test();
 
@@ -87,7 +87,7 @@ subtest 'Invalid s3 config' => sub {
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
 
 # revert bucket name
-    $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'FakeS3Bucket';
+    $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'TestingS3Bucket';
 };
 
 subtest 'binary metadata should be correctly sent' => sub {
