@@ -10,7 +10,7 @@ use BOM::MyAffiliates::TurnoverReporter;
 use BOM::Platform::Email qw/send_email/;
 
 my $reporter        = BOM::MyAffiliates::TurnoverReporter->new();
-my $processing_date = Date::Utility->new;
+my $processing_date = Date::Utility->new(time - 86400);
 
 my @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy);
 
@@ -28,8 +28,6 @@ foreach my $line (@csv) {
 }
 
 undef $fh;
-
-my @csv_filenames = ($output_filename);
 
 my $brand = Brands->new();
 # email CSV out for reporting purposes
