@@ -258,6 +258,8 @@ $proposal_1 = $t->await::proposal({
     proposal => 1,
     %notouch_2
 });
+use Data::Dumper;
+warn Data::Dumper->Dumper($proposal_1);
 $proposal_id = $proposal_1->{proposal}->{id};
 $res         = $t->await::buy({
     buy   => $proposal_id,
