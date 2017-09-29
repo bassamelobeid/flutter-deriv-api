@@ -5,7 +5,7 @@ use Test::Most;
 use Test::Warn;
 use JSON;
 use BOM::Test::Helper qw/build_wsapi_test/;
-use Digest::SHA1 qw/sha1_hex/;
+use Digest::SHA qw/sha1_hex/;
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
