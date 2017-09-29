@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use List::MoreUtils qw(none all);
+use BOM::Market::DataDecimate;
 use VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Static;
@@ -125,10 +126,12 @@ sub _build_pricing_vol {
 
     my $vol;
     my $volatility_error;
+
     if ($self->priced_with_intraday_model) {
         $vol = $self->empirical_volsurface->get_volatility({
             from                          => $self->effective_start,
             to                            => $self->date_expiry,
+            delta                         => 50,
             ticks                         => $self->ticks_for_short_term_volatility_calculation,
             include_economic_event_impact => 1,
         });
@@ -136,9 +139,9 @@ sub _build_pricing_vol {
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
             $vol = $self->volsurface->get_volatility({
-                from  => $self->effective_start,
-                to    => $self->date_expiry,
-                delta => 50
+                delta => 50,
+                from  => $self->effective_start->epoch,
+                to    => $self->date_expiry->epoch,
             });
         } else {
             $vol = $self->vol_at_strike;

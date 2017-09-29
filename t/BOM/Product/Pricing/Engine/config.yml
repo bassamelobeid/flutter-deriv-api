@@ -1318,9 +1318,9 @@ expected_result:
       commission_markup: 0.035
       duration: 4d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.0803
+      risk_markup: 0.0807
       spot: 1.3803
-      theo_prob: 0.7211
+      theo_prob: 0.7235
       total_markup: 0.121
     RANGE:
       ask_prob: 0.2778

@@ -62,7 +62,7 @@ subtest 'expiry miss' => sub {
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
         is roundcommon(0.001, $call->{amount}), 0.585, 'correct tv for CALL';
-        is roundcommon(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.184, 'correct vol for call';
+        is roundcommon(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.183, 'correct vol for call';
         is roundcommon(0.001, $put->{amount}), 0.057, 'correct tv for PUT';
         is roundcommon(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.25, 'correct vol for put';
     }
@@ -113,7 +113,7 @@ subtest 'expiry range' => sub {
         isa_ok $c, 'BOM::Product::Contract::Expiryrange';
         is $c->code,         'EXPIRYRANGE';
         is $c->pricing_code, 'EXPIRYRANGE';
-        is $c->ask_price,    '4.13';
+        is $c->ask_price,    '4.14';
         ok $c->sentiment,    'low_vol';
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
@@ -122,7 +122,7 @@ subtest 'expiry range' => sub {
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
         is roundcommon(0.001, $call->{amount}), 0.567, 'correct tv for CALL';
-        is roundcommon(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.183, 'correct vol for call';
+        is roundcommon(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.182, 'correct vol for call';
         is roundcommon(0.001, $put->{amount}), 0.057, 'correct tv for PUT';
         is roundcommon(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.25, 'correct vol for put';
 

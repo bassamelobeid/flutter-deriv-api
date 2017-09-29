@@ -27,9 +27,9 @@ my $now           = Date::Utility->new('2016-02-01');
 note('Pricing on ' . $now->datetime);
 
 my %skip_category = (
-    asian   => 1,
-    digits  => 1,
-    spreads => 1,
+    asian    => 1,
+    digits   => 1,
+    spreads  => 1,
     lookback => 1,
 );
 
@@ -105,8 +105,8 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
 
-                        is roundcommon(0.00001, $c->theo_probability->amount), roundcommon(0.00001, $expectation->{$code}),
-                            'theo probability matches [' . $code . " - " . $c->shortcode . ']';
+                        ok abs($c->theo_probability->amount - $expectation->{$code}) < 1e-5,
+                            'theo probability matches [' . $code . '] exp [' . $expectation->{$code} . '] got [' . $c->theo_probability->amount . ']';
                     }
                     'survived';
                 }

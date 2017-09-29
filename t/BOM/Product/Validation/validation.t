@@ -909,7 +909,6 @@ subtest 'invalid lifetimes.. how rude' => sub {
         {
             symbol         => 'frxEURUSD',
             recorded_date  => Date::Utility->new($bet_params->{date_pricing}),
-            spot_reference => $tick->quote,
         });
 
     $bet = produce_contract($bet_params);

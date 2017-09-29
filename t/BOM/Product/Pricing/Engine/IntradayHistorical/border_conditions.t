@@ -36,7 +36,7 @@ my $currency   = 'GBP';
 my $first_day = Date::Utility->new($date_start)->truncate_to_day;
 my $next_day = Date::Utility->new($date_start + (3600 * 9));
 
-foreach my $day ($first_day, $next_day) {
+foreach my $day ($first_day) {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $day});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
