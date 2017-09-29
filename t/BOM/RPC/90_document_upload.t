@@ -71,14 +71,19 @@ is($doc->status,      'uploading',          'document status is set to uploading
 $args->{expiration_date} = '';    # Document with no expiration_date
 $c->call_ok($method, $params)->result;
 
+my $checksum = 'FileChecksum';
+
 $args = {
-    status  => 'success',
-    file_id => $result->{file_id}};
+    status   => 'success',
+    checksum => $checksum,
+    file_id  => $result->{file_id}};
 $params->{args} = $args;
 $result = $c->call_ok($method, $params)->result;
 ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 is($doc->status,                                     'uploaded',           'document\'s status changed');
 is($test_client->get_status('under_review')->reason, 'Documents uploaded', 'client\'s status changed');
+ok $doc->file_name, 'Filename should not be empty';
+is $doc->checksum, $checksum, 'Checksum should be added correctly';
 
 $args->{file_id} = 1231531;
 $c->call_ok($method, $params)->has_error->error_message_is('Document not found.', 'error if document is not present');
