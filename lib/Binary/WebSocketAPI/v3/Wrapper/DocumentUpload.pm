@@ -12,7 +12,7 @@ sub add_upload_info {
 
     return create_error($args, $rpc_response) if $rpc_response->{error};
 
-    my $current_stash = $c->stash('document_upload') || {last_upload_id => 0};
+    my $current_stash = $c->stash->{document_upload} || {last_upload_id => 0};
     my $upload_id     = generate_upload_id($current_stash);
     my $call_params   = create_call_params($args);
     my $file_name     = $rpc_response->{file_name};
@@ -99,7 +99,7 @@ sub get_upload_info {
 
     my ($call_type, $upload_id, $chunk_size, $data) = unpack "N3a*", $frame;
 
-    my $upload_info = $c->stash('document_upload')->{$upload_id} or die "Unknown upload request";
+    my $upload_info = $c->stash->{document_upload}->{$upload_id} or die "Unknown upload request";
 
     die "Unknown call type"   unless $call_type == $upload_info->{call_type};
     die "Incorrect data size" unless $chunk_size == length $data;
@@ -125,7 +125,7 @@ sub send_upload_failure {
     $c->call_rpc({
             method      => 'document_upload',
             call_params => {
-                token => $c->stash('token'),
+                token => $c->stash->{token},
             },
             args => {
                 req_id      => $upload_info->{req_id},
@@ -160,7 +160,7 @@ sub send_upload_successful {
     $c->call_rpc({
             method      => 'document_upload',
             call_params => {
-                token => $c->stash('token'),
+                token => $c->stash->{token},
             },
             args => {
                 req_id      => $upload_info->{req_id},
@@ -193,7 +193,7 @@ sub upload_chunk {
     my ($c, $upload_info) = @_;
     my $upload_id = $upload_info->{upload_id};
     my $data      = $upload_info->{data};
-    my $stash     = $c->stash('document_upload');
+    my $stash     = $c->stash->{document_upload};
 
     my $new_received_bytes = $stash->{$upload_id}->{received_bytes} + length $data;
 
@@ -252,7 +252,7 @@ sub generate_upload_id {
 sub delete_stash {
     my ($c, $upload_info) = @_;
     return unless defined $upload_info;
-    my $stash = $c->stash('document_upload');
+    my $stash = $c->stash->{document_upload};
 
     delete $stash->{$upload_info->{upload_id}} if exists $upload_info->{upload_id};
 
