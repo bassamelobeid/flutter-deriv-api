@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.010;
 use YAML::XS;
-use DBIx::Connector::Pg;
+use DBI;
 use DBD::Pg;
 use IO::Select;
 use Try::Tiny;
@@ -32,22 +32,18 @@ sub run {
             while (1) {
                 try {
                     my $redis = _redis();
-                    my $dbic  = _db($ip);
+                    my $dbh   = _db($ip);
 
-                    $dbic->run(
-                        sub {
-                            my $dbh = $_;
-                            $dbh->do("LISTEN transaction_watchers");
+                    $dbh->do("LISTEN transaction_watchers");
 
-                            my $sel = IO::Select->new;
-                            $sel->add($dbh->{pg_socket});
-                            while ($sel->can_read) {
-                                while (my $notify = $dbh->pg_notifies) {
-                                    my ($name, $pid, $payload) = @$notify;
-                                    _publish($redis, _msg($payload));
-                                }
-                            }
-                        });
+                    my $sel = IO::Select->new;
+                    $sel->add($dbh->{pg_socket});
+                    while ($sel->can_read) {
+                        while (my $notify = $dbh->pg_notifies) {
+                            my ($name, $pid, $payload) = @$notify;
+                            _publish($redis, _msg($payload));
+                        }
+                    }
                 }
                 catch {
                     warn "$0 ($$): saw exception: $_";
@@ -108,7 +104,7 @@ sub _master_db_connections {
 sub _db {
     my $ip = shift;
     my $db_postfix = $ENV{DB_POSTFIX} // '';
-    return DBIx::Connector->new(
+    return DBI->connect(
         "dbi:Pg:dbname=regentmarkets$db_postfix;host=$ip;port=5432;application_name=notify_pub;sslmode=require",
         'write',
         $conn->{$ip},

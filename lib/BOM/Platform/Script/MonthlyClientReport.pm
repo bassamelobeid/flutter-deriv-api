@@ -113,7 +113,7 @@ HERE
         })->db->dbic;
 
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth   = $_->prepare($sql);
             my @binds = (
                 $start_date->ymd,    # b0
