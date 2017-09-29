@@ -117,12 +117,13 @@ sub get_upload_info {
 sub send_upload_failure {
     my ($c, $upload_info, $reason) = @_;
 
-    delete_upload_info($c, $upload_info);
+    delete_stash($c, $upload_info);
 
-    $upload_info = {
+    $upload_info //= {
         echo_req    => {},
         req_id      => '1',
-        passthrough => {}} unless $upload_info;
+        passthrough => {}
+    };
 
     $c->call_rpc({
             method      => 'document_upload',
@@ -138,7 +139,7 @@ sub send_upload_failure {
             response => sub {
                 my (undef, $api_response, $req_storage) = @_;
 
-                sanitize_echo_req($upload_info, $req_storage);
+                replace_echo_req($upload_info, $req_storage);
 
                 return create_error($upload_info, $api_response);
             },
@@ -150,7 +151,7 @@ sub send_upload_failure {
 sub send_upload_successful {
     my ($c, $upload_info, $status) = @_;
 
-    delete_upload_info($c, $upload_info);
+    delete_stash($c, $upload_info);
 
     my $upload_finished = {
         size      => $upload_info->{received_bytes},
@@ -173,7 +174,7 @@ sub send_upload_successful {
             response => sub {
                 my (undef, $api_response, $req_storage) = @_;
 
-                sanitize_echo_req($upload_info, $req_storage);
+                replace_echo_req($upload_info, $req_storage);
 
                 return create_error($upload_info, $api_response) if exists($api_response->{error});
 
@@ -238,7 +239,7 @@ sub create_response {
     };
 }
 
-sub sanitize_echo_req {
+sub replace_echo_req {
     my ($upload_info, $req_storage) = @_;
 
     $req_storage->{args} = $upload_info->{echo_req};
@@ -251,7 +252,7 @@ sub generate_upload_id {
     return $stash->{last_upload_id} = ($stash->{last_upload_id} + 1) % (1 << 32);
 }
 
-sub delete_upload_info {
+sub delete_stash {
     my ($c, $upload_info) = @_;
     return unless defined $upload_info;
     my $stash = $c->stash('document_upload');
