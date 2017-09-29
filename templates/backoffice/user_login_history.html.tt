@@ -22,7 +22,7 @@
             env = env.remove('.+User_AGENT=');
 %]
             <tr>
-                <td width='150'>[% date %] UTC</td>
+                <td width='150'>[% date %] GMT</td>
                 <td>[% l.action %]</td>
                 <td>[% status %]</td>
                 <td>[% ip %]</td>
