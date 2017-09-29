@@ -244,7 +244,7 @@ like(
 $t->await::forget({forget => $proposal_1->{proposal}->{id}});
 
 my %notouch_2 = (
-    "amount"        => "1000",
+    "amount"        => "1",
     "basis"         => "stake",
     "contract_type" => "NOTOUCH",
     "currency"      => "USD",
