@@ -81,7 +81,7 @@ subtest 'Invalid s3 config' => sub {
 
     my $error = $res->{error};
 
-    is $error->{code}, 'UploadError', 'Upload should fail for invalid s3 config';
+    is $error->{code}, 'UploadDenied', 'Upload should fail for invalid s3 config';
 
     is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
@@ -267,7 +267,7 @@ subtest 'Maximum file size' => sub {
     [qr/Unknown upload request/], 'Expected warning';
     $CHUNK_SIZE = $previous_chunk_size;
 
-    is $error->{code}, 'UploadError', 'Upload should be failed';
+    is $error->{code}, 'UploadDenied', 'Upload should be failed';
 
 # ignore extra chunk
     $t = $t->message_ok;
