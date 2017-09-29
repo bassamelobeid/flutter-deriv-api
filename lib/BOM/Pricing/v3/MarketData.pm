@@ -7,6 +7,7 @@ no indirect;
 use Try::Tiny;
 use Date::Utility;
 use Time::Duration::Concise::Localize;
+use Storable 'dclone';
 
 use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 
@@ -21,7 +22,7 @@ sub _get_cache {
     for (keys %$cache) {
         delete $cache->{$_} if time - $cache->{$_}->{time} > 3600;
     }
-    return $cache->{$name}->{value} if defined $cache->{$name}->{value};
+    return dclone($cache->{$name}->{value}) if defined $cache->{$name}->{value};
     return;
 }
 
@@ -29,7 +30,7 @@ sub _set_cache {
     my ($name, $value) = @_;
     $cache->{$name} = {
         time  => time,
-        value => $value,
+        value => dclone($value),
     };
     return;
 }
@@ -84,7 +85,7 @@ sub trading_times {
             }
         }
     }
-    _set_cache($cache_key, {%$trading_times});
+    _set_cache($cache_key, $trading_times);
     return $trading_times,;
 }
 
@@ -180,7 +181,7 @@ sub asset_index {
             }
         }
     }
-    _set_cache($cache_key, [@data]);
+    _set_cache($cache_key, \@data);
     return \@data;
 }
 
