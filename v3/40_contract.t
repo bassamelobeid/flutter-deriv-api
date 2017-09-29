@@ -263,7 +263,7 @@ $res         = $t->await::buy({
     buy   => $proposal_id,
     price => 10000
 });
-is $res->{buy}->{buy_price}, '1';
+is $res->{buy}->{buy_price}, '1.00';
 
 $t->finish_ok;
 
