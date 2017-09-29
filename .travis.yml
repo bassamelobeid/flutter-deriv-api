@@ -18,6 +18,8 @@ before_install:
     - . /tmp/travis-scripts/setup_perl.sh
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - /tmp/travis-scripts/fixHostName.sh
+    - dpkg -l | grep postgres
+    - pg_lsclusters
 
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom-test
@@ -26,6 +28,7 @@ before_install:
       regentmarkets/bom-postgres
       regentmarkets/bom-market
 
+    - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
     - /tmp/travis-scripts/setup_logs.sh
 
