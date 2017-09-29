@@ -24,9 +24,10 @@ and contract reference id
 
 use Moose;
 use Text::CSV;
-use File::SortedSeek qw(numeric get_between);
-
 use Date::Utility;
+use File::SortedSeek qw/numeric get_between/;
+use Format::Util::Numbers qw/financialrounding/;
+
 use BOM::Database::DataMapper::MyAffiliates;
 
 =head2 activity_for_date_as_csv
@@ -54,8 +55,20 @@ sub activity_for_date_as_csv {
 
     my (@output, @output_fields, $csv);
     foreach my $obj (@$activity) {
-        $csv = Text::CSV->new;
-        $csv->combine(@$obj);
+        $csv           = Text::CSV->new;
+        @output_fields = (
+            # loginid
+            $activity->[0],
+            # stake
+            financialrounding('price', 'USD', $activity->[1]),
+            # payout
+            financialrounding('price', 'USD', $activity->[2]),
+            # probability
+            $activity->[3],
+            # contract reference id
+            $activity->[4]
+        );
+        $csv->combine(@output_fields);
         push @output, $csv->string;
     }
 
