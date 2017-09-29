@@ -63,7 +63,8 @@ sub successful_upload {
     return create_upload_error('doc_not_found') if not $doc;
 
     $doc->{file_name} = join '.', $client->loginid, $doc->{document_type}, $doc->{id}, $doc->{document_format};
-    $doc->{status} = 'uploaded';
+    $doc->{checksum}  = $args->{checksum};
+    $doc->{status}    = 'uploaded';
 
     if (not $doc->save()) {
         warn 'Unable to save upload information in the db';
