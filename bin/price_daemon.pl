@@ -14,6 +14,7 @@ use Sys::Info;
 use List::Util qw(max);
 use DataDog::DogStatsd::Helper;
 use Volatility::Seasonality;
+use Quant::Framework::LinearCache;
 
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 GetOptions(
@@ -38,7 +39,6 @@ sigtrap->import(
 
 # tune cache: up to 2s
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;    ## nocritic
-$ENV{QUANT_FRAMEWORK_VOLSURFACE_CACHE} = 1;    ## nocritic
 my $pm = Parallel::ForkManager->new($workers);
 
 $pm->run_on_start(
@@ -66,6 +66,8 @@ $pm->run_on_finish(
 
 # warming up cache to eliminate pricing time spike on first price of underlying
 Volatility::Seasonality::warmup_cache();
+# cache for updated seasonality in Redis not more often then 10 seconds
+$Quant::Framework::LinearCache::PERIOD_OF_CHECKING_FOR_UPDATES = 10;
 
 while (1) {
     $pm->start and next;
