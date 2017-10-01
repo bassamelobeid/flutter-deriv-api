@@ -393,7 +393,7 @@ sub get_client_by_status {
             broker_code => $broker,
         })->db->dbic;
     my $results = $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
             $sth->execute($show, $broker);
             return $sth->fetchall_hashref('loginid');

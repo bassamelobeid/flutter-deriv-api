@@ -87,7 +87,7 @@ sub _build__connection_builder {
         broker_code => $self->_db_broker_code,
         operation   => $self->_db_operation,
     });
-    $cdb->db->dbic->run(sub { $_->do("SET statement_timeout TO 0") });
+    $cdb->db->dbic->run(fixup => sub { $_->do("SET statement_timeout TO 0") });
     return $cdb;
 }
 
@@ -107,7 +107,7 @@ has live_open_bets => (
 
 sub _build_live_open_bets {
     my $self = shift;
-    return $self->_db->dbic->run(sub { $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id') });
+    return $self->_db->dbic->run(fixup => sub { $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id') });
 }
 
 has live_open_ico => (
@@ -118,7 +118,7 @@ has live_open_ico => (
 
 sub _build_live_open_ico {
     my $self = shift;
-    my $live_open_ico = $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id');
+    my $live_open_ico = $self->_db->dbic->run(fixup => sub { $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id') });
 
     foreach my $c (keys %$live_open_ico) {
         $live_open_ico->{$c}->{per_token_bid_price_USD} =

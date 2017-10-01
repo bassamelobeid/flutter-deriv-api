@@ -94,7 +94,7 @@ sub get_matched_clients_info_by_broker {
             broker_code => $broker,
         })->db->dbic;
     my $clients = $dbic->run(
-        sub {
+        fixup => sub {
             $_->selectcol_arrayref(
                 q{
         SELECT
@@ -109,7 +109,7 @@ sub get_matched_clients_info_by_broker {
     #XXX: can we rely on rows? New rows are added on client's registration
     # WHERE condition we need only for QA
     $dbic->run(
-        sub {
+        ping => sub {
             $_->do("UPDATE betonmarkets.sanctions_check SET result='0',type='C',tstmp=? WHERE client_loginid ~ ('^' || ? || '\\d')",
                 undef, Date::Utility->new->datetime, $broker);
         });
@@ -122,7 +122,7 @@ sub get_matched_clients_info_by_broker {
 
     my $values = join ",", ('(?,?)') x scalar @matched;
     $dbic->run(
-        sub {
+        ping => sub {
             $_->do(
                 qq{
             WITH input(result, client_loginid)

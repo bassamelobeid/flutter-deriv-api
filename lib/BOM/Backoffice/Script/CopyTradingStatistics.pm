@@ -18,7 +18,7 @@ sub run {
             operation   => 'backoffice_replica',
         }
         )->db->dbic->run(
-        sub {
+        fixup => sub {
             $_->selectcol_arrayref(
                 q{
         SELECT

@@ -54,7 +54,7 @@ sub _build_open_position_sql {
 
 sub generate_report {
     my $self = shift;
-    return $self->collector_dbic->run(sub { $self->_generate_report($_) });
+    return $self->collector_dbic->run(ping => sub { $self->_generate_report($_) });
 }
 
 sub _generate_report {

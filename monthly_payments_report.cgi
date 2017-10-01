@@ -87,7 +87,7 @@ my $dbic = BOM::Database::ClientDB->new({
     })->db->dbic;
 
 $dbic->run(
-    sub {
+    fixup => sub {
         my $sth = $_->prepare($sql);
         $sth->execute(@binds);
 

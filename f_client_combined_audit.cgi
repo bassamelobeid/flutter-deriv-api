@@ -99,7 +99,7 @@ foreach my $table (
 {
     $prefix = ($table eq 'client') ? '' : 'client_';
     $u_db = $dbic->run(
-        sub {
+        fixup => sub {
             $_->selectall_hashref(
                 "SELECT * FROM audit.$table WHERE "
                     . $prefix
@@ -160,7 +160,7 @@ foreach my $table (
 }
 
 $u_db = $dbic->run(
-    sub {
+    fixup => sub {
         $_->selectall_hashref(
             "SELECT * FROM audit.login_history WHERE client_loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp",
             'stamp'

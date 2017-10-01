@@ -99,7 +99,7 @@ my $dbic = BOM::Database::ClientDB->new({
         broker_code => 'JP',
     })->db->dbic;
 my $open_contracts = $dbic->run(
-    sub {
+    fixup => sub {
         my $sth = $_->prepare($sql);
 
         $sth->execute(@params);
