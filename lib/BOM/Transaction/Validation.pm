@@ -37,9 +37,11 @@ sub _open_ico_for_european_country {
             broker_code => 'FOG',
             operation   => 'collector'
         })->db;
-    my $number_of_unique_client_per_eu_country =
-        $db->dbic->run(sub{$_->selectcol_arrayref(q{ SELECT cnt FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', ARRAY[?]::VARCHAR[]) },
-        undef, $client_residence)})->[0];
+    my $number_of_unique_client_per_eu_country = $db->dbic->run(
+        fixup => sub {
+            $_->selectcol_arrayref(q{ SELECT cnt FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', ARRAY[?]::VARCHAR[]) },
+                undef, $client_residence);
+        })->[0];
 
     return $number_of_unique_client_per_eu_country // 0;
 }
