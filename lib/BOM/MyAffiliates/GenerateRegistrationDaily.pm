@@ -171,7 +171,7 @@ sub register_tokens {
                 $bind_param = $token_data->{'loginid'};
             }
             $dbic->run(
-                sub {
+                ping => sub {
                     $_->do($sql, undef, $bind_param);
                 });
             push @results_for_broker,

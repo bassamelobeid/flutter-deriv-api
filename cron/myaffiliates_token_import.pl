@@ -43,7 +43,7 @@ my $sql = q{
 };
 
 my $myaffiliates_tokens = $connection_builder->db->dbic->run(
-    sub {
+    fixup => sub {
         return $_->selectall_arrayref($sql, {Slice => {}});
     });
 my $i    = 0;
