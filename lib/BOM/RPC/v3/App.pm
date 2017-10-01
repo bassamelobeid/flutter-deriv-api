@@ -256,7 +256,7 @@ sub app_markup_details {
 
     return {
         transactions => $clientdb->dbic->run(
-            sub {
+            fixup => sub {
                 $_->selectall_arrayref(
                     'SELECT * FROM reporting.get_app_markup_details(?,?,?,?,?,?,?,?)',
                     {Slice => {}},
