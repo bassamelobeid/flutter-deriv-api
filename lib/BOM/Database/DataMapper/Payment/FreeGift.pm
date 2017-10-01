@@ -66,7 +66,7 @@ sub get_clients_with_only_one_freegift_transaction_and_inactive {
 
     my @no_used_gift_clients;
     try {
-        push @no_used_gift_clients, $dbic->run(
+        push @no_used_gift_clients, $dbic->run( fixup => 
             sub {
                 my $sth = $_->prepare($sql);
                 my @bind_value = ($before_than, $broker_code . "%");

@@ -36,7 +36,7 @@ sub get_authenticated_payment_agents {
     my $target_country = $args->{target_country};
 
     my $dbic = $self->db->dbic;
-    return $dbic->run(
+    return $dbic->run( fixup => 
         sub {
             my $authenticated_pa_sth = $_->prepare('SELECT * FROM betonmarkets.payment_agent WHERE is_authenticated = TRUE AND target_country = $1');
 
@@ -59,7 +59,7 @@ sub get_all_authenticated_payment_agent_countries {
     my $self = shift;
 
     my $dbic = $self->db->dbic;
-    return $dbic->run(
+    return $dbic->run( fixup => 
         sub {
             my $authenticated_payment_agents_statement =
                 $_->prepare('SELECT DISTINCT target_country FROM betonmarkets.payment_agent WHERE is_authenticated');

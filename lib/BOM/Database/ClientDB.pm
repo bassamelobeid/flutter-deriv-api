@@ -117,7 +117,7 @@ sub getall_arrayref {
     my $self = shift;
     my ($query, $params) = @_;
 
-    my $result = $self->db->dbic->run(
+    my $result = $self->db->dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($query);
             $sth->execute(@$params);
@@ -157,7 +157,7 @@ sub get_duplicate_client {
         broker_code=?
 ";
     my $dbic        = $self->db->dbic;
-    my @dupe_record = $dbic->run(
+    my @dupe_record = $dbic->run( fixup => 
         sub {
             my $dupe_sth = $_->prepare($dupe_sql);
             $dupe_sth->bind_param(1, uc $args->{first_name});
@@ -176,7 +176,7 @@ sub lock_client_loginid {
     my $client_loginid = shift || $self->loginid;
 
     my $dbic   = $self->db->dbic;
-    my $result = $dbic->run(
+    my $result = $dbic->run( ping => 
         sub {
             $_->do('SET synchronous_commit=local');
 
@@ -201,7 +201,7 @@ sub unlock_client_loginid {
     my $client_loginid = shift || $self->loginid;
 
     my $dbic   = $self->db->dbic;
-    my $result = $dbic->run(
+    my $result = $dbic->run( ping => 
         sub {
             $_->do('SET synchronous_commit=local');
 

@@ -13,7 +13,7 @@ sub get_copiers_cnt {
     };
 
     my @binds = ($args->{trader_id});
-    return $self->db->dbic->run(sub { $_->selectrow_array($sql, undef, @binds) || [] });
+    return $self->db->dbic->run( fixup => sub { $_->selectrow_array($sql, undef, @binds) || [] });
 }
 
 sub get_trade_copiers {
@@ -66,7 +66,7 @@ SELECT DISTINCT copier_id from (
 ) t
 SQL
 
-    return $self->db->dbic->run(
+    return $self->db->dbic->run( fixup => 
         sub {
             $_->selectcol_arrayref($sql, undef, @{$args}{qw/trader_id trade_type asset price/});
         }) // [];
@@ -82,7 +82,7 @@ sub get_traders {
     };
 
     my @binds = ($args->{copier_id});
-    return $self->db->dbic->run(sub { $_->selectcol_arrayref($sql, undef, @binds) });
+    return $self->db->dbic->run( fixup => sub { $_->selectcol_arrayref($sql, undef, @binds) });
 }
 
 no Moose;

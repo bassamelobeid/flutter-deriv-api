@@ -93,7 +93,7 @@ sub get_daily_summary_report {
             a.id
     };
 
-    return $dbic->run(
+    return $dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($sql);
 
@@ -141,7 +141,7 @@ SELECT b.*
    AND a.client_loginid ~ ('^' || $2 || '[0-9]')
 SQL
 
-    my $open_bets = $dbic->run(
+    my $open_bets = $dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($sql);
 
@@ -185,7 +185,7 @@ sub get_turnover_of_account {
     };
 
     my $dbic                = $self->db->dbic;
-    my $transaction_hashref = $dbic->run(
+    my $transaction_hashref = $dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($sql);
             $sth->execute($self->client_loginid, $self->currency_code);
@@ -244,7 +244,7 @@ SELECT tt.currency_code,
  ORDER BY 1
 SQL
 
-    return $dbic->run(
+    return $dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($sql);
             $sth->execute($self->client_loginid, $start_time->db_timestamp);
@@ -303,7 +303,7 @@ sub get_payments {
     my $limit  = $args->{limit}  || 50;
 
     my $dbic = $self->db->dbic;
-    return $dbic->run(
+    return $dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($sql);
 
@@ -373,7 +373,7 @@ sub get_transactions_ws {
     $sql =~ s/##ACTION_TYPE##/$action_query/;
 
     my @binds = ($acc->id, $dt_to, $dt_fm, ($action_type) ? $action_type : (), $limit, $offset);
-    return $self->db->dbic->run(sub { $_->selectall_arrayref($sql, {Slice => {}}, @binds) });
+    return $self->db->dbic->run( fixup => sub { $_->selectall_arrayref($sql, {Slice => {}}, @binds) });
 }
 
 sub get_monthly_payments_sum {
@@ -392,7 +392,7 @@ sub get_monthly_payments_sum {
     };
 
     my @binds = ($self->account->id);
-    return $self->db->dbic->run(sub { $_->selectall_arrayref($sql, undef, @binds) });
+    return $self->db->dbic->run( fixup => sub { $_->selectall_arrayref($sql, undef, @binds) });
 }
 
 sub get_monthly_balance {
@@ -427,7 +427,7 @@ sub get_monthly_balance {
     };
 
     my @binds = ($self->account->id);
-    return $self->db->dbic->run(sub { $_->selectall_arrayref($sql, undef, @binds) });
+    return $self->db->dbic->run( fixup => sub { $_->selectall_arrayref($sql, undef, @binds) });
 }
 
 sub unprocessed_bets {
@@ -460,7 +460,7 @@ sub unprocessed_bets {
         ORDER BY id ASC
     };
 
-    return $self->db->dbic->run(sub { $_->selectall_arrayref($sql, undef, @binds) });
+    return $self->db->dbic->run( fixup => sub { $_->selectall_arrayref($sql, undef, @binds) });
 }
 
 =head2 $self->get_transactions($parameters)
@@ -530,7 +530,7 @@ sub get_transactions {
     my $limit  = $args->{limit}  || 50;
 
     my $dbic = $self->db->dbic;
-    return $dbic->run(
+    return $dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($sql);
 
@@ -594,7 +594,7 @@ sub get_bet_transactions_for_broker {
             t.id
     };
 
-    return $dbic->run(
+    return $dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($sql);
             $sth->execute($broker_code, $action_type, $start, $end);
@@ -621,7 +621,7 @@ sub get_profit_for_days {
         };
 
     my $dbic = $self->db->dbic;
-    return $dbic->run(
+    return $dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($sql);
 
@@ -666,7 +666,7 @@ sub get_details_by_transaction_ref {
         t.id = $1
    };
 
-    return $self->db->dbic->run(
+    return $self->db->dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($sql);
             $sth->execute($transaction_id);

@@ -25,7 +25,7 @@ sub get_clients_activity {
         SELECT * FROM get_myaffiliate_clients_activity($1)
     };
 
-    return $dbic->run(
+    return $dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($sql);
             $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ);

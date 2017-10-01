@@ -66,7 +66,7 @@ sub get_sold_bets_of_account {
     }
 
     my $dbic = $self->db->dbic;
-    return $dbic->run(
+    return $dbic->run( fixup => 
         sub {
             my $sth = $_->prepare("
         SELECT fmb.*, t.id txn_id, t.source
@@ -184,7 +184,7 @@ sub get_sold {
     my $limit  = $args->{limit}  || 50;
 
     my $dbic = $self->db->dbic;
-    return $dbic->run(
+    return $dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($sql);
 
@@ -219,7 +219,7 @@ sub get_contract_details_with_transaction_ids {
             fmb.id = ?
     };
 
-    my @fmbs = $self->db->dbic->run(
+    my @fmbs = $self->db->dbic->run( fixup => 
         sub {
             my $sth = $_->prepare($sql);
             $sth->execute($contract_id);

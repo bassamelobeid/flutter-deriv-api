@@ -36,7 +36,7 @@ has 'db' => (
 sub record_fail_txn {
     my $self = shift;
 
-    $self->db->dbic->run(
+    $self->db->dbic->run( ping => 
         sub {
             $_->do(
                 'INSERT INTO data_collection.rejected_trades (loginid,financial_market_bet_id,shortcode,action_type,reason,details) values(?,?,?,?,?,?)',
