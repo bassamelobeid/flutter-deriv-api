@@ -5,15 +5,21 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table   => 'production_servers',
-    schema   => 'betonmarkets',
+    table  => 'production_servers',
+    schema => 'betonmarkets',
 
     columns => [
-        srvname    => { type => 'text', not_null => 1 },
-        real_money => { type => 'boolean', default => 'false' },
+        srvname => {
+            type     => 'text',
+            not_null => 1
+        },
+        real_money => {
+            type    => 'boolean',
+            default => 'false'
+        },
     ],
 
-    primary_key_columns => [ 'srvname' ],
+    primary_key_columns => ['srvname'],
 );
 
 1;

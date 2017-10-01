@@ -5,22 +5,46 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table   => 'western_union',
-    schema   => 'audit',
+    table  => 'western_union',
+    schema => 'audit',
 
     columns => [
-        operation       => { type => 'varchar', length => 10, not_null => 1 },
-        stamp           => { type => 'timestamp', not_null => 1 },
-        pg_userid       => { type => 'text', not_null => 1 },
-        client_addr     => { type => 'scalar' },
-        client_port     => { type => 'integer' },
-        payment_id      => { type => 'bigint', not_null => 1 },
-        mtcn_number     => { type => 'varchar', length => 15, not_null => 1 },
-        payment_country => { type => 'varchar', length => 64, not_null => 1 },
-        secret_answer   => { type => 'varchar', length => 128 },
+        operation => {
+            type     => 'varchar',
+            length   => 10,
+            not_null => 1
+        },
+        stamp => {
+            type     => 'timestamp',
+            not_null => 1
+        },
+        pg_userid => {
+            type     => 'text',
+            not_null => 1
+        },
+        client_addr => {type => 'scalar'},
+        client_port => {type => 'integer'},
+        payment_id  => {
+            type     => 'bigint',
+            not_null => 1
+        },
+        mtcn_number => {
+            type     => 'varchar',
+            length   => 15,
+            not_null => 1
+        },
+        payment_country => {
+            type     => 'varchar',
+            length   => 64,
+            not_null => 1
+        },
+        secret_answer => {
+            type   => 'varchar',
+            length => 128
+        },
     ],
 
-    primary_key_columns => [ 'payment_country' ],
+    primary_key_columns => ['payment_country'],
 );
 
 1;

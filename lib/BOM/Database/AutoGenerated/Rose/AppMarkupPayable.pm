@@ -5,23 +5,56 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table   => 'app_markup_payable',
-    schema   => 'data_collection',
+    table  => 'app_markup_payable',
+    schema => 'data_collection',
 
     columns => [
-        foreign_server   => { type => 'varchar', length => 3, not_null => 1, remarks => 'Did this txn originate on CR, MF, MX...' },
-        transaction_id   => { type => 'bigint', not_null => 1, remarks => 'The transaction.transaction id of the reference record' },
-        app_id           => { type => 'bigint', not_null => 1 },
-        transaction_time => { type => 'timestamp', not_null => 1 },
-        app_markup       => { type => 'numeric', not_null => 1 },
-        client_currcode  => { type => 'varchar', length => 3, not_null => 1 },
-        dev_currcode     => { type => 'varchar', length => 3, remarks => 'The currency of the developer payee client account' },
-        dev_loginid      => { type => 'varchar' },
-        app_markup_value => { type => 'numeric', remarks => 'The value of app_markup after being converted from the client`s currency to the developer`s currency, effective at the time of the transaction' },
-        app_markup_usd   => { type => 'numeric', remarks => 'The USD value of app_markup after being converted from the client`s currency, effective at the time of the transaction' },
+        foreign_server => {
+            type     => 'varchar',
+            length   => 3,
+            not_null => 1,
+            remarks  => 'Did this txn originate on CR, MF, MX...'
+        },
+        transaction_id => {
+            type     => 'bigint',
+            not_null => 1,
+            remarks  => 'The transaction.transaction id of the reference record'
+        },
+        app_id => {
+            type     => 'bigint',
+            not_null => 1
+        },
+        transaction_time => {
+            type     => 'timestamp',
+            not_null => 1
+        },
+        app_markup => {
+            type     => 'numeric',
+            not_null => 1
+        },
+        client_currcode => {
+            type     => 'varchar',
+            length   => 3,
+            not_null => 1
+        },
+        dev_currcode => {
+            type    => 'varchar',
+            length  => 3,
+            remarks => 'The currency of the developer payee client account'
+        },
+        dev_loginid      => {type => 'varchar'},
+        app_markup_value => {
+            type => 'numeric',
+            remarks =>
+                'The value of app_markup after being converted from the client`s currency to the developer`s currency, effective at the time of the transaction'
+        },
+        app_markup_usd => {
+            type    => 'numeric',
+            remarks => 'The USD value of app_markup after being converted from the client`s currency, effective at the time of the transaction'
+        },
     ],
 
-    primary_key_columns => [ 'foreign_server', 'transaction_id' ],
+    primary_key_columns => ['foreign_server', 'transaction_id'],
 );
 
 1;

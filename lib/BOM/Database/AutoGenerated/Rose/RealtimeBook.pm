@@ -5,20 +5,24 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table   => 'realtime_book',
-    schema   => 'accounting',
+    table  => 'realtime_book',
+    schema => 'accounting',
 
     columns => [
-        id                      => { type => 'bigint', not_null => 1, sequence => 'sequences.global_serial' },
-        financial_market_bet_id => { type => 'bigint' },
-        market_price            => { type => 'numeric' },
-        delta                   => { type => 'numeric' },
-        theta                   => { type => 'numeric' },
-        vega                    => { type => 'numeric' },
-        gamma                   => { type => 'numeric' },
+        id => {
+            type     => 'bigint',
+            not_null => 1,
+            sequence => 'sequences.global_serial'
+        },
+        financial_market_bet_id => {type => 'bigint'},
+        market_price            => {type => 'numeric'},
+        delta                   => {type => 'numeric'},
+        theta                   => {type => 'numeric'},
+        vega                    => {type => 'numeric'},
+        gamma                   => {type => 'numeric'},
     ],
 
-    primary_key_columns => [ 'id' ],
+    primary_key_columns => ['id'],
 );
 
 1;

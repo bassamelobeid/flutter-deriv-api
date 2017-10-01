@@ -68,18 +68,18 @@ EOF
 
     $| = 1;
 
-    my $datadir = $dbic->run( fixup => sub { $_->selectall_arrayref($sql_datadir)->[0]->[0] });
+    my $datadir = $dbic->run(fixup => sub { $_->selectall_arrayref($sql_datadir)->[0]->[0] });
 
     for (
-        my ($oid, $tname, $path) = @{$dbic->run( fixup => sub { $_->selectall_arrayref($sql_first_oid, undef, $table_pattern)->[0] }) // []};
+        my ($oid, $tname, $path) = @{$dbic->run(fixup => sub { $_->selectall_arrayref($sql_first_oid, undef, $table_pattern)->[0] }) // []};
         defined($oid);
-        ($oid, $tname, $path) = @{$dbic->run( fixup => sub {->selectall_arrayref($sql_next_oid, undef, $oid, $table_pattern)->[0] }) // []})
+        ($oid, $tname, $path) = @{$dbic->run(fixup => sub {->selectall_arrayref($sql_next_oid, undef, $oid, $table_pattern)->[0] }) // []})
     {
         print "$oid: $tname ($datadir/$path)\n";
         for my $fork (qw/main fsm vm/) {    # skipping init fork
             my $n = 0;
             for (my $curr_block = 0;; $curr_block += $chunk) {
-                my $l = $dbic->run( fixup => sub { $_->selectall_arrayref($sql_pages, undef, $oid, $fork, $curr_block, $chunk) });
+                my $l = $dbic->run(fixup => sub { $_->selectall_arrayref($sql_pages, undef, $oid, $fork, $curr_block, $chunk) });
                 if (@$l < $chunk) {
                     print "." unless @$l == 0;
                     print "\n" unless $n == 0 and @$l == 0;

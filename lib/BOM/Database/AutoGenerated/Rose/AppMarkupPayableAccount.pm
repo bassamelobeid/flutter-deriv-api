@@ -5,16 +5,26 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table   => 'app_markup_payable_account',
-    schema   => 'data_collection',
+    table  => 'app_markup_payable_account',
+    schema => 'data_collection',
 
     columns => [
-        app_id       => { type => 'bigint', not_null => 1 },
-        dev_loginid  => { type => 'varchar', not_null => 1 },
-        dev_currcode => { type => 'varchar', length => 3, not_null => 1 },
+        app_id => {
+            type     => 'bigint',
+            not_null => 1
+        },
+        dev_loginid => {
+            type     => 'varchar',
+            not_null => 1
+        },
+        dev_currcode => {
+            type     => 'varchar',
+            length   => 3,
+            not_null => 1
+        },
     ],
 
-    primary_key_columns => [ 'app_id' ],
+    primary_key_columns => ['app_id'],
 );
 
 1;

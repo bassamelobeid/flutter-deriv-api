@@ -5,21 +5,39 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table   => 'rejected_trades',
-    schema   => 'data_collection',
+    table  => 'rejected_trades',
+    schema => 'data_collection',
 
     columns => [
-        id                      => { type => 'bigserial', not_null => 1 },
-        loginid                 => { type => 'text', not_null => 1 },
-        financial_market_bet_id => { type => 'bigint' },
-        shortcode               => { type => 'text', not_null => 1 },
-        trade_time              => { type => 'timestamp', default => 'now()' },
-        action_type             => { type => 'text', not_null => 1 },
-        reason                  => { type => 'text', not_null => 1 },
-        details                 => { type => 'scalar' },
+        id => {
+            type     => 'bigserial',
+            not_null => 1
+        },
+        loginid => {
+            type     => 'text',
+            not_null => 1
+        },
+        financial_market_bet_id => {type => 'bigint'},
+        shortcode               => {
+            type     => 'text',
+            not_null => 1
+        },
+        trade_time => {
+            type    => 'timestamp',
+            default => 'now()'
+        },
+        action_type => {
+            type     => 'text',
+            not_null => 1
+        },
+        reason => {
+            type     => 'text',
+            not_null => 1
+        },
+        details => {type => 'scalar'},
     ],
 
-    primary_key_columns => [ 'id' ],
+    primary_key_columns => ['id'],
 
     allow_inline_column_values => 1,
 );
