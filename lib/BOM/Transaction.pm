@@ -336,7 +336,8 @@ sub calculate_limits {
     $limits{max_balance} = $client->get_limit_for_account_balance;
 
     if ($client->landing_company->short =~ /japan/) {
-        $limits{general_open_position_payout} = in_USD(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit_for_japan, $currency);
+        $limits{general_open_position_payout} =
+            in_USD(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit_for_japan, $currency);
     }
 
     if (not $contract->tick_expiry) {
