@@ -218,10 +218,10 @@ quants:
       global: 1
       default: '{}'
     general_open_position_payout_limit_for_japan:
-      description: "Open position payout limit for japan landing company in USD"
+      description: "Open position payout limit for japan landing company in JPY"
       isa: Num
       global: 1
-      default: 10000
+      default: 5000000
 system:
   description: "Various parameters determining core application functionality"
   isa: section
