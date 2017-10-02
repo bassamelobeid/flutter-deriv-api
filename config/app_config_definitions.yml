@@ -217,6 +217,11 @@ quants:
       isa: json_string
       global: 1
       default: '{}'
+    general_open_position_payout_limit_for_japan:
+      description: "Open position payout limit for japan landing company in USD"
+      isa: Num
+      global: 1
+      default: 10000
 system:
   description: "Various parameters determining core application functionality"
   isa: section
