@@ -18,6 +18,7 @@ use Finance::Asset::Market::Types;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 
 use BOM::Platform::Config;
+use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Platform::Context qw(localize request);
@@ -332,6 +333,10 @@ sub calculate_limits {
     return {} if $contract->is_binaryico;
 
     $limits{max_balance} = $client->get_limit_for_account_balance;
+
+    if ($client->landing_company->short =~ /japan/) {
+        $limits{general_open_position_payout} = BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit_for_japan;
+    }
 
     if (not $contract->tick_expiry) {
         $limits{max_open_bets}        = $client->get_limit_for_open_positions;
