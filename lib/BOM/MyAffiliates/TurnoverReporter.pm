@@ -2,7 +2,7 @@ package BOM::MyAffiliates::TurnoverReporter;
 
 =head1 NAME
 
-BOM::MyAffiliates::TurnoverReported
+BOM::MyAffiliates::TurnoverReporter
 
 =head1 DESCRIPTION
 
@@ -13,11 +13,11 @@ and contract reference id
 
 =head1 SYNOPSIS
 
-    use BOM::MyAffiliates::TurnoverReported;
+    use BOM::MyAffiliates::TurnoverReporter;
 
     my $date = '18-Aug-10';
 
-    my $reporter = BOM::MyAffiliates::TurnoverReported->new;
+    my $reporter = BOM::MyAffiliates::TurnoverReporter->new;
     $reporter->activity_for_date_as_csv($date);
 
 =cut
