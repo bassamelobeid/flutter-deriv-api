@@ -22,11 +22,11 @@ and contract reference id
 
 =cut
 
-use Moose;
-use Text::CSV;
 use Date::Utility;
 use File::SortedSeek qw/numeric get_between/;
 use Format::Util::Numbers qw/financialrounding/;
+use Moose;
+use Text::CSV;
 
 use BOM::Database::DataMapper::MyAffiliates;
 
