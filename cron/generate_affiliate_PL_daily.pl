@@ -4,9 +4,10 @@ use warnings;
 use Getopt::Long;
 use Path::Tiny;
 use FileHandle;
+use Date::Utility;
 
 use Brands;
-use Date::Utility;
+
 use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::ActivityReporter;
 use BOM::Platform::Runtime;
