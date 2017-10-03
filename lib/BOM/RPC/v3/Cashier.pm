@@ -432,9 +432,9 @@ sub paymentagent_transfer {
     {
         $error_msg = localize('Sorry, payment agent transfer is temporarily disabled due to system maintenance.');
     } elsif (not $client_fm->landing_company->allows_payment_agents) {
-        $error_msg = localize('Payment agents are not available for this account.');
+        $error_msg = localize('Payment agent facility is not available for this account.');
     } elsif (not $payment_agent) {
-        $error_msg = localize('You are not authorize to perform payment agent transfer.');
+        $error_msg = localize('You are not authorized for transfer via payment agent.');
     } elsif (not $payment_agent->is_authenticated) {
         $error_msg = localize('Your account needs to be authenticated to perform payment agent transfer.');
     } elsif ($client_fm->cashier_setting_password) {
@@ -467,10 +467,12 @@ sub paymentagent_transfer {
 
     return $error_sub->(localize('Payment agent transfer is available for USD currency only.')) if $currency ne 'USD';
 
-    return $error_sub->(localize("Sorry, [_1] is not default currency for payment agent [_2].", $currency, $loginid_fm))
+    return $error_sub->(
+        localize("Payment agent transfer is not allowed, as [_1] is not default account currency for payment agent [_2].", $currency, $loginid_fm))
         if ($client_fm->currency ne $currency or not $client_fm->default_account);
 
-    return $error_sub->(localize("Sorry, [_1] is not default currency for client [_2].", $currency, $loginid_to))
+    return $error_sub->(
+        localize("Payment agent transfer is not allowed, as [_1] is not default account currency for client [_2].", $currency, $loginid_to))
         if ($client_to->currency ne $currency or not $client_to->default_account);
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to))
@@ -510,14 +512,14 @@ sub paymentagent_transfer {
 
     if (not $fm_client_db->freeze) {
         return $error_sub->(
-            localize('An error occurred while processing request. Please try again in one minute.'),
+            localize('Sorry, an error occurred while processing your request. Please try again in one minute.'),
             "Account stuck in previous transaction $loginid_fm"
         );
     }
 
     if (not $to_client_db->freeze) {
         return $error_sub->(
-            localize('An error occurred while processing request. Please try again in one minute.'),
+            localize('Sorry, an error occurred while processing your request. Please try again in one minute.'),
             "Account stuck in previous transaction $loginid_to"
         );
     }
@@ -678,10 +680,9 @@ sub paymentagent_withdraw {
         or $app_config->system->suspend->payment_agents
         or $app_config->system->suspend->system)
     {
-        return $error_sub->(
-            localize('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
+        return $error_sub->(localize('Sorry, the payment agent withdrawal is temporarily disabled due to system maintenance.'));
     } elsif (not $client->landing_company->allows_payment_agents) {
-        return $error_sub->(localize('Payment Agents are not available on this site.'));
+        return $error_sub->(localize('Payment agent facility is not available for this account.'));
     } elsif (not BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client)) {
         # check whether allow to withdraw via payment agent
         return $error_sub->(localize('You are not authorized for withdrawal via payment agent.'));
@@ -695,48 +696,45 @@ sub paymentagent_withdraw {
         $authenticated_pa = $payment_agent_mapper->get_authenticated_payment_agents({target_country => $client->residence});
     }
 
-    if (not $client->residence or scalar keys %{$authenticated_pa} == 0) {
-        return $error_sub->(localize('The Payment Agent facility is currently not available in your country.'));
-    }
+    return $error_sub->(localize('The payment agent facility is currently not available in your country.'))
+        if (not $client->residence or scalar keys %{$authenticated_pa} == 0);
 
     my $min_max = BOM::RPC::v3::Utility::paymentagent_default_min_max();
-    if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum}) {
-        return $error_sub->(localize('Invalid amount. minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}));
-    }
+    return $error_sub->(localize('Invalid amount. minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
+        if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum});
 
     my $paymentagent = Client::Account::PaymentAgent->new({'loginid' => $paymentagent_loginid})
-        or return $error_sub->(localize('Sorry, the Payment Agent does not exist.'));
+        or return $error_sub->(localize('The payment agent account does not exist.'));
 
-    if ($client->broker ne $paymentagent->broker) {
-        return $error_sub->(localize('Sorry, the Payment Agent is unavailable for your region.'));
-    }
+    return $error_sub->(localize('Payment agent transfer is not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
 
     my $pa_client = $paymentagent->client;
-    if ($client->currency ne $currency) {
-        return $error_sub->(localize('Sorry, your currency of [_1] is unavailable for Payment Agent Withdrawal', $currency));
-    }
+    return $error_sub->(
+        localize('Payment agent withdrawal is not allowed, as [_1] is not default currency for your account [_2]', $currency, $client->loginid))
+        if ($client->currency ne $currency or not $client->default_account);
 
-    if ($pa_client->currency ne $currency) {
-        return $error_sub->(localize("Sorry, the Payment Agent's currency [_1] is unavailable for Payment Agent Withdrawal", $currency));
-    }
+    return $error_sub->(
+        localize("Payment agent withdrawal is not allowed, as [_1] is not default currency for payment agent account [_2].", $currency))
+        if ($pa_client->currency ne $currency or not $pa_client->default_account);
 
     # check that the amount is in correct format
-    if ($amount !~ /^\d*\.?\d*$/) {
-        return $error_sub->(localize('There was an error processing the request.'));
-    }
+    return $error_sub->(localize('Invalid amount.')) if ($amount !~ /^\d*\.?\d*$/);
 
     # check that the additional information does not exceeded the allowed limits
-    if (length($further_instruction) > 300) {
-        return $error_sub->(localize('Further instructions must not exceed [_1] characters.', 300));
-    }
+    return $error_sub->(localize('Further instructions must not exceed [_1] characters.', 300)) if (length($further_instruction) > 300);
 
     # check that both the client payment agent cashier is not locked
-    if ($client->get_status('cashier_locked') || $client->get_status('withdrawal_locked') || $client->documents_expired) {
-        return $error_sub->(localize('There was an error processing the request.'));
-    }
-    if ($pa_client->get_status('cashier_locked') || $client->documents_expired) {
-        return $error_sub->(localize('This Payment Agent cashier section is locked.'));
-    }
+    return $error_sub->(localize('Your cashier is locked as per your request.')) if $client->get_status('cashier_locked');
+
+    return $error_sub->(localize('You cannot perform withdrawal, as your account is withdrawal locked.')) if $client->get_status('withdrawal_locked');
+
+    return $error_sub->(localize('You cannot perform withdrawal, as your verification documents have expired.')) if $client->documents_expired;
+
+    return $error_sub->(localize('You cannot perform withdrawal to account [_1], as payment agent cashier is locked.', $pa_client->loginid))
+        if $pa_client->get_status('cashier_locked');
+
+    return $error_sub->(localize('You cannot perform withdrawal to account [_1], as payment agent verification documents have expired.'))
+        if $pa_client->documents_expired;
 
     if ($args->{dry_run}) {
         return {
@@ -761,13 +759,13 @@ sub paymentagent_withdraw {
     # freeze loginID to avoid a race condition
     if (not $client_db->freeze) {
         return $error_sub->(
-            localize('An error occurred while processing request. Please try again in one minute.'),
+            localize('Sorry, an error occurred while processing your request. Please try again in one minute.'),
             "Account stuck in previous transaction $client_loginid"
         );
     }
     if (not $paymentagent_client_db->freeze) {
         return $error_sub->(
-            localize('An error occurred while processing request. Please try again in one minute.'),
+            localize('Sorry, an error occurred while processing your request. Please try again in one minute.'),
             "Account stuck in previous transaction $paymentagent_loginid"
         );
     }
@@ -843,7 +841,7 @@ sub paymentagent_withdraw {
             return $error_sub->(localize('Request too frequent. Please try again later.'), $error);
         } else {
             warn "Error in paymentagent_transfer for withdrawal - $error\n";
-            return $error_sub->(localize('An error occurred while processing your payment agent withdrawal.'), $error);
+            return $error_sub->(localize('Sorry, an error occurred while processing your request.'), $error);
         }
     }
 
