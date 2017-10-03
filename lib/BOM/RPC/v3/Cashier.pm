@@ -588,6 +588,7 @@ sub paymentagent_transfer {
         );
     }
     catch {
+        chomp;
         $error = "Paymentagent Transfer failed to $loginid_to [$_]";
     };
 
