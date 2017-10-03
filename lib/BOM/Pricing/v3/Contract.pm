@@ -464,6 +464,8 @@ sub send_ask {
     $params->{args}->{landing_company} = $params->{landing_company}
         if $params->{landing_company};
 
+    $params->{args}->{unit} //= $params->{args}->{amount};
+
     my $symbol   = $params->{args}->{symbol};
     my $response = _validate_symbol($symbol);
     if ($response and exists $response->{error}) {
