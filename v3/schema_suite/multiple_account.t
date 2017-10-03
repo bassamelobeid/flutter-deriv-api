@@ -64,7 +64,7 @@ fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/t
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_cr.json',
     $placeholder, 'testmultiple@binary.com', 'Howdee';
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
-    '(USD|EUR|GBP|AUD|BTC|LTC|ETH)', 7;
+    '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH)', 8;
 # will fail as currency for existing client is not set
 fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json',
     'Howdee', 'id';
@@ -154,6 +154,8 @@ fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_cu
     'ETH';
 fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
     'BTC';
+fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
+    'BCH';    
 # set account currency
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
     'EUR';
@@ -186,6 +188,8 @@ fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_cu
     'LTC';
 fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
     'BTC';
+fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
+    'BCH';
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
     'EUR';
 
@@ -228,6 +232,8 @@ fail_test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account
 
 fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
     'BTC';
+fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
+    'BCH';    
 fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
     'LTC';
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',

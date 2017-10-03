@@ -30,7 +30,7 @@ subtest 'country code Malaysia' => sub {
             'CF-IPCOUNTRY' => 'my',
         });
     my $res = $t->await::payout_currencies({payout_currencies => 1});
-    cmp_deeply($res->{payout_currencies}, bag(qw(USD EUR GBP AUD BTC LTC ETH)), 'payout currencies are correct') or note explain $res;
+    cmp_deeply($res->{payout_currencies}, bag(qw(USD EUR GBP AUD BTC LTC BCH ETH)), 'payout currencies are correct') or note explain $res;
     $t->finish_ok;
     done_testing;
 };
