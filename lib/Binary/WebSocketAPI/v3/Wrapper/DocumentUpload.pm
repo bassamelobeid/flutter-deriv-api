@@ -5,6 +5,9 @@ use warnings;
 
 use Try::Tiny;
 use Digest::SHA;
+use Net::Async::Webservice::S3;
+
+use Binary::WebSocketAPI::Hooks;
 
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
@@ -29,9 +32,11 @@ sub add_upload_info {
         sha1            => Digest::SHA->new,
         received_bytes  => 0,
         pending_futures => \@pending_futures,
+        upload_id       => $upload_id,
+        s3              => create_s3_instance($c),
     };
 
-    $upload_info->{put_future} = $c->s3->put_object(
+    $upload_info->{put_future} = $upload_info->{s3}->put_object(
         key   => $file_name,
         value => sub {
             my ($f) = @{$upload_info->{pending_futures}};
@@ -52,9 +57,15 @@ sub add_upload_info {
         sub {
             my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
 
+            # For tests
             return if $s3_config->{bucket} eq 'TestingS3Bucket';
 
             send_upload_failure($c, $upload_info, 'unknown');
+        });
+
+    $upload_info->{put_future}->on_done(
+        sub {
+            send_upload_successful($c, $upload_info, 'success');
         });
 
     my $stash = {
@@ -80,9 +91,12 @@ sub document_upload {
     try {
         $upload_info = get_upload_info($c, $frame);
 
-        return upload_chunk($c, $upload_info) if $upload_info->{chunk_size} != 0;
+        # Last chunk is indicated with zero size
+        upload_chunk($c, $upload_info) if $upload_info->{chunk_size} != 0;
 
-        send_upload_successful($c, $upload_info, 'success');
+        # For tests
+        my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
+        send_upload_successful($c, $upload_info, 'success') if $s3_config->{bucket} eq 'TestingS3Bucket';
     }
     catch {
         warn "UploadError: $_";
@@ -107,7 +121,6 @@ sub get_upload_info {
     return {
         chunk_size => $chunk_size,
         data       => $data,
-        upload_id  => $upload_id,
         %{$upload_info},
     };
 }
@@ -260,6 +273,20 @@ sub delete_stash {
     delete $upload_info->{pending_futures};
 
     return;
+}
+
+sub create_s3_instance {
+    my $c = shift;
+
+    my $s3 = Net::Async::Webservice::S3->new(
+        %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)},
+        max_retries => 1,
+        timeout     => 60,
+    );
+
+    $c->loop->add($s3);
+
+    return $s3;
 }
 
 1;
