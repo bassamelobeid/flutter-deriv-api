@@ -11,6 +11,9 @@ use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
+use constant MAX_FILE_SIZE  => 2**20 * 3;    # 3MB
+use constant MAX_CHUNK_SIZE => 2**17;
+
 $ENV{DOCUMENT_AUTH_S3_ACCESS} = 'TestingS3Access';
 $ENV{DOCUMENT_AUTH_S3_SECRET} = 'TestingS3Secret';
 $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'TestingS3Bucket';
@@ -134,9 +137,18 @@ subtest 'binary metadata should be correctly sent' => sub {
                 binary => (pack 'N3A*', $call_type, $upload_id, 2, 'A'),
             })->message_ok;
     }
-    [qr/Incorrect data size/], 'Expected warning';
+    [qr/Incorrect chunk size/], 'Expected warning';
     $res = decode_json($t->message->[1]);
     ok $res->{error}, 'chunk_size should be valid';
+
+    warning_like {
+        $t = $t->send_ok({
+                binary => (pack 'N3A*', $call_type, $upload_id, MAX_CHUNK_SIZE + 1, 'A'),
+            })->message_ok;
+    }
+    [qr/Maximum chunk size exceeded/], 'Expected warning';
+    $res = decode_json($t->message->[1]);
+    ok $res->{error}, 'chunk_size should be less than max';
 
     ok((not exists($res->{echo_req}->{status})), 'status should not be present');
 };
@@ -227,7 +239,7 @@ subtest 'Send two files one by one' => sub {
 };
 
 subtest 'Maximum file size' => sub {
-    my $max_size = 2**20 * 3 + 1;
+    my $max_size = MAX_FILE_SIZE + 1;
 
     my $req = {
         req_id          => ++$req_id,
