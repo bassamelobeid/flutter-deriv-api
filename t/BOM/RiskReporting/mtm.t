@@ -53,6 +53,11 @@ create_underlying('frxBTCUSD')->set_combined_realtime({
     quote => 100
 });
 
+create_underlying('frxBCHUSD')->set_combined_realtime({
+    epoch => time,
+    quote => 100
+});
+
 create_underlying('frxLTCUSD')->set_combined_realtime({
     epoch => time,
     quote => 100
