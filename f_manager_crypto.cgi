@@ -90,9 +90,10 @@ my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbh = $clientdb->db->dbh;
 
 my $rpc_client_builders = {
-    BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}},   timeout => 5)) },
-    LTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{litecoin}},  timeout => 5)) },
-    ETH => sub { Ethereum::RPC::Client->new((%{$cfg->{ethereum}}, timeout => 5)) },
+    BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}},      timeout => 5)) },
+    BCH => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin_cash}}, timeout => 5)) },
+    LTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{litecoin}},     timeout => 5)) },
+    ETH => sub { Ethereum::RPC::Client->new((%{$cfg->{ethereum}},    timeout => 5)) },
 };
 my $rpc_client = ($rpc_client_builders->{$currency} // code_exit_BO("no RPC client found for currency " . $currency))->();
 # Exchange rate should be populated according to supported cryptocurrencies.
@@ -238,7 +239,7 @@ if ($view_action eq 'withdrawals') {
     );
 
     {
-        # Apply date filtering. Note that this is currently BTC/LTC-specific, but
+        # Apply date filtering. Note that this is currently BTC/BCH/LTC-specific, but
         # once we have the information in the database we should pass the date range
         # as a parameter instead.
         my $filter = sub {
