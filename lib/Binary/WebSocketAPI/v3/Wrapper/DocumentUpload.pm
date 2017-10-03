@@ -9,6 +9,8 @@ use Net::Async::Webservice::S3;
 
 use Binary::WebSocketAPI::Hooks;
 
+use constant MAX_CHUNK_SIZE => 2**17;
+
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
     my $args = $req_storage->{origin_args};
@@ -57,7 +59,7 @@ sub add_upload_info {
         sub {
             my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
 
-            # For tests
+            # Ignore failure for tests
             return if $s3_config->{bucket} eq 'TestingS3Bucket';
 
             send_upload_failure($c, $upload_info, 'unknown');
@@ -92,11 +94,9 @@ sub document_upload {
         $upload_info = get_upload_info($c, $frame);
 
         # Last chunk is indicated with zero size
-        upload_chunk($c, $upload_info) if $upload_info->{chunk_size} != 0;
+        return upload_chunk($c, $upload_info) if $upload_info->{chunk_size} != 0;
 
-        # For tests
-        my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
-        send_upload_successful($c, $upload_info, 'success') if $s3_config->{bucket} eq 'TestingS3Bucket';
+        send_success_for_tests($c, $upload_info);
     }
     catch {
         warn "UploadError: $_";
@@ -109,14 +109,15 @@ sub document_upload {
 sub get_upload_info {
     my ($c, $frame) = @_;
 
-    die 'Invalid frame' unless length $frame >= 12;
+    die 'Invalid frame' if length $frame < 12;
 
     my ($call_type, $upload_id, $chunk_size, $data) = unpack "N3a*", $frame;
 
     my $upload_info = $c->stash->{document_upload}->{$upload_id} or die "Unknown upload request";
 
-    die "Unknown call type"   unless $call_type == $upload_info->{call_type};
-    die "Incorrect data size" unless $chunk_size == length $data;
+    die "Unknown call type"           if $call_type != $upload_info->{call_type};
+    die "Maximum chunk size exceeded" if $chunk_size > MAX_CHUNK_SIZE;
+    die "Incorrect chunk size"        if $chunk_size != length $data;
 
     return {
         chunk_size => $chunk_size,
@@ -264,7 +265,9 @@ sub generate_upload_id {
 
 sub delete_stash {
     my ($c, $upload_info) = @_;
-    return unless defined $upload_info;
+
+    return if !$upload_info;
+
     my $stash = $c->stash->{document_upload};
 
     delete $stash->{$upload_info->{upload_id}} if exists $upload_info->{upload_id};
@@ -287,6 +290,13 @@ sub create_s3_instance {
     $c->loop->add($s3);
 
     return $s3;
+}
+
+sub send_success_for_tests {
+    my ($c, $upload_info) = @_;
+# For tests
+    my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
+    send_upload_successful($c, $upload_info, 'success') if $s3_config->{bucket} eq 'TestingS3Bucket';
 }
 
 1;
