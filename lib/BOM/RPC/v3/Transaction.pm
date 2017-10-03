@@ -67,6 +67,8 @@ sub buy {
     my $amount_type = $contract_parameters->{amount_type};
     my $response;
 
+    $contract_parameters->{unit} //= $contract_parameters->{amount};
+
     my $price = $args->{price};
     if (defined $amount_type and $amount_type eq 'stake') {
         return BOM::RPC::v3::Utility::create_error({
