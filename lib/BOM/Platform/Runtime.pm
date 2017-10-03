@@ -5,6 +5,7 @@ use feature 'state';
 
 use App::Config::Chronicle;
 use BOM::Platform::Chronicle;
+use BOM::Platform::RedisReplicated;
 
 has 'app_config' => (
     is         => 'ro',
@@ -45,6 +46,8 @@ sub get_offerings_config {
     $config_args->{suspend_contract_types} = $runtime->app_config->quants->features->suspend_contract_types;
 
     $config_args->{disabled_markets} = $runtime->app_config->quants->markets->disabled;
+    $config_args->{_redis_write}     = BOM::Platform::RedisReplicated::redis_write();
+    $config_args->{_redis_read}      = BOM::Platform::RedisReplicated::redis_write();
 
     return $config_args;
 }
