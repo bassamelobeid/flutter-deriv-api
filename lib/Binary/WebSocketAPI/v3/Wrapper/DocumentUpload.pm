@@ -297,6 +297,8 @@ sub send_success_for_tests {
 # For tests
     my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
     send_upload_successful($c, $upload_info, 'success') if $s3_config->{bucket} eq 'TestingS3Bucket';
+
+    return;
 }
 
 1;
