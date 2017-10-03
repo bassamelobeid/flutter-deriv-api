@@ -31,11 +31,11 @@
                 },
                 "legal_allowed_currencies": {
                     "type": "array",
-                    "minItems": 6,
+                    "minItems": 7,
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC)$",
+                        "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC|BCH)$",
                         "required": "1"
                     }
                 },
