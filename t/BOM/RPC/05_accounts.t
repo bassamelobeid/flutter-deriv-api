@@ -249,7 +249,7 @@ my $method = 'payout_currencies';
 subtest $method => sub {
     # we shouldn't care about order of currencies
     # we just need to send array back
-    cmp_bag($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD BTC LTC)], 'invalid token will get all currencies');
+    cmp_bag($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD BTC BCH LTC)], 'invalid token will get all currencies');
     cmp_bag(
         $c->tcall(
             $method,
@@ -257,12 +257,12 @@ subtest $method => sub {
                 token => undef,
             }
         ),
-        [qw(USD EUR GBP AUD BTC LTC)],
+        [qw(USD EUR GBP AUD BTC BCH LTC)],
         'undefined token will get all currencies'
     );
 
     cmp_bag($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
-    cmp_bag($c->tcall($method, {}), [qw(USD EUR GBP AUD BTC LTC)], "will return legal currencies if no token");
+    cmp_bag($c->tcall($method, {}), [qw(USD EUR GBP AUD BTC BCH LTC)], "will return legal currencies if no token");
 };
 
 $method = 'landing_company';
