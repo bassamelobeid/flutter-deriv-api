@@ -268,6 +268,7 @@ if ($input{whattodo} eq 'uploadID') {
 
         $doc->{file_name} = $new_file_name;
         $doc->{checksum}  = $checksum;
+        $doc->{comments}  = $comments;
 
         die "Cannot record uploaded file $filetoupload in the db" unless $doc->save();
 
