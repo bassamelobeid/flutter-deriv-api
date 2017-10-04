@@ -19,7 +19,7 @@ my $date_pricing = 1352344145;
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $date_pricing});
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked->mock('get', sub {[map {{epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.005)}} (0..80)]});
+$mocked->mock('get', sub {[map {{epoch => $_, decimate_epoch => $_, quote => 100 + 0.005*$_}} (0..80)]});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {

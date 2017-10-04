@@ -45,7 +45,7 @@ subtest 'monday mornings intraday' => sub {
     $mocked->mock(
         'get',
         sub {
-            [map { {epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.005)} } (0 .. 80)];
+            [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005*$_} } (0 .. 80)];
         });
     $c = produce_contract($args);
     ok $c->pricing_vol, 'no warnings';
