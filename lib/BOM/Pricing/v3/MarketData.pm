@@ -41,7 +41,7 @@ sub _set_cache {
 }
 
 sub _get_digest {
-    my $digest = LandingCompany::Offerings::_get_config_key(BOM::Platform::Runtime->instance->get_offerings_config) . '1';
+    my $digest = LandingCompany::Offerings::_get_config_key(BOM::Platform::Runtime->instance->get_offerings_config);
     return $digest;
 }
 
