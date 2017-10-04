@@ -96,7 +96,7 @@ bet_limits:
         AUD: 3000
         GBP: 3000
         JPY: 200000 # 200 lots for JPY on < 7 days
-        BTC: 2
+        BTC: 1
         BCH: 5
         ETH: 10
         LTC: 50
