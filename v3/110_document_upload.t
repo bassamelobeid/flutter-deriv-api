@@ -6,13 +6,18 @@ use Test::Warn;
 use JSON;
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Digest::SHA qw/sha1_hex/;
+use Net::Async::Webservice::S3;
 
+use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
+use Binary::WebSocketAPI::Hooks;
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 use constant MAX_FILE_SIZE  => 2**20 * 3;    # 3MB
 use constant MAX_CHUNK_SIZE => 2**17;
+
+override_subs();
 
 $ENV{DOCUMENT_AUTH_S3_ACCESS} = 'TestingS3Access';
 $ENV{DOCUMENT_AUTH_S3_SECRET} = 'TestingS3Secret';
@@ -438,6 +443,57 @@ sub document_upload_ok {
     is $success->{status}, 'success', 'File is successfully uploaded';
     is $success->{size}, length $file, 'file size is correct';
     is $success->{checksum}, sha1_hex($file), 'checksum is correct';
+}
+
+sub override_subs {
+    my $prev_upload_chunk = \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::upload_chunk;
+
+    *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::upload_chunk = sub {
+        my ($c, $upload_info) = @_;
+
+        return $prev_upload_chunk->($c, $upload_info) if $upload_info->{chunk_size} != 0;
+
+        Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::send_upload_successful($c, $upload_info, 'success');
+    };
+
+    my $prev_create_s3_instance = \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::create_s3_instance;
+
+    *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::create_s3_instance = sub {
+        my ($c, $upload_info) = @_;
+
+        my $s3 = Net::Async::Webservice::S3->new(
+            %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)},
+            max_retries => 1,
+            timeout     => 60,
+        );
+
+        $c->loop->add($s3);
+
+        $upload_info->{s3} = $s3;
+
+        $upload_info->{put_future} = $s3->put_object(
+            key   => $upload_info->{file_name},
+            value => sub {
+                my ($f) = @{$upload_info->{pending_futures}};
+
+                push @{$upload_info->{pending_futures}}, $f = $c->loop->new_future unless $f;
+
+                $f->on_ready(
+                    sub {
+                        shift @{$upload_info->{pending_futures}};
+                    });
+
+                return $f;
+            },
+            value_length => $upload_info->{file_size},
+        );
+
+        $upload_info->{put_future}->on_fail(
+            sub {
+                Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::send_upload_failure($c, $upload_info, 'unknown')
+                    if not $ENV{DOCUMENT_AUTH_S3_BUCKET} eq 'TestingS3Bucket';
+            });
+    };
 }
 
 done_testing();
