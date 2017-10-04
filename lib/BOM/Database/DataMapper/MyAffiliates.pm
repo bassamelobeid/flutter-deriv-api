@@ -9,7 +9,6 @@ extends 'BOM::Database::DataMapper::Base';
 
 =over
 
-
 =item get_clients_activity
 
 get different factors of clients activity needed for myaffiliates pl reports.
@@ -17,8 +16,7 @@ get different factors of clients activity needed for myaffiliates pl reports.
 =cut
 
 sub get_clients_activity {
-    my $self = shift;
-    my $args = shift;
+    my ($self, $args) = @_;
     my $dbic = $self->db->dbic;
 
     my $sql = q{
@@ -33,6 +31,30 @@ sub get_clients_activity {
             return $sth->fetchall_hashref('loginid');
         });
 }
+
+=item get_trading_activity
+
+get client trading activity for particular date for myaffiliates turnover reports.
+
+=cut
+
+sub get_trading_activity {
+    my ($self, $args) = @_;
+    my $dbic = $self->db->dbic;
+
+    my $sql = q{
+        SELECT * FROM get_myaffiliate_clients_trading_activity($1)
+    };
+
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ);
+
+            return $sth->fetchall_arrayref;
+        });
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
