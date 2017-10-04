@@ -1159,6 +1159,20 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -message_to_client => BOM::Platform::Context::localize('No further trading is allowed for the current trading session.'),
         );
     },
+    BI019 => sub {
+        my $self   = shift;
+        my $client = shift;
+        my $msg    = shift;
+
+        my $limit_name = 'Unknown';
+        $msg =~ /^.+: ([^,]+)/ and $limit_name = $1;
+
+        return Error::Base->cuss(
+            -type              => $limit_name . 'Exceeded',
+            -mesg              => 'Exceeds open position limit on ' . $limit_name,
+            -message_to_client => BOM::Platform::Context::localize('You have exceeded the open position limit for contracts of this type.'),
+        );
+    },
     BI050 => sub {
         my $self   = shift;
         my $client = shift;
