@@ -17,7 +17,7 @@ use Date::Utility;
 
 BOM::Backoffice::Sysinit::init();
 
-my @all_currencies = ('USD', 'GBP', 'EUR', 'AUD', 'JPY', 'BTC', 'LTC', 'ETH');
+my @all_currencies = ('USD', 'GBP', 'EUR', 'AUD', 'JPY', 'BTC', 'BCH', 'LTC', 'ETH');
 
 my $update_time = Date::Utility->new($ARGV[0] || time());
 
