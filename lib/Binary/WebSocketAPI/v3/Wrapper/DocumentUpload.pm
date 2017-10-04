@@ -17,58 +17,24 @@ sub add_upload_info {
 
     return create_error($args, $rpc_response) if $rpc_response->{error};
 
-    my $current_stash = $c->stash->{document_upload} || {};
-    my $upload_id     = generate_upload_id($current_stash);
-    my $call_params   = create_call_params($args);
-    my $file_name     = $rpc_response->{file_name};
-    my $file_size     = $args->{file_size};
-
+    my $current_stash   = $c->stash->{document_upload} || {};
+    my $upload_id       = generate_upload_id($current_stash);
+    my $call_params     = create_call_params($args);
     my @pending_futures = ();
 
     my $upload_info = {
         %{$call_params},
         file_id         => $rpc_response->{file_id},
         call_type       => $rpc_response->{call_type},
-        file_name       => $file_name,
-        file_size       => $file_size,
+        file_name       => $rpc_response->{file_name},
+        file_size       => $args->{file_size},
         sha1            => Digest::SHA->new,
         received_bytes  => 0,
         pending_futures => \@pending_futures,
         upload_id       => $upload_id,
-        s3              => create_s3_instance($c),
     };
 
-    $upload_info->{put_future} = $upload_info->{s3}->put_object(
-        key   => $file_name,
-        value => sub {
-            my ($f) = @{$upload_info->{pending_futures}};
-
-            push @{$upload_info->{pending_futures}}, $f = $c->loop->new_future unless $f;
-
-            $f->on_ready(
-                sub {
-                    shift @{$upload_info->{pending_futures}};
-                });
-
-            return $f;
-        },
-        value_length => $file_size,
-    );
-
-    $upload_info->{put_future}->on_fail(
-        sub {
-            my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
-
-            # Ignore failure for tests
-            return if $s3_config->{bucket} eq 'TestingS3Bucket';
-
-            send_upload_failure($c, $upload_info, 'unknown');
-        });
-
-    $upload_info->{put_future}->on_done(
-        sub {
-            send_upload_successful($c, $upload_info, 'success');
-        });
+    create_s3_instance($c, $upload_info);
 
     my $stash = {
         %{$current_stash},
@@ -94,9 +60,7 @@ sub document_upload {
         $upload_info = get_upload_info($c, $frame);
 
         # Last chunk is indicated with zero size
-        return upload_chunk($c, $upload_info) if $upload_info->{chunk_size} != 0;
-
-        send_success_for_tests($c, $upload_info);
+        upload_chunk($c, $upload_info);
     }
     catch {
         warn "UploadError: $_";
@@ -205,6 +169,9 @@ sub send_upload_successful {
 
 sub upload_chunk {
     my ($c, $upload_info) = @_;
+
+    return if $upload_info->{chunk_size} == 0;
+
     my $upload_id = $upload_info->{upload_id};
     my $data      = $upload_info->{data};
     my $stash     = $c->stash->{document_upload};
@@ -279,7 +246,7 @@ sub delete_stash {
 }
 
 sub create_s3_instance {
-    my $c = shift;
+    my ($c, $upload_info) = @_;
 
     my $s3 = Net::Async::Webservice::S3->new(
         %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)},
@@ -289,14 +256,28 @@ sub create_s3_instance {
 
     $c->loop->add($s3);
 
-    return $s3;
-}
+    $upload_info->{s3} = $s3;
 
-sub send_success_for_tests {
-    my ($c, $upload_info) = @_;
-# For tests
-    my $s3_config = Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c);
-    send_upload_successful($c, $upload_info, 'success') if $s3_config->{bucket} eq 'TestingS3Bucket';
+    $upload_info->{put_future} = $s3->put_object(
+        key   => $upload_info->{file_name},
+        value => sub {
+            my ($f) = @{$upload_info->{pending_futures}};
+
+            push @{$upload_info->{pending_futures}}, $f = $c->loop->new_future unless $f;
+
+            $f->on_ready(
+                sub {
+                    shift @{$upload_info->{pending_futures}};
+                });
+
+            return $f;
+        },
+        value_length => $upload_info->{file_size},
+    );
+
+    $upload_info->{put_future}->on_fail(sub { send_upload_failure($c, $upload_info, 'unknown') });
+
+    $upload_info->{put_future}->on_done(sub { send_upload_successful($c, $upload_info, 'success') });
 
     return;
 }
