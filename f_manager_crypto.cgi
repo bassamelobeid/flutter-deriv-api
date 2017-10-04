@@ -97,7 +97,6 @@ my $rpc_client_builders = {
 };
 my $rpc_client = ($rpc_client_builders->{$currency} // code_exit_BO("no RPC client found for currency " . $currency))->();
 # Exchange rate should be populated according to supported cryptocurrencies.
-#my $exchange_rates = {map { $_ => in_USD(1.0, $_) } keys %$rpc_client_builders};
 
 my $exchange_rate = eval { in_USD(1.0, $currency) } or code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();
 
@@ -105,10 +104,6 @@ my $display_transactions = sub {
     my $trxns = shift;
     # Assign USD equivalent value
     for my $trx (@$trxns) {
-        unless (defined $exchange_rate) {
-            warn "exchange_rates for $trx->{currency_code} is undefined";
-            $exchange_rate = 0;
-        }
         $trx->{amount} //= 0;    # it will be undef on newly generated addresses
         $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
     }

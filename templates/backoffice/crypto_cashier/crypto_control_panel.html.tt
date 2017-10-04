@@ -12,7 +12,7 @@
         <button type="submit" name="view_action" value="new_deposit_address">Get New Deposit Address</button>
     <br>
     <br>
-    Exchange Rate: [% currency %]/USD: <strong>[% exchange_rate %]</strong>[% UNLESS loop.last %]&nbsp;[% END %]
+    Exchange Rate: [% currency %]/USD: <strong>[% exchange_rate %]</strong>
     <br>
     <br>
     <input type="hidden" name="broker" value="[% broker %]">
