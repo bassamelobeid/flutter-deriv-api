@@ -35,7 +35,7 @@ sub _set_cache {
             value  => $value,
         },
         Date::Utility->new(),
-        0
+        0, 86400,
     );
     return;
 }
