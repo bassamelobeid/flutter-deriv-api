@@ -176,15 +176,15 @@ subtest $method => sub {
             language => 'EN',
         };
         $result = $rpc_ct->call_ok('payout_currencies', $params)->has_no_system_error->result;
-        is scalar @$result, 6, 'Correct number of currencies when token is not passed';
+        is scalar @$result, 7, 'Correct number of currencies when token is not passed';
 
         $params->{token} = $token;
         $result = $rpc_ct->call_ok('payout_currencies', $params)->has_no_system_error->result;
-        is scalar @$result, 6, 'Correct number of currencies for omnibus if authorized as currency not yet selected';
+        is scalar @$result, 7, 'Correct number of currencies for omnibus if authorized as currency not yet selected';
 
         $params->{token} = $sub_token;
         $result = $rpc_ct->call_ok('payout_currencies', $params)->has_no_system_error->result;
-        is scalar @$result, 6, 'Correct number of currencies when sub account token is passed as currency not yet selected';
+        is scalar @$result, 7, 'Correct number of currencies when sub account token is passed as currency not yet selected';
     };
 
 };

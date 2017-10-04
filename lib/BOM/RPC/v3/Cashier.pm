@@ -96,8 +96,8 @@ sub cashier {
         return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
-    ## if currency == BTC|ETH|LTC|ETC, use cryptocurrency cashier
-    if (grep { $currency eq $_ } ('BTC', 'ETH', 'LTC', 'ETC')) {
+    ## if currency is a cryptocurrency, use cryptocurrency cashier
+    if (LandingCompany::Registry::get('costarica')->legal_allowed_currencies->{$currency} eq 'crypto') {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
@@ -588,6 +588,7 @@ sub paymentagent_transfer {
         );
     }
     catch {
+        chomp;
         $error = "Paymentagent Transfer failed to $loginid_to [$_]";
     };
 
