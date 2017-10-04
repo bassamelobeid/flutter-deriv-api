@@ -21,7 +21,10 @@ use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 
-use constant SOCIAL_LOGIN_MODE => 1;
+# fetch social login feature status from settings
+sub _is_social_login_suspended {
+    return BOM::Platform::Runtime->instance->app_config->system->suspend->social_logins;
+}
 
 sub _oauth_model {
     return BOM::Database::Model::OAuth->new;
@@ -78,7 +81,8 @@ sub authorize {
         error        => delete $c->session->{_oneall_error} || '',
         csrf_token   => $c->csrf_token,
         r            => $c->stash('request'),
-        social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
+        # prevent feature rendering
+        social_login => (not _is_social_login_suspended and $request_country_code ne 'jp'),
     ) unless $client;
 
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
@@ -92,7 +96,7 @@ sub authorize {
         error        => localize('This account is unavailable.'),
         r            => $c->stash('request'),
         csrf_token   => $c->csrf_token,
-        social_login => (SOCIAL_LOGIN_MODE and $request_country_code ne 'jp'),
+        social_login => (not _is_social_login_suspended and $request_country_code ne 'jp'),
     ) if grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands};
 
     my $redirect_uri = $app->{redirect_uri};
@@ -238,7 +242,7 @@ sub _login {
         } elsif (
             grep {
                 $client->loginid =~ /^$_/
-            } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins})
+            } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins} or ($oneall_user_id and _is_social_login_suspended))
         {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         } elsif ($client->get_status('disabled')) {
@@ -256,7 +260,7 @@ sub _login {
             error        => $err,
             r            => $c->stash('request'),
             csrf_token   => $c->csrf_token,
-            social_login => (SOCIAL_LOGIN_MODE and $c->{stash}->{request}->{country_code} ne 'jp'),
+            social_login => (not _is_social_login_suspended and $c->{stash}->{request}->{country_code} ne 'jp'),
         );
         return;
     }
