@@ -17,7 +17,8 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use constant MAX_FILE_SIZE  => 2**20 * 3;    # 3MB
 use constant MAX_CHUNK_SIZE => 2**17;
 
-override_subs();
+warning_like { override_subs() }[qr/Subroutine.*redefined.*/, qr/Subroutine.*redefined.*/],
+    'We override upload_chunk and create_s3_instance to avoid using s3 for tests';
 
 $ENV{DOCUMENT_AUTH_S3_ACCESS} = 'TestingS3Access';
 $ENV{DOCUMENT_AUTH_S3_SECRET} = 'TestingS3Secret';
