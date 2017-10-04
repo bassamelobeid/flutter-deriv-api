@@ -22,7 +22,7 @@ my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked->mock(
     'get',
     sub {
-        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.1)} } (0 .. 80)];
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.005)} } (0 .. 80)];
     });
 
 my $trading_calendar    = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);

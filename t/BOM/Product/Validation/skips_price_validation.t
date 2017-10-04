@@ -23,7 +23,7 @@ initialize_realtime_ticks_db();
 
 note('mocking ticks to prevent warnings.');
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked->mock('get', sub {[map {{epoch => $_,decimate_epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
+$mocked->mock('get', sub {[map {{epoch => $_,decimate_epoch => $_, quote => 100 + rand(0.005)}} (0..80)]});
 $mocked->mock(
     'decimate_cache_get',
     sub {
