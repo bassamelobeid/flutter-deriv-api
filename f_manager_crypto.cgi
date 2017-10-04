@@ -99,7 +99,7 @@ my $rpc_client = ($rpc_client_builders->{$currency} // code_exit_BO("no RPC clie
 # Exchange rate should be populated according to supported cryptocurrencies.
 #my $exchange_rates = {map { $_ => in_USD(1.0, $_) } keys %$rpc_client_builders};
 
-my $exchange_rate = eval {in_USD(1.0, $currency)} or code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();;
+my $exchange_rate = eval { in_USD(1.0, $currency) } or code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();
 
 my $display_transactions = sub {
     my $trxns = shift;
