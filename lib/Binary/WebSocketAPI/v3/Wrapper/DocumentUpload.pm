@@ -59,7 +59,6 @@ sub document_upload {
     try {
         $upload_info = get_upload_info($c, $frame);
 
-        # Last chunk is indicated with zero size
         upload_chunk($c, $upload_info);
     }
     catch {
@@ -170,6 +169,7 @@ sub send_upload_successful {
 sub upload_chunk {
     my ($c, $upload_info) = @_;
 
+    # Last chunk is indicated with zero size
     return if $upload_info->{chunk_size} == 0;
 
     my $upload_id = $upload_info->{upload_id};
