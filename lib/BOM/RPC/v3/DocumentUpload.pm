@@ -73,6 +73,7 @@ sub successful_upload {
 
 # Change client's account status.
     $client->set_status('under_review', 'system', 'Documents uploaded');
+    $client->clr_status('needs_action');
 
     if (not $client->save()) {
         warn 'Unable to change client status';
