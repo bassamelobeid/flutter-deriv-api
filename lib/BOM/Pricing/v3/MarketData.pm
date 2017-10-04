@@ -4,52 +4,76 @@ use strict;
 use warnings;
 no indirect;
 
-use Try::Tiny;
 use Date::Utility;
+use LandingCompany::Offerings qw(get_permitted_expiries);
 use Time::Duration::Concise::Localize;
-use Storable 'dclone';
+use Try::Tiny;
 
-use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
-
-use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
+use BOM::Platform::Chronicle;
 use BOM::Product::Contract::Offerings;
-
-my $cache = {};
 
 sub _get_cache {
     my ($name) = @_;
-    for (keys %$cache) {
-        delete $cache->{$_} if time - $cache->{$_}->{time} > 3600;
+    my $v = BOM::Platform::Chronicle::get_chronicle_reader()->get('OFFERINGS', $name);
+    return undef if not $v;
+    if ($v->{digest} ne _get_digest()) {
+        BOM::Platform::Chronicle::get_chronicle_writer()->cache_writer->del('OFFERINGS', $name);
+        return undef;
     }
-    return dclone($cache->{$name}->{value}) if defined $cache->{$name}->{value};
-    return;
+    return $v->{value};
 }
 
 sub _set_cache {
     my ($name, $value) = @_;
-    $cache->{$name} = {
-        time  => time,
-        value => dclone($value),
-    };
+    BOM::Platform::Chronicle::get_chronicle_writer()->set(
+        'OFFERINGS',
+        $name,
+        {
+            digest => _get_digest(),
+            value  => $value,
+        },
+        Date::Utility->new(),
+        0
+    );
     return;
 }
 
-sub _get_key {
-    #check if we have actual cache, get FlyBy object and check digest
-    my $digest = LandingCompany::Offerings::_get_config_key(BOM::Platform::Runtime->instance->get_offerings_config);
-    my $cache_key = join ':', $digest, @_;
-    return $cache_key;
+sub _get_digest {
+    my $digest = LandingCompany::Offerings::_get_config_key(BOM::Platform::Runtime->instance->get_offerings_config) . '1';
+    return $digest;
 }
 
 sub trading_times {
-    my $params = shift;
-
-    my $date = try { Date::Utility->new($params->{args}->{trading_times}) } || Date::Utility->new;
-    my $cache_key = _get_key('times', $date->date_ddmmmyyyy);
+    my $params    = shift;
+    my $date      = try { Date::Utility->new($params->{args}->{trading_times}) } || Date::Utility->new;
+    my $cache_key = 'trading_times_' . $date->date_ddmmmyyyy;
 
     my $cached = _get_cache($cache_key);
     return $cached if $cached;
+    $cached = generate_trading_times($date);
+    _set_cache($cache_key, $cached);
+    return $cached;
+}
+
+sub asset_index {
+    my $params               = shift;
+    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
+    my $language             = $params->{language} // 'en';
+
+    my $cache_key = $landing_company_name . '_asset_index_' . $language;
+
+    my $cached = _get_cache($cache_key);
+    return $cached if $cached;
+    $cached = generate_asset_index($landing_company_name, $language);
+    _set_cache($cache_key, $cached);
+    return $cached;
+
+}
+
+sub generate_trading_times {
+    my $date = shift;
 
     my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
         markets     => {name => 'name'},
@@ -85,19 +109,11 @@ sub trading_times {
             }
         }
     }
-    _set_cache($cache_key, $trading_times);
     return $trading_times,;
 }
 
-sub asset_index {
-    my $params               = shift;
-    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
-    my $language             = $params->{language} // 'en';
-
-    my $cache_key = _get_key($landing_company_name, $language);
-
-    my $cached = _get_cache($cache_key);
-    return $cached if $cached;
+sub generate_asset_index {
+    my ($landing_company_name, $language) = @_;
 
     my $asset_index = BOM::Product::Contract::Offerings->new(landing_company => $landing_company_name)->decorate_tree(
         markets => {
@@ -181,7 +197,6 @@ sub asset_index {
             }
         }
     }
-    _set_cache($cache_key, \@data);
     return \@data;
 }
 
