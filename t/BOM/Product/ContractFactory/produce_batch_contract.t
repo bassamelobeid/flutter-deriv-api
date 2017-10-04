@@ -17,7 +17,7 @@ use Date::Utility;
 use JSON qw(to_json);
 
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked_decimate->mock('get', sub {[map {{epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.005)}} (0..80)]});
+$mocked_decimate->mock('get', sub {[map {{epoch => $_, decimate_epoch => $_, quote => 100 + 0.001*$_}} (0..80)]});
 my %custom_otm =
     map { rand(1234) => {conditions => {market => $_, expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
 BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json(\%custom_otm));
