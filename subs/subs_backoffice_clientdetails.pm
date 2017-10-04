@@ -371,9 +371,9 @@ sub show_client_id_docs {
         my $url = BOM::Backoffice::Script::DocumentUpload::get_s3_url($file_name);
         $links .= qq{<tr><td><a href="$url">$file_name</a></td><td>$input};
         if ($show_delete && !$args{no_edit}) {
-            $url .= qq{&loginid=$loginid&doc_id=$id&deleteit=yes};
-            my $onclick = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
-            $links .= qq{[<a onclick="$onclick" href="$url">Delete</a>]};
+            my $onclick    = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
+            my $delete_url = request()->url_for("backoffice/download_document.cgi?loginid=$loginid&doc_id=$id&deleteit=yes");
+            $links .= qq{[<a onclick="$onclick" href="$delete_url">Delete</a>]};
         }
         $links .= "</td></tr>";
     }
