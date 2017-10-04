@@ -126,12 +126,12 @@ sub _perform_checks {
                     underlying_symbol => $tick->{symbol},
                     start_time        => $tick->{epoch},
                     # each jump triggers a commission for 20 minutes because historical volatility is calculated using the last 20 minutes ticks
-                    end_time   => $tick->{epoch} + 20 * 60,
+                    end_time   => $tick->{epoch} + 10 * 60,
                     partitions => [{
                             partition_range => $partition_range,
                             flat            => 0,
-                            cap_rate        => 0.3,
-                            floor_rate      => 0.01,
+                            cap_rate        => 0.05,
+                            floor_rate      => 0,
                             width           => 0.5,
                             centre_offset   => 0,
                         }
