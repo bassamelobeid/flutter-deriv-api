@@ -97,18 +97,15 @@ my $rpc_client_builders = {
 };
 my $rpc_client = ($rpc_client_builders->{$currency} // code_exit_BO("no RPC client found for currency " . $currency))->();
 # Exchange rate should be populated according to supported cryptocurrencies.
-my $exchange_rates = {map { $_ => in_USD(1.0, $_) } keys %$rpc_client_builders};
+
+my $exchange_rate = eval { in_USD(1.0, $currency) } or code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();
 
 my $display_transactions = sub {
     my $trxns = shift;
     # Assign USD equivalent value
     for my $trx (@$trxns) {
-        unless (defined $exchange_rates->{$trx->{currency_code}}) {
-            warn "exchange_rates for $trx->{currency_code} is undefined";
-            $exchange_rates->{$trx->{currency_code}} = 0;
-        }
         $trx->{amount} //= 0;    # it will be undef on newly generated addresses
-        $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rates->{$trx->{currency_code}});
+        $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
     }
 
     # Render template page with transactions
@@ -132,7 +129,7 @@ my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
     'backoffice/crypto_cashier/crypto_control_panel.html.tt',
     {
-        exchange_rates => $exchange_rates,
+        exchange_rate  => $exchange_rate,
         controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
         currency       => $currency,
         cmd            => request()->param('command') // '',
