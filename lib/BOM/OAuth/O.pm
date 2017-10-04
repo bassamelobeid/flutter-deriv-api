@@ -75,12 +75,12 @@ sub authorize {
     # show error when no client found in session
     # show login form
     return $c->render(
-        template     => _get_login_template_name($brand_name),
-        layout       => $brand_name,
-        app          => $app,
-        error        => delete $c->session->{_oneall_error} || '',
-        csrf_token   => $c->csrf_token,
-        r            => $c->stash('request'),
+        template   => _get_login_template_name($brand_name),
+        layout     => $brand_name,
+        app        => $app,
+        error      => delete $c->session->{_oneall_error} || '',
+        csrf_token => $c->csrf_token,
+        r          => $c->stash('request'),
         # prevent feature rendering
         social_login => (not _is_social_login_suspended and $request_country_code ne 'jp'),
     ) unless $client;
@@ -242,7 +242,8 @@ sub _login {
         } elsif (
             grep {
                 $client->loginid =~ /^$_/
-            } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins} or ($oneall_user_id and _is_social_login_suspended))
+            } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}
+            or ($oneall_user_id and _is_social_login_suspended))
         {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         } elsif ($client->get_status('disabled')) {
