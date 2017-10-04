@@ -20,7 +20,11 @@ use BOM::Platform::RedisReplicated;
 use Test::MockModule;
 
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked_decimate->mock('get', sub {[map {{epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
+$mocked_decimate->mock(
+    'get',
+    sub {
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.005)} } (0 .. 80)];
+    });
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
@@ -142,7 +146,7 @@ subtest 'call variations' => sub {
     }
     'pricing engine selection';
 };
-
+exit;
 subtest 'entry conditions' => sub {
     $args->{date_pricing} = $now->plus_time_interval('1s');
     my $c = produce_contract($args);

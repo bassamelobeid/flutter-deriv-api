@@ -13,7 +13,11 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked_decimate->mock('get', sub {[map {{epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
+$mocked_decimate->mock(
+    'get',
+    sub {
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.005)} } (0 .. 80)];
+    });
 my $mock = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
 $mock->mock('get_trading_periods', sub { [] });
 use BOM::Product::ContractFactory qw(produce_contract);

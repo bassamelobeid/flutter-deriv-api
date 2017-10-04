@@ -22,7 +22,11 @@ initialize_realtime_ticks_db();
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked_decimate->mock('get', sub {[map {{epoch => $_,decimate_epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
+$mocked_decimate->mock(
+    'get',
+    sub {
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.005)} } (0 .. 80)];
+    });
 my $now = Date::Utility->new('2016-09-28 10:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
