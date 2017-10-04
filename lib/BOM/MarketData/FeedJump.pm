@@ -125,7 +125,7 @@ sub _perform_checks {
                     name              => "feed jump $tick->{symbol} $tick->{epoch}",
                     underlying_symbol => $tick->{symbol},
                     start_time        => $tick->{epoch},
-                    # each jump triggers a commission for 20 minutes because historical volatility is calculated using the last 20 minutes ticks
+                    # each jump triggers a commission for 10 minutes, also this is handled in historical volatility
                     end_time   => $tick->{epoch} + 10 * 60,
                     partitions => [{
                             partition_range => $partition_range,
