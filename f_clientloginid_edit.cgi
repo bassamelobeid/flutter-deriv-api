@@ -438,19 +438,22 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->aml_risk_classification($input{$key});
         }
 
-        if ($key eq 'client_authentication') {
+        if ($key eq 'client_authentication' and $input{$key}) {
             if ($input{$key} eq 'ID_DOCUMENT' or $input{$key} eq 'ID_NOTARIZED') {
                 $client->set_authentication($input{$key})->status('pass');
-            }
-            if ($input{$key} eq 'CLEAR_ALL') {
+            } else {
                 foreach my $m (@{$client->client_authentication_method}) {
                     $m->delete;
                 }
             }
+
             if ($input{$key} eq 'NEEDS_ACTION') {
                 $client->set_status('needs_action', $clerk, 'Documents uploaded');
-                $client->clr_status('under_review');
+            } else {
+                $client->clr_status('needs_action');
             }
+
+            $client->clr_status('under_review');
         }
         if ($key eq 'myaffiliates_token') {
             # $client->myaffiliates_token_registered(1);
