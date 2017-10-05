@@ -171,8 +171,7 @@ sub send_upload_successful {
 sub upload_chunk {
     my ($c, $upload_info) = @_;
 
-    # Last chunk is indicated with zero size
-    return if $upload_info->{chunk_size} == 0;
+    return if last_chunk_received($c, $upload_info);
 
     my $upload_id = $upload_info->{upload_id};
     my $data      = $upload_info->{data};
@@ -277,7 +276,15 @@ sub create_s3_instance {
         value_length => $upload_info->{file_size},
     );
 
-    retain_future(Future->wait_any(
+    return;
+}
+
+sub last_chunk_received {
+    my ($c, $upload_info) = @_;
+
+    return if $upload_info->{chunk_size} != 0;
+
+    return retain_future(Future->wait_any(
         $upload_info->{put_future},
         $c->loop->timeout_future(after => 120),
     )->then(sub {
@@ -285,8 +292,6 @@ sub create_s3_instance {
     }, sub {
         send_upload_failure($c, $upload_info, 'unknown');
     }));
-
-    return;
 }
 
 1;
