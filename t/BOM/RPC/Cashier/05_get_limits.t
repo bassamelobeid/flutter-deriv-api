@@ -75,8 +75,13 @@ subtest 'CR' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price',  'USD', $limits->{lifetime_limit}),
-            'payout_per_symbol_and_contract_type' => '10000.00',
-        };
+            'payout_per_symbol_and_contract_type' => '20000.00',
+            'payout_per_symbol'                   => {
+                atm     => '10000.00',
+                non_atm => {
+                    less_than_seven_days => '3000.00',
+                    more_than_seven_days => '10000.00',
+                }}};
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
         $client->smart_payment(%deposit);
@@ -102,10 +107,16 @@ subtest 'CR' => sub {
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
             'lifetime_limit'                      => formatnumber('price',  'USD', 99999999),
-            'payout_per_symbol_and_contract_type' => '10000.00',
+            'payout_per_symbol_and_contract_type' => '20000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price',  'USD', 99998999),
+            'payout_per_symbol'                   => {
+                atm     => '10000.00',
+                non_atm => {
+                    less_than_seven_days => '3000.00',
+                    more_than_seven_days => '10000.00',
+                }}
 
         };
 
@@ -156,8 +167,12 @@ subtest 'JP' => sub {
             'withdrawal_for_x_days_monetary'      => 0,
             'withdrawal_since_inception_monetary' => 0,
             'remainder'                           => formatnumber('price',  'JPY', $limits->{lifetime_limit}),
-            'payout_per_symbol_and_contract_type' => 200000,
-        };
+            'payout_per_symbol_and_contract_type' => 400000,
+            'payout_per_symbol'                   => {
+                non_atm => {
+                    less_than_seven_days => 200000,
+                    more_than_seven_days => 200000,
+                }}};
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -187,10 +202,15 @@ subtest 'JP' => sub {
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
             'lifetime_limit'                      => formatnumber('price',  'JPY', 99999999),
-            'payout_per_symbol_and_contract_type' => 200000,
+            'payout_per_symbol_and_contract_type' => 400000,
             'withdrawal_since_inception_monetary' => 1000,
             'withdrawal_for_x_days_monetary'      => 1000,
             'remainder'                           => formatnumber('price',  'JPY', 99998999),
+            'payout_per_symbol'                   => {
+                non_atm => {
+                    less_than_seven_days => 200000,
+                    more_than_seven_days => 200000,
+                }}
 
         };
 
@@ -226,8 +246,13 @@ subtest 'MLT' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price',  'EUR', $limits->{lifetime_limit}),
-            payout_per_symbol_and_contract_type   => '10000.00',
-        };
+            payout_per_symbol_and_contract_type   => '20000.00',
+            'payout_per_symbol'                   => {
+                atm     => '10000.00',
+                non_atm => {
+                    less_than_seven_days => '3000.00',
+                    more_than_seven_days => '10000.00',
+                }}};
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
         $client->smart_payment(%deposit, currency => 'EUR');
@@ -256,10 +281,16 @@ subtest 'MLT' => sub {
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
             'lifetime_limit'                      => formatnumber('price',  'EUR', 99999999),
-            'payout_per_symbol_and_contract_type' => '10000.00',
+            'payout_per_symbol_and_contract_type' => '20000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => formatnumber('price',  'EUR', 99998999)};
+            'remainder'                           => formatnumber('price',  'EUR', 99998999),
+            'payout_per_symbol'                   => {
+                atm     => '10000.00',
+                non_atm => {
+                    less_than_seven_days => '3000.00',
+                    more_than_seven_days => '10000.00',
+                }}};
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
     };
@@ -293,8 +324,13 @@ subtest 'MX' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price',  'EUR', $limits->{limit_for_days}),
-            payout_per_symbol_and_contract_type   => '10000.00',
-        };
+            payout_per_symbol_and_contract_type   => '20000.00',
+            'payout_per_symbol'                   => {
+                atm     => '10000.00',
+                non_atm => {
+                    less_than_seven_days => '3000.00',
+                    more_than_seven_days => '10000.00',
+                }}};
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
         $client->smart_payment(%deposit, currency => 'EUR');
@@ -323,11 +359,16 @@ subtest 'MX' => sub {
             'num_of_days'                         => $limits->{for_days},
             'num_of_days_limit'                   => 99999999,
             'lifetime_limit'                      => formatnumber('price',  'EUR', $limits->{lifetime_limit}),
-            'payout_per_symbol_and_contract_type' => '10000.00',
+            'payout_per_symbol_and_contract_type' => '20000.00',
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price',  'EUR', 99998999),
-        };
+            'payout_per_symbol'                   => {
+                atm     => '10000.00',
+                non_atm => {
+                    less_than_seven_days => '3000.00',
+                    more_than_seven_days => '10000.00',
+                }}};
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
     };
