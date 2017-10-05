@@ -80,8 +80,8 @@ $args = {
 $params->{args} = $args;
 $result = $c->call_ok($method, $params)->result;
 ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
-is($doc->status,                                     'uploaded',           'document\'s status changed');
-is($test_client->get_status('under_review')->reason, 'Documents uploaded', 'client\'s status changed');
+is($doc->status,                                              'uploaded',           'document\'s status changed');
+is($test_client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
 ok $doc->file_name, 'Filename should not be empty';
 is $doc->checksum, $checksum, 'Checksum should be added correctly';
 
