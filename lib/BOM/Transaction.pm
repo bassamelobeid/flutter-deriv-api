@@ -16,7 +16,6 @@ use Brands;
 use Client::Account;
 use Finance::Asset::Market::Types;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 use BOM::Platform::Config;
 use BOM::Platform::Runtime;
@@ -336,8 +335,10 @@ sub calculate_limits {
     $limits{max_balance} = $client->get_limit_for_account_balance;
 
     if ($client->landing_company->short =~ /japan/) {
-        $limits{general_open_position_payout} =
-            in_USD(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit_for_japan, $currency);
+        $limits{general_open_position_payout} = {
+            limit    => BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit_for_japan,
+            currency => $currency,
+        };
     }
 
     if (not $contract->tick_expiry) {
