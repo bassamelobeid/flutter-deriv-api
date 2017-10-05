@@ -254,7 +254,7 @@ sub _build_long_term_prediction {
 sub ticks_for_short_term_volatility_calculation {
     my $self = shift;
     return $self->_get_ticks_for_volatility_calculation({
-        from => $self->effective_start->minus_time_interval('20m'),
+        from => $self->effective_start->minus_time_interval('30m'),
         to   => $self->effective_start,
     });
 }
