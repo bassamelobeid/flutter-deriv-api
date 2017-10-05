@@ -448,12 +448,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             }
 
             if ($input{$key} eq 'NEEDS_ACTION') {
-                $client->set_status('needs_action', $clerk, 'Documents uploaded');
+                $client->set_status('document_needs_action', $clerk, 'Documents uploaded');
             } else {
-                $client->clr_status('needs_action');
+                $client->clr_status('document_needs_action');
             }
 
-            $client->clr_status('under_review');
+            $client->clr_status('document_under_review');
         }
         if ($key eq 'myaffiliates_token') {
             # $client->myaffiliates_token_registered(1);
