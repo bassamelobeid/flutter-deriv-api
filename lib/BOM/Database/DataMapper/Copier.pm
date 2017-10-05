@@ -13,7 +13,7 @@ sub get_copiers_cnt {
     };
 
     my @binds = ($args->{trader_id});
-    return $self->db->dbic->run(fixup => sub { $_->selectrow_array($sql, undef, @binds) || [] });
+    return $self->db->dbic->run(fixup => sub { my @result = $_->selectrow_array($sql, undef, @binds); return $result[0] });
 }
 
 sub get_trade_copiers {
