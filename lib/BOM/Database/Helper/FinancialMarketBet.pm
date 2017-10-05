@@ -225,7 +225,7 @@ sub batch_buy_bet {
         # transaction table
         $transdata->{transaction_time},
         $staff_loginid,
-        @{$transdata}{qw/remark source app_markup/},
+        @{$transdata}{qw/remark source app_markup quantity/},
 
         # data_collection.quants_bet_variables
         $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
@@ -248,7 +248,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
                                 $5::NUMERIC, $6::TIMESTAMP, $7::TIMESTAMP, $8::TIMESTAMP, $9::BOOLEAN,
                                 $10::VARCHAR(30), $11::VARCHAR(30), $12::VARCHAR(800), $13::VARCHAR(255),
                                 $14::BOOLEAN, $15::INT, $16::JSON, $17::TIMESTAMP, $18::VARCHAR(24),
-                                $19::VARCHAR(800), $20::BIGINT, $21::NUMERIC, $22::JSON, acc.limits) b
+                                $19::VARCHAR(800), $20::BIGINT, $21::NUMERIC, $22::INT, $23::JSON, acc.limits) b
  ORDER BY acc.seq');
 
         $stmt->execute(@param, @acclim);
@@ -308,7 +308,7 @@ sub sell_bet {
         $bet->{absolute_barrier} ? JSON::XS::encode_json(+{absolute_barrier => $bet->{absolute_barrier}}) : undef,
 
         # transaction table
-        @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source/},
+        @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source quantity/},
 
         # data_collection.quants_bet_variables
         $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
@@ -321,7 +321,7 @@ sub sell_bet {
 SELECT (s.v_fmb).*, (s.v_trans).*, t.id
   FROM bet_v1.sell_bet( $1::VARCHAR(12), $2::VARCHAR(3), $3::BIGINT, $4::NUMERIC, $5::TIMESTAMP,
                         $6::JSON, $7::TIMESTAMP, $8::VARCHAR(24), $9::VARCHAR(800), $10::BIGINT,
-                        $11::JSON) s
+                        $11::INT, $12::JSON) s
   LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(s.v_fmb).id AND t.action_type=$$buy$$');
         $stmt->execute(@param);
 
@@ -386,7 +386,8 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, t.id, (b.v_fmb).*, (b.v_trans).
  $7::VARCHAR(24),
  $8::VARCHAR(800),
  $9::BIGINT,
- $10::JSON
+ $10::INT,
+ $11::JSON
 
 ) b
 LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AND t.action_type=$$buy$$
@@ -404,6 +405,7 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
             $transdata->{staff_loginid} ? ('#' . $transdata->{staff_loginid}) : undef,    # -- 8
             $transdata->{remark} // '',                                                   # -- 9
             $transdata->{source},                                                         # -- 10
+            $transdata->{quantity},
             $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,    # -- 11
             map { $_->{client_loginid} } @{$self->account_data}                                                       # -- 12...
         );
@@ -502,6 +504,8 @@ bets(id, sell_price, sell_time, chld, transaction_time, staff_loginid, remark, s
                 . ($_ * 9 + 10)
                 . '::BIGINT,' . ' $'
                 . ($_ * 9 + 11)
+                . '::INT,' . ' $'
+                . ($_ * 9 + 12)
                 . '::JSON)';
         } 0 .. $#$bets
         )
@@ -519,6 +523,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
                                     b.staff_loginid,
                                     b.remark,
                                     b.source,
+                                    b.quantity,
                                     b.qv) s
  LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(s.v_fmb).id AND t.action_type=$$buy$$
  ORDER BY (s.v_trans).id DESC';
@@ -538,7 +543,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
             $bet->{absolute_barrier} ? JSON::XS::encode_json(+{absolute_barrier => $bet->{absolute_barrier}}) : undef,
 
             # transaction table
-            @{$transdata || {}}{qw/transaction_time staff_loginid remark source/},
+            @{$transdata || {}}{qw/transaction_time staff_loginid remark source quantity/},
 
             # data_collection.quants_bet_variables
             $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
