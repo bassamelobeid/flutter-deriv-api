@@ -5,31 +5,19 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'range_bet',
-    schema => 'bet',
+    table   => 'range_bet',
+    schema   => 'bet',
 
     columns => [
-        financial_market_bet_id => {
-            type     => 'bigint',
-            not_null => 1
-        },
-        relative_lower_barrier => {
-            type   => 'varchar',
-            length => 20
-        },
-        absolute_lower_barrier  => {type => 'numeric'},
-        relative_higher_barrier => {
-            type   => 'varchar',
-            length => 20
-        },
-        absolute_higher_barrier => {type => 'numeric'},
-        prediction              => {
-            type   => 'varchar',
-            length => 20
-        },
+        financial_market_bet_id => { type => 'bigint', not_null => 1 },
+        relative_lower_barrier  => { type => 'varchar', length => 20 },
+        absolute_lower_barrier  => { type => 'numeric' },
+        relative_higher_barrier => { type => 'varchar', length => 20 },
+        absolute_higher_barrier => { type => 'numeric' },
+        prediction              => { type => 'varchar', length => 20 },
     ],
 
-    primary_key_columns => ['financial_market_bet_id'],
+    primary_key_columns => [ 'financial_market_bet_id' ],
 );
 
 1;

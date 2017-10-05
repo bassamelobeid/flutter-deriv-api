@@ -5,47 +5,23 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'legacy_bet',
-    schema => 'bet',
+    table   => 'legacy_bet',
+    schema   => 'bet',
 
     columns => [
-        financial_market_bet_id => {
-            type     => 'bigint',
-            not_null => 1
-        },
-        absolute_lower_barrier  => {type => 'numeric'},
-        absolute_higher_barrier => {type => 'numeric'},
-        intraday_ifunless       => {
-            type   => 'varchar',
-            length => 50
-        },
-        intraday_starthour => {
-            type   => 'varchar',
-            length => 10
-        },
-        intraday_leg1 => {
-            type   => 'varchar',
-            length => 10
-        },
-        intraday_midhour => {
-            type   => 'varchar',
-            length => 10
-        },
-        intraday_leg2 => {
-            type   => 'varchar',
-            length => 10
-        },
-        intraday_endhour => {
-            type   => 'varchar',
-            length => 10
-        },
-        short_code => {
-            type   => 'varchar',
-            length => 255
-        },
+        financial_market_bet_id => { type => 'bigint', not_null => 1 },
+        absolute_lower_barrier  => { type => 'numeric' },
+        absolute_higher_barrier => { type => 'numeric' },
+        intraday_ifunless       => { type => 'varchar', length => 50 },
+        intraday_starthour      => { type => 'varchar', length => 10 },
+        intraday_leg1           => { type => 'varchar', length => 10 },
+        intraday_midhour        => { type => 'varchar', length => 10 },
+        intraday_leg2           => { type => 'varchar', length => 10 },
+        intraday_endhour        => { type => 'varchar', length => 10 },
+        short_code              => { type => 'varchar', length => 255 },
     ],
 
-    primary_key_columns => ['financial_market_bet_id'],
+    primary_key_columns => [ 'financial_market_bet_id' ],
 );
 
 1;

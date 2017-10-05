@@ -5,71 +5,28 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'client_authentication_document',
-    schema => 'audit',
+    table   => 'client_authentication_document',
+    schema   => 'audit',
 
     columns => [
-        operation => {
-            type     => 'varchar',
-            length   => 10,
-            not_null => 1
-        },
-        stamp => {
-            type     => 'timestamp',
-            not_null => 1
-        },
-        pg_userid => {
-            type     => 'text',
-            not_null => 1
-        },
-        client_addr => {type => 'scalar'},
-        client_port => {type => 'integer'},
-        id          => {
-            type     => 'bigint',
-            not_null => 1
-        },
-        document_type => {
-            type     => 'varchar',
-            length   => 100,
-            not_null => 1
-        },
-        document_format => {
-            type     => 'varchar',
-            length   => 100,
-            not_null => 1
-        },
-        document_path => {
-            type     => 'varchar',
-            length   => 255,
-            not_null => 1
-        },
-        client_loginid => {
-            type     => 'varchar',
-            length   => 12,
-            not_null => 1
-        },
-        authentication_method_code => {
-            type     => 'varchar',
-            length   => 50,
-            not_null => 1
-        },
-        expiration_date => {type => 'date'},
-        remote_addr     => {type => 'scalar'},
-        comments        => {
-            type     => 'varchar',
-            default  => '',
-            length   => 255,
-            not_null => 1
-        },
-        document_id => {
-            type     => 'varchar',
-            default  => '',
-            length   => 30,
-            not_null => 1
-        },
+        operation                  => { type => 'varchar', length => 10, not_null => 1 },
+        stamp                      => { type => 'timestamp', not_null => 1 },
+        pg_userid                  => { type => 'text', not_null => 1 },
+        client_addr                => { type => 'scalar' },
+        client_port                => { type => 'integer' },
+        id                         => { type => 'bigint', not_null => 1 },
+        document_type              => { type => 'varchar', length => 100, not_null => 1 },
+        document_format            => { type => 'varchar', length => 100, not_null => 1 },
+        document_path              => { type => 'varchar', length => 255, not_null => 1 },
+        client_loginid             => { type => 'varchar', length => 12, not_null => 1 },
+        authentication_method_code => { type => 'varchar', length => 50, not_null => 1 },
+        expiration_date            => { type => 'date' },
+        remote_addr                => { type => 'scalar' },
+        comments                   => { type => 'varchar', default => '', length => 255, not_null => 1 },
+        document_id                => { type => 'varchar', default => '', length => 30, not_null => 1 },
     ],
 
-    primary_key_columns => ['id'],
+    primary_key_columns => [ 'id' ],
 );
 
 1;

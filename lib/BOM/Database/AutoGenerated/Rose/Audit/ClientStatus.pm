@@ -5,54 +5,25 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'client_status',
-    schema => 'audit',
+    table   => 'client_status',
+    schema   => 'audit',
 
     columns => [
-        operation => {
-            type     => 'varchar',
-            length   => 10,
-            not_null => 1
-        },
-        stamp => {
-            type     => 'timestamp',
-            not_null => 1
-        },
-        pg_userid => {
-            type     => 'text',
-            not_null => 1
-        },
-        client_addr    => {type => 'scalar'},
-        client_port    => {type => 'integer'},
-        id             => {type => 'bigint'},
-        client_loginid => {
-            type     => 'varchar',
-            length   => 12,
-            not_null => 1
-        },
-        status_code => {
-            type     => 'varchar',
-            length   => 32,
-            not_null => 1
-        },
-        staff_name => {
-            type     => 'varchar',
-            length   => 100,
-            not_null => 1
-        },
-        reason => {
-            type     => 'varchar',
-            length   => 1000,
-            not_null => 1
-        },
-        last_modified_date => {
-            type    => 'timestamp',
-            default => 'now()'
-        },
-        remote_addr => {type => 'scalar'},
+        operation          => { type => 'varchar', length => 10, not_null => 1 },
+        stamp              => { type => 'timestamp', not_null => 1 },
+        pg_userid          => { type => 'text', not_null => 1 },
+        client_addr        => { type => 'scalar' },
+        client_port        => { type => 'integer' },
+        id                 => { type => 'bigint' },
+        client_loginid     => { type => 'varchar', length => 12, not_null => 1 },
+        status_code        => { type => 'varchar', length => 32, not_null => 1 },
+        staff_name         => { type => 'varchar', length => 100, not_null => 1 },
+        reason             => { type => 'varchar', length => 1000, not_null => 1 },
+        last_modified_date => { type => 'timestamp', default => 'now()' },
+        remote_addr        => { type => 'scalar' },
     ],
 
-    primary_key_columns => ['id'],
+    primary_key_columns => [ 'id' ],
 
     allow_inline_column_values => 1,
 );

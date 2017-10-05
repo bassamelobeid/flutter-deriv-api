@@ -5,19 +5,16 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'last_login',
-    schema => 'users',
+    table   => 'last_login',
+    schema   => 'users',
 
     columns => [
-        binary_user_id => {
-            type     => 'bigint',
-            not_null => 1
-        },
-        history_date => {type => 'timestamp'},
-        environment  => {type => 'varchar'},
+        binary_user_id => { type => 'bigint', not_null => 1 },
+        history_date   => { type => 'timestamp' },
+        environment    => { type => 'varchar' },
     ],
 
-    primary_key_columns => ['binary_user_id'],
+    primary_key_columns => [ 'binary_user_id' ],
 );
 
 1;

@@ -20,7 +20,7 @@ sub rose_db {
         database => "userdb$db_postfix",
         port     => 6432,
         username => 'write',
-        host     => '/var/run/postgresql',
+        host     => '/var/run/postgresql' ,
         password => '',
         %overrides,
     );

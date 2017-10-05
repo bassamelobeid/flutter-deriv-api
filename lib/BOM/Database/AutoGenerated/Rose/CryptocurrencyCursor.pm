@@ -5,19 +5,15 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'cryptocurrency_cursor',
-    schema => 'payment',
+    table   => 'cryptocurrency_cursor',
+    schema   => 'payment',
 
     columns => [
-        currency_code => {
-            type     => 'varchar',
-            length   => 3,
-            not_null => 1
-        },
-        continue_with => {type => 'text'},
+        currency_code => { type => 'varchar', length => 3, not_null => 1 },
+        continue_with => { type => 'text' },
     ],
 
-    primary_key_columns => ['currency_code'],
+    primary_key_columns => [ 'currency_code' ],
 );
 
 1;

@@ -66,8 +66,8 @@ sub get_sold_bets_of_account {
     }
 
     my $dbic = $self->db->dbic;
-    return $dbic->run(
-        fixup => sub {
+    return $dbic->run( fixup => 
+        sub {
             my $sth = $_->prepare("
         SELECT fmb.*, t.id txn_id, t.source
         $sql
@@ -184,8 +184,8 @@ sub get_sold {
     my $limit  = $args->{limit}  || 50;
 
     my $dbic = $self->db->dbic;
-    return $dbic->run(
-        fixup => sub {
+    return $dbic->run( fixup => 
+        sub {
             my $sth = $_->prepare($sql);
 
             $sth->bind_param(1, $self->account->id);
@@ -219,8 +219,8 @@ sub get_contract_details_with_transaction_ids {
             fmb.id = ?
     };
 
-    my @fmbs = $self->db->dbic->run(
-        fixup => sub {
+    my @fmbs = $self->db->dbic->run( fixup => 
+        sub {
             my $sth = $_->prepare($sql);
             $sth->execute($contract_id);
             return @{$sth->fetchall_arrayref({})};
@@ -281,7 +281,7 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
         $param->{'coinauction_bet_record'} = $rose_object->coinauction_bet;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::CoinauctionBet';
-    } else {
+    }else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
     }
 

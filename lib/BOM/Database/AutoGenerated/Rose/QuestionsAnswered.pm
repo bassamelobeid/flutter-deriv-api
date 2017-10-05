@@ -5,54 +5,22 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'questions_answered',
-    schema => 'japan',
+    table   => 'questions_answered',
+    schema   => 'japan',
 
     columns => [
-        pk => {
-            type     => 'bigserial',
-            not_null => 1
-        },
-        client_loginid => {
-            type     => 'varchar',
-            length   => 12,
-            not_null => 1
-        },
-        qid => {
-            type     => 'integer',
-            not_null => 1
-        },
-        stamp => {
-            type     => 'timestamp',
-            default  => 'now()',
-            not_null => 1
-        },
-        answer => {
-            type     => 'boolean',
-            not_null => 1,
-            remarks  => 'The answer the client provided for the question'
-        },
-        pass => {
-            type     => 'boolean',
-            not_null => 1,
-            remarks  => 'Did the client score correctly on this question?'
-        },
-        test_id => {
-            type     => 'bigint',
-            not_null => 1,
-            remarks  => 'This value should be able to effectively identify a unique test session for the client involved'
-        },
-        question_presented => {
-            type    => 'text',
-            remarks => 'The text of the question presented'
-        },
-        category => {
-            type    => 'integer',
-            remarks => 'A question grouping identifier'
-        },
+        pk                 => { type => 'bigserial', not_null => 1 },
+        client_loginid     => { type => 'varchar', length => 12, not_null => 1 },
+        qid                => { type => 'integer', not_null => 1 },
+        stamp              => { type => 'timestamp', default => 'now()', not_null => 1 },
+        answer             => { type => 'boolean', not_null => 1, remarks => 'The answer the client provided for the question' },
+        pass               => { type => 'boolean', not_null => 1, remarks => 'Did the client score correctly on this question?' },
+        test_id            => { type => 'bigint', not_null => 1, remarks => 'This value should be able to effectively identify a unique test session for the client involved' },
+        question_presented => { type => 'text', remarks => 'The text of the question presented' },
+        category           => { type => 'integer', remarks => 'A question grouping identifier' },
     ],
 
-    primary_key_columns => ['pk'],
+    primary_key_columns => [ 'pk' ],
 
     allow_inline_column_values => 1,
 );

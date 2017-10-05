@@ -5,30 +5,26 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'myaffiliates_commission',
-    schema => 'data_collection',
+    table   => 'myaffiliates_commission',
+    schema   => 'data_collection',
 
     columns => [
-        id => {
-            type     => 'bigint',
-            not_null => 1,
-            sequence => 'sequences.global_serial'
-        },
-        affiliate_userid             => {type => 'bigint'},
-        affiliate_username           => {type => 'text'},
-        effective_date               => {type => 'date'},
-        intraday_turnover            => {type => 'numeric'},
-        runbet_turnover              => {type => 'numeric'},
-        other_turnover               => {type => 'numeric'},
-        pnl                          => {type => 'numeric'},
-        effective_pnl_for_commission => {type => 'numeric'},
-        carry_over_to_next_month     => {type => 'numeric'},
-        commission                   => {type => 'numeric'},
+        id                           => { type => 'bigint', not_null => 1, sequence => 'sequences.global_serial' },
+        affiliate_userid             => { type => 'bigint' },
+        affiliate_username           => { type => 'text' },
+        effective_date               => { type => 'date' },
+        intraday_turnover            => { type => 'numeric' },
+        runbet_turnover              => { type => 'numeric' },
+        other_turnover               => { type => 'numeric' },
+        pnl                          => { type => 'numeric' },
+        effective_pnl_for_commission => { type => 'numeric' },
+        carry_over_to_next_month     => { type => 'numeric' },
+        commission                   => { type => 'numeric' },
     ],
 
-    primary_key_columns => ['id'],
+    primary_key_columns => [ 'id' ],
 
-    unique_key => ['affiliate_userid', 'affiliate_username', 'effective_date'],
+    unique_key => [ 'affiliate_userid', 'affiliate_username', 'effective_date' ],
 );
 
 1;

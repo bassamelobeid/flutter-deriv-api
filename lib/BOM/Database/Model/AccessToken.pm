@@ -33,8 +33,7 @@ sub create_token {
     $scopes = __filter_valid_scopes($scopes);
 
     my $dbic = $self->dbic;
-    my ($token) =
-        $dbic->run(ping => sub { $_->selectrow_array("SELECT auth.create_token(15, ?, ?, ?, ?)", undef, $loginid, $display_name, $scopes, $ip) });
+    my ($token) = $dbic->run( ping => sub { $_->selectrow_array("SELECT auth.create_token(15, ?, ?, ?, ?)", undef, $loginid, $display_name, $scopes, $ip) });
 
     return $token;
 }
@@ -42,8 +41,8 @@ sub create_token {
 sub get_token_details {
     my ($self, $token) = @_;
 
-    my $details = $self->dbic->run(
-        fixup => sub {
+    my $details = $self->dbic->run( fixup => 
+        sub {
             $_->selectrow_hashref(<<'SQL', undef, $token) });
 SELECT loginid, creation_time, scopes, display_name, last_used, valid_for_ip
   FROM auth.get_token_details($1)
@@ -56,8 +55,8 @@ SQL
 sub get_scopes_by_access_token {
     my ($self, $access_token) = @_;
 
-    my $scopes = $self->dbic->run(
-        fixup => sub {
+    my $scopes = $self->dbic->run( fixup => 
+        sub {
             my $sth = $_->prepare("
         SELECT scopes FROM auth.access_token
         WHERE token = ?
@@ -72,8 +71,8 @@ sub get_scopes_by_access_token {
 sub get_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
-    my $tokens = $self->dbic->run(
-        fixup => sub {
+    my $tokens = $self->dbic->run( fixup => 
+        sub {
             my $sth = $_->prepare("
         SELECT
             token, display_name, scopes, last_used::timestamp(0), valid_for_ip
@@ -89,8 +88,8 @@ sub get_tokens_by_loginid {
 sub get_token_count_by_loginid {
     my ($self, $loginid) = @_;
 
-    return $self->dbic->run(
-        fixup => sub {
+    return $self->dbic->run( fixup => 
+        sub {
             $_->selectrow_array("SELECT COUNT(*) FROM auth.access_token WHERE client_loginid = ?", undef, $loginid);
         });
 }
@@ -98,8 +97,8 @@ sub get_token_count_by_loginid {
 sub is_name_taken {
     my ($self, $loginid, $display_name) = @_;
 
-    return $self->dbic->run(
-        fixup => sub {
+    return $self->dbic->run( fixup => 
+        sub {
             $_->selectrow_array("SELECT 1 FROM auth.access_token WHERE client_loginid = ? AND display_name = ?", undef, $loginid, $display_name);
         });
 }
@@ -107,8 +106,8 @@ sub is_name_taken {
 sub remove_by_loginid {
     my ($self, $client_loginid) = @_;
 
-    return $self->dbic->run(
-        ping => sub {
+    return $self->dbic->run( ping => 
+        sub {
             $_->do("DELETE FROM auth.access_token WHERE client_loginid = ?", undef, $client_loginid);
         });
 }
@@ -116,8 +115,8 @@ sub remove_by_loginid {
 sub remove_by_token {
     my ($self, $token, $loginid) = @_;
 
-    return $self->dbic->run(
-        ping => sub {
+    return $self->dbic->run( ping => 
+        sub {
             $_->do("DELETE FROM auth.access_token WHERE token = ? and client_loginid = ?", undef, $token, $loginid);
         });
 }
@@ -126,8 +125,8 @@ sub get_all_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
     my @tokens;
-    $self->dbic->run(
-        fixup => sub {
+    $self->dbic->run( fixup => 
+        sub {
             my $sth = $_->prepare('
         SELECT
             access_token

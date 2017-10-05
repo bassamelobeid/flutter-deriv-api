@@ -55,8 +55,8 @@ sub get_total_deposit_of_account {
 
     my $total_deposit = 0;
     try {
-        my $payment_hashref = $dbic->run(
-            fixup => sub {
+        my $payment_hashref = $dbic->run( fixup => 
+            sub {
                 local $_->{'RaiseError'} = 1;
 
                 my $sth = $_->prepare($sql);
@@ -128,8 +128,8 @@ sub get_total_withdrawal {
 
     my $total_withdrawal = 0;
     try {
-        my $payment_hashref = $dbic->run(
-            fixup => sub {
+        my $payment_hashref = $dbic->run( fixup => 
+            sub {
                 local $_->{'RaiseError'} = 1;
 
                 my $sth = $_->prepare($sql);

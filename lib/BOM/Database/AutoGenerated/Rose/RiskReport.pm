@@ -5,18 +5,15 @@ use strict;
 use base qw(BOM::Database::Rose::DB::Object::AutoBase1);
 
 __PACKAGE__->meta->setup(
-    table  => 'risk_report',
-    schema => 'betonmarkets',
+    table   => 'risk_report',
+    schema   => 'betonmarkets',
 
     columns => [
-        client_loginid => {
-            type     => 'text',
-            not_null => 1
-        },
-        report => {type => 'scalar'},
+        client_loginid => { type => 'text', not_null => 1 },
+        report         => { type => 'scalar' },
     ],
 
-    primary_key_columns => ['client_loginid'],
+    primary_key_columns => [ 'client_loginid' ],
 );
 
 1;
