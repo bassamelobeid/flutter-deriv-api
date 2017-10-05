@@ -477,7 +477,7 @@ sub paymentagent_transfer {
 
     return $error_sub->(localize('Payment agent transfer is not allowed within same account.')) if $loginid_to eq $loginid_fm;
 
-    return $error_sub->(localize('Payment agent transfer is available for USD currency only.')) if $currency ne 'USD';
+    return $error_sub->(localize('Payment agent transfer is available for [_1] currency only.', 'USD')) if $currency ne 'USD';
 
     return $error_sub->(
         localize("Payment agent transfer is not allowed, as [_1] is not default account currency for payment agent [_2].", $currency, $loginid_fm))
@@ -490,8 +490,8 @@ sub paymentagent_transfer {
     return $error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to))
         if $client_to->get_status('disabled');
 
-    return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to));
-    if $client_to->get_status('cashier_locked');
+    return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to))
+        if $client_to->get_status('cashier_locked');
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their verification documents have expired.', $loginid_to))
         if $client_to->documents_expired;
