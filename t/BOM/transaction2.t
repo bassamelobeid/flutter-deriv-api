@@ -261,15 +261,45 @@ subtest 'general_open_position_payout', sub {
             $txn->buy;
         };
         SKIP: {
-            is $error->get_type, 'general_open_position_payoutExceeded', 'error is general_open_position_payout';
+            is $error->get_type, 'CompanyWideLimitExceeded', 'error is CompanyWideLimitExceeded';
 
-            is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg},              'Exceeds payout limit on general_open_position_payout',   'mesg';
+            is $error->{-message_to_client}, 'No further trading is allowed for the current trading session.', 'message_to_client';
+            is $error->{-mesg},              'company-wide risk limit reached',   'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
             is $txn->balance_after,  undef, 'txn->balance_after';
         }
+
+        # now matching exactly the limit -- should succeed
+        $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            note("mocked general_open_position_payout JPY limit to 150");
+            BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit_for_japan(150);
+
+            $contract = make_similar_contract($contract);
+            # create a new transaction object to get pristine (undef) contract_id and the like
+            $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 25.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => $contract->date_start,
+            });
+            $txn->buy;
+        };
+        is $error, undef, 'exactly matching the limit ==> successful buy';
     }
     'survived';
 };

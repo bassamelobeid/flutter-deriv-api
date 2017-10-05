@@ -1192,6 +1192,17 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
         );
     },
+    BI051 => sub {
+        my $self   = shift;
+        my $client = shift;
+        my $msg    = shift;
+
+        Error::Base->cuss(
+            -type              => 'CompanyWideLimitExceeded',
+            -mesg              => 'company-wide risk limit reached',
+            -message_to_client => BOM::Platform::Context::localize('No further trading is allowed for the current trading session.'),
+        );
+    },
     BI103 => Error::Base->cuss(
         -type              => 'RoundingExceedPermittedEpsilon',
         -mesg              => 'Rounding exceed permitted epsilon',
