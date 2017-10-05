@@ -559,6 +559,8 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
         );
     }
 
+    warn "SQL: " . $sql;
+
     my $dbic_code = sub {
         my $stmt = $_->prepare($sql);
         $stmt->execute(@param);
