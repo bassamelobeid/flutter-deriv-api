@@ -260,6 +260,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        social_logins:
+          description: "Suspend social logins"
+          isa: Bool
+          default: 0
+          global: 1
         logins:
           description: "Suspend logins for a broker code (ex. VRTC,MX,CR)"
           isa: ArrayRef
