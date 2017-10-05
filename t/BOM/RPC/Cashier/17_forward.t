@@ -271,9 +271,9 @@ subtest 'landing_companies_specific' => sub {
 
 subtest 'all status are covered' => sub {
     my $all_status = Client::Account::client_status_types;
-    # as social signup, jp_transaction_detail are flags to represent state
-    # not status for preventing cashier access
-    my @temp_status = grep { $_ !~ /^(?:social_signup|jp_transaction_detail)$/ } keys %$all_status;
+    # as social signup, jp_transaction_detail, duplicate_account, migrated_single_email
+    # are flags to represent state not status for preventing cashier access
+    my @temp_status = grep { $_ !~ /^(?:social_signup|jp_transaction_detail|duplicate_account|migrated_single_email)$/ } keys %$all_status;
     fail("missing status $_") for sort grep !exists $seen{$_}, @temp_status;
     pass("ok to prevent warning 'no tests run");
     done_testing();

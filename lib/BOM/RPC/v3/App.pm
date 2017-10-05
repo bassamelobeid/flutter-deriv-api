@@ -121,28 +121,14 @@ sub update {
 }
 
 sub __validate_app_links {
-    my ($homepage, $github, $appstore, $googleplay) = @_;
-
     my @sites = @_;
     my $validation_error;
 
     for (grep { length($_) } @sites) {
+        next if $_ =~ m{^https?://play\.google\.com/store/apps/details\?id=[\w.]+$};
         $validation_error = BOM::RPC::v3::Utility::validate_uri($_);
         return $validation_error if $validation_error;
     }
-
-    return localize('Invalid URI for homepage.')
-        if length($homepage)
-        and $homepage !~ m{^https?://};
-    return localize('Invalid URI for github.')
-        if length($github)
-        and $github !~ m{^https?://(www\.)?github\.com/\S+$};
-    return localize('Invalid URI for appstore.')
-        if length($appstore)
-        and $appstore !~ m{^https?://itunes\.apple\.com/\S+$};
-    return localize('Invalid URI for googleplay.')
-        if length($googleplay)
-        and $googleplay !~ m{^https?://play\.google\.com/\S+$};
 
     return;
 }

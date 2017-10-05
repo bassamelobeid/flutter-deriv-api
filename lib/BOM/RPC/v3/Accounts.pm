@@ -331,6 +331,7 @@ sub get_account_status {
     my $user = BOM::Platform::User->new({email => $client->email});
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->check_trade_status($client);
 
+    push @status, 'social_signup' if $user->has_social_signup;
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();
     $financial_assessment = ref($financial_assessment) ? from_json($financial_assessment->data || '{}') : {};
@@ -384,7 +385,21 @@ sub change_password {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $user = BOM::Platform::User->new({email => $client->email});
+    # Fetch user by loginid, if the user doesn't exist or
+    # has no associated clients then throw exception
+    my $user = BOM::Platform::User->new({loginid => $client->loginid});
+    my @clients;
+    if (not $user or not @clients = $user->clients) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => "InternalServerError",
+                message_to_client => localize("Sorry, an error occurred while processing your account.")});
+    }
+
+    # do not allow social based clients to reset password
+    return BOM::RPC::v3::Utility::create_error({
+            code              => "SocialBased",
+            message_to_client => localize("Sorry, your account does not allow passwords because you use social media to log in.")}
+    ) if $user->has_social_signup;
 
     if (
         my $pass_error = BOM::RPC::v3::Utility::_check_password({
@@ -401,11 +416,10 @@ sub change_password {
     $user->save;
 
     my $oauth = BOM::Database::Model::OAuth->new;
-    foreach my $c1 ($user->clients) {
-        $c1->password($new_password);
-        $c1->save;
-
-        $oauth->revoke_tokens_by_loginid($c1->loginid);
+    for my $obj (@clients) {
+        $obj->password($new_password);
+        $obj->save;
+        $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
     BOM::Platform::AuditLog::log('password has been changed', $client->email);
@@ -554,21 +568,22 @@ sub reset_password {
                 message_to_client => $err->{message_to_client}});
     }
 
-    my ($user, @clients);
-    $user = BOM::Platform::User->new({email => $email});
+    my $user = BOM::Platform::User->new({email => $email});
+    my @clients = ();
+    if (not $user or not @clients = $user->clients) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => "InternalServerError",
+                message_to_client => localize("Sorry, an error occurred while processing your account.")});
+    }
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => "InternalServerError",
-            message_to_client => localize("Sorry, an error occurred while processing your account.")}) unless $user and @clients = $user->clients;
+    # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
+    my $client = $clients[0];
 
     # do not allow social based clients to reset password
     return BOM::RPC::v3::Utility::create_error({
             code              => "SocialBased",
-            message_to_client => localize("Sorry, your account does not allow passwords because you use social media to log in.")}
-    ) unless $user->password;
-
-    # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
-    my $client = $clients[0];
+            message_to_client => localize('Sorry, you cannot reset your password because you logged in using a social network.'),
+        }) if $user->has_social_signup;
 
     unless ($client->is_virtual) {
         unless ($args->{date_of_birth}) {
@@ -593,10 +608,9 @@ sub reset_password {
     $user->save;
 
     my $oauth = BOM::Database::Model::OAuth->new;
-    foreach my $obj (@clients) {
+    for my $obj (@clients) {
         $obj->password($new_password);
         $obj->save;
-
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 

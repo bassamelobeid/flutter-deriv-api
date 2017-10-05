@@ -164,8 +164,10 @@ subtest $method => sub {
 
         $params->{token} = $token;
         $result = $rpc_ct->call_ok('authorize', $params)->has_no_system_error->result;
-        is $result->{allow_omnibus}, 1, 'Allow omnibus not set';
-        is $result->{sub_accounts}->[1]->{loginid}, $sub_client->loginid, 'Correct sub account for omnibus';
+        is $result->{allow_omnibus}, 1, 'Allow omnibus set';
+        is scalar @{$result->{sub_accounts}}, 2, 'Correct number of sub accounts';
+        my $match = grep { $_->{loginid} eq $sub_client->loginid } @{$result->{sub_accounts}};
+        ok $match, 'Correct sub account for omnibus';
         is_deeply([sort keys %{$result->{sub_accounts}->[0]}], ['currency', 'loginid'], 'correct structure');
     };
 
@@ -174,15 +176,15 @@ subtest $method => sub {
             language => 'EN',
         };
         $result = $rpc_ct->call_ok('payout_currencies', $params)->has_no_system_error->result;
-        is scalar @$result, 6, 'Correct number of currencies when token is not passed';
+        is scalar @$result, 7, 'Correct number of currencies when token is not passed';
 
         $params->{token} = $token;
         $result = $rpc_ct->call_ok('payout_currencies', $params)->has_no_system_error->result;
-        is scalar @$result, 6, 'Correct number of currencies for omnibus if authorized as currency not yet selected';
+        is scalar @$result, 7, 'Correct number of currencies for omnibus if authorized as currency not yet selected';
 
         $params->{token} = $sub_token;
         $result = $rpc_ct->call_ok('payout_currencies', $params)->has_no_system_error->result;
-        is scalar @$result, 6, 'Correct number of currencies when sub account token is passed as currency not yet selected';
+        is scalar @$result, 7, 'Correct number of currencies when sub account token is passed as currency not yet selected';
     };
 
 };

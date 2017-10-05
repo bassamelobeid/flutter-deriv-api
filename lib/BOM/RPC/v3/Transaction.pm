@@ -5,6 +5,7 @@ use warnings;
 
 use Try::Tiny;
 use JSON::XS qw/encode_json/;
+use Scalar::Util qw(blessed);
 
 use Client::Account;
 use Format::Util::Numbers qw/formatnumber/;
@@ -67,7 +68,7 @@ sub buy {
     my $response;
 
     my $price = $args->{price};
-    if (defined $amount_type and $amount_type eq 'stake') {
+    if (defined $price and defined $contract_parameters->{amount} and defined $amount_type and $amount_type eq 'stake') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price.")}
@@ -97,10 +98,16 @@ sub buy {
         }
     }
     catch {
-        warn __PACKAGE__ . " buy buy failed, parameters: " . encode_json($contract_parameters);
+        my $message_to_client;
+        if (blessed($_) && $_->isa('BOM::Product::Exception')) {
+            $message_to_client = $_->message_to_client;
+        } else {
+            $message_to_client = ['Cannot create contract'];
+            warn __PACKAGE__ . " buy buy failed, parameters: " . encode_json($contract_parameters);
+        }
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+                message_to_client => BOM::Platform::Context::localize(@$message_to_client)});
     };
     return $response if $response;
 
