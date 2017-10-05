@@ -250,8 +250,8 @@ sub create_s3_instance {
 
     my $s3 = Net::Async::Webservice::S3->new(
         %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)},
-        max_retries => 1,
-        timeout     => 60,
+        max_retries   => 1,
+        stall_timeout => 60,
     );
 
     $c->loop->add($s3);
