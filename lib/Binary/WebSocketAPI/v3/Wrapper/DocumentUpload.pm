@@ -6,10 +6,12 @@ use warnings;
 use Try::Tiny;
 use Digest::SHA;
 use Net::Async::Webservice::S3;
+use Future;
+use Variable::Disposition qw/retain_future/;
 
 use Binary::WebSocketAPI::Hooks;
 
-use constant MAX_CHUNK_SIZE => 2**17;
+use constant MAX_CHUNK_SIZE => 2**17; #100KB
 
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
@@ -92,7 +94,7 @@ sub get_upload_info {
 sub send_upload_failure {
     my ($c, $upload_info, $reason) = @_;
 
-    delete_stash($c, $upload_info);
+    clean_up_on_finish($c, $upload_info);
 
     $upload_info //= {
         echo_req    => {},
@@ -125,7 +127,7 @@ sub send_upload_failure {
 sub send_upload_successful {
     my ($c, $upload_info, $status) = @_;
 
-    delete_stash($c, $upload_info);
+    clean_up_on_finish($c, $upload_info);
 
     my $upload_finished = {
         size      => $upload_info->{received_bytes},
@@ -230,7 +232,7 @@ sub generate_upload_id {
     return $stash->{last_upload_id} = exists $stash->{last_upload_id} ? ($stash->{last_upload_id} + 1) % (1 << 32) : 1;
 }
 
-sub delete_stash {
+sub clean_up_on_finish {
     my ($c, $upload_info) = @_;
 
     return if !$upload_info;
@@ -275,9 +277,15 @@ sub create_s3_instance {
         value_length => $upload_info->{file_size},
     );
 
-    $upload_info->{put_future}->on_fail(sub { send_upload_failure($c, $upload_info, 'unknown') });
-
-    $upload_info->{put_future}->on_done(sub { send_upload_successful($c, $upload_info, 'success') });
+    retain_future(Future->wait_any(
+        $upload_info->{put_future},
+        $c->loop->timeout_future(after => 120),
+    )->then(sub {
+        send_upload_successful($c, $upload_info, 'success');
+    }, sub {
+        my $reason = shift;
+        send_upload_failure($c, $upload_info, $reason eq 'Timeout' ? 'upload_timeout' : 'unknown');
+    }));
 
     return;
 }
