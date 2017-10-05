@@ -283,8 +283,7 @@ sub create_s3_instance {
     )->then(sub {
         send_upload_successful($c, $upload_info, 'success');
     }, sub {
-        my $reason = shift;
-        send_upload_failure($c, $upload_info, $reason eq 'Timeout' ? 'upload_timeout' : 'unknown');
+        send_upload_failure($c, $upload_info, 'unknown');
     }));
 
     return;
