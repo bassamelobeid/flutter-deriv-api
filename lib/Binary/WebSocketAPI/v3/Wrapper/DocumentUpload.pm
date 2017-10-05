@@ -11,7 +11,7 @@ use Variable::Disposition qw/retain_future/;
 
 use Binary::WebSocketAPI::Hooks;
 
-use constant MAX_CHUNK_SIZE => 2**17; #100KB
+use constant MAX_CHUNK_SIZE => 2**17;    #100KB
 
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
@@ -284,14 +284,14 @@ sub last_chunk_received {
 
     return if $upload_info->{chunk_size} != 0;
 
-    return retain_future(Future->wait_any(
-        $upload_info->{put_future},
-        $c->loop->timeout_future(after => 120),
-    )->then(sub {
-        send_upload_successful($c, $upload_info, 'success');
-    }, sub {
-        send_upload_failure($c, $upload_info, 'unknown');
-    }));
+    return retain_future(
+        Future->wait_any($upload_info->{put_future}, $c->loop->timeout_future(after => 120),)->then(
+            sub {
+                send_upload_successful($c, $upload_info, 'success');
+            },
+            sub {
+                send_upload_failure($c, $upload_info, 'unknown');
+            }));
 }
 
 1;
