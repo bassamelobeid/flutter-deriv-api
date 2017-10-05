@@ -12,6 +12,7 @@ __PACKAGE__->meta->setup(
         loginid        => { type => 'varchar', length => 12, not_null => 1 },
         binary_user_id => { type => 'bigint', not_null => 1 },
         creation_stamp => { type => 'timestamp', default => 'now()', remarks => 'The timestamp of when this record was created. NULL values here mean the record was created prior to this column`s creation.' },
+        status         => { type => 'enum', check_in => [ 'disabled', 'migrated_single_email', 'duplicate_account' ], db_type => 'users.loginid_status' },
     ],
 
     primary_key_columns => [ 'loginid' ],
