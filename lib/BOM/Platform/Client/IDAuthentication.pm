@@ -83,7 +83,7 @@ sub _do_proveid {
             $set_status->('disabled', "$type match", "$type match");
         }
         # Director is ok, no unwelcome, no documents request
-        elsif ((($type) = grep { /(Directors)/ } @{$prove_id_result->{matches}})) {
+        elsif (grep { /Directors/ } @{$prove_id_result->{matches}}) {
         }
         # Politically Exposed => unwelcome client
         elsif ((($type) = grep { /(PEP)/ } @{$prove_id_result->{matches}})) {
