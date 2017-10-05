@@ -70,7 +70,7 @@ sub buy {
     $contract_parameters->{unit} //= $contract_parameters->{amount};
 
     my $price = $args->{price};
-    if (defined $amount_type and $amount_type eq 'stake') {
+    if (defined $price and defined $contract_parameters->{amount} and defined $amount_type and $amount_type eq 'stake') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price.")}
