@@ -39,6 +39,9 @@
             [ 'payment_fee',        'Payment Fee' ],
             [ 'cash_transfer',      'Western Union' ],
             [ 'arbitrary_markup',   'Arbitrary Markup Payment' ],
+            [ 'crypto_deposit',     'Crypto Deposit' ],
+            [ 'test_account',       'Test Account' ],
+            [ 'commission_paid',    'Commission Paid' ],
         ];
     %]
 

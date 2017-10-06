@@ -93,6 +93,9 @@
             <option value="adjustment"          >Adjustment</option>
             <option value="cash_transfer"       >Western Union</option>
             <option value="arbitrary_markup"    >Arbitrary Markup Payment</option>
+            <option value="crypto_deposit"      >Crypto Deposit</option>
+            <option value="test_account"        >Test Account</option>
+            <option value="commission_paid"     >Commission Paid</option>
         </select>
     </td>
     <td style="text-align:center">                 <input type="checkbox" name="skip_validation" value="on" id="skip_validation1" /></td>
