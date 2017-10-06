@@ -20,7 +20,11 @@ use BOM::Platform::RedisReplicated;
 use Test::MockModule;
 
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked_decimate->mock('get', sub {[map {{epoch => $_, decimate_epoch => $_, quote => 100 + rand(0.1)}} (0..80)]});
+$mocked_decimate->mock(
+    'get',
+    sub {
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005*$_} } (0 .. 80)];
+    });
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
@@ -263,7 +267,7 @@ subtest 'pips size changes' => sub {
         cmp_ok $c->barrier->as_absolute, 'eq', '0.99360', 'correct absolute barrier (it will be pipsized) ';
         cmp_ok $c->entry_tick->quote,    'eq', '0.9936',  'correct entry tick';
         cmp_ok $c->current_spot, 'eq', '0.99360', 'correct current spot (it will be pipsized)';
-        cmp_ok $c->ask_price,    'eq', '5.68',    'correct ask price';
+        cmp_ok $c->ask_price,    'eq', '5.69',    'correct ask price';
         $args->{date_pricing} = $now->plus_time_interval('10m');
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'frxAUDCAD',
