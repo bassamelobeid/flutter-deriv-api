@@ -65,17 +65,17 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'frxUSDJPY', '3', 'm', 'Win payout if USD/JPY is strictly higher than entry spot at 3 minutes after contract start time.', '54.72', '54.72', '97.140';
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
-    '100', 'CALL', 'frxUSDJPY', '1', 'h', 'Win payout if USD/JPY is strictly higher than entry spot at 1 hour after contract start time.', '54.66', '54.66', '97.140';
+    '100', 'CALL', 'frxUSDJPY', '1', 'h', 'Win payout if USD/JPY is strictly higher than entry spot at 1 hour after contract start time.', '54.69', '54.69', '97.140';
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'frxUSDJPY', '1', 'd', 'Win payout if USD/JPY is strictly higher than entry spot at close on 2016-08-10.', '56.62', '56.62', '97.140';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
-    'CALL', 'frxUSDJPY', '15', 'm', '+0.01', 'Win payout if USD/JPY is strictly higher than entry spot plus  10 pips at 15 minutes after contract start time.', '52.46', '52.46', '97.140';
+    'CALL', 'frxUSDJPY', '15', 'm', '+0.01', 'Win payout if USD/JPY is strictly higher than entry spot plus  10 pips at 15 minutes after contract start time.', '47.54', '47.54', '97.140';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
-    'CALL', 'frxUSDJPY', '30', 'm', '+0.01', 'Win payout if USD/JPY is strictly higher than entry spot plus  10 pips at 30 minutes after contract start time.', '50.88', '50.88', '97.140';
+    'CALL', 'frxUSDJPY', '30', 'm', '+0.01', 'Win payout if USD/JPY is strictly higher than entry spot plus  10 pips at 30 minutes after contract start time.', '48.78', '48.78', '97.140';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
-    'CALL', 'frxUSDJPY', '1', 'h', '+0.01', 'Win payout if USD/JPY is strictly higher than entry spot plus  10 pips at 1 hour after contract start time.', '50.17', '50.17', '97.140';
+    'CALL', 'frxUSDJPY', '1', 'h', '+0.01', 'Win payout if USD/JPY is strictly higher than entry spot plus  10 pips at 1 hour after contract start time.', '49.80', '49.80', '97.140';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
-    'CALL', 'frxUSDJPY', '2', 'h', '+0.01', 'Win payout if USD/JPY is strictly higher than entry spot plus  10 pips at 2 hours after contract start time.', '51.08', '51.08', '97.140';
+    'CALL', 'frxUSDJPY', '2', 'h', '+0.01', 'Win payout if USD/JPY is strictly higher than entry spot plus  10 pips at 2 hours after contract start time.', '51.07', '51.07', '97.140';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
     'CALL', 'frxUSDJPY', '1', 'd', '97.150', 'Win payout if USD/JPY is strictly higher than 97.150 at close on 2016-08-10.', '55.84', '55.84', '97.140';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
