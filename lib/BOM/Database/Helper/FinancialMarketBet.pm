@@ -557,7 +557,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
             $bet->{absolute_barrier} ? JSON::XS::encode_json(+{absolute_barrier => $bet->{absolute_barrier}}) : undef,
 
             # transaction table
-            @{$transdata || {}}{qw/transaction_time staff_loginid remark source quantity/},
+            @{$transdata || {}}{qw/transaction_time staff_loginid remark source/},
             @{$bet}{qw/quantity/},
 
             # data_collection.quants_bet_variables
