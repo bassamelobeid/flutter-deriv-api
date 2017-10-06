@@ -337,12 +337,11 @@ sub calculate_limits {
 
     my $general_open_position_payout_limit =
         from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit // {});
-    if (   exists $general_open_position_payout_limit->{$client->landing_company->short}
-        && exists $general_open_position_payout_limit->{$client->landing_company->short}->{$currency})
-    {
+    if (my $limit = $general_open_position_payout_limit->{$client->landing_company->short}) {
+        my ($limit_currency, $limit_amount) = each %$limit;
         $limits{general_open_position_payout} = {
-            limit    => $general_open_position_payout_limit->{$client->landing_company->short}->{$currency},
-            currency => $currency,
+            limit    => $limit_amount,
+            currency => $limit_currency,
         };
     }
 
