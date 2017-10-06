@@ -90,24 +90,22 @@ my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbh = $clientdb->db->dbh;
 
 my $rpc_client_builders = {
-    BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}},   timeout => 5)) },
-    LTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{litecoin}},  timeout => 5)) },
-    ETH => sub { Ethereum::RPC::Client->new((%{$cfg->{ethereum}}, timeout => 5)) },
+    BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}},      timeout => 5)) },
+    BCH => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin_cash}}, timeout => 5)) },
+    LTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{litecoin}},     timeout => 5)) },
+    ETH => sub { Ethereum::RPC::Client->new((%{$cfg->{ethereum}},    timeout => 5)) },
 };
 my $rpc_client = ($rpc_client_builders->{$currency} // code_exit_BO("no RPC client found for currency " . $currency))->();
 # Exchange rate should be populated according to supported cryptocurrencies.
-my $exchange_rates = {map { $_ => in_USD(1.0, $_) } keys %$rpc_client_builders};
+
+my $exchange_rate = eval { in_USD(1.0, $currency) } or code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();
 
 my $display_transactions = sub {
     my $trxns = shift;
     # Assign USD equivalent value
     for my $trx (@$trxns) {
-        unless (defined $exchange_rates->{$trx->{currency_code}}) {
-            warn "exchange_rates for $trx->{currency_code} is undefined";
-            $exchange_rates->{$trx->{currency_code}} = 0;
-        }
         $trx->{amount} //= 0;    # it will be undef on newly generated addresses
-        $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rates->{$trx->{currency_code}});
+        $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
     }
 
     # Render template page with transactions
@@ -131,7 +129,7 @@ my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
     'backoffice/crypto_cashier/crypto_control_panel.html.tt',
     {
-        exchange_rates => $exchange_rates,
+        exchange_rate  => $exchange_rate,
         controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
         currency       => $currency,
         cmd            => request()->param('command') // '',
@@ -238,7 +236,7 @@ if ($view_action eq 'withdrawals') {
     );
 
     {
-        # Apply date filtering. Note that this is currently BTC/LTC-specific, but
+        # Apply date filtering. Note that this is currently BTC/BCH/LTC-specific, but
         # once we have the information in the database we should pass the date range
         # as a parameter instead.
         my $filter = sub {

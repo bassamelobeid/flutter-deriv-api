@@ -174,6 +174,7 @@ sub get_settings_by_group {
                 system.suspend.is_auction_ended
                 system.suspend.ico_final_price
                 system.suspend.all_logins
+                system.suspend.social_logins
                 system.suspend.logins
                 system.suspend.system
                 system.suspend.mt5
