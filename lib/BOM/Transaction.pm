@@ -727,13 +727,11 @@ sub prepare_bet_data_for_sell {
         id         => scalar $self->contract_id,
         sell_price => scalar $self->price,
         sell_time  => scalar $contract->date_pricing->db_timestamp,
+        $contract->is_binary ? (quantity => 1) : (quantity => $contract->unit),
         $contract->category_code eq 'asian' && $contract->is_after_settlement
         ? (absolute_barrier => scalar $contract->barrier->as_absolute)
         : (),
     };
-
-    $bet_params->{quantity} = 1;
-    $bet_params->{quantity} = $contract->unit if not $contract->is_binary;
 
     my $quants_bet_variables;
     if (my $comment_hash = $self->comment->[1]) {
