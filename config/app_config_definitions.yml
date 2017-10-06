@@ -218,7 +218,7 @@ quants:
       global: 1
       default: '{}'
     general_open_position_payout_limit:
-      description: "Open position payout limit for landing company. Note that a landing company could have multiple currencies."
+description: "Open position payout limit for landing company. Note that a landing company could have multiple currencies. E.g. '{\"japan\": {\"JPY\": \"100\"}}'"
       isa: json_string
       global: 1
       default: '{}'
