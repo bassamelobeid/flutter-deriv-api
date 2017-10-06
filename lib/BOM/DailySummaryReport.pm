@@ -22,7 +22,7 @@ has [qw(for_date currencies brokercodes broker_path)] => (
     required => 1,
 );
 
-has [qw(collector_dbic balance_sql open_position_sql)] => (
+has [qw(collector_dbic)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -36,22 +36,6 @@ sub _build_collector_dbic {
         })->db->dbic;
 }
 
-sub _build_balance_sql {
-    return q{
-                INSERT INTO accounting.end_of_day_balances (account_id, effective_date, balance)
-                    VALUES(?,?,?) RETURNING id
-                };
-
-}
-
-sub _build_open_position_sql {
-    return q{
-                INSERT INTO accounting.end_of_day_open_positions
-                    (end_of_day_balance_id, financial_market_bet_id, marked_to_market_value)
-                    VALUES(?,?,?)
-                };
-}
-
 sub generate_report {
     my $self = shift;
     return $self->collector_dbic->run(ping => sub { $self->_generate_report($_) });
@@ -63,6 +47,7 @@ sub _generate_report {
     my $run_for           = Date::Utility->new($self->for_date);
     my $start_of_next_day = Date::Utility->new($run_for->epoch - $run_for->seconds_after_midnight)->datetime_iso8601;
     my $total_pl;
+
     foreach my $currency (sort @{$self->currencies}) {
         foreach my $broker (sort @{$self->brokercodes}) {
             # We don't care about these for Virtuals.
@@ -82,10 +67,14 @@ sub _generate_report {
             my $agg_total_open_bets_profit = 0;
             CLIENT:
             foreach my $login_id (sort keys %{$client_ref}) {
-                my $account_id = $client_ref->{$login_id}->{'account_id'};
-                my $acbalance  = $client_ref->{$login_id}->{'balance_at'};
+                my $account_id  = $client_ref->{$login_id}->{'account_id'};
+                my $acbalance   = $client_ref->{$login_id}->{'balance_at'};
+                my $balance_sql = q{
+                INSERT INTO accounting.end_of_day_balances (account_id, effective_date, balance)
+                    VALUES(?,?,?) RETURNING id
+                };
 
-                my @eod_id = $dbh->selectrow_array($self->balance_sql, {}, ($account_id, $self->for_date, $acbalance));
+                my @eod_id = $dbh->selectrow_array($balance_sql, {}, ($account_id, $self->for_date, $acbalance));
 
                 # Only execute this part if client had open bets at that time.
                 my @portfolios;
@@ -109,7 +98,13 @@ sub _generate_report {
                             return 1;
                         } and next;
 
-                        my $open_position_statement = $dbh->prepare($self->open_position_sql);
+                        my $open_position_sql = q{
+                INSERT INTO accounting.end_of_day_open_positions
+                    (end_of_day_balance_id, financial_market_bet_id, marked_to_market_value)
+                    VALUES(?,?,?)
+                };
+
+                        my $open_position_statement = $dbh->prepare($open_position_sql);
                         $open_position_statement->execute(($eod_id[0], $bet_id, $theo));
 
                         my $portfolio = "1L $bet->{buy_price} $bet->{short_code} ($theo)";
