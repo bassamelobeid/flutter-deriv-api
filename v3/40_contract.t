@@ -244,7 +244,7 @@ like(
 $t->await::forget({forget => $proposal_1->{proposal}->{id}});
 
 my %notouch_2 = (
-    "amount"        => "1000",
+    "amount"        => "1",
     "basis"         => "stake",
     "contract_type" => "NOTOUCH",
     "currency"      => "USD",
@@ -261,10 +261,9 @@ $proposal_1 = $t->await::proposal({
 $proposal_id = $proposal_1->{proposal}->{id};
 $res         = $t->await::buy({
     buy   => $proposal_id,
-    price => 100000
+    price => 10000
 });
-
-is $res->{buy}->{buy_price}, '1000.00';
+is $res->{buy}->{buy_price}, '1.00';
 
 $t->finish_ok;
 
