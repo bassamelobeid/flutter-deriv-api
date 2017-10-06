@@ -129,7 +129,7 @@ sub getall_arrayref {
         @result = map { JSON::XS::decode_json($_->[0]) } @$result;
     }
     catch {
-        die "Result must be always rows of JSON";
+        die "Result must be always rows of JSON : $_";
     };
 
     return \@result;
