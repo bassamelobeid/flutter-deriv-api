@@ -74,6 +74,10 @@
       "type": "integer",
       "description":"[For japan only] An epoch value of a predefined trading period start time"
     },
+    "predefined_code": {
+        "type": "string",
+        "description": "We offer a set of contracts with predefined trading windows and barriers."
+    },
     "passthrough": {
       "type": "object",
       "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
