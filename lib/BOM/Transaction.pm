@@ -732,6 +732,9 @@ sub prepare_bet_data_for_sell {
         : (),
     };
 
+    $bet_params->{quantity} = 1;
+    $bet_params->{quantity} = $contract->unit if not $contract->is_binary;
+
     my $quants_bet_variables;
     if (my $comment_hash = $self->comment->[1]) {
         $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
@@ -809,9 +812,6 @@ sub sell {
         client_loginid => $self->client->loginid,
         currency_code  => $self->contract->currency,
     };
-
-    $bet_data->{quantity} = 1;
-    $bet_data->{quantity} = $self->contract->unit if not $self->contract->is_binary;
 
     $self->stats_validation_done($stats_data);
 
