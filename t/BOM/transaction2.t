@@ -213,7 +213,7 @@ subtest 'general_open_position_payout', sub {
         is + ($bal = $acc_jpy->balance + 0), 5000, 'JPY balance is 5000 got: ' . $bal;
 
         note("mocked general_open_position_payout JPY limit to 149.99");
-        BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit_for_japan(149.99);
+        BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit('{"japan": {"JPY": "149.99"}}');
         my $contract = produce_contract({
             underlying   => 'frxUSDJPY',
             bet_type     => 'CALLE',
@@ -285,7 +285,7 @@ subtest 'general_open_position_payout', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note("mocked general_open_position_payout JPY limit to 150");
-            BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit_for_japan(150);
+            BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit('{"japan": {"JPY": "150"}}');
 
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like

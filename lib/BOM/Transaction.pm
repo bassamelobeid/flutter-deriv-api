@@ -335,9 +335,13 @@ sub calculate_limits {
 
     $limits{max_balance} = $client->get_limit_for_account_balance;
 
-    if ($client->landing_company->short =~ /japan/) {
+    my $general_open_position_payout_limit =
+        from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit // {});
+    if (   exists $general_open_position_payout_limit->{$client->landing_company->short}
+        && exists $general_open_position_payout_limit->{$client->landing_company->short}->{$currency})
+    {
         $limits{general_open_position_payout} = {
-            limit    => BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit_for_japan,
+            limit    => $general_open_position_payout_limit->{$client->landing_company->short}->{$currency},
             currency => $currency,
         };
     }
