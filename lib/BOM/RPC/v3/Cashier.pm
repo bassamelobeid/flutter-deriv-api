@@ -442,7 +442,7 @@ sub paymentagent_transfer {
         or $app_config->system->suspend->payment_agents
         or $app_config->system->suspend->system)
     {
-        $error_msg = localize('Sorry, payment agent transfer is temporarily disabled due to system maintenance.');
+        $error_msg = localize('Sorry, this facility is temporarily disabled due to system maintenance.');
     } elsif (not $client_fm->landing_company->allows_payment_agents) {
         $error_msg = localize('Payment agent facility is not available for this account.');
     } elsif (not $payment_agent) {
@@ -454,6 +454,8 @@ sub paymentagent_transfer {
     }
 
     return $error_sub->($error_msg) if $error_msg;
+
+    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->get_status('disabled');
 
     my ($max_withdrawal, $min_withdrawal, $min_max) =
         ($payment_agent->max_withdrawal, $payment_agent->min_withdrawal, BOM::RPC::v3::Utility::paymentagent_default_min_max());
@@ -480,11 +482,10 @@ sub paymentagent_transfer {
     return $error_sub->(localize('Payment agent transfer is available for [_1] currency only.', 'USD')) if $currency ne 'USD';
 
     return $error_sub->(
-        localize("Payment agent transfer is not allowed, as [_1] is not default account currency for payment agent [_2].", $currency, $loginid_fm))
+        localize("You cannot perform this action, as [_1] is not default account currency for payment agent [_2].", $currency, $loginid_fm))
         if ($client_fm->currency ne $currency or not $client_fm->default_account);
 
-    return $error_sub->(
-        localize("Payment agent transfer is not allowed, as [_1] is not default account currency for client [_2].", $currency, $loginid_to))
+    return $error_sub->(localize("You cannot perform this action, as [_1] is not default account currency for client [_2].", $currency, $loginid_to))
         if ($client_to->currency ne $currency or not $client_to->default_account);
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to))
@@ -496,10 +497,10 @@ sub paymentagent_transfer {
     return $error_sub->(localize('You cannot transfer to account [_1], as their verification documents have expired.', $loginid_to))
         if $client_to->documents_expired;
 
-    return $error_sub->(localize('You cannot perform transfer, as your cashier is locked as per your request.'))
+    return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.'))
         if $client_fm->get_status('cashier_locked');
 
-    return $error_sub->(localize('You cannot perform transfer, as your verification documents have expired.')) if $client_fm->documents_expired;
+    return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client_fm->documents_expired;
 
     if ($args->{dry_run}) {
         return {
@@ -692,7 +693,7 @@ sub paymentagent_withdraw {
         or $app_config->system->suspend->payment_agents
         or $app_config->system->suspend->system)
     {
-        return $error_sub->(localize('Sorry, the payment agent withdrawal is temporarily disabled due to system maintenance.'));
+        return $error_sub->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'));
     } elsif (not $client->landing_company->allows_payment_agents) {
         return $error_sub->(localize('Payment agent facility is not available for this account.'));
     } elsif (not BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client)) {
@@ -711,6 +712,8 @@ sub paymentagent_withdraw {
     return $error_sub->(localize('The payment agent facility is currently not available in your country.'))
         if (not $client->residence or scalar keys %{$authenticated_pa} == 0);
 
+    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->get_status('disabled');
+
     my $min_max = BOM::RPC::v3::Utility::paymentagent_default_min_max();
     return $error_sub->(localize('Invalid amount. minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
         if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum});
@@ -722,11 +725,10 @@ sub paymentagent_withdraw {
 
     my $pa_client = $paymentagent->client;
     return $error_sub->(
-        localize('Payment agent withdrawal is not allowed, as [_1] is not default currency for your account [_2]', $currency, $client->loginid))
+        localize('You cannot perform this action, as [_1] is not default currency for your account [_2]', $currency, $client->loginid))
         if ($client->currency ne $currency or not $client->default_account);
 
-    return $error_sub->(
-        localize("Payment agent withdrawal is not allowed, as [_1] is not default currency for payment agent account [_2].", $currency))
+    return $error_sub->(localize("You cannot perform this action, as [_1] is not default currency for payment agent account [_2].", $currency))
         if ($pa_client->currency ne $currency or not $pa_client->default_account);
 
     # check that the amount is in correct format
@@ -736,11 +738,12 @@ sub paymentagent_withdraw {
     return $error_sub->(localize('Further instructions must not exceed [_1] characters.', 300)) if (length($further_instruction) > 300);
 
     # check that both the client payment agent cashier is not locked
-    return $error_sub->(localize('Your cashier is locked as per your request.')) if $client->get_status('cashier_locked');
+    return $error_sub->(localize('You can perform this action, as your account is cashier locked.')) if $client->get_status('cashier_locked');
 
-    return $error_sub->(localize('You cannot perform withdrawal, as your account is withdrawal locked.')) if $client->get_status('withdrawal_locked');
+    return $error_sub->(localize('You cannot perform this action, as your account is withdrawal locked.'))
+        if $client->get_status('withdrawal_locked');
 
-    return $error_sub->(localize('You cannot perform withdrawal, as your verification documents have expired.')) if $client->documents_expired;
+    return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client->documents_expired;
 
     return $error_sub->(localize('You cannot perform withdrawal to account [_1], as payment agent cashier is locked.', $pa_client->loginid))
         if $pa_client->get_status('cashier_locked');
@@ -954,11 +957,14 @@ sub transfer_between_accounts {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 
-    if ($client->get_status('disabled') or $client->get_status('cashier_locked') or $client->get_status('withdrawal_locked')) {
-        return _transfer_between_accounts_error(localize('Account transfer is not available for your account: [_1].', $client->loginid));
-    }
-
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
+    return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is currently disabled.'))
+        if $client->get_status('disabled');
+    return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is cashier locked.'))
+        if $client->get_status('cashier_locked');
+    return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
+        if $client->get_status('withdrawal_locked');
 
     my $args = $params->{args};
     my ($currency, $amount) = @{$args}{qw/currency amount/};
@@ -990,7 +996,8 @@ sub transfer_between_accounts {
     }
 
     return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $currency;
-    return _transfer_between_accounts_error(localize('Please provide valid amount.')) if (not looks_like_number($amount) or $amount <= 0);
+    return _transfer_between_accounts_error(localize('Please provide valid amount.'))
+        if (not looks_like_number($amount) or $amount <= 0);
 
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same user
@@ -1004,7 +1011,8 @@ sub transfer_between_accounts {
     };
     return $res if $res;
 
-    my ($from_currency, $to_currency) = ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
+    my ($from_currency, $to_currency) =
+        ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
     $res = _validate_transfer_between_accounts(
         $client,
         $client_from,
@@ -1216,7 +1224,8 @@ sub _validate_transfer_between_accounts {
     # error if landing companies are different with exception
     # of maltainvest and malta as we allow transfer between them
     return _transfer_between_accounts_error()
-        if (($lc_from->short ne $lc_to->short) and ($lc_from->short !~ /^(?:malta|maltainvest)$/ or $lc_to->short !~ /^(?:malta|maltainvest)$/));
+        if (($lc_from->short ne $lc_to->short)
+        and ($lc_from->short !~ /^(?:malta|maltainvest)$/ or $lc_to->short !~ /^(?:malta|maltainvest)$/));
 
     # error if currency is not legal for landing company
     return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
