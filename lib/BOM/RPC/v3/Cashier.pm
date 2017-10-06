@@ -455,7 +455,7 @@ sub paymentagent_transfer {
 
     return $error_sub->($error_msg) if $error_msg;
 
-    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->get_status('disabled');
+    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client_fm->get_status('disabled');
 
     my ($max_withdrawal, $min_withdrawal, $min_max) =
         ($payment_agent->max_withdrawal, $payment_agent->min_withdrawal, BOM::RPC::v3::Utility::paymentagent_default_min_max());
@@ -472,7 +472,7 @@ sub paymentagent_transfer {
     }
 
     my $client_to = try { Client::Account->new({loginid => $loginid_to}) };
-    return $error_sub->(localize('Login id ([_1]) does not exist.', $loginid_to)) unless $client_to;
+    return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to)) unless $client_to;
 
     return $error_sub->(localize('Payment agent transfer is not allowed for specified accounts.'))
         unless ($client_fm->landing_company->short eq $client_to->landing_company->short);
@@ -725,7 +725,7 @@ sub paymentagent_withdraw {
 
     my $pa_client = $paymentagent->client;
     return $error_sub->(
-        localize('You cannot perform this action, as [_1] is not default currency for your account [_2]', $currency, $client->loginid))
+        localize('You cannot perform this action, as [_1] is not default currency for your account [_2].', $currency, $client->loginid))
         if ($client->currency ne $currency or not $client->default_account);
 
     return $error_sub->(localize("You cannot perform this action, as [_1] is not default currency for payment agent account [_2].", $currency))
