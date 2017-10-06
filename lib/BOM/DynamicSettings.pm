@@ -191,6 +191,7 @@ sub get_settings_by_group {
                 quants.underlyings.disable_autoupdate_vol
                 quants.underlyings.suspend_buy
                 quants.underlyings.suspend_trades
+                quants.general_open_position_payout_limit_for_japan
                 )
         ],
         it => [qw(
