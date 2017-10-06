@@ -435,7 +435,6 @@ sub prepare_bet_data_for_buy {
         payout_price      => scalar $self->payout,
     };
 
-#just for experimentation
     $bet_params->{quantity} = $contract->unit if not $contract->is_binary;
 
     $bet_params->{expiry_daily} = 1 if $contract->expiry_daily;
@@ -812,9 +811,6 @@ sub sell {
     };
 
     $self->stats_validation_done($stats_data);
-
-    use Data::Dumper;
-    warn "Inside Tr::sell " . Dumper($bet_data);
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
@@ -1328,9 +1324,6 @@ sub sell_expired_contracts {
     my %stats_failure;
     for my $bet (@$bets) {
 
-        use Data::Dumper;
-        warn "sell_expired1### " . Dumper($bet);
-
         my $contract;
         my $error;
         my $failure = {fmb_id => $bet->{id}};
@@ -1442,9 +1435,6 @@ sub sell_expired_contracts {
     }
 
     return $result unless @bets_to_sell;    # nothing to do
-
-    use Data::Dumper;
-    warn "sell_expired2#####>>> " . Dumper(\@bets_to_sell);
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         transaction_data => \@transdata,
