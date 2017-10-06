@@ -394,7 +394,7 @@ sub vol_spread_markup {
     # We cap vol spread at +/-5%
     my $vol_spread = min(0.05, max(-0.05, $long_term_average_vol - $bet->_pricing_args->{iv}));
     my $vega       = $self->base_probability->peek_amount('intraday_vega');
-    my $multiplier = $vega < 0 ? 2 : 1;
+    my $multiplier = $vega < 0 ? 1 : 0.5;
 
     return Pricing::Engine::Markup::VolSpread->new(
         bet_vega   => $vega,
