@@ -810,7 +810,13 @@ sub sell {
         currency_code  => $self->contract->currency,
     };
 
+    $bet_data->{quantity} = 1;
+    $bet_data->{quantity} = $self->contract->unit if not $self->contract->is_binary;
+
     $self->stats_validation_done($stats_data);
+
+    use Data::Dumper;
+    warn "Inside Tr::sell " . Dumper($bet_data);
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
@@ -1323,6 +1329,10 @@ sub sell_expired_contracts {
     my %stats_attempt;
     my %stats_failure;
     for my $bet (@$bets) {
+
+        use Data::Dumper;
+        warn "sell_expired1### " . Dumper($bet);
+
         my $contract;
         my $error;
         my $failure = {fmb_id => $bet->{id}};
@@ -1349,6 +1359,8 @@ sub sell_expired_contracts {
                 @{$bet}{qw/sell_price sell_time/} = ($contract->bid_price, $contract->date_pricing->db_timestamp);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute
                     if $contract->category_code eq 'asian' and $contract->is_after_settlement;
+                $bet->{quantity} = 1;
+                $bet->{quantity} = $contract->unit if not $contract->is_binary;
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
@@ -1372,6 +1384,8 @@ sub sell_expired_contracts {
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
                 @{$bet}{qw/sell_price sell_time/} = ($bet->{buy_price}, $now->db_timestamp);
+                $bet->{quantity} = 1;
+                $bet->{quantity} = $contract->unit if not $contract->is_binary;
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
@@ -1430,6 +1444,9 @@ sub sell_expired_contracts {
     }
 
     return $result unless @bets_to_sell;    # nothing to do
+
+    use Data::Dumper;
+    warn "sell_expired2#####>>> " . Dumper(\@bets_to_sell);
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         transaction_data => \@transdata,
