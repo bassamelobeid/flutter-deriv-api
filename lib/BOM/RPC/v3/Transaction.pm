@@ -83,7 +83,6 @@ sub buy {
             contract_parameters => $contract_parameters,
             price               => ($price || 0),
             (defined $payout) ? (payout => $payout) : (),
-#experimentation
             (defined $amount_type) ? (amount_type => $amount_type) : (amount_type => 'unit'),
             purchase_date => $purchase_date,
             source        => $source,
