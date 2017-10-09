@@ -85,6 +85,8 @@ sub _db {
                 return;
             }
         });
+    # Maybe the connection got from cache, set it for safe
+    $cdb->db->dbic->run(fixup => sub{$_->do("SET statement_timeout TO 0")});
     return $cdb->db;
 }
 
