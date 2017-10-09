@@ -11,6 +11,14 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Database::Model::OAuth;
+use Test::MockModule;
+
+my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
+$mocked_decimate->mock(
+    'get',
+    sub {
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005*$_} } (0 .. 80)];
+    });
 
 use BOM::Test::RPC::Client;
 use Test::BOM::RPC::Contract;
