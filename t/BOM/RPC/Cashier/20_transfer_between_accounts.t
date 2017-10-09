@@ -37,7 +37,7 @@ my $params = {
     args     => {},
 };
 
-my ($method, $email, $client_cr, $client_cr1, $client_mlt, $client_mf, $user) = ('transfer_between_accounts');
+my ($method, $email, $client_vr, $client_cr, $client_cr1, $client_mlt, $client_mf, $user, $token) = ('transfer_between_accounts');
 
 my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
 $mocked_CurrencyConverter->mock(
@@ -53,7 +53,13 @@ $mocked_CurrencyConverter->mock(
     });
 
 subtest 'call params validation' => sub {
-    $email     = 'dummy' . rand(999) . '@binary.com';
+    $email = 'dummy' . rand(999) . '@binary.com';
+
+    $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email
+    });
+
     $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email
@@ -80,7 +86,8 @@ subtest 'call params validation' => sub {
     $user->add_loginid({loginid => $client_mf->loginid});
     $user->save;
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $token = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $params->{token} = $token;
 
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is @{$result->{accounts}}, 3, 'if no loginid from or to passed then it returns accounts';
@@ -112,11 +119,42 @@ subtest 'call params validation' => sub {
     is $result->{error}->{code},              'TransferBetweenAccountsError',   'Correct error code for invalid currency';
     is $result->{error}->{message_to_client}, 'Please provide valid currency.', 'Correct error message for invalid amount';
 
-    $params->{args}->{currency} = 'EUR';
+    $params->{args}->{currency}     = 'EUR';
+    $params->{args}->{account_from} = $client_vr->loginid;
+
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_vr->loginid, 'test token');
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code},              'PermissionDenied',   'Correct error code for virtual account';
+    is $result->{error}->{message_to_client}, 'Permission denied.', 'Correct error message for virtual account';
+
+    $params->{token} = $token;
+    $params->{args}->{account_from} = $client_cr->loginid;
+
+    $client_cr->set_status('cashier_locked', 'system', 'testing something');
+    $client_cr->save;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for cashier locked';
+    is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is cashier locked.',
+        'Correct error message for cashier locked';
+
+    $client_cr->clr_status('cashier_locked');
+    $client_cr->set_status('withdrawal_locked', 'system', 'testing something');
+    $client_cr->save;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for withdrawal locked';
+    is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.',
+        'Correct error message for withdrawal locked';
+
+    $client_cr->clr_status('withdrawal_locked');
+    $client_cr->save;
 };
 
 subtest 'validation' => sub {
     # random loginid to make it fail
+    $params->{token} = $token;
     $params->{args}->{account_from} = 'CR123';
 
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
