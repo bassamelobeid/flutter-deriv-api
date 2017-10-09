@@ -90,7 +90,8 @@ sub _build__connection_builder {
     my $connect_options = $cdb->db->connect_options;
     $connect_options->{Callbacks} = {
         connected => sub { warn "callback called";
-            shift->do("SET statement_timeout TO 0");
+                           shift->do("SET statement_timeout TO 0");
+                           return ;
         }
     };
     $cdb->db->connect_options($connect_options);
