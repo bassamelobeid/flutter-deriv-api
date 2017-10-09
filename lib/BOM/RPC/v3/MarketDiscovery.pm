@@ -23,7 +23,7 @@ sub active_symbols {
     my $params = shift;
 
     my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
-    my $lc                   = LandingCompany::get($landing_company_name);
+    my $lc                   = LandingCompany::Registry::get($landing_company_name);
     my $product_type         = $params->{args}->{product_type} // $lc->legal_allowed_offerings->[0];    # get the default for the landing company
     my $language             = $params->{language} || 'EN';
     my $token_details        = $params->{token_details};
