@@ -77,6 +77,7 @@ sub buy_multiple_bets {
         underlying_symbol => 'frxUSDJPY',
         payout_price      => 200,
         buy_price         => 20,
+        quantity          => 1,
         remark            => 'Test Remark',
         purchase_time     => $now->db_timestamp,
         start_time        => $now->db_timestamp,
