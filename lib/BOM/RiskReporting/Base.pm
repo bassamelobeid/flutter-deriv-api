@@ -87,13 +87,13 @@ sub _build__connection_builder {
         broker_code => $self->_db_broker_code,
         operation   => $self->_db_operation,
     });
-    my $connection_options = $cdb->db->connection_options;
-    $connection_options->{Callbacks} = {
+    my $connect_options = $cdb->db->connect_options;
+    $connect_options->{Callbacks} = {
         connected => sub { warn "callback called";
             shift->do("SET statement_timeout TO 0");
         }
     };
-    $cdb->db->connection_options($connection_options);
+    $cdb->db->connect_options($connect_options);
     return $cdb;
 }
 
