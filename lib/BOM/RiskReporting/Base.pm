@@ -88,13 +88,11 @@ sub _build__connection_builder {
         operation   => $self->_db_operation,
     });
     $cdb->db->connect_option(Callbacks => {
-        connected => sub { warn "callback called";
+        connected => sub {
                            shift->do("SET statement_timeout TO 0");
                            return ;
         }
     });
-    use Data::Dumper;
-    warn "connect_options in base.pm: " . Dumper({$cdb->db->connect_options});
     return $cdb;
 }
 
