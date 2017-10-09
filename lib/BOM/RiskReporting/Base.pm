@@ -89,10 +89,10 @@ sub _build__connection_builder {
     });
     my $connection_options = $cdb->db->connection_options;
     $connection_options->{Callbacks} = {
-                                        connected  => sub {
-                                          shift->do("SET statement_timeout TO 0");
-                                        }
-                                       };
+        connected => sub {
+            shift->do("SET statement_timeout TO 0");
+        }
+    };
     $cdb->db->connection_options($connection_options);
     return $cdb;
 }
