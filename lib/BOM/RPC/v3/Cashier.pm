@@ -444,11 +444,11 @@ sub paymentagent_transfer {
     {
         $error_msg = localize('Sorry, this facility is temporarily disabled due to system maintenance.');
     } elsif (not $client_fm->landing_company->allows_payment_agents) {
-        $error_msg = localize('Payment agent facility is not available for this account.');
+        $error_msg = localize('The payment agent facility is not available for this account.');
     } elsif (not $payment_agent) {
-        $error_msg = localize('You are not authorized for transfer via payment agent.');
+        $error_msg = localize('You are not authorized for transfers via payment agents.');
     } elsif (not $payment_agent->is_authenticated) {
-        $error_msg = localize('Your account needs to be authenticated to perform payment agent transfer.');
+        $error_msg = localize('Your account needs to be authenticated to perform payment agent transfers.');
     } elsif ($client_fm->cashier_setting_password) {
         $error_msg = localize('Your cashier is locked as per your request.');
     }
@@ -474,18 +474,19 @@ sub paymentagent_transfer {
     my $client_to = try { Client::Account->new({loginid => $loginid_to}) };
     return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to)) unless $client_to;
 
-    return $error_sub->(localize('Payment agent transfer is not allowed for specified accounts.'))
+    return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
         unless ($client_fm->landing_company->short eq $client_to->landing_company->short);
 
-    return $error_sub->(localize('Payment agent transfer is not allowed within same account.')) if $loginid_to eq $loginid_fm;
+    return $error_sub->(localize('Payment agent transfers are not allowed within the same account.')) if $loginid_to eq $loginid_fm;
 
-    return $error_sub->(localize('Payment agent transfer is available for [_1] currency only.', 'USD')) if $currency ne 'USD';
+    return $error_sub->(localize('Payment agent transfers are available for [_1] currency only.', 'USD')) if $currency ne 'USD';
 
     return $error_sub->(
-        localize("You cannot perform this action, as [_1] is not default account currency for payment agent [_2].", $currency, $loginid_fm))
+        localize('You cannot perform this action, as [_1] is not the default account currency for payment agent [_2].', $currency, $loginid_fm))
         if ($client_fm->currency ne $currency or not $client_fm->default_account);
 
-    return $error_sub->(localize("You cannot perform this action, as [_1] is not default account currency for client [_2].", $currency, $loginid_to))
+    return $error_sub->(
+        localize("You cannot perform this action, as [_1] is not the default account currency for client [_2].", $currency, $loginid_to))
         if ($client_to->currency ne $currency or not $client_to->default_account);
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to))
@@ -525,14 +526,14 @@ sub paymentagent_transfer {
 
     if (not $fm_client_db->freeze) {
         return $error_sub->(
-            localize('Sorry, an error occurred while processing your request. Please try again in one minute.'),
+            localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'),
             "Account stuck in previous transaction $loginid_fm"
         );
     }
 
     if (not $to_client_db->freeze) {
         return $error_sub->(
-            localize('Sorry, an error occurred while processing your request. Please try again in one minute.'),
+            localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'),
             "Account stuck in previous transaction $loginid_to"
         );
     }
@@ -562,18 +563,20 @@ sub paymentagent_transfer {
 
     # maximum amount USD 100000 per day
     if (($amount_transferred + $amount) >= 100000) {
-        return $error_sub->(localize('Payment agent transfer is not allowed, as you have exceeded the maximum allowable transfer amount for today.'));
+        return $error_sub->(
+            localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount for today.'));
     }
 
     # do not allow more than 1000 transactions per day
     if ($count > 1000) {
-        return $error_sub->(localize('Payment agent transfer is not allowed, as you have exceeded the maximum allowable transactions for today.'));
+        return $error_sub->(localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transactions for today.'));
     }
 
     if ($client_to->default_account and $amount + $client_to->default_account->balance > $client_to->get_limit_for_account_balance) {
         return $error_sub->(
-            localize('Payment agent transfer is not allowed with specified amount, as account [_1] balance will exceed allowed limits.', $loginid_to)
-        );
+            localize(
+                'Payment agent transfer is not allowed with the specified amount, as account [_1] balance would exceed allowed limits.', $loginid_to
+            ));
     }
 
     # execute the transfer
@@ -607,7 +610,7 @@ sub paymentagent_transfer {
             return $error_sub->(localize('Request too frequent. Please try again later.'), $error);
         } else {
             warn "Error in paymentagent_transfer for transfer - $error\n";
-            return $error_sub->(localize('Sorry, an error occurred while processing your request.'), $error);
+            return $error_sub->(localize('Sorry, an error occurred whilst processing your request.'), $error);
         }
     }
 
@@ -695,10 +698,10 @@ sub paymentagent_withdraw {
     {
         return $error_sub->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'));
     } elsif (not $client->landing_company->allows_payment_agents) {
-        return $error_sub->(localize('Payment agent facility is not available for this account.'));
+        return $error_sub->(localize('Payment agent facilities are not available for this account.'));
     } elsif (not BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client)) {
         # check whether allow to withdraw via payment agent
-        return $error_sub->(localize('You are not authorized for withdrawal via payment agent.'));
+        return $error_sub->(localize('You are not authorized for withdrawals via payment agents.'));
     } elsif ($client->cashier_setting_password) {
         return $error_sub->(localize('Your cashier is locked as per your request.'));
     }
@@ -715,13 +718,13 @@ sub paymentagent_withdraw {
     return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->get_status('disabled');
 
     my $min_max = BOM::RPC::v3::Utility::paymentagent_default_min_max();
-    return $error_sub->(localize('Invalid amount. minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
+    return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
         if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum});
 
     my $paymentagent = Client::Account::PaymentAgent->new({'loginid' => $paymentagent_loginid})
         or return $error_sub->(localize('The payment agent account does not exist.'));
 
-    return $error_sub->(localize('Payment agent transfer is not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
+    return $error_sub->(localize('Payment agent transfers are not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
 
     my $pa_client = $paymentagent->client;
     return $error_sub->(
@@ -738,17 +741,17 @@ sub paymentagent_withdraw {
     return $error_sub->(localize('Further instructions must not exceed [_1] characters.', 300)) if (length($further_instruction) > 300);
 
     # check that both the client payment agent cashier is not locked
-    return $error_sub->(localize('You can perform this action, as your account is cashier locked.')) if $client->get_status('cashier_locked');
+    return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.')) if $client->get_status('cashier_locked');
 
     return $error_sub->(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if $client->get_status('withdrawal_locked');
 
     return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client->documents_expired;
 
-    return $error_sub->(localize('You cannot perform withdrawal to account [_1], as payment agent cashier is locked.', $pa_client->loginid))
+    return $error_sub->(localize("You cannot perform the withdrawal to account [_1], as the payment agent's cashier is locked.", $pa_client->loginid))
         if $pa_client->get_status('cashier_locked');
 
-    return $error_sub->(localize('You cannot perform withdrawal to account [_1], as payment agent verification documents have expired.'))
+    return $error_sub->(localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired."))
         if $pa_client->documents_expired;
 
     if ($args->{dry_run}) {
@@ -774,13 +777,13 @@ sub paymentagent_withdraw {
     # freeze loginID to avoid a race condition
     if (not $client_db->freeze) {
         return $error_sub->(
-            localize('Sorry, an error occurred while processing your request. Please try again in one minute.'),
+            localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'),
             "Account stuck in previous transaction $client_loginid"
         );
     }
     if (not $paymentagent_client_db->freeze) {
         return $error_sub->(
-            localize('Sorry, an error occurred while processing your request. Please try again in one minute.'),
+            localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'),
             "Account stuck in previous transaction $paymentagent_loginid"
         );
     }
@@ -856,7 +859,7 @@ sub paymentagent_withdraw {
             return $error_sub->(localize('Request too frequent. Please try again later.'), $error);
         } else {
             warn "Error in paymentagent_transfer for withdrawal - $error\n";
-            return $error_sub->(localize('Sorry, an error occurred while processing your request.'), $error);
+            return $error_sub->(localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'), $error);
         }
     }
 
@@ -1035,7 +1038,7 @@ sub transfer_between_accounts {
 
         BOM::Platform::AuditLog::log("Account Transfer FAILED, $err");
 
-        $client_message ||= localize('An error occurred while processing request. Please try again after one minute.');
+        $client_message ||= localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.');
         return _transfer_between_accounts_error($client_message);
     };
 
@@ -1193,7 +1196,7 @@ sub _transfer_between_accounts_error {
     my ($message_to_client, $message) = @_;
     return BOM::RPC::v3::Utility::create_error({
         code              => 'TransferBetweenAccountsError',
-        message_to_client => ($message_to_client // localize('Account transfer is not available for your account.')),
+        message_to_client => ($message_to_client // localize('Account transfers are not available for your account.')),
         ($message) ? (message => $message) : (),
     });
 }
@@ -1208,7 +1211,7 @@ sub _validate_transfer_between_accounts {
     return BOM::RPC::v3::Utility::permission_error() if ($client_from->is_virtual or $client_to->is_virtual);
 
     # error out if from and to loginid are same
-    return _transfer_between_accounts_error(localize('Account transfer is not available within same account.'))
+    return _transfer_between_accounts_error(localize('Account transfers are not available within same account.'))
         unless ($client_from->loginid ne $client_to->loginid);
 
     # error out if current logged in client and loginid from passed are not same
@@ -1258,11 +1261,11 @@ sub _validate_transfer_between_accounts {
     my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
 
     # we don't allow fiat to fiat if they are different
-    return _transfer_between_accounts_error(localize('Account transfer is not available for accounts with different currency.'))
+    return _transfer_between_accounts_error(localize('Account transfers are not available for accounts with different currencies.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'fiat') and ($currency ne $to_currency));
 
     # we don't allow crypto to crypto transfer
-    return _transfer_between_accounts_error(localize('Account transfer is not available within accounts with cryptocurrency as default currency.'))
+    return _transfer_between_accounts_error(localize('Account transfers are not available within accounts with cryptocurrency as default currency.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
 
     return undef;

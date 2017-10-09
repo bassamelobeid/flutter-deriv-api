@@ -159,7 +159,7 @@ subtest 'validation' => sub {
 
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for loginid that does not exists';
-    is $result->{error}->{message_to_client}, 'Account transfer is not available for your account.',
+    is $result->{error}->{message_to_client}, 'Account transfers are not available for your account.',
         'Correct error message for loginid that does not exists';
 
     my $cr_dummy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -172,7 +172,7 @@ subtest 'validation' => sub {
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for loginid not in siblings';
-    is $result->{error}->{message_to_client}, 'Account transfer is not available for your account.',
+    is $result->{error}->{message_to_client}, 'Account transfers are not available for your account.',
         'Correct error message for loginid not in siblings';
 
     $params->{args}->{account_from} = $client_mlt->loginid;
@@ -182,7 +182,7 @@ subtest 'validation' => sub {
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if from and to are same';
-    is $result->{error}->{message_to_client}, 'Account transfer is not available within same account.',
+    is $result->{error}->{message_to_client}, 'Account transfers are not available within same account.',
         'Correct error message if from and to are same';
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
@@ -190,7 +190,7 @@ subtest 'validation' => sub {
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code';
-    is $result->{error}->{message_to_client}, 'Account transfer is not available for your account.',
+    is $result->{error}->{message_to_client}, 'Account transfers are not available for your account.',
         'Correct error message for different landing companies';
 
     $params->{args}->{account_from} = $client_mf->loginid;
@@ -239,7 +239,7 @@ subtest 'validation' => sub {
     $params->{args}->{account_from} = $client_mf->loginid;
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as no different currency')
-        ->error_message_is('Account transfer is not available for accounts with different currency.', 'Different currency error message');
+        ->error_message_is('Account transfers are not available for accounts with different currencies.', 'Different currency error message');
 
     $email    = 'new_email' . rand(999) . '@binary.com';
     $cr_dummy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -287,7 +287,7 @@ subtest 'validation' => sub {
     $params->{args}->{amount} = 0.002;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
-    is $result->{error}->{message_to_client}, 'Account transfer is not available within accounts with cryptocurrency as default currency.',
+    is $result->{error}->{message_to_client}, 'Account transfers are not available within accounts with cryptocurrency as default currency.',
         'Correct error message for crypto to crypto';
 };
 
@@ -339,7 +339,7 @@ subtest $method => sub {
         $params->{args}->{account_to} = 'MLT999999';
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as wrong to client')
-            ->error_message_is('Account transfer is not available for your account.', 'Correct error message for transfering to random client');
+            ->error_message_is('Account transfers are not available for your account.', 'Correct error message for transfering to random client');
 
         $params->{args}->{account_to} = $client_mf->loginid;
         $rpc_ct->call_ok($method, $params)

@@ -155,7 +155,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 verification_code     => $code
             }});
     is $res->{error}->{message_to_client},
-        'You cannot perform withdrawal to account ' . $pa_client->loginid . ', as payment agent cashier is locked.',
+        'You cannot perform the withdrawal to account ' . $pa_client->loginid . ", as the payment agent's cashier is locked.",
         'This Payment Agent cashier section is locked';
 
     $pa_client->clr_status('cashier_locked');
@@ -203,7 +203,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 100,
                 verification_code     => $code
             }});
-    is $res->{error}->{message_to_client}, 'Sorry, an error occurred while processing your request. Please try again in one minute.',
+    is $res->{error}->{message_to_client}, 'Sorry, an error occurred whilst processing your request. Please try again in one minute.',
         'An error occurred while processing request';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
@@ -247,7 +247,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 currency              => 'USD',
                 amount                => 100
             }});
-    is $res->{error}->{message_to_client}, 'You are not authorized for transfer via payment agent.', 'You are not a Payment Agent';
+    is $res->{error}->{message_to_client}, 'You are not authorized for transfers via payment agents.', 'You are not a Payment Agent';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
             client => $pa_client,
@@ -309,7 +309,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 currency              => 'RMB',
                 amount                => 100
             }});
-    is $res->{error}->{message_to_client}, 'Payment agent transfer is available for USD currency only.', 'only USD is allowed';
+    is $res->{error}->{message_to_client}, 'Payment agent transfers are available for USD currency only.', 'only USD is allowed';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
             client => $pa_client,
@@ -319,7 +319,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 currency              => 'USD',
                 amount                => 100
             }});
-    is $res->{error}->{message_to_client}, 'Payment agent transfer is not allowed within same account.', 'self, it is not allowed';
+    is $res->{error}->{message_to_client}, 'Payment agent transfers are not allowed within the same account.', 'self, it is not allowed';
 
     $client->set_status('disabled', 'test.t', "just for test");
     $client->save();
@@ -390,7 +390,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 currency              => 'USD',
                 amount                => 100,
             }});
-    is $res->{error}->{message_to_client}, 'Sorry, an error occurred while processing your request. Please try again in one minute.',
+    is $res->{error}->{message_to_client}, 'Sorry, an error occurred whilst processing your request. Please try again in one minute.',
         'An error occurred while processing request';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
