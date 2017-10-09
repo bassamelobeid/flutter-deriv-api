@@ -78,12 +78,13 @@ sub _db {
         broker_code => $self->_db_broker_code,
         operation   => $self->_db_operation,
     });
-    $cdb->db->connect_option(Callbacks => {
-        connected => sub {
-                           shift->do("SET statement_timeout TO 0");
-                           return ;
-        }
-    });
+    $cdb->db->connect_option(
+        Callbacks => {
+            connected => sub {
+                shift->do("SET statement_timeout TO 0");
+                return;
+            }
+        });
     return $cdb->db;
 }
 
