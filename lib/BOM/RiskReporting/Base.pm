@@ -87,7 +87,13 @@ sub _build__connection_builder {
         broker_code => $self->_db_broker_code,
         operation   => $self->_db_operation,
     });
-    $cdb->db->dbic->run(fixup => sub { $_->do("SET statement_timeout TO 0") });
+    my $connection_options = $cdb->db->connection_options;
+    $connection_options->{Callbacks} = {
+                                        connected  => sub {
+                                          shift->do("SET statement_timeout TO 0");
+                                        }
+                                       };
+    $cdb->db->connection_options($connection_options);
     return $cdb;
 }
 
