@@ -72,15 +72,6 @@ sub amount_in_usd {
 }
 
 sub _db {
-    return shift->_connection_builder->db;
-}
-
-has _connection_builder => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__connection_builder {
     my $self = shift;
 
     my $cdb = BOM::Database::ClientDB->new({
@@ -93,7 +84,7 @@ sub _build__connection_builder {
                            return ;
         }
     });
-    return $cdb;
+    return $cdb->db;
 }
 
 sub _db_write {
