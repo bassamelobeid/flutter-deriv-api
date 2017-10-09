@@ -60,7 +60,7 @@
     </div>
 
     [% FOREACH transaction IN transactions %]
-    <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
+    <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding" style="min-width:1000px">
         <div class="grd-grid-1">[% transaction.date.datetime %]</div>
         <div class="grd-grid-1">[% transaction.staff_loginid %]</div>
         [% IF transaction.financial_market_bet_id.defined %]
