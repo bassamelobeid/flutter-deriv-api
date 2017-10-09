@@ -72,10 +72,11 @@ sub generate {
     while ($pricing_date->epoch + 5 > time) {
         sleep 1;
     }
+    my $dbic = $self->_db->dbic;
     try {
         # There is side-effect in block, so I use ping mode here.
-        $self->dbic_run(
-            $self->_db => txn => ping => sub {
+        $dbic->txn(
+            ping => sub {
                 my $dbh = $_;
                 # This seems to be the recommended way to do transactions
                 $dbh->do(qq{DELETE FROM accounting.expired_unsold});

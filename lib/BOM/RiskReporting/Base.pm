@@ -49,9 +49,7 @@ sub _db_broker_code {
 
 sub _db_operation {
     my $self = shift;
-    return ($self->_db_broker_code eq 'FOG')
-        ? 'collector'
-        : 'backoffice_replica';
+    return ($self->_db_broker_code eq 'FOG') ? 'collector' : 'backoffice_replica';
 }
 
 sub _build_end {
@@ -64,10 +62,7 @@ has _usd_rates => (
 );
 
 sub _build__usd_rates {
-    return {
-        map { $_ => in_USD(1, $_) }
-        grep { $_ !~ /^(?:ETC|BCH)$/ } LandingCompany::Registry->new()->all_currencies
-    };
+    return {map { $_ => in_USD(1, $_) } grep { $_ !~ /^(?:ETC|BCH)$/ } LandingCompany::Registry->new()->all_currencies};
 }
 
 sub amount_in_usd {
@@ -77,24 +72,23 @@ sub amount_in_usd {
 }
 
 sub _db {
-    my $self = shift;
-    return BOM::Database::ClientDB->new({
-            broker_code => $self->_db_broker_code,
-            operation   => $self->_db_operation,
-        })->db;
+    return shift->_connection_builder->db;
 }
 
-sub dbic_run {
-    my ($self, $db, $method, $mode, $code) = @_;
-    die "method should be run,txn or svp, but it is $method"
-        if not($method eq 'run' or $method eq 'txn' or $method eq 'svp');
-    die "mode should be ping or fixup but it is $mode"
-        if not($mode eq 'ping' or $mode eq 'fixup');
-    return $db->dbic->$method(
-        $mode => sub {
-            $_->do("SET statement_timeout TO 0");
-            return $code->();
-        });
+has _connection_builder => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__connection_builder {
+    my $self = shift;
+
+    my $cdb = BOM::Database::ClientDB->new({
+        broker_code => $self->_db_broker_code,
+        operation   => $self->_db_operation,
+    });
+    $cdb->db->dbic->run(fixup => sub { $_->do("SET statement_timeout TO 0") });
+    return $cdb;
 }
 
 sub _db_write {
@@ -113,10 +107,7 @@ has live_open_bets => (
 
 sub _build_live_open_bets {
     my $self = shift;
-    return $self->dbic_run(
-        $self->_db => run => fixup => sub {
-            $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id');
-        });
+    return $self->_db->dbic->run(fixup => sub { $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id') });
 }
 
 has live_open_ico => (
@@ -126,11 +117,8 @@ has live_open_ico => (
 );
 
 sub _build_live_open_ico {
-    my $self          = shift;
-    my $live_open_ico = $self->dbic_run(
-        $self->_db => run => fixup => sub {
-            $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id');
-        });
+    my $self = shift;
+    my $live_open_ico = $self->_db->dbic->run(fixup => sub { $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id') });
 
     foreach my $c (keys %$live_open_ico) {
         $live_open_ico->{$c}->{per_token_bid_price_USD} =

@@ -123,9 +123,9 @@ sub get {
     my $data = {};
 
     if (
-        my $rows = $self->dbic_run(
-            $self->_db => run => fixup =>
-                sub { $_->selectrow_hashref("SELECT report FROM betonmarkets.risk_report WHERE client_loginid= ?", {}, $self->client->loginid) }))
+        my $rows = $self->_db->dbic->run(
+            fixup => sub { $_->selectrow_hashref("SELECT report FROM betonmarkets.risk_report WHERE client_loginid= ?", {}, $self->client->loginid) })
+        )
     {
         $data = JSON::XS::decode_json($rows->{report});
         $self->_update(1);
@@ -137,8 +137,8 @@ sub get {
 sub _save {
     my $self = shift;
     my $data = shift;
-    $self->dbic_run(
-        $self->_db_write => 'run' => ping => sub {
+    $self->_db_write->dbic->run(
+        ping => sub {
             my $sth;
             if ($self->_update) {
                 $sth = $_->prepare('update betonmarkets.risk_report set report = $1 where client_loginid = $2');
