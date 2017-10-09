@@ -14,6 +14,7 @@ use BOM::MarketData::Types;
 use Client::Account;
 use BOM::Platform::Context qw (localize request);
 use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
+use LandingCompany::Registry;
 use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
 use Quant::Framework;
@@ -22,9 +23,10 @@ sub active_symbols {
     my $params = shift;
 
     my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
-    my $product_type = $params->{args}->{product_type} // 'basic';
-    my $language = $params->{language} || 'EN';
-    my $token_details = $params->{token_details};
+    my $lc                   = LandingCompany::get($landing_company_name);
+    my $product_type         = $params->{args}->{product_type} // $lc->legal_allowed_offerings->[0];    # get the default for the landing company
+    my $language             = $params->{language} || 'EN';
+    my $token_details        = $params->{token_details};
     if ($token_details and exists $token_details->{loginid}) {
         my $client = Client::Account->new({loginid => $token_details->{loginid}});
         $landing_company_name = $client->landing_company->short if $client;
