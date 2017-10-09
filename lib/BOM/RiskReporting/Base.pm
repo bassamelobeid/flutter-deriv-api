@@ -93,6 +93,8 @@ sub _build__connection_builder {
                            return ;
         }
     });
+    use Data::Dumper;
+    warn "connect_options in base.pm: " . Dumper({$cdb->db->connect_options});
     return $cdb;
 }
 
