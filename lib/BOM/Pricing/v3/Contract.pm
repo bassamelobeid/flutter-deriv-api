@@ -347,7 +347,8 @@ sub get_bid {
             longcode            => localize($contract->longcode),
             shortcode           => $short_code,
             payout              => $contract->payout,
-            contract_type       => $contract->code
+            contract_type       => $contract->code,
+            expiry_type         => $contract->expiry_type,
         };
 
         if (not $contract->may_settle_automatically
