@@ -142,8 +142,7 @@ sub dbi_connect {
             keepalives_interval=5
             keepalives_count=10 /,
     );
-    use Data::Dumper;warn "dbi connect params is " . Dumper(\@params);
-    warn "connect_options when do dbi_connect" . Dumper($self->connect_options);
+
     if (not exists $self->{dbic}) {
         $self->{dbic} = DBIx::Connector::Pg->new(@params);
         # fixup mode is a safe and quick mode. That's why we switch from DBI  to  DBIx::Connector.
