@@ -112,7 +112,8 @@ sub sell_by_shortcode {
             bet_data => +{
                 'sell_price' => '18',
                 'sell_time'  => $now->db_timestamp,
-                'id'         => undef
+                'id'         => undef,
+                'quantity'   => 1,
             },
             account_data     => [map           { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
             transaction_data => {staff_loginid => 'CL001'},
