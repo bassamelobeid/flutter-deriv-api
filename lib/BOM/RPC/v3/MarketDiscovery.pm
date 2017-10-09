@@ -42,7 +42,10 @@ sub active_symbols {
         $active_symbols = $cached_symbols;
     } else {
         my $offerings_config = BOM::Platform::Runtime->instance->get_offerings_config;
-        my $offerings_args = {landing_company => $landing_company_name};
+        my $offerings_args   = {
+            landing_company => $landing_company_name,
+            product_type    => $product_type
+        };
         # For multi_barrier product_type, we can only offer major forex pairs as of now.
         $offerings_args->{submarket} = 'major_pairs' if $product_type eq 'multi_barrier';
         my @all_active = get_offerings_with_filter($offerings_config, 'underlying_symbol', $offerings_args);
