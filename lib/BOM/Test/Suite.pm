@@ -416,6 +416,28 @@ sub _setup_market_data {
         $redis->zadd($key, $_->{epoch}, $encoder->encode($_)) for @$ticks;
     }
 
+    # setup predefined windows
+    my @expiries = ('2016-08-09 12:15:00', '2016-08-09 12:30:02', '2016-08-09 13:00:04', '2016-08-09 14:00:06');
+    my $start    = Date::Utility->new;
+    my @windows  = map {
+        my $exp = Date::Utility->new($_);
+        +{
+            date_expiry => {
+                date  => $exp->datetime,
+                epoch => $exp->epoch
+            },
+            date_start => {
+                date  => $start->datetime,
+                epoch => $start->epoch
+            },
+            duration => '2h',
+        };
+    } @expiries;
+    $redis->set('predefined_parameters::trading_period_frxUSDJPY_2016-08-09_' . $_, to_json(\@windows)) for qw(12 13 14);
+    #setup predefined barriers
+    $redis->set('predefined_parameters::barriers_frxUSDJPY_' . $start->epoch . '_' . Date::Utility->new($_)->epoch, to_json(+{50 => 97.150}))
+        for @expiries;
+
     return;
 }
 
