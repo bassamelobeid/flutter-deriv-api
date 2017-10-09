@@ -183,7 +183,7 @@ subtest 'realtime report generation' => sub {
     warning {
         lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
     };
-
+    BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->_db->dbic->run(ping => sub {$_->do("select 1")});
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
     note "Includes a lot of unit test transactions about which we don't care.";
