@@ -37,7 +37,9 @@ has send_alerts => (
     default => 1,
 );
 
-has client => ( is => 'rw', );
+has client => (
+    is => 'rw',
+);
 
 sub _db_broker_code {
     my $self = shift;
@@ -47,9 +49,9 @@ sub _db_broker_code {
 
 sub _db_operation {
     my $self = shift;
-    return ( $self->_db_broker_code eq 'FOG' )
-      ? 'collector'
-      : 'backoffice_replica';
+    return ($self->_db_broker_code eq 'FOG')
+        ? 'collector'
+        : 'backoffice_replica';
 }
 
 sub _build_end {
@@ -63,50 +65,44 @@ has _usd_rates => (
 
 sub _build__usd_rates {
     return {
-        map { $_ => in_USD( 1, $_ ) }
-          grep { $_ !~ /^(?:ETC|BCH)$/ }
-          LandingCompany::Registry->new()->all_currencies
+        map { $_ => in_USD(1, $_) }
+        grep { $_ !~ /^(?:ETC|BCH)$/ } LandingCompany::Registry->new()->all_currencies
     };
 }
 
 sub amount_in_usd {
-    my ( $self, $amount, $currency ) = @_;
+    my ($self, $amount, $currency) = @_;
 
-    return $amount * $self->_usd_rates->{ uc $currency };
+    return $amount * $self->_usd_rates->{uc $currency};
 }
 
 sub _db {
     my $self = shift;
-    return BOM::Database::ClientDB->new(
-        {
+    return BOM::Database::ClientDB->new({
             broker_code => $self->_db_broker_code,
             operation   => $self->_db_operation,
-        }
-    )->db;
+        })->db;
 }
 
 sub dbic_run {
-    my ( $self, $db, $method, $mode, $code ) = @_;
+    my ($self, $db, $method, $mode, $code) = @_;
     die "method should be run,txn or svp, but it is $method"
-      if not( $method eq 'run' or $method eq 'txn' or $method eq 'svp' );
+        if not($method eq 'run' or $method eq 'txn' or $method eq 'svp');
     die "mode should be ping or fixup but it is $mode"
-      if not( $mode eq 'ping' or $mode eq 'fixup' );
+        if not($mode eq 'ping' or $mode eq 'fixup');
     return $db->dbic->$method(
         $mode => sub {
             $_->do("SET statement_timeout TO 0");
             return $code->();
-        }
-    );
+        });
 }
 
 sub _db_write {
     my $self = shift;
-    return BOM::Database::ClientDB->new(
-        {
+    return BOM::Database::ClientDB->new({
             broker_code => $self->client->broker,
             operation   => 'write',
-        }
-    )->db;
+        })->db;
 }
 
 has live_open_bets => (
@@ -119,10 +115,8 @@ sub _build_live_open_bets {
     my $self = shift;
     return $self->dbic_run(
         $self->_db => run => fixup => sub {
-            $_->selectall_hashref(
-                qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id' );
-        }
-    );
+            $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id');
+        });
 }
 
 has live_open_ico => (
@@ -135,19 +129,12 @@ sub _build_live_open_ico {
     my $self          = shift;
     my $live_open_ico = $self->dbic_run(
         $self->_db => run => fixup => sub {
-            $_->selectall_hashref(
-                qq{ SELECT * FROM accounting.get_live_ico() }, 'id' );
-        }
-    );
+            $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id');
+        });
 
-    foreach my $c ( keys %$live_open_ico ) {
-        $live_open_ico->{$c}->{per_token_bid_price_USD} = financialrounding(
-            'price', 'USD',
-            in_USD(
-                $live_open_ico->{$c}->{per_token_bid_price},
-                $live_open_ico->{$c}->{currency_code}
-            )
-        );
+    foreach my $c (keys %$live_open_ico) {
+        $live_open_ico->{$c}->{per_token_bid_price_USD} =
+            financialrounding('price', 'USD', in_USD($live_open_ico->{$c}->{per_token_bid_price}, $live_open_ico->{$c}->{currency_code}));
 
     }
     return $live_open_ico;

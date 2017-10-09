@@ -13,7 +13,7 @@ use BOM::Database::ClientDB;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-my %params = %{ request()->params };
+my %params = %{request()->params};
 
 my $yyyymm        = $params{yyyymm}            // '';
 my $broker        = $params{broker}            // '';
@@ -36,9 +36,9 @@ try {
 catch {
     code_exit_BO("Date $yyyymm was not parsed as YYYY-MM, check it");
 };
-my $until_date = $start_date->clone->add( months => $months );
+my $until_date = $start_date->clone->add(months => $months);
 
-my ( $payment_filter, $csv_name );
+my ($payment_filter, $csv_name);
 
 my @binds = (
     $start_date->ymd,    # b0
@@ -48,18 +48,16 @@ my @binds = (
 
 if ($all_types) {
     $csv_name = "${broker}_all_payments_$yyyymm.csv";
-}
-else {
+} else {
     $csv_name = "${broker}_payments_$yyyymm.csv";
     my @payment_types = ref $payment_types ? @$payment_types : ($payment_types);
-    $payment_filter = 'and p.payment_type_code in ('
-      . join( ',', ('?') x @payment_types ) . ')';
+    $payment_filter = 'and p.payment_type_code in (' . join(',', ('?') x @payment_types) . ')';
     push @binds, @payment_types;
 }
 
 PrintContentType_excel($csv_name);
 
-my $sql = <<'START' . ( $payment_filter ? <<"FILTER" : '' ) . <<'END';
+my $sql = <<'START' . ($payment_filter ? <<"FILTER" : '') . <<'END';
 
     select
         cli.broker_code,
@@ -84,31 +82,25 @@ FILTER
     order by 1,2,3
 END
 
-my $dbic = BOM::Database::ClientDB->new(
-    {
+my $dbic = BOM::Database::ClientDB->new({
         broker_code => $broker,
-    }
-)->db->dbic;
+    })->db->dbic;
 
 $dbic->run(
     fixup => sub {
         my $sth = $_->prepare($sql);
         $sth->execute(@binds);
 
-        my @headers =
-          qw/Broker Loginid Residence Timestamp PaymentGateway PaymentType Currency Amount Remark/;
+        my @headers = qw/Broker Loginid Residence Timestamp PaymentGateway PaymentType Currency Amount Remark/;
 
-        my $csv = Text::CSV->new( { eol => "\n" } );
-        $csv->print( \*STDOUT, \@headers );
-        while ( my $row = $sth->fetchrow_arrayref ) {
-            s/\s*$//
-              for @$row
-              ; # removes some nasty trailing white-space in historical affiliate records
-            $csv->print( \*STDOUT, $row );
+        my $csv = Text::CSV->new({eol => "\n"});
+        $csv->print(\*STDOUT, \@headers);
+        while (my $row = $sth->fetchrow_arrayref) {
+            s/\s*$// for @$row;    # removes some nasty trailing white-space in historical affiliate records
+            $csv->print(\*STDOUT, $row);
         }
 
-    }
-);
+    });
 
 1;
 
