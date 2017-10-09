@@ -287,13 +287,13 @@ sub delete_app {
 
     my $dbic = $self->dbic;
 
+    $dbic->run(ping => sub{
     ## delete real delete
     foreach my $table ('user_scope_confirm', 'access_token') {
-        $dbic->run( fixup => sub { $_->do("DELETE FROM oauth.$table WHERE app_id = ?", undef, $app_id) });
+        $_->do("DELETE FROM oauth.$table WHERE app_id = ?", undef, $app_id);
     }
-
-    $dbic->run( fixup => sub { $_->do("DELETE FROM oauth.apps WHERE id = ?", undef, $app_id) });
-
+    $_->do("DELETE FROM oauth.apps WHERE id = ?", undef, $app_id);
+});
     return 1;
 }
 
@@ -329,10 +329,11 @@ sub revoke_app {
     my ($self, $app_id, $loginid) = @_;
 
     my $dbic = $self->dbic;
+    $dbic->run(ping => sub {
     foreach my $table ('user_scope_confirm', 'access_token') {
-        $dbic->run( ping => sub { $_->do("DELETE FROM oauth.$table WHERE app_id = ? AND loginid = ?", undef, $app_id, $loginid) });
+        $_->do("DELETE FROM oauth.$table WHERE app_id = ? AND loginid = ?", undef, $app_id, $loginid);
     }
-
+});
     return 1;
 }
 
