@@ -87,7 +87,7 @@ sub _build__connection_builder {
         broker_code => $self->_db_broker_code,
         operation   => $self->_db_operation,
     });
-    $cdb->db->connect_options(Callbacks => {
+    $cdb->db->connect_option(Callbacks => {
         connected => sub { warn "callback called";
                            shift->do("SET statement_timeout TO 0");
                            return ;
