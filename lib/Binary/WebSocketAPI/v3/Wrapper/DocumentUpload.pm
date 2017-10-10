@@ -234,6 +234,7 @@ sub clean_up_on_finish {
     delete $stash->{$upload_info->{upload_id}} if exists $upload_info->{upload_id};
 
     delete $upload_info->{pending_futures};
+    delete $upload_info->{s3};
 
     return;
 }
