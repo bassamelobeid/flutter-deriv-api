@@ -163,8 +163,6 @@ sub startup {
             'asset_index',
             {
                 instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,
-                before_forward     => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
-                success            => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
             }
         ],
         ['active_symbols', {stash_params => [qw/ token /]}],
