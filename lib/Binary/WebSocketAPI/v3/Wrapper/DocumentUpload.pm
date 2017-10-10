@@ -22,7 +22,6 @@ sub add_upload_info {
     my $current_stash   = $c->stash->{document_upload} || {};
     my $upload_id       = generate_upload_id($current_stash);
     my $call_params     = create_call_params($args);
-    my @pending_futures = ();
 
     my $upload_info = {
         %{$call_params},
@@ -32,7 +31,7 @@ sub add_upload_info {
         file_size       => $args->{file_size},
         sha1            => Digest::SHA->new,
         received_bytes  => 0,
-        pending_futures => \@pending_futures,
+        pending_futures => [],
         upload_id       => $upload_id,
     };
 
@@ -184,13 +183,7 @@ sub upload_chunk {
     $stash->{$upload_id}->{sha1}->add($data);
     $stash->{$upload_id}->{received_bytes} = $new_received_bytes;
 
-    my ($f) = grep { not $_->is_ready } @{$upload_info->{pending_futures}};
-
-    push $upload_info->{pending_futures}, $f = $c->loop->new_future unless $f;
-
-    $f->done($data);
-
-    return;
+    return add_upload_future($c, $upload_info->{pending_futures}, $data);
 }
 
 sub create_error {
@@ -240,7 +233,6 @@ sub clean_up_on_finish {
 
     delete $stash->{$upload_info->{upload_id}} if exists $upload_info->{upload_id};
 
-    delete $upload_info->{put_future};
     delete $upload_info->{pending_futures};
 
     return;
@@ -259,20 +251,11 @@ sub create_s3_instance {
 
     $upload_info->{s3} = $s3;
 
+    my $pending_futures = $upload_info->{pending_futures};
+
     $upload_info->{put_future} = $s3->put_object(
         key   => $upload_info->{file_name},
-        value => sub {
-            my ($f) = @{$upload_info->{pending_futures}};
-
-            push @{$upload_info->{pending_futures}}, $f = $c->loop->new_future unless $f;
-
-            $f->on_ready(
-                sub {
-                    shift @{$upload_info->{pending_futures}};
-                });
-
-            return $f;
-        },
+        value => sub { add_upload_future($c, $pending_futures) },
         value_length => $upload_info->{file_size},
     );
 
@@ -284,14 +267,35 @@ sub last_chunk_received {
 
     return if $upload_info->{chunk_size} != 0;
 
+    # Breaking the ref cycle for the timeout future
+    my $put_future = $upload_info->{put_future};
+    delete $upload_info->{put_future};
+
     return retain_future(
-        Future->wait_any($upload_info->{put_future}, $c->loop->timeout_future(after => 120),)->then(
+        Future->wait_any($put_future, $c->loop->timeout_future(after => 120),)->then(
             sub {
                 send_upload_successful($c, $upload_info, 'success');
             },
             sub {
                 send_upload_failure($c, $upload_info, 'unknown');
             }));
+}
+
+sub add_upload_future {
+    my ($c, $pending_futures, $received_chunk) = @_;
+
+    my ($first_pending_future) = grep { not ($received_chunk and $_->is_ready) } @{$pending_futures};
+
+    my $upload_future = $first_pending_future || $c->loop->new_future;
+    push $pending_futures, $upload_future;
+
+    if ($received_chunk) {
+        $upload_future->done($received_chunk);
+    } else {
+        $upload_future->on_ready(sub { shift $pending_futures });
+    }
+
+    return $upload_future;
 }
 
 1;
