@@ -177,6 +177,10 @@
           "type": "integer",
           "description": "Epoch time of the sell spot. Note that since certain underlyings don't tick every second, the sell spot time may be a few seconds before the sell time. Example: 1446629000 (only present for contracts already sold)"
         },
+        "expiry_type": {
+          "type": "string",
+          "description": "The type of expiry if this contract. It could intraday, daily or tick."
+        },
         "transaction_ids": {
           "type": "object",
           "title": "Transaction ids for contract",
