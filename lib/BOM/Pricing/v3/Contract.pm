@@ -348,7 +348,6 @@ sub get_bid {
             shortcode           => $short_code,
             payout              => $contract->payout,
             contract_type       => $contract->code,
-            expiry_type         => $contract->expiry_type,
         };
 
         if (not $contract->may_settle_automatically
@@ -381,6 +380,7 @@ sub get_bid {
         if ($contract->exit_tick and $contract->is_valid_exit_tick and $contract->is_after_settlement) {
             $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
             $response->{exit_tick_time} = $contract->exit_tick->epoch;
+            $response->{audit_details}  = $contract->audit_details;
         }
 
         $response->{current_spot} = $contract->current_spot
