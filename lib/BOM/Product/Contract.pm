@@ -992,6 +992,8 @@ sub pricing_details {
 sub audit_details {
     my $self = shift;
 
+    return {} unless $self->exit_tick && $self->is_valid_exit_tick;
+
     my $start_epoch  = $self->date_start->epoch;
     my $expiry_epoch = $self->date_expiry->epoch;
 
