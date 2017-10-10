@@ -1024,7 +1024,7 @@ sub audit_details {
                     name  => 'End Time'
                 },
                 quote => {
-                    value => $self->entry_tick->quote,
+                    value => $self->exit_tick->quote,
                     name  => 'Exit Spot'
                 }});
     }
@@ -1041,13 +1041,17 @@ sub _get_tick_details {
     my $quote      = $args->{quote}{value};
     my $quote_name = $args->{quote}{name};
 
-    my $ticks = $self->underlying->ticks_in_between_start_end({
-        start_time => $epoch - $interval,
-        end_time   => $epoch + $interval
-    });
+    my @ticks = reverse @{
+        $self->underlying->ticks_in_between_start_end({
+                start_time => $epoch - $interval,
+                end_time   => $epoch + $interval
+            })};
 
     my @details;
-    foreach my $t (@$ticks) {
+    for (my $i = 0; $i < $#ticks; $i++) {
+        my $t  = $ticks[$i];
+        my $t2 = $ticks[$i + 1];
+
         my $t_details = {
             epoch => $t->epoch,
             tick  => $t->quote,
@@ -1059,7 +1063,17 @@ sub _get_tick_details {
         } elsif ($t->quote == $quote) {
             $t_details->{name} = $quote_name;
         }
+
         push @details, $t_details;
+
+        # if there's no tick on start or end time.
+        if ($epoch > $t->epoch && $epoch < $t2->epoch) {
+            push @details,
+                +{
+                name  => $epoch_name,
+                epoch => $epoch
+                };
+        }
     }
 
     return \@details;
