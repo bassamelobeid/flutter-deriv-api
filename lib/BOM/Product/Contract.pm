@@ -1015,7 +1015,7 @@ sub audit_details {
         $details->{contract_end} = [{
                 epoch => $closing_tick->epoch,
                 tick  => $closing_tick->quote,
-                name  => 'Closing Spopt'
+                name  => 'Closing Spot'
             }];
     } else {
         $details->{contract_end} = $self->_get_tick_details({
