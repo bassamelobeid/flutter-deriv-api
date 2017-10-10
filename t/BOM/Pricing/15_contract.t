@@ -421,7 +421,7 @@ subtest 'get_bid' => sub {
             current_spot
             entry_spot
             barrier_count
-            expiry_type
+            audit_details
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
