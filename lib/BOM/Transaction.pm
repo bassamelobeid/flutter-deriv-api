@@ -1,6 +1,9 @@
 package BOM::Transaction;
 
 use Moose;
+
+no indirect;
+
 use Data::Dumper;
 use Error::Base;
 use Path::Tiny;
@@ -19,6 +22,7 @@ use Finance::Contract::Category;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 
 use BOM::Platform::Config;
+use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Platform::Context qw(localize request);
@@ -345,6 +349,23 @@ sub calculate_limits {
     return {} if $contract->is_binaryico;
 
     $limits{max_balance} = $client->get_limit_for_account_balance;
+
+    try {
+        my $general_open_position_payout_limit =
+            from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
+        if (my $limit = $general_open_position_payout_limit->{$client->landing_company->short}) {
+            my ($limit_currency, $limit_amount, @extra) = %$limit;
+            die "found multiple entries for landing company, extra: @extra" if @extra;
+            $limits{general_open_position_payout} = {
+                limit    => $limit_amount,
+                currency => $limit_currency,
+            };
+        }
+    }
+    catch {
+        warn "Failure while attempting to process open position limits - $_\n";
+        stats_inc('transaction.open_position_limit.failure');
+    };
 
     if (not $contract->tick_expiry) {
         $limits{max_open_bets}        = $client->get_limit_for_open_positions;
@@ -1199,6 +1220,17 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -type              => 'NoOpenPosition',
             -mesg              => $msg,
             -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
+        );
+    },
+    BI051 => sub {
+        my $self   = shift;
+        my $client = shift;
+        my $msg    = shift;
+
+        Error::Base->cuss(
+            -type              => 'CompanyWideLimitExceeded',
+            -mesg              => 'company-wide risk limit reached',
+            -message_to_client => BOM::Platform::Context::localize('No further trading is allowed for the current trading session.'),
         );
     },
     BI103 => Error::Base->cuss(

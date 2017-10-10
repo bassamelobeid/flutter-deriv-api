@@ -200,6 +200,111 @@ sub top_up {
 # real tests begin here
 ####################################################################
 
+subtest 'general_open_position_payout', sub {
+    plan tests => 12;
+    lives_ok {
+        my $cl = create_client('JP');
+
+        top_up $cl, 'JPY', 5000;
+
+        isnt + (my $acc_jpy = $cl->find_account(query => [currency_code => 'JPY'])->[0]), undef, 'got JPY account';
+
+        my $bal;
+        is + ($bal = $acc_jpy->balance + 0), 5000, 'JPY balance is 5000 got: ' . $bal;
+
+        note("mocked general_open_position_payout JPY limit to 149.99");
+        BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit('{"japan": {"JPY": "149.99"}}');
+        my $contract = produce_contract({
+            underlying   => 'frxUSDJPY',
+            bet_type     => 'CALLE',
+            currency     => 'JPY',
+            payout       => 50,
+            duration     => '5m',
+            current_tick => $tick,
+            barrier      => 'S10P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 25.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock('_validate_stake_limit',
+                sub { note "mocked Transaction::Validation->_validate_stake_limit returning nothing"; () });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            is $txn->buy, undef, 'bought 1st contract';
+            is $txn->buy, undef, 'bought 2nd contract';
+
+            $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 25.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => $contract->date_start,
+            });
+
+            $txn->buy;
+        };
+        SKIP: {
+            is $error->get_type, 'CompanyWideLimitExceeded', 'error is CompanyWideLimitExceeded';
+
+            is $error->{-message_to_client}, 'No further trading is allowed for the current trading session.', 'message_to_client';
+            is $error->{-mesg}, 'company-wide risk limit reached', 'mesg';
+
+            is $txn->contract_id,    undef, 'txn->contract_id';
+            is $txn->transaction_id, undef, 'txn->transaction_id';
+            is $txn->balance_after,  undef, 'txn->balance_after';
+        }
+
+        # now matching exactly the limit -- should succeed
+        $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            note("mocked general_open_position_payout JPY limit to 150");
+            BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit('{"japan": {"JPY": "150"}}');
+
+            $contract = make_similar_contract($contract);
+            # create a new transaction object to get pristine (undef) contract_id and the like
+            $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 25.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => $contract->date_start,
+            });
+            $txn->buy;
+        };
+        is $error, undef, 'exactly matching the limit ==> successful buy';
+    }
+    'survived';
+};
+
 subtest 'tick_expiry_engine_turnover_limit', sub {
     plan tests => 12;
     lives_ok {
