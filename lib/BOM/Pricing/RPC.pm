@@ -13,6 +13,7 @@ use JSON;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
 use BOM::Pricing::v3::Contract;
+use BOM::Pricing::v3::MarketData;
 use BOM::Pricing::v3::Utility;
 
 sub apply_usergroup {
@@ -102,8 +103,8 @@ sub startup {
         ['get_contract_details', \&BOM::Pricing::v3::Contract::get_contract_details],
         ['longcode',             \&BOM::Pricing::v3::Contract::longcode],
         ['contracts_for',        \&BOM::Pricing::v3::Contract::contracts_for],
-        ['trading_times',        \&BOM::Pricing::v3::Contract::trading_times],
-        ['asset_index',          \&BOM::Pricing::v3::Contract::asset_index],
+        ['trading_times',        \&BOM::Pricing::v3::MarketData::trading_times],
+        ['asset_index',          \&BOM::Pricing::v3::MarketData::asset_index],
     );
     my $services = {};
     foreach my $srv (@services) {
