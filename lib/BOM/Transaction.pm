@@ -367,6 +367,10 @@ sub calculate_limits {
         stats_inc('transaction.open_position_limit.failure');
     };
 
+    if (not $contract->is_binary) {
+        $limits{lookback_open_position_limit} = $static_config->{lookback_limits};
+    }
+
     if (not $contract->tick_expiry) {
         $limits{max_open_bets}        = $client->get_limit_for_open_positions;
         $limits{max_payout_open_bets} = $client->get_limit_for_payout;
