@@ -989,6 +989,80 @@ sub pricing_details {
     return \@comment_fields;
 }
 
+sub audit_details {
+    my $self = shift;
+
+    my $start_epoch  = $self->date_start->epoch;
+    my $expiry_epoch = $self->date_expiry->epoch;
+
+    my $details = {
+        contract_start => $self->_get_tick_details({
+                requested_epoch => {
+                    value => $start_epoch,
+                    name  => 'Start Time'
+                },
+                quote => {
+                    value => $self->entry_tick->quote,
+                    name  => 'Entry Spot'
+                }}
+        ),
+    };
+
+    if ($self->expiry_daily) {
+        my $closing_tick = $self->underlying->closing_tick_on($expiry_epoch);
+        $details->{contract_end} = [{
+                epoch => $closing_tick->epoch,
+                tick  => $closing_tick->quote,
+                name  => 'Closing Spopt'
+            }];
+    } else {
+        $details->{contract_end} = $self->_get_tick_details({
+                requested_epoch => {
+                    value => $expiry_epoch,
+                    name  => 'End Time'
+                },
+                quote => {
+                    value => $self->entry_tick->quote,
+                    name  => 'Exit Spot'
+                }});
+    }
+
+    return $details;
+}
+
+sub _get_tick_details {
+    my ($self, $args) = @_;
+
+    my $interval   = 5;                                 # look back & forward 5 ticks
+    my $epoch      = $args->{requested_epoch}{value};
+    my $epoch_name = $args->{requested_epoch}{name};
+    my $quote      = $args->{quote}{value};
+    my $quote_name = $args->{quote}{name};
+
+    my $ticks = $self->underlying->ticks_in_between_start_end({
+        start_time => $epoch - $interval,
+        end_time   => $epoch + $interval
+    });
+
+    my @details;
+    foreach my $t (@$ticks) {
+        my $t_details = {
+            epoch => $t->epoch,
+            tick  => $t->quote,
+        };
+        if ($t->epoch == $epoch && $t->quote == $quote) {
+            $t_details->{name} = $epoch_name . ' and ' . $quote_name;
+        } elsif ($t->epoch == $epoch) {
+            $t_details->{name} = $epoch_name;
+        } elsif ($t->quote == $quote) {
+            $t_details->{name} = $quote_name;
+        }
+        push @details, $t_details;
+    }
+
+    return \@details;
+}
+
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
 
