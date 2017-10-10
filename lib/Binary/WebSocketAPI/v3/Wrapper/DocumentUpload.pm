@@ -19,9 +19,9 @@ sub add_upload_info {
 
     return create_error($args, $rpc_response) if $rpc_response->{error};
 
-    my $current_stash   = $c->stash->{document_upload} || {};
-    my $upload_id       = generate_upload_id($current_stash);
-    my $call_params     = create_call_params($args);
+    my $current_stash = $c->stash->{document_upload} || {};
+    my $upload_id     = generate_upload_id($current_stash);
+    my $call_params   = create_call_params($args);
 
     my $upload_info = {
         %{$call_params},
@@ -254,8 +254,8 @@ sub create_s3_instance {
     my $pending_futures = $upload_info->{pending_futures};
 
     $upload_info->{put_future} = $s3->put_object(
-        key   => $upload_info->{file_name},
-        value => sub { add_upload_future($c, $pending_futures) },
+        key          => $upload_info->{file_name},
+        value        => sub { add_upload_future($c, $pending_futures) },
         value_length => $upload_info->{file_size},
     );
 
@@ -284,7 +284,7 @@ sub last_chunk_received {
 sub add_upload_future {
     my ($c, $pending_futures, $received_chunk) = @_;
 
-    my ($first_pending_future) = grep { not ($received_chunk and $_->is_ready) } @{$pending_futures};
+    my ($first_pending_future) = grep { not($received_chunk and $_->is_ready) } @{$pending_futures};
 
     my $upload_future = $first_pending_future || $c->loop->new_future;
     push $pending_futures, $upload_future;
