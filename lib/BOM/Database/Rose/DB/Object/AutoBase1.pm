@@ -87,7 +87,7 @@ sub _set_staff {
     return;
 }
 
-sub delete {
+sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     my ($self, @args) = (shift, @_);
     $self->_set_staff;
     return $self->SUPER::delete(@args);

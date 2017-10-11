@@ -35,10 +35,8 @@ qr/At least one of broker_code, or client_loginid must be specified/,
 
 foreach my $client_loginid (qw( VRTC1234 CR1234 MLT1234 MX1234 )) {
     $init_info->{client_loginid} = $client_loginid;
-    Test::More::ok(
-        $connection_builder = BOM::Database::ClientDB->new($init_info),
-        'Create new ConnectionBuilder object using client_loginid(' . $client_loginid . ')'
-    );
+    Test::More::ok($connection_builder = BOM::Database::ClientDB->new($init_info),
+        'Create new ConnectionBuilder object using client_loginid(' . $client_loginid . ')');
     Test::More::ok($db = $connection_builder->db, 'Get db object');
 }
 
@@ -94,8 +92,7 @@ foreach my $serv_op (qw( write )) {
         broker_code => 'FOG',
         operation   => $serv_op,
     };
-    ok($connection_builder = BOM::Database::ClientDB->new($init_info),
-        "Create connection with explicit server for $serv_op operation");
+    ok($connection_builder = BOM::Database::ClientDB->new($init_info), "Create connection with explicit server for $serv_op operation");
     $db = $connection_builder->db;
     isa_ok($db, 'BOM::Database::Rose::DB');
 }

@@ -377,7 +377,7 @@ sub get_app_id_by_token {
 sub user_has_app_id {
     my ($self, $user_id, $app_id) = @_;
 
-    return $self->dbic->run(sub { $_->selectrow_array("SELECT id FROM oauth.apps WHERE binary_user_id = ? AND id = ?", undef,  $user_id, $app_id) });
+    return $self->dbic->run(sub { $_->selectrow_array("SELECT id FROM oauth.apps WHERE binary_user_id = ? AND id = ?", undef, $user_id, $app_id) });
 }
 
 no Moose;
