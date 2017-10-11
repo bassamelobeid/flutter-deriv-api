@@ -11,7 +11,7 @@ use IO::Select;
 use Try::Tiny;
 use POSIX qw/strftime/;
 
-our $DEBUG //= 1;    ## no critic
+our $DEBUG;    ## no critic
 use constant TMOUT => 10;
 
 STDERR->autoflush(1);
@@ -19,7 +19,7 @@ STDERR->autoflush(1);
 sub log_msg {
     my ($level, $msg) = @_;
     print STDERR strftime('%F %T', localtime), ": (PID $$) ", $msg, "\n"
-        if $DEBUG >= $level;
+        if (($DEBUG // 1) >= $level);
 
     return;
 }
