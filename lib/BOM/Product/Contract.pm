@@ -1069,7 +1069,7 @@ sub _get_tick_details {
         };
         if ($t->quote == $quote) {
             if ($t->epoch == $epoch) {
-                $t_details->{name} = $epoch_name . ' and ' . $quote_name;
+                $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $epoch_name, $quote_name];
             } elsif ($t->epoch == $quote_epoch) {
                 $t_details->{name} = $quote_name;
             }

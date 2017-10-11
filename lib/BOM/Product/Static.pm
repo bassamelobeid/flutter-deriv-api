@@ -159,6 +159,7 @@ my $config = {
         exit_spot      => 'Exit Spot',
         entry_spot_cap => 'Entry Spot',
         closing_spot   => 'Closing Spot',
+        time_and_spot  => '[_1] and [_2]',
     },
 };
 
