@@ -993,8 +993,11 @@ sub pricing_details {
 sub audit_details {
     my $self = shift;
 
-    # audit details will only be available once the contract is settled or has valid settlement conditions.
-    return {} unless $self->exit_tick && $self->is_valid_exit_tick;
+    # audit details will NOT be be available for contracts that:
+    # - has been sold early
+    # - has not fulfilled settlement conditions
+    my $valid_expiry_condition = $self->exit_tick && $self->is_valid_exit_tick;
+    return {} unless ($valid_expiry_condition && $self->is_sold);
 
     my $start_epoch  = $self->date_start->epoch;
     my $expiry_epoch = $self->date_expiry->epoch;
@@ -1012,6 +1015,9 @@ sub audit_details {
                 }}
         ),
     };
+
+    # no contract end audit details if contract is sold early.
+    return $details if $self->is_sold;
 
     if ($self->expiry_daily) {
         my $closing_tick = $self->underlying->closing_tick_on($expiry_epoch);
