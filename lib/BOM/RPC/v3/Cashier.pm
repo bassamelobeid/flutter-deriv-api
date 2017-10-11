@@ -717,6 +717,9 @@ sub paymentagent_withdraw {
 
     return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->get_status('disabled');
 
+    # check that the amount is in correct format
+    return $error_sub->(localize('Invalid amount.')) if ($amount !~ /^\d*\.?\d*$/);
+
     my $min_max = BOM::RPC::v3::Utility::paymentagent_default_min_max();
     return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
         if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum});
@@ -733,9 +736,6 @@ sub paymentagent_withdraw {
 
     return $error_sub->(localize("You cannot perform this action, as [_1] is not default currency for payment agent account [_2].", $currency))
         if ($pa_client->currency ne $currency or not $pa_client->default_account);
-
-    # check that the amount is in correct format
-    return $error_sub->(localize('Invalid amount.')) if ($amount !~ /^\d*\.?\d*$/);
 
     # check that the additional information does not exceeded the allowed limits
     return $error_sub->(localize('Further instructions must not exceed [_1] characters.', 300)) if (length($further_instruction) > 300);
@@ -1196,7 +1196,7 @@ sub _transfer_between_accounts_error {
     my ($message_to_client, $message) = @_;
     return BOM::RPC::v3::Utility::create_error({
         code              => 'TransferBetweenAccountsError',
-        message_to_client => ($message_to_client // localize('Account transfers are not available for your account.')),
+        message_to_client => ($message_to_client // localize('Transfers between accounts are not available for your account.')),
         ($message) ? (message => $message) : (),
     });
 }
