@@ -51,7 +51,7 @@ sub upload {
     my $s3_bucket = $s3->bucket($bucket) or die 'Could not retrieve the requested s3 bucket';
     my $file = read_file($original_filename, binmode => ':raw') or die "Unable to read file: $original_filename";
 
-    $s3_bucket->add_key($filename, $file) or die "Unable to upload the file to s3, " . $s3_bucket->err . ": " . $s3_bucket->errstr;
+    $s3_bucket->add_key($filename, $file) or die 'Unable to upload the file to s3.';
 
     return sha1_hex($file);
 }
