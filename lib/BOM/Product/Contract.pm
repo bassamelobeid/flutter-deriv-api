@@ -69,7 +69,8 @@ UNITCHECK {
     use BOM::Product::Pricing::Greeks::BlackScholes;
 }
 
-my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+my $ERROR_MAPPING   = BOM::Product::Static::get_error_mapping();
+my $GENERIC_MAPPING = BOM::Product::Static::get_generic_mapping();
 
 =head1 ATTRIBUTES - Construction
 
@@ -473,7 +474,7 @@ sub longcode {
     my $description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
     my @longcode = ($description, $self->currency, formatnumber('price', $self->currency, $self->payout), $self->underlying->display_name);
 
-    my ($when_end, $when_start, $generic_mapping) = ([], [], BOM::Product::Static::get_generic_mapping());
+    my ($when_end, $when_start, $generic_mapping) = ([], [], $GENERIC_MAPPING);
     if ($expiry_type eq 'intraday_fixed_expiry') {
         $when_end = [$self->date_expiry->datetime . ' GMT'];
     } elsif ($expiry_type eq 'intraday') {
@@ -1002,12 +1003,12 @@ sub audit_details {
         contract_start => $self->_get_tick_details({
                 requested_epoch => {
                     value => $start_epoch,
-                    name  => 'Start Time'
+                    name  => $GENERIC_MAPPING->{start_time},
                 },
                 quote => {
                     value => $self->entry_tick->quote,
                     epoch => $self->entry_tick->epoch,
-                    name  => 'Entry Spot'
+                    name  => $GENERIC_MAPPING->{entry_spot_cap},
                 }}
         ),
     };
@@ -1017,18 +1018,18 @@ sub audit_details {
         $details->{contract_end} = [{
                 epoch => $closing_tick->epoch,
                 tick  => $closing_tick->quote,
-                name  => 'Closing Spot'
+                name  => $GENERIC_MAPPING->{closing_spot},
             }];
     } else {
         $details->{contract_end} = $self->_get_tick_details({
                 requested_epoch => {
                     value => $expiry_epoch,
-                    name  => 'End Time'
+                    name  => $GENERIC_MAPPING->{end_time},
                 },
                 quote => {
                     value => $self->exit_tick->quote,
                     epoch => $self->exit_tick->epoch,
-                    name  => 'Exit Spot'
+                    name  => $GENERIC_MAPPING->{exit_spot},
                 }});
     }
 
