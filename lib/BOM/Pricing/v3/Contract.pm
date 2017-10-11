@@ -378,17 +378,21 @@ sub get_bid {
         }
 
         if ($contract->exit_tick and $contract->is_valid_exit_tick and $contract->is_after_settlement) {
+            $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
+            $response->{exit_tick_time} = $contract->exit_tick->epoch;
+        }
+
+        my $ad = $contract->audit_details;
+        if ($ad && %$ad) {
             my $localized_audit_details;
-            foreach my $key (keys %{$contract->audit_details}) {
+            foreach my $key (keys %$ad) {
                 $localized_audit_details->{$key} = [
                     map {
                         if ($_->{name}) { $_->{name} = localize($_->{name}) }
                         $_
-                    } @{$contract->audit_details->{$key}}];
+                    } @{$ad->{$key}}];
             }
-            $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
-            $response->{exit_tick_time} = $contract->exit_tick->epoch;
-            $response->{audit_details}  = $localized_audit_details;
+            $response->{audit_details} = $localized_audit_details;
         }
 
         $response->{current_spot} = $contract->current_spot
