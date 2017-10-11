@@ -20,4 +20,3 @@ ok(!$client_db->freeze, 'Can not lock client that is already stuck');
 
 ok($client_db->unfreeze, 'Client was unlocked successfully');
 
-
