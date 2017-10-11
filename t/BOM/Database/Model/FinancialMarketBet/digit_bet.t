@@ -22,9 +22,9 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my $account = $client->set_default_account('USD');
 
 $client->payment_free_gift(
-    currency    => 'USD',
-    amount      => 500,
-    remark      => 'free gift',
+    currency => 'USD',
+    amount   => 500,
+    remark   => 'free gift',
 );
 
 my $digit;
@@ -134,20 +134,20 @@ lives_ok {
 
 subtest 'Expect that all fields are the same after loading FROM account transfer record' => sub {
 
-    is($digit->financial_market_bet_record->account_id,              $account->id, 'account_id');
-    is($digit->financial_market_bet_record->underlying_symbol,       'frxUSDJPY',                  'underlying_symbol');
-    is($digit->financial_market_bet_record->payout_price,            '200.00',                     'payout_price');
-    is($digit->financial_market_bet_record->buy_price,               '20.00',                      'buy_price');
-    is($digit->financial_market_bet_record->sell_price,              '40.00',                      'sell_price');
-    is($digit->financial_market_bet_record->remark,                  'Test Remark',                'remark');
-    is($digit->financial_market_bet_record->start_time->datetime(),  '2010-12-02T12:00:00',        'start_time');
-    is($digit->financial_market_bet_record->expiry_time->datetime(), '2010-12-02T14:00:00',        'expiry_time');
-    is($digit->financial_market_bet_record->is_expired,              1,                            'is_expired');
-    is($digit->financial_market_bet_record->is_sold,                 1,                            'is_sold');
-    is($digit->financial_market_bet_record->bet_class,               'digit_bet',                  'bet_class');
-    is($digit->financial_market_bet_record->bet_type,                'DIGITMATCH',                 'bet_type');
-    is($digit->digit_bet_record->last_digit,                         8,                            'last_digit');
-    is($digit->digit_bet_record->prediction,                         'match',                      'prediction');
+    is($digit->financial_market_bet_record->account_id,              $account->id,          'account_id');
+    is($digit->financial_market_bet_record->underlying_symbol,       'frxUSDJPY',           'underlying_symbol');
+    is($digit->financial_market_bet_record->payout_price,            '200.00',              'payout_price');
+    is($digit->financial_market_bet_record->buy_price,               '20.00',               'buy_price');
+    is($digit->financial_market_bet_record->sell_price,              '40.00',               'sell_price');
+    is($digit->financial_market_bet_record->remark,                  'Test Remark',         'remark');
+    is($digit->financial_market_bet_record->start_time->datetime(),  '2010-12-02T12:00:00', 'start_time');
+    is($digit->financial_market_bet_record->expiry_time->datetime(), '2010-12-02T14:00:00', 'expiry_time');
+    is($digit->financial_market_bet_record->is_expired,              1,                     'is_expired');
+    is($digit->financial_market_bet_record->is_sold,                 1,                     'is_sold');
+    is($digit->financial_market_bet_record->bet_class,               'digit_bet',           'bet_class');
+    is($digit->financial_market_bet_record->bet_type,                'DIGITMATCH',          'bet_type');
+    is($digit->digit_bet_record->last_digit,                         8,                     'last_digit');
+    is($digit->digit_bet_record->prediction,                         'match',               'prediction');
 };
 
 lives_ok {

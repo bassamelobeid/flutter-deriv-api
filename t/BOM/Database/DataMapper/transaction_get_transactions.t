@@ -59,6 +59,7 @@ sub insert_hl_bet {
         db  => $client->db,
         quantity => 1,
     });
+
     my ($fmb, $txn) = $hl_helper->buy_bet;
     $fmb->{quantity} = 1;
     $hl_helper->bet_data($fmb);

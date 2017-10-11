@@ -31,7 +31,8 @@ lives_ok {
         payment_type     => 'credit_debit_card',
         transaction_time => Date::Utility->new->datetime_yyyymmdd_hhmmss,
     );
-} 'expecting to create the required account models for transfer';
+}
+'expecting to create the required account models for transfer';
 
 my $financial_market_bet_id;
 my $financial_market_bet_helper;
@@ -39,14 +40,14 @@ my ($fmb, $txn);
 
 lives_ok {
     my $legacy = {
-        theo => 1,
-        trade => 1,
-        recalc => 1,
-        win => 2,
-        delta => 0.002,
-        vega => 0,
-        theta => 0,
-        gamma => 0,
+        theo         => 1,
+        trade        => 1,
+        recalc       => 1,
+        win          => 2,
+        delta        => 0.002,
+        vega         => 0,
+        theta        => 0,
+        gamma        => 0,
         intradaytime => 0.856150104239055,
     };
     my $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
@@ -74,6 +75,7 @@ lives_ok {
         quants_bet_variables => $quants_bet_variables,
         db                   => $connection_builder->db,
     });
+
     ($fmb, $txn) = $financial_market_bet_helper->buy_bet;
 }
 'expect to be able to buy the bet';

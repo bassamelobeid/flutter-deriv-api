@@ -70,15 +70,14 @@ lives_ok {
 
 my $clientdb;
 lives_ok {
-    $clientdb = BOM::Database::ClientDB->new({
-        broker_code => 'CR'
-    });
+    $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
 }
 'build fmb data mapper';
 
 ## higher lower - absolute barrier
 my $short_code = 'PUT_FRXUSDJPY_2_1311570485_25_JUL_11_784600_0';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 0, 'check qty open bet = 0');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 0, 'check qty open bet = 0');
 
 # buy bet
 lives_ok {
@@ -99,11 +98,13 @@ lives_ok {
     };
 }
 'buy higher lower absolute barrier bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 1, 'check qty open bet = 1');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 1, 'check qty open bet = 1');
 
 ## higher lower - relative barrier
 $short_code = 'CALL_FRXUSDJPY_20_1311574735_1311576535_S10P_0';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 1, 'check qty open bet = 1');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 1, 'check qty open bet = 1');
 
 # buy bet
 my @fmb_id;
@@ -126,7 +127,8 @@ lives_ok {
     push @fmb_id, $fmb->{id};
 }
 'buy higher lower relative barrier bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 2, 'check qty open bet = 1');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 2, 'check qty open bet = 1');
 
 # buy 1 more same bet
 lives_ok {
@@ -148,7 +150,8 @@ lives_ok {
     push @fmb_id, $fmb->{id};
 }
 'buy higher lower relative barrier bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 3, 'check qty open bet = 2');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 3, 'check qty open bet = 2');
 
 # sell 1 bet & test
 isnt scalar sell({
@@ -158,7 +161,8 @@ isnt scalar sell({
     }
     ),
     undef, 'sell 1 bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 2, 'check qty open bet = 1');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 2, 'check qty open bet = 1');
 
 # sell the other bet too
 isnt scalar sell({
@@ -168,7 +172,8 @@ isnt scalar sell({
     }
     ),
     undef, 'sell 1 bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 1, 'check qty open bet = 0');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 1, 'check qty open bet = 0');
 
 ## touch bet - absolute barrier
 $short_code = 'ONETOUCH_GDAXI_2_1311602700_1_AUG_11_7435_0';
@@ -192,7 +197,8 @@ lives_ok {
     push @fmb_id, $fmb->{id};
 }
 'buy touch bet absolute barrier bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 2, 'check qty open bet = 1');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 2, 'check qty open bet = 1');
 
 # sell it
 isnt scalar sell({
@@ -202,7 +208,8 @@ isnt scalar sell({
     }
     ),
     undef, 'sell 1 bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 1, 'check qty open bet = 0');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 1, 'check qty open bet = 0');
 
 ## touch bet - relative barrier
 $short_code = 'NOTOUCH_R_50_2_1311603776_1311607376_S5004P_0';
@@ -226,7 +233,8 @@ lives_ok {
     push @fmb_id, $fmb->{id};
 }
 'buy touch bet relative barrier bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 2, 'check qty open bet = 1');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 2, 'check qty open bet = 1');
 
 # sell it
 isnt scalar sell({
@@ -236,7 +244,8 @@ isnt scalar sell({
     }
     ),
     undef, 'sell 1 bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 1, 'check qty open bet = 0');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 1, 'check qty open bet = 0');
 
 ## range bet - absolute barrier
 $short_code = 'RANGE_FTSE_4_1311604156_1_AUG_11_6064_5801';
@@ -261,7 +270,8 @@ lives_ok {
     push @fmb_id, $fmb->{id};
 }
 'buy range bet absolute barrier bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 2, 'check qty open bet = 1');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 2, 'check qty open bet = 1');
 
 # sell it
 isnt scalar sell({
@@ -271,7 +281,8 @@ isnt scalar sell({
     }
     ),
     undef, 'sell 1 bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 1, 'check qty open bet = 0');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 1, 'check qty open bet = 0');
 
 ## range bet - relative barrier
 $short_code = 'EXPIRYMISS_R_25_3_1311605282_1311634082_S7147P_S-7148P';
@@ -296,7 +307,8 @@ lives_ok {
     push @fmb_id, $fmb->{id};
 }
 'buy range bet relative barrier bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 2, 'check qty open bet = 1');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 2, 'check qty open bet = 1');
 
 # sell it
 isnt scalar sell({
@@ -306,7 +318,8 @@ isnt scalar sell({
     }
     ),
     undef, 'sell 1 bet';
-cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 1, 'check qty open bet = 0');
+cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+    '==', 1, 'check qty open bet = 0');
 
 subtest 'digits' => sub {
     my %type_prediction = (
@@ -340,7 +353,8 @@ subtest 'digits' => sub {
                 push @fmb_id, $fmb->{id};
             }
             'buy';
-            cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 2, 'check qty open bet = 1');
+            cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+                '==', 2, 'check qty open bet = 1');
 
             isnt scalar sell({
                     id         => shift(@fmb_id),
@@ -349,7 +363,8 @@ subtest 'digits' => sub {
                 }
                 ),
                 undef, 'sell';
-            cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])}, '==', 1, 'check qty open bet = 0');
+            cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
+                '==', 1, 'check qty open bet = 0');
         };
     }
 };

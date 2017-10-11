@@ -3,6 +3,7 @@ package BOM::Database::Script::CheckDataChecksums;
 use strict;
 use warnings;
 use DBIx::Connector::Pg;
+use Time::HiRes qw(sleep);
 
 sub run {
 # use environment variables to connect to the database
@@ -19,7 +20,6 @@ sub run {
     my $table_pattern = shift;
 
     my $chunk = 100;    # how many blocks at once 1block=8kbyte
-    my $sleep = 100;    # in millisec
 
     my $dbic = DBIx::Connector::Pg->new(
         'dbi:Pg:',
@@ -66,7 +66,7 @@ SELECT $2::text, i, page_header(get_raw_page($1::oid::regclass::text, $2, ser.i)
  WHERE sz.sz > 0
 EOF
 
-    $| = 1;
+    local $| = 1;
 
     my $datadir = $dbic->run(sub { $_->selectall_arrayref($sql_datadir)->[0]->[0] });
 
@@ -88,12 +88,12 @@ EOF
                     $n = ($n + 1) % 80;
                     print "*";
                     print "\n" if $n == 0;
-                    select undef, undef, undef, $sleep / 1000 if @$l;
+                    sleep 0.1  if @$l;
                 }
             }
         }
     }
-
+    return;
 }
 
 1;

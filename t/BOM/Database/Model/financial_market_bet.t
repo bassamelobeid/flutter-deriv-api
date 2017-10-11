@@ -1,8 +1,8 @@
 use strict;
 use warnings;
-use Test::More tests=>16;
+use Test::More tests => 16;
 use Test::Exception;
-use Test::FailWarnings -allow_from => [ qw/BOM::Database::Rose::DB/ ];
+use Test::FailWarnings -allow_from => [qw/BOM::Database::Rose::DB/];
 use BOM::Database::Model::Account;
 use BOM::Database::Model::FinancialMarketBet;
 use BOM::Database::Model::FinancialMarketBetOpen;
@@ -25,13 +25,17 @@ lives_ok {
     $account = $client->set_default_account('USD');
 
     $client->payment_free_gift(
-        currency    => 'USD',
-        amount      => 500,
-        remark      => 'free gift',
+        currency => 'USD',
+        amount   => 500,
+        remark   => 'free gift',
     );
 }
 'expecting to create the required account models for transfer';
-my %account_data = (account_data => {client_loginid => $account->client_loginid, currency_code => $account->currency_code});
+my %account_data = (
+    account_data => {
+        client_loginid => $account->client_loginid,
+        currency_code  => $account->currency_code
+    });
 
 my $financial_market_bet;
 my $financial_market_bet_id;
@@ -128,7 +132,7 @@ is_deeply([
     'correct data read back'
 );
 
-throws_ok( sub{$financial_market_bet->save}, qr/permission denied/, 'updating fmb is not allowed');
+throws_ok(sub { $financial_market_bet->save }, qr/permission denied/, 'updating fmb is not allowed');
 
 lives_ok {
     $financial_market_bet = BOM::Database::Model::FinancialMarketBet::HigherLowerBet->new({
@@ -277,6 +281,7 @@ lives_ok {
         bet => $financial_market_bet,
         db  => $connection_builder->db,
     });
+
     $financial_market_bet_helper->bet_data->{quantity} = 1;
     push @fmbs, ($financial_market_bet_helper->buy_bet)[0]; # buy 1st bet
     push @fmbs, ($financial_market_bet_helper->buy_bet)[0]; # and the 2nd one

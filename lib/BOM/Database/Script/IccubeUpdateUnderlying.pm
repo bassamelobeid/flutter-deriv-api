@@ -74,7 +74,7 @@ sub run {
     if ($upd) {
         print "updated $upd underlyings -- you probably want to fully reload the cube.\n";
     }
-
+    return;
 }
 
 1;
