@@ -58,6 +58,10 @@ table#client_edit td{
         <td>: <b>[% client.broker %]</b> <input type="hidden" name="edit_client_loginid" value="[% client.loginid %]"></td>
     </tr>
     <tr>
+        <td class="label">Currency</td>
+        <td>: <b>[% client.default_account.currency_code || 'NO CURRENCY HAS BEEN SET BY CLIENT' %]</b></td>
+    </tr>
+    <tr>
 [%-
         last_check = client.sanctions_check;
 -%]
