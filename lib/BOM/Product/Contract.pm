@@ -1006,12 +1006,12 @@ sub audit_details {
         contract_start => $self->_get_tick_details({
                 requested_epoch => {
                     value => $start_epoch,
-                    name  => $GENERIC_MAPPING->{start_time},
+                    name  => [$GENERIC_MAPPING->{start_time}],
                 },
                 quote => {
                     value => $self->entry_tick->quote,
                     epoch => $self->entry_tick->epoch,
-                    name  => $GENERIC_MAPPING->{entry_spot_cap},
+                    name  => [$GENERIC_MAPPING->{entry_spot_cap}],
                 }}
         ),
     };
@@ -1024,18 +1024,18 @@ sub audit_details {
         $details->{contract_end} = [{
                 epoch => $closing_tick->epoch,
                 tick  => $self->underlying->pipsized_value($$closing_tick->quote),
-                name  => $GENERIC_MAPPING->{closing_spot},
+                name  => [$GENERIC_MAPPING->{closing_spot}],
             }];
     } else {
         $details->{contract_end} = $self->_get_tick_details({
                 requested_epoch => {
                     value => $expiry_epoch,
-                    name  => $GENERIC_MAPPING->{end_time},
+                    name  => [$GENERIC_MAPPING->{end_time}],
                 },
                 quote => {
                     value => $self->exit_tick->quote,
                     epoch => $self->exit_tick->epoch,
-                    name  => $GENERIC_MAPPING->{exit_spot},
+                    name  => [$GENERIC_MAPPING->{exit_spot}],
                 }});
     }
 
@@ -1069,7 +1069,7 @@ sub _get_tick_details {
         };
         if ($t->quote == $quote) {
             if ($t->epoch == $epoch) {
-                $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $epoch_name, $quote_name];
+                $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $epoch_name->[0], $quote_name->[0]];
             } elsif ($t->epoch == $quote_epoch) {
                 $t_details->{name} = $quote_name;
             }
