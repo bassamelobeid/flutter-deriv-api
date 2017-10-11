@@ -57,6 +57,7 @@ lives_ok {
             short_code        => 'DIGITMATCH_FRXUSDJPY_200_1301038969_1301038999_8_0',
             last_digit        => 8,
             prediction        => 'match',
+            quantity          => 1,
         },
         transaction_data => {
             staff_loginid => $account->client_loginid,
@@ -116,6 +117,7 @@ lives_ok {
         bet_data => {
             id         => $digit_id,
             sell_price => 40,
+            quantity   => 1,
         },
         transaction_data => {
             staff_loginid => 'AUTOSELL',

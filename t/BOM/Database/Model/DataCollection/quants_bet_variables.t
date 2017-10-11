@@ -69,6 +69,7 @@ lives_ok {
             'bet_class'         => 'higher_lower_bet',
             'bet_type'          => 'CALL',
             'short_code'        => 'CALL_FRXUSDJPY_15_23_OCT_09_S30_05H5648',
+            'quantity'          => 1,
         },
         quants_bet_variables => $quants_bet_variables,
         db                   => $connection_builder->db,
