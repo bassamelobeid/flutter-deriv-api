@@ -993,11 +993,8 @@ sub pricing_details {
 sub audit_details {
     my $self = shift;
 
-    # audit details will NOT be be available for contracts that:
-    # - has been sold early
-    # - has not fulfilled settlement conditions
-    my $valid_expiry_condition = $self->exit_tick && $self->is_valid_exit_tick;
-    return {} unless ($valid_expiry_condition && $self->is_sold);
+    # If there's no entry tick, practically the contract hasn't started.
+    return {} unless $self->entry_tick;
 
     my $start_epoch  = $self->date_start->epoch;
     my $expiry_epoch = $self->date_expiry->epoch;
@@ -1016,14 +1013,22 @@ sub audit_details {
         ),
     };
 
-    # no contract end audit details if contract is sold early.
-    return $details if $self->is_sold;
+    # only contract_start audit details if contract is sold early.
+    # no contract_end audit details if settlement conditions is not fulfilled.
+    return $details if $self->is_sold || !$self->is_settleable;
 
-    if ($self->expiry_daily) {
+    if ($self->is_path_dependent && $self->hit_tick) {
+        my $hit_tick = $self->hit_tick;
+        $details->{contract_end} = [{
+                epoch => $hit_tick->epoch,
+                tick  => $self->underlying->pipsized_value($hit_tick->quote),
+                name  => [$GENERIC_MAPPING->{exit_spot}],
+            }];
+    } elsif ($self->expiry_daily) {
         my $closing_tick = $self->underlying->closing_tick_on($expiry_epoch);
         $details->{contract_end} = [{
                 epoch => $closing_tick->epoch,
-                tick  => $self->underlying->pipsized_value($$closing_tick->quote),
+                tick  => $self->underlying->pipsized_value($closing_tick->quote),
                 name  => [$GENERIC_MAPPING->{closing_spot}],
             }];
     } else {
