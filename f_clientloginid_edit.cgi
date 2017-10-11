@@ -256,7 +256,8 @@ if ($input{whattodo} eq 'uploadID') {
         my ($id) = $dbh->selectrow_array(
             "SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?::status_type)",
             {Slice => {}},
-            $loginid, $doctype, $docformat, '', $expiration_date, 'ID_DOCUMENT', $document_id || '',
+            $loginid, $doctype, $docformat, '', $expiration_date || undef,
+            'ID_DOCUMENT', $document_id || '',
             '', 'uploaded'
         );
 
