@@ -57,9 +57,10 @@ sub insert_hl_bet {
             short_code        => 'some short code',
         },
         db  => $client->db,
+        quantity => 1,
     });
     my ($fmb, $txn) = $hl_helper->buy_bet;
-
+    $fmb->{quantity} = 1;
     $hl_helper->bet_data($fmb);
     $fmb->{sell_price} = ($win) ? $payout : 0;
     $hl_helper->transaction_data->{transaction_time} = Date::Utility->new($date->epoch + 10)->db_timestamp;
