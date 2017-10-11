@@ -180,15 +180,15 @@
         "audit_details": {
           "type": "object",
           "title": "Audit details for expired contract.",
-          "description": "Entry and exit quote used in contract settlement.",
+          "description": "Tick details around contract start and end time.",
           "properties": {
             "contract_start": {
               "type": "array",
-              "description": "Quotes around contract start time."
+              "description": "Ticks around contract start time."
             },
             "contract_end": {
               "type": "array",
-              "description": "Quotes around contract end time."
+              "description": "Ticks around contract end time."
             }
           }
         },
