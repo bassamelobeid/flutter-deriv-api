@@ -382,7 +382,7 @@ sub get_bid {
             $response->{exit_tick_time} = $contract->exit_tick->epoch;
         }
 
-        if ($self->is_settleable || $contract->is_sold) {
+        if ($contract->is_settleable || $contract->is_sold) {
             my $localized_audit_details;
             my $ad = $contract->audit_details;
             foreach my $key (keys %$ad) {
