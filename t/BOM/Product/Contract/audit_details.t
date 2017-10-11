@@ -72,7 +72,7 @@ subtest 'when there is tick at start & expiry' => sub {
 };
 
 subtest 'no tick at start & expiry' => sub {
-    my @before = map { [100 + 0.001 * $_, $now->epoch + $_,    'frxUSDJPY'] } (-2, -1, 1, 2);
+    my @before = map { [100, $now->epoch + $_,    'frxUSDJPY'] } (-2, -1, 1, 2);
     my @after  = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
     create_ticks(@before, @after);
     my $c = produce_contract({%$args, date_pricing => $expiry});

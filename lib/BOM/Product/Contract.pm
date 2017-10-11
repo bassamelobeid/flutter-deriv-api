@@ -992,6 +992,7 @@ sub pricing_details {
 sub audit_details {
     my $self = shift;
 
+    # audit details will only be available once the contract is settled or has valid settlement conditions.
     return {} unless $self->exit_tick && $self->is_valid_exit_tick;
 
     my $start_epoch  = $self->date_start->epoch;
@@ -1005,6 +1006,7 @@ sub audit_details {
                 },
                 quote => {
                     value => $self->entry_tick->quote,
+                    epoch => $self->entry_tick->epoch,
                     name  => 'Entry Spot'
                 }}
         ),
@@ -1025,6 +1027,7 @@ sub audit_details {
                 },
                 quote => {
                     value => $self->exit_tick->quote,
+                    epoch => $self->exit_tick->epoch,
                     name  => 'Exit Spot'
                 }});
     }
@@ -1035,11 +1038,12 @@ sub audit_details {
 sub _get_tick_details {
     my ($self, $args) = @_;
 
-    my $interval   = 5;                                 # look back & forward 5 ticks
-    my $epoch      = $args->{requested_epoch}{value};
-    my $epoch_name = $args->{requested_epoch}{name};
-    my $quote      = $args->{quote}{value};
-    my $quote_name = $args->{quote}{name};
+    my $interval    = 5;                                 # look back & forward 5 ticks
+    my $epoch       = $args->{requested_epoch}{value};
+    my $epoch_name  = $args->{requested_epoch}{name};
+    my $quote       = $args->{quote}{value};
+    my $quote_epoch = $args->{quote}{epoch};
+    my $quote_name  = $args->{quote}{name};
 
     my @ticks = reverse @{
         $self->underlying->ticks_in_between_start_end({
@@ -1056,12 +1060,14 @@ sub _get_tick_details {
             epoch => $t->epoch,
             tick  => $t->quote,
         };
-        if ($t->epoch == $epoch && $t->quote == $quote) {
-            $t_details->{name} = $epoch_name . ' and ' . $quote_name;
+        if ($t->quote == $quote) {
+            if ($t->epoch == $epoch) {
+                $t_details->{name} = $epoch_name . ' and ' . $quote_name;
+            } elsif ($t->epoch == $quote_epoch) {
+                $t_details->{name} = $quote_name;
+            }
         } elsif ($t->epoch == $epoch) {
             $t_details->{name} = $epoch_name;
-        } elsif ($t->quote == $quote) {
-            $t_details->{name} = $quote_name;
         }
 
         push @details, $t_details;
