@@ -1,6 +1,9 @@
 package BOM::Transaction;
 
 use Moose;
+
+no indirect;
+
 use Data::Dumper;
 use Error::Base;
 use Path::Tiny;
@@ -335,15 +338,22 @@ sub calculate_limits {
 
     $limits{max_balance} = $client->get_limit_for_account_balance;
 
-    my $general_open_position_payout_limit =
-        from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit // {});
-    if (my $limit = $general_open_position_payout_limit->{$client->landing_company->short}) {
-        my ($limit_currency, $limit_amount) = each %$limit;
-        $limits{general_open_position_payout} = {
-            limit    => $limit_amount,
-            currency => $limit_currency,
-        };
+    try {
+        my $general_open_position_payout_limit =
+            from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
+        if (my $limit = $general_open_position_payout_limit->{$client->landing_company->short}) {
+            my ($limit_currency, $limit_amount, @extra) = %$limit;
+            die "found multiple entries for landing company, extra: @extra" if @extra;
+            $limits{general_open_position_payout} = {
+                limit    => $limit_amount,
+                currency => $limit_currency,
+            };
+        }
     }
+    catch {
+        warn "Failure while attempting to process open position limits - $_\n";
+        stats_inc('transaction.open_position_limit.failure');
+    };
 
     if (not $contract->tick_expiry) {
         $limits{max_open_bets}        = $client->get_limit_for_open_positions;
