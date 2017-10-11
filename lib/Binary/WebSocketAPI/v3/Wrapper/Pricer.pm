@@ -558,7 +558,7 @@ sub _create_pricer_channel {
         return;
     }
 
-    my $uuid = &Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
+    my $uuid = Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
 
     # subscribe if it is not already subscribed
     if (    exists $args->{subscribe}
