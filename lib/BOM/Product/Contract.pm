@@ -1017,7 +1017,7 @@ sub audit_details {
         my $closing_tick = $self->underlying->closing_tick_on($expiry_epoch);
         $details->{contract_end} = [{
                 epoch => $closing_tick->epoch,
-                tick  => $closing_tick->quote,
+                tick  => $self->underlying->pipsized_value($$closing_tick->quote),
                 name  => $GENERIC_MAPPING->{closing_spot},
             }];
     } else {
@@ -1059,7 +1059,7 @@ sub _get_tick_details {
 
         my $t_details = {
             epoch => $t->epoch,
-            tick  => $t->quote,
+            tick  => $self->underlying->pipsized_value($t->quote),
         };
         if ($t->quote == $quote) {
             if ($t->epoch == $epoch) {
