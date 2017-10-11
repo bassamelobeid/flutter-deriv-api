@@ -104,18 +104,18 @@ sub _build_survival_weight {
         my $vanna_correction = $self->bet_greeks->{vanna} * $self->greek_market_prices->{vanna};
         my $volga_correction = $self->bet_greeks->{volga} * $self->greek_market_prices->{volga};
 
-        my $a = $self->calibration_params->{a};
-        my $b = $self->calibration_params->{b};
-        my $c = $self->calibration_params->{c};
+        my $param_a = $self->calibration_params->{a};
+        my $param_b = $self->calibration_params->{b};
+        my $param_c = $self->calibration_params->{c};
 
         $surv_prob =
-            ($self->bs_probability->amount + $b * ($volga_correction + $vega_correction)) /
-            (exp(-$args->{r_rate} * $args->{t}) - $a * $vanna_correction - $c * ($volga_correction + $vega_correction));
+            ($self->bs_probability->amount + $param_b * ($volga_correction + $vega_correction)) /
+            (exp(-$args->{r_rate} * $args->{t}) - $param_a * $vanna_correction - $param_c * ($volga_correction + $vega_correction));
 
         if ($bet->sentiment eq 'high_vol') {
             $surv_prob =
-                (exp(-$args->{r_rate} * $args->{t}) - $self->bs_probability->amount - $b * ($volga_correction + $vega_correction)) /
-                (exp(-$args->{r_rate} * $args->{t}) + $a * $vanna_correction + $c * ($volga_correction + $vega_correction));
+                (exp(-$args->{r_rate} * $args->{t}) - $self->bs_probability->amount - $param_b * ($volga_correction + $vega_correction)) /
+                (exp(-$args->{r_rate} * $args->{t}) + $param_a * $vanna_correction + $param_c * ($volga_correction + $vega_correction));
         }
 
         if ($self->calibration_model eq 'bloomberg') {
