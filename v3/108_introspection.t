@@ -1,6 +1,11 @@
 use strict;
 use warnings;
 
+use BOM::Test::RPC::BomRpc;
+use BOM::Test::RPC::PricingRpc;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 
