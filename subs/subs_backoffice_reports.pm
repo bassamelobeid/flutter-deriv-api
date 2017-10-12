@@ -50,7 +50,8 @@ sub DailyTurnOverReport {
 
     # get latest timestamp in redis cache
     my $cache_prefix = 'DAILY_TURNOVER';
-    my $redis_time   = Cache::RedisDB->keys($cache_prefix);
+    # TODO: we should rename the method `keys` of Cache::RedisDB, otherwise perlcritic will report DeprecatedFeatures error
+    my $redis_time   = Cache::RedisDB->keys($cache_prefix); ## no critic (DeprecatedFeatures)
 
     my $latest_time;
     foreach my $time (@{$redis_time}) {
