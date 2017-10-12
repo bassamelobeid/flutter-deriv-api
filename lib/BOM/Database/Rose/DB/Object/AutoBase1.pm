@@ -21,7 +21,7 @@ Rose::DB::Object::Metadata::Relationship::OneToMany->default_auto_method_types(q
 # be generated into local db_{read|write} attributes.  If not supplied, a default
 # connection is generated.  Note also we defer creation of the write-connection until needed by a save.
 
-use overload '""' => sub { shift->safe_stringify }; ## no critic (OverloadOptions)
+use overload '""' => sub { shift->safe_stringify };    ## no critic (OverloadOptions)
 
 sub safe_stringify {
     my $self = shift;
