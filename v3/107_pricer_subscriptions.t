@@ -1,8 +1,6 @@
 use strict;
 use warnings;
 
-use BOM::Test::RPC::PricingRpc;
-
 use Test::More;
 use JSON;
 use FindBin qw/$Bin/;
