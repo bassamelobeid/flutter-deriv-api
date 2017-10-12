@@ -82,7 +82,7 @@ sub AUTOLOAD {
         $self,
         $goal_msg,
         sub {
-            $self->send_ok({json => $payload}) if $params;
+            $self->send_ok({json => $payload}) if $payload;
         },
         {
            %{ $params || {} },
