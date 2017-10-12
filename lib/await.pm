@@ -87,7 +87,7 @@ sub get_data {
         my $msg  = $t->message->[1];
         my $data = decode_json($msg);
 
-        return $data if !exists($params->{req_id}) or $data->{req_id} == $params->{req_id};
+        return $data if not exists($params->{req_id}) or $data->{req_id} == $params->{req_id};
     }
 
     return;
