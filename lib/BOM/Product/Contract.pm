@@ -1014,7 +1014,8 @@ sub audit_details {
     };
 
     # only contract_start audit details if contract is sold early.
-    return $details if $self->is_sold && $self->date_pricing->is_before($self->date_expiry);
+    # path dependent could hit early, we will check if it is sold early or hit in the next condition.
+    return $details if $self->is_sold && !$self->is_path_dependent && $self->date_pricing->is_before($self->date_expiry);
 
     # no contract_end audit details if settlement conditions is not fulfilled.
     return $details unless $self->is_settleable;
