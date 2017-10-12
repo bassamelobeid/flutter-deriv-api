@@ -43,14 +43,14 @@ sub wsapi_wait_for {
 
     if (exists($params->{req_id})) {
         while (1) {
-            $t->message_ok;
+            $t = $t->message_ok;
             my $msg = $t->message->[1];
             my $data = decode_json($msg);
 
             last if $data->{req_id} == $params->{req_id};
         }
     } else {
-        $t->message_ok;
+        $t = $t->message_ok;
     }
     my $msg = $t->message->[1];
 
