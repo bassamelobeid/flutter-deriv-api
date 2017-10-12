@@ -39,20 +39,25 @@ my $url                = '/websockets/v3?l=EN&debug=1&app_id=1';
 my $channel;
 my $user_first = {};
 
+my $req_id = 0;
+
 subtest "Born and die" => sub {
 
     my $t = $test_server->websocket_ok($url => {});
 
     $t->await::proposal({
-        "proposal"  => 1,
-        "subscribe" => 1,
+        proposal  => 1,
+        req_id    => ++$req_id,
         %contractParameters
     });
     is(scalar keys %{$test_server->app->pricing_subscriptions()}, 1, "Subscription created");
     $channel = [keys %{$test_server->app->pricing_subscriptions()}]->[0];
     is(refcount($test_server->app->pricing_subscriptions()->{$channel}), 1, "check refcount");
     ok(redis_pricer->get($channel), "check redis subscription");
-    $t->await::forget_all({forget_all => 'proposal'});
+    $t->await::forget_all({
+        forget_all => 'proposal',
+        req_id    => ++$req_id,
+    });
 
     is($test_server->app->pricing_subscriptions()->{$channel}, undef, "Killed");
     ### Mojo::Redis2 has not method PUBSUB
@@ -91,14 +96,17 @@ subtest "Create Subscribes" => sub {
         $t->tx->on(message => $callback);
 
         $t->await::proposal({
-            "proposal"  => 1,
-            "subscribe" => 1,
+            proposal  => 1,
+            req_id    => ++$req_id,
             %contractParameters
         });
     }
 
     cmp_ok(keys %$user_first, '==', 3, "3 subscription created ok");
-    $test_server->await::forget_all({'forget_all' => 'proposal'});
+    $test_server->await::forget_all({
+        forget_all => 'proposal',
+        req_id    => ++$req_id,
+    });
 
     $_->finish_ok for @connections;
 
@@ -128,10 +136,10 @@ subtest "Count Subscribes" => sub {
         my $t = $test_server->websocket_ok($url => {});
         push @connections, $t;
         my $res = $t->await::proposal({
-            "proposal"  => 1,
-            "subscribe" => 1,
+            proposal  => 1,
+            req_id    => ++$req_id,
             %contractParameters,
-            "contract_type" => "CALL",
+            contract_type => "CALL",
         });
         test_schema('proposal', $res);
     }
