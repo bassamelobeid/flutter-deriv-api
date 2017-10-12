@@ -47,7 +47,7 @@ sub wsapi_wait_for {
             my $msg = $t->message->[1];
             my $data = decode_json($msg);
 
-            break if $data->{req_id} == $params->{req_id};
+            last if $data->{req_id} == $params->{req_id};
         }
     } else {
         $t->message_ok;
