@@ -41,20 +41,7 @@ sub wsapi_wait_for {
 
     $action_sub->();
 
-    if (exists($params->{req_id})) {
-        while (1) {
-            $t = $t->message_ok;
-            my $msg  = $t->message->[1];
-            my $data = decode_json($msg);
-
-            last if $data->{req_id} == $params->{req_id};
-        }
-    } else {
-        $t = $t->message_ok;
-    }
-    my $msg = $t->message->[1];
-
-    my $data = decode_json($msg);
+    my $data = get_data($t, $params);
 
     if ($data->{msg_type} eq $wait_for or $data->{msg_type} eq 'error') {
         $f->done($data) if !$f->is_ready;
@@ -74,9 +61,12 @@ our $AUTOLOAD;
 
 sub AUTOLOAD {
     my ($self, $payload, $params) = @_;
+    $params //= {};
 
     return unless ref $self;
     my ($goal_msg) = ($AUTOLOAD =~ /::([^:]+)/);
+
+    my $req_id = exists($payload->{req_id}) ? {req_id => $payload->{req_id}} : {};
 
     return wsapi_wait_for(
         $self,
@@ -84,8 +74,21 @@ sub AUTOLOAD {
         sub {
             $self->send_ok({json => $payload}) if $payload;
         },
-        {%{$params || {}}, %{exists($payload->{req_id}) ? {req_id => $payload->{req_id}} : {}},},
+        {%{$params}, %{$req_id}},
     );
+}
+
+sub get_data {
+    my ($t, $params) = @_;
+    $params //= {};
+
+    while (1) {
+        $t = $t->message_ok;
+        my $msg  = $t->message->[1];
+        my $data = decode_json($msg);
+
+        return $data if !exists($params->{req_id}) or $data->{req_id} == $params->{req_id};
+    }
 }
 
 1;
