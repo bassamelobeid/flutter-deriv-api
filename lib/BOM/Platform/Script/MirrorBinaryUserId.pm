@@ -1,5 +1,36 @@
 package BOM::Platform::Script::MirrorBinaryUserId;
 
+# Please read this first!
+#
+# The current implementation is very simple.
+#
+#  1. open a transaction in userdb
+#  2. remove one item from the queue
+#  3. update clientdb
+#  4. commit transaction in userdb
+#
+# If the process dies somewhere after 1 the userdb transaction
+# is rolled back and next time the same item will be removed.
+# This works for this case because the clientdb update can be
+# repeated without harm.
+#
+# Processing one item at a time should be good enough because
+# changes in the association between binary users and loginids
+# are rare.
+# However, if it turns out it's not, you can run the daemon in
+# multiple instances as long as we guarantee that loginids are
+# only added to a binary user and never removed. If that is not
+# given, the following can happen. A loginid is added and
+# immediately removed. That creates 2 items in the queue. Now,
+# process A picks the first item but gets delayed a little.
+# Next, process B picks the second item, the loginid removal,
+# and performs it. Then process A continues it's work and adds
+# the binary_user_id to the client account. A typical race
+# condition.
+#
+# If you are tempted to run this daemon in multiple instances,
+# better change the design!
+
 use 5.014;
 
 use strict;
