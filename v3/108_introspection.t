@@ -237,7 +237,7 @@ SKIP: {
 
         $t->await::forget_all({
             forget_all => 'proposal',
-            req_id   => ++$req_id,
+            req_id     => ++$req_id,
         });
         $intro_conn = send_introspection_cmd('connections');
         cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 0, 'no more price subscription';

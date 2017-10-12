@@ -46,8 +46,8 @@ subtest "Born and die" => sub {
     my $t = $test_server->websocket_ok($url => {});
 
     $t->await::proposal({
-        proposal  => 1,
-        req_id    => ++$req_id,
+        proposal => 1,
+        req_id   => ++$req_id,
         %contractParameters
     });
     is(scalar keys %{$test_server->app->pricing_subscriptions()}, 1, "Subscription created");
@@ -56,7 +56,7 @@ subtest "Born and die" => sub {
     ok(redis_pricer->get($channel), "check redis subscription");
     $t->await::forget_all({
         forget_all => 'proposal',
-        req_id    => ++$req_id,
+        req_id     => ++$req_id,
     });
 
     is($test_server->app->pricing_subscriptions()->{$channel}, undef, "Killed");
@@ -96,8 +96,8 @@ subtest "Create Subscribes" => sub {
         $t->tx->on(message => $callback);
 
         $t->await::proposal({
-            proposal  => 1,
-            req_id    => ++$req_id,
+            proposal => 1,
+            req_id   => ++$req_id,
             %contractParameters
         });
     }
@@ -105,7 +105,7 @@ subtest "Create Subscribes" => sub {
     cmp_ok(keys %$user_first, '==', 3, "3 subscription created ok");
     $test_server->await::forget_all({
         forget_all => 'proposal',
-        req_id    => ++$req_id,
+        req_id     => ++$req_id,
     });
 
     $_->finish_ok for @connections;
@@ -136,8 +136,8 @@ subtest "Count Subscribes" => sub {
         my $t = $test_server->websocket_ok($url => {});
         push @connections, $t;
         my $res = $t->await::proposal({
-            proposal  => 1,
-            req_id    => ++$req_id,
+            proposal => 1,
+            req_id   => ++$req_id,
             %contractParameters,
             contract_type => "CALL",
         });
