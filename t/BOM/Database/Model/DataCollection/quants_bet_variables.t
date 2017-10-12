@@ -31,7 +31,8 @@ lives_ok {
         payment_type     => 'credit_debit_card',
         transaction_time => Date::Utility->new->datetime_yyyymmdd_hhmmss,
     );
-} 'expecting to create the required account models for transfer';
+}
+'expecting to create the required account models for transfer';
 
 my $financial_market_bet_id;
 my $financial_market_bet_helper;
@@ -39,14 +40,14 @@ my ($fmb, $txn);
 
 lives_ok {
     my $legacy = {
-        theo => 1,
-        trade => 1,
-        recalc => 1,
-        win => 2,
-        delta => 0.002,
-        vega => 0,
-        theta => 0,
-        gamma => 0,
+        theo         => 1,
+        trade        => 1,
+        recalc       => 1,
+        win          => 2,
+        delta        => 0.002,
+        vega         => 0,
+        theta        => 0,
+        gamma        => 0,
         intradaytime => 0.856150104239055,
     };
     my $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
@@ -54,25 +55,25 @@ lives_ok {
     });
 
     $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({
-        account_data => {
-            client_loginid => $account->client_loginid,
-            currency_code  => $account->currency_code,
-        },
-        bet_data => {
-            'underlying_symbol' => 'frxUSDJPY',
-            'payout_price'      => 200,
-            'buy_price'         => 20,
-            'remark'            => 'Test Remark',
-            'purchase_time'     => '2010-12-02 12:00:00',
-            'start_time'        => '2010-12-02 12:00:00',
-            'expiry_time'       => '2010-12-02 14:00:00',
-            'bet_class'         => 'higher_lower_bet',
-            'bet_type'          => 'CALL',
-            'short_code'        => 'CALL_FRXUSDJPY_15_23_OCT_09_S30_05H5648',
-        },
-        quants_bet_variables => $quants_bet_variables,
-        db                   => $connection_builder->db,
-    });
+            account_data => {
+                client_loginid => $account->client_loginid,
+                currency_code  => $account->currency_code,
+            },
+            bet_data => {
+                'underlying_symbol' => 'frxUSDJPY',
+                'payout_price'      => 200,
+                'buy_price'         => 20,
+                'remark'            => 'Test Remark',
+                'purchase_time'     => '2010-12-02 12:00:00',
+                'start_time'        => '2010-12-02 12:00:00',
+                'expiry_time'       => '2010-12-02 14:00:00',
+                'bet_class'         => 'higher_lower_bet',
+                'bet_type'          => 'CALL',
+                'short_code'        => 'CALL_FRXUSDJPY_15_23_OCT_09_S30_05H5648',
+            },
+            quants_bet_variables => $quants_bet_variables,
+            db                   => $connection_builder->db,
+        });
     ($fmb, $txn) = $financial_market_bet_helper->buy_bet;
 }
 'expect to be able to buy the bet';

@@ -117,8 +117,7 @@ sub _cached_db {
 # this will help in calling functions in DB.
 # result must be always rows of JSON
 sub getall_arrayref {
-    my $self = shift;
-    my ($query, $params) = @_;
+    my ($self, $query, $params) = @_;
 
     my $result = $self->db->dbic->run(
         sub {

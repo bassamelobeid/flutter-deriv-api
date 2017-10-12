@@ -22,7 +22,7 @@ lives_ok {
         broker_code => 'CR',
     });
 
-    $account = $client->set_default_account('USD');
+    $account    = $client->set_default_account('USD');
     $account_id = $account->id;
 }
 'expecting to create the required account models for transfer';

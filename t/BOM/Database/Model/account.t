@@ -20,7 +20,7 @@ lives_ok {
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
-    $account = $client->set_default_account('USD');
+    $account    = $client->set_default_account('USD');
     $account_id = $account->id;
 }
 'expecting to load the required account models for transfer';
@@ -62,21 +62,23 @@ throws_ok {
     warning_like {
         $account->currency_code('USD');
         $account->save();
-    } qr/permission denied/;
+    }
+    qr/permission denied/;
 }
 qr/permission denied/, 'Cannot change currency_code';
 
 throws_ok {
     $account = BOM::Database::Model::Account->new({
-        'data_object_params' => {
-            'client_loginid' => $client->loginid,
-            'currency_code'  => 'GBP'
-        },
-        db => $connection_builder->db
-    });
+            'data_object_params' => {
+                'client_loginid' => $client->loginid,
+                'currency_code'  => 'GBP'
+            },
+            db => $connection_builder->db
+        });
     warning_like {
         $account->save();
-    } qr/duplicate key value violates unique constraint/i;
+    }
+    qr/duplicate key value violates unique constraint/i;
 }
 qr/duplicate key value violates unique constraint/i, 'Check if trying to save an existing account fails';
 
@@ -85,31 +87,33 @@ throws_ok {
         broker_code => 'MX',
     });
     $account = BOM::Database::Model::Account->new({
-           'data_object_params' => {
-               'client_loginid' => $client->loginid,
-               'currency_code'  => 'JPY',
-               'balance'        => 100,
-           },
-           db => $connection_builder->db
-       });
+            'data_object_params' => {
+                'client_loginid' => $client->loginid,
+                'currency_code'  => 'JPY',
+                'balance'        => 100,
+            },
+            db => $connection_builder->db
+        });
     warning_like {
-       $account->save();
-    } qr/permission denied for relation account/i; 
+        $account->save();
+    }
+    qr/permission denied for relation account/i;
 }
 qr/permission denied for relation account/i, 'Check transaction.account.balance permissions';
 
 throws_ok {
-   $account = BOM::Database::Model::Account->new({
-           'data_object_params' => {
-               'client_loginid' => $client->loginid,
-               'currency_code'  => 'JPY',
-               'last_modified'  => '2000-01-01',
-           },
-           db => $connection_builder->db
-   });
-   warning_like {
-       $account->save();
-   } qr/permission denied for relation account/i;
+    $account = BOM::Database::Model::Account->new({
+            'data_object_params' => {
+                'client_loginid' => $client->loginid,
+                'currency_code'  => 'JPY',
+                'last_modified'  => '2000-01-01',
+            },
+            db => $connection_builder->db
+        });
+    warning_like {
+        $account->save();
+    }
+    qr/permission denied for relation account/i;
 }
 qr/permission denied for relation account/i, 'Check transaction.account.last_modified permissions';
 
