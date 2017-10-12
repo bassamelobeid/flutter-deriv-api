@@ -44,7 +44,7 @@ sub wsapi_wait_for {
     if (exists($params->{req_id})) {
         while (1) {
             $t = $t->message_ok;
-            my $msg = $t->message->[1];
+            my $msg  = $t->message->[1];
             my $data = decode_json($msg);
 
             last if $data->{req_id} == $params->{req_id};
@@ -84,10 +84,7 @@ sub AUTOLOAD {
         sub {
             $self->send_ok({json => $payload}) if $payload;
         },
-        {
-           %{ $params || {} },
-           %{ exists($payload->{req_id}) ? { req_id => $payload->{req_id} } : {} },
-        },
+        {%{$params || {}}, %{exists($payload->{req_id}) ? {req_id => $payload->{req_id}} : {}},},
     );
 }
 
