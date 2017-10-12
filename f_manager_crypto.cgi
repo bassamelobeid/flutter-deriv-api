@@ -235,7 +235,38 @@ if ($view_action eq 'withdrawals') {
             or die 'failed to run ctc_bo_transactions_for_reconciliation'
     );
 
-    {
+    if ($currency eq 'ETH') {
+        my $collectordb = BOM::Database::ClientDB->new({
+                broker_code => 'FOG',
+                operation   => 'collector',
+            })->db->dbh;
+        if (
+            my $deposits = $collectordb->selectall_arrayref(
+                q{SELECT * FROM cryptocurrency.bookkeeping WHERE currency_code = ? AND transaction_type = 'deposit' AND DATE_TRUNC('day', tmstmp) >= ? AND DATE_TRUNC('day', tmstmp) <= ?},
+                {Slice => {}},
+                $currency,
+                $start_date->iso8601,
+                $end_date->iso8601
+            ))
+        {
+            $recon->from_blockchain_deposits($filter->($deposits));
+        } else {
+            code_exit_BO('<p style="color:red;">Unable to request deposits from RPC</p>');
+        }
+        if (
+            my $withdrawals = $collectordb->selectall_arrayref(
+                q{SELECT * FROM cryptocurrency.bookkeeping WHERE currency_code = ? AND transaction_type = 'withdrawal' AND DATE_TRUNC('day', tmstmp) >= ? AND DATE_TRUNC('day', tmstmp) <= ?},
+                {Slice => {}},
+                $currency,
+                $start_date->iso8601,
+                $end_date->iso8601
+            ))
+        {
+            $recon->from_blockchain_withdrawals($filter->($withdrawals));
+        } else {
+            code_exit_BO('<p style="color:red;">Unable to request deposits from RPC</p>');
+        }
+    } else {
         # Apply date filtering. Note that this is currently BTC/BCH/LTC-specific, but
         # once we have the information in the database we should pass the date range
         # as a parameter instead.
