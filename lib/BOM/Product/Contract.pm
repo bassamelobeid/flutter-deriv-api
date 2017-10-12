@@ -1067,7 +1067,7 @@ sub _get_tick_details {
             })};
 
     my @details;
-    for (my $i = 0; $i < $#ticks; $i++) {
+    for (my $i = 0; $i <= $#ticks; $i++) {
         my $t  = $ticks[$i];
         my $t2 = $ticks[$i + 1];
 
@@ -1088,7 +1088,7 @@ sub _get_tick_details {
         push @details, $t_details;
 
         # if there's no tick on start or end time.
-        if ($epoch > $t->epoch && $epoch < $t2->epoch) {
+        if ($t2 && $epoch > $t->epoch && $epoch < $t2->epoch) {
             push @details,
                 +{
                 name  => $epoch_name,
