@@ -282,7 +282,8 @@ subtest "Friday after close, weekend, won't open check." => sub {
         },
     );
 
-    while (my ($name, $details) = each %test_data) {
+    for my $name (sort keys %test_data ){
+        my $details = $test_data{$name};
         my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
