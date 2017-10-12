@@ -93,7 +93,8 @@ sub create {
         error      => sub {
             my ($self, $err) = @_;
             warn("Redis $name error: $err");
-            stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.errors')
+
+            stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.errors');
         });
 
     return $server;
