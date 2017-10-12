@@ -89,6 +89,8 @@ sub get_data {
 
         return $data if !exists($params->{req_id}) or $data->{req_id} == $params->{req_id};
     }
+
+    return;
 }
 
 1;
