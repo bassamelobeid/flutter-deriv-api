@@ -294,7 +294,7 @@ sub cache_daily_turnover {
 
     # when month changes
     if ($pricing_date->day_of_month == 1 and $pricing_date->hour < 3) {
-        my $redis_time = Cache::RedisDB->keys($cache_prefix);
+        my $redis_time = Cache::RedisDB->keys($cache_prefix); ## no critic (DeprecatedFeatures)
         my @prev_month;
         my $latest_prev;
 
