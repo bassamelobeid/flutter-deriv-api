@@ -1053,18 +1053,25 @@ sub audit_details {
 sub _get_tick_details {
     my ($self, $args) = @_;
 
-    my $interval    = 5;                                 # look back & forward 5 ticks
     my $epoch       = $args->{requested_epoch}{value};
     my $epoch_name  = $args->{requested_epoch}{name};
     my $quote       = $args->{quote}{value};
     my $quote_epoch = $args->{quote}{epoch};
     my $quote_name  = $args->{quote}{name};
 
-    my @ticks = reverse @{
-        $self->underlying->ticks_in_between_start_end({
-                start_time => $epoch - $interval,
-                end_time   => $epoch + $interval
+    # tick frequency is a problem here. Hence, using two calls to ensure we get
+    # the desired number of ticks if they are in the database.
+    my @ticks_before = reverse @{
+        $self->underlying->ticks_in_between_end_limit({
+                end_time => $epoch,
+                limit    => 3,
             })};
+    my @ticks_after = @{
+        $self->underlying->ticks_in_between_start_limit({
+                start_time => $epoch + 1,
+                limit      => 3,
+            })};
+    my @ticks = (@ticks_before, @ticks_after);
 
     my @details;
     for (my $i = 0; $i <= $#ticks; $i++) {
