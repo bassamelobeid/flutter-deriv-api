@@ -1014,8 +1014,10 @@ sub audit_details {
     };
 
     # only contract_start audit details if contract is sold early.
+    return $details if $self->is_sold && $self->date_pricing->is_before($self->date_expiry);
+
     # no contract_end audit details if settlement conditions is not fulfilled.
-    return $details if $self->is_sold || !$self->is_settleable;
+    return $details unless $self->is_settleable;
 
     if ($self->is_path_dependent && $self->hit_tick) {
         my $hit_tick = $self->hit_tick;
