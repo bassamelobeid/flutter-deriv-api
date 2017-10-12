@@ -70,9 +70,9 @@ if (not defined $pid) {
         POSIX::close $fd;
     }
 
-    POSIX::open("/dev/null", &POSIX::O_RDONLY);    # stdin
-    POSIX::open("/dev/null", &POSIX::O_WRONLY);    # stdout
-    POSIX::open("/dev/null", &POSIX::O_WRONLY);    # stderr
+    POSIX::open("/dev/null", POSIX::O_RDONLY());    # stdin
+    POSIX::open("/dev/null", POSIX::O_WRONLY());    # stdout
+    POSIX::open("/dev/null", POSIX::O_WRONLY());    # stderr
 
     $0 = "fetch myaffiliate payment info worker";  ## no critic (RequireLocalizedPunctuationVars)
     POSIX::setsid;
