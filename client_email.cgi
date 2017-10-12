@@ -90,6 +90,7 @@ if ($email ne $new_email) {
         $user->save;
 
         foreach my $lid ($user->loginid) {
+            next unless $lid->loginid !~ /^MT\d+$/;
             my $client_obj = Client::Account->new({loginid => $lid->loginid});
             $client_obj->email($new_email);
             $client_obj->save;
