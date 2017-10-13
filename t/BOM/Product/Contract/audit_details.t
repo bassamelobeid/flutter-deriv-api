@@ -79,17 +79,8 @@ subtest 'no tick at start & expiry' => sub {
 subtest 'expiry daily' => sub {
     my $expiry = $now->truncate_to_day->plus_time_interval('23h59m59s');
     my @before = map { [100 + 0.001 * $_, $now->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
-    create_ticks(@before);
-    my $mocked_u = Test::MockModule->new('Quant::Framework::Underlying');
-    $mocked_u->mock(
-        'closing_tick_on',
-        sub {
-            return Postgres::FeedDB::Spot::Tick->new({
-                underlying => 'frxUSJDPY',
-                quote      => 100,
-                epoch      => $expiry->epoch
-            });
-        });
+    my @after = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
+    create_ticks(@before, @after);
     my $c = produce_contract({
         %$args,
         date_pricing => $expiry,
@@ -100,7 +91,7 @@ subtest 'expiry daily' => sub {
     ok $c->is_valid_exit_tick, 'contract has valid exit tick';
     ok $c->expiry_daily,       'expiry daily contract';
     my $expected = from_json(
-        '{"contract_start":[{"epoch":"1507593598","tick":"99.998"},{"epoch":"1507593599","tick":"99.999"},{"epoch":"1507593600","name":["Start Time"]},{"epoch":"1507593601","name":["Entry Spot"],"tick":"100.001"},{"epoch":"1507593602","tick":"100.002"}],"contract_end":[{"epoch":"1507679999","name":["Closing Spot"],"tick":"100.000"}]}'
+        '{"contract_start":[{"epoch":"1507593598","tick":"99.998"},{"epoch":"1507593599","tick":"99.999"},{"epoch":"1507593600","name":["Start Time"]},{"epoch":"1507593601","name":["Entry Spot"],"tick":"100.001"},{"epoch":"1507593602","tick":"100.002"},{"epoch":"1507679997","tick":"99.998"}],"contract_end":[{"epoch":"1507679999","name":["Closing Spot"],"tick":"99.999"}]}'
     );
     is_deeply($c->audit_details, $expected, 'audit details as expected');
 };
