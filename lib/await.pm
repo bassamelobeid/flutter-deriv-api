@@ -90,7 +90,7 @@ sub get_data {
 
         return $data if not exists($params->{req_id}) or $data->{req_id} == $params->{req_id};
 
-        note "skipping message $msg";
+        note "We're looking for this req_id: " . $params->{req_id} . ", skipping $msg";
     }
 
     return;
