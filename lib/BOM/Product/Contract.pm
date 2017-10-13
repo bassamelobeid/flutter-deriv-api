@@ -69,7 +69,8 @@ UNITCHECK {
     use BOM::Product::Pricing::Greeks::BlackScholes;
 }
 
-my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+my $ERROR_MAPPING   = BOM::Product::Static::get_error_mapping();
+my $GENERIC_MAPPING = BOM::Product::Static::get_generic_mapping();
 
 =head1 ATTRIBUTES - Construction
 
@@ -473,7 +474,7 @@ sub longcode {
     my $description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
     my @longcode = ($description, $self->currency, formatnumber('price', $self->currency, $self->payout), $self->underlying->display_name);
 
-    my ($when_end, $when_start, $generic_mapping) = ([], [], BOM::Product::Static::get_generic_mapping());
+    my ($when_end, $when_start, $generic_mapping) = ([], [], $GENERIC_MAPPING);
     if ($expiry_type eq 'intraday_fixed_expiry') {
         $when_end = [$self->date_expiry->datetime . ' GMT'];
     } elsif ($expiry_type eq 'intraday') {
@@ -987,6 +988,123 @@ sub pricing_details {
     }
 
     return \@comment_fields;
+}
+
+sub audit_details {
+    my $self = shift;
+
+    # If there's no entry tick, practically the contract hasn't started.
+    return {} unless $self->entry_tick;
+
+    my $start_epoch  = $self->date_start->epoch;
+    my $expiry_epoch = $self->date_expiry->epoch;
+
+    my $details = {
+        contract_start => $self->_get_tick_details({
+                requested_epoch => {
+                    value => $start_epoch,
+                    name  => [$GENERIC_MAPPING->{start_time}],
+                },
+                quote => {
+                    value => $self->entry_tick->quote,
+                    epoch => $self->entry_tick->epoch,
+                    name  => [$GENERIC_MAPPING->{entry_spot_cap}],
+                }}
+        ),
+    };
+
+    # only contract_start audit details if contract is sold early.
+    # path dependent could hit early, we will check if it is sold early or hit in the next condition.
+    return $details if $self->is_sold && !$self->is_path_dependent && $self->date_pricing->is_before($self->date_expiry);
+
+    # no contract_end audit details if settlement conditions is not fulfilled.
+    return $details unless $self->is_settleable;
+
+    if ($self->is_path_dependent && $self->hit_tick) {
+        my $hit_tick = $self->hit_tick;
+        $details->{contract_end} = [{
+                epoch => $hit_tick->epoch,
+                tick  => $self->underlying->pipsized_value($hit_tick->quote),
+                name  => [$GENERIC_MAPPING->{exit_spot}],
+            }];
+    } elsif ($self->expiry_daily) {
+        my $closing_tick = $self->underlying->closing_tick_on($self->date_expiry->date);
+        $details->{contract_end} = [{
+                epoch => $closing_tick->epoch,
+                tick  => $self->underlying->pipsized_value($closing_tick->quote),
+                name  => [$GENERIC_MAPPING->{closing_spot}],
+            }];
+    } else {
+        $details->{contract_end} = $self->_get_tick_details({
+                requested_epoch => {
+                    value => $expiry_epoch,
+                    name  => [$GENERIC_MAPPING->{end_time}],
+                },
+                quote => {
+                    value => $self->exit_tick->quote,
+                    epoch => $self->exit_tick->epoch,
+                    name  => [$GENERIC_MAPPING->{exit_spot}],
+                }});
+    }
+
+    return $details;
+}
+
+sub _get_tick_details {
+    my ($self, $args) = @_;
+
+    my $epoch       = $args->{requested_epoch}{value};
+    my $epoch_name  = $args->{requested_epoch}{name};
+    my $quote       = $args->{quote}{value};
+    my $quote_epoch = $args->{quote}{epoch};
+    my $quote_name  = $args->{quote}{name};
+
+    # tick frequency is a problem here. Hence, using two calls to ensure we get
+    # the desired number of ticks if they are in the database.
+    my @ticks_before = reverse @{
+        $self->underlying->ticks_in_between_end_limit({
+                end_time => $epoch,
+                limit    => 3,
+            })};
+    my @ticks_after = @{
+        $self->underlying->ticks_in_between_start_limit({
+                start_time => $epoch + 1,
+                limit      => 3,
+            })};
+    my @ticks = (@ticks_before, @ticks_after);
+
+    my @details;
+    for (my $i = 0; $i <= $#ticks; $i++) {
+        my $t  = $ticks[$i];
+        my $t2 = $ticks[$i + 1];
+
+        my $t_details = {
+            epoch => $t->epoch,
+            tick  => $self->underlying->pipsized_value($t->quote),
+        };
+        if ($t->quote == $quote) {
+            if ($t->epoch == $epoch) {
+                $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $epoch_name->[0], $quote_name->[0]];
+            } elsif ($t->epoch == $quote_epoch) {
+                $t_details->{name} = $quote_name;
+            }
+        } elsif ($t->epoch == $epoch) {
+            $t_details->{name} = $epoch_name;
+        }
+
+        push @details, $t_details;
+
+        # if there's no tick on start or end time.
+        if ((!$t2 && $epoch > $t->epoch) || ($epoch > $t->epoch && $epoch < $t2->epoch)) {
+            push @details,
+                +{
+                name  => $epoch_name,
+                epoch => $epoch
+                };
+        }
+    }
+
+    return \@details;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
