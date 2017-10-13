@@ -89,6 +89,8 @@ sub get_data {
         my $data = decode_json($msg);
 
         return $data if not exists($params->{req_id}) or $data->{req_id} == $params->{req_id};
+
+        note "skipping message $msg";
     }
 
     return;
