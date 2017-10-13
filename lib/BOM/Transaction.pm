@@ -20,6 +20,7 @@ use Client::Account;
 use Finance::Asset::Market::Types;
 use Finance::Contract::Category;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
+use List::Util qw(min);
 
 use BOM::Platform::Config;
 use BOM::Platform::Runtime;
@@ -1256,6 +1257,11 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         -type              => 'LookbackOpenPositionLimitExceeded',
         -mesg              => 'Lookback open positions limit exceeded',
         -message_to_client => BOM::Platform::Context::localize('Lookback open positions limit exceeded.'),
+    ),
+    BI111 => Error::Base->cuss(
+        -type              => 'LookbackDailyTurnoverLimitExceeded',
+        -mesg              => 'Lookback daily turnover limit exceeded',
+        -message_to_client => BOM::Platform::Context::localize('Lookback daily turnover limit exceeded.'),
     ),
 );
 
