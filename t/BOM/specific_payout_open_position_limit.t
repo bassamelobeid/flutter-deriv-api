@@ -31,29 +31,25 @@ use Crypt::NamedKeys;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
 initialize_realtime_ticks_db();
-my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked->mock(
-    'get',
-    sub {
-        [map { {epoch => $_, quote => 100 + rand(0.1)} } (0 .. 80)];
-    });
+my $mocked = Test::MockModule->new('BOM::Product::Contract');
+$mocked->mock('pricing_vol', 0.1);
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol        => 'USD',
+        symbol        => $_,
         recorded_date => $now
-    });
+    }) for (qw(USD JPY JPY-USD));
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'randomindex',
+    'volsurface_delta',
     {
-        symbol => 'R_50',
-        date   => $now,
+        symbol        => 'frxUSDJPY',
+        recorded_date => $now,
     });
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
-    underlying => 'R_100',
+    underlying => 'frxUSDJPY',
 });
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
@@ -64,7 +60,7 @@ $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validatio
 
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
-subtest 'atm' => sub {
+subtest 'does not affect volidx' => sub {
     lives_ok {
         my $cl = create_client();
         top_up($cl, 'USD', 5000);
@@ -155,6 +151,103 @@ subtest 'atm' => sub {
             });
             $txn->buy;
         };
+
+        is $error, undef, 'exactly matching the limit ==> successful buy';
+    }
+    'survived';
+};
+
+subtest 'atm' => sub {
+    lives_ok {
+        my $cl = create_client();
+        top_up($cl, 'USD', 5000);
+        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        my $bal;
+        is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
+
+        note("setting  {open_positions_payout_per_symbol_limit}{atm} to 199.99");
+        BOM::Platform::Config::quants->{bet_limits}{open_positions_payout_per_symbol_limit}{atm}{USD} = 199.99;
+        my $contract = produce_contract({
+            underlying   => 'frxUSDJPY',
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            current_tick => $tick,
+            barrier      => 'S10P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            $txn->buy;
+        };
+
+        # this is to make sure non ATM contract will not affect ATM
+        is $error, undef, 'bought 1st non ATM contract without error';
+
+        # ATM contract
+        $contract = produce_contract({
+            underlying   => 'frxUSDJPY',
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => $contract->date_start,
+        });
+
+        $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            is $txn->buy, undef, 'bought 1st contract';
+
+            $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => $contract->date_start,
+            });
+            $txn->buy;
+        };
         SKIP: {
             is $error->get_type, 'ATM open position payout limitExceeded', 'error is ATM open position payout limitExceeded';
 
@@ -196,7 +289,7 @@ subtest 'atm' => sub {
 
             # non ATM is not affected
             $contract = produce_contract({
-                underlying   => 'R_100',
+                underlying   => 'frxUSDJPY',
                 bet_type     => 'CALL',
                 currency     => 'USD',
                 payout       => 100,
@@ -231,7 +324,7 @@ subtest 'non ATM - > 7 days open position payout limit' => sub {
         note("setting {open_positions_payout_per_symbol_limit}{non_atm}{more_than_seven_days} to 199.99");
         BOM::Platform::Config::quants->{bet_limits}{open_positions_payout_per_symbol_limit}{non_atm}{more_than_seven_days}{USD} = 199.99;
         my $contract = produce_contract({
-            underlying   => 'R_100',
+            underlying   => 'frxUSDJPY',
             bet_type     => 'CALL',
             currency     => 'USD',
             payout       => 100,
@@ -269,7 +362,7 @@ subtest 'non ATM - > 7 days open position payout limit' => sub {
 
         # non ATM
         $contract = produce_contract({
-            underlying   => 'R_100',
+            underlying   => 'frxUSDJPY',
             bet_type     => 'CALL',
             currency     => 'USD',
             payout       => 100,
@@ -353,7 +446,7 @@ subtest 'non ATM - > 7 days open position payout limit' => sub {
 
             # less than 7 days are not affected
             $contract = produce_contract({
-                underlying   => 'R_100',
+                underlying   => 'frxUSDJPY',
                 bet_type     => 'CALL',
                 currency     => 'USD',
                 payout       => 100,
@@ -388,7 +481,7 @@ subtest 'non ATM - < 7 days open position payout limit' => sub {
         note("setting {open_positions_payout_per_symbol_limit}{non_atm}{less_than_seven_days} to 199.99");
         BOM::Platform::Config::quants->{bet_limits}{open_positions_payout_per_symbol_limit}{non_atm}{less_than_seven_days}{USD} = 199.99;
         my $contract = produce_contract({
-            underlying   => 'R_100',
+            underlying   => 'frxUSDJPY',
             bet_type     => 'CALL',
             currency     => 'USD',
             payout       => 100,
@@ -426,7 +519,7 @@ subtest 'non ATM - < 7 days open position payout limit' => sub {
 
         # non ATM
         $contract = produce_contract({
-            underlying   => 'R_100',
+            underlying   => 'frxUSDJPY',
             bet_type     => 'CALL',
             currency     => 'USD',
             payout       => 100,
@@ -509,7 +602,7 @@ subtest 'non ATM - < 7 days open position payout limit' => sub {
 
             # more than 7 days are not affected
             $contract = produce_contract({
-                underlying   => 'R_100',
+                underlying   => 'frxUSDJPY',
                 bet_type     => 'CALL',
                 currency     => 'USD',
                 payout       => 100,
