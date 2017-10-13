@@ -1028,7 +1028,7 @@ sub audit_details {
                 name  => [$GENERIC_MAPPING->{exit_spot}],
             }];
     } elsif ($self->expiry_daily) {
-        my $closing_tick = $self->underlying->closing_tick_on($expiry_epoch);
+        my $closing_tick = $self->underlying->closing_tick_on($self->date_expiry->date);
         $details->{contract_end} = [{
                 epoch => $closing_tick->epoch,
                 tick  => $self->underlying->pipsized_value($closing_tick->quote),
