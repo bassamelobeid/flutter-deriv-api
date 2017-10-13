@@ -1,7 +1,10 @@
 package Binary::WebSocketAPI::v3::Instance::Redis;
+
 use strict;
 use warnings;
+
 no indirect;
+
 use YAML::XS qw| LoadFile |;
 use Exporter qw| import   |;
 use DataDog::DogStatsd::Helper qw| stats_inc stats_dec |;
@@ -23,6 +26,8 @@ my $instances = {
     shared_redis    => undef,
 };
 
+our @EXPORT_OK = (keys %$config, 'check_connections');
+
 sub instances {
     return $instances;
 }
@@ -41,6 +46,7 @@ sub create {
         error      => sub {
             my ($self, $err) = @_;
             warn("Redis $name error: $err");
+            stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.errors');
         });
 
     return $server;
@@ -140,7 +146,5 @@ sub shared_redis {
     $instances->{$name}{shared_info} = {};
     return $instances->{$name};
 }
-
-our @EXPORT_OK = (keys %$config, 'check_connections');
 
 1;
