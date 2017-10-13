@@ -425,7 +425,8 @@ sub calculate_limits {
         my @specific_turnover_limits = $rp->get_turnover_limit_parameters(\@cl_rp);
         my @limits_arr               = map { $_->{limit} } @{$specific_turnover_limits[0]};
         my $min_limits               = min(@limits_arr);
-        $limits{ookback_specific_turnover} = $min_limits if defined $min_limits;
+        $limits{lookback_specific_turnover} = $min_limits if defined $min_limits;
+        delete $limits{specific_turnover_limits};
     }
 
     return \%limits;
