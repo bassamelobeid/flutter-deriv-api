@@ -421,6 +421,13 @@ sub calculate_limits {
     my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
     push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
 
+    if (not $contract->is_binary) {
+        my @specific_turnover_limits = $rp->get_turnover_limit_parameters(\@cl_rp);
+        my @limits_arr               = map { $_->{limit} } @{$specific_turnover_limits[0]};
+        my $min_limits               = min(@limits_arr);
+        $limits{ookback_specific_turnover} = $min_limits if defined $min_limits;
+    }
+
     return \%limits;
 }
 
