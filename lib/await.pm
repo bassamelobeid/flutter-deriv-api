@@ -66,7 +66,8 @@ sub AUTOLOAD {
     return unless ref $self;
     my ($goal_msg) = ($AUTOLOAD =~ /::([^:]+)/);
 
-    my $req_id = exists($payload->{req_id}) ? {req_id => $payload->{req_id}} : {};
+    my $req_id = {};
+    $req_id->{req_id} = $payload->{req_id} if ref($payload) eq 'HASH' and exists($payload->{req_id});
 
     return wsapi_wait_for(
         $self,
