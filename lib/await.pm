@@ -17,7 +17,7 @@ Working with Test::Mojo based tests
 
 =cut
 
-our $req_id = 0;
+our $req_id = 999999;    # desparately trying to avoid conflicts
 
 sub wsapi_wait_for {
     my ($t, $wait_for, $action_sub, $params, $messages_without_accidens) = @_;
@@ -70,13 +70,16 @@ sub AUTOLOAD {
 
     $req_id += 1;
 
+    my $payload_with_req_id = {%{$payload}};
+    $payload_with_req_id->{req_id} //= $req_id;
+
     return wsapi_wait_for(
         $self,
         $goal_msg,
         sub {
-            $self->send_ok({json => {%{$payload}, req_id => $req_id}}) if $payload;
+            $self->send_ok({json => $payload_with_req_id}) if $payload;
         },
-        {%{$params}, req_id => $req_id},
+        {%{$params}, req_id => $payload_with_req_id->{req_id}},
     );
 }
 
