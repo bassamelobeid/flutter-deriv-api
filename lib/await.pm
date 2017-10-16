@@ -93,7 +93,7 @@ sub get_data {
         note "We're looking for this req_id: " . $params->{req_id} . ", skipping $msg";
     }
 
-    return;
+    return undef;
 }
 
 1;
