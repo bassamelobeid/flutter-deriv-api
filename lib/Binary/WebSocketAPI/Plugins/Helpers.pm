@@ -9,6 +9,7 @@ use feature "state";
 use Sys::Hostname;
 use Scalar::Util ();
 use IO::Async::Loop::Mojo;
+use curry;
 
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
@@ -119,21 +120,10 @@ sub register {
             };
         });
 
-    for my $redis_name (qw| ws_redis_master ws_redis_slave redis_pricer shared_redis |) {
+    for my $redis_name (qw(ws_redis_master ws_redis_slave redis_pricer shared_redis)) {
         $app->helper(
             $redis_name => sub {
-                my $c = shift;
-                return $c->stash($redis_name) if $c->stash($redis_name);
-
-                my $redis = Binary::WebSocketAPI::v3::Instance::Redis->$redis_name();
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        warn("Redis $redis_name error: $err");
-                        $app->stat->{redis_errors}++;
-                    });
-                $c->stash($redis_name => $redis);
-                return $c->stash($redis_name) if $c->stash($redis_name);
+                return Binary::WebSocketAPI::v3::Instance::Redis->$redis_name;
             });
     }
 
