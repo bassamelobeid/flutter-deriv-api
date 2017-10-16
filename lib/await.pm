@@ -69,10 +69,10 @@ sub AUTOLOAD {
 
     $req_id += 1;
 
-    my $payload_copy = $payload ? {%{$payload}} : undef;
-    my $params_copy  = $params  ? {%{$params}}  : {};
+    my $payload_copy = ref $payload eq 'HASH' ? {%{$payload}} : $payload;
+    my $params_copy = $params ? {%{$params}} : {};
 
-    if ($payload_copy) {
+    if (ref $payload_copy eq 'HASH') {
         $payload_copy->{req_id} //= $req_id;
         $params_copy->{req_id} = $payload_copy->{req_id};
     }
