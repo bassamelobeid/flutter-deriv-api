@@ -94,7 +94,7 @@ subtest "Create Subscribes" => sub {
         if ($i == $subs_count) {
             is(scalar keys %{$c->pricing_subscriptions()}, 1, "One subscription by few clients");
             $channel = [keys %{$c->pricing_subscriptions()}]->[0];
-            is(refcount($c->pricing_subscriptions()->{$channel}), 1, "check refcount");
+            is(refcount($c->pricing_subscriptions()->{$channel}), $subs_count, "check refcount");
         }
     }
 
