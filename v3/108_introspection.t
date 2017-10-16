@@ -168,11 +168,8 @@ my %contract = (
     "subscribe"     => 1,
 );
 
-my $req_id = 0;
-
 $t->await::proposal({
-    proposal => 1,
-    req_id   => ++$req_id,
+    "proposal" => 1,
     %contract
 });
 
@@ -212,12 +209,9 @@ SKIP: {
         sub do_proposal {
             my $expected_err = shift;
             my $res          = $t->await::proposal({
-                proposal => 1,
-                req_id   => ++$req_id,
+                "proposal" => 1,
                 %contract
             });
-
-            return do_proposal($expected_err) if $res->{req_id} != $req_id;
             is $res->{error}{message}, $expected_err, 'got expected error for proposal call';
         }
 
@@ -235,10 +229,7 @@ SKIP: {
         $intro_conn = send_introspection_cmd('connections');
         cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 2, 'now 2 price subscription';
 
-        $t->await::forget_all({
-            forget_all => 'proposal',
-            req_id     => ++$req_id,
-        });
+        $t->await::forget_all({forget_all => 'proposal'});
         $intro_conn = send_introspection_cmd('connections');
         cmp_ok $intro_conn->{connections}[0]{pricer_subscription_count}, '==', 0, 'no more price subscription';
     };
