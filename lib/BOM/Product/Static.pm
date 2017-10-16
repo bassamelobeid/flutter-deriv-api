@@ -153,6 +153,13 @@ my $config = {
         entry_spot_plus         => 'entry spot plus [_1]',
         entry_spot_plus_plural  => 'entry spot plus [plural,_1,%d pip, %d pips]',
         first_tick              => 'first tick',
+        # use it audit details
+        start_time     => 'Start Time',
+        end_time       => 'End Time',
+        exit_spot      => 'Exit Spot',
+        entry_spot_cap => 'Entry Spot',
+        closing_spot   => 'Closing Spot',
+        time_and_spot  => '[_1] and [_2]',
     },
 };
 
