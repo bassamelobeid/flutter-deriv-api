@@ -18,6 +18,7 @@ Working with Test::Mojo based tests
 =cut
 
 our $req_id = 999999;    # desparately trying to avoid conflicts
+note "non-matched messages are silently dropped. Please, set BINARY_AWAIT_DEBUG=1 to see all messages (including skipped ones) in the test";
 
 sub wsapi_wait_for {
     my ($t, $wait_for, $action_sub, $params, $messages_without_accidens) = @_;
@@ -99,7 +100,7 @@ sub get_data {
 
         return $data if not exists($params->{req_id}) or $data->{req_id} == $params->{req_id};
 
-        note "We're looking for this req_id: " . $params->{req_id} . ", skipping $msg";
+        note "We're looking for this req_id: " . $params->{req_id} . ", skipping $msg" if $ENV{BINARY_AWAIT_DEBUG};
     }
 
     return undef;
