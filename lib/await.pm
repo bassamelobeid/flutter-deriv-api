@@ -74,10 +74,7 @@ sub AUTOLOAD {
         $self,
         $goal_msg,
         sub {
-            $self->send_ok({
-                    json => {
-                        req_id => $req_id,
-                        %{$payload}}}) if $payload;
+            $self->send_ok({json => {%{$payload}, req_id => $req_id}}) if $payload;
         },
         {%{$params}, req_id => $req_id},
     );
