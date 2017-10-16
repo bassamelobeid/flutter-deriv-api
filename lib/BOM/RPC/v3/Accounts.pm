@@ -136,10 +136,10 @@ sub statement {
     my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
 
     my %translation = (
-        buy        => localize('buy'),
-        sell       => localize('sell'),
-        deposit    => localize('deposit'),
-        withdrawal => localize('withdrawal'),
+        buy        => localize('Buy'),
+        sell       => localize('Sell'),
+        deposit    => localize('Deposit'),
+        withdrawal => localize('Withdrawal'),
     );
 
     my @txns;
