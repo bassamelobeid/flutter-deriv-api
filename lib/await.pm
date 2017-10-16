@@ -17,6 +17,8 @@ Working with Test::Mojo based tests
 
 =cut
 
+our $req_id = 0;
+
 sub wsapi_wait_for {
     my ($t, $wait_for, $action_sub, $params, $messages_without_accidens) = @_;
     $params //= {};
@@ -66,16 +68,18 @@ sub AUTOLOAD {
     return unless ref $self;
     my ($goal_msg) = ($AUTOLOAD =~ /::([^:]+)/);
 
-    my $req_id = {};
-    $req_id->{req_id} = $payload->{req_id} if ref($payload) eq 'HASH' and exists($payload->{req_id});
+    $req_id += 1;
 
     return wsapi_wait_for(
         $self,
         $goal_msg,
         sub {
-            $self->send_ok({json => $payload}) if $payload;
+            $self->send_ok({
+                    json => {
+                        req_id => $req_id,
+                        %{$payload}}}) if $payload;
         },
-        {%{$params}, %{$req_id}},
+        {%{$params}, req_id => $req_id},
     );
 }
 
