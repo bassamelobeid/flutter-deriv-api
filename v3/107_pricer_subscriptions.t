@@ -85,15 +85,9 @@ subtest "Create Subscribes" => sub {
         $t->tx->on(
             message => sub {
                 my ($tx, $msg) = @_;
-
                 test_schema('proposal', decode_json $msg );
 
                 $user_first->{$tx->req->cookie('user')->value} = 1;
-                if ($i == $subs_count) {
-                    is(scalar keys %{$c->pricing_subscriptions()}, 1, "One subscription by few clients");
-                    $channel = [keys %{$c->pricing_subscriptions()}]->[0];
-                    is(refcount($c->pricing_subscriptions()->{$channel}), 1, "check refcount");
-                }
             });
 
         $t->await::proposal({
@@ -101,6 +95,12 @@ subtest "Create Subscribes" => sub {
             req_id   => ++$req_id,
             %contractParameters
         });
+
+        if ($i == $subs_count) {
+            is(scalar keys %{$c->pricing_subscriptions()}, 1, "One subscription by few clients");
+            $channel = [keys %{$c->pricing_subscriptions()}]->[0];
+            is(refcount($c->pricing_subscriptions()->{$channel}), 1, "check refcount");
+        }
     }
 
     cmp_ok(keys %$user_first, '==', 3, "3 subscription created ok");
