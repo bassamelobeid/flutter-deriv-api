@@ -48,7 +48,9 @@ subtest "Born and die" => sub {
         req_id   => ++$req_id,
         %contractParameters
     });
+
     my ($c) = values $t->app->active_connections;
+
     is(scalar keys %{$c->pricing_subscriptions()}, 1, "Subscription created");
     $channel = [keys %{$c->pricing_subscriptions()}]->[0];
     is(refcount($c->pricing_subscriptions()->{$channel}), 1, "check refcount");
