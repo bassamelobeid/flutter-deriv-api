@@ -13,8 +13,6 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 use await;
 
-my $subs_count = 3;
-
 build_test_R_50_data();
 
 my $test_server = build_mojo_test('Binary::WebSocketAPI', {app_id => 1});
@@ -50,16 +48,17 @@ subtest "Born and die" => sub {
         req_id   => ++$req_id,
         %contractParameters
     });
-    is(scalar keys %{$test_server->app->pricing_subscriptions()}, 1, "Subscription created");
-    $channel = [keys %{$test_server->app->pricing_subscriptions()}]->[0];
-    is(refcount($test_server->app->pricing_subscriptions()->{$channel}), 1, "check refcount");
+    my ($c) = values $t->app->active_connections;
+    is(scalar keys %{$c->pricing_subscriptions()}, 1, "Subscription created");
+    $channel = [keys %{$c->pricing_subscriptions()}]->[0];
+    is(refcount($c->pricing_subscriptions()->{$channel}), 1, "check refcount");
     ok(redis_pricer->get($channel), "check redis subscription");
     $t->await::forget_all({
         forget_all => 'proposal',
         req_id     => ++$req_id,
     });
 
-    is($test_server->app->pricing_subscriptions()->{$channel}, undef, "Killed");
+    is($c->pricing_subscriptions()->{$channel}, undef, "Killed");
     ### Mojo::Redis2 has not method PUBSUB
     SKIP: {
         skip 'Provide test access to pricing cycle so we can confirm that the subscription is cleaned up', 1;
@@ -71,29 +70,31 @@ subtest "Born and die" => sub {
 
 subtest "Create Subscribes" => sub {
 
-    my $callback = sub {
-        my ($tx, $msg) = @_;
-
-        test_schema('proposal', decode_json $msg );
-
-        $user_first->{$tx->req->cookie('user')->value} = 1;
-        if (--$subs_count == 0) {
-            is(scalar keys %{$test_server->app->pricing_subscriptions()}, 1, "One subscription by few clients");
-            $channel = [keys %{$test_server->app->pricing_subscriptions()}]->[0];
-            is(refcount($test_server->app->pricing_subscriptions()->{$channel}), 3, "check refcount");
-        }
-    };
+    my $subs_count = 3;
 
     my @connections;
-    for my $i (0 .. $subs_count - 1) {
+    for my $i (1 .. $subs_count) {
         my $t = $test_server->websocket_ok($url => {});
+        my ($c) = values $t->app->active_connections;
         push @connections, $t;
 
         $t->tx->req->cookies({
                 name  => 'user',
                 value => ('#' . $i)});
 
-        $t->tx->on(message => $callback);
+        $t->tx->on(
+            message => sub {
+                my ($tx, $msg) = @_;
+
+                test_schema('proposal', decode_json $msg );
+
+                $user_first->{$tx->req->cookie('user')->value} = 1;
+                if ($i == $subs_count) {
+                    is(scalar keys %{$c->pricing_subscriptions()}, 1, "One subscription by few clients");
+                    $channel = [keys %{$c->pricing_subscriptions()}]->[0];
+                    is(refcount($c->pricing_subscriptions()->{$channel}), 1, "check refcount");
+                }
+            });
 
         $t->await::proposal({
             proposal => 1,
