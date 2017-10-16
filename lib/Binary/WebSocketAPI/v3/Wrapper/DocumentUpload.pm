@@ -290,12 +290,12 @@ sub add_upload_future {
     my ($first_pending_future) = grep { not($received_chunk and $_->is_ready) } @{$pending_futures};
 
     my $upload_future = $first_pending_future || $c->loop->new_future;
-    push $pending_futures, $upload_future;
+    push @{$pending_futures}, $upload_future;
 
     if ($received_chunk) {
         $upload_future->done($received_chunk);
     } else {
-        $upload_future->on_ready(sub { shift $pending_futures });
+        $upload_future->on_ready(sub { shift @{$pending_futures} });
     }
 
     return $upload_future;
