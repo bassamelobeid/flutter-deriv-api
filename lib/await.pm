@@ -63,23 +63,28 @@ our $AUTOLOAD;
 
 sub AUTOLOAD {
     my ($self, $payload, $params) = @_;
-    $params //= {};
 
     return unless ref $self;
-    my ($goal_msg) = ($AUTOLOAD =~ /::([^:]+)/);
 
     $req_id += 1;
 
-    my $payload_with_req_id = {%{$payload}};
-    $payload_with_req_id->{req_id} //= $req_id;
+    my $payload_copy = $payload ? {%{$payload}} : undef;
+    my $params_copy  = $params  ? {%{$params}}  : {};
+
+    if ($payload_copy) {
+        $payload_copy->{req_id} //= $req_id;
+        $params_copy->{req_id} = $payload_copy->{req_id};
+    }
+
+    my ($goal_msg) = ($AUTOLOAD =~ /::([^:]+)/);
 
     return wsapi_wait_for(
         $self,
         $goal_msg,
         sub {
-            $self->send_ok({json => $payload_with_req_id}) if $payload;
+            $self->send_ok({json => $payload_copy}) if $payload_copy;
         },
-        {%{$params}, req_id => $payload_with_req_id->{req_id}},
+        $params_copy,
     );
 }
 
