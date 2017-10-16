@@ -241,7 +241,8 @@ subtest 'general_open_position_payout', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_validation->mock('_validate_stake_limit', sub {note "mocked Transaction::Validation->_validate_stake_limit returning nothing"; ()});
+            $mock_validation->mock('_validate_stake_limit',
+                sub { note "mocked Transaction::Validation->_validate_stake_limit returning nothing"; () });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -264,7 +265,7 @@ subtest 'general_open_position_payout', sub {
             is $error->get_type, 'CompanyWideLimitExceeded', 'error is CompanyWideLimitExceeded';
 
             is $error->{-message_to_client}, 'No further trading is allowed for the current trading session.', 'message_to_client';
-            is $error->{-mesg},              'company-wide risk limit reached',   'mesg';
+            is $error->{-mesg}, 'company-wide risk limit reached', 'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
