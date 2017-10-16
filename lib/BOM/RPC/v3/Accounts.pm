@@ -143,7 +143,7 @@ sub statement {
     );
 
     my @txns;
-    foreach my $txn (@$results) {
+    for my $txn (@$results) {
         my $struct = {
             transaction_id => $txn->{id},
             reference_id   => $txn->{buy_tr_id},
