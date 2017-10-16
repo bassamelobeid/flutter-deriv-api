@@ -1,14 +1,13 @@
 package BOM::Database::ClientDB;
 
-use Moose;
-use feature "state";
-use BOM::Database::Rose::DB;
-use File::ShareDir;
-use YAML::XS qw(LoadFile);
-use JSON::XS;
-use LandingCompany::Registry;
-
 use Carp;
+use Moose;
+use File::ShareDir;
+use JSON::MaybeXS;
+use LandingCompany::Registry;
+use YAML::XS qw(LoadFile);
+
+use BOM::Database::Rose::DB;
 
 has broker_code => (
     is  => 'rw',
@@ -114,6 +113,8 @@ sub _cached_db {
 
     return $db;
 }
+
+my $decoder = JSON::MaybeXS->new;
 # this will help in calling functions in DB.
 # result must be always rows of JSON
 sub getall_arrayref {
@@ -125,8 +126,7 @@ sub getall_arrayref {
             $sth->execute(@$params);
             return $sth->fetchall_arrayref([0]);
         });
-
-    my @result = map { JSON::XS::decode_json($_->[0]) } @$result;
+    my @result = map { $decoder->decode($_->[0]) } @$result;
     return \@result;
 }
 
