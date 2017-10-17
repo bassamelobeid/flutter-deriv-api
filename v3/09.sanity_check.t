@@ -9,28 +9,27 @@ use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
-use await;
 
 use utf8;
 
 my $t = build_wsapi_test();
 
-my $res = $t->await::sanity_check({ping => '௰'});
+my $res = request({ping => '௰'});
 is $res->{error}->{code}, 'SanityCheckFailed';
 ok ref($res->{echo_req}) eq 'HASH' && !keys %{$res->{echo_req}};
 test_schema('ping', $res);
 
 # undefs are fine for some values
-$t->await::ping({ping => {key => undef}});
+request({ping => {key => undef}});
 
-$res = $t->await::change_password({
+$res = request({
     change_password => 1,
     old_password    => '௰',
     new_password    => '௰'
 });
 ok $res->{error}->{code} ne 'SanityCheckFailed', 'Do not check value of password key';
 
-$res = $t->await::sanity_check({
+$res = request({
     change_password    => 1,
     '௰_old_password' => '௰',
     new_password       => '௰'
@@ -38,5 +37,7 @@ $res = $t->await::sanity_check({
 is $res->{error}->{code}, 'SanityCheckFailed', 'Should be failed if paswword key consist of non sanity symbols';
 
 $t->finish_ok;
+
+sub request { decode_json($t->send_ok({json => shift})->message_ok->message->[1]) }
 
 done_testing();
