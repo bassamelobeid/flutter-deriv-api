@@ -225,17 +225,32 @@ if ($view_action eq 'withdrawals') {
         currency => $currency,
     );
 
+    my $sth = $dbh->prepare('SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)');
+    $sth->execute($currency, $start_date->iso8601, $end_date->iso8601);
+    my $database_items = $sth->fetchall_hashref('address') or die 'failed to run ctc_bo_transactions_for_reconciliation';
     # First, we get a mapping from address to database transaction information
-    $recon->from_database_items(
-        $dbh->selectall_arrayref(
-            q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
-            {Slice => {}},
-            $currency, $start_date->iso8601, $end_date->iso8601
-            )
-            or die 'failed to run ctc_bo_transactions_for_reconciliation'
-    );
+    $recon->from_database_items([values %$database_items]);
 
     if ($currency eq 'ETH') {
+        my $filter = sub {
+            my ($transactions) = @_;
+            my @res = ();
+            foreach my $tran (@$transactions) {
+                my $loginid = $database_items->{$tran->{to_address}}->{client_loginid};
+                push @res,
+                    {
+                    account       => $loginid,
+                    label         => $loginid,
+                    confirmations => 3,
+                    address       => $tran->{to_address},
+                    amount        => $tran->{amount},
+                    time          => $tran->{tmstmp},
+                    txids         => [$tran->{transaction_hash}],
+                    };
+            }
+            return \@res;
+        };
+
         my $collectordb = BOM::Database::ClientDB->new({
                 broker_code => 'FOG',
                 operation   => 'collector',
@@ -250,7 +265,7 @@ if ($view_action eq 'withdrawals') {
                 $end_date->iso8601
             ))
         {
-            $recon->from_blockchain_deposits($deposits);
+            $recon->from_blockchain_deposits($filter->($deposits));
         } else {
             code_exit_BO('<p style="color:red;">Unable to request deposits from RPC</p>');
         }
@@ -264,7 +279,7 @@ if ($view_action eq 'withdrawals') {
                 $end_date->iso8601
             ))
         {
-            $recon->from_blockchain_withdrawals($withdrawals);
+            $recon->from_blockchain_withdrawals($filter->($withdrawals));
         } else {
             code_exit_BO('<p style="color:red;">Unable to request deposits from RPC</p>');
         }
