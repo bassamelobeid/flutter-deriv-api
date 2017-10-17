@@ -9,6 +9,7 @@ use List::MoreUtils qw(any);
 use Data::Password::Meter;
 use Format::Util::Numbers qw/formatnumber/;
 use JSON qw/encode_json/;
+use Email::Valid;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -110,8 +111,8 @@ sub request_email {
     if (!Email::Valid->address($email)) {
         
         return BOM::RPC::v3::Utility::create_error({
-            code                => 'Invalid Email',
-            message_to_client   => localize('This email address is invalid')
+            code                => 'InvalidEmail',
+            message_to_client   => localize('This email address is invalid.')
         });
         
     }
