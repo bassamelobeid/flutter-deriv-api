@@ -3,12 +3,14 @@ package BOM::DynamicSettings;
 use strict;
 use warnings;
 
-use BOM::Platform::Runtime;
-use HTML::Entities;
 use Data::Compare;
+use HTML::Entities;
 use JSON qw( from_json to_json );
-use Try::Tiny;
+use LandingCompany::Offerings qw(reinitialise_offerings);
 use Text::CSV;
+use Try::Tiny;
+
+use BOM::Platform::Runtime;
 
 sub get_all_settings_list {
     my $setting = shift;
@@ -22,6 +24,12 @@ sub textify_obj {
     my $type  = shift;
     my $value = shift;
     return ($type eq 'ArrayRef') ? join(',', @$value) : $value;
+}
+
+sub dynamic_save {
+    return 0 unless BOM::Platform::Runtime->instance->app_config->save_dynamic;
+    reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+    return 1;
 }
 
 sub save_settings {
@@ -81,10 +89,10 @@ sub save_settings {
 
             if ($has_errors) {
                 $message .= '<div id="error">NOT saving global settings due to data problems.</div>';
-            } elsif (not BOM::Platform::Runtime->instance->app_config->save_dynamic) {
+            } elsif (not dynamic_save()) {
                 $message .= '<div id="error">Could not save global settings to environment</div>';
             } else {
-                $message .= '<div id="saved">Saved global settings to environment</div>';
+                $message .= '<div id="saved">Saved global settings to environment, offerings updated</div>';
             }
         } else {
             $message .= "<div id=\"error\">Invalid 'submitted' value " . encode_entities($submitted) . "</div>";
