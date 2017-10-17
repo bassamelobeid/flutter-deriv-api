@@ -17,6 +17,9 @@ Working with Test::Mojo based tests
 
 =cut
 
+our $req_id = 999999;    # desparately trying to avoid conflicts
+note "non-matched messages are silently dropped. Please, set BINARY_AWAIT_DEBUG=1 to see all messages (including skipped ones) in the test";
+
 sub wsapi_wait_for {
     my ($t, $wait_for, $action_sub, $params, $messages_without_accidens) = @_;
     $params //= {};
@@ -40,10 +43,8 @@ sub wsapi_wait_for {
     $f->on_ready(sub { shift->loop->unwatch_time($id) });
 
     $action_sub->();
-    $t->message_ok;
-    my $msg = $t->message->[1];
 
-    my $data = decode_json($msg);
+    my $data = get_data($t, $params);
 
     if ($data->{msg_type} eq $wait_for or $data->{msg_type} eq 'error') {
         $f->done($data) if !$f->is_ready;
@@ -62,19 +63,47 @@ sub wsapi_wait_for {
 our $AUTOLOAD;
 
 sub AUTOLOAD {
-    my ($self, $params, $timeouts) = @_;
+    my ($self, $payload, $params) = @_;
 
     return unless ref $self;
+
+    $req_id += 1;
+
+    my $payload_copy = ref $payload eq 'HASH' ? {%{$payload}} : $payload;
+    my $params_copy = $params ? {%{$params}} : {};
+
+    if (ref $payload_copy eq 'HASH') {
+        $payload_copy->{req_id} //= $req_id;
+        $params_copy->{req_id} = $payload_copy->{req_id};
+    }
+
     my ($goal_msg) = ($AUTOLOAD =~ /::([^:]+)/);
 
     return wsapi_wait_for(
         $self,
         $goal_msg,
         sub {
-            $self->send_ok({json => $params}) if $params;
+            $self->send_ok({json => $payload_copy}) if $payload_copy;
         },
-        $timeouts
+        $params_copy,
     );
+}
+
+sub get_data {
+    my ($t, $params) = @_;
+    $params //= {};
+
+    while (1) {
+        $t = $t->message_ok;
+        my $msg  = $t->message->[1];
+        my $data = decode_json($msg);
+
+        return $data if not exists($params->{req_id}) or $data->{req_id} == $params->{req_id};
+
+        note "We're looking for this req_id: " . $params->{req_id} . ", skipping $msg" if $ENV{BINARY_AWAIT_DEBUG};
+    }
+
+    return undef;
 }
 
 1;
