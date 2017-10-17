@@ -107,14 +107,13 @@ sub new_account_virtual {
 
 sub request_email {
     my ($email, $args) = @_;
-    
+
     if (!Email::Valid->address($email)) {
-        
+
         return BOM::RPC::v3::Utility::create_error({
-            code                => 'InvalidEmail',
-            message_to_client   => localize('This email address is invalid.')
-        });
-        
+                code              => 'InvalidEmail',
+                message_to_client => localize('This email address is invalid.')});
+
     }
 
     my $subject = $args->{subject};
