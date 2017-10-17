@@ -5,24 +5,24 @@ package main;
 use strict;
 use warnings;
 
-use lib qw(/home/git/regentmarkets/bom-backoffice);
-use JSON qw(from_json to_json);
-use f_brokerincludeall;
-use List::Util qw(first);
-use Digest::MD5 qw(md5_hex);
 use Date::Utility;
+use Digest::MD5 qw(md5_hex);
 use HTML::Entities;
-
-use LandingCompany::Registry;
+use JSON qw(from_json to_json);
 use LandingCompany::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Registry;
+use List::Util qw(first);
+use f_brokerincludeall;
 
-use BOM::Platform::Runtime;
-use BOM::Platform::RiskProfile;
-use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Request qw(request);
+use BOM::Backoffice::Sysinit ();
+use BOM::DynamicSettings;
 use BOM::Platform::Config;
 use BOM::Platform::RiskProfile;
-use BOM::Backoffice::Sysinit ();
+use BOM::Platform::RiskProfile;
+use BOM::Platform::Runtime;
+
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -31,6 +31,7 @@ BrokerPresentation('Product Management');
 my $staff            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $r                = request();
 my $limit_profile    = BOM::Platform::Config::quants->{risk_profile};
+my $quants_config    = BOM::Platform::Runtime->instance->app_config->quants;
 my %known_profiles   = map { $_ => 1 } keys %$limit_profile;
 my %allowed_multiple = (
     market            => 1,
@@ -38,6 +39,8 @@ my %allowed_multiple = (
     underlying_symbol => 1,
     landing_company   => 1,
 );
+
+my $need_to_save = 0;
 
 if ($r->param('update_limit')) {
     my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
@@ -51,11 +54,10 @@ if ($r->param('update_limit')) {
         if (my $value = $r->param($key)) {
             if (first { $value =~ $_ } @{$known_values{$key}}) {
                 # we should not allow more than one value for risk_profile
-                die 'You could not specify multiple value for ' . $key if not $allowed_multiple{$key} and $value =~ /,/;
+                code_exit_BO('You could not specify multiple value for ' . $key) if not $allowed_multiple{$key} and $value =~ /,/;
                 $ref{$key} = $value;
             } else {
-                print "Unrecognized value[" . encode_entities($r->param($key)) . "] for $key. Nothing is updated!!";
-                code_exit_BO();
+                code_exit_BO("Unrecognized value[" . encode_entities($r->param($key)) . "] for $key. Nothing is updated!!");
             }
         }
     }
@@ -67,74 +69,67 @@ if ($r->param('update_limit')) {
     if (my $custom_name = $r->param('custom_name')) {
         $ref{name} = $custom_name;
     } elsif ($has_custom_conditions) {
-        print "Name is required";
-        code_exit_BO();
+        code_exit_BO('Name is required.');
     }
 
     my $p = $r->param('risk_profile');
     if ($p and $known_profiles{$p}) {
         $ref{risk_profile} = $p;
     } elsif ($has_custom_conditions) {
-        print "Unrecognize risk profile.";
-        code_exit_BO();
+        code_exit_BO('Unrecognize risk profile.');
     }
 
     if (my $id = $r->param('client_loginid')) {
-        my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
+        my $current = from_json($quants_config->custom_client_profiles);
         my $comment = $r->param('comment');
         $current->{$id}->{custom_limits}->{$uniq_key} = \%ref    if $has_custom_conditions;
         $current->{$id}->{reason}                     = $comment if $comment;
         $current->{$id}->{updated_by}                 = $staff;
         $current->{$id}->{updated_on}                 = Date::Utility->new->date;
-        BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
+        $quants_config->custom_client_profiles(to_json($current));
     } else {
-        my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles);
+        my $current = from_json($quants_config->custom_product_profiles);
         $ref{updated_by}      = $staff;
         $ref{updated_on}      = Date::Utility->new->date;
         $current->{$uniq_key} = \%ref;
-        BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($current));
+        $quants_config->custom_product_profiles(to_json($current));
     }
 
-    BOM::Platform::Runtime->instance->app_config->save_dynamic;
+    $need_to_save = 1;
 }
 
 if ($r->param('delete_limit')) {
     my $id = $r->param('id');
-    if (not $id) {
-        print "ID is required. Nothing is deleted.";
-        code_exit_BO();
-    }
+    code_exit_BO('ID is required. Nothing is deleted.') if not $id;
 
     if (my $client_loginid = $r->param('client_loginid')) {
-        my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
+        my $current = from_json($quants_config->custom_client_profiles);
         delete $current->{$client_loginid}->{custom_limits}->{$id};
-        BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
+        $quants_config->custom_client_profiles(to_json($current));
     } else {
-        my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles);
+        my $current = from_json($quants_config->custom_product_profiles);
         delete $current->{$id};
-        BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($current));
+        $quants_config->custom_product_profiles(to_json($current));
     }
-
-    BOM::Platform::Runtime->instance->app_config->save_dynamic;
+    $need_to_save = 1;
 }
 
 if ($r->param('delete_client')) {
     my $client_loginid = $r->param('client_loginid');
-    my $current        = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
+    my $current        = from_json($quants_config->custom_client_profiles);
     delete $current->{$client_loginid};
-    BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
-    BOM::Platform::Runtime->instance->app_config->save_dynamic;
+    $quants_config->custom_client_profiles(to_json($current));
+    $need_to_save = 1;
 }
 
 if ($r->param('update_otm')) {
-    my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold);
-    unless (($r->param('underlying_symbol') or $r->param('market')) and $r->param('otm_value')) {
-        die 'Must specify either underlying symbol/market and otm value to set custom OTM threshold';
-    }
+    code_exit_BO('Must specify either underlying symbol/market and otm value to set custom OTM threshold')
+        unless ($r->param('underlying_symbol') or $r->param('market'))
+        and $r->param('otm_value');
 
-    if ($r->param('otm_value') > 1) {
-        die 'Maximum value of OTM threshold is 1.';
-    }
+    code_exit_BO('Maximum value of OTM threshold is 1.') if $r->param('otm_value') > 1;
+
+    my $current = from_json($quants_config->custom_otm_threshold);
 
     # underlying symbol supercedes market
     my $which = $r->param('underlying_symbol') ? 'underlying_symbol' : 'market';
@@ -150,20 +145,22 @@ if ($r->param('update_otm')) {
             value => $r->param('otm_value'),
         };
     }
-    BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json($current));
-    BOM::Platform::Runtime->instance->app_config->save_dynamic;
+    $quants_config->custom_otm_threshold(to_json($current));
+    $need_to_save = 1;
 }
 
 if ($r->param('delete_otm')) {
-    my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold);
+    my $current = from_json($quants_config->custom_otm_threshold);
     unless ($r->param('otm_id')) {
-        die 'Please specify otm id to delete.';
+        code_exit_BO('Please specify otm id to delete.');
     }
 
     delete $current->{$r->param('otm_id')};
-    BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json($current));
-    BOM::Platform::Runtime->instance->app_config->save_dynamic;
+    $quants_config->custom_otm_threshold(to_json($current));
+    $need_to_save = 1;
 }
+
+BOM::DynamicSettings::dynamic_save() if $need_to_save;
 
 Bar("Limit Definitions");
 
@@ -179,8 +176,7 @@ BOM::Backoffice::Request::template->process(
 
 Bar("Existing limits");
 
-my $config        = BOM::Platform::Runtime->instance->app_config->quants;
-my $custom_limits = from_json($config->custom_product_profiles);
+my $custom_limits = from_json($quants_config->custom_product_profiles);
 
 my @output;
 foreach my $id (keys %$custom_limits) {
@@ -206,7 +202,7 @@ BOM::Backoffice::Request::template->process(
 
 Bar("Custom Client Limits");
 
-my $custom_client_limits = from_json($config->custom_client_profiles);
+my $custom_client_limits = from_json($quants_config->custom_client_profiles);
 
 my @client_output;
 foreach my $client_loginid (keys %$custom_client_limits) {
@@ -258,7 +254,7 @@ BOM::Backoffice::Request::template->process(
     'backoffice/update_otm_threshold.html.tt',
     {
         url             => request()->url_for('backoffice/quant/product_management.cgi'),
-        existing_custom => from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold),
+        existing_custom => from_json($quants_config->custom_otm_threshold),
     }) || die BOM::Backoffice::Request::template->error;
 
 code_exit_BO();
