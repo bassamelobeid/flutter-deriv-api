@@ -240,6 +240,7 @@ if ($view_action eq 'withdrawals') {
                 broker_code => 'FOG',
                 operation   => 'collector',
             })->db->dbh;
+
         if (
             my $deposits = $collectordb->selectall_arrayref(
                 q{SELECT * FROM cryptocurrency.bookkeeping WHERE currency_code = ? AND transaction_type = 'deposit' AND DATE_TRUNC('day', tmstmp) >= ? AND DATE_TRUNC('day', tmstmp) <= ?},
@@ -249,10 +250,11 @@ if ($view_action eq 'withdrawals') {
                 $end_date->iso8601
             ))
         {
-            $recon->from_blockchain_deposits($filter->($deposits));
+            $recon->from_blockchain_deposits($deposits);
         } else {
             code_exit_BO('<p style="color:red;">Unable to request deposits from RPC</p>');
         }
+
         if (
             my $withdrawals = $collectordb->selectall_arrayref(
                 q{SELECT * FROM cryptocurrency.bookkeeping WHERE currency_code = ? AND transaction_type = 'withdrawal' AND DATE_TRUNC('day', tmstmp) >= ? AND DATE_TRUNC('day', tmstmp) <= ?},
@@ -262,7 +264,7 @@ if ($view_action eq 'withdrawals') {
                 $end_date->iso8601
             ))
         {
-            $recon->from_blockchain_withdrawals($filter->($withdrawals));
+            $recon->from_blockchain_withdrawals($withdrawals);
         } else {
             code_exit_BO('<p style="color:red;">Unable to request deposits from RPC</p>');
         }
