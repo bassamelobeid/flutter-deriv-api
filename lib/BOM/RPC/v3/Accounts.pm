@@ -135,16 +135,30 @@ sub statement {
 
     my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
 
+    my %translation = (
+        buy        => localize('Buy'),
+        sell       => localize('Sell'),
+        deposit    => localize('Deposit'),
+        withdrawal => localize('Withdrawal'),
+    );
+
     my @txns;
-    foreach my $txn (@$results) {
+    for my $txn (@$results) {
         my $struct = {
             transaction_id => $txn->{id},
             reference_id   => $txn->{buy_tr_id},
             amount         => $txn->{amount},
-            action_type    => $txn->{action_type},
-            balance_after  => formatnumber('amount', $account->currency_code, $txn->{balance_after}),
-            contract_id    => $txn->{financial_market_bet_id},
-            payout         => $txn->{payout_price}};
+            # Translate according to known action types.
+            # Otherwise, log unknow so we can request translation
+            # for it in the weblate.
+            action_type => lc $translation{$txn->{action_type}} // do {
+                warn "No translation known for action_type " . $txn->{action_type};
+                $txn->{action_type};
+            },
+            balance_after => formatnumber('amount', $account->currency_code, $txn->{balance_after}),
+            contract_id   => $txn->{financial_market_bet_id},
+            payout        => $txn->{payout_price},
+        };
 
         my $txn_time;
         if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
@@ -186,7 +200,6 @@ sub statement {
             }
             $struct->{longcode} //= $txn->{payment_remark} // '';
         }
-
         push @txns, $struct;
     }
 
