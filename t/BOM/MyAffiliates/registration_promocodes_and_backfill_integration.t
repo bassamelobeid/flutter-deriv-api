@@ -1,3 +1,6 @@
+use strict;
+use warnings;
+
 use Test::MockTime qw( restore_time set_fixed_time );
 use Test::More skip_all => 'this functionality deprecated';
 use Test::MockModule;
