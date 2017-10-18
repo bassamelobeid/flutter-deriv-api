@@ -45,8 +45,14 @@ unless ($pid) {
     exit;
 }
 
-$t->await::tick({ticks => 'R_50'});
-my $res = $t->await::tick({ticks => 'R_50'});
+$t->await::tick({
+    ticks  => 'R_50',
+    req_id => 1
+});
+my $res = $t->await::tick({
+    ticks  => 'R_50',
+    req_id => 1
+});
 is $res->{error}->{code}, 'AlreadySubscribed';
 
 done_testing();
