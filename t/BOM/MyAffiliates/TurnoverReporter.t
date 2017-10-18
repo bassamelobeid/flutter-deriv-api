@@ -47,11 +47,12 @@ my @csv = BOM::MyAffiliates::TurnoverReporter->new->activity_for_date_as_csv('20
 ok scalar @csv, 'got some records';
 
 my @row = split ',', $csv[0];
-is $row[0], $client->loginid, 'got correct loginid';
+is $row[0], '2017-09-01', 'got correct transaction time';
+is $row[1], $client->loginid, 'got correct loginid';
 
-ok $row[1], 'has stake price';
-ok $row[2], 'has payout price';
-cmp_ok($row[3], '==', financialrounding('price', 'USD', ($row[1] / $row[2] * 100)), 'got proper probability');
-ok $row[4], 'has reference id';
+ok $row[2], 'has stake price';
+ok $row[3], 'has payout price';
+cmp_ok($row[4], '==', financialrounding('price', 'USD', ($row[2] / $row[3] * 100)), 'got proper probability');
+ok $row[5], 'has reference id';
 
 done_testing();
