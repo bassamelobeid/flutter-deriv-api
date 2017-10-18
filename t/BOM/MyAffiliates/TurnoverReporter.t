@@ -6,7 +6,7 @@ use Test::Warnings;
 use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::MyAffiliates::TurnoverReporter;
-use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::DataMapper::FinancialMarketBet;
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
