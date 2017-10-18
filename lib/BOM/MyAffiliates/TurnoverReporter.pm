@@ -34,9 +34,11 @@ use BOM::Database::DataMapper::MyAffiliates;
 
     $reporter->activity_for_date_as_csv('8-Sep-10');
 
-    Produce a nicely formatted CSV output adjusted into USD for the requested date formatted as follows:
+    Produce a nicely formatted CSV output adjusted into USD
+    for the requested date formatted as follows:
 
-    Date, Client loginid, Buy price (stake), payout price, probablity (stake/payout_price*100), contract reference id
+    Transaction date, Client loginid, Buy price (stake), payout price,
+    probablity (stake/payout_price*100), contract reference id
 
 =cut
 
@@ -57,21 +59,37 @@ sub activity_for_date_as_csv {
     foreach my $obj (@$activity) {
         $csv           = Text::CSV->new;
         @output_fields = (
+            # transaction date
+            Date::Utility->new($obj->[0])->date_yyyymmdd,
             # loginid
-            $obj->[0],
+            $obj->[1],
             # stake
-            financialrounding('price', 'USD', $obj->[1]),
-            # payout
             financialrounding('price', 'USD', $obj->[2]),
+            # payout
+            financialrounding('price', 'USD', $obj->[3]),
             # probability
-            $obj->[3],
+            $obj->[4],
             # contract reference id
-            $obj->[4]);
+            $obj->[5]);
         $csv->combine(@output_fields);
         push @output, $csv->string;
     }
 
     return @output;
+}
+
+=head2 get_headers_for_csv
+
+    BOM::MyAffiliates::TurnoverReporter::get_headers_for_csv
+
+    Headers for turnover csv
+
+=cut
+
+sub get_headers_for_csv {
+    my $csv = Text::CSV->new;
+    $csv->combine(qw/Date Loginid Stake PayoutPrice Probability ReferenceId/);
+    return $csv->string;
 }
 
 no Moose;
