@@ -275,11 +275,10 @@ if ($view_action eq 'withdrawals') {
 
         if (
             my $deposits = $collectordb->selectall_arrayref(
-                q{SELECT * FROM cryptocurrency.bookkeeping WHERE currency_code = ? AND transaction_type = 'deposit' AND DATE_TRUNC('day', tmstmp) >= ? AND DATE_TRUNC('day', tmstmp) <= ?},
+                q{SELECT * FROM cryptocurrency.get_bookkeeping_records(?, ?, ?, ?)},
                 {Slice => {}},
-                $currency,
-                $start_date->iso8601,
-                $end_date->iso8601
+                $currency, 'deposit', $start_date->date_yyyymmdd,
+                $end_date->date_yyyymmdd
             ))
         {
             $recon->from_blockchain_deposits($filter->($deposits));
@@ -289,11 +288,10 @@ if ($view_action eq 'withdrawals') {
 
         if (
             my $withdrawals = $collectordb->selectall_arrayref(
-                q{SELECT * FROM cryptocurrency.bookkeeping WHERE currency_code = ? AND transaction_type = 'withdrawal' AND DATE_TRUNC('day', tmstmp) >= ? AND DATE_TRUNC('day', tmstmp) <= ?},
+                q{SELECT * FROM cryptocurrency.get_bookkeeping_records(?, ?, ?, ?)},
                 {Slice => {}},
-                $currency,
-                $start_date->iso8601,
-                $end_date->iso8601
+                $currency, 'withdrawal', $start_date->date_yyyymmdd,
+                $end_date->date_yyyymmdd
             ))
         {
             $recon->from_blockchain_withdrawals($filter->($withdrawals));
