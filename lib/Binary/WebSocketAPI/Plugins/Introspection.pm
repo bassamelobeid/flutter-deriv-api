@@ -227,10 +227,10 @@ command connections => sub {
         for my $k (keys %{$_->pricing_subscriptions}) {
             ++$pc if defined $_->pricing_subscriptions->{$k};
         }
-        for my $k (keys($_->stash->{pricing_channel} || [])) {
+        for my $k (keys %{$_->stash->{pricing_channel} || {}}) {
             next if $k eq 'uuid';
             next if $k eq 'price_daemon_cmd';
-            $ch += scalar keys $_->stash->{pricing_channel}{$k};
+            $ch += scalar keys %{$_->stash->{pricing_channel}{$k}};
         }
         my $connection_info = {
             app_id                         => $_->stash->{source},
