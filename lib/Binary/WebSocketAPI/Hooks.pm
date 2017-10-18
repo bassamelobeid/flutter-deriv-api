@@ -327,7 +327,7 @@ sub check_useragent {
 sub _on_sanity_failed {
     my ($c) = @_;
     my $client_ip =
-        ($c->tx and $c->tx->req && $c->tx->req->headers->header('REMOTE_ADDR'))
+        ($c->tx && $c->tx->req && $c->tx->req->headers->header('REMOTE_ADDR'))
         ? $c->tx->req->headers->header('REMOTE_ADDR')
         : $c->client_ip;
 
