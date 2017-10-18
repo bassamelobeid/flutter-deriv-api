@@ -260,7 +260,7 @@ sub app_markup_details {
             {Slice => {}},
             $app_ids, $time_from, $time_to,
             $args->{offset}         || undef,
-            $args->{limit}          || undef,
+            $args->{limit}          || 1000,
             $args->{client_loginid} || undef,
             $args->{sort_fields}    || undef,
             $args->{sort}           || undef
