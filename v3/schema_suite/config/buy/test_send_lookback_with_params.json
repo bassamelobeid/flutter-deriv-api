@@ -2,8 +2,7 @@
   "buy": 1,
   "price": 19.56,
   "parameters": {
-    "unit": 10,
-    "basis": "payout",
+    "amount": 10,
     "contract_type": "LBFIXEDCALL",
     "currency": "USD",
     "symbol": "R_50",
