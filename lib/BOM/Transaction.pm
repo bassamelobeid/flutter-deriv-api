@@ -1437,7 +1437,7 @@ sub sell_expired_contracts {
                 @{$bet}{qw/sell_price sell_time/} = ($bet->{buy_price}, $now->db_timestamp);
                 $bet->{quantity} = 1;
                 $bet->{quantity} = $contract->unit if not $contract->is_binary;
-                
+
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
