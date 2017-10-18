@@ -231,24 +231,41 @@ if ($view_action eq 'withdrawals') {
     # First, we get a mapping from address to database transaction information
     $recon->from_database_items([values %$database_items]);
 
+    # TODO: once we move all currencies to our bookkeeping
+    # we need to remove this currency specific check
+    # and also this filtering of bookkeeping transaction to match
+    # reconciliation will be gone, as of now we want to release
+    # this and we will enhance later
     if ($currency eq 'ETH') {
         my $filter = sub {
             my ($transactions) = @_;
-            my @res = ();
+            my $res = {};
             foreach my $tran (@$transactions) {
                 my $loginid = $database_items->{$tran->{to_address}}->{client_loginid};
-                push @res,
-                    {
-                    account       => $loginid,
-                    label         => $loginid,
-                    confirmations => 3,
-                    address       => $tran->{to_address},
-                    amount        => $tran->{amount},
-                    time          => $tran->{tmstmp},
-                    txids         => [$tran->{transaction_hash}],
+
+                # if it already exists then it means multiple transactions
+                # were performed, so just update amount and add transaction ids
+                if (my $record = $res->{$tran->{to_address}}) {
+                    if ($tran->{transaction_type} eq 'deposit') {
+                        $res->{$tran->{to_address}}->{amount} += $tran->{amount};
+                    } else {
+                        # for withdrawal recon expect negative amount
+                        $res->{$tran->{to_address}}->{amount} -= $tran->{amount};
+                    }
+                    push @{$res->{$tran->{to_address}}->{txids}}, $tran->{transaction_hash};
+                } else {
+                    $res->{$tran->{to_address}} = {
+                        account       => $loginid,
+                        label         => $loginid,
+                        confirmations => 3,
+                        address       => $tran->{to_address},
+                        amount        => ($tran->{transaction_type} eq 'deposit' ? $tran->{amount} : -$tran->{amount}),
+                        time          => $tran->{tmstmp},
+                        txids         => [$tran->{transaction_hash}],
                     };
+                }
             }
-            return \@res;
+            return [values %$res];
         };
 
         my $collectordb = BOM::Database::ClientDB->new({
