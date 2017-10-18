@@ -71,6 +71,7 @@ lives_ok {
         bet => $higher_lower,
         db  => $connection_builder->db,
     });
+    $higher_lower_helper->bet_data->{quantity} = 1;
     $higher_lower_helper->buy_bet;
 
     $higher_lower_id = $higher_lower->financial_market_bet_open_record->id;
@@ -128,7 +129,7 @@ lives_ok {
         bet => $higher_lower,
         db  => $connection_builder->db,
     });
-
+    $higher_lower_helper->bet_data->{quantity} = 1;
     $higher_lower_helper->sell_bet() // die "Bet not sold";
 }
 'expect to sell';
