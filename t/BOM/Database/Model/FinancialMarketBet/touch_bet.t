@@ -158,8 +158,8 @@ lives_ok {
 is($touch_bet->financial_market_bet_open_record->account_id,        $account->id,       'account_id');
 is($touch_bet->financial_market_bet_open_record->underlying_symbol, $underlying_symbol, 'underlying_symbol');
 cmp_ok($touch_bet->financial_market_bet_open_record->payout_price, '==', financialrounding('amount', 'USD', $payout_price), 'payout_price');
-cmp_ok($touch_bet->financial_market_bet_open_record->buy_price, '==',    financialrounding('amount', 'USD', $buy_price),    'buy_price');
-cmp_ok($touch_bet->financial_market_bet_open_record->sell_price, '==',   financialrounding('amount', 'USD', $sell_price),   'sell_price');
+cmp_ok($touch_bet->financial_market_bet_open_record->buy_price,    '==', financialrounding('amount', 'USD', $buy_price),    'buy_price');
+cmp_ok($touch_bet->financial_market_bet_open_record->sell_price,   '==', financialrounding('amount', 'USD', $sell_price),   'sell_price');
 is($touch_bet->financial_market_bet_open_record->expiry_time, $expiry_time, 'expiry_time');
 is($touch_bet->financial_market_bet_open_record->is_expired,  $is_expired,  'is_expired');
 is($touch_bet->financial_market_bet_open_record->is_sold,     1,            'is_sold');

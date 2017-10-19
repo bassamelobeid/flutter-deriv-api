@@ -10,7 +10,7 @@ sub finish_request_cycle {
     my $self = shift;
 
     foreach my $entry ($self->db_cache_entries) {
-        my $db  = $entry->db;
+        my $db = $entry->db;
         next unless $db->has_dbh;
 
         my $dbh = $db->dbh;

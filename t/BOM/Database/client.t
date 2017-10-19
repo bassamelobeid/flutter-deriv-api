@@ -1,5 +1,7 @@
 use strict;
 use warnings;
+use utf8;
+
 use Test::More;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -39,5 +41,19 @@ cmp_ok($res, '>', 1, 'It finds duplicats even with extra space');
 $details->{first_name} = 'NAME NOT THERE';
 $res = BOM::Database::ClientDB->new({broker_code => 'CR'})->get_duplicate_client($details);
 cmp_ok($res, '==', 0, 'But it does not exists, it will return 0');
+
+subtest "unicode json in getall_arrayref" => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $client->first_name('Василий');
+    $client->last_name('Пупкин');
+    $client->date_of_birth('1932-09-07');
+    $client->save;
+    my $r = $clientdb->getall_arrayref("select json_build_object('f', first_name, 'l', last_name) from betonmarkets.client where first_name = ?", ['Василий']);
+    is $r->[0]->{f}, 'Василий';
+    is $r->[0]->{l}, 'Пупкин';
+};
 
 done_testing();

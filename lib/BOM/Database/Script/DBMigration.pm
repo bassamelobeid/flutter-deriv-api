@@ -173,7 +173,7 @@ sub script_run {
     } else {
         $self->print_info("Update had been cancelled.");
     }
-
+    return;
 }
 
 sub _confirm_database_versioning_changes {
@@ -209,6 +209,7 @@ sub print_info {
     my $self = shift;
     my $c    = shift;
     print $c, "\n";
+    return;
 }
 
 no Moose;
