@@ -435,6 +435,8 @@ sub paymentagent_transfer {
         });
     };
 
+    return $error_sub->(localize('Invalid amount.')) if ($amount !~ /^\d*\.?\d*$/);
+
     my $error_msg;
     my $payment_agent = $client_fm->payment_agent;
     my $app_config    = BOM::Platform::Runtime->instance->app_config;
@@ -455,8 +457,6 @@ sub paymentagent_transfer {
 
     return $error_sub->($error_msg) if $error_msg;
 
-    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client_fm->get_status('disabled');
-
     my ($max_withdrawal, $min_withdrawal, $min_max) =
         ($payment_agent->max_withdrawal, $payment_agent->min_withdrawal, BOM::RPC::v3::Utility::paymentagent_default_min_max());
     if ($max_withdrawal) {
@@ -470,6 +470,13 @@ sub paymentagent_transfer {
     } elsif ($amount < $min_max->{minimum}) {
         return $error_sub->(localize('Invalid amount. Minimum is [_1].', $min_max->{minimum}));
     }
+
+    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client_fm->get_status('disabled');
+
+    return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.'))
+        if $client_fm->get_status('cashier_locked');
+
+    return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client_fm->documents_expired;
 
     my $client_to = try { Client::Account->new({loginid => $loginid_to}) };
     return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to)) unless $client_to;
@@ -493,15 +500,10 @@ sub paymentagent_transfer {
         if $client_to->get_status('disabled');
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to))
-        if $client_to->get_status('cashier_locked');
+        if ($client_to->get_status('cashier_locked') or $client_to->cashier_setting_password);
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their verification documents have expired.', $loginid_to))
         if $client_to->documents_expired;
-
-    return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.'))
-        if $client_fm->get_status('cashier_locked');
-
-    return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client_fm->documents_expired;
 
     if ($args->{dry_run}) {
         return {
@@ -691,6 +693,9 @@ sub paymentagent_withdraw {
         });
     };
 
+    # check that the amount is in correct format
+    return $error_sub->(localize('Invalid amount.')) if ($amount !~ /^\d*\.?\d*$/);
+
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
         or $app_config->system->suspend->payment_agents
@@ -716,9 +721,6 @@ sub paymentagent_withdraw {
         if (not $client->residence or scalar keys %{$authenticated_pa} == 0);
 
     return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->get_status('disabled');
-
-    # check that the amount is in correct format
-    return $error_sub->(localize('Invalid amount.')) if ($amount !~ /^\d*\.?\d*$/);
 
     my $min_max = BOM::RPC::v3::Utility::paymentagent_default_min_max();
     return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
@@ -749,7 +751,7 @@ sub paymentagent_withdraw {
     return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client->documents_expired;
 
     return $error_sub->(localize("You cannot perform the withdrawal to account [_1], as the payment agent's cashier is locked.", $pa_client->loginid))
-        if $pa_client->get_status('cashier_locked');
+        if ($pa_client->get_status('cashier_locked') or $pa_client->cashier_setting_password);
 
     return $error_sub->(localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired."))
         if $pa_client->documents_expired;
