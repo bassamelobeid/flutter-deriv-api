@@ -136,7 +136,7 @@ sub startup {
             );
         });
 
-    $app->plugin('ClientIP');
+    $app->plugin('ClientIP::CloudFlare', v4_only => 1);
     $app->plugin('Binary::WebSocketAPI::Plugins::Helpers');
 
     my $actions = [[
