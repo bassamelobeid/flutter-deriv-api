@@ -970,6 +970,7 @@ sub transfer_between_accounts {
         if $client->get_status('cashier_locked');
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if $client->get_status('withdrawal_locked');
+    return _transfer_between_accounts_error(localize('Your cashier is locked as per your request.')) if $client->cashier_setting_password;
 
     my $args = $params->{args};
     my ($currency, $amount) = @{$args}{qw/currency amount/};
@@ -1248,6 +1249,9 @@ sub _validate_transfer_between_accounts {
     # set same crypto for multiple account
     return _transfer_between_accounts_error(localize('Please set the currency for your existing account [_1].', $client_to->loginid))
         unless $to_currency;
+
+    return _transfer_between_accounts_error(localize('Your [_1] cashier is locked as per your request.', $client_to->loginid))
+        if $client_to->cashier_setting_password;
 
     my $min_allowed_amount = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->amount->$from_currency_type->min;
     return _transfer_between_accounts_error(
