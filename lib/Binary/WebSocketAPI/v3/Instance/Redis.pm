@@ -120,7 +120,7 @@ sub check_connections {
 
 # Autopopulate remaining methods
 for my $name (sort keys %$config) {
-    *$name = sub {
+    my $code = sub {
         return $INSTANCES{$name} //= do {
             my $redis = create($name);
             $redis->on(
@@ -129,6 +129,10 @@ for my $name (sort keys %$config) {
             $redis->{shared_info} ||= {};
             $redis
         };
+    }
+    {
+        no strict 'refs';
+        *$name  = $code
     }
 }
 
