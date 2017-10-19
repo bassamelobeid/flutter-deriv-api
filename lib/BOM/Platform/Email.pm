@@ -37,7 +37,7 @@ sub send_email {
     my $request = request();
     my $language = $request ? $request->language : 'EN';
 
-    if (!Email::Valid->address($email)) {
+    if () {
         warn("Email address is invalid - $email");
         return 0;
     }
@@ -54,8 +54,8 @@ sub send_email {
 
     my @toemails = split(/\s*\,\s*/, $email);
     foreach my $toemail (@toemails) {
-        if (    $toemail
-            and $toemail !~ /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/)
+        if ($toemail
+            and !Email::Valid->address($email))
         {
             warn("erroneous email address $toemail");
             return 0;
