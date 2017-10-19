@@ -49,7 +49,7 @@ sub send_email {
 
     my @toemails = split(/\s*\,\s*/, $email);
     foreach my $toemail (@toemails) {
-        if ($toemail and !Email::Valid->address($toemail)) {
+        if ($toemail and not Email::Valid->address($toemail)) {
             warn("erroneous email address $toemail");
             return 0;
         }
