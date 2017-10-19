@@ -60,6 +60,7 @@ sub proposal {
                 language              => $c->stash('language'),
                 app_markup_percentage => $c->stash('app_markup_percentage'),
                 landing_company       => $c->landing_company_name,
+                country_code          => $c->stash('country_code'),
             },
             success => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
