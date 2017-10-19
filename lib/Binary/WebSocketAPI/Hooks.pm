@@ -326,7 +326,7 @@ sub check_useragent {
 
 sub _on_sanity_failed {
     my ($c) = @_;
-    my $client_ip = $_->stash->{client_ip};
+    my $client_ip = $c->stash->{client_ip};
     my $tags = ["client_ip:$client_ip", "app_name:" . ($c->stash('app_name') || ''), "app_id:" . ($c->stash('source') || ''),];
     DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.sanity_check_failed.count', {tags => $tags});
 
