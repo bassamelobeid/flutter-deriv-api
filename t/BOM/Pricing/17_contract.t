@@ -129,15 +129,11 @@ subtest 'prepare_ask' => sub {
         barrier       => 'S20P',
     };
     delete $expected->{barrier};
-    #cmp_deeply(BOM::Pricing::v3::Contract::prepare_ask($params), $expected, 'result is ok after added date_expiry and barrier and barrier2');
 
     delete $params->{barrier};
     $expected->{barrier} = 'S0P';
     delete $expected->{high_barrier};
     delete $expected->{low_barrier};
-    #cmp_deeply(BOM::Pricing::v3::Contract::prepare_ask($params),
-    #    $expected, 'will set barrier default value and delete barrier2 if contract type is not like ASIAN');
-
 };
 
 subtest 'get_bid' => sub {
