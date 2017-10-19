@@ -1085,11 +1085,14 @@ sub _get_tick_details {
         if ($t->quote == $quote) {
             if ($t->epoch == $epoch) {
                 $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $epoch_name->[0], $quote_name->[0]];
+                $t_details->{untranslated_name} = "$epoch_name->[0] and $quote_name->[0]";
             } elsif ($t->epoch == $quote_epoch) {
-                $t_details->{name} = $quote_name;
+                $t_details->{name}              = $quote_name;
+                $t_details->{untranslated_name} = "$quote_name->[0]";
             }
         } elsif ($t->epoch == $epoch) {
-            $t_details->{name} = $epoch_name;
+            $t_details->{name}              = $epoch_name;
+            $t_details->{untranslated_name} = "$epoch_name->[0]";
         }
 
         push @details, $t_details;
