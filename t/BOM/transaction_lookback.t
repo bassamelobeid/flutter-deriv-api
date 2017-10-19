@@ -124,17 +124,11 @@ initialize_realtime_ticks_db();
 my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch - 99,
     underlying => 'R_50',
-#    quote      => 76.5996,
-#    bid        => 76.6010,
-#    ask        => 76.2030,
 });
 
 my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch - 52,
     underlying => 'R_50',
-#    quote      => 76.6996,
-#    bid        => 76.7010,
-#    ask        => 76.3030,
 });
 
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -350,7 +344,6 @@ lives_ok {
     $cl = create_client;
 
     #make sure client can trade
-    #ok(!BOM::Transaction::Validation->new({clients => [$cl]})->not_allow_trade($cl), "client can trade");
     ok(!BOM::Transaction::Validation->new({clients => [$cl]})->check_trade_status($cl),      "client can trade: check_trade_status");
     ok(!BOM::Transaction::Validation->new({clients => [$cl]})->_validate_client_status($cl), "client can trade: _validate_client_status");
 
