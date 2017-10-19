@@ -91,7 +91,6 @@ lives_ok {
         bet => $touch_bet,
         db  => $connection_builder->db,
     });
-    $financial_market_bet_helper->bet_data->{quantity} = 1;
     $financial_market_bet_helper->buy_bet;
 
     $touch_bet_financial_bet_id = $touch_bet->financial_market_bet_open_record->id;
@@ -149,7 +148,7 @@ lives_ok {
         bet => $touch_bet,
         db  => $connection_builder->db,
     });
-    $financial_market_bet_helper->bet_data->{quantity} = 1;
+
     $financial_market_bet_helper->sell_bet // die "Bet not sold";
     $sell_price = 40;
 }

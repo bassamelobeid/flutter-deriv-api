@@ -19,7 +19,6 @@ __PACKAGE__->meta->setup(
         dev_loginid      => { type => 'varchar' },
         app_markup_value => { type => 'numeric', remarks => 'The value of app_markup after being converted from the client`s currency to the developer`s currency, effective at the time of the transaction' },
         app_markup_usd   => { type => 'numeric', remarks => 'The USD value of app_markup after being converted from the client`s currency, effective at the time of the transaction' },
-        client_loginid   => { type => 'varchar' },
     ],
 
     primary_key_columns => [ 'foreign_server', 'transaction_id' ],

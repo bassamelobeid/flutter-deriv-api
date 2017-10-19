@@ -24,7 +24,6 @@ use BOM::Database::Model::FinancialMarketBet::SpreadBet;
 use BOM::Database::Model::FinancialMarketBet::TouchBet;
 use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Model::FinancialMarketBet::DigitBet;
-use BOM::Database::Model::FinancialMarketBet::LookbackOption;
 use Date::Utility;
 use Try::Tiny;
 
@@ -98,7 +97,7 @@ sub get_fmb_by_id {
         with_objects    => [
             $BOM::Database::Model::Constants::BET_CLASS_HIGHER_LOWER_BET, $BOM::Database::Model::Constants::BET_CLASS_RANGE_BET,
             $BOM::Database::Model::Constants::BET_CLASS_TOUCH_BET,        $BOM::Database::Model::Constants::BET_CLASS_LEGACY_BET,
-            $BOM::Database::Model::Constants::BET_CLASS_DIGIT_BET,        $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION,
+            $BOM::Database::Model::Constants::BET_CLASS_DIGIT_BET,
         ],
         query => [id => $bet_ids],
         db    => $self->db,
@@ -282,9 +281,6 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
         $param->{'coinauction_bet_record'} = $rose_object->coinauction_bet;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::CoinauctionBet';
-    } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION) {
-        $param->{'lookback_option_record'} = $rose_object->lookback_option;
-        $model_class = 'BOM::Database::Model::FinancialMarketBet::LookbackOption';
     } else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
     }
