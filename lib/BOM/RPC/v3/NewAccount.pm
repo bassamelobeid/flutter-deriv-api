@@ -49,6 +49,7 @@ sub new_account_virtual {
     }
 
     my $email = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
+    return BOM::RPC::v3::Utility::invalid_email() if !Email::Valid->address($email);
 
     if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'account_opening')->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -108,14 +109,6 @@ sub new_account_virtual {
 sub request_email {
     my ($email, $args) = @_;
 
-    if (!Email::Valid->address($email)) {
-
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidEmail',
-                message_to_client => localize('This email address is invalid.')});
-
-    }
-
     my $subject = $args->{subject};
     my $message = $args->{message};
 
@@ -139,8 +132,10 @@ sub verify_email {
     my $params = shift;
 
     my $email = $params->{args}->{verify_email};
-    my $type  = $params->{args}->{type};
-    my $code  = BOM::Platform::Token->new({
+    return BOM::RPC::v3::Utility::invalid_email() if !Email::Valid->address($email);
+
+    my $type = $params->{args}->{type};
+    my $code = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
             created_for => $type,
@@ -436,6 +431,8 @@ sub new_sub_account {
     my $error_map = BOM::RPC::v3::Utility::error_map();
 
     my $client = $params->{client};
+    return BOM::RPC::v3::Utility::invalid_email() if !Email::Valid->address($client->email);
+
     if ($client->is_virtual or not $client->allow_omnibus) {
         return BOM::RPC::v3::Utility::permission_error();
     }

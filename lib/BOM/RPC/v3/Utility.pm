@@ -8,6 +8,7 @@ use YAML::XS qw(LoadFile);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use List::Util qw(any);
 use URI;
+use Email::Valid;
 use Domain::PublicSuffix;
 use Format::Util::Numbers qw/formatnumber/;
 
@@ -78,6 +79,12 @@ sub permission_error {
     return create_error({
             code              => 'PermissionDenied',
             message_to_client => localize('Permission denied.')});
+}
+
+sub invalid_email {
+    return create_error({
+            code              => 'InvalidEmail',
+            message_to_client => localize('This email address is invalid.')});
 }
 
 # Start this at zero to ensure we always load on first call.
@@ -301,6 +308,9 @@ sub validate_make_new_account {
     return create_error({
             code              => 'NoResidence',
             message_to_client => localize('Please set your country of residence.')}) unless $residence;
+
+    my $email = $client->email;
+    return invalid_email() if !Email::Valid->address($email);
 
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
     my $gaming_company     = $countries_instance->gaming_company_for_country($residence);
