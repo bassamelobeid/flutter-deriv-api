@@ -27,7 +27,6 @@ use Scalar::Util qw(looks_like_number);
 my $config = {
     shared_redis    => LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml')->{read},
     redis_pricer    => LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write},
-    ws_redis_slave  => LoadFile($ENV{BOM_TEST_WS_REDIS}         // '/etc/rmg/ws-redis.yml')->{read},
     ws_redis_master => LoadFile($ENV{BOM_TEST_WS_REDIS}         // '/etc/rmg/ws-redis.yml')->{write},
 };
 
