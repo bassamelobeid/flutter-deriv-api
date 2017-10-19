@@ -37,7 +37,7 @@ sub send_email {
     my $request = request();
     my $language = $request ? $request->language : 'EN';
 
-    if (!Email::Valid->address(email)) {
+    if (!Email::Valid->address($email)) {
         warn("Email address is invalid - $email");
         return 0;
     }
