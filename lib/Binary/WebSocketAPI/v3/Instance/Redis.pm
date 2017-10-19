@@ -133,7 +133,7 @@ for my $name (sort keys %$config) {
             $redis->{shared_info} ||= {};
             $redis;
         };
-        }
+    };
     {
         no strict 'refs';
         *$name = $code
