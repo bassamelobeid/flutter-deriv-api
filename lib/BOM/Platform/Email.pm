@@ -5,6 +5,7 @@ use warnings;
 
 use URL::Encode;
 use Email::Stuffer;
+use Email::Valid;
 use Encode;
 
 use Brands;
@@ -35,6 +36,11 @@ sub send_email {
 
     my $request = request();
     my $language = $request ? $request->language : 'EN';
+
+    if (!Email::Valid->address(email)) {
+        warn("Email address is invalid - $email");
+        return 0;
+    }
 
     unless ($email && $fromemail && $subject) {
         warn("from, to, or subject missed - [from: $fromemail, to: $email, subject: $subject]");
