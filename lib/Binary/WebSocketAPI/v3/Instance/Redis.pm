@@ -72,14 +72,14 @@ my %message_handler = (
     },
     ws_redis_master => sub {
         my ($redis, $msg, $channel) = @_;
-        Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($redis->{shared_info}, $msg, $channel) if $channel eq 'NOTIFY::broadcast::channel';
-    }
-);
+        Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($redis->{shared_info}, $msg, $channel)
+            if $channel eq 'NOTIFY::broadcast::channel';
+    });
 
 sub create {
     my $name = shift;
 
-    my $cf        = $config->{$name} // die 'unknown Redis instance ' . $name;
+    my $cf = $config->{$name} // die 'unknown Redis instance ' . $name;
     my $redis_url = Mojo::URL->new("redis://$cf->{host}:$cf->{port}");
 
     $redis_url->userinfo('dummy:' . $cf->{password}) if $cf->{password};
@@ -87,9 +87,9 @@ sub create {
     my $server = Mojo::Redis2->new(url => $redis_url);
     $server->on(
         connection => sub {
-            stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.connections')
+            stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.connections');
         },
-        error      => sub {
+        error => sub {
             my ($self, $err) = @_;
             warn("Redis $name error: $err");
 
@@ -107,9 +107,15 @@ sub check_connections {
             $server_name = $sn;
             $server      = __PACKAGE__->$server_name();
             $server->ping() if $server;
-        } catch {
+        }
+        catch {
             if ($server) {
-                die "Redis server $sn does not work! Host: " . (eval { $server->url->host } // "(failed - $@)") . ", port: " . (eval { $server->url->port } // "(failed - $@)") . ", reason: " . $_;
+                die "Redis server $sn does not work! Host: "
+                    . (eval { $server->url->host } // "(failed - $@)")
+                    . ", port: "
+                    . (eval { $server->url->port } // "(failed - $@)")
+                    . ", reason: "
+                    . $_;
             } else {
                 die "$sn is not available: " . $_;
             }
@@ -123,16 +129,14 @@ for my $name (sort keys %$config) {
     my $code = sub {
         return $INSTANCES{$name} //= do {
             my $redis = create($name);
-            $redis->on(
-                message => $message_handler{$name}
-            ) if exists $message_handler{$name};
+            $redis->on(message => $message_handler{$name}) if exists $message_handler{$name};
             $redis->{shared_info} ||= {};
-            $redis
+            $redis;
         };
-    }
+        }
     {
         no strict 'refs';
-        *$name  = $code
+        *$name = $code
     }
 }
 
