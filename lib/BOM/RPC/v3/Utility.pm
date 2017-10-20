@@ -8,7 +8,6 @@ use YAML::XS qw(LoadFile);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use List::Util qw(any);
 use URI;
-use Email::Valid;
 use Domain::PublicSuffix;
 use Format::Util::Numbers qw/formatnumber/;
 
