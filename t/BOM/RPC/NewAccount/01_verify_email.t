@@ -66,7 +66,7 @@ subtest 'Initialization' => sub {
     'Initial RPC server and client connection';
 };
 
-subtest 'Account opening requet with an invalid email address' => sub {
+subtest 'Account opening request with an invalid email address' => sub {
     $mailbox->clear;
     $params[1]->{args}->{verify_email} = 'test' . rand(999) . '.@binary.com';
     $params[1]->{args}->{type}         = 'account_opening';

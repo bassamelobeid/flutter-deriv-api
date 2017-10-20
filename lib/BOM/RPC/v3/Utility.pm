@@ -309,9 +309,6 @@ sub validate_make_new_account {
             code              => 'NoResidence',
             message_to_client => localize('Please set your country of residence.')}) unless $residence;
 
-    my $email = $client->email;
-    return invalid_email() if !Email::Valid->address($$email);
-
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
     my $gaming_company     = $countries_instance->gaming_company_for_country($residence);
     my $financial_company  = $countries_instance->financial_company_for_country($residence);
