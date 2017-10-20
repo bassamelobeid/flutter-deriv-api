@@ -159,7 +159,6 @@ sub buy_one_bet {
         bet_type          => 'CALL',
         short_code        => ('CALL_R_50_' . $payout_price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
         relative_barrier  => 'S0P',
-        quantity          => 1,
         %$args,
     };
 
@@ -195,7 +194,6 @@ sub buy_multiple_bets {
         bet_type          => 'CALL',
         short_code        => ('CALL_R_50_200_' . $now->epoch . '_' . $now->plus_time_interval('15s')->epoch . '_S0P_0'),
         relative_barrier  => 'S0P',
-        quantity          => 1,
     };
 
     my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
@@ -259,8 +257,7 @@ subtest 'survived notify sell_one_bet', sub {
         {
         id         => $fmbb->{id},
         sell_price => 0,
-        sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
-        quantity   => 1,
+        sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp
         };
 
     test_notify({
@@ -284,7 +281,6 @@ subtest 'survived notify batch_sell_bet', sub {
         id         => $fmb2->{id},
         sell_price => 0,
         sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
-        quantity   => 1,
         };
 
     my ($txn3, $fmb3) = buy_one_bet $acc2;
@@ -302,7 +298,7 @@ subtest 'survived notify batch_sell_bet', sub {
     # the USD account has 6 bets here, 5 of which are unsold. Let's sell them all.
     lives_ok {
         my @bets_to_sell =
-            map { {id => $_, quantity => 1, sell_price => 30, sell_time => Date::Utility->new->plus_time_interval('1s')->db_timestamp,} } @usd_bets;
+            map { {id => $_, sell_price => 30, sell_time => Date::Utility->new->plus_time_interval('1s')->db_timestamp,} } @usd_bets;
 
         my @qvs = (
             BOM::Database::Model::DataCollection::QuantsBetVariables->new({
