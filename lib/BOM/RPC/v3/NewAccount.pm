@@ -429,6 +429,7 @@ sub new_sub_account {
 
     my $error_map = BOM::RPC::v3::Utility::error_map();
 
+    my $client = $params->{client};
     if ($client->is_virtual or not $client->allow_omnibus) {
         return BOM::RPC::v3::Utility::permission_error();
     }
