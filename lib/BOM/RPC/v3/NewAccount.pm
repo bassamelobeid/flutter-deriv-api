@@ -49,7 +49,6 @@ sub new_account_virtual {
     }
 
     my $email = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
-    return BOM::RPC::v3::Utility::invalid_email() if !Email::Valid->address($email);
 
     if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'account_opening')->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -429,9 +428,6 @@ sub new_sub_account {
     my $params = shift;
 
     my $error_map = BOM::RPC::v3::Utility::error_map();
-
-    my $client = $params->{client};
-    return BOM::RPC::v3::Utility::invalid_email() if !Email::Valid->address($client->email);
 
     if ($client->is_virtual or not $client->allow_omnibus) {
         return BOM::RPC::v3::Utility::permission_error();
