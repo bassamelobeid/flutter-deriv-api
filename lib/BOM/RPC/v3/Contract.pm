@@ -48,7 +48,7 @@ sub validate_license {
     if ($ul->feed_license ne 'realtime') {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'NoRealtimeQuotes',
-            message_to_client => localize("Realtime quotes not available for [_1]", $ul->symbol),
+            message_to_client => localize("Realtime quotes not available for [_1].", $ul->symbol),
         });
     }
     return;
@@ -57,9 +57,7 @@ sub validate_license {
 sub validate_is_open {
     my $ul = shift;
 
-    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
-
-    unless ($trading_calendar->is_open($ul->exchange)) {
+    unless (Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader())->is_open($ul->exchange)) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'MarketIsClosed',
             message_to_client => localize('This market is presently closed.'),

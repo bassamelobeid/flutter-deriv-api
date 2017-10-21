@@ -38,7 +38,6 @@ sub ticks_history {
     }
 
     my $ul = create_underlying($symbol);
-
     unless ($ul->feed_license =~ /^(realtime|delayed|daily)$/) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'StreamingNotAllowed',
