@@ -20,14 +20,10 @@ sub ticks {
     my $symbol   = $params->{symbol};
     my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
     if ($response and exists $response->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $response->{error}->{code},
-                message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
+        return $response;
     }
 
-    my $display_decimals = create_underlying($symbol)->display_decimals;
-
-    return {stash => {"${symbol}_display_decimals" => $display_decimals}};
+    return {stash => {"${symbol}_display_decimals" => $response->display_decimals}};
 }
 
 sub ticks_history {
@@ -38,9 +34,7 @@ sub ticks_history {
 
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $response->{error}->{code},
-                message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
+        return $response;
     }
 
     my $ul = create_underlying($symbol);
@@ -52,18 +46,14 @@ sub ticks_history {
     }
 
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-        my $status = BOM::RPC::v3::Contract::validate_license($symbol);
+        my $status = BOM::RPC::v3::Contract::validate_license($ul);
         if ($status and exists $status->{error}) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => $status->{error}->{code},
-                    message_to_client => BOM::Platform::Context::localize($status->{error}->{message}, $symbol)});
+            return $response;
         }
 
-        $status = BOM::RPC::v3::Contract::validate_is_open($symbol);
+        $status = BOM::RPC::v3::Contract::validate_is_open($ul);
         if ($status and exists $status->{error}) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => $status->{error}->{code},
-                    message_to_client => BOM::Platform::Context::localize($status->{error}->{message}, $symbol)});
+            return $response;
         }
     }
 
