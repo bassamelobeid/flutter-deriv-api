@@ -53,9 +53,9 @@ if ($preview) {
     my $payments_csv_fh = $cgi->upload('payments_csv');
     binmode $payments_csv_fh, ':encoding(UTF-8)';
     open my $fh, '>:encoding(UTF-8)', $payments_csv_file or die "writing upload: $!";
-    while (<$payments_csv_fh>) {
-        s/\s*$//;    # remove various combos of unix/windows rec-separators
-        $fh->print("$_\n");
+    while (my $line = <$payments_csv_fh>) {
+        $line =~ s/\s*$//;    # remove various combos of unix/windows rec-separators
+        $fh->print("$line\n");
     }
     close $fh;
 }
