@@ -190,10 +190,10 @@ sub statement {
                 if (exists $res->{error}) {
                     $struct->{longcode} = localize('Could not retrieve contract details');
                 } else {
-                    # this should be already localize
+                    # this should be already localized
                     my $longcode = $res->{longcode};
                     # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
-                    $longcode = 'Binary ICO: canceled bid'
+                    $longcode = localize('Binary ICO: cancelled bid')
                         if ($txn->{short_code} =~ /^BINARYICO/ and $txn->{amount} == 0.98 * $txn->{payout_price});
                     $struct->{longcode} = $longcode;
                 }
