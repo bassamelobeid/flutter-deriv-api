@@ -1,6 +1,9 @@
 package BOM::Transaction;
 
 use Moose;
+
+no indirect;
+
 use Data::Dumper;
 use Error::Base;
 use Path::Tiny;
@@ -335,15 +338,22 @@ sub calculate_limits {
 
     $limits{max_balance} = $client->get_limit_for_account_balance;
 
-    my $general_open_position_payout_limit =
-        from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit // {});
-    if (my $limit = $general_open_position_payout_limit->{$client->landing_company->short}) {
-        my ($limit_currency, $limit_amount) = each %$limit;
-        $limits{general_open_position_payout} = {
-            limit    => $limit_amount,
-            currency => $limit_currency,
-        };
+    try {
+        my $general_open_position_payout_limit =
+            from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
+        if (my $limit = $general_open_position_payout_limit->{$client->landing_company->short}) {
+            my ($limit_currency, $limit_amount, @extra) = %$limit;
+            die "found multiple entries for landing company, extra: @extra" if @extra;
+            $limits{general_open_position_payout} = {
+                limit    => $limit_amount,
+                currency => $limit_currency,
+            };
+        }
     }
+    catch {
+        warn "Failure while attempting to process open position limits - $_\n";
+        stats_inc('transaction.open_position_limit.failure');
+    };
 
     if (not $contract->tick_expiry) {
         $limits{max_open_bets}        = $client->get_limit_for_open_positions;
@@ -351,27 +361,29 @@ sub calculate_limits {
         $limits{max_payout_per_symbol_and_bet_type} =
             $static_config->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
 
-        if ($contract->is_atm_bet) {
-            $limits{atm_specific_open_position_payout} = [{
-                    name     => 'ATM open position payout limit',
-                    symbols  => [$contract->underlying->symbol],
-                    bet_type => [@{$contract->category->available_types}],
-                    limit    => $static_config->{bet_limits}{open_positions_payout_per_symbol_limit}{atm}{$currency},
-                }];
-        } else {
-            my $categories = Finance::Contract::Category::get_all_contract_categories();
-            my @bet_type_list = map { @{$_->{available_types}} } values %$categories;
-            my ($limit_name, $which_limit) =
-                $contract->timeindays->amount <= 7
-                ? ('max_7day_specific_open_position_payout', 'less_than_seven_days')
-                : ('max_more_than_7day_specific_open_position_payout', 'more_than_seven_days');
+        if ($contract->market->name ne 'volidx') {
+            if ($contract->is_atm_bet) {
+                $limits{atm_specific_open_position_payout} = [{
+                        name     => 'ATM open position payout limit',
+                        symbols  => [$contract->underlying->symbol],
+                        bet_type => [@{$contract->category->available_types}],
+                        limit    => $static_config->{bet_limits}{open_positions_payout_per_symbol_limit}{atm}{$currency},
+                    }];
+            } else {
+                my $categories = Finance::Contract::Category::get_all_contract_categories();
+                my @bet_type_list = map { @{$_->{available_types}} } values %$categories;
+                my ($limit_name, $which_limit) =
+                    $contract->timeindays->amount <= 7
+                    ? ('max_7day_specific_open_position_payout', 'less_than_seven_days')
+                    : ('max_more_than_7day_specific_open_position_payout', 'more_than_seven_days');
 
-            $limits{$limit_name} = [{
-                    name     => $limit_name,
-                    symbols  => [$contract->underlying->symbol],
-                    bet_type => [@bet_type_list],
-                    limit    => $static_config->{bet_limits}{open_positions_payout_per_symbol_limit}->{non_atm}{$which_limit}{$currency},
-                }];
+                $limits{$limit_name} = [{
+                        name     => $limit_name,
+                        symbols  => [$contract->underlying->symbol],
+                        bet_type => [@bet_type_list],
+                        limit    => $static_config->{bet_limits}{open_positions_payout_per_symbol_limit}->{non_atm}{$which_limit}{$currency},
+                    }];
+            }
         }
     }
 
