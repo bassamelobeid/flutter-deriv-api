@@ -5,6 +5,15 @@ perl:
     - "5.14.2-thr"
 matrix:
     fast_finish: true
+
+notifications:
+    slack:
+        rooms:
+            - binary-group:6t92829RicGEft1kCkpKLPj9#test-failures
+        on_success: never
+        on_failure: always
+        on_pull_requests: false
+
 env:
     - TEST_SUITE=unit_test_market
 services:
