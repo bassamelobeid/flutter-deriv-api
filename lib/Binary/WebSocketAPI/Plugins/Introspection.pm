@@ -306,11 +306,10 @@ command stats => sub {
 sub _get_redis_connections {
     my $app         = shift;
     my $connections = 0;
-    my @redises     = ();
     my %uniq;
 
-    push @redises, values %{Binary::WebSocketAPI::v3::Instance::Redis::instances()};
-    unless (scalar @redises > 1) {
+    my @redises = values %Binary::WebSocketAPI::v3::Instance::Redis::INSTANCES;
+    unless (@redises) {
         # redises are not moved to Instance::Redis yet...
         for my $c (values %{$app->active_connections // {}}) {
             push @redises, $c->redis if $c->stash->{redis};
