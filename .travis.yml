@@ -8,6 +8,15 @@ matrix:
     fast_finish: true
 addons:
     postgresql: "9.3"
+
+notifications:
+    slack:
+        rooms:
+            - binary-group:6t92829RicGEft1kCkpKLPj9#test-failures
+        on_success: never
+        on_failure: always
+        on_pull_requests: false
+
 services:
     - redis-server
 cache: apt
