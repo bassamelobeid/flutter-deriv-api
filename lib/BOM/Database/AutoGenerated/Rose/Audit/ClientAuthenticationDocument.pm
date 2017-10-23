@@ -24,6 +24,9 @@ __PACKAGE__->meta->setup(
         remote_addr                => { type => 'scalar' },
         comments                   => { type => 'varchar', default => '', length => 255, not_null => 1 },
         document_id                => { type => 'varchar', default => '', length => 30, not_null => 1 },
+        status                     => { type => 'enum', check_in => [ 'uploading', 'uploaded' ], db_type => 'status_type' },
+        file_name                  => { type => 'varchar', length => 100 },
+        checksum                   => { type => 'varchar', length => 40 },
     ],
 
     primary_key_columns => [ 'id' ],
