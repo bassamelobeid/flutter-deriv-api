@@ -66,6 +66,17 @@ subtest 'Initialization' => sub {
     'Initial RPC server and client connection';
 };
 
+subtest 'Account opening request with an invalid email address' => sub {
+    $mailbox->clear;
+    $params[1]->{args}->{verify_email} = 'test' . rand(999) . '.@binary.com';
+    $params[1]->{args}->{type}         = 'account_opening';
+    $params[1]->{server_name}          = 'binary.com';
+    $params[1]->{link}                 = 'binary.com/some_url';
+
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidEmail', 'If email address is invalid it should return error')
+        ->error_message_is('This email address is invalid.', 'If email address is invalid it should return error_message');
+};
+
 subtest 'Account opening request with email does not exist' => sub {
     $mailbox->clear;
     $params[1]->{args}->{verify_email} = 'test' . rand(999) . '@binary.com';
