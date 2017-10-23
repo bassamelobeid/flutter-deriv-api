@@ -9,6 +9,7 @@ use List::MoreUtils qw(any);
 use Data::Password::Meter;
 use Format::Util::Numbers qw/formatnumber/;
 use JSON qw/encode_json/;
+use Email::Valid;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -130,8 +131,10 @@ sub verify_email {
     my $params = shift;
 
     my $email = $params->{args}->{verify_email};
-    my $type  = $params->{args}->{type};
-    my $code  = BOM::Platform::Token->new({
+    return BOM::RPC::v3::Utility::invalid_email() if !Email::Valid->address($email);
+
+    my $type = $params->{args}->{type};
+    my $code = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
             created_for => $type,
