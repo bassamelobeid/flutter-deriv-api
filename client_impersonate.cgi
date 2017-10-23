@@ -28,7 +28,7 @@ if ($login !~ /^$broker\d+$/) {
     code_exit_BO();
 }
 
-my $client = Client::Account::get_instance({'loginid' => $login});
+my $client = Client::Account::get_instance({'loginid' => uc $login});
 if (not $client) {
     print "Error: wrong loginid ($encoded_login) could not get client instance";
     code_exit_BO();
