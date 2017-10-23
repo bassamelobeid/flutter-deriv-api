@@ -139,34 +139,34 @@ sub run {
                     $self->report->{$symbol}->{success} = 1;
                 } else {
 
-                    my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
-                    my $now      = Date::Utility->new;
-
-# Does London Stocks Exchange trade on $now
-                    my $is_open = $calendar->trades_on($underlying->exchange, $now);
-
-                    if (
-                        $is_open && !(
-                            $volsurface->validation_error =~ /identical to existing one/
-                            && time - Quant::Framework::VolSurface::Moneyness->new({
-                                    underlying       => $underlying,
-                                    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-                                }
-                            )->creation_date->epoch < 60 * 60
-
-                        ))
-                    {
-                        $self->report->{$symbol} = {
-                            success => 0,
-                            reason  => 'Term 7 is missing from datasource for ' . $symbol,
-                        };
-                    }
+                    $self->report->{$symbol} = {
+                        success => 0,
+                        reason  => 'Term 7 is missing from datasource for ' . $symbol,
+                    };
                 }
             } else {
-                $self->report->{$symbol} = {
-                    success => 0,
-                    reason  => $volsurface->validation_error,
-                };
+                my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+                my $now      = Date::Utility->new;
+
+# Does London Stocks Exchange trade on $now
+                my $is_open = $calendar->trades_on($underlying->exchange, $now);
+
+                if (
+                    $is_open && !(
+                        $volsurface->validation_error =~ /identical to existing one/
+                        && time - Quant::Framework::VolSurface::Moneyness->new({
+                                underlying       => $underlying,
+                                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+                            }
+                        )->creation_date->epoch < 60 * 60
+
+                    ))
+                {
+                    $self->report->{$symbol} = {
+                        success => 0,
+                        reason  => $volsurface->validation_error,
+                    };
+                }
             }
         }
         catch {
