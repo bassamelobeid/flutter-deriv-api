@@ -209,7 +209,7 @@
             },
             "contract_end": {
               "type": "array",
-              "description": "Ticks around contract end time."
+              "description": "Ticks around contract end time.",
               "item": {
                 "type": "object",
                 "properties": {
