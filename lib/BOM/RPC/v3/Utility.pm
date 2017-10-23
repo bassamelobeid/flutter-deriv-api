@@ -80,6 +80,12 @@ sub permission_error {
             message_to_client => localize('Permission denied.')});
 }
 
+sub invalid_email {
+    return create_error({
+            code              => 'InvalidEmail',
+            message_to_client => localize('This email address is invalid.')});
+}
+
 # Start this at zero to ensure we always load on first call.
 my $rates_file_last_load = 0;
 my $rates_file_content;
