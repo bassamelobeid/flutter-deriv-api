@@ -230,6 +230,16 @@ sub get_pricing_rpc_url {
     return $ENV{PRICING_RPC_URL} || $c->app->config->{pricing_rpc_url};
 }
 
+sub get_doc_auth_s3_conf {
+    my $c = shift;
+
+    return {
+        access_key => $ENV{DOCUMENT_AUTH_S3_ACCESS} || $c->app->config->{document_auth_s3_access},
+        secret_key => $ENV{DOCUMENT_AUTH_S3_SECRET} || $c->app->config->{document_auth_s3_secret},
+        bucket     => $ENV{DOCUMENT_AUTH_S3_BUCKET} || $c->app->config->{document_auth_s3_bucket},
+    };
+}
+
 sub output_validation {
     my ($c, $req_storage, $api_response) = @_;
 
