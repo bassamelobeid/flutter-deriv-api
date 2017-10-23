@@ -45,13 +45,14 @@ sub ticks_history {
     }
 
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-        my $status = BOM::RPC::v3::Contract::validate_license($ul);
-        if ($status and exists $status->{error}) {
+        $response = BOM::RPC::v3::Contract::validate_license($ul);
+
+        if ($response and exists $response->{error}) {
             return $response;
         }
 
-        $status = BOM::RPC::v3::Contract::validate_is_open($ul);
-        if ($status and exists $status->{error}) {
+        $response = BOM::RPC::v3::Contract::validate_is_open($ul);
+        if ($response and exists $response->{error}) {
             return $response;
         }
     }

@@ -51,6 +51,7 @@ sub validate_license {
             message_to_client => localize("Realtime quotes not available for [_1].", $ul->symbol),
         });
     }
+
     return;
 }
 
@@ -63,6 +64,7 @@ sub validate_is_open {
             message_to_client => localize('This market is presently closed.'),
         });
     }
+
     return;
 }
 
