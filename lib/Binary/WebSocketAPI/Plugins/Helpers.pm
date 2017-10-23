@@ -8,12 +8,13 @@ use feature "state";
 
 use Sys::Hostname;
 use Scalar::Util ();
+use IO::Async::Loop::Mojo;
 use curry;
 
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| ws_redis_master ws_redis_slave redis_pricer shared_redis |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| ws_redis_master redis_pricer shared_redis |;
 
 use Locale::Maketext::ManyPluralForms {
     'EN'      => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/en.po'],
@@ -119,7 +120,7 @@ sub register {
             };
         });
 
-    for my $redis_name (qw(ws_redis_master ws_redis_slave redis_pricer shared_redis)) {
+    for my $redis_name (qw(ws_redis_master redis_pricer shared_redis)) {
         $app->helper(
             $redis_name => sub {
                 return Binary::WebSocketAPI::v3::Instance::Redis->$redis_name;
@@ -210,6 +211,8 @@ sub register {
                     return;
                 });
         });
+
+    $app->helper(loop => sub { my ($c) = @_; $c->stash->{loop} //= IO::Async::Loop::Mojo->new() });
 
     return;
 }
