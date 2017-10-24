@@ -136,7 +136,11 @@ sub startup {
             );
         });
 
-    $app->plugin('ClientIP::CloudFlare', v4_only => 1);
+    $app->plugin(
+        'ClientIP::Pluggable',
+        analyze_headers => [qw/cf-pseudo-ipv4 cf-connecting-ip true-client-ip/],
+        restrict_family => 'ipv4',
+        fallbacks       => [qw/rfc-7239 x-forwarded-for remote_address/]);
     $app->plugin('Binary::WebSocketAPI::Plugins::Helpers');
 
     my $actions = [[
