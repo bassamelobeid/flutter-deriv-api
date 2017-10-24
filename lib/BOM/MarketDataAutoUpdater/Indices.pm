@@ -148,7 +148,6 @@ sub run {
                 my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
 
 # Ignore all error when exchange is closed.
-                my $is_open = $calendar->is_open($underlying->exchange);
 
                 if ($calendar->is_open($underlying->exchange)) {
 
