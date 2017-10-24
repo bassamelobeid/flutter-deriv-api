@@ -12,9 +12,10 @@ __PACKAGE__->meta->setup(
         currency_code => { type => 'varchar', length => 3, not_null => 1 },
         payout        => { type => 'numeric', not_null => 1 },
         cnt           => { type => 'bigint', not_null => 1 },
+        is_aggregate  => { type => 'boolean', default => 'false' },
     ],
 
-    primary_key_columns => [ 'currency_code' ],
+    primary_key_columns => [ 'is_aggregate' ],
 );
 
 1;
