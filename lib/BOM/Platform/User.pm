@@ -195,7 +195,8 @@ sub get_last_successful_login_history {
     my $self = shift;
 
     my $last_login =
-        $self->db->dbic->run(sub { $_->selectrow_hashref('SELECT * FROM users.last_login WHERE binary_user_id = ?', undef, $self->{id}) });
+        $self->db->dbic->run(
+        sub { $_->selectrow_hashref('SELECT environment, history_date FROM users.last_login WHERE binary_user_id = ?', undef, $self->{id}) });
 
     if ($last_login) {
         return {
