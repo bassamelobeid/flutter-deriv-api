@@ -36,6 +36,12 @@ my $broker = encode_entities(request()->broker_code // "");
 my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my $home_link = request()->url_for('backoffice/f_viewclientsubset.cgi');
+my @header    = (
+    'LOGINID', 'NAME', 'COUNTRY', 'EMAIL', 'AGG. DEPOSITS - WITHDRAWALS',
+    'CASH BALANCE', 'CASHIER',
+    'TOTAL EQUITY & Expired contracts',
+    'Last access (in days)', 'reason'
+);
 
 # This block of code shall come before PrintContentType, as PrintContentType will overwrite our
 # intention of outputing CSV file.
@@ -45,17 +51,11 @@ if (request()->param('action') eq 'DOWNLOAD CSV') {
     my $csv = Text::CSV->new({
             binary       => 1,
             always_quote => 1,
-            quote_char   => "'",
+            quote_char   => '"',
             eol          => "\n"
         })    # should set binary attribute.
         or die "Cannot use CSV: " . Text::CSV->error_diag();
 
-    my @header = (
-        'LOGINID', 'NAME', 'COUNTRY', 'EMAIL', 'AGG. DEPOSITS - WITHDRAWALS',
-        'CASH BALANCE', 'CASHIER',
-        'TOTAL EQUITY & Expired contracts',
-        'Last access (in days)', 'reason'
-    );
     $csv->combine(@header);
     print $csv->string;
 
@@ -104,17 +104,7 @@ Bar($show);
 
 my $total_bal;
 
-my $table_header = '<tr>'
-    . '<th>LOGINID</th>'
-    . '<th>NAME</th>'
-    . '<th>COUNTRY</th>'
-    . '<th>EMAIL</th>'
-    . '<th>AGG. DEPOSITS<br />- WITHDRAWALS</th>'
-    . '<th>CASH<br />BALANCE</th>'
-    . '<th>Cashier</th>'
-    . '<th>TOTAL EQUITY<br />& Expired contracts</th>'
-    . '<th>Last access (in days)</th>'
-    . '<th>Reason</th>' . '</tr>';
+my $table_header = '<tr>' . (join '', map { "<th>$_</th>" } @header) . '</tr>';
 
 print '<br /><table border=1 cellpadding=0 cellspacing=0 width=95%>' . $table_header;
 
