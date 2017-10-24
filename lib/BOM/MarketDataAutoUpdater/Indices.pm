@@ -146,7 +146,6 @@ sub run {
                 }
             } else {
                 my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
-                my $now      = Date::Utility->new;
 
 # Does London Stocks Exchange trade on $now
                 my $is_open = $calendar->is_open($underlying->exchange);
