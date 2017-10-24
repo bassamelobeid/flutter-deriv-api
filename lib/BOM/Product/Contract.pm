@@ -1026,6 +1026,7 @@ sub audit_details {
                 epoch => $hit_tick->epoch,
                 tick  => $self->underlying->pipsized_value($hit_tick->quote),
                 name  => [$GENERIC_MAPPING->{exit_spot}],
+                flag  => 'highlight_tick',
             }];
     } elsif ($self->expiry_daily) {
         my $closing_tick = $self->underlying->closing_tick_on($self->date_expiry->date);
@@ -1033,6 +1034,7 @@ sub audit_details {
                 epoch => $closing_tick->epoch,
                 tick  => $self->underlying->pipsized_value($closing_tick->quote),
                 name  => [$GENERIC_MAPPING->{closing_spot}],
+                flag  => 'highlight_tick',
             }];
     } else {
         $details->{contract_end} = $self->_get_tick_details({
@@ -1085,11 +1087,14 @@ sub _get_tick_details {
         if ($t->quote == $quote) {
             if ($t->epoch == $epoch) {
                 $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $epoch_name->[0], $quote_name->[0]];
+                $t_details->{flag} = "highlight_tick";
             } elsif ($t->epoch == $quote_epoch) {
                 $t_details->{name} = $quote_name;
+                $t_details->{flag} = "highlight_tick";
             }
         } elsif ($t->epoch == $epoch) {
             $t_details->{name} = $epoch_name;
+            $t_details->{flag} = "highlight_time";
         }
 
         push @details, $t_details;
@@ -1098,6 +1103,7 @@ sub _get_tick_details {
         if ((!$t2 && $epoch > $t->epoch) || ($epoch > $t->epoch && $epoch < $t2->epoch)) {
             push @details,
                 +{
+                flag  => "highlight_time",
                 name  => $epoch_name,
                 epoch => $epoch
                 };
