@@ -147,13 +147,11 @@ sub run {
             } else {
                 my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
 
-# Does London Stocks Exchange trade on $now
+# Ignore all error when exchange is closed.
                 my $is_open = $calendar->is_open($underlying->exchange);
 
-                if ($is_open) {
-                    $self->report;
-                }
-                {
+                if ($calendar->is_open($underlying->exchange)) {
+
                     $self->report->{$symbol} = {
                         success => 0,
                         reason  => $volsurface->validation_error,
