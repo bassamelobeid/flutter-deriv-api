@@ -4,6 +4,8 @@ use 5.014;
 use strict;
 use warnings;
 
+use Try::Tiny;
+
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
 use BOM::Database::Model::OAuth;
@@ -246,8 +248,18 @@ sub app_markup_details {
         $app_ids = $oauth->get_app_ids_by_user_id($user->id);
     }
 
-    my $time_from = Date::Utility->new($args->{date_from})->datetime_yyyymmdd_hhmmss;
-    my $time_to   = Date::Utility->new($args->{date_to})->datetime_yyyymmdd_hhmmss;
+    my ($time_from, $time_to, $date_format_error);
+    try {
+        $time_from = Date::Utility->new($args->{date_from})->datetime_yyyymmdd_hhmmss;
+        $time_to   = Date::Utility->new($args->{date_to})->datetime_yyyymmdd_hhmmss;
+    }
+    catch {
+        $date_format_error = 1;
+    };
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidDateFormat',
+            message_to_client => localize('Invalid date format.'),
+        }) if $date_format_error;
 
     my $clientdb = BOM::Database::ClientDB->new({
             client_loginid => $client->loginid,
@@ -262,7 +274,7 @@ sub app_markup_details {
                     {Slice => {}},
                     $app_ids, $time_from, $time_to,
                     $args->{offset}         || undef,
-                    $args->{limit}          || undef,
+                    $args->{limit}          || 1000,
                     $args->{client_loginid} || undef,
                     $args->{sort_fields}    || undef,
                     $args->{sort}           || undef
