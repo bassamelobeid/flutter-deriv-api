@@ -69,19 +69,19 @@ subtest "predefined contracts for symbol" => sub {
     my %expected = (
         frxUSDJPY => {
             contract_count => {
-                callput      => 14,
+                callput      => 16,
                 touchnotouch => 8,
                 staysinout   => 8,
                 endsinout    => 8,
             },
-            hit_count => 38,
+            hit_count => 40,
         },
         frxAUDCAD => {hit_count => 0},
     );
     foreach my $u (keys %expected) {
         my $f = available_contracts_for_symbol({
-            symbol          => $u,
-            date            => $now,
+            symbol => $u,
+            date   => $now
         });
         my %got;
         $got{$_->{contract_category}}++ for (@{$f->{available}});
@@ -103,9 +103,9 @@ subtest "predefined trading_period" => sub {
 
     my %expected_trading_period = (
         call_intraday => {
-            duration => ['2h', '6h'],
+            duration => ['2h15m', '5h15m'],
             date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 18:00:00', '2015-09-04 18:00:00',)],
-            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 16:00:00', '2015-09-04 12:00:00',)],
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 15:45:00', '2015-09-04 12:45:00',)],
         },
         range_daily => {
             duration => ['1W', '1M', '3M', '1Y'],
@@ -152,36 +152,51 @@ subtest "predefined trading_period" => sub {
 
 subtest "check_intraday trading_period_JPY" => sub {
     my %expected_intraday_trading_period = (
-        # sunday
-        '2015-11-22 23:59:00' => {combination => 0},
         # monday
         '2015-11-23 00:00:00' => {
-            combination => 2,                                                                                                   # one call and one put
-            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch, Date::Utility->new('2015-11-23 00:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch, Date::Utility->new('2015-11-23 06:00:00')->epoch],
+            combination => 1,                                                    # one call and one put
+            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch],
         },
         '2015-11-23 01:00:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch, Date::Utility->new('2015-11-23 00:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch, Date::Utility->new('2015-11-23 06:00:00')->epoch],
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 00:00:00', '2015-11-23 00:45:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-23 02:00:00', '2015-11-23 06:00:00',)],
 
         },
         '2015-11-23 13:00:00' => {
-            combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 12:00:00')->epoch, Date::Utility->new('2015-11-23 12:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 14:00:00')->epoch, Date::Utility->new('2015-11-23 18:00:00')->epoch],
+            combination => 3,
+            date_start  => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-23 11:45:00', '2015-11-23 12:45:00', '2015-11-23 08:45:00',)
+            ],
+            date_expiry => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-23 14:00:00', '2015-11-23 18:00:00', '2015-11-23 14:00:00',)
+            ],
 
         },
         '2015-11-23 14:00:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 14:00:00')->epoch, Date::Utility->new('2015-11-23 12:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 16:00:00')->epoch, Date::Utility->new('2015-11-23 18:00:00')->epoch],
+            date_start  => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-23 13:45:00', '2015-11-23 12:45:00',)
+            ],
+            date_expiry => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-23 16:00:00', '2015-11-23 18:00:00',)
+            ],
+
         },
 
         '2015-11-23 17:00:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 16:00:00')->epoch, Date::Utility->new('2015-11-23 12:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 18:00:00')->epoch, Date::Utility->new('2015-11-23 18:00:00')->epoch],
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 15:45:00', '2015-11-23 12:45:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-23 18:00:00', '2015-11-23 18:00:00',)],
 
         },
 
@@ -189,7 +204,122 @@ subtest "check_intraday trading_period_JPY" => sub {
         '2015-11-23 19:00:00' => {combination => 0},
         '2015-11-23 20:00:00' => {combination => 0},
         '2015-11-23 21:00:00' => {combination => 0},
-        '2015-11-23 22:00:00' => {combination => 0},
+        '2015-11-23 22:00:00' => {
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-23 21:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 23:59:59')->epoch],
+        },
+        # tues
+        '2015-11-24 01:45:00' => {
+            combination => 3,
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 23:45:00', '2015-11-24 01:45:00', '2015-11-24 00:45:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-24 02:00:00', '2015-11-24 04:00:00', '2015-11-24 06:00:00',)],
+
+        },
+        '2015-11-24 12:45:00' => {
+            combination => 3,
+            date_start  => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 11:45:00', '2015-11-24 12:45:00', '2015-11-24 08:45:00',)
+            ],
+            date_expiry => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 14:00:00', '2015-11-24 18:00:00', '2015-11-24 14:00:00',)
+            ],
+
+        },
+        '2015-11-24 14:45:00' => {
+            combination => 2,
+            date_start  => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 13:45:00', '2015-11-24 12:45:00',)
+            ],
+            date_expiry => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 16:00:00', '2015-11-24 18:00:00',)
+            ],
+
+        },
+        '2015-11-24 17:45:00' => {
+            combination => 2,
+            date_start  => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 15:45:00', '2015-11-24 12:45:00',)
+            ],
+            date_expiry => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 18:00:00', '2015-11-24 18:00:00',)
+            ],
+
+        },
+        '2015-11-24 18:45:00' => {combination => 0},
+        '2015-11-24 19:45:00' => {combination => 0},
+        '2015-11-24 20:45:00' => {combination => 0},
+        '2015-11-24 21:45:00' => {
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-24 21:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-24 23:59:59')->epoch],
+        },
+        '2015-11-24 22:45:00' => {
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-24 21:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-24 23:59:59')->epoch],
+        },
+        '2015-11-24 23:45:00' => {
+            combination => 2,
+            date_start  => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 21:45:00', '2015-11-24 23:45:00',)
+            ],
+            date_expiry => [
+                map {
+                    Date::Utility->new($_)->epoch
+                } ('2015-11-24 23:59:59', '2015-11-25 02:00:00',)
+            ],
+        },
+
+        '2015-11-25 00:00:00' => {
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-24 23:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-25 02:00:00')->epoch],
+        },
+
+        '2015-11-25 21:45:00' => {
+            combination => 0,
+        },
+
+        '2015-11-2600:00:00' => {
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-26 00:00:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-26 02:00:00')->epoch],
+        },
+
+        # Friday
+        '2015-11-27 00:00:00' => {
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-26 23:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-27 02:00:00')->epoch],
+        },
+        '2015-11-27 02:00:00' => {
+            combination => 2,
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-27 01:45:00', '2015-11-27 00:45:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-27 04:00:00', '2015-11-27 06:00:00',)],
+
+        },
+        '2015-11-27 18:00:00' => {
+            combination => 0,
+        },
+        '2015-11-27 19:00:00' => {
+            combination => 0,
+        },
+
     );
 
     my @i_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
@@ -198,7 +328,7 @@ subtest "check_intraday trading_period_JPY" => sub {
         my $now = Date::Utility->new($date);
         my $ex = create_underlying('frxUSDJPY', $now);
         generate_trading_periods($ex->symbol, $now);
-        my @intraday_offerings = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $ex, \@i_offerings) // []};
+        my @intraday_offerings = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $ex, \@i_offerings)};
         my @got_date_start  = map { $intraday_offerings[$_]{trading_period}{date_start}{epoch} } keys @intraday_offerings;
         my @got_date_expiry = map { $intraday_offerings[$_]{trading_period}{date_expiry}{epoch} } keys @intraday_offerings;
 
@@ -216,25 +346,27 @@ subtest "check_intraday trading_period_JPY" => sub {
     }
 
 };
-
 subtest "check_intraday trading_period_non_JPY" => sub {
     my %expected_eur_intraday_trading_period = (
-        #sunday
-        '2015-11-22 23:59:00' => {combination => 0},
         # monday
         '2015-11-23 00:00:00' => {
-            combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch, Date::Utility->new('2015-11-23 00:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch, Date::Utility->new('2015-11-23 06:00:00')->epoch],
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch],
         },
         '2015-11-23 18:00:00' => {combination => 0},
         '2015-11-23 22:00:00' => {combination => 0},
+        '2015-11-23 23:45:00' => {
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-23 23:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch],
+        },
 
         # tues
         '2015-11-24 00:00:00' => {
-            combination => 2,
-            date_start  => [Date::Utility->new('2015-11-24 00:00:00')->epoch, Date::Utility->new('2015-11-24 00:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-24 02:00:00')->epoch, Date::Utility->new('2015-11-24 06:00:00')->epoch],
+            combination => 1,
+            date_start  => [Date::Utility->new('2015-11-23 23:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-24 02:00:00')->epoch],
         },
         '2015-11-24 21:00:00' => {combination => 0},
         '2015-11-24 23:00:00' => {combination => 0},
@@ -249,7 +381,7 @@ subtest "check_intraday trading_period_non_JPY" => sub {
         my $now = Date::Utility->new($date);
         my $ex = create_underlying('frxEURUSD', $now);
         generate_trading_periods($ex->symbol, $now);
-        my @eurusd_offerings = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $ex, \@e_offerings) // []};
+        my @eurusd_offerings = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $ex, \@e_offerings)};
         my @got_date_start  = map { $eurusd_offerings[$_]{trading_period}{date_start}{epoch} } keys @eurusd_offerings;
         my @got_date_expiry = map { $eurusd_offerings[$_]{trading_period}{date_expiry}{epoch} } keys @eurusd_offerings;
 
