@@ -202,7 +202,7 @@
                   },
                   "flag": {
                     "type": ["string","null"],
-                    "description": "A flag used to highlight record. Can be ignored if you do not wish to highlight entry or exit tick and start or end time."
+                    "description": "A flag used to highlight the record in front-end applications."
                   }
                 }
               }
@@ -227,7 +227,7 @@
                   },
                   "flag": {
                     "type": ["string","null"],
-                    "description": "A flag used to highlight record. Can be ignored if you do not wish to highlight entry or exit tick and start or end time."
+                    "description": "A flag used to highlight the record in front-end applications."
                   }
                 }
               }
