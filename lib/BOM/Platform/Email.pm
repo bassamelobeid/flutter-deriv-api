@@ -5,6 +5,7 @@ use warnings;
 
 use URL::Encode;
 use Email::Stuffer;
+use Email::Valid;
 use Encode;
 
 use Brands;
@@ -48,9 +49,7 @@ sub send_email {
 
     my @toemails = split(/\s*\,\s*/, $email);
     foreach my $toemail (@toemails) {
-        if (    $toemail
-            and $toemail !~ /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/)
-        {
+        if ($toemail and not Email::Valid->address($toemail)) {
             warn("erroneous email address $toemail");
             return 0;
         }

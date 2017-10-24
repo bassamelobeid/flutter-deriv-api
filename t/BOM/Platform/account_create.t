@@ -228,7 +228,7 @@ subtest 'create account' => sub {
     foreach my $broker_code (keys $vr_details) {
         my %social_login_user_details = (
             %{$vr_details->{$broker_code}},
-            email             => 'social+' . $broker_code . '@binary.com',
+            email         => 'social+' . $broker_code . '@binary.com',
             social_signup => 1,
         );
         my ($vr_client, $real_client, $social_login_user, $real_acc);
@@ -264,8 +264,8 @@ subtest 'create account' => sub {
             "create $broker_code account OK, after verify email";
 
             my ($client, $user) = @{$real_acc}{qw/client user/};
-            is(defined $user, 1,            "Social login user with residence $user->residence has been created");
-            is($client->broker,       $broker_code, "Successfully created real account $client->loginid");
+            is(defined $user,   1,            "Social login user with residence $user->residence has been created");
+            is($client->broker, $broker_code, "Successfully created real account $client->loginid");
         } elsif ($broker_code eq 'JP') {
             #Social login user isn't able to create JP account
             $real_acc = BOM::Platform::Account::Real::japan::create_account({
@@ -291,8 +291,8 @@ subtest 'create account' => sub {
             "create $broker_code account OK, after verify email";
 
             my ($client, $user) = @{$real_acc}{qw/client user/};
-            is(defined $user, 1,            "Social login user with residence $user->residence has been created");
-            is($client->broker,       $broker_code, "Successfully created real account $client->loginid");
+            is(defined $user,   1,            "Social login user with residence $user->residence has been created");
+            is($client->broker, $broker_code, "Successfully created real account $client->loginid");
         }
     }
 };
@@ -301,9 +301,9 @@ sub create_vr_acc {
     my $args = shift;
     return BOM::Platform::Account::Virtual::create_account({
             details => {
-                email           => $args->{email},
-                client_password => $args->{client_password},
-                residence       => $args->{residence},
+                email             => $args->{email},
+                client_password   => $args->{client_password},
+                residence         => $args->{residence},
                 has_social_signup => $args->{social_signup},
             }});
 }
