@@ -22,6 +22,7 @@ Path::Tiny::path($output_dir)->mkpath if (not -d $output_dir);
 my $output_filename = $output_dir . 'turnover_' . $processing_date->date_yyyymmdd . '.csv';
 my $fh              = FileHandle->new('>' . $output_filename);
 
+print $fh $reporter->get_headers_for_csv . "\n";
 foreach my $line (@csv) {
     chomp $line;
     print $fh $line . "\n" if $line;
