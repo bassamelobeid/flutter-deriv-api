@@ -19,12 +19,12 @@ use Binary::WebSocketAPI::v3::Wrapper::Accounts;
 use Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
+use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections |;
 
 use File::Slurp;
 use JSON::Schema;
 use JSON::XS;
-use Try::Tiny;
 use Format::Util::Strings qw( defang );
 use Digest::MD5 qw(md5_hex);
 use RateLimitations::Pluggable;
@@ -429,6 +429,14 @@ sub startup {
         ],
 
         ['copytrading_statistics'],
+        [
+            'document_upload',
+            {
+                stash_params    => [qw/ token /],
+                require_auth    => 'admin',
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::add_upload_info,
+            }
+        ],
         ['copy_start',         {require_auth => 'trade'}],
         ['copy_stop',          {require_auth => 'trade'}],
         ['app_markup_details', {require_auth => 'admin'}]];
@@ -486,8 +494,8 @@ sub startup {
 
     $app->plugin(
         'web_socket_proxy' => {
-            actions => $actions,
-
+            actions      => $actions,
+            binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
                 \&Binary::WebSocketAPI::Hooks::before_forward,               \&Binary::WebSocketAPI::Hooks::get_rpc_url,
