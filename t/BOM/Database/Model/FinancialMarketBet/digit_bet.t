@@ -39,30 +39,31 @@ lives_ok {
 lives_ok {
 
     my ($fmb, $txn) = BOM::Database::Helper::FinancialMarketBet->new({
-            account_data => {
-                client_loginid => $account->client_loginid,
-                currency_code  => $account->currency_code,
-            },
-            bet_data => {
-                underlying_symbol => 'frxUSDJPY',
-                payout_price      => 200,
-                buy_price         => 20,
-                remark            => 'Test Remark',
-                purchase_time     => '2010-12-02 12:00:00',
-                start_time        => '2010-12-02 12:00:00',
-                expiry_time       => '2010-12-02 14:00:00',
-                is_expired        => 1,
-                bet_class         => 'digit_bet',
-                bet_type          => 'DIGITMATCH',
-                short_code        => 'DIGITMATCH_FRXUSDJPY_200_1301038969_1301038999_8_0',
-                last_digit        => 8,
-                prediction        => 'match',
-            },
-            transaction_data => {
-                staff_loginid => $account->client_loginid,
-            },
-            db => $connection_builder->db,
-        })->buy_bet;
+        account_data => {
+            client_loginid => $account->client_loginid,
+            currency_code  => $account->currency_code,
+        },
+        bet_data => {
+            underlying_symbol => 'frxUSDJPY',
+            payout_price      => 200,
+            buy_price         => 20,
+            remark            => 'Test Remark',
+            purchase_time     => '2010-12-02 12:00:00',
+            start_time        => '2010-12-02 12:00:00',
+            expiry_time       => '2010-12-02 14:00:00',
+            is_expired        => 1,
+            bet_class         => 'digit_bet',
+            bet_type          => 'DIGITMATCH',
+            short_code        => 'DIGITMATCH_FRXUSDJPY_200_1301038969_1301038999_8_0',
+            last_digit        => 8,
+            prediction        => 'match',
+            quantity          => 1,
+        },
+        transaction_data => {
+            staff_loginid => $account->client_loginid,
+        },
+        db  => $connection_builder->db,
+    })->buy_bet;
 
     $digit = BOM::Database::Model::FinancialMarketBet::DigitBet->new({
         data_object_params => $fmb,
@@ -109,19 +110,20 @@ lives_ok {
 
 lives_ok {
     my ($fmb, $txn) = BOM::Database::Helper::FinancialMarketBet->new({
-            account_data => {
-                client_loginid => $account->client_loginid,
-                currency_code  => $account->currency_code,
-            },
-            bet_data => {
-                id         => $digit_id,
-                sell_price => 40,
-            },
-            transaction_data => {
-                staff_loginid => 'AUTOSELL',
-            },
-            db => $connection_builder->db,
-        })->sell_bet;
+        account_data => {
+            client_loginid => $account->client_loginid,
+            currency_code  => $account->currency_code,
+        },
+        bet_data => {
+            id         => $digit_id,
+            sell_price => 40,
+            quantity   => 1,
+        },
+        transaction_data => {
+            staff_loginid => 'AUTOSELL',
+        },
+        db  => $connection_builder->db,
+    })->sell_bet;
 
     $digit = BOM::Database::Model::FinancialMarketBet::DigitBet->new({
         data_object_params => $fmb,

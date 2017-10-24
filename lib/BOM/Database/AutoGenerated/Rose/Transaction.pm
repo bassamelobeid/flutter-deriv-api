@@ -19,7 +19,7 @@ __PACKAGE__->meta->setup(
         financial_market_bet_id => { type => 'bigint' },
         payment_id              => { type => 'bigint' },
         action_type             => { type => 'varchar', length => 20, not_null => 1 },
-        quantity                => { type => 'integer', default => 1 },
+        quantity                => { type => 'integer', not_null => 1 },
         balance_after           => { type => 'numeric' },
         source                  => { type => 'bigint' },
         app_markup              => { type => 'numeric' },
