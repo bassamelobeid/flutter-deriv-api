@@ -63,7 +63,7 @@ sub document_upload {
         upload_chunk($c, $upload_info);
     }
     catch {
-        warn "UploadError: $_";
+        warn "UploadError: $_, app_id: " . $c->app_id;
         send_upload_failure($c, $upload_info, 'unknown');
     };
 
