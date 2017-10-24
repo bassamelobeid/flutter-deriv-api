@@ -62,8 +62,7 @@ db
 =cut
 
 sub get {
-    shift;    # skip class
-    my %params = @_;
+    my (undef, %params) = @_;
 
     $params{fmb_record} = $params{financial_market_bet_record} if $params{financial_market_bet_record};
 
