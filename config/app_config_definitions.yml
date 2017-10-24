@@ -91,7 +91,7 @@ payments:
             crypto:
               description: 'Fees for transfering from crypto currency to fiat currency in percentage'
               isa: Num
-              default: 0.5
+              default: 1
               global: 1
         amount:
           isa: section
