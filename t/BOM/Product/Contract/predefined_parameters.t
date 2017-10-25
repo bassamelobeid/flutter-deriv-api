@@ -7,8 +7,10 @@ use Test::More;
 use Test::Deep;
 use Test::Warnings;
 
+use Cache::RedisDB;
 use List::Util qw(first);
 use Date::Utility;
+use JSON::XS;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::MarketData qw(create_underlying);
@@ -273,6 +275,15 @@ sub setup_ticks {
             epoch      => $date->epoch,
             $quote ? (quote => $quote) : (),
         });
+        # simulate distributor work
+        if ($quote) {
+            BOM::Platform::RedisReplicated::redis_write()->set(
+                "Distributor::QUOTE::$symbol", encode_json({
+                    quote => $quote,
+                    epcoh => $date->epoch,
+                })
+            );
+        }
     }
 }
 
