@@ -22,14 +22,15 @@ use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections |;
 
+use Digest::MD5 qw(md5_hex);
 use File::Slurp;
+use Format::Util::Strings qw( defang );
 use JSON::Schema;
 use JSON::XS;
-use Format::Util::Strings qw( defang );
-use Digest::MD5 qw(md5_hex);
+use Mojolicious::Plugin::ClientIP::Pluggable;
 use RateLimitations::Pluggable;
-use Time::Duration::Concise;
 use Scalar::Util qw(weaken);
+use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 
 # FIXME This needs to come from config, requires chef changes
