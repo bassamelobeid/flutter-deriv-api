@@ -90,12 +90,12 @@ subtest 'Initialization' => sub {
 subtest 'ticks_history' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is no symbol param')
-        ->error_message_is('Symbol  invalid', 'It should return error if there is no symbol param');
+        ->error_message_is('Symbol  invalid.', 'It should return error if there is no symbol param');
 
     $params->{args}->{ticks_history} = 'wrong';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is wrong symbol param')
-        ->error_message_is('Symbol wrong invalid', 'It should return error if there is wrong symbol param');
+        ->error_message_is('Symbol wrong invalid.', 'It should return error if there is wrong symbol param');
 
     $params->{args}->{ticks_history} = 'DFMGI';
     $rpc_ct->call_ok($method, $params)
@@ -107,7 +107,7 @@ subtest 'ticks_history' => sub {
     $params->{args}->{subscribe}     = '1';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('NoRealtimeQuotes', 'It should return error if realtime quotes not available for this symbol')
-        ->error_message_is('Realtime quotes not available for TOP40', 'It should return error if realtime quotes not available for this symbol');
+        ->error_message_is('Realtime quotes not available for TOP40.', 'It should return error if realtime quotes not available for this symbol');
 
     set_fixed_time(Date::Utility->new('2016-07-24')->epoch);
     $params->{args}->{ticks_history} = 'frxUSDJPY';
