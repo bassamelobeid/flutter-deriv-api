@@ -252,14 +252,14 @@ if ($view_action eq 'withdrawals') {
     my $database_items = $dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                q{SELECT address FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
+                q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
                 {Slice => {}},
                 $currency, $start_date->iso8601, $end_date->iso8601
             );
         }) or die 'failed to run ctc_bo_transactions_for_reconciliation';
 
     # First, we get a mapping from address to database transaction information
-    $recon->from_database_items([values %$database_items]);
+    $recon->from_database_items($database_items);
 
     # TODO: once we move all currencies to our bookkeeping
     # we need to remove this currency specific check
