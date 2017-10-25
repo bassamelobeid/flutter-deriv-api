@@ -89,8 +89,6 @@ sub run {
             # Will return empty if we didn't need to update, so make sure we apply actual
             # version before our check here
             $rev ||= BOM::Platform::Runtime->instance->app_config->current_revision;
-            my $age = Time::HiRes::time - $rev;
-            warn "Config age is >90s - $age\n" if $age > 90;
             $tv_appconfig = $tv_now;
         }
 
