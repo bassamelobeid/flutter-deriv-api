@@ -64,7 +64,7 @@ fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/t
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_cr.json',
     $placeholder, 'testmultiple@binary.com', 'Howdee';
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',
-    '(USD|EUR|GBP|AUD|BTC|LTC|BCH)', 7;
+    '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH)', 8;
 # will fail as currency for existing client is not set
 fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json',
     'Howdee', 'id';
