@@ -87,7 +87,6 @@ my $config = {
         TradingDurationNotAllowed     => 'Trading is not offered for this duration.',
         TradingHoursExpiry            => 'Contract must expire during trading hours.',
         TradingNotAvailable           => 'Trading is not available from [_1] to [_2].',
-        TradingSuspended              => 'Trading is currently suspended due to configuration update.',
         TradingSuspendedSpecificHours => 'Trading on forex contracts with duration less than 5 hours is not available from [_1] to [_2]',
         WaitForContractSettlement     => 'Please wait for contract settlement. The final settlement price may differ from the indicative price.',
         ZeroAbsoluteBarrier           => 'Absolute barrier cannot be zero.',
