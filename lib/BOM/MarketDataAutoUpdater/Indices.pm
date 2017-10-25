@@ -138,16 +138,24 @@ sub run {
                     $volsurface->save;
                     $self->report->{$symbol}->{success} = 1;
                 } else {
+
                     $self->report->{$symbol} = {
                         success => 0,
                         reason  => 'Term 7 is missing from datasource for ' . $symbol,
                     };
                 }
             } else {
-                $self->report->{$symbol} = {
-                    success => 0,
-                    reason  => $volsurface->validation_error,
-                };
+                my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+
+# Ignore all error when exchange is closed.
+
+                if ($calendar->is_open($underlying->exchange)) {
+
+                    $self->report->{$symbol} = {
+                        success => 0,
+                        reason  => $volsurface->validation_error,
+                    };
+                }
             }
         }
         catch {
