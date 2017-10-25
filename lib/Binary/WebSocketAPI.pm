@@ -22,6 +22,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections |;
 
+use DataDog::DogStatsd::Helper;
 use Digest::MD5 qw(md5_hex);
 use File::Slurp;
 use Format::Util::Strings qw( defang );
@@ -486,7 +487,7 @@ sub startup {
                 # Basic sanitisation: we expect IPv4/IPv6 addresses only, reject anything else
                 $ip =~ s{[^[:xdigit:]:.]+}{_}g;
             } else {
-                $app->log->warn("cannot determine client IP-address");
+                DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.unknown_ip.count');
                 $ip = 'UNKNOWN';
             }
 
