@@ -7,6 +7,7 @@ use JSON;
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Digest::SHA qw/sha1_hex/;
 use Net::Async::Webservice::S3;
+use Variable::Disposition qw/retain_future/;
 
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::Hooks;
@@ -189,18 +190,19 @@ subtest 'sending two files concurrently' => sub {
     my @frames1 = gen_frames($data, $call_type1, $upload_id1);
     my @frames2 = gen_frames($data, $call_type2, $upload_id2);
 
+    receive_ok($upload_id1, $data);
+    receive_ok($upload_id2, $data);
     $t = $t->send_ok({binary => $frames1[0]});
     $t = $t->send_ok({binary => $frames2[0]});
     $t = $t->send_ok({binary => $frames1[1]});
     $t = $t->send_ok({binary => $frames2[1]});
-
     $t = $t->send_ok({binary => $frames1[2]});
-    receive_ok($upload_id1, $data);
+
     $t    = $t->message_ok;
     $res1 = decode_json($t->message->[1]);
 
     $t = $t->send_ok({binary => $frames2[2]});
-    receive_ok($upload_id2, $data);
+
     $t    = $t->message_ok;
     $res2 = decode_json($t->message->[1]);
 
@@ -334,10 +336,10 @@ subtest 'sending extra data after EOF chunk' => sub {
 
     my @frames = gen_frames($data, $call_type, $upload_id);
 
+    receive_ok($upload_id, $data);
     for (@frames) {
         $t = $t->send_ok({binary => $_});
     }
-    receive_ok($upload_id, $data);
     $t = $t->message_ok;
 
     $res = decode_json($t->message->[1]);
@@ -418,10 +420,10 @@ sub upload {
 
     my $length = length $data;
 
+    receive_ok($upload_id, $data);
     for (gen_frames $data, $call_type, $upload_id) {
         $t = $t->send_ok({binary => $_});
     }
-    receive_ok($upload_id, $data) if $check_receive;
     $t = $t->message_ok;
 
     is $res->{req_id},             $req->{req_id},      'binary payload req_id is unchanged';
@@ -461,8 +463,6 @@ sub override_subs {
         delete $upload_info->{put_future};
     };
 
-    my $prev_create_s3_instance = \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::create_s3_instance;
-
     *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::create_s3_instance = sub {
         my ($c, $upload_info) = @_;
 
@@ -496,22 +496,32 @@ sub receive_ok {
     my ($c) = values $t->app->active_connections;
     my $upload_info = $c->stash->{document_upload}->{$upload_id};
 
-    my $size = length $data;
+    retain_future(receive_loop($c, $upload_info, $data));
+}
+
+sub receive_loop {
+    my ($c, $upload_info, $data) = @_;
+
     my $test_digest = $upload_info->{test_digest} //= Digest::SHA->new;
     $upload_info->{test_received_size} //= 0;
+    my $pending_futures = $upload_info->{pending_futures};
 
-    while (1) {
-        my $msg = Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::add_upload_future($c, $upload_info->{pending_futures})->get;
+    return Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::add_upload_future($c, $pending_futures)->then(
+        sub {
+            my $msg  = shift;
+            my $size = length $data;
 
-        $test_digest->add($msg);
-        $upload_info->{test_received_size} += length $msg;
-        last if $upload_info->{test_received_size} == $size;
-    }
+            $test_digest->add($msg);
+            $upload_info->{test_received_size} += length $msg;
+            return receive_loop($c, $upload_info, $data) if $upload_info->{test_received_size} < $size;
 
-    is $test_digest->hexdigest, sha1_hex($data), 'Data received correctly';
+            is $test_digest->hexdigest, sha1_hex($data), 'Data received correctly';
 
-    $upload_info->{last_chunk_arrived}->get;
-    Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::send_upload_successful($c, $upload_info, 'success');
+            return $upload_info->{last_chunk_arrived}->then(
+                sub {
+                    return Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::send_upload_successful($c, $upload_info, 'success');
+                });
+        });
 }
 
 done_testing();
