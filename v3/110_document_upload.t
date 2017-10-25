@@ -472,22 +472,7 @@ sub override_subs {
 
         $upload_info->{s3} = $s3;
 
-        $upload_info->{put_future} = $s3->put_object(
-            key   => $upload_info->{file_name},
-            value => sub {
-                my ($f) = @{$upload_info->{pending_futures}};
-
-                push @{$upload_info->{pending_futures}}, $f = $c->loop->new_future unless $f;
-
-                $f->on_ready(
-                    sub {
-                        shift @{$upload_info->{pending_futures}};
-                    });
-
-                return $f;
-            },
-            value_length => $upload_info->{file_size},
-        );
+        $upload_info->{put_future} = $s3->put_object(key  => '', value => sub {}, value_length => 0);
 
         $upload_info->{put_future}->on_fail(
             sub {
