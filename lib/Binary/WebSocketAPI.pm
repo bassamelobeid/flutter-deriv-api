@@ -137,7 +137,7 @@ sub startup {
         });
 
     $app->plugin(
-        'ClientIP::Pluggable',
+        'Mojolicious::Plugin::ClientIP::Pluggable',
         analyze_headers => [qw/cf-pseudo-ipv4 cf-connecting-ip true-client-ip/],
         restrict_family => 'ipv4',
         fallbacks       => [qw/rfc-7239 x-forwarded-for remote_address/]);
