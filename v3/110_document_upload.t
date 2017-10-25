@@ -3,7 +3,7 @@ use warnings;
 
 use Test::Most;
 use Test::Warn;
-use JSON;
+use JSON::MaybeXS qw/decode_json encode_json/;
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Digest::SHA qw/sha1_hex/;
 use Net::Async::Webservice::S3;
@@ -34,6 +34,13 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $req_id      = 1;
 my $CHUNK_SIZE  = 6;
 my $PASSTHROUGH = {key => 'value'};
+
+subtest 'Encoded json passed as binary frame' => sub {
+    $t = $t->send_ok({binary => encode_json({ping => 1})})->message_ok;
+    my $res = decode_json($t->message->[1]);
+
+    ok $res->{ping}, 'Encoded json should be treated as json';
+};
 
 subtest 'Invalid upload frame' => sub {
     warning_like {
