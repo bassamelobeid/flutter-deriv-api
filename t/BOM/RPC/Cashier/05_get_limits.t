@@ -247,12 +247,7 @@ subtest 'MLT' => sub {
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price',  'EUR', $limits->{lifetime_limit}),
             payout_per_symbol_and_contract_type   => '20000.00',
-            'payout_per_symbol'                   => {
-                atm     => '10000.00',
-                non_atm => {
-                    less_than_seven_days => '3000.00',
-                    more_than_seven_days => '10000.00',
-                }}};
+        };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
         $client->smart_payment(%deposit, currency => 'EUR');
@@ -285,12 +280,7 @@ subtest 'MLT' => sub {
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price',  'EUR', 99998999),
-            'payout_per_symbol'                   => {
-                atm     => '10000.00',
-                non_atm => {
-                    less_than_seven_days => '3000.00',
-                    more_than_seven_days => '10000.00',
-                }}};
+        };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
     };
