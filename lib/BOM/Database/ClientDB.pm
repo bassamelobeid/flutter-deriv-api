@@ -118,8 +118,8 @@ my $decoder = JSON::MaybeXS->new;
 sub getall_arrayref {
     my ($self, $query, $params) = @_;
 
-    my $result = $self->db->dbic->run( fixup => 
-        sub {
+    my $result = $self->db->dbic->run(
+        fixup => sub {
             my $sth = $_->prepare($query);
             $sth->execute(@$params);
             return $sth->fetchall_arrayref([0]);
@@ -158,8 +158,8 @@ sub get_duplicate_client {
         broker_code=?
 ";
     my $dbic        = $self->db->dbic;
-    my @dupe_record = $dbic->run( fixup => 
-        sub {
+    my @dupe_record = $dbic->run(
+        fixup => sub {
             my $dupe_sth = $_->prepare($dupe_sql);
             $dupe_sth->bind_param(1, uc $args->{first_name});
             $dupe_sth->bind_param(2, uc $args->{last_name});
@@ -177,8 +177,8 @@ sub lock_client_loginid {
     my $client_loginid = shift || $self->loginid;
 
     my $dbic   = $self->db->dbic;
-    my $result = $dbic->run( ping => 
-        sub {
+    my $result = $dbic->run(
+        ping => sub {
             $_->do('SET synchronous_commit=local');
 
             my $sth = $_->prepare('SELECT lock_client_loginid($1)');
@@ -202,8 +202,8 @@ sub unlock_client_loginid {
     my $client_loginid = shift || $self->loginid;
 
     my $dbic   = $self->db->dbic;
-    my $result = $dbic->run( ping => 
-        sub {
+    my $result = $dbic->run(
+        ping => sub {
             $_->do('SET synchronous_commit=local');
 
             my $sth = $_->prepare('SELECT unlock_client_loginid($1)');
