@@ -194,22 +194,16 @@ sub loginid_list_cookie_val {
 sub get_last_successful_login_history {
     my $self = shift;
 
-    my $login_history = $self->find_login_history(
-        query => [
-            action     => 'login',
-            successful => 't'
-        ],
-        sort_by => 'history_date desc',
-        limit   => 1
-    );
+    my $last_login =
+        $self->db->dbic->run(
+        sub { $_->selectrow_hashref('SELECT environment, history_date FROM users.last_login WHERE binary_user_id = ?', undef, $self->{id}) });
 
-    if (@{$login_history}) {
-        my $record = @{$login_history}[0];
+    if ($last_login) {
         return {
-            action      => $record->action,
-            status      => $record->successful ? 1 : 0,
-            environment => $record->environment,
-            epoch       => Date::Utility->new($record->history_date)->epoch
+            action      => 'login',
+            status      => 1,
+            environment => $last_login->{environment},
+            epoch       => Date::Utility->new($last_login->{history_date})->epoch
         };
     }
 
