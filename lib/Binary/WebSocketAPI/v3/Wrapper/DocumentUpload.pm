@@ -8,6 +8,7 @@ use Digest::SHA;
 use Net::Async::Webservice::S3;
 use Future;
 use Variable::Disposition qw/retain_future/;
+use JSON::MaybeXS qw/decode_json/;
 
 use Binary::WebSocketAPI::Hooks;
 
@@ -55,6 +56,9 @@ sub add_upload_info {
 sub document_upload {
     my ($c, $frame) = @_;
 
+    # Ignore valid json frames;
+    return if eval { decode_json($frame) };
+
     my $upload_info;
 
     try {
@@ -63,7 +67,7 @@ sub document_upload {
         upload_chunk($c, $upload_info);
     }
     catch {
-        warn "UploadError: $_";
+        warn "UploadError (app_id: " . $c->app_id . "): $_";
         send_upload_failure($c, $upload_info, 'unknown');
     };
 
