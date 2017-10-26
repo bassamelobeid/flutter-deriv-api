@@ -91,8 +91,7 @@ JOIN    data_collection.quants_bet_variables as qbv ON txn.id = qbv.transaction_
 WHERE   fmb.bet_class = 'coinauction_bet'
 SQL
 
-    $_->{per_token_bid_price_USD} = financialrounding('price', 'USD', in_USD($_->{per_token_bid_price}, $_->{currency_code}))
-        for @$live_open_ico;
+    $_->{per_token_bid_price_USD} = financialrounding('price', 'USD', in_USD($_->{per_token_bid_price}, $_->{currency_code})) for @$live_open_ico;
     return $live_open_ico;
 }
 
@@ -110,11 +109,11 @@ sub website_status {
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
-        ico_info => $ico_info,
+        ico_info                 => $ico_info,
         ico_status               => (
             $app_config->system->suspend->is_auction_ended
                 or not $app_config->system->suspend->is_auction_started
-            ) ? 'closed' : 'open',
+        ) ? 'closed' : 'open',
     };
 }
 
