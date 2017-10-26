@@ -113,7 +113,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 100,
                 verification_code     => $code
             }});
-    ok $res->{error}->{message_to_client} =~ /the Payment Agent does not exist/, 'the Payment Agent does not exist';
+    is $res->{error}->{message_to_client}, 'The payment agent account does not exist.', 'the Payment Agent does not exist';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
             client => $client,
@@ -124,7 +124,9 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 100,
                 verification_code     => $code
             }});
-    ok $res->{error}->{message_to_client} =~ /your currency of RMB is unavailable/, 'your currency of RMB is unavailable';
+    is $res->{error}->{message_to_client},
+        'You cannot perform this action, as RMB is not default currency for your account ' . $client->loginid . '.',
+        'your currency of RMB is unavailable';
 
     $client->set_status('withdrawal_locked', 'test.t', "just for test");
     $client->save();
@@ -137,7 +139,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 100,
                 verification_code     => $code
             }});
-    ok $res->{error}->{message_to_client} =~ /There was an error processing the request/, 'error';
+    is $res->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.', 'error';
 
     $client->clr_status('withdrawal_locked');
     $client->save();
@@ -152,7 +154,9 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 100,
                 verification_code     => $code
             }});
-    ok $res->{error}->{message_to_client} =~ /This Payment Agent cashier section is locked/, 'This Payment Agent cashier section is locked';
+    is $res->{error}->{message_to_client},
+        'You cannot perform the withdrawal to account ' . $pa_client->loginid . ", as the payment agent's cashier is locked.",
+        'This Payment Agent cashier section is locked';
 
     $pa_client->clr_status('cashier_locked');
     $pa_client->save();
@@ -165,7 +169,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 500,
                 verification_code     => $code
             }});
-    ok $res->{error}->{message_to_client} =~ /you cannot withdraw./, 'you cannot withdraw.';
+    ok $res->{error}->{message_to_client} =~ /Sorry, you cannot withdraw. Your account balance is/, 'you cannot withdraw.';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
             client => $client,
@@ -199,7 +203,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 100,
                 verification_code     => $code
             }});
-    ok $res->{error}->{message_to_client} =~ /An error occurred while processing request/, 'An error occurred while processing request';
+    is $res->{error}->{message_to_client}, 'Sorry, an error occurred whilst processing your request. Please try again in one minute.',
+        'An error occurred while processing request';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
             client => $client,
@@ -242,7 +247,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 currency              => 'USD',
                 amount                => 100
             }});
-    ok $res->{error}->{message_to_client} =~ /You are not a Payment Agent/, 'You are not a Payment Agent';
+    is $res->{error}->{message_to_client}, 'You are not authorized for transfers via payment agents.', 'You are not a Payment Agent';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
             client => $pa_client,
@@ -304,7 +309,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 currency              => 'RMB',
                 amount                => 100
             }});
-    ok $res->{error}->{message_to_client} =~ /only USD is allowed/, 'only USD is allowed';
+    is $res->{error}->{message_to_client}, 'Payment agent transfers are available for USD currency only.', 'only USD is allowed';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
             client => $pa_client,
@@ -314,7 +319,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 currency              => 'USD',
                 amount                => 100
             }});
-    ok $res->{error}->{message_to_client} =~ /it is not allowed/, 'self, it is not allowed';
+    is $res->{error}->{message_to_client}, 'Payment agent transfers are not allowed within the same account.', 'self, it is not allowed';
 
     $client->set_status('disabled', 'test.t', "just for test");
     $client->save();
@@ -341,7 +346,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 currency              => 'USD',
                 amount                => 100,
             }});
-    ok $res->{error}->{message_to_client} =~ /Your cashier section is locked/, 'Your cashier section is locked';
+    is $res->{error}->{message_to_client}, 'You cannot perform this action, as your account is cashier locked.', 'Your cashier section is locked';
 
     $pa_client->clr_status('cashier_locked');
     $pa_client->save();
@@ -385,7 +390,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 currency              => 'USD',
                 amount                => 100,
             }});
-    ok $res->{error}->{message_to_client} =~ /An error occurred while processing request/, 'An error occurred while processing request';
+    is $res->{error}->{message_to_client}, 'Sorry, an error occurred whilst processing your request. Please try again in one minute.',
+        'An error occurred while processing request';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
             client => $pa_client,

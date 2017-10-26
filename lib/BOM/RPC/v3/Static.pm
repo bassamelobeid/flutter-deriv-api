@@ -75,13 +75,17 @@ sub _currencies_config {
 sub website_status {
     my $params = shift;
 
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
     return {
-        terms_conditions_version => BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version,
+        terms_conditions_version => $app_config->cgi->terms_conditions_version,
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,
         clients_country          => $params->{country_code},
-        supported_languages      => BOM::Platform::Runtime->instance->app_config->cgi->supported_languages,
+        supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
-        ico_status               => BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_ended == 1 ? 'closed' : 'open',
+        ico_status               => (
+            $app_config->system->suspend->is_auction_ended
+                or not $app_config->system->suspend->is_auction_started
+        ) ? 'closed' : 'open',
     };
 }
 
