@@ -291,10 +291,11 @@ sub last_chunk_received {
 sub add_upload_future {
     my ($c, $pending_futures, $received_chunk) = @_;
 
-    my ($first_pending_future) = grep { not($received_chunk and $_->is_ready) } @{$pending_futures};
+    my ($current_pending_future) = grep { not($received_chunk and $_->is_ready) } @{$pending_futures};
 
-    my $upload_future = $first_pending_future || $c->loop->new_future;
-    push @{$pending_futures}, $upload_future;
+    my $upload_future = $current_pending_future || $c->loop->new_future;
+
+    push @{$pending_futures}, $upload_future if not $current_pending_future;
 
     if ($received_chunk) {
         $upload_future->done($received_chunk);
