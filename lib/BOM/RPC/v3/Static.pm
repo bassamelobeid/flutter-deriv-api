@@ -82,7 +82,10 @@ sub website_status {
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
-        ico_status               => ($app_config->system->suspend->is_auction_ended or not $app_config->system->suspend->is_auction_started) ? 'closed' : 'open',
+        ico_status               => (
+            $app_config->system->suspend->is_auction_ended
+                or not $app_config->system->suspend->is_auction_started
+        ) ? 'closed' : 'open',
     };
 }
 
