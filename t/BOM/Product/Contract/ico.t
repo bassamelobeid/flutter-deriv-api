@@ -37,7 +37,7 @@ my $bet_params = {
 };
 
 subtest 'Ico variations' => sub {
-
+    BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_started(1);
     my $c = produce_contract($bet_params);
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
     is $c->code,      'BINARYICO',             'is a Binaryico';
@@ -60,11 +60,9 @@ subtest 'Ico variations' => sub {
     is $c->code, 'BINARYICO', 'is a Binaryico';
     ok !$c->is_valid_to_buy, 'is not valid to buy';
     is $c->primary_validation_error->message, 'The minimum bid is USD 1 or equivalent in other currency.', 'Minimum bid of USD1';
-
 };
 
 subtest 'shortcode_to_parameters' => sub {
-
     my $parameters = shortcode_to_parameters('BINARYICO_1.0001_1400', 'USD');
     my $expected = {
         underlying                    => create_underlying('BINARYICO'),
@@ -84,6 +82,7 @@ subtest 'shortcode_to_parameters' => sub {
         binaryico_number_of_tokens    => 1400
     };
 
+    BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_started(1);
     my $c = produce_contract($parameters);
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
     is $c->code,      'BINARYICO',             'is a Binaryico';
@@ -98,5 +97,9 @@ subtest 'shortcode_to_parameters' => sub {
 
     $legacy = shortcode_to_parameters('BINARYICO_BTCICO_1HB5XMLmzFVj8ALj6mfBsbifRoD4miY36v_0.0001_1400_1493596800', 'USD');
     is($legacy->{bet_type}, 'Invalid', 'Legacy shortcode.');
+
+    BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_started(0);
+    $c = produce_contract($parameters);
+    ok !$c->is_valid_to_buy, 'is not valid to buy as auction not started';
     }
 
