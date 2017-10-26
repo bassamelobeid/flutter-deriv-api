@@ -21,7 +21,7 @@ my %expected_type = (
     virtual         => [
         'ASIAND',     'ASIANU',     'CALL',        'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD', 'DIGITOVER',
         'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',        'PUTE',     'RANGE',
-        'UPORDOWN',   'CALLE',      'EXPIRYRANGEE', 
+        'UPORDOWN',   'CALLE',      'EXPIRYRANGEE',
     ],
     costarica => [
         'ASIAND',     'ASIANU',     'CALL',        'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD', 'DIGITOVER',

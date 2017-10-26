@@ -85,7 +85,8 @@ sub create_pricing_data {
         }
 
         if (grep { $underlying->market->name eq $_ } qw(forex commodities)) {
-            push @currencies, ($underlying->asset_symbol, $underlying->quoted_currency_symbol, $underlying->rate_to_imply . '-' . $underlying->rate_to_imply_from);
+            push @currencies,
+                ($underlying->asset_symbol, $underlying->quoted_currency_symbol, $underlying->rate_to_imply . '-' . $underlying->rate_to_imply_from);
         } else {
             @dividend_symbols = $underlying->symbol;
             push @currencies, $underlying->quoted_currency_symbol;

@@ -89,7 +89,8 @@ subtest 'produce_contract exception' => sub {
     foreach my $undef ({bet_type => undef}, {duration => undef}, {underlying => undef}, {currency => undef}) {
         try {
             produce_contract({%$contract_params, %$undef});
-        } catch {
+        }
+        catch {
             isa_ok $_, 'BOM::Product::Exception';
             is $_->message_to_client->[0], 'Missing required contract parameters ([_1]).';
             my $missing = (keys %$undef)[0];

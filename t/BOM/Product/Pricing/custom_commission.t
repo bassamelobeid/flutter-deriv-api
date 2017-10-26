@@ -279,8 +279,8 @@ subtest 'ITM check on callput' => sub {
     $c = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0, 'does not charge for OTM PUT';
     $args->{bet_type} = 'CALLE';
-    $args->{barrier} = 'S0P';
-    $c = produce_contract($args);
+    $args->{barrier}  = 'S0P';
+    $c                = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0, 'does not charge for ATM contracts';
 };
 

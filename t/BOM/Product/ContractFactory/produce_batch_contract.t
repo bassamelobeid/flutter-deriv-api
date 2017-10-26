@@ -17,7 +17,11 @@ use Date::Utility;
 use JSON qw(to_json);
 
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked_decimate->mock('get', sub {[map {{epoch => $_, decimate_epoch => $_, quote => 100 + 0.001*$_}} (0..80)]});
+$mocked_decimate->mock(
+    'get',
+    sub {
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.001 * $_} } (0 .. 80)];
+    });
 my %custom_otm =
     map { rand(1234) => {conditions => {market => $_, expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
 BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json(\%custom_otm));
@@ -138,13 +142,14 @@ subtest 'produce_batch_contract - error check' => sub {
     cmp_ok $ask_prices->{RANGE}->{'100.200-99.800'}->{ask_price}, '==', 2, 'minimum ask price';
     is_deeply($ask_prices->{UPORDOWN}->{'100.200-99.800'}->{error}{message_to_client}, ['This contract offers no return.'],);
     is $ask_prices->{RANGE}->{'100.250-98.750'}->{ask_price},    2.36, 'correct ask price';
-    is $ask_prices->{UPORDOWN}->{'100.250-98.750'}->{ask_price}, 8.36,  'correct ask price';
+    is $ask_prices->{UPORDOWN}->{'100.250-98.750'}->{ask_price}, 8.36, 'correct ask price';
 
     $args->{bet_types} = ['CALL', 'RANGE'];
     try {
         $batch = produce_batch_contract($args);
         $batch->ask_prices;
-    } catch {
+    }
+    catch {
         isa_ok $_, 'BOM::Product::Exception';
         is $_->message_to_client->[0], 'Invalid barrier ([_1]).';
         like $_->message_to_client->[1], qr/Could not mixed single barrier and double barrier contracts/, 'correct error args';
@@ -160,7 +165,8 @@ subtest 'produce_batch_contract - error check' => sub {
     try {
         $batch = produce_batch_contract($args);
         $batch->ask_prices;
-    } catch {
+    }
+    catch {
         isa_ok $_, 'BOM::Product::Exception';
         is $_->message_to_client->[0], 'Invalid barrier ([_1]).';
         like $_->message_to_client->[1], qr/Single barrier input is expected/, 'correct error args';
@@ -169,7 +175,8 @@ subtest 'produce_batch_contract - error check' => sub {
     try {
         $batch = produce_batch_contract($args);
         throws_ok { $batch->ask_prices } qr/BOM::Product::Exception/, 'throws error if bet_type-barrier mismatch';
-    } catch {
+    }
+    catch {
         isa_ok $_, 'BOM::Product::Exception';
         is $_->message_to_client->[0], 'Invalid barrier ([_1]).';
         like $_->message_to_client->[1], qr/Double barrier input is expected/, 'correct error args';

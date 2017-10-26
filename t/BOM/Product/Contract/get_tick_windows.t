@@ -13,19 +13,19 @@ $mocked_c->mock('_applicable_economic_events', sub { [] });
 my $now = Date::Utility->new->truncate_to_day;
 
 my $c = produce_contract({
-    bet_type   => 'CALL',
-    underlying => 'frxUSDJPY',
-    date_start => $now,
+    bet_type     => 'CALL',
+    underlying   => 'frxUSDJPY',
+    date_start   => $now,
     date_pricing => $now,
-    duration   => '1h',
-    barrier    => 'S0P',
-    currency   => 'USD',
-    payout     => 100,
+    duration     => '1h',
+    barrier      => 'S0P',
+    currency     => 'USD',
+    payout       => 100,
 });
 
 my $period = {
     from => $c->effective_start->minus_time_interval('20m'),
-    to => $c->effective_start
+    to   => $c->effective_start
 };
 
 subtest 'no events' => sub {

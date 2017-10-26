@@ -99,6 +99,12 @@ sub produce_contract {
     $params_ref->{'_produce_contract_ref'} = \&produce_contract;
 
     my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
+
+    # XXX Remove this after ICO finishes
+    die 'Invalid landing company ' . $landing_company . ' for coin auction'
+        if $contract_class->isa('BOM::Product::Contract::Coinauction')
+        and $landing_company ne 'costarica';
+
     return $contract_class->new($params_ref) unless $role_exists;
 
     # we're applying role. For speed reasons, we're not using $role->meta->apply($contract_obj),
