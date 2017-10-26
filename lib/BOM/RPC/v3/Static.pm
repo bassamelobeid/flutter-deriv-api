@@ -104,9 +104,9 @@ SQL
         $sum{$bucket} += $_->{unit_price_usd} * $_->{tokens};
     }
     return {
-        bids => $bids,
+        bids      => $bids,
         histogram => \%sum
-    }
+    };
 }
 
 sub website_status {
