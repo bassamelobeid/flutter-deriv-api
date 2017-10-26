@@ -186,61 +186,63 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $recorded_date,
         rates         => $dividend->{$_}{rates},
     }) for qw( FTSE GDAXI);
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'correlation_matrix',
+    {
         recorded_date => $recorded_date,
-        correlations => {
-          FTSE => {
-            GBP => {
-              '3M' =>  0.356,
-              '6M' => 0.336,
-              '9M' => 0.32,
-              '12M' => 0.307,
+        correlations  => {
+            FTSE => {
+                GBP => {
+                    '3M'  => 0.356,
+                    '6M'  => 0.336,
+                    '9M'  => 0.32,
+                    '12M' => 0.307,
+                },
+                USD => {
+                    '3M'  => 0.554,
+                    '6M'  => 0.538,
+                    '9M'  => 0.525,
+                    '12M' => 0.516,
+                },
             },
-            USD => {
-              '3M' => 0.554,
-              '6M' => 0.538,
-              '9M' => 0.525,
-              '12M' => 0.516,
+            DFMGI => {
+                GBP => {
+                    '3M'  => 0.356,
+                    '6M'  => 0.336,
+                    '9M'  => 0.32,
+                    '12M' => 0.307,
+                },
+                USD => {
+                    '3M'  => 0.554,
+                    '6M'  => 0.538,
+                    '9M'  => 0.525,
+                    '12M' => 0.516,
+                },
             },
-          },
-          DFMGI => {
-            GBP => {
-              '3M' =>  0.356,
-              '6M' => 0.336,
-              '9M' => 0.32,
-              '12M' => 0.307,
+            GDAXI => {
+                USD => {
+                    '3M'  => 0.506,
+                    '6M'  => 0.49,
+                    '9M'  => 0.477,
+                    '12M' => 0.467,
+                }
             },
-            USD => {
-              '3M' => 0.554,
-              '6M' => 0.538,
-              '9M' => 0.525,
-              '12M' => 0.516,
+            FCHI => {
+                GBP => {
+                    '3M'  => 0.356,
+                    '6M'  => 0.336,
+                    '9M'  => 0.32,
+                    '12M' => 0.307,
+                },
+                USD => {
+                    '3M'  => 0.554,
+                    '6M'  => 0.538,
+                    '9M'  => 0.525,
+                    '12M' => 0.516,
+                },
             },
-          },
-          GDAXI => {
-            USD => {
-              '3M' => 0.506,
-              '6M' => 0.49,
-              '9M' => 0.477,
-              '12M' =>  0.467,
-            }
-          },
-          FCHI => {
-            GBP => {
-              '3M' =>  0.356,
-              '6M' => 0.336,
-              '9M' => 0.32,
-              '12M' => 0.307,
-            },
-            USD => {
-              '3M' => 0.554,
-              '6M' => 0.538,
-              '9M' => 0.525,
-              '12M' => 0.516,
-            },
-          },
-    },
-});
+        },
+    });
 
 foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
     foreach my $bet_type ('CALL', 'NOTOUCH', 'RANGE', 'EXPIRYRANGE', 'DIGITMATCH') {

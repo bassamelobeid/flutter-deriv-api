@@ -16,8 +16,11 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Test::MockModule;
 
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked->mock('get', sub {[map {{epoch => $_, decimate_epoch => $_, quote => 100 + 0.005*$_}} (0..80)]});
-
+$mocked->mock(
+    'get',
+    sub {
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
+    });
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');

@@ -21,9 +21,13 @@ Cache::RedisDB->flushall;
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
-my $now = Date::Utility->new('2016-09-19 19:59:59');
+my $now    = Date::Utility->new('2016-09-19 19:59:59');
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
-$mocked->mock('get', sub {[map {{epoch => $_, decimate_epoch => $_, quote => 100 + 0.005*$_}} (0..80)]});
+$mocked->mock(
+    'get',
+    sub {
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
+    });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -75,7 +79,7 @@ subtest 'inefficient period' => sub {
     $bet_params->{date_start} = $bet_params->{date_pricing} = $now->plus_time_interval('1s');
     note('price at 2016-09-19 20:00:00');
     $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy,       'valid to buy';
+    ok !$c->is_valid_to_buy, 'valid to buy';
     ok $c->market_is_inefficient, 'market inefficient flag triggered';
     $bet_params->{underlying} = 'R_100';
     note('set underlying to R_100. Makes sure only forex is affected.');
@@ -138,7 +142,7 @@ subtest 'non dst' => sub {
     $bet_params->{date_start} = $bet_params->{date_pricing} = $non_dst->plus_time_interval('1s');
     $bet_params->{disable_trading_at_quiet_period} = 0;
     $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy,       'valid to buy';
+    ok !$c->is_valid_to_buy, 'valid to buy';
     ok $c->market_is_inefficient, 'correctly triggered for non dst';
 };
 

@@ -16,7 +16,7 @@ my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked_decimate->mock(
     'get',
     sub {
-        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005*$_} } (0 .. 80)];
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
     });
 my $mock = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
 $mock->mock('get_trading_periods', sub { [] });
