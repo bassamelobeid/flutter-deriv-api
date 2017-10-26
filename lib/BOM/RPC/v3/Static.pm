@@ -13,6 +13,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (request);
+use BOM::Database::ClientDB;
 use BOM::RPC::v3::Utility;
 
 sub residence_list {
@@ -72,16 +73,42 @@ sub _currencies_config {
     return \%currencies_config;
 }
 
+sub live_open_ico_bids {
+    my $clientdb = BOM::Database::ClientDB->new({
+        broker_code => 'CR',
+        operation   => 'replica',
+    });
+    my $live_open_ico = $self->_db->dbh->selectall_arrayref(<<'SQL', { Slice => {} });
+SELECT  acc.currency_code,
+        qbv.binaryico_number_of_tokens as number_of_tokens,
+        qbv.binaryico_per_token_bid_price as per_token_bid_price
+FROM    bet.financial_market_bet_open AS fmb
+JOIN    transaction.account AS acc ON fmb.account_id = acc.id
+JOIN    transaction.transaction AS txn ON fmb.id = txn.financial_market_bet_id
+JOIN    data_collection.quants_bet_variables as qbv ON txn.id = qbv.transaction_id
+WHERE   fmb.bet_class = 'coinauction_bet'
+SQL
+
+    $_->{per_token_bid_price_USD} = financialrounding('price', 'USD', in_USD($_->{per_token_bid_price}, $_->{currency_code})) for values %$live_open_ico;
+    return $live_open_ico;
+}
+
 sub website_status {
     my $params = shift;
 
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $ico_info = {
+        final_price => $app_config->system->suspend->ico_final_price,
+        bids        => live_open_ico_bids(),
+    };
     return {
-        terms_conditions_version => BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version,
+        terms_conditions_version => $app_config->cgi->terms_conditions_version,
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,
         clients_country          => $params->{country_code},
-        supported_languages      => BOM::Platform::Runtime->instance->app_config->cgi->supported_languages,
+        supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
-        ico_status               => BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_ended == 1 ? 'closed' : 'open',
+        ico_status               => ($app_config->system->suspend->is_auction_ended or not $app_config->system->suspend->is_auction_started) ? 'closed' : 'open',
+        ico_info                 => $ico_info,
     };
 }
 
