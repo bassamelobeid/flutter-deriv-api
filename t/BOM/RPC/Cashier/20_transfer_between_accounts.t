@@ -471,7 +471,8 @@ subtest 'transfer with fees' => sub {
     is $result->{client_to_loginid}, $client_cr1->loginid, 'Transaction successful';
 
     # fiat to crypto to is 1% and exchange rate is 4000 for BTC
-    my $transfer_amount = ($amount - $amount * 1 / 100) / 4000;
+    my $fee_percent     = 1;
+    my $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
     my $current_balance = $client_cr1->default_account->load->balance;
     cmp_ok $current_balance, '==', 1 + $transfer_amount, 'correct balance after transfer including fees';
     cmp_ok $client_cr->default_account->load->balance, '==', 1000 - $amount, 'correct balance, exact amount deducted';
@@ -487,7 +488,8 @@ subtest 'transfer with fees' => sub {
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr->loginid, 'Transaction successful';
 
-    $transfer_amount = ($amount - $amount * 0.5 / 100) * 4000;
+    # crypto to fiat is 1%
+    $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
     cmp_ok $client_cr->default_account->load->balance, '==', 990 + $transfer_amount, 'correct balance after transfer including fees';
     cmp_ok $client_cr1->default_account->load->balance, '==', $current_balance - $amount, 'correct balance after transfer including fees';
 };
@@ -557,7 +559,9 @@ subtest 'paymentagent transfer' => sub {
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr1->loginid, 'Transaction successful';
 
-    my $transfer_amount = ($amount - $amount * 0.5 / 100) * 4000;
+    # crypto to fiat is 1% and fiat to crypto is 1%
+    my $fee_percent     = 1;
+    my $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
     cmp_ok $client_cr->default_account->load->balance, '==', 1 - $amount, 'correct balance after transfer including fees';
     my $current_balance = $client_cr1->default_account->load->balance;
     cmp_ok $current_balance, '==', 1000 + $transfer_amount, 'correct balance after transfer including fees as payment agent is not authenticated';
