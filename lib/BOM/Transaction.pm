@@ -816,6 +816,7 @@ sub sell {
         currency_code  => $self->contract->currency,
     };
 
+    $bet_data->{bet_data}{is_expired} = $self->contract->is_expired;
     $self->stats_validation_done($stats_data);
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
@@ -867,7 +868,7 @@ sub sell_by_shortcode {
     my $stats_data = $self->stats_start('sell');
 
     my ($error_status, $bet_data) = $self->prepare_sell($options{skip});
-
+    $bet_data->{bet_data}{is_expired} = $self->contract->is_expired;
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
@@ -1285,12 +1286,14 @@ sub _build_pricing_comment {
 }
 
 =head2 sell_expired_contracts
+
 Static function: Sells expired contracts.
 For contracts with missing market data, settle them manually for real money accounts, but sell with purchase price for virtual account
 Returns: HashRef, with:
 'total_credited', total amount credited to Client
 'skip_contract', count for expired contracts that failed to be sold
 'failures', the failure information
+
 =cut
 
 my %source_to_sell_type = (
@@ -1363,7 +1366,7 @@ sub sell_expired_contracts {
 
         try {
             if ($contract->is_valid_to_sell) {
-                @{$bet}{qw/sell_price sell_time/} = ($contract->bid_price, $contract->date_pricing->db_timestamp);
+                @{$bet}{qw/sell_price sell_time is_expired/} = ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute
                     if $contract->category_code eq 'asian' and $contract->is_after_settlement;
                 push @bets_to_sell, $bet;
@@ -1388,7 +1391,7 @@ sub sell_expired_contracts {
 
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
-                @{$bet}{qw/sell_price sell_time/} = ($bet->{buy_price}, $now->db_timestamp);
+                @{$bet}{qw/sell_price sell_time is_expired/} = ($bet->{buy_price}, $now->db_timestamp, $contract->is_expired);
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
