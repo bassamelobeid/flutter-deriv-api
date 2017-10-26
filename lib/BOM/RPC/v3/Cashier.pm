@@ -503,6 +503,9 @@ sub paymentagent_transfer {
     return $error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to))
         if $client_to->get_status('disabled');
 
+    return $error_sub->(localize('You cannot transfer to account [_1], as their account is marked as unwelcome.', $loginid_to))
+        if $client_to->get_status('unwelcome');
+
     return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to))
         if ($client_to->get_status('cashier_locked') or $client_to->cashier_setting_password);
 
@@ -753,6 +756,14 @@ sub paymentagent_withdraw {
         if $client->get_status('withdrawal_locked');
 
     return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client->documents_expired;
+
+    return $error_sub->(
+        localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is disabled.", $pa_client->loginid))
+        if $pa_client->get_status('disabled');
+
+    return $error_sub->(
+        localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is marked as unwelcome.", $pa_client->loginid))
+        if $pa_client->get_status('unwelcome');
 
     return $error_sub->(localize("You cannot perform the withdrawal to account [_1], as the payment agent's cashier is locked.", $pa_client->loginid))
         if ($pa_client->get_status('cashier_locked') or $pa_client->cashier_setting_password);
@@ -1240,6 +1251,18 @@ sub _validate_transfer_between_accounts {
     # error if currency is not legal for landing company
     return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
         if (not $lc_from->is_currency_legal($currency) or not $lc_to->is_currency_legal($currency));
+
+    return _transfer_between_accounts_error(
+        localize('You cannot perform this action, as your account [_1] is currently disabled.', $client_to->loginid))
+        if $client_to->get_status('disabled');
+
+    return _transfer_between_accounts_error(
+        localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client_to->loginid))
+        if $client_to->get_status('unwelcome');
+
+    return _transfer_between_accounts_error(
+        localize('Your cannot perform this action, as your account [_1] cashier is locked as per request.', $client_to->loginid))
+        if $client_to->cashier_setting_password;
 
     # error out if from account has no currency set
     return _transfer_between_accounts_error(localize('Please deposit to your account.')) unless $from_currency;
