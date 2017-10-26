@@ -180,6 +180,7 @@ sub get_settings_by_group {
                 system.suspend.cryptocurrencies
                 system.suspend.new_accounts
                 system.suspend.is_auction_ended
+                system.suspend.is_auction_started
                 system.suspend.ico_final_price
                 system.suspend.all_logins
                 system.suspend.social_logins
