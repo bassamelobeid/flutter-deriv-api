@@ -113,10 +113,9 @@ sub website_status {
     my $params = shift;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
-    my $ico_info   = {
-        final_price => $app_config->system->suspend->ico_final_price,
-        bids        => live_open_ico_bids(),
-    };
+    my $ico_info   = live_open_ico_bids();
+    $ico_info->{final_price} = $app_config->system->suspend->ico_final_price;
+
     return {
         terms_conditions_version => $app_config->cgi->terms_conditions_version,
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,
