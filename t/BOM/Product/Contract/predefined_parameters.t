@@ -278,11 +278,11 @@ sub setup_ticks {
         # simulate distributor work
         if ($quote) {
             BOM::Platform::RedisReplicated::redis_write()->set(
-                "Distributor::QUOTE::$symbol", encode_json({
-                    quote => $quote,
-                    epcoh => $date->epoch,
-                })
-            );
+                "Distributor::QUOTE::$symbol",
+                encode_json({
+                        quote => $quote,
+                        epcoh => $date->epoch,
+                    }));
         }
     }
 }

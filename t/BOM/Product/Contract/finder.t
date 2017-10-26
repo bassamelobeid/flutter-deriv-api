@@ -85,16 +85,7 @@ subtest "available contracts for symbol" => sub {
         },
     );
 
-    my $expected_blackouts = [
-          [
-            '11:00:00',
-            '13:00:00'
-          ],
-          [
-            '20:00:00',
-            '23:59:59'
-          ]
-        ];
+    my $expected_blackouts = [['11:00:00', '13:00:00'], ['20:00:00', '23:59:59']];
 
     foreach my $market (keys %input) {
         foreach my $u (@{$input{$market}}) {
@@ -105,9 +96,10 @@ subtest "available contracts for symbol" => sub {
             });
             my $f = available_contracts_for_symbol({symbol => $u});
 
-            if($u eq 'frxEURUSD') {
-            	foreach my $contract (@{$f->{'available'}}) {
-			cmp_deeply $contract->{'forward_starting_options'}[0]{'blackouts'}, $expected_blackouts, "expected blackouts" if $contract->{start_type} eq 'forward';
+            if ($u eq 'frxEURUSD') {
+                foreach my $contract (@{$f->{'available'}}) {
+                    cmp_deeply $contract->{'forward_starting_options'}[0]{'blackouts'}, $expected_blackouts, "expected blackouts"
+                        if $contract->{start_type} eq 'forward';
                 }
             }
 

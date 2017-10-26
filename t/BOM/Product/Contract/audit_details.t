@@ -79,7 +79,7 @@ subtest 'no tick at start & expiry' => sub {
 subtest 'expiry daily' => sub {
     my $expiry = $now->truncate_to_day->plus_time_interval('23h59m59s');
     my @before = map { [100 + 0.001 * $_, $now->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
-    my @after = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
+    my @after  = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
     create_ticks(@before, @after);
     my $c = produce_contract({
         %$args,

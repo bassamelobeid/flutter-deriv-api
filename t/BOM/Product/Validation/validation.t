@@ -34,7 +34,7 @@ my $mocked_decimate  = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked_decimate->mock(
     'get',
     sub {
-        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005*$_} } (0 .. 80)];
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
     });
 my $mocked = Test::MockModule->new('BOM::Product::Contract');
 $mocked->mock('market_is_inefficient', sub { 0 });
@@ -61,7 +61,9 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 source       => 'forexfactory',
                 impact       => 1,
                 event_name   => 'FOMC',
-            }], recorded_date => Date::Utility->new('2013-03-27')});
+            }
+        ],
+        recorded_date => Date::Utility->new('2013-03-27')});
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
@@ -629,48 +631,48 @@ subtest 'invalid start times' => sub {
     test_error_list('buy', $bet, $expected_reasons);
 
 # Test forward starting inefficient period
-    my $fwd_date   = Date::Utility->new('2013-03-29 23:00:34');
-    $bet_params->{date_pricing} = $fwd_date->epoch;
-    $bet_params->{date_start}   = $fwd_date->epoch;
-    $bet_params->{bet_type}     = 'CALL';
-    $bet_params->{duration}     = '30m';
+    my $fwd_date = Date::Utility->new('2013-03-29 23:00:34');
+    $bet_params->{date_pricing}               = $fwd_date->epoch;
+    $bet_params->{date_start}                 = $fwd_date->epoch;
+    $bet_params->{bet_type}                   = 'CALL';
+    $bet_params->{duration}                   = '30m';
     $bet_params->{starts_as_forward_starting} = 1;
 
-    $expected_reasons         = [qr/blackout period/];
-    $bet                      = produce_contract($bet_params);
+    $expected_reasons = [qr/blackout period/];
+    $bet              = produce_contract($bet_params);
     ok $bet->_validate_start_and_expiry_date;
 
-    $fwd_date   = Date::Utility->new('2013-03-29 22:00:34');
-    $bet_params->{date_pricing} = $fwd_date->epoch;
-    $bet_params->{date_start}   = $fwd_date->epoch;
-    $bet_params->{bet_type}     = 'CALL';
-    $bet_params->{duration}     = '30m';
+    $fwd_date                                 = Date::Utility->new('2013-03-29 22:00:34');
+    $bet_params->{date_pricing}               = $fwd_date->epoch;
+    $bet_params->{date_start}                 = $fwd_date->epoch;
+    $bet_params->{bet_type}                   = 'CALL';
+    $bet_params->{duration}                   = '30m';
     $bet_params->{starts_as_forward_starting} = 1;
 
-    $expected_reasons         = [qr/blackout period/];
-    $bet                      = produce_contract($bet_params);
+    $expected_reasons = [qr/blackout period/];
+    $bet              = produce_contract($bet_params);
     ok $bet->_validate_start_and_expiry_date;
 
-    $fwd_date   = Date::Utility->new('2013-03-29 21:00:34');
-    $bet_params->{date_pricing} = $fwd_date->epoch;
-    $bet_params->{date_start}   = $fwd_date->epoch;
-    $bet_params->{bet_type}     = 'CALL';
-    $bet_params->{duration}     = '30m';
+    $fwd_date                                 = Date::Utility->new('2013-03-29 21:00:34');
+    $bet_params->{date_pricing}               = $fwd_date->epoch;
+    $bet_params->{date_start}                 = $fwd_date->epoch;
+    $bet_params->{bet_type}                   = 'CALL';
+    $bet_params->{duration}                   = '30m';
     $bet_params->{starts_as_forward_starting} = 1;
 
-    $expected_reasons         = [qr/blackout period/];
-    $bet                      = produce_contract($bet_params);
+    $expected_reasons = [qr/blackout period/];
+    $bet              = produce_contract($bet_params);
     ok $bet->_validate_start_and_expiry_date;
 
-    $fwd_date   = Date::Utility->new('2013-03-29 20:00:34');
-    $bet_params->{date_pricing} = $fwd_date->epoch;
-    $bet_params->{date_start}   = $fwd_date->epoch;
-    $bet_params->{bet_type}     = 'CALL';
-    $bet_params->{duration}     = '30m';
+    $fwd_date                                 = Date::Utility->new('2013-03-29 20:00:34');
+    $bet_params->{date_pricing}               = $fwd_date->epoch;
+    $bet_params->{date_start}                 = $fwd_date->epoch;
+    $bet_params->{bet_type}                   = 'CALL';
+    $bet_params->{duration}                   = '30m';
     $bet_params->{starts_as_forward_starting} = 1;
 
-    $expected_reasons         = [qr/blackout period/];
-    $bet                      = produce_contract($bet_params);
+    $expected_reasons = [qr/blackout period/];
+    $bet              = produce_contract($bet_params);
     ok $bet->_validate_start_and_expiry_date;
     delete $bet_params->{starts_as_forward_starting};
 
@@ -907,8 +909,8 @@ subtest 'invalid lifetimes.. how rude' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
-            symbol         => 'frxEURUSD',
-            recorded_date  => Date::Utility->new($bet_params->{date_pricing}),
+            symbol        => 'frxEURUSD',
+            recorded_date => Date::Utility->new($bet_params->{date_pricing}),
         });
 
     $bet = produce_contract($bet_params);
@@ -1204,14 +1206,14 @@ subtest 'tentative events' => sub {
         {
             recorded_date => Date::Utility->new(),
             events        => [{
-                    symbol       => 'USD',
-                    release_date => $now->epoch,
-                    blankout     => $blackout_start->epoch,
+                    symbol                 => 'USD',
+                    release_date           => $now->epoch,
+                    blankout               => $blackout_start->epoch,
                     estimated_release_date => $now->epoch,
-                    blankout_end => $blackout_end->epoch,
-                    is_tentative => 1,
-                    event_name   => 'Test tentative',
-                    impact       => 5,
+                    blankout_end           => $blackout_end->epoch,
+                    is_tentative           => 1,
+                    event_name             => 'Test tentative',
+                    impact                 => 5,
                 }
             ],
         });

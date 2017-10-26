@@ -127,6 +127,7 @@ my @ct = grep { not $skip_type{$_} } grep { !$equal{$_} } get_offerings_with_fil
     });
 my $vol = 0.15062438755219;
 subtest 'prices without economic events' => sub {
+
     foreach my $contract_type (@ct) {
         my @barriers = @{
             Test::BOM::UnitTestPrice::get_barrier_range({
