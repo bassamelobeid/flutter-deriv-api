@@ -60,6 +60,7 @@ sub build_mojo_test {
 }
 
 sub launch_redis {
+    return if $ENV{DOCKER};
     my $redis_port   = empty_port;
     my $redis_server = Mojo::Redis2::Server->new;
     $redis_server->start(
