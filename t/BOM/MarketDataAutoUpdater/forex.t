@@ -216,7 +216,7 @@ subtest 'save identical' => sub {
                 type          => $fake_surface->type
             }});
     lives_ok { $au->run } 'run without dying';
-    ok !$au->report->{frxUSDJPY}->{reason}, 'Silently passes on identical VS which is not expired';
+    is $au->report->{frxUSDJPY}->{reason}, undef, 'Silently passes on identical VS which is not expired';
 
     set_absolute_time($fake_date->epoch + MAX_ALLOWED_AGE + 2);
 
@@ -282,7 +282,7 @@ subtest "Friday after close, weekend, won't open check." => sub {
         },
     );
 
-    for my $name (sort keys %test_data ){
+    for my $name (sort keys %test_data) {
         my $details = $test_data{$name};
         my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
