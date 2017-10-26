@@ -27,6 +27,8 @@ use LandingCompany::Offerings qw(get_offerings_flyby);
 use List::Util qw(first);
 use Scalar::Util qw(looks_like_number);
 
+use BOM::Platform::Runtime;
+
 has [qw(chronicle_reader chronicle_writer)] => (is => 'ro');
 
 has [qw(recorded_date for_date)] => (
@@ -167,7 +169,7 @@ sub delete_config {
 sub _validate {
     my ($key, $value) = @_;
 
-    my $fb = get_offerings_flyby();
+    my $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config);
     my %valid_inputs = map { $_ => 1 } $fb->values_for_key($key);
 
     return 0 unless $valid_inputs{$value};
