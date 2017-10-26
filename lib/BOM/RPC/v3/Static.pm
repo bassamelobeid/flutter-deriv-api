@@ -8,6 +8,8 @@ use List::Util qw( min );
 
 use Brands;
 use LandingCompany::Registry;
+use Format::Util::Numbers qw/financialrounding/;
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
@@ -78,7 +80,7 @@ sub live_open_ico_bids {
         broker_code => 'CR',
         operation   => 'replica',
     });
-    my $live_open_ico = $self->_db->dbh->selectall_arrayref(<<'SQL', {Slice => {}});
+    my $live_open_ico = $clientdb->db->dbh->selectall_arrayref(<<'SQL', {Slice => {}});
 SELECT  acc.currency_code,
         qbv.binaryico_number_of_tokens as number_of_tokens,
         qbv.binaryico_per_token_bid_price as per_token_bid_price
@@ -90,7 +92,7 @@ WHERE   fmb.bet_class = 'coinauction_bet'
 SQL
 
     $_->{per_token_bid_price_USD} = financialrounding('price', 'USD', in_USD($_->{per_token_bid_price}, $_->{currency_code}))
-        for values %$live_open_ico;
+        for @$live_open_ico;
     return $live_open_ico;
 }
 
@@ -108,11 +110,11 @@ sub website_status {
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
+        ico_info => $ico_info,
         ico_status               => (
             $app_config->system->suspend->is_auction_ended
                 or not $app_config->system->suspend->is_auction_started
             ) ? 'closed' : 'open',
-        ico_info => $ico_info,
     };
 }
 
