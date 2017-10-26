@@ -1,16 +1,17 @@
 package BOM::Product::Contract::Coinauction;
 
 use Moose;
+use Date::Utility;
+use Quant::Framework::Underlying;
+use Format::Util::Numbers qw/financialrounding/;
+
+use Postgres::FeedDB::CurrencyConverter qw (in_USD);
 
 with 'MooseX::Role::Validatable';
-use BOM::MarketData::Types;
-use Quant::Framework::Underlying;
 extends 'Finance::Contract';
+use BOM::MarketData::Types;
 use BOM::Product::Static qw(get_error_mapping);
-use Date::Utility;
 use BOM::Platform::Runtime;
-use Postgres::FeedDB::CurrencyConverter qw (in_USD);
-use Format::Util::Numbers qw/financialrounding/;
 
 # Actual methods for introspection purposes.
 sub is_binaryico        { return 1 }
@@ -27,10 +28,6 @@ use constant {    # added for Transaction
 };
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
-
-my $app_config          = BOM::Platform::Runtime->instance->app_config;
-my $is_auction_ended    = $app_config->system->suspend->is_auction_ended;
-my $auction_final_price = $app_config->system->suspend->ico_final_price;
 
 has _for_sale => (
     is      => 'rw',
@@ -78,6 +75,24 @@ has payout => (
     lazy_build => 1,
 );
 
+has auction_ended => (
+    is         => 'ro',
+    isa        => 'Bool',
+    lazy_build => 1,
+);
+
+has auction_started => (
+    is         => 'ro',
+    isa        => 'Bool',
+    lazy_build => 1,
+);
+
+has auction_final_price => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
 sub _build_ask_price {
     my $self = shift;
     return $self->binaryico_number_of_tokens * $self->binaryico_per_token_bid_price;
@@ -88,11 +103,23 @@ sub _build_payout {
     return $self->ask_price;
 }
 
+sub _build_auction_started {
+    return BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_started;
+}
+
+sub _build_auction_ended {
+    return BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_ended;
+}
+
+sub _build_auction_final_price {
+    return BOM::Platform::Runtime->instance->app_config->system->suspend->ico_final_price;
+}
+
 sub _build_binaryico_auction_status {
     my $self = shift;
 
-    if ($is_auction_ended) {
-        if ($self->binaryico_per_token_bid_price_USD < $auction_final_price) {
+    if ($self->auction_ended) {
+        if ($self->binaryico_per_token_bid_price_USD < $self->auction_final_price) {
             $self->bid_price($self->ask_price);
             return 'unsuccessful bid';
         } else {
@@ -186,6 +213,20 @@ sub is_valid_to_buy {
     return $self->confirm_validity;
 }
 
+sub _validate_auction_started {
+    my $self = shift;
+
+    unless ($self->auction_started) {
+        return {
+            message           => 'ICO has not yet started.',
+            severity          => 99,
+            message_to_client => [$ERROR_MAPPING->{IcoNotStarted}],
+        };
+    }
+
+    return;
+}
+
 sub is_valid_to_sell {
     my $self = shift;
 
@@ -215,7 +256,7 @@ sub longcode {
 sub is_expired {
     my $self = shift;
 
-    return ($is_auction_ended) ? 1 : 0;
+    return ($self->auction_ended) ? 1 : 0;
 }
 
 sub is_settleable {
@@ -248,7 +289,7 @@ sub _validate_date_pricing {
 
     return if $self->_for_sale;
 
-    if ($is_auction_ended) {
+    if ($self->auction_ended) {
         return {
             message           => 'The auction is already closed.',
             severity          => 99,
