@@ -202,7 +202,7 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         underlying    => $usdjpy,
-        recorded_date => Date::Utility->new(time - 60 * 60 + 1),
+        recorded_date => Date::Utility->new(time - 60 * 60 + 4),
     });
 
 subtest 'save identical' => sub {
