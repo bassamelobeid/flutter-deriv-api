@@ -104,9 +104,9 @@ SQL
         $sum{$bucket} += $bid->{unit_price_usd} * $bid->{tokens};
     }
     return {
-        bids      => $bids,
+        bids                  => $bids,
         histogram_bucket_size => ICO_BUCKET_SIZE,
-        histogram => \%sum
+        histogram             => \%sum
     };
 }
 
