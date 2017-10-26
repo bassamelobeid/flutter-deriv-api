@@ -56,7 +56,7 @@ sub BUILD {
     $self->_eec($eec);
 
     # we are only concern about the 9 forex pairs where we offer multi-barrier trading on.
-    my $fb = get_offerings_flyby({}, 'japan');
+    my $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, 'japan');
     my %symbols = map { $_ => 1 } $fb->values_for_key('underlying_symbol');
     $self->_symbols_to_perform_check(\%symbols);
 
