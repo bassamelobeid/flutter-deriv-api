@@ -78,7 +78,7 @@ sub live_open_ico_bids {
         broker_code => 'CR',
         operation   => 'replica',
     });
-    my $live_open_ico = $self->_db->dbh->selectall_arrayref(<<'SQL', { Slice => {} });
+    my $live_open_ico = $self->_db->dbh->selectall_arrayref(<<'SQL', {Slice => {}});
 SELECT  acc.currency_code,
         qbv.binaryico_number_of_tokens as number_of_tokens,
         qbv.binaryico_per_token_bid_price as per_token_bid_price
@@ -89,7 +89,8 @@ JOIN    data_collection.quants_bet_variables as qbv ON txn.id = qbv.transaction_
 WHERE   fmb.bet_class = 'coinauction_bet'
 SQL
 
-    $_->{per_token_bid_price_USD} = financialrounding('price', 'USD', in_USD($_->{per_token_bid_price}, $_->{currency_code})) for values %$live_open_ico;
+    $_->{per_token_bid_price_USD} = financialrounding('price', 'USD', in_USD($_->{per_token_bid_price}, $_->{currency_code}))
+        for values %$live_open_ico;
     return $live_open_ico;
 }
 
@@ -97,7 +98,7 @@ sub website_status {
     my $params = shift;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
-    my $ico_info = {
+    my $ico_info   = {
         final_price => $app_config->system->suspend->ico_final_price,
         bids        => live_open_ico_bids(),
     };
@@ -107,8 +108,11 @@ sub website_status {
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
-        ico_status               => ($app_config->system->suspend->is_auction_ended or not $app_config->system->suspend->is_auction_started) ? 'closed' : 'open',
-        ico_info                 => $ico_info,
+        ico_status               => (
+            $app_config->system->suspend->is_auction_ended
+                or not $app_config->system->suspend->is_auction_started
+            ) ? 'closed' : 'open',
+        ico_info => $ico_info,
     };
 }
 
