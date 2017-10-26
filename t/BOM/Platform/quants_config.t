@@ -145,9 +145,10 @@ subtest 'get_config with bias' => sub {
     ok !@$configs, 'no config for WLDUSD, no warnings as well';
 };
 
+# this test is time-dependant. So, try to eliminate false-negatives by adding one more second to 3600
 subtest '_cleanup' => sub {
     clear_config();
-    my $hour_before = time - 3600;
+    my $hour_before = time - 3601;
     my $args        = {
         underlying_symbol => 'frxUSDJPY',
         name              => 'test',
