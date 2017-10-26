@@ -5,6 +5,7 @@ use warnings;
 
 use Format::Util::Numbers;
 use List::Util qw( min );
+use List::UtilsBy qw(nsort_by);
 
 use Brands;
 use LandingCompany::Registry;
@@ -17,6 +18,9 @@ use BOM::Platform::Config;
 use BOM::Platform::Context qw (request);
 use BOM::Database::ClientDB;
 use BOM::RPC::v3::Utility;
+
+# How wide each ICO histogram bucket is, in USD
+use constant ICO_BUCKET_SIZE => 0.20;
 
 sub residence_list {
     my $residence_countries_list;
@@ -80,10 +84,10 @@ sub live_open_ico_bids {
         broker_code => 'CR',
         operation   => 'replica',
     });
-    my $live_open_ico = $clientdb->db->dbh->selectall_arrayref(<<'SQL', {Slice => {}});
-SELECT  acc.currency_code,
-        qbv.binaryico_number_of_tokens as number_of_tokens,
-        qbv.binaryico_per_token_bid_price as per_token_bid_price
+    my $bids = $clientdb->db->dbh->selectall_arrayref(<<'SQL', {Slice => {}});
+SELECT  acc.currency_code as "currency",
+        qbv.binaryico_number_of_tokens as "tokens",
+        qbv.binaryico_per_token_bid_price as "unit_price"
 FROM    bet.financial_market_bet_open AS fmb
 JOIN    transaction.account AS acc ON fmb.account_id = acc.id
 JOIN    transaction.transaction AS txn ON fmb.id = txn.financial_market_bet_id
@@ -91,8 +95,18 @@ JOIN    data_collection.quants_bet_variables as qbv ON txn.id = qbv.transaction_
 WHERE   fmb.bet_class = 'coinauction_bet'
 SQL
 
-    $_->{per_token_bid_price_USD} = financialrounding('price', 'USD', in_USD($_->{per_token_bid_price}, $_->{currency_code})) for @$live_open_ico;
-    return $live_open_ico;
+    $_->{unit_price_usd} = financialrounding('price', 'USD', in_USD($_->{per_token_bid_price}, $_->{currency_code})) for @$bids;
+
+    # Divide these items into buckets - currently hardcoded at 20c
+    my %sum;
+    for my $bid (nsort_by { $_->{per_token_bid_price_USD} } @$bids) {
+        my $bucket = ICO_BUCKET_SIZE * floor($bid->{unit_price_usd} / ICO_BUCKET_SIZE);
+        $sum{$bucket} += $_->{unit_price_usd} * $_->{tokens};
+    }
+    return {
+        bids => $bids,
+        histogram => \%sum
+    }
 }
 
 sub website_status {
