@@ -95,16 +95,17 @@ JOIN    data_collection.quants_bet_variables as qbv ON txn.id = qbv.transaction_
 WHERE   fmb.bet_class = 'coinauction_bet'
 SQL
 
-    $_->{unit_price_usd} = financialrounding('price', 'USD', in_USD($_->{per_token_bid_price}, $_->{currency_code})) for @$bids;
+    $_->{unit_price_usd} = financialrounding('price', 'USD', in_USD($_->{unit_price}, $_->{currency})) for @$bids;
 
     # Divide these items into buckets - currently hardcoded at 20c
     my %sum;
-    for my $bid (nsort_by { $_->{per_token_bid_price_USD} } @$bids) {
-        my $bucket = ICO_BUCKET_SIZE * floor($bid->{unit_price_usd} / ICO_BUCKET_SIZE);
-        $sum{$bucket} += $_->{unit_price_usd} * $_->{tokens};
+    for my $bid (nsort_by { $_->{unit_price_usd} } @$bids) {
+        my $bucket = ICO_BUCKET_SIZE * financialrounding('price', 'USD', $bid->{unit_price_usd} / ICO_BUCKET_SIZE);
+        $sum{$bucket} += $bid->{unit_price_usd} * $bid->{tokens};
     }
     return {
         bids      => $bids,
+        histogram_bucket_size => ICO_BUCKET_SIZE,
         histogram => \%sum
     };
 }
