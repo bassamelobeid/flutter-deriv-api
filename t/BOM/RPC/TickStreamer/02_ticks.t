@@ -24,17 +24,17 @@ $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 subtest 'validate_ticks' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is no symbol param')
-        ->error_message_is('Symbol  invalid', 'It should return error if there is no symbol param');
+        ->error_message_is('Symbol  invalid.', 'It should return error if there is no symbol param');
 
     $params->{symbol} = 'wrong';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is wrong symbol param')
-        ->error_message_is('Symbol wrong invalid', 'It should return error if there is wrong symbol param');
+        ->error_message_is('Symbol wrong invalid.', 'It should return error if there is wrong symbol param');
 
     $params->{symbol} = 'HSI';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('NoRealtimeQuotes', 'It should return error if realtime quotes not available for this symbol')
-        ->error_message_is('Realtime quotes not available for HSI', 'It should return error if realtime quotes not available for this symbol');
+        ->error_message_is('Realtime quotes not available for HSI.', 'It should return error if realtime quotes not available for this symbol');
 
     set_fixed_time(Date::Utility->new('2016-07-24')->epoch);
     $params->{symbol} = 'frxUSDJPY';
