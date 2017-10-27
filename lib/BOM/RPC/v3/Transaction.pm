@@ -20,6 +20,7 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
 
 my $json = JSON::MaybeXS->new;
+
 sub trade_copiers {
     my $params = shift;
 

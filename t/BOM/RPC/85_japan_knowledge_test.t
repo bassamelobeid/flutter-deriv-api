@@ -15,7 +15,7 @@ use BOM::RPC::v3::Accounts;
 ## do not send email
 my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
-my $json = JSON::MaybeXS->new;
+my $json              = JSON::MaybeXS->new;
 my %jp_client_details = (
     gender                                      => 'f',
     first_name                                  => 'first\'name',

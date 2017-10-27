@@ -40,6 +40,7 @@ use BOM::Database::Model::UserConnect;
 use BOM::Platform::Pricing;
 
 my $json = JSON::MaybeXS->new;
+
 sub payout_currencies {
     my $params = shift;
 

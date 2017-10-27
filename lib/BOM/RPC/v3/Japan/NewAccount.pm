@@ -21,6 +21,7 @@ use BOM::Platform::AuditLog;
 use BOM::Database::Helper::QuestionsAnswered;
 
 my $json = JSON::MaybeXS->new;
+
 sub get_jp_account_status {
     my $client = shift;
 

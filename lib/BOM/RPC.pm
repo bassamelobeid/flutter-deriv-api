@@ -40,6 +40,7 @@ use BOM::Transaction::Validation;
 use BOM::RPC::v3::DocumentUpload;
 
 my $json = JSON::MaybeXS->new;
+
 sub apply_usergroup {
     my ($cf, $log) = @_;
 
