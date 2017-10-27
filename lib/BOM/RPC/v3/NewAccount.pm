@@ -186,7 +186,7 @@ sub new_account_real {
 
     my ($client, $args) = @{$params}{qw/client args/};
 
-    # send error if maltainvest and japan client tried to make this call
+    # send error if maltaivest and japan client tried to make this call
     # as they have their own separate api call for account opening
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
@@ -194,15 +194,10 @@ sub new_account_real {
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'real', $args);
     return $error if $error;
 
-    my $ico_only = $args->{account_type} eq 'ico';
-
     my $residence = $client->residence;
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
     my $company     = $countries_instance->gaming_company_for_country($residence) // $countries_instance->financial_company_for_country($residence);
     my $broker      = LandingCompany::Registry->new->get($company)->broker_codes->[0];
-    # EU clients signing up for ICO get a CR account with trading disabled
-    $broker = 'CR' if $ico_only;
-
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
     my $error_map   = BOM::RPC::v3::Utility::error_map();
     if (my $err = $details_ref->{error}) {
@@ -233,10 +228,6 @@ sub new_account_real {
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
     my $user            = $acc->{user};
-
-    # XXX If we fail after account creation then we could end up with this flag not set,
-    # ideally should be handled in a single transaction
-    $new_client->client_status('ico_only') if $ico_only;
 
     if ($args->{currency}) {
         my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
