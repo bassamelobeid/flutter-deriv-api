@@ -23,7 +23,7 @@ sub create_client {
     my $args     = shift;
     my $client   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => $broker,
-            %$args, # modification to default client info
+            ($args ? %$args : ()),    # modification to default client info
         },
         $skipauth ? undef : 1
     );
