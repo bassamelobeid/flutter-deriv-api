@@ -71,7 +71,7 @@ foreach my $f (grep { -d } glob "$v/*") {
         }
     }
     $t->message_ok("$test_name got a response");
-    my $str = File::Slurp::read_file("$f/receive.json");
+    $str = File::Slurp::read_file("$f/receive.json");
     my $validator = JSON::Schema->new($json->decode($str));
     my $result    = $validator->validate($json->decode($t->message->[1]));
     ok $result, "$f response is valid";
