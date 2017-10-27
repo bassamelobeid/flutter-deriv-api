@@ -25,7 +25,7 @@ sub login_success {
     # rpc response is not yet populated into stash
     $c->stash(loginid              => $rpc_response->{loginid});
     $c->stash(landing_company_name => $rpc_response->{landing_company_name});
-    $c->stash(country => $rpc_response->{country});
+    $c->stash(country              => $rpc_response->{country});
 
     return;
 }
