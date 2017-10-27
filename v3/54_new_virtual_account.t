@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
+use JSON::MaybeXS;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client reconnect/;
@@ -136,7 +136,7 @@ sub _get_token {
 
     my $code;
     foreach my $key (@{$tokens}) {
-        my $value = JSON::from_json($redis->get($key));
+        my $value = JSON::MaybeXS->new->decode($redis->get($key));
 
         if ($value->{email} eq $email) {
             $key =~ /^VERIFICATION_TOKEN::(\w+)$/;

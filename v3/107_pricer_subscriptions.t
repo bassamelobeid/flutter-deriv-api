@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use JSON;
+use JSON::MaybeXS;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use Devel::Refcount qw| refcount |;
@@ -81,7 +81,7 @@ subtest "Create Subscribes" => sub {
         $t->tx->on(
             message => sub {
                 my ($tx, $msg) = @_;
-                test_schema('proposal', decode_json $msg );
+                test_schema('proposal', JSON::MaybeXS->new->decode($msg) );
 
                 $user_first->{$tx->req->cookie('user')->value} = 1;
             });

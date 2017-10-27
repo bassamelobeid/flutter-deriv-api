@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
+use JSON::MaybeXS;
 use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
@@ -15,6 +15,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 my $t = build_wsapi_test();
+my $json = JSON::MaybeXS->new;
 
 # prepare client
 my $email  = 'test-binary@binary.com';
@@ -36,12 +37,12 @@ subtest 'validate_oauth_token' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
-    my $res = decode_json($t->message->[1]);
+    my $res = $json->decode($t->message->[1]);
     is $res->{authorize}->{email}, $email, 'Correct email for oauth token';
     test_schema('authorize', $res);
 
     $t = $t->send_ok({json => {balance => 1}})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode($t->message->[1]);
     is $res->{balance}->{loginid}, $loginid, 'Correct response for balance';
     test_schema('balance', $res);
 
@@ -49,18 +50,18 @@ subtest 'validate_oauth_token' => sub {
     BOM::Database::Model::OAuth->new->revoke_tokens_by_loginid_app($loginid, 1);
 
     $t = $t->send_ok({json => {balance => 1}})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode($t->message->[1]);
     is $res->{error}->{code},    'InvalidToken',          'Can not request authenticated (like balance) call when token has expired';
     is $res->{error}->{message}, 'The token is invalid.', 'Correct invalid token message';
     test_schema('balance', $res);
 
     $t = $t->send_ok({json => {logout => 1}})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode($t->message->[1]);
     ok($res->{logout});
     test_schema('logout', $res);
 
     $t = $t->send_ok({json => {balance => 1}})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode($t->message->[1]);
     is($res->{error}->{code}, 'AuthorizationRequired', 'Proper code for authorization rather than invalid token');
 };
 
@@ -74,7 +75,7 @@ subtest 'validate_api_token' => sub {
                 api_token => 1,
                 new_token => 'Test Token'
             }})->message_ok;
-    my $res = decode_json($t->message->[1]);
+    my $res = $json->decode($t->message->[1]);
 
     ok($res->{api_token});
     ok $res->{api_token}->{new_token};
@@ -85,12 +86,12 @@ subtest 'validate_api_token' => sub {
 
     # authorize with api token
     $t = $t->send_ok({json => {authorize => $test_token->{token}}})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode($t->message->[1]);
     is $res->{authorize}->{email}, $email, 'Correct email for api token';
     test_schema('authorize', $res);
 
     $t = $t->send_ok({json => {balance => 1}})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode($t->message->[1]);
     is $res->{balance}->{loginid}, $loginid, 'Correct response for balance';
     test_schema('balance', $res);
 
@@ -100,25 +101,25 @@ subtest 'validate_api_token' => sub {
                 api_token    => 1,
                 delete_token => $test_token->{token},
             }})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode($t->message->[1]);
     ok($res->{api_token});
     ok $res->{api_token}->{delete_token};
     is_deeply($res->{api_token}->{tokens}, [], 'empty');
     test_schema('api_token', $res);
 
     $t = $t->send_ok({json => {balance => 1}})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode($t->message->[1]);
     is $res->{error}->{code},    'InvalidToken',          'Can not request authenticated (like balance) call when token has expired';
     is $res->{error}->{message}, 'The token is invalid.', 'Correct invalid token message';
     test_schema('balance', $res);
 
     $t = $t->send_ok({json => {logout => 1}})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode($t->message->[1]);
     ok($res->{logout});
     test_schema('logout', $res);
 
     $t = $t->send_ok({json => {balance => 1}})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode($t->message->[1]);
     is($res->{error}->{code}, 'AuthorizationRequired', 'Proper code for authorization rather than invalid token');
 };
 

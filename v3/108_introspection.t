@@ -15,7 +15,7 @@ use Date::Utility;
 use File::Temp;
 use Future;
 use Future::Mojo;
-use JSON;
+use JSON::MaybeXS;
 use Socket qw(PF_INET SOCK_STREAM pack_sockaddr_in inet_aton);
 use Try::Tiny;
 use Variable::Disposition qw(retain_future);
@@ -257,6 +257,6 @@ sub send_introspection_cmd {
                 Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
             }));
     $ret = substr($ret, 5);         # remove 'OK - '
-    $ret = JSON::from_json($ret);
+    $ret = JSON::MaybeXS->new->decode($ret);
     return $ret;
 }

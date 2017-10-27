@@ -4,13 +4,14 @@ use strict;
 use warnings;
 use Test::More;
 use Data::Dumper;
-use JSON;
+use JSON::MaybeXS;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Platform::RedisReplicated;
 use await;
 my $t = build_wsapi_test();
+my $json = JSON::MaybeXS->new;
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
@@ -32,7 +33,7 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
         bid    => $i + 1,
         ohlc   => $ohlc_sample,
     };
-    BOM::Platform::RedisReplicated::redis_write->publish("FEED::$symbol", encode_json($payload));
+    BOM::Platform::RedisReplicated::redis_write->publish("FEED::$symbol", $json->encode($payload));
 }
 my $pid = fork;
 die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;

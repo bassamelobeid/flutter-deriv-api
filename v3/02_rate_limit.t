@@ -114,7 +114,7 @@ use BOM::Test::Helper qw/build_wsapi_test/;
 
 use Binary::WebSocketAPI::Hooks;
 
-use JSON;
+use JSON::MaybeXS;
 use Mojo::IOLoop::Delay;
 
 my $t = build_wsapi_test();
@@ -191,7 +191,7 @@ subtest "get error code (verify_email)" => sub {
                     type         => 'account_opening'
                 }})->message_ok;
     }
-    my $res = decode_json($t->message->[1]);
+    my $res = JSON::MaybeXS->new->decode($t->message->[1]);
     is $res->{error}->{code}, 'RateLimit';
 };
 

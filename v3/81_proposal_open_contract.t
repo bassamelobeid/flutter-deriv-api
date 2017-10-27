@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Deep;
-use JSON;
+use JSON::MaybeXS;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -18,6 +18,7 @@ use BOM::Platform::Runtime;
 
 build_test_R_50_data();
 my $t = build_wsapi_test();
+my $json = JSON::MaybeXS->new;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -140,7 +141,7 @@ subtest 'selling contract message' => sub {
         currency_code           => 'USD',
     };
 
-    BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json $msg);
+    BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json->encode($msg));
 
     my $data = $t->await::proposal_open_contract();
     is($data->{msg_type}, 'proposal_open_contract', 'Got message about selling contract');
@@ -191,7 +192,7 @@ subtest 'check two contracts subscription' => sub {
 
     };
 
-    BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json $msg);
+    BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json->encode($msg));
 
     sleep 2; ### we must wait for pricing rpc response
 

@@ -3,7 +3,7 @@ use warnings;
 
 use Test::Most;
 use Test::MockTime qw/:all/;
-use JSON;
+use JSON::MaybeXS;
 use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
@@ -27,7 +27,7 @@ build_test_R_50_data();
 
 my $t = build_wsapi_test();
 my $token = BOM::Database::Model::AccessToken->new->create_token("CR2002", 'Test', ['price', 'trade']);
-
+my $json = JSON::MaybeXS->new;
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
 my ($req, $res, $start, $end);
@@ -44,15 +44,15 @@ $req = {
 };
 
 $t->send_ok({json => $req})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $json->decode($t->message->[1]);
 ok $res->{proposal}->{id}, 'Should return id';
 
 $t->send_ok({json => $req})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $json->decode($t->message->[1]);
 is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for already subscribed with same req_id';
 
 $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $json->decode($t->message->[1]);
 is scalar @{$res->{forget_all}}, 1, 'Correct number of subscription forget';
 
 done_testing();

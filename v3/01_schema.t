@@ -1,7 +1,7 @@
 use Test::Most;
 use Test::Mojo;
 use JSON::Schema;
-use JSON;
+use JSON::MaybeXS;
 use File::Slurp;
 use File::Basename;
 use Data::Dumper;
@@ -17,6 +17,7 @@ use BOM::Test::Helper qw/launch_redis/;
 use BOM::Platform::RedisReplicated;
 use BOM::Test::Helper qw/build_wsapi_test/;
 
+my $json = JSON::MaybeXS->new;
 initialize_realtime_ticks_db();
 
 # R_50 is used in example.json for ticks and ticks_history Websocket API calls
@@ -40,7 +41,7 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
         bid    => $i + 1,
         ohlc   => $ohlc_sample,
     };
-    BOM::Platform::RedisReplicated::redis_write->publish("FEED::$symbol", encode_json($payload));
+    BOM::Platform::RedisReplicated::redis_write->publish("FEED::$symbol", $json->encode($payload));
 }
 
 my ($t, $test_name, $response) = (build_wsapi_test());
@@ -50,7 +51,7 @@ explain "Testing version: $v";
 foreach my $f (grep { -d } glob "$v/*") {
     $test_name = File::Basename::basename($f);
     explain $f;
-    my $send = JSON::from_json(File::Slurp::read_file("$f/example.json"));
+    my $send = $json->decode(File::Slurp::read_file("$f/example.json"));
     $t->send_ok({json => $send}, "send request for $test_name");
     if ($f eq "$v/ticks") {
         # upcoming $t->message_ok for 'ticks' WS API call subscribes to FEED::R_50 channel
@@ -69,10 +70,10 @@ foreach my $f (grep { -d } glob "$v/*") {
         }
     }
     $t->message_ok("$test_name got a response");
-    my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));
-    my $result    = $validator->validate(Mojo::JSON::decode_json $t->message->[1]);
+    my $validator = JSON::Schema->new($json->decode(File::Slurp::read_file("$f/receive.json")));
+    my $result    = $validator->validate($json->decode($t->message->[1]));
     ok $result, "$f response is valid";
-    if (not $result) { print " - $_\n" foreach $result->errors; print Data::Dumper::Dumper(Mojo::JSON::decode_json $t->message->[1]) }
+    if (not $result) { print " - $_\n" foreach $result->errors; print Data::Dumper::Dumper($json->decode($t->message->[1])) }
 }
 
 done_testing;

@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 use Test::MockTime qw/:all/;
-use JSON;
+use JSON::MaybeXS;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
@@ -13,6 +13,7 @@ use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
+my $json = JSON::MaybeXS->new;
 for my $symbol (qw/R_50 R_100/) {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => $symbol,
@@ -36,7 +37,7 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
         bid    => $i + 1,
         ohlc   => $ohlc_sample,
     };
-    BOM::Platform::RedisReplicated::redis_write->publish("FEED::$symbol", encode_json($payload));
+    BOM::Platform::RedisReplicated::redis_write->publish("FEED::$symbol", $json->encode($payload));
 }
 
 my $t = build_wsapi_test();
@@ -61,12 +62,12 @@ unless ($pid) {
 subtest 'ticks' => sub {
     $t->send_ok({json => {ticks => ['R_50', 'R_100']}});
     $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode($t->message->[1]);
     is $res->{error}->{code}, 'AlreadySubscribed', 'Should return already subscribed error';
     is $res->{error}->{message}, 'You are already subscribed to R_50', 'Should return already subscribed error';
 
     $t->send_ok({json => {ticks => 'R_5012312312'}})->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode($t->message->[1]);
     is $res->{error}->{code}, 'InvalidSymbol', 'Should return invalid symbol error';
 };
 

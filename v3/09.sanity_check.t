@@ -4,7 +4,7 @@ use Test::More;
 #use Test::NoWarnings; #
 use Test::FailWarnings;
 
-use JSON;
+use JSON::MaybeXS;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -38,6 +38,6 @@ is $res->{error}->{code}, 'SanityCheckFailed', 'Should be failed if paswword key
 
 $t->finish_ok;
 
-sub request { decode_json($t->send_ok({json => shift})->message_ok->message->[1]) }
+sub request { JSON::MaybeXS->new->decode($t->send_ok({json => shift})->message_ok->message->[1]) }
 
 done_testing();

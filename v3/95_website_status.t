@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
+use JSON::MaybeXS;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -11,9 +11,10 @@ use Mojo::Redis2;
 use Clone;
 use BOM::Platform::Chronicle;
 
+my $json = JSON::MaybeXS->new;
 my $t = build_wsapi_test();
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
-my $res = decode_json($t->message->[1]);
+my $res = $json->decode($t->message->[1]);
 
 my $reader = BOM::Platform::Chronicle::get_chronicle_reader();
 my $writer = BOM::Platform::Chronicle::get_chronicle_writer();
@@ -35,7 +36,7 @@ is $reader->get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_ve
 # wait app-cconfig refresh
 sleep 11;
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $json->decode($t->message->[1]);
 
 is $res->{website_status}->{terms_conditions_version}, $updated_tcv, 'It should return updated terms_conditions_version';
 
