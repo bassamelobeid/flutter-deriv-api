@@ -41,7 +41,7 @@ sub website_status {
                     my $website_status = {};
                     $rpc_response->{clients_country} //= '';
                     $website_status->{$_} = $rpc_response->{$_}
-                        for qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config ico_status|;
+                        for qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config ico_status ico_info|;
 
                     $shared_info->{broadcast_notifications}{$c + 0}{'c'}            = $c;
                     $shared_info->{broadcast_notifications}{$c + 0}{echo}           = $args;
