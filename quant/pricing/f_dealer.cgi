@@ -94,8 +94,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
                     ) x @$fmbs
                 ],
                 bet_data => [
-                    map {
-                        {
+                    map { {
                             sell_price => 0,
                             sell_time  => $now->db_timestamp,
                             quantity   => $qty,
