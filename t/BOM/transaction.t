@@ -446,7 +446,7 @@ subtest 'sell a bet', sub {
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is !$fmb->{is_expired}, !1, 'is_expired';
+            is !$fmb->{is_expired}, !$contract->is_expired, 'is_expired';
             is !$fmb->{is_sold},    !1, 'is_sold';
             cmp_ok $fmb->{payout_price} + 0, '==', 1000, 'payout_price';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
