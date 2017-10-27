@@ -125,6 +125,7 @@ foreach my $bet_info (@bet_infos) {
             sell_price => $bet_info->{sell_price},
             sell_time  => Date::Utility->new($now->epoch + 10)->db_timestamp,
             quantity   => 1,
+            is_expired => 0,
         });
         ($fmb, $txn, my $buy_txn_id2) = $financial_market_bet_helper->sell_bet;
         is $fmb->{id}, $financial_market_bet->id, 'sell fmb object';
