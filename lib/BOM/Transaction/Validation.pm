@@ -130,7 +130,7 @@ sub validate_trx_buy {
         -type              => 'IcoOnly',
         -mesg              => "Contract type is not allowed for this client",
         -message_to_client => localize("This contract type is not available for this acccount"),
-    ) if any { $_->client_status('ico_only') } @$clients;
+    ) if any { $_->get_status('ico_only') } @$clients;
 
     ### Order is very important
     ### _validate_trade_pricing_adjustment may contain some expensive calculations
