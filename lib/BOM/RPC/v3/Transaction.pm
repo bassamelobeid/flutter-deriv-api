@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use JSON::XS qw/encode_json/;
+use JSON::MaybeXS;
 use Scalar::Util qw(blessed);
 
 use Client::Account;
@@ -19,6 +19,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
 
+my $json = JSON::MaybeXS->new;
 sub trade_copiers {
     my $params = shift;
 
@@ -103,7 +104,7 @@ sub buy {
             $message_to_client = $_->message_to_client;
         } else {
             $message_to_client = ['Cannot create contract'];
-            warn __PACKAGE__ . " buy buy failed, parameters: " . encode_json($contract_parameters);
+            warn __PACKAGE__ . " buy buy failed, parameters: " . $json->encode($contract_parameters);
         }
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
@@ -200,7 +201,7 @@ sub buy_contract_for_multiple_accounts {
     catch {
         warn __PACKAGE__
             . " buy_contract_for_multiple_accounts failed with error [$_], parameters: "
-            . (eval { encode_json($contract_parameters) } // 'could not encode, ' . $@);
+            . (eval { $json->encode($contract_parameters) } // 'could not encode, ' . $@);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
