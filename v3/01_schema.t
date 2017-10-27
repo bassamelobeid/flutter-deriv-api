@@ -52,7 +52,6 @@ foreach my $f (grep { -d } glob "$v/*") {
     $test_name = File::Basename::basename($f);
     explain $f;
     my $str = File::Slurp::read_file("$f/example.json");
-    explain $str;
     my $send = $json->decode($str);
     $t->send_ok({json => $send}, "send request for $test_name");
     if ($f eq "$v/ticks") {
@@ -72,7 +71,8 @@ foreach my $f (grep { -d } glob "$v/*") {
         }
     }
     $t->message_ok("$test_name got a response");
-    my $validator = JSON::Schema->new($json->decode(File::Slurp::read_file("$f/receive.json")));
+    my $str = File::Slurp::read_file("$f/receive.json");
+    my $validator = JSON::Schema->new($json->decode($str));
     my $result    = $validator->validate($json->decode($t->message->[1]));
     ok $result, "$f response is valid";
     if (not $result) { print " - $_\n" foreach $result->errors; print Data::Dumper::Dumper($json->decode($t->message->[1])) }
