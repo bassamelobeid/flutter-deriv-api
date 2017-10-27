@@ -51,7 +51,9 @@ explain "Testing version: $v";
 foreach my $f (grep { -d } glob "$v/*") {
     $test_name = File::Basename::basename($f);
     explain $f;
-    my $send = $json->decode(File::Slurp::read_file("$f/example.json"));
+    my $str = File::Slurp::read_file("$f/example.json");
+    explain $str;
+    my $send = $json->decode($str);
     $t->send_ok({json => $send}, "send request for $test_name");
     if ($f eq "$v/ticks") {
         # upcoming $t->message_ok for 'ticks' WS API call subscribes to FEED::R_50 channel
