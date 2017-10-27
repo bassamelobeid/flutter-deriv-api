@@ -745,38 +745,36 @@ BOM::Backoffice::Request::template->process(
     });
 
 Bar("Financial Assessment");
+my $financial_assessment = $client->financial_assessment();
+my $is_professional = $financial_assessment ? $financial_assessment->is_professional : 0;
 print qq{
    <form action="$self_post" method="post">
             <input type="hidden" name="whattodo" value="update_professional_status">
                 <select name="professional_status">
-                <option value=1>YES</option>
-                <option value=0>NO</option>
+                <option value=1} . ($is_professional ? q{ selected="selected"} : q{}) . q{>YES</option>
+                <option value=0} . (!$is_professional ? q{ selected="selected"} : q{}) . q{>NO</option>
              </select>
              <input type="submit" value="Update professional status">
+        <tr><td>Is professional</td><td>$is_professional</td></tr>
     <input type="hidden" name="broker" value="$encoded_broker">
     <input type="hidden" name="loginID" value="$encoded_loginid">
         </form>
    };
+if ($financial_assessment) {
+    my $user_data_json = $financial_assessment->data;
+    print qq{<table class="collapsed">
+        <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
+        . encode_entities($user_data_json) . qq{</textarea></td></tr>
+        <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
+        </table>
+    };
+}
 
 if ($input{whattodo} eq 'update_professional_status') {
     $client->financial_assessment({is_professional => $input{professional_status}});
     $client->save;
 
 }
-my $financial_assessment = $client->financial_assessment();
-if ($financial_assessment) {
-    my $user_data_json = $financial_assessment->data;
-    my $is_professional = $financial_assessment->is_professional ? 'yes' : 'no';
-    print qq{<table class="collapsed">
-        <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
-        . encode_entities($user_data_json) . qq{</textarea></td></tr>
-        <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
-        <tr><td>Is professional</td><td>$is_professional</td></tr>
-        </table>
-    };
-
-}
-
 Bar($user->email . " Login history");
 print '<div><br/>';
 my $limit         = 200;
