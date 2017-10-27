@@ -402,10 +402,10 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
             $self->bet_data->{sell_time},     # -- 5
             $self->bet_data->{absolute_barrier}
             ? JSON::XS::encode_json(+{absolute_barrier => $self->bet_data->{absolute_barrier}})
-            : undef,                           # -- 6
+            : undef,                          # -- 6
             $self->bet_data->{is_expired} // 1,    # -- 7
-            
-            $transdata->{transaction_time},    # -- 8
+
+            $transdata->{transaction_time},        # -- 8
             $transdata->{staff_loginid} ? ('#' . $transdata->{staff_loginid}) : undef,    # -- 9
             $transdata->{remark} // '',                                                   # -- 10
             $transdata->{source},                                                         # -- 11
