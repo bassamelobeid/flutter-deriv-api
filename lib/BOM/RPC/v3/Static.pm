@@ -5,15 +5,22 @@ use warnings;
 
 use Format::Util::Numbers;
 use List::Util qw( min );
+use List::UtilsBy qw(nsort_by);
 
 use Brands;
 use LandingCompany::Registry;
+use Format::Util::Numbers qw/financialrounding/;
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (request);
+use BOM::Database::ClientDB;
 use BOM::RPC::v3::Utility;
+
+# How wide each ICO histogram bucket is, in USD
+use constant ICO_BUCKET_SIZE => 0.20;
 
 sub residence_list {
     my $residence_countries_list;
@@ -72,16 +79,55 @@ sub _currencies_config {
     return \%currencies_config;
 }
 
+sub live_open_ico_bids {
+    my $clientdb = BOM::Database::ClientDB->new({
+        broker_code => 'CR',
+        operation   => 'replica',
+    });
+    my $bids = $clientdb->db->dbh->selectall_arrayref(<<'SQL', {Slice => {}});
+SELECT  acc.currency_code as "currency",
+        qbv.binaryico_number_of_tokens as "tokens",
+        qbv.binaryico_per_token_bid_price as "unit_price"
+FROM    bet.financial_market_bet_open AS fmb
+JOIN    transaction.account AS acc ON fmb.account_id = acc.id
+JOIN    transaction.transaction AS txn ON fmb.id = txn.financial_market_bet_id
+JOIN    data_collection.quants_bet_variables as qbv ON txn.id = qbv.transaction_id
+WHERE   fmb.bet_class = 'coinauction_bet'
+SQL
+
+    $_->{unit_price_usd} = financialrounding('price', 'USD', in_USD($_->{unit_price}, $_->{currency})) for @$bids;
+
+    # Divide these items into buckets - currently hardcoded at 20c
+    my %sum;
+    for my $bid (nsort_by { $_->{unit_price_usd} } @$bids) {
+        my $bucket = ICO_BUCKET_SIZE * financialrounding('price', 'USD', $bid->{unit_price_usd} / ICO_BUCKET_SIZE);
+        $sum{$bucket} += $bid->{unit_price_usd} * $bid->{tokens};
+    }
+    return {
+        bids                  => $bids,
+        histogram_bucket_size => ICO_BUCKET_SIZE,
+        histogram             => \%sum
+    };
+}
+
 sub website_status {
     my $params = shift;
 
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $ico_info   = live_open_ico_bids();
+    $ico_info->{final_price} = $app_config->system->suspend->ico_final_price;
+
     return {
-        terms_conditions_version => BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version,
+        terms_conditions_version => $app_config->cgi->terms_conditions_version,
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,
         clients_country          => $params->{country_code},
-        supported_languages      => BOM::Platform::Runtime->instance->app_config->cgi->supported_languages,
+        supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
-        ico_status               => BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_ended == 1 ? 'closed' : 'open',
+        ico_info                 => $ico_info,
+        ico_status               => (
+            $app_config->system->suspend->is_auction_ended
+                or not $app_config->system->suspend->is_auction_started
+        ) ? 'closed' : 'open',
     };
 }
 
