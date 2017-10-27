@@ -94,7 +94,15 @@ if (request()->param('whattodo') eq 'closeatzero') {
                     ) x @$fmbs
                 ],
                 bet_data => [
-                    map { {sell_price => 0, sell_time => $now->db_timestamp, quantity => $qty, id => $_->financial_market_bet_record->id, is_expired => 0,} } @{$fmbs}
+                    map {
+                        {
+                            sell_price => 0,
+                            sell_time  => $now->db_timestamp,
+                            quantity   => $qty,
+                            id         => $_->financial_market_bet_record->id,
+                            is_expired => 0,
+                        }
+                    } @{$fmbs}
                 ],
                 db => BOM::Database::ClientDB->new({broker_code => $broker})->db,
             })->batch_sell_bet;
