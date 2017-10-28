@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use JSON::MaybeXS;
 use BOM::Database::Model::UserConnect;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -129,7 +130,7 @@ sub sample_oneall_data {
                             'provider_identity_uid' => 'PIUE74DCA7D9BDE86F517BB6401BCAF3209',
                             'emails'                => [{
                                     'value'       => 'fayland@regentmarkets.com',
-                                    'is_verified' => bless(do { \(my $o = 1) }, 'JSON::PP::Boolean')}]
+                                    'is_verified' => JSON->true]
                         },
                         'identities' => [{
                                 'provider'       => 'google',
