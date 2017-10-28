@@ -38,14 +38,15 @@ $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platf
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
-use JSON qw/to_json/;
+use JSON::MaybeXS;
+my $json = JSON::MaybeXS->new;
 my $datadog_mock = Test::MockModule->new('DataDog::DogStatsd');
 my @datadog_actions;
-$datadog_mock->mock(increment => sub { shift; push @datadog_actions, to_json + {increment => [@_]}; return; });
-$datadog_mock->mock(decrement => sub { shift; push @datadog_actions, to_json + {decrement => [@_]}; return; });
-$datadog_mock->mock(timing    => sub { shift; push @datadog_actions, to_json + {timing    => [@_]}; return; });
-$datadog_mock->mock(gauge     => sub { shift; push @datadog_actions, to_json + {gauge     => [@_]}; return; });
-$datadog_mock->mock(count     => sub { shift; push @datadog_actions, to_json + {count     => [@_]}; return; });
+$datadog_mock->mock(increment => sub { shift; push @datadog_actions, $json->encode({increment => [@_]}; return; }));
+$datadog_mock->mock(decrement => sub { shift; push @datadog_actions, $json->encode({decrement => [@_]}; return; }));
+$datadog_mock->mock(timing    => sub { shift; push @datadog_actions, $json->encode({timing    => [@_]}; return; }));
+$datadog_mock->mock(gauge     => sub { shift; push @datadog_actions, $json->encode({gauge     => [@_]}; return; }));
+$datadog_mock->mock(count     => sub { shift; push @datadog_actions, $json->encode({count     => [@_]}; return; }));
 
 {
     no warnings 'redefine';
@@ -57,7 +58,7 @@ sub reset_datadog {
 }
 
 sub check_datadog {
-    my $item = to_json + {@_};
+    my $item = $json->encode({@_});
     if ($_[0] eq 'timing') {
         my ($p1, $p2) = split /,/, $item, 2;
         my $re = qr/\Q$p1\E,[\d.]+,\Q$p2\E/;

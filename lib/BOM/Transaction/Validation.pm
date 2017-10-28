@@ -7,6 +7,7 @@ use Moo;
 use Error::Base;
 use List::Util qw(min max first);
 use YAML::XS qw(LoadFile);
+use JSON::MaybeXS;
 
 use Format::Util::Numbers qw/formatnumber/;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
@@ -29,7 +30,7 @@ has transaction => (is => 'ro');
 This is to get the number of unique users that have place ICO in a European Union country
 
 =cut
-
+my $json = JSON::MaybeXS->new;
 sub _open_ico_for_european_country {
     my ($self, $client_residence) = @_;
 
@@ -342,7 +343,7 @@ sub _slippage {
                 shortcode   => $contract->shortcode,
                 action_type => $p->{action},
                 reason      => 'SLIPPAGE',
-                details     => JSON::to_json({
+                details     => $json->encode({
                         order_price      => $self->transaction->price,
                         recomputed_price => $p->{action} eq 'buy' ? $contract->ask_price : $contract->bid_price,
                         slippage         => $self->transaction->price - $contract->ask_price,
@@ -386,7 +387,7 @@ sub _invalid_contract {
                     shortcode   => $contract->shortcode,
                     action_type => $p->{action},
                     reason      => $message_to_client,
-                    details     => JSON::to_json({
+                    details     => $json->encode({
                             current_tick_epoch => $contract->current_tick->epoch,
                             pricing_epoch      => $contract->date_pricing->epoch,
                             option_type        => $contract->code,

@@ -5,7 +5,6 @@ use warnings;
 
 use Test::Most tests => 10;
 use File::Spec;
-use JSON qw(decode_json);
 use YAML::XS qw(LoadFile);
 use Test::Warnings;
 

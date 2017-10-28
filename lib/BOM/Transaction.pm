@@ -9,7 +9,7 @@ use Error::Base;
 use Path::Tiny;
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(tv_interval gettimeofday time);
-use JSON qw( from_json to_json );
+use JSON::MaybeXS;
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Try::Tiny;
@@ -228,6 +228,7 @@ sub BUILDARGS {
 
 my %known_errors;              # forward declaration
 sub sell_expired_contracts;    # forward declaration
+my $json = JSON::MaybeXS->new;
 
 sub stats_start {
     my $self = shift;
@@ -340,7 +341,7 @@ sub calculate_limits {
 
     try {
         my $general_open_position_payout_limit =
-            from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
+            $json->decode(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
         if (my $limit = $general_open_position_payout_limit->{$client->landing_company->short}) {
             my ($limit_currency, $limit_amount, @extra) = %$limit;
             die "found multiple entries for landing company, extra: @extra" if @extra;

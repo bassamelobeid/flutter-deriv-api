@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use JSON qw(to_json);
+use JSON::MaybeXS;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More;    # tests => 4;
@@ -31,6 +31,7 @@ use BOM::MarketData::Types;
 use Crypt::NamedKeys;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
+my $json = JSON::MaybeXS->new;
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked->mock(
     'get',
@@ -364,7 +365,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
                     "name"              => "tick_expiry_engine_turnover_limit"
                 }};
 
-            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($new));
+            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -483,7 +484,7 @@ subtest 'asian_daily_turnover_limit', sub {
                     "name"              => "asian_turnover_limit"
                 }};
 
-            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($new));
+            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -614,7 +615,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
                     "name"              => "intraday_spot_index_turnover_limit"
                 }};
 
-            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($new));
+            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -890,7 +891,7 @@ subtest 'custom client limit' => sub {
                     "risk_profile"      => "high_risk",
                     "name"              => "tick_expiry_engine_turnover_limit"
                 }};
-            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($new));
+            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
 
             note('mocking custom_client_profiles to no_business profile');
             my $fake = {
@@ -902,7 +903,7 @@ subtest 'custom client limit' => sub {
                         }}
                 },
             };
-            BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($fake));
+            BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles($json->encode($fake));
 
             $txn->buy;
         };
@@ -981,7 +982,7 @@ subtest 'non atm turnover checks' => sub {
                     "risk_profile"      => "extreme_risk",
                     "name"              => "tick_expiry_nonatm_turnover_limit"
                 }};
-            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($new));
+            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -1072,7 +1073,7 @@ subtest 'non atm turnover checks' => sub {
 # see further transaction.t:  many more tests
 #             transaction2.t: special turnover limits
 my $empty_hashref = {};
-BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($empty_hashref));
-BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($empty_hashref));
+BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($empty_hashref));
+BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles($json->encode($empty_hashref));
 
 done_testing;
