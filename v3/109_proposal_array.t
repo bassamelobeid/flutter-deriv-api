@@ -61,7 +61,7 @@ my $contract_type_pairs = {
 
 my $trading_frames = {};
 
-generate_trading_periods($symbol);
+BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, Date::Utility->new);
 initialize_realtime_ticks_db();
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY);
@@ -159,7 +159,7 @@ SKIP: {
 }
 
 # Regenerate trading periods here to try avoid below bail out.
-generate_trading_periods($symbol);
+BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, Date::Utility->new);
 
 $contracts_for = $t->await::contracts_for({
     "contracts_for"   => $symbol,
