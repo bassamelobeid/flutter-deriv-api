@@ -35,6 +35,8 @@ use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::Utils::Test;
 use Quant::Framework::Asset;
 
+use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
+
 BEGIN {
     die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
 }
@@ -193,6 +195,19 @@ sub create_doc {
     }
 
     return $obj;
+}
+
+sub create_trading_periods {
+    my ($symbol, $date) = @_;
+
+    my $periods = BOM::Product::Contract::PredefinedParameters::generate_trading_periods($symbol, $date);
+    my @redis_key = BOM::Product::Contract::PredefinedParameters::trading_period_key($symbol, $date);
+
+    # 1 - to save to chronicle database
+    # ttl - set to 5 minutes
+    BOM::Platform::Chronicle::get_chronicle_writer()->set(@redis_key, [grep { defined } @$periods], $date, 1, 300);
+
+    return $periods;
 }
 
 sub import {
