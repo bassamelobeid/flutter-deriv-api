@@ -4,10 +4,11 @@ use strict;
 use warnings;
 
 use Sys::Hostname;
-use JSON;
+use JSON::MaybeXS;
 use Date::Utility;
 use Path::Tiny;
 
+my $json = JSON::MaybeXS->new;
 sub log {    ## no critic (ProhibitBuiltinHomonyms)
     my $log   = shift;
     my $user  = shift || '';
@@ -15,7 +16,7 @@ sub log {    ## no critic (ProhibitBuiltinHomonyms)
 
     Path::Tiny::path('/var/log/fixedodds/audit.log')->append(
         # UTF-8 bytes, in case message or staff/user include non-ASCII chars
-        JSON::encode_json({
+        $json->encode({
                 timestamp    => Date::Utility->new->datetime_iso8601,
                 hostname     => Sys::Hostname::hostname,
                 staff        => $staff,

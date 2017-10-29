@@ -18,7 +18,7 @@ no indirect;
 
 use Try::Tiny;
 
-use JSON::XS qw(encode_json);
+use JSON::MaybeXS;
 use YAML::XS qw(LoadFile);
 use IO::Socket::IP;
 use Client::Account;
@@ -101,10 +101,10 @@ Usage:
  $class->publish({ source => 'doughflow', amount => 123.45 });
 
 =cut
-
+my $json = JSON::MaybeXS->new;
 sub publish {
     my ($class, $data) = @_;
-    my $bytes = encode_json($data);
+    my $bytes = $json->encode($data);
     $sock->send($bytes);
     return;
 }
