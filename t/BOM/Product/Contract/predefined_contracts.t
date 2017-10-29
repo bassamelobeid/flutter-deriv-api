@@ -13,7 +13,6 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 use Cache::RedisDB;
 BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
 
@@ -33,7 +32,8 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
         epoch      => $_,
     }) for ($now->minus_time_interval('400d')->epoch, $now->epoch, $now->plus_time_interval('1s')->epoch);
-generate_trading_periods('frxUSDJPY', $now);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', $now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {

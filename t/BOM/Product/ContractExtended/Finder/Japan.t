@@ -11,7 +11,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
-use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
@@ -46,7 +45,7 @@ subtest "predefined contracts for symbol" => sub {
             "2015-08-21 00:45:00", "2015-08-21 03:45:00", "2015-08-21 04:45:00", "2015-08-21 05:30:00", "2015-08-24 00:00:00",
             "2015-08-31",          "2015-08-31 00:00:01", "2015-09-04 16:30:00", time
             );
-        generate_trading_periods($symbol, $now);
+            BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $now);
     }
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -120,7 +119,7 @@ subtest "predefined trading_period" => sub {
     is(scalar(@offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
     my $now = Date::Utility->new('2015-09-04 17:00:00');
     my $underlying = create_underlying('frxUSDJPY', $now);
-    generate_trading_periods($underlying->symbol, $now);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($underlying->symbol, $now);
     my @new = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $underlying, \@offerings)};
 
     my %got;
@@ -327,7 +326,7 @@ subtest "check_intraday trading_period_JPY" => sub {
     foreach my $date (sort keys %expected_intraday_trading_period) {
         my $now = Date::Utility->new($date);
         my $ex = create_underlying('frxUSDJPY', $now);
-        generate_trading_periods($ex->symbol, $now);
+        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($ex->symbol, $now);
         my @intraday_offerings = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $ex, \@i_offerings)};
         my @got_date_start  = map { $intraday_offerings[$_]{trading_period}{date_start}{epoch} } keys @intraday_offerings;
         my @got_date_expiry = map { $intraday_offerings[$_]{trading_period}{date_expiry}{epoch} } keys @intraday_offerings;
@@ -380,7 +379,7 @@ subtest "check_intraday trading_period_non_JPY" => sub {
     foreach my $date (keys %expected_eur_intraday_trading_period) {
         my $now = Date::Utility->new($date);
         my $ex = create_underlying('frxEURUSD', $now);
-        generate_trading_periods($ex->symbol, $now);
+        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($ex->symbol, $now);
         my @eurusd_offerings = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $ex, \@e_offerings)};
         my @got_date_start  = map { $eurusd_offerings[$_]{trading_period}{date_start}{epoch} } keys @eurusd_offerings;
         my @got_date_expiry = map { $eurusd_offerings[$_]{trading_period}{date_expiry}{epoch} } keys @eurusd_offerings;

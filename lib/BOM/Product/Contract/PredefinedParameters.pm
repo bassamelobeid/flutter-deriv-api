@@ -90,14 +90,12 @@ sub get_trading_periods {
     my $underlying = create_underlying($symbol, $date);
     $date //= Date::Utility->new;
 
-    return generate_trading_periods($underlying->symbol, $underlying->for_date) if $underlying->for_date;
+    my $for_date = $underlying->for_date;
+    my $method   = $for_date ? 'get_for' : 'get';
+    my $key      = join '_', ('trading_period', $underlying->symbol, $date->date, $date->hour);
+    my $cache    = BOM::Platform::Chronicle::get_chronicle_reader($for_date)->$method($cache_namespace, $key, $for_date);
 
-    my $key = join '_', ('trading_period', $underlying->symbol, $date->date, $date->hour);
-    my $cache = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
-
-    return from_json($cache) if ($cache);
-
-    return [];
+    return $cache // [];
 }
 
 =head2 generate_trading_periods
@@ -144,16 +142,18 @@ sub generate_trading_periods {
 
     return [] unless $trading_calendar->trades_on($underlying->exchange, $date);
 
-    my $key = join '_', ('trading_period', $underlying->symbol, $date->date, $date->hour);
     my @trading_periods = _get_daily_trading_window($underlying, $date);
     my @intraday_periods = _get_intraday_trading_window($underlying, $date);
     push @trading_periods, @intraday_periods if @intraday_periods;
 
-    my $next = next_generation_epoch($date);
-    my $ttl = max(1, $next - $date->epoch);
-    BOM::Platform::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([grep { defined } @trading_periods]), 'EX', $ttl);
-
     return \@trading_periods;
+}
+
+sub trading_period_key {
+    my ($underlying_symbol, $date) = @_;
+
+    my $key = join '_', ('trading_period', $underlying_symbol, $date->date, $date->hour);
+    return ($cache_namespace, $key);
 }
 
 =head2 update_predefined_highlow

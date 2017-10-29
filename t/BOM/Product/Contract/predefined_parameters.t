@@ -14,7 +14,7 @@ use JSON::XS;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::MarketData qw(create_underlying);
-use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods get_predefined_offerings update_predefined_highlow);
+use BOM::Product::Contract::PredefinedParameters qw(get_predefined_offerings update_predefined_highlow);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -26,14 +26,14 @@ my $monday           = Date::Utility->new('2016-11-14');    # monday
 
 subtest 'non trading day' => sub {
     my $saturday = Date::Utility->new('2016-11-19');        # saturday
-    generate_trading_periods($supported_symbol, $saturday);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($supported_symbol, $saturday);
     my $offerings = get_predefined_offerings({
         symbol => $supported_symbol,
         date   => $saturday
     });
     ok !@$offerings, 'no offerings were generated on non trading day';
     setup_ticks($supported_symbol, [[$monday->minus_time_interval('400d')], [$monday]]);
-    generate_trading_periods($supported_symbol, $monday);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($supported_symbol, $monday);
     $offerings = get_predefined_offerings({
         symbol => $supported_symbol,
         date   => $monday
@@ -114,7 +114,7 @@ subtest 'intraday trading period' => sub {
         $date = Date::Utility->new($date);
         setup_ticks($symbol, [[$date->minus_time_interval('400d')], [$date]]);
         note('generating for ' . $symbol . '. Time set to ' . $date->day_as_string . ' at ' . $date->time);
-        generate_trading_periods($symbol, $date);
+        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $date);
         my $offerings = get_predefined_offerings({
             symbol => $symbol,
             date   => $date
@@ -217,7 +217,7 @@ subtest 'predefined barriers' => sub {
         });
 
     my $generation_date = $date->plus_time_interval('1h');
-    generate_trading_periods($symbol, $generation_date);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $generation_date);
 
     foreach my $test (@inputs) {
         setup_ticks($symbol, $test->{ticks});
@@ -250,7 +250,7 @@ subtest 'update_predefined_highlow' => sub {
             epoch  => $now->plus_time_interval('30s')->epoch,
             quote  => 69.2
         };
-        my $tp = generate_trading_periods($symbol);
+        my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $now);
         ok update_predefined_highlow($new_tick), 'updated highlow';
         my $offering = get_predefined_offerings({symbol => $symbol});
         my $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
