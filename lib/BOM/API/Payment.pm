@@ -8,7 +8,7 @@ use Router::Resource;
 use parent qw(Plack::Component);
 use Plack::Request;
 use Plack::Response;
-use JSON;
+use JSON::MaybeXS;
 use Scalar::Util qw/blessed/;
 use Try::Tiny;
 use Log::Dispatch::File;
@@ -208,7 +208,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
 
             # JSON by default
             my $code = delete $r->{status_code} || 200;
-            my $body = encode_json $r;
+            my $body = JSON::MaybeXS->new->encode($r);
             return [$code, ['Content-Type' => 'application/json; charset=utf-8'], [$body]];
         };
     };
