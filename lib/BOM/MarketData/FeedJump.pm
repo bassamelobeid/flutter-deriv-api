@@ -34,7 +34,7 @@ use LandingCompany::Offerings qw(get_offerings_flyby);
 
 use Try::Tiny;
 use namespace::autoclean;
-use JSON qw(from_json);
+use JSON::MaybeXS;
 use List::Util qw(first);
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
@@ -46,6 +46,7 @@ has _jump_threshold => (
     default => 0.0005,
 );
 
+my $json = JSON::MaybeXS->new;
 sub BUILD {
     my $self = shift;
 
@@ -80,7 +81,7 @@ sub iterate {
         pmessage => sub {
             my ($redis, $tick) = @_;
             try {
-                $self->_perform_checks(from_json($tick));
+                $self->_perform_checks($json->decode($tick));
             }
             catch {
                 warn "exception caught while performing feed jump checks for $_";

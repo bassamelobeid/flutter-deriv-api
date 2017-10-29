@@ -10,7 +10,6 @@ use File::Slurp;
 use List::Util qw(max min);
 use Scalar::Util qw(looks_like_number);
 use File::Spec;
-use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
