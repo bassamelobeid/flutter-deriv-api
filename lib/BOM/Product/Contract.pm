@@ -503,11 +503,11 @@ sub longcode {
 }
 
 sub _barrier_display_text {
-    my ($self, $supplied_type) = @_;
+    my ($self, $supplied_barrier) = @_;
 
-    return $supplied_type if $supplied_type !~ /^S[-+]?\d+P$/;
+    return $supplied_barrier if $supplied_barrier !~ /^S[-+]?\d+P$/ || $self->category_code eq 'digits';
 
-    my ($pips) = $supplied_type =~ /S([+-]?\d+)P/;
+    my ($pips) = $supplied_barrier =~ /S([+-]?\d+)P/;
 
     my $string = $pips > 0 ? $GENERIC_MAPPING->{entry_spot_plus_plural} : $GENERIC_MAPPING->{entry_spot_minus_plural};
 
