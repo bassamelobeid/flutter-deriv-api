@@ -517,7 +517,7 @@ sub _pricing_channel_for_ask {
     $args_hash{language}               = $c->stash('language') || 'EN';
     $args_hash{price_daemon_cmd}       = $price_daemon_cmd;
     $args_hash{landing_company}        = $c->landing_company_name;
-    $args_hash{country}                = $c->stash('country') // $c->stash('country_code');
+    $args_hash{country_code}           = $c->stash('country') // $c->stash('country_code');
     $args_hash{skips_price_validation} = 1;
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel    = $args->{amount};
@@ -539,7 +539,7 @@ sub _pricing_channel_for_bid {
     $hash{language}         = $c->stash('language') || 'EN';
     $hash{price_daemon_cmd} = $price_daemon_cmd;
     $hash{landing_company}  = $c->landing_company_name;
-    $hash{country}          = $c->stash('country');
+    $hash{country_code}     = $c->stash('country');
     my $redis_channel = _serialized_args(\%hash);
 
     %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
