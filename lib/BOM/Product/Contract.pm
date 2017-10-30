@@ -495,8 +495,11 @@ sub longcode {
 
     if ($self->two_barriers) {
         push @longcode, ($self->_barrier_display_text($self->supplied_high_barrier), $self->_barrier_display_text($self->supplied_low_barrier));
-    } elsif ($self->barrier) {
+    } elsif ($self->supplied_barrier) {
         push @longcode, $self->_barrier_display_text($self->supplied_barrier);
+    } else {
+        # the default to this was set by BOM::Product::Contract::Strike but we skipped that for speed reason
+        push @longcode, [$self->underlying->pip_size];
     }
 
     return \@longcode;
