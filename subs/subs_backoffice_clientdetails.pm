@@ -6,6 +6,7 @@ use Encode;
 use Format::Util::Strings qw( set_selected_item );
 use Date::Utility;
 use Brands;
+
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -13,6 +14,7 @@ use BOM::Platform::Client::Utility ();
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::Backoffice::FormAccounts;
+use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 sub get_currency_options {
@@ -326,14 +328,11 @@ sub get_untrusted_client_reason {
 ## show_client_id_docs #######################################
 # Purpose : generate the html to display client's documents.
 # Relocated to here from Client module.
-# If 'folder' arg present, this is a request to show docs from that folder.
-# Otherwise it's a request to show the client's authentication docs.
 ##############################################################
 sub show_client_id_docs {
     my ($loginid, %args) = @_;
     my $show_delete = $args{show_delete};
     my $extra       = $args{no_edit} ? 'disabled' : '';
-    my $folder      = $args{folder};
     my $links       = '';
 
     return unless $loginid;
@@ -345,53 +344,36 @@ sub show_client_id_docs {
         db_operation => 'replica',
     });
 
-    my @docs;
-    if ($folder) {
-        my $path = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/clientIDscans/" . $client->broker . "/$folder";
-        @docs = glob("$path/$loginid*");
-        for (@docs) {
-            s/\s/+/g;
-            s/\&/%26/g;
-        }
-    } else {
-        @docs = $client->client_authentication_document;
-    }
+    my @docs = $client->client_authentication_document;
     foreach my $doc (sort { $a->id <=> $b->id } @docs) {
-        my ($id, $document_file, $file_name, $download_file, $input);
-        if ($folder) {
-            $id            = 0;
-            $document_file = $doc;
-            ($file_name) = $document_file =~ m[clientIDscans/\w+/\w+/(.+)$];
-            $download_file = $client->broker . "/$folder/$file_name";
-            $input         = '';
-        } else {
-            $id            = $doc->id;
-            $document_file = $doc->document_path;
-            ($file_name) = $document_file =~ m[clientIDscans/\w+/(.+)$];
-            $download_file = $client->broker . "/$file_name";
-            my $date = $doc->expiration_date || '';
-            if ($date) {
-                eval {
-                    my $formatted = Date::Utility->new($date)->date_yyyymmdd;
-                    $date = $formatted;
-                } or do {
-                    warn "Invalid date, using original information: $date\n";
-                    }
-            }
-            my $comments    = $doc->comments;
-            my $document_id = $doc->document_id;
-            $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
-            $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
-            $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
+        my ($id, $document_path, $file_name, $file_path, $input);
+        $id            = $doc->id;
+        $document_path = $doc->document_path;
+        $file_name     = $doc->file_name;
+
+        my $date = $doc->expiration_date || '';
+        if ($date) {
+            eval {
+                my $formatted = Date::Utility->new($date)->date_yyyymmdd;
+                $date = $formatted;
+            } or do {
+                warn "Invalid date, using original information: $date\n";
+                }
         }
-        my $file_size = -s $document_file || next;
-        my $file_age  = int(-M $document_file);
-        my $url       = request()->url_for("backoffice/download_document.cgi?path=$download_file");
-        $links .= qq{<tr><td><a href="$url">$file_name</a> $file_size bytes, $file_age days old</td><td>$input};
+
+        my $comments    = $doc->comments;
+        my $document_id = $doc->document_id;
+
+        $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
+        $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
+        $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
+
+        my $url = BOM::Backoffice::Script::DocumentUpload::get_s3_url($file_name);
+        $links .= qq{<tr><td><a href="$url">$file_name</a></td><td>$input};
         if ($show_delete && !$args{no_edit}) {
-            $url .= qq{&loginid=$loginid&doc_id=$id&deleteit=yes};
-            my $onclick = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
-            $links .= qq{[<a onclick="$onclick" href="$url">Delete</a>]};
+            my $onclick    = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
+            my $delete_url = request()->url_for("backoffice/download_document.cgi?loginid=$loginid&doc_id=$id&deleteit=yes");
+            $links .= qq{[<a onclick="$onclick" href="$delete_url">Delete</a>]};
         }
         $links .= "</td></tr>";
     }

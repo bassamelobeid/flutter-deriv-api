@@ -39,7 +39,7 @@ if ($category eq '192_result') {
 } elsif ($category eq 'temp') {
     $full_path = get_tmp_path_or_die() . $path;
 } else {
-    $full_path = "$dbloc/clientIDscans/$path";
+    $full_path = $path;
 }
 
 local $\ = "";
@@ -48,33 +48,28 @@ if (request()->param('deleteit') eq 'yes') {
     PrintContentType();
     BrokerPresentation('DELETE DOCUMENT');
     my $msg;
-    if (-s $full_path) {
-        my $loginid = encode_entities(request()->param('loginid'));
-        my $doc_id  = request()->param('doc_id');
-        my $client  = Client::Account::get_instance({loginid => $loginid});
-        if ($client) {
-            $client->set_db('write');
-            my ($doc) = $client->find_client_authentication_document(query => [id => $doc_id]);    # Rose
-            if ($doc) {
-                if ($doc->delete) {
-                    $msg = "SUCCESS - $encoded_path is deleted!";
-                    rename $full_path, $full_path . '.' . time . '.deleted';
-                } else {
-                    $msg = "ERROR: did not remove $encoded_path record from db";
-                }
+    my $loginid = encode_entities(request()->param('loginid'));
+    my $doc_id  = request()->param('doc_id');
+    my $client  = Client::Account::get_instance({loginid => $loginid});
+    if ($client) {
+        $client->set_db('write');
+        my ($doc) = $client->find_client_authentication_document(query => [id => $doc_id]);    # Rose
+        if ($doc) {
+            if ($doc->delete) {
+                $msg = "SUCCESS - $encoded_path is deleted!";
             } else {
-                $msg = "ERROR: could not find $encoded_path record in db";
+                $msg = "ERROR: did not remove $encoded_path record from db";
             }
-            $msg .=
-                  '<p>Go back to client details <a href="'
-                . request()->url_for("backoffice/f_clientloginid_edit.cgi", {loginID => $loginid}) . '">'
-                . $loginid . '</p>';
-
         } else {
-            $msg = "ERROR: with client login " . $loginid;
+            $msg = "ERROR: could not find $encoded_path record in db";
         }
+        $msg .=
+              '<p>Go back to client details <a href="'
+            . request()->url_for("backoffice/f_clientloginid_edit.cgi", {loginID => $loginid}) . '">'
+            . $loginid . '</p>';
+
     } else {
-        $msg = "ERROR: " . $full_path . " does not exist or is empty!";
+        $msg = "ERROR: with client login " . $loginid;
     }
     print "<p>$msg</p>";
     code_exit_BO();
