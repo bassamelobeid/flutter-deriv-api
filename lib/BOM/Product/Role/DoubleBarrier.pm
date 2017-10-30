@@ -8,37 +8,6 @@ use BOM::Product::Static;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
-sub BUILD {
-    my $self = shift;
-
-    if (my $barrier2 = $self->low_barrier and my $barrier1 = $self->high_barrier) {
-        if ($barrier2->as_absolute > $barrier1->as_absolute) {
-            $self->_add_error({
-                severity          => 5,
-                message           => 'High and low barriers inverted',
-                message_to_client => [$ERROR_MAPPING->{InvalidHighBarrier}],
-            });
-            $self->low_barrier($barrier1);
-            $self->high_barrier($barrier2);
-        } elsif ($barrier1->as_absolute == $barrier2->as_absolute) {
-            $self->_add_error({
-                severity          => 100,
-                message           => 'High and low barriers must be different',
-                message_to_client => [$ERROR_MAPPING->{SameBarriersNotAllowed}],
-            });
-            # these are dummy barriers that so that the calculation will not die
-            my $min_barrier      = $self->underlying->market->integer_barrier ? 1 : $self->pip_size;
-            my $new_low_barrier  = $self->make_barrier($barrier1->as_absolute - $min_barrier);
-            my $new_high_barrier = $self->make_barrier($barrier2->as_absolute + $min_barrier);
-            $self->low_barrier($new_low_barrier);
-            $self->high_barrier($new_high_barrier);
-
-        }
-    }
-
-    return;
-}
-
 has [qw(supplied_high_barrier supplied_low_barrier)] => (is => 'ro');
 
 has high_barrier => (
@@ -88,6 +57,31 @@ sub _validate_barrier {
     my $high_barrier = $self->high_barrier;
     my $low_barrier  = $self->low_barrier;
     my $current_spot = $self->current_spot;
+
+    if ($low_barrier and $high_barrier) {
+        if ($low_barrier->as_absolute > $high_barrier->as_absolute) {
+            $self->low_barrier($high_barrier);
+            $self->high_barrier($low_barrier);
+            return {
+                severity          => 5,
+                message           => 'High and low barriers inverted',
+                message_to_client => [$ERROR_MAPPING->{InvalidHighBarrier}],
+            };
+        } elsif ($high_barrier->as_absolute == $low_barrier->as_absolute) {
+            # these are dummy barriers that so that the calculation will not die
+            my $min_barrier      = $self->underlying->market->integer_barrier ? 1 : $self->pip_size;
+            my $new_low_barrier  = $self->make_barrier($high_barrier->as_absolute - $min_barrier);
+            my $new_high_barrier = $self->make_barrier($low_barrier->as_absolute + $min_barrier);
+            $self->low_barrier($new_low_barrier);
+            $self->high_barrier($new_high_barrier);
+            return {
+                severity          => 100,
+                message           => 'High and low barriers must be different',
+                message_to_client => [$ERROR_MAPPING->{SameBarriersNotAllowed}],
+            };
+
+        }
+    }
 
     return ($high_barrier->all_errors)[0] if not $high_barrier->confirm_validity;
     return ($low_barrier->all_errors)[0]  if not $low_barrier->confirm_validity;
