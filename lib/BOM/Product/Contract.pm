@@ -509,6 +509,8 @@ sub _barrier_display_text {
 
     my ($pips) = $supplied_barrier =~ /S([+-]?\d+)P/;
 
+    return [$GENERIC_MAPPING->{entry_spot}] if abs($pips) == 0;
+
     my $string;
     if ($self->underlying->market->name eq 'forex') {
         $string = $pips > 0 ? $GENERIC_MAPPING->{entry_spot_plus_plural} : $GENERIC_MAPPING->{entry_spot_minus_plural};
