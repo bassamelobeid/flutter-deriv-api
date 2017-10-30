@@ -85,11 +85,8 @@ subtest 'longcode from params for forward starting' => sub {
 
     ok $c->is_forward_starting, 'is a forward starting contract';
 
-    my $longcode;
-    like(warning { $longcode = $c->longcode }, qr/No basis tick for/, 'Got warning for no basis tick');
-
     is_deeply(
-        $longcode,
+        $c->longcode,
         [
             'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
             'USD', '10.00',
