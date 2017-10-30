@@ -14,7 +14,7 @@ use await;
 
 # cleanup
 use BOM::Database::Model::AccessToken;
-BOM::Database::Model::AccessToken->new->dbh->do("
+BOM::Database::Model::AccessToken->new->dbic->dbh->do("
     DELETE FROM $_
 ") foreach ('auth.access_token');
 
