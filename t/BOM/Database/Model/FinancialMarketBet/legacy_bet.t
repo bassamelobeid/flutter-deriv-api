@@ -149,8 +149,9 @@ lives_ok {
 
     my $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({
         %account_data,
-        bet => $legacy_bet,
-        db  => $connection_builder->db,
+        bet      => $legacy_bet,
+        bet_data => {is_expired => 1},
+        db       => $connection_builder->db,
     });
 
     $financial_market_bet_helper->sell_bet // die "Bet not sold";

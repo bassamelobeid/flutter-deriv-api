@@ -43,7 +43,7 @@ sub get_open_bet_overviews {
     }
 
     return $self->db->dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
             if ($from_historical) {
                 $sth->execute($before_date->db_timestamp);
@@ -67,7 +67,7 @@ sub get_last_generated_historical_marked_to_market_time {
     my $dbic = $self->db->dbic;
 
     my $result = $dbic->run(
-        sub {
+        fixup => sub {
             my $sql = q{
         SELECT
             date_trunc('second', calculation_time) as max_time
@@ -99,7 +99,7 @@ sub get_active_accounts_payment_profit {
     my $args = shift;
 
     return $self->db->dbic->run(
-        sub {
+        fixup => sub {
             my $sql = q{ SELECT * FROM accounting.get_active_accounts_payment_profit(?, ?) };
             my $sth = $_->prepare($sql);
             $sth->execute($args->{start_time}->db_timestamp, $args->{end_time}->db_timestamp);
@@ -115,7 +115,7 @@ sub turnover_in_period {
     my $sql  = q{ SELECT * FROM accounting.turnover_in_period(?, ?) };
 
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
             $sth->execute($args->{start_date}, $args->{end_date});
 
@@ -138,7 +138,7 @@ sub check_clients_duplication {
         SELECT * FROM check_client_duplication(?)
     };
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
             $sth->execute($from_date->datetime_yyyymmdd_hhmmss);
 
@@ -153,7 +153,7 @@ sub get_aggregated_sum_of_transactions_of_month {
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare("SELECT * FROM sum_of_bet_txn_of_month(?)");
             $sth->execute($month_first_day);
 
@@ -193,7 +193,7 @@ sub eod_market_values_of_month {
     };
 
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
             $sth->execute($month_first_day, $month_first_day);
 
@@ -218,7 +218,7 @@ sub number_of_active_clients_of_month {
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
             $sth->execute($month_first_day);
             return $sth->fetchall_hashref('transaction_time');
@@ -236,7 +236,7 @@ sub get_clients_result_by_field {
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
             $sth->execute(@binds);
 
@@ -253,7 +253,7 @@ sub get_unregistered_client_token_pairs_before_datetime {
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
             $sth->execute($to_date);
 

@@ -7,13 +7,13 @@ sub get_copiers_cnt {
     my ($self, $args) = @_;
 
     my $sql = q{
-        SELECT DISTINCT copier_id
+        SELECT COUNT(DISTINCT copier_id)
           FROM betonmarkets.copiers
          WHERE trader_id = $1
     };
 
     my @binds = ($args->{trader_id});
-    return scalar(@{$self->db->dbic->run(sub { $_->selectcol_arrayref($sql, undef, @binds) || [] })});
+    return $self->db->dbic->run(fixup => sub { [$_->selectrow_array($sql, undef, @binds)]->[0] });
 }
 
 sub get_trade_copiers {
@@ -67,7 +67,7 @@ SELECT DISTINCT copier_id from (
 SQL
 
     return $self->db->dbic->run(
-        sub {
+        fixup => sub {
             $_->selectcol_arrayref($sql, undef, @{$args}{qw/trader_id trade_type asset price/});
         }) // [];
 }
@@ -82,7 +82,7 @@ sub get_traders {
     };
 
     my @binds = ($args->{copier_id});
-    return $self->db->dbic->run(sub { $_->selectcol_arrayref($sql, undef, @binds) });
+    return $self->db->dbic->run(fixup => sub { $_->selectcol_arrayref($sql, undef, @binds) });
 }
 
 no Moose;
