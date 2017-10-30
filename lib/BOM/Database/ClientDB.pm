@@ -5,6 +5,7 @@ use Moose;
 use File::ShareDir;
 use JSON::MaybeXS;
 use LandingCompany::Registry;
+use Try::Tiny;
 use YAML::XS qw(LoadFile);
 
 use BOM::Database::Rose::DB;
@@ -118,12 +119,20 @@ sub getall_arrayref {
     my ($self, $query, $params) = @_;
 
     my $result = $self->db->dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($query);
             $sth->execute(@$params);
             return $sth->fetchall_arrayref([0]);
         });
-    my @result = map { $decoder->decode($_->[0]) } @$result;
+
+    my @result;
+    try {
+        @result = map { $decoder->decode($_->[0]) } @$result;
+    }
+    catch {
+        die "Result must be always rows of JSON : $_";
+    };
+
     return \@result;
 }
 
@@ -150,7 +159,7 @@ sub get_duplicate_client {
 ";
     my $dbic        = $self->db->dbic;
     my @dupe_record = $dbic->run(
-        sub {
+        fixup => sub {
             my $dupe_sth = $_->prepare($dupe_sql);
             $dupe_sth->bind_param(1, uc $args->{first_name});
             $dupe_sth->bind_param(2, uc $args->{last_name});
@@ -169,7 +178,7 @@ sub lock_client_loginid {
 
     my $dbic   = $self->db->dbic;
     my $result = $dbic->run(
-        sub {
+        ping => sub {
             $_->do('SET synchronous_commit=local');
 
             my $sth = $_->prepare('SELECT lock_client_loginid($1)');
@@ -194,7 +203,7 @@ sub unlock_client_loginid {
 
     my $dbic   = $self->db->dbic;
     my $result = $dbic->run(
-        sub {
+        ping => sub {
             $_->do('SET synchronous_commit=local');
 
             my $sth = $_->prepare('SELECT unlock_client_loginid($1)');

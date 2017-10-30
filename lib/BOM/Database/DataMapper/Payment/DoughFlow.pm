@@ -68,7 +68,7 @@ sub delete_expired_tokens {
 
     my $sql = q{ DELETE FROM betonmarkets.handoff_token WHERE client_loginid = ? and expires < NOW() };
     return $self->db->dbic->run(
-        sub {
+        ping => sub {
             my $sth = $_->prepare($sql);
             return $sth->execute($self->client_loginid);
         });
