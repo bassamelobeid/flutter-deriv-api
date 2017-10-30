@@ -230,6 +230,16 @@ sub get_pricing_rpc_url {
     return $ENV{PRICING_RPC_URL} || $c->app->config->{pricing_rpc_url};
 }
 
+sub get_doc_auth_s3_conf {
+    my $c = shift;
+
+    return {
+        access_key => $ENV{DOCUMENT_AUTH_S3_ACCESS} || $c->app->config->{document_auth_s3_access},
+        secret_key => $ENV{DOCUMENT_AUTH_S3_SECRET} || $c->app->config->{document_auth_s3_secret},
+        bucket     => $ENV{DOCUMENT_AUTH_S3_BUCKET} || $c->app->config->{document_auth_s3_bucket},
+    };
+}
+
 sub output_validation {
     my ($c, $req_storage, $api_response) = @_;
 
@@ -324,6 +334,15 @@ sub check_useragent {
     return;
 }
 
+sub _on_sanity_failed {
+    my ($c) = @_;
+    my $client_ip = $c->stash->{client_ip};
+    my $tags = ["client_ip:$client_ip", "app_name:" . ($c->stash('app_name') || ''), "app_id:" . ($c->stash('source') || ''),];
+    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.sanity_check_failed.count', {tags => $tags});
+
+    return;
+}
+
 sub on_client_connect {
     my ($c) = @_;
     # We use a weakref in case the disconnect is never called
@@ -331,6 +350,8 @@ sub on_client_connect {
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
 
     $c->app->stat->{cumulative_client_connections}++;
+    $c->on(sanity_failed => \&_on_sanity_failed);
+
     return;
 }
 
@@ -340,6 +361,9 @@ sub on_client_disconnect {
     forget_all($c);
 
     delete $c->app->active_connections->{$c};
+    if (my $tx = $c->tx) {
+        $tx->unsubscribe('sanity_failed');
+    }
 
     return;
 }

@@ -14,7 +14,7 @@ use Format::Util::Numbers qw/formatnumber/;
 
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::System;
-use Binary::WebSocketAPI::v3::Instance::Redis qw( ws_redis_slave ws_redis_master shared_redis );
+use Binary::WebSocketAPI::v3::Instance::Redis qw( ws_redis_master shared_redis );
 
 use utf8;
 use Try::Tiny;
@@ -41,7 +41,7 @@ sub website_status {
                     my $website_status = {};
                     $rpc_response->{clients_country} //= '';
                     $website_status->{$_} = $rpc_response->{$_}
-                        for qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config ico_status|;
+                        for qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config ico_status ico_info|;
 
                     $shared_info->{broadcast_notifications}{$c + 0}{'c'}            = $c;
                     $shared_info->{broadcast_notifications}{$c + 0}{echo}           = $args;
@@ -50,7 +50,7 @@ sub website_status {
                     Scalar::Util::weaken($shared_info->{broadcast_notifications}{$c + 0}{'c'});
 
                     ### to config
-                    my $current_state = ws_redis_slave->get("NOTIFY::broadcast::state");
+                    my $current_state = ws_redis_master()->get("NOTIFY::broadcast::state");
 
                     $current_state = eval { decode_json($current_state) }
                         if $current_state && !ref $current_state;
@@ -101,7 +101,7 @@ sub send_notification {
 
         unless ($is_on_key) {
             $is_on_key = "NOTIFY::broadcast::is_on";    ### TODO: to config
-            return unless ws_redis_slave->get($is_on_key);    ### Need 1 for continuing
+            return unless ws_redis_master()->get($is_on_key);    ### Need 1 for continuing
         }
 
         $message = eval { decode_json $message } unless ref $message eq 'HASH';

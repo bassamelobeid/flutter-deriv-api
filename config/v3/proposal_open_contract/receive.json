@@ -81,6 +81,10 @@
           "type": "integer",
           "description": "Whether the contract is expired or not. Boolean value 1 or 0"
         },
+        "is_sold": {
+          "type": "integer",
+          "description": "Whether the contract is sold or not. Boolean value 1 or 0"
+        },
         "is_settleable": {
           "type": "integer",
           "description": "Whether the contract is settleable or not. Boolean value 1 or 0"
@@ -176,6 +180,63 @@
         "sell_spot_time": {
           "type": "integer",
           "description": "Epoch time of the sell spot. Note that since certain underlyings don't tick every second, the sell spot time may be a few seconds before the sell time. Example: 1446629000 (only present for contracts already sold)"
+        },
+        "audit_details": {
+          "type": ["object", "null"],
+          "title": "Audit details for expired contract.",
+          "description": "Tick details around contract start and end time.",
+          "properties": {
+            "contract_start": {
+              "type": "array",
+              "description": "Ticks around contract start time.",
+              "item": {
+                "type": "object",
+                "properties": {
+                  "epoch": {
+                    "type": "integer",
+                    "description": "Epoch time of a tick or the contract start or end time."
+                  },
+                  "name": {
+                    "type": ["string","null"],
+                    "description": "A short description of the data. It could be a tick or a time associated with the contract."
+                  },
+                  "tick": {
+                    "type": ["number","null"],
+                    "description": "The spot value at the given epoch."
+                  },
+                  "flag": {
+                    "type": ["string","null"],
+                    "description": "A flag used to highlight the record in front-end applications."
+                  }
+                }
+              }
+            },
+            "contract_end": {
+              "type": "array",
+              "description": "Ticks around contract end time.",
+              "item": {
+                "type": "object",
+                "properties": {
+                  "epoch": {
+                    "type": "integer",
+                    "description": "Epoch time of a tick or the contract start or end time."
+                  },
+                  "name": {
+                    "type": ["string","null"],
+                    "description": "A short description of the data. It could be a tick or a time associated with the contract."
+                  },
+                  "tick": {
+                    "type": ["number","null"],
+                    "description": "The spot value at the given epoch."
+                  },
+                  "flag": {
+                    "type": ["string","null"],
+                    "description": "A flag used to highlight the record in front-end applications."
+                  }
+                }
+              }
+            }
+          }
         },
         "transaction_ids": {
           "type": "object",
