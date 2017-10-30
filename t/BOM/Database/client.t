@@ -51,7 +51,8 @@ subtest "unicode json in getall_arrayref" => sub {
     $client->last_name('Пупкин');
     $client->date_of_birth('1932-09-07');
     $client->save;
-    my $r = $clientdb->getall_arrayref("select json_build_object('f', first_name, 'l', last_name) from betonmarkets.client where first_name = ?", ['Василий']);
+    my $r = $clientdb->getall_arrayref("select json_build_object('f', first_name, 'l', last_name) from betonmarkets.client where first_name = ?",
+        ['Василий']);
     is $r->[0]->{f}, 'Василий';
     is $r->[0]->{l}, 'Пупкин';
 };

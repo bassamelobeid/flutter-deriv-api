@@ -12,14 +12,6 @@ sub _build_dbic {
     return BOM::Database::AuthDB::rose_db->dbic;
 }
 
-# TODO chylli/dbix_connector
-# should remove this atribute after the whole dbix_connector project finished
-
-sub dbh {
-    my $self = shift;
-    return $self->dbic->dbh;
-}
-
 sub __parse_array {
     my ($array_string) = @_;
     return $array_string if ref($array_string) eq 'ARRAY';
@@ -41,7 +33,8 @@ sub create_token {
     $scopes = __filter_valid_scopes($scopes);
 
     my $dbic = $self->dbic;
-    my ($token) = $dbic->run(sub { $_->selectrow_array("SELECT auth.create_token(15, ?, ?, ?, ?)", undef, $loginid, $display_name, $scopes, $ip) });
+    my ($token) =
+        $dbic->run(ping => sub { $_->selectrow_array("SELECT auth.create_token(15, ?, ?, ?, ?)", undef, $loginid, $display_name, $scopes, $ip) });
 
     return $token;
 }
@@ -50,7 +43,7 @@ sub get_token_details {
     my ($self, $token) = @_;
 
     my $details = $self->dbic->run(
-        sub {
+        fixup => sub {
             $_->selectrow_hashref(<<'SQL', undef, $token) });
 SELECT loginid, creation_time, scopes, display_name, last_used, valid_for_ip
   FROM auth.get_token_details($1)
@@ -64,7 +57,7 @@ sub get_scopes_by_access_token {
     my ($self, $access_token) = @_;
 
     my $scopes = $self->dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare("
         SELECT scopes FROM auth.access_token
         WHERE token = ?
@@ -80,7 +73,7 @@ sub get_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
     my $tokens = $self->dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare("
         SELECT
             token, display_name, scopes, last_used::timestamp(0), valid_for_ip
@@ -97,7 +90,7 @@ sub get_token_count_by_loginid {
     my ($self, $loginid) = @_;
 
     return $self->dbic->run(
-        sub {
+        fixup => sub {
             $_->selectrow_array("SELECT COUNT(*) FROM auth.access_token WHERE client_loginid = ?", undef, $loginid);
         });
 }
@@ -106,7 +99,7 @@ sub is_name_taken {
     my ($self, $loginid, $display_name) = @_;
 
     return $self->dbic->run(
-        sub {
+        fixup => sub {
             $_->selectrow_array("SELECT 1 FROM auth.access_token WHERE client_loginid = ? AND display_name = ?", undef, $loginid, $display_name);
         });
 }
@@ -115,7 +108,7 @@ sub remove_by_loginid {
     my ($self, $client_loginid) = @_;
 
     return $self->dbic->run(
-        sub {
+        ping => sub {
             $_->do("DELETE FROM auth.access_token WHERE client_loginid = ?", undef, $client_loginid);
         });
 }
@@ -124,7 +117,7 @@ sub remove_by_token {
     my ($self, $token, $loginid) = @_;
 
     return $self->dbic->run(
-        sub {
+        ping => sub {
             $_->do("DELETE FROM auth.access_token WHERE token = ? and client_loginid = ?", undef, $token, $loginid);
         });
 }
@@ -134,7 +127,7 @@ sub get_all_tokens_by_loginid {
 
     my @tokens;
     $self->dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare('
         SELECT
             access_token

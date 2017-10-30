@@ -68,7 +68,7 @@ sub get_sold_bets_of_account {
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare("
         SELECT fmb.*, t.id txn_id, t.source
         $sql
@@ -186,7 +186,7 @@ sub get_sold {
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
 
             $sth->bind_param(1, $self->account->id);
@@ -221,7 +221,7 @@ sub get_contract_details_with_transaction_ids {
     };
 
     my @fmbs = $self->db->dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
             $sth->execute($contract_id);
             return @{$sth->fetchall_arrayref({})};

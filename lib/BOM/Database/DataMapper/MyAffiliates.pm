@@ -24,7 +24,7 @@ sub get_clients_activity {
     };
 
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
             $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ);
 
