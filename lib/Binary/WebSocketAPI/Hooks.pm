@@ -334,6 +334,15 @@ sub check_useragent {
     return;
 }
 
+sub _on_sanity_failed {
+    my ($c) = @_;
+    my $client_ip = $c->stash->{client_ip};
+    my $tags = ["client_ip:$client_ip", "app_name:" . ($c->stash('app_name') || ''), "app_id:" . ($c->stash('source') || ''),];
+    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.sanity_check_failed.count', {tags => $tags});
+
+    return;
+}
+
 sub on_client_connect {
     my ($c) = @_;
     # We use a weakref in case the disconnect is never called
@@ -341,6 +350,8 @@ sub on_client_connect {
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
 
     $c->app->stat->{cumulative_client_connections}++;
+    $c->on(sanity_failed => \&_on_sanity_failed);
+
     return;
 }
 
@@ -350,6 +361,9 @@ sub on_client_disconnect {
     forget_all($c);
 
     delete $c->app->active_connections->{$c};
+    if (my $tx = $c->tx) {
+        $tx->unsubscribe('sanity_failed');
+    }
 
     return;
 }
