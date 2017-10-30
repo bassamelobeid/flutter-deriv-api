@@ -114,7 +114,7 @@
                   "required": "1"
                 },
                 "num_of_days_limit": {
-                  "type": "integer",
+                  "type": "number",
                   "pattern": "^10000$",
                   "required": "1"
                 },
