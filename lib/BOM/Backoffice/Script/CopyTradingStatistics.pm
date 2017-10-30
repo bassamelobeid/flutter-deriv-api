@@ -17,8 +17,10 @@ sub run {
             broker_code => 'CR',
             operation   => 'backoffice_replica',
         }
-        )->db->dbh->selectcol_arrayref(
-        q{
+        )->db->dbic->run(
+        fixup => sub {
+            $_->selectcol_arrayref(
+                q{
         SELECT
             loginid
         FROM
@@ -26,7 +28,8 @@ sub run {
         WHERE
             allow_copiers IS TRUE
     }
-        );
+            );
+        });
 
     for my $trader_id (@$trader_ids) {
         my $last_processed_id = BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_LAST_PROCESSED_ID:$trader_id") || 0;

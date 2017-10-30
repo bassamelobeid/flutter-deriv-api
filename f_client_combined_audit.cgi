@@ -85,14 +85,12 @@ foreach my $transaction (@{$statement->{transactions}}) {
     }
 }
 
-my $dbh = BOM::Database::ClientDB->new({
+my $dbic = BOM::Database::ClientDB->new({
         client_loginid => $loginid,
         operation      => 'backoffice_replica',
     }
-    )->db->dbh
+    )->db->dbic
     or die "[$0] cannot create connection";
-$dbh->{AutoCommit} = 0;
-$dbh->{RaiseError} = 1;
 
 my $u_db;
 my $prefix;
@@ -100,12 +98,15 @@ foreach my $table (
     qw(client client_status client_promo_code client_authentication_method client_authentication_document self_exclusion financial_assessment))
 {
     $prefix = ($table eq 'client') ? '' : 'client_';
-    $u_db = $dbh->selectall_hashref(
-        "SELECT * FROM audit.$table WHERE "
-            . $prefix
-            . "loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp",
-        'stamp'
-    );
+    $u_db = $dbic->run(
+        fixup => sub {
+            $_->selectall_hashref(
+                "SELECT * FROM audit.$table WHERE "
+                    . $prefix
+                    . "loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp",
+                'stamp'
+            );
+        });
 
     my $old;
     foreach my $stamp (sort keys %{$u_db}) {
@@ -158,10 +159,13 @@ foreach my $table (
     }
 }
 
-$u_db = $dbh->selectall_hashref(
-    "SELECT * FROM audit.login_history WHERE client_loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp",
-    'stamp'
-);
+$u_db = $dbic->run(
+    fixup => sub {
+        $_->selectall_hashref(
+            "SELECT * FROM audit.login_history WHERE client_loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp",
+            'stamp'
+        );
+    });
 
 foreach my $stamp (sort keys %{$u_db}) {
     $u_db->{$stamp}->{client_addr} = revers_ip($u_db->{$stamp}->{client_addr});

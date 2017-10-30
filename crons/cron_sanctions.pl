@@ -90,11 +90,13 @@ sub make_client_csv_line {
 sub get_matched_clients_info_by_broker {
     my $broker = shift;
     my @matched;
-    my $dbh = BOM::Database::ClientDB->new({
+    my $dbic = BOM::Database::ClientDB->new({
             broker_code => $broker,
-        })->db->dbh;
-    my $clients = $dbh->selectcol_arrayref(
-        q{
+        })->db->dbic;
+    my $clients = $dbic->run(
+        fixup => sub {
+            $_->selectcol_arrayref(
+                q{
         SELECT
             loginid
         FROM
@@ -102,11 +104,15 @@ sub get_matched_clients_info_by_broker {
         WHERE
             loginid ~ ('^' || ? || '\\d')
         }, undef, $broker
-    );
+            );
+        });
     #XXX: can we rely on rows? New rows are added on client's registration
     # WHERE condition we need only for QA
-    $dbh->do("UPDATE betonmarkets.sanctions_check SET result='0',type='C',tstmp=? WHERE client_loginid ~ ('^' || ? || '\\d')",
-        undef, Date::Utility->new->datetime, $broker);
+    $dbic->run(
+        ping => sub {
+            $_->do("UPDATE betonmarkets.sanctions_check SET result='0',type='C',tstmp=? WHERE client_loginid ~ ('^' || ? || '\\d')",
+                undef, Date::Utility->new->datetime, $broker);
+        });
     foreach my $c (@$clients) {
         my $client = Client::Account->new({loginid => $c});
         my $result = $sanctions->get_sanctioned_info($client->first_name, $client->last_name);
@@ -115,8 +121,10 @@ sub get_matched_clients_info_by_broker {
     return '' unless @matched;
 
     my $values = join ",", ('(?,?)') x scalar @matched;
-    $dbh->do(
-        qq{
+    $dbic->run(
+        ping => sub {
+            $_->do(
+                qq{
             WITH input(result, client_loginid)
                 AS(VALUES $values)
             UPDATE betonmarkets.sanctions_check s
@@ -124,7 +132,8 @@ sub get_matched_clients_info_by_broker {
             FROM input
             WHERE s.client_loginid=input.client_loginid
             }, undef, map { $_->[1] => $_->[0]->loginid } @matched
-    ) or warn $DBI::errstr;
+            );
+        }) or warn $DBI::errstr;
 
     my $result = '';
     $result .= make_client_csv_line($_) . "\n" for sort { $a->[0]->loginid cmp $b->[0]->loginid } @matched;
