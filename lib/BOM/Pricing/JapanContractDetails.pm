@@ -81,9 +81,9 @@ sub verify_with_id {
         currency        => $details->{currency_code},
         landing_company => $landing_company,
         ask_price       => $adjusted_traded_contract_price,
-        start           => $action_type eq 'buy' ? $details->{purchase_time} : $details->{sell_time},
-        action_type     => $action_type,
-        extra           => $extra,
+        ($action_type eq 'sell' ? (start => $details->{sell_time}) : ()),
+        action_type => $action_type,
+        extra       => $extra,
     });
     my $contract_args = {
         loginID         => $details->{loginid},

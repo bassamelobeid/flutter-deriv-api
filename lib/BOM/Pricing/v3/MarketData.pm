@@ -48,7 +48,8 @@ sub _get_digest {
 sub trading_times {
     my $params    = shift;
     my $date      = try { Date::Utility->new($params->{args}->{trading_times}) } || Date::Utility->new;
-    my $cache_key = 'trading_times_' . $date->date_ddmmmyyyy;
+    my $language  = $params->{language} // 'en';
+    my $cache_key = 'trading_times_' . $language . '_' . $date->date_yyyymmdd;
 
     my $cached = _get_cache($cache_key);
     return $cached if $cached;

@@ -389,14 +389,25 @@ sub get_bid {
             $response->{exit_tick_time} = $contract->exit_tick->epoch;
         }
 
+        if ($contract->is_settleable || $contract->is_sold) {
+            my $localized_audit_details;
+            my $ad = $contract->audit_details;
+            foreach my $key (keys %$ad) {
+                $localized_audit_details->{$key} = [
+                    map {
+                        if ($_->{name}) { $_->{name} = localize($_->{name}) }
+                        $_
+                    } @{$ad->{$key}}];
+            }
+            $response->{audit_details} = $localized_audit_details;
+        }
+
         $response->{current_spot} = $contract->current_spot
             if $contract->underlying->feed_license eq 'realtime';
 
         # sell_spot and sell_spot_time are updated if the contract is sold
         # or when the contract is expired.
         if ($sell_time or $contract->is_expired) {
-            $response->{is_expired} = 1;
-
             # path dependent contracts may have hit tick but not sell time
             my $sell_tick =
                   $sell_time
