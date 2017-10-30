@@ -145,7 +145,7 @@ open my $fh, '>:encoding(UTF-8)', $filename;
 print $fh join(',', @fields);
 
 foreach my $ref (@$open_contracts) {
-    print $fh join(',', map { $ref->{$_} } @fields);
+    print $fh join(',', map { $ref->{$_} // '' } @fields);
 }
 close $fh;
 
