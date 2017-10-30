@@ -496,7 +496,7 @@ sub longcode {
     if ($self->two_barriers) {
         push @longcode, ($self->_barrier_display_text($self->supplied_high_barrier), $self->_barrier_display_text($self->supplied_low_barrier));
     } elsif ($self->barrier) {
-        push @longcode, $self->_barrier_display_text($self->supplied_text);
+        push @longcode, $self->_barrier_display_text($self->supplied_barrier);
     }
 
     return \@longcode;
