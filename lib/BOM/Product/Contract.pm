@@ -494,12 +494,24 @@ sub longcode {
     push @longcode, ($when_start, $when_end);
 
     if ($self->two_barriers) {
-        push @longcode, ($self->high_barrier->display_text, $self->low_barrier->display_text);
+        push @longcode, ($self->_barrier_display_text($self->supplied_high_barrier), $self->_barrier_display_text($self->supplied_low_barrier));
     } elsif ($self->barrier) {
-        push @longcode, $self->barrier->display_text;
+        push @longcode, $self->_barrier_display_text($self->supplied_text);
     }
 
     return \@longcode;
+}
+
+sub _barrier_display_text {
+    my ($self, $supplied_type) = @_;
+
+    return $supplied_type if $supplied_type !~ /^S[-+]?\d+P$/;
+
+    my ($pips) = $supplied_type =~ /S([+-]?\d+)P/;
+
+    my $string = $pips > 0 ? $GENERIC_MAPPING->{entry_spot_plus_plural} : $GENERIC_MAPPING->{entry_spot_minus_plural};
+
+    return [$string, abs($pips)];
 }
 
 =head2 allowed_slippage
