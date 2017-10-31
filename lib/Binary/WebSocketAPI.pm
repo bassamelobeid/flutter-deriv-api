@@ -22,14 +22,16 @@ use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections |;
 
+use DataDog::DogStatsd::Helper;
+use Digest::MD5 qw(md5_hex);
 use File::Slurp;
+use Format::Util::Strings qw( defang );
 use JSON::Schema;
 use JSON::XS;
-use Format::Util::Strings qw( defang );
-use Digest::MD5 qw(md5_hex);
+use Mojolicious::Plugin::ClientIP::Pluggable;
 use RateLimitations::Pluggable;
-use Time::Duration::Concise;
 use Scalar::Util qw(weaken);
+use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 
 # FIXME This needs to come from config, requires chef changes
@@ -136,7 +138,11 @@ sub startup {
             );
         });
 
-    $app->plugin('ClientIP');
+    $app->plugin(
+        'Mojolicious::Plugin::ClientIP::Pluggable',
+        analyze_headers => [qw/cf-pseudo-ipv4 cf-connecting-ip true-client-ip/],
+        restrict_family => 'ipv4',
+        fallbacks       => [qw/rfc-7239 x-forwarded-for remote_address/]);
     $app->plugin('Binary::WebSocketAPI::Plugins::Helpers');
 
     my $actions = [[
@@ -481,7 +487,7 @@ sub startup {
                 # Basic sanitisation: we expect IPv4/IPv6 addresses only, reject anything else
                 $ip =~ s{[^[:xdigit:]:.]+}{_}g;
             } else {
-                $app->log->warn("cannot determine client IP-address");
+                DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.unknown_ip.count');
                 $ip = 'UNKNOWN';
             }
 
