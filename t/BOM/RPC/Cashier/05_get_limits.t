@@ -54,7 +54,7 @@ my %deposit = (
 
 # Test for CR accounts which use USD as the currency
 subtest 'CR - USD' => sub {
-    
+
     # Initialise a CR test account and email and set USD as the currency
     my $email  = 'test-cr-usd@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -89,7 +89,7 @@ subtest 'CR - USD' => sub {
 
     # Test for unauthenticated accounts
     subtest 'unauthenticated' => sub {
-        
+
         # Set expected results for accounts that have not had withdrawals yet
         my $expected_result = {
             'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
@@ -131,7 +131,7 @@ subtest 'CR - USD' => sub {
         # Set client status to authenticated and save
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
-        
+
         # Set expected results to reflect withdrawn amount of USD 1000
         my $expected_result = {
             'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
@@ -174,7 +174,7 @@ subtest 'CR - USD' => sub {
 
 # Test for CR accounts which use EUR as the currency
 subtest 'CR-EUR' => sub {
-    
+
     # Initialise a CR test account and email and set USD as the currency
     my $email  = 'test-cr-eur@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -182,7 +182,6 @@ subtest 'CR-EUR' => sub {
     });
     $client->set_default_account('EUR');
 
-    
     $client->email($email);
     $client->save;
     my $loginid = $client->loginid;
@@ -215,10 +214,9 @@ subtest 'CR-EUR' => sub {
                 non_atm => {
                     less_than_seven_days => '3000.00',
                     more_than_seven_days => '10000.00',
-                }}
-        };
+                }}};
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
-        
+
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
         $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
@@ -235,17 +233,17 @@ subtest 'CR-EUR' => sub {
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
-    
+
     # Convert limits from 99999999 USD to EUR
-    $limit_for_days = formatnumber('price',  'EUR', amount_from_to_currency(99999999, 'USD', 'EUR'));
-    $lifetime_limit = formatnumber('price',  'EUR', amount_from_to_currency(99999999, 'USD', 'EUR'));
+    $limit_for_days = formatnumber('price', 'EUR', amount_from_to_currency(99999999, 'USD', 'EUR'));
+    $lifetime_limit = formatnumber('price', 'EUR', amount_from_to_currency(99999999, 'USD', 'EUR'));
 
     # Test for authenticated accounts
     subtest 'authenticated' => sub {
         # Set client status to authenticated and save
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
-        * # Set expected results to reflect withdrawn amount of EUR 1000
+        # Set expected results to reflect withdrawn amount of EUR 1000
         my $expected_result = {
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
@@ -263,8 +261,7 @@ subtest 'CR-EUR' => sub {
                 non_atm => {
                     less_than_seven_days => '3000.00',
                     more_than_seven_days => '10000.00',
-                }}
-        };
+                }}};
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
     };
@@ -311,18 +308,25 @@ subtest 'CR-BTC' => sub {
                 non_atm => {
                     less_than_seven_days => '1.00000000',
                     more_than_seven_days => '2.00000000',
-                }}
-        };
+                }}};
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
         # Deposit BTC 2.00000000
-        $client->smart_payment(%deposit, currency => 'BTC', amount => 2);
+        $client->smart_payment(
+            %deposit,
+            currency => 'BTC',
+            amount   => 2
+        );
         $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
         $client->save;
 
         # Withdraw BTC 1.00000000
         my $withdraw_amount = 1;
-        $client->smart_payment(%withdrawal, currency => 'BTC', amount => -1);
+        $client->smart_payment(
+            %withdrawal,
+            currency => 'BTC',
+            amount   => -1
+        );
 
         # After withdrawal, change withdrawn amount and remainder
         $expected_result->{'withdrawal_for_x_days_monetary'}      = formatnumber('price', 'BTC', $withdraw_amount);
@@ -332,9 +336,9 @@ subtest 'CR-BTC' => sub {
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
 
-    # Convert limits from 99999999 USD to BTC    
-    $limit_for_days = formatnumber('price',  'BTC', amount_from_to_currency(99999999, 'USD', 'BTC'));
-    $lifetime_limit = formatnumber('price',  'BTC', amount_from_to_currency(99999999, 'USD', 'BTC'));
+    # Convert limits from 99999999 USD to BTC
+    $limit_for_days = formatnumber('price', 'BTC', amount_from_to_currency(99999999, 'USD', 'BTC'));
+    $lifetime_limit = formatnumber('price', 'BTC', amount_from_to_currency(99999999, 'USD', 'BTC'));
 
     # Test for authenticated accounts
     subtest 'authenticated' => sub {
@@ -359,8 +363,7 @@ subtest 'CR-BTC' => sub {
                 non_atm => {
                     less_than_seven_days => '1.00000000',
                     more_than_seven_days => '2.00000000',
-                }}
-        };
+                }}};
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
     };
@@ -585,7 +588,7 @@ subtest 'MX' => sub {
         # Withdraw EUR 1000
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal, currency => 'EUR');
-        
+
         # After withdrawal, change withdrawn amount and remainder
         $expected_result->{'withdrawal_for_x_days_monetary'}      = formatnumber('price', 'EUR', $withdraw_amount);
         $expected_result->{'withdrawal_since_inception_monetary'} = formatnumber('price', 'EUR', $withdraw_amount);

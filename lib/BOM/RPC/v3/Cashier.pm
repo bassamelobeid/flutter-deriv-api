@@ -331,19 +331,19 @@ sub get_limits {
         $withdrawal_limit_curr = $currency;
     } elsif ($landing_company eq 'costarica') {
         $withdrawal_limit_curr = 'USD';
-    }else {
+    } else {
         # limit in EUR for: MX, MLT, MF
         $withdrawal_limit_curr = 'EUR';
     }
 
-    $limit->{num_of_days}       = $numdays;
+    $limit->{num_of_days} = $numdays;
 
     if ($landing_company eq 'costarica' and $currency ne 'USD') {
-        $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit, $withdrawal_limit_curr, $currency));
-        $limit->{lifetime_limit}    = formatnumber('price', $currency, amount_from_to_currency($lifetimelimit, $withdrawal_limit_curr, $currency));        
+        $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
+        $limit->{lifetime_limit}    = formatnumber('price', $currency, amount_from_to_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
     } else {
         $limit->{num_of_days_limit} = $numdayslimit;
-        $limit->{lifetime_limit}    = formatnumber('price', $currency, $lifetimelimit);
+        $limit->{lifetime_limit} = formatnumber('price', $currency, $lifetimelimit);
     }
 
     # withdrawal since $numdays
