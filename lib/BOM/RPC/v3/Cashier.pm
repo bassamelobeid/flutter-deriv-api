@@ -327,16 +327,24 @@ sub get_limits {
     }
 
     my $withdrawal_limit_curr;
-    if (first { $client->landing_company->short eq $_ } ('costarica', 'japan')) {
+    if ($landing_company eq 'japan') {
         $withdrawal_limit_curr = $currency;
-    } else {
+    } elsif ($landing_company eq 'costarica') {
+        $withdrawal_limit_curr = 'USD';
+    }else {
         # limit in EUR for: MX, MLT, MF
         $withdrawal_limit_curr = 'EUR';
     }
 
     $limit->{num_of_days}       = $numdays;
-    $limit->{num_of_days_limit} = $numdayslimit;
-    $limit->{lifetime_limit}    = formatnumber('price', $currency, $lifetimelimit);
+
+    if ($landing_company eq 'costarica' and $currency ne 'USD') {
+        $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit, $withdrawal_limit_curr, $currency));
+        $limit->{lifetime_limit}    = formatnumber('price', $currency, amount_from_to_currency($lifetimelimit, $withdrawal_limit_curr, $currency));        
+    } else {
+        $limit->{num_of_days_limit} = $numdayslimit;
+        $limit->{lifetime_limit}    = formatnumber('price', $currency, $lifetimelimit);
+    }
 
     # withdrawal since $numdays
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
@@ -353,6 +361,12 @@ sub get_limits {
     my $remainder = min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception));
     if ($remainder < 0) {
         $remainder = 0;
+    }
+
+    if ($landing_company eq 'costarica' and $currency ne 'USD') {
+        $withdrawal_since_inception = amount_from_to_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency);
+        $withdrawal_for_x_days      = amount_from_to_currency($withdrawal_for_x_days,      $withdrawal_limit_curr, $currency);
+        $remainder                  = amount_from_to_currency($remainder,                  $withdrawal_limit_curr, $currency);
     }
 
     $limit->{withdrawal_since_inception_monetary} = formatnumber('price', $currency, $withdrawal_since_inception);
