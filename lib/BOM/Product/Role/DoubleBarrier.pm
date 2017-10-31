@@ -11,6 +11,8 @@ my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 sub BUILD {
     my $self = shift;
 
+    return unless $self->pricing_new;
+
     if (my $barrier2 = $self->low_barrier and my $barrier1 = $self->high_barrier) {
         if ($barrier2->as_absolute > $barrier1->as_absolute) {
             $self->_add_error({
