@@ -97,6 +97,11 @@ subtest 'longcode from params for forward starting' => sub {
 
 subtest 'longcode with \'difference\' as barrier' => sub {
     my $now = Date::Utility->new('2016-10-19 10:00:00');
+    my $tick = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'R_100',
+        quote => 100,
+        epoch => $now->epoch
+        });
     my $c   = produce_contract({
         bet_type     => 'CALL',
         underlying   => 'R_100',
@@ -107,6 +112,7 @@ subtest 'longcode with \'difference\' as barrier' => sub {
         barrier      => '+0.32',
         payout       => 10,
         fixed_expiry => 1,
+        current_tick => $tick,
     });
     is_deeply(
         $c->longcode,
@@ -127,6 +133,7 @@ subtest 'longcode with \'difference\' as barrier' => sub {
         low_barrier  => '-0.42',
         payout       => 10,
         fixed_expiry => 1,
+        current_tick => $tick,
     });
     is_deeply(
         $c->longcode,
