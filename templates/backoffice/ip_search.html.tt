@@ -7,7 +7,7 @@
 <hr>
 <b>Get accounts logged in with the same IPs</b>
 <form action="[% ip_search_url %]" method="post">
-<input type=text size=50 maxlength=50 name=loginid value='[% loginid %]' placeholder="user@binary.com"><br>
+<input type=text size=50 maxlength=50 name=loginid value='[% loginid %]' placeholder="CR12345 -or- user@binary.com"><br>
 <input type=text size=15 maxlength=15 name=date_from placeholder="2016-01-01" value='[% date_from %]'>
 <input type=text size=15 maxlength=15 name=date_to placeholder="2017-01-01" value='[% date_to %]'>
 <input type="submit" value="Search for evidences">
@@ -25,7 +25,7 @@ Can be useful in finding duplicates.
         <tr>
             <td>[% l.history_date %]</td>
             <td>[% l.action %]</td>
-            <td>[% l.binary_user.email %]</td>
+            <td>[% l.email %]</td>
         </tr>
     [% END %]
 </table>
