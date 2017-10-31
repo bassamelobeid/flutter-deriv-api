@@ -379,12 +379,15 @@ sub get_client_by_status {
         GROUP BY 1,2,3,4,5,6,7,8,9,10
     };
 
-    my $dbh = BOM::Database::ClientDB->new({
+    my $dbic = BOM::Database::ClientDB->new({
             broker_code => $broker,
-        })->db->dbh;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($show, $broker);
-    my $results = $sth->fetchall_hashref('loginid');
+        })->db->dbic;
+    my $results = $dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($show, $broker);
+            return $sth->fetchall_hashref('loginid');
+        });
 
     foreach my $loginID (keys %{$results}) {
         my $client = $results->{$loginID};

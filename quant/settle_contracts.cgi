@@ -60,6 +60,7 @@ if (request()->param('perform_actions')) {
                         id         => $fmb_id,
                         sell_price => $action eq 'win' ? $bet_info->{payout} : 0,
                         sell_time  => Date::Utility->new->db_timestamp,
+                        is_expired => 1,
                     },
                     account_data => {
                         client_loginid => $bet_info->{loginid},
@@ -98,7 +99,7 @@ sub current_unsaleable {
     my $broker_db = shift;
 
     my $query = qq{ SELECT * FROM expired_unsold_bets() };
-    my %possibles = %{$broker_db->dbh->selectall_hashref($query, 'financial_market_bet_id')};
+    my %possibles = %{$broker_db->dbic->run(fixup => sub { $_->selectall_hashref($query, 'financial_market_bet_id') })};
 
     return [
         sort { $a->{bb_lookup} cmp $b->{bb_lookup} }
