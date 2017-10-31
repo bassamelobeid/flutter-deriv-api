@@ -85,17 +85,66 @@ subtest 'longcode from params for forward starting' => sub {
 
     ok $c->is_forward_starting, 'is a forward starting contract';
 
-    my $longcode;
-    like(warning { $longcode = $c->longcode }, qr/No basis tick for/, 'Got warning for no basis tick');
-
     is_deeply(
-        $longcode,
+        $c->longcode,
         [
             'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
             'USD', '10.00',
             'Volatility 100 Index',
             ['2016-10-19 10:10:00 GMT'],
             ['10 minutes'], ['entry spot']]);
+};
+
+subtest 'longcode with \'difference\' as barrier' => sub {
+    my $now = Date::Utility->new('2016-10-19 10:00:00');
+    my $tick = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'R_100',
+        quote => 100,
+        epoch => $now->epoch
+        });
+    my $c   = produce_contract({
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        date_start   => $now->plus_time_interval('10m'),
+        date_pricing => $now,
+        duration     => '10m',
+        currency     => 'USD',
+        barrier      => '+0.32',
+        payout       => 10,
+        fixed_expiry => 1,
+        current_tick => $tick,
+    });
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
+            'USD', '10.00',
+            'Volatility 100 Index',
+            ['2016-10-19 10:10:00 GMT'],
+            ['10 minutes'], ['entry spot plus [_1]', 0.32]]);
+    $c = produce_contract({
+        bet_type     => 'EXPIRYMISS',
+        underlying   => 'R_100',
+        date_start   => $now->plus_time_interval('10m'),
+        date_pricing => $now,
+        duration     => '10m',
+        currency     => 'USD',
+        high_barrier => '+0.32',
+        low_barrier  => '-0.42',
+        payout       => 10,
+        fixed_expiry => 1,
+        current_tick => $tick,
+    });
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_3] ends outside [_7] to [_6] at [_5].',
+            'USD', '10.00', 'Volatility 100 Index',
+            [],
+            ['2016-10-19 10:20:00 GMT'],
+            ['entry spot plus [_1]',  0.32],
+            ['entry spot minus [_1]', 0.42],
+        ]);
 };
 
 done_testing();

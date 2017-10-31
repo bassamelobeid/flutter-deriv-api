@@ -1034,16 +1034,6 @@ test_with_feed([
 
         # LOSE TEST
         # The price at expiry is 63948.31
-        $bet_params->{'high_barrier'} = 63946;                           # in range
-        $bet_params->{'low_barrier'}  = 63949;                           # in range - these are backwards, do we still get the right answer?
-        $bet                          = produce_contract($bet_params);
-        lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value,      0, 'Bet outcome lost');
-        ok(!$bet->is_valid_to_sell, '...but even though we got the right answer, it still cannot be sold');
-        like($bet->primary_validation_error->message, qr/barriers inverted/, '....because the barriers are inverted.');
-
-        # The price at expiry is 63948.31
         $bet_params->{'high_barrier'} = 63948.32;                        # in range
         $bet_params->{'low_barrier'}  = 63948.30;                        # in range
         $bet                          = produce_contract($bet_params);

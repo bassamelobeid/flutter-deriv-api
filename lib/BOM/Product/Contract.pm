@@ -491,12 +491,42 @@ sub longcode {
     push @longcode, ($when_start, $when_end);
 
     if ($self->two_barriers) {
-        push @longcode, ($self->high_barrier->display_text, $self->low_barrier->display_text);
-    } elsif ($self->barrier) {
-        push @longcode, $self->barrier->display_text;
+        push @longcode, map { $self->_barrier_display_text($_) } ($self->supplied_high_barrier, $self->supplied_low_barrier);
+    } elsif (defined $self->supplied_barrier) {
+        push @longcode, $self->_barrier_display_text($self->supplied_barrier);
+    } else {
+        # the default to this was set by BOM::Product::Contract::Strike but we skipped that for speed reason
+        push @longcode, [$self->underlying->pip_size];
     }
 
     return \@longcode;
+}
+
+sub _barrier_display_text {
+    my ($self, $supplied_barrier) = @_;
+
+    return $supplied_barrier if $self->category_code eq 'digits';
+    return $self->underlying->pipsized_value($supplied_barrier) if $supplied_barrier =~ /^\d+\.?\d+/;
+
+    my ($string, $pips);
+    if ($supplied_barrier =~ /^S[-+]?\d+P$/) {
+        ($pips) = $supplied_barrier =~ /S([+-]?\d+)P/;
+    } elsif ($supplied_barrier =~ /^[+-](?:\d+\.?\d{0,12})/) {
+        $pips = $supplied_barrier / $self->underlying->pip_size;
+    }
+
+    return [$GENERIC_MAPPING->{entry_spot}] if abs($pips) == 0;
+
+    if ($self->underlying->market->name eq 'forex') {
+        $string = $pips > 0 ? $GENERIC_MAPPING->{entry_spot_plus_plural} : $GENERIC_MAPPING->{entry_spot_minus_plural};
+        $pips = abs($pips);
+    } else {
+        $string = $pips > 0 ? $GENERIC_MAPPING->{entry_spot_plus} : $GENERIC_MAPPING->{entry_spot_minus};
+        $pips *= $self->underlying->pip_size;
+        $pips = $self->underlying->pipsized_value(abs($pips));
+    }
+
+    return [$string, $pips];
 }
 
 =head2 allowed_slippage

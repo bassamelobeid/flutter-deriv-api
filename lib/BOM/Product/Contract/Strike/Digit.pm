@@ -66,11 +66,5 @@ override for_shortcode => sub {
     return $self->supplied_barrier;
 };
 
-override display_text => sub {
-    my $self = shift;
-
-    return $self->supplied_barrier;
-};
-
 __PACKAGE__->meta->make_immutable;
 1;

@@ -204,44 +204,6 @@ sub _build_for_shortcode {
     return $sc_version;
 }
 
-has display_text => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_display_text {
-    my $self = shift;
-
-    my ($barrier_type, $display_barrier) = ($self->supplied_type);
-
-    # We don't have the display text to change as well for immutable longcode's sake.
-    my $strike = $self;
-
-    if ($barrier_type eq 'absolute') {
-        $display_barrier = [$strike->as_absolute];
-    } else {
-        my $generic_mapping = BOM::Product::Static::get_generic_mapping();
-        if (my $pips = $strike->pip_difference) {
-            if ($self->underlying->market->name eq 'forex') {
-                $display_barrier =
-                      ($pips > 0)
-                    ? [$generic_mapping->{entry_spot_plus_plural}, $pips]
-                    : [$generic_mapping->{entry_spot_minus_plural}, abs $pips];
-            } else {
-                my $abs_diff = $self->_proper_value(abs $strike->as_difference);
-                $display_barrier =
-                      ($pips > 0)
-                    ? [$generic_mapping->{entry_spot_plus}, $abs_diff]
-                    : [$generic_mapping->{entry_spot_minus}, $abs_diff];
-            }
-        } else {
-            $display_barrier = [$generic_mapping->{entry_spot}];
-        }
-    }
-
-    return $display_barrier;
-}
-
 # Modifiers are limited to simple linear arthimetic adjustments.
 # Critic doesn't like eval of expressions.
 my %modifiers = (
