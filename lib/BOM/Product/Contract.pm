@@ -508,7 +508,8 @@ sub longcode {
 sub _barrier_display_text {
     my ($self, $supplied_barrier) = @_;
 
-    return $supplied_barrier if $self->category_code eq 'digits' || $supplied_barrier =~ /^\d+\.?\d+/;
+    return $supplied_barrier if $self->category_code eq 'digits';
+    return $self->underlying->pipsized_value($supplied_barrier) if $supplied_barrier =~ /^\d+\.?\d+/;
 
     my ($string, $pips);
     if ($supplied_barrier =~ /^S[-+]?\d+P$/) {
