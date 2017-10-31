@@ -293,7 +293,7 @@ system:
         ico_final_price:
           description: "The final price of the  ICO auction"
           isa: Num
-          default: 10
+          default: 0
           global: 1
         mt5:
           description: "Suspend MT5 API calls"
