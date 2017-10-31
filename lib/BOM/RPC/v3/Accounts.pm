@@ -15,7 +15,7 @@ use List::Util qw(any sum0);
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber financialrounding/;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 use BOM::RPC::v3::Utility;
@@ -194,7 +194,8 @@ sub statement {
                     my $longcode = $res->{longcode};
                     # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
                     $longcode = localize('Binary ICO: cancelled bid')
-                        if ($txn->{short_code} =~ /^BINARYICO/ and $txn->{amount} == 0.98 * $txn->{payout_price});
+                        if ($txn->{short_code} =~ /^BINARYICO/
+                        and $txn->{amount} == financialrounding('price', $account->currency_code, 0.98 * $txn->{payout_price}));
                     $struct->{longcode} = $longcode;
                 }
             }
