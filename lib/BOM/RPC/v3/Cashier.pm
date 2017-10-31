@@ -326,6 +326,7 @@ sub get_limits {
         $lifetimelimit = 99999999;
     }
 
+    # Each landing company in the withdrawal limits file has its own currency.
     my $withdrawal_limit_curr;
     if ($landing_company eq 'japan') {
         $withdrawal_limit_curr = $currency;
@@ -338,6 +339,8 @@ sub get_limits {
 
     $limit->{num_of_days} = $numdays;
 
+    # CR limits are in terms of USD.
+    # Performs conversion of limits to USD if the account is a non-USD CR account
     if ($landing_company eq 'costarica' and $currency ne 'USD') {
         $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
         $limit->{lifetime_limit}    = formatnumber('price', $currency, amount_from_to_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
@@ -346,7 +349,7 @@ sub get_limits {
         $limit->{lifetime_limit} = formatnumber('price', $currency, $lifetimelimit);
     }
 
-    # withdrawal since $numdays
+    # Withdrawal since $numdays
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
     my $withdrawal_for_x_days = $payment_mapper->get_total_withdrawal({
         start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
@@ -363,6 +366,7 @@ sub get_limits {
         $remainder = 0;
     }
 
+    # Converts the withdrawal limit back to the client's currency if the account is a non-USD CR account
     if ($landing_company eq 'costarica' and $currency ne 'USD') {
         $withdrawal_since_inception = amount_from_to_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency);
         $withdrawal_for_x_days      = amount_from_to_currency($withdrawal_for_x_days,      $withdrawal_limit_curr, $currency);
