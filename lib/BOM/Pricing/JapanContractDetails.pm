@@ -20,11 +20,10 @@ use BOM::Platform::Chronicle;
 sub parse_file {
     my ($file, $landing_company) = @_;
 
-    my @lines = Path::Tiny::path($file)->lines;
+    my @lines = Path::Tiny::path($file)->lines({chomp => 1});
 
     my $pricing_parameters;
     foreach my $line (@lines) {
-        chomp $line;
         # Might have a trailing blank at the end, and any in the middle of the file are generally harmless too
         next unless length $line;
         my ($shortcode, $ask_price, $bid_price, $extra) = extract_from_code($line);
