@@ -72,10 +72,18 @@ sub successful_upload {
         return create_upload_error();
     }
 
-    return $args if $client->get_status('document_under_review');
+    my $client_id = $client->loginid;
+    my $clientdb  = BOM::Database::ClientDB->new({
+            client_loginid => $client_id,
+            operation      => 'replica',
+        })->db;
+
+    return unless $clientdb->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', {Slice => {}}, $client_id, 'Documents uploaded',);
+        });
 
 # Change client's account status.
-    $client->set_status('document_under_review', 'system', 'Documents uploaded');
     $client->clr_status('document_needs_action');
 
     if (not $client->save()) {
@@ -83,7 +91,6 @@ sub successful_upload {
         return create_upload_error();
     }
 
-    my $client_id  = $client->loginid;
     my $email_body = "New document was uploaded for the account: " . $client_id;
 
     send_email({
