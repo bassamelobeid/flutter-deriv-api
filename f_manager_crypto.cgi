@@ -380,14 +380,11 @@ EOF
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(loginid type)};
         print '<td><a href="' . $address_uri . $_ . '" target="_blank">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
-        my $amount = formatnumber('amount', $currency, financialrounding('price',$currency, $db_tran->{amount}));
-        my $usd_amount = formatnumber('amount', 'USD', financialrounding('price','USD',in_USD($db_tran->{amount},$currency)));
-        my $fee = formatnumber('amount', $currency, financialrounding('price',$currency,$db_tran->{fee}));
+        my $amount = formatnumber('amount', $currency, financialrounding('price', $currency, $db_tran->{amount}));
+        my $usd_amount = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_USD($db_tran->{amount}, $currency)));
+        my $fee = formatnumber('amount', $currency, financialrounding('price', $currency, $db_tran->{fee}));
         if (defined $db_tran->{amount}) {
-            print '<td style="text-align:right;">'
-                . encode_entities($_)
-                . '</td>'
-                for $amount,'$'.$usd_amount, $fee;
+            print '<td style="text-align:right;">' . encode_entities($_) . '</td>' for $amount, '$' . $usd_amount, $fee;
         } else {
             print '<td>&nbsp;</td><td>&nbsp;</td>';
         }
