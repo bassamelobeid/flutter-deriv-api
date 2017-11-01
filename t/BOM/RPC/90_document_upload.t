@@ -89,7 +89,9 @@ my ($msg) = $mailbox->search(
     email   => 'authentications@binary.com',
     subject => qr/New uploaded document/
 );
-is $msg->{body}, 'New document was uploaded for the account: CR10000', 'CS notification email was sent successfully';
+my $email_body = $msg->{body};
+chomp $mail_body;
+is $email_body, 'New document was uploaded for the account: CR10000', 'CS notification email was sent successfully';
 
 ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 is($doc->status,                                              'uploaded',           'document\'s status changed');
