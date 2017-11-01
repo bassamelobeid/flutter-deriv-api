@@ -326,7 +326,7 @@ sub validate_make_new_account {
         if ($account_type eq 'real') {
             return undef if $gaming_company;
             # for ico, &new_account_real will be called to get an ico_only CR account
-            return undef if $request_data->{account_type} eq 'ico';
+            return undef if (($request_data->{account_type} // '') eq 'ico');
             # send error as account opening for maltainvest and japan has separate call
             return create_error({
                     code              => 'InvalidAccount',
