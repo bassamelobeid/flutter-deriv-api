@@ -513,6 +513,8 @@ sub _barrier_display_text {
         ($pips) = $supplied_barrier =~ /S([+-]?\d+)P/;
     } elsif ($supplied_barrier =~ /^[+-](?:\d+\.?\d{0,12})/) {
         $pips = $supplied_barrier / $self->underlying->pip_size;
+    } else {
+        die "Unrecognized supplied barrier [$supplied_barrier] shortcode: " . $self->shortcode;
     }
 
     return [$GENERIC_MAPPING->{entry_spot}] if abs($pips) == 0;
