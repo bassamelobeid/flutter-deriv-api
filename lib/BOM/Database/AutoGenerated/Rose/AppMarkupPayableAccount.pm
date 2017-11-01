@@ -12,9 +12,12 @@ __PACKAGE__->meta->setup(
         app_id       => { type => 'bigint', not_null => 1 },
         dev_loginid  => { type => 'varchar', not_null => 1 },
         dev_currcode => { type => 'varchar', length => 3, not_null => 1 },
+        init_stamp   => { type => 'timestamp', default => 'now()', remarks => 'When this record was created. NULL values preceeded the addition of this column.' },
     ],
 
     primary_key_columns => [ 'app_id' ],
+
+    allow_inline_column_values => 1,
 );
 
 1;
