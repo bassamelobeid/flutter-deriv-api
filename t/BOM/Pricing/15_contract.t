@@ -462,6 +462,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
         contract_id => $contract->id,
         currency    => 'USD',
         is_sold     => 0,
+        sell_price => $contract->value,
     };
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
