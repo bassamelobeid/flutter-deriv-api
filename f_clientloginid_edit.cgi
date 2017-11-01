@@ -367,9 +367,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
 
     # Filter keys for tax residence
-    my @matching_keys = grep { /tax_residence/ } keys %input;
-    my $tax_residence = join(",", @input{@matching_keys});
-    $client->tax_residence($tax_residence);
+    if (my @matching_keys = grep { /tax_residence/ } keys %input) {
+        my $tax_residence = join(",", sort grep { length } @input{@matching_keys});
+        $client->tax_residence($tax_residence);
+    }
 
     my @number_updates = qw/
         custom_max_acbal

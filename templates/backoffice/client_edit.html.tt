@@ -217,7 +217,7 @@ table#client_edit td{
             <td>:
                 <select name="tax_residence_1">
                     <option value="" selected="selected">Not selected</option>
-                [% FOREACH country = countries %]
+                [% FOREACH country IN countries %]
                     <option value="[% country_codes.$country %]">[% country %]</option>
                 [% END %]
         </tr>
@@ -228,12 +228,11 @@ table#client_edit td{
                 <td>:  
                     <select name="tax_residence_[% loop.count %]">
                         <option value="">Not selected</option>
-                    [% FOREACH country = countries %]
-                        [% IF country_codes.$country == residence %]
-                            <option value="[%country_codes.$country %]" selected="selected">[% country %]</option>
-                        [% ELSE %]
-                            <option value="[% country_codes.$country %]">[% country %]</option>
-                        [% END %]
+                    [% FOREACH country IN countries %]
+                        <option value="[% country_codes.$country %]" 
+                            [% IF country_codes.$country == residence %] selected="selected" [% END %]>
+                            [% country %]
+                        </option>
                     [% END %]
                 </td>
             </tr>
