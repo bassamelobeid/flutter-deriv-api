@@ -36,41 +36,36 @@ BEGIN {
     our @EXPORT_OK = qw( produce_contract make_similar_contract produce_batch_contract );
 }
 
-# Defer these until after we've compiled all our modules, since that way they can find the make_similar_contract
-# function. Ideally, no pricing engine would need to use BOM::Product::Contract code, so we expect this UNITCHECK
-# block to be redundant once those are split out.
-UNITCHECK {
-    use BOM::Product::Contract::Batch;
-    use BOM::Product::Contract::Asiand;
-    use BOM::Product::Contract::Asianu;
-    use BOM::Product::Contract::Call;
-    use BOM::Product::Contract::Calle;
-    use BOM::Product::Contract::Pute;
-    use BOM::Product::Contract::Digitdiff;
-    use BOM::Product::Contract::Digiteven;
-    use BOM::Product::Contract::Digitmatch;
-    use BOM::Product::Contract::Digitodd;
-    use BOM::Product::Contract::Digitover;
-    use BOM::Product::Contract::Digitunder;
-    use BOM::Product::Contract::Expirymisse;
-    use BOM::Product::Contract::Expiryrangee;
-    use BOM::Product::Contract::Expirymiss;
-    use BOM::Product::Contract::Expiryrange;
-    use BOM::Product::Contract::Invalid;
-    use BOM::Product::Contract::Notouch;
-    use BOM::Product::Contract::Onetouch;
-    use BOM::Product::Contract::Put;
-    use BOM::Product::Contract::Range;
-    use BOM::Product::Contract::Upordown;
-    use BOM::Product::Contract::Vanilla_call;
-    use BOM::Product::Contract::Vanilla_put;
-    use BOM::Product::Contract::Lbfixedcall;
-    use BOM::Product::Contract::Lbfixedput;
-    use BOM::Product::Contract::Lbfloatcall;
-    use BOM::Product::Contract::Lbfloatput;
-    use BOM::Product::Contract::Lbhighlow;
-    use BOM::Product::Contract::Binaryico;
-}
+use BOM::Product::Contract::Batch;
+use BOM::Product::Contract::Asiand;
+use BOM::Product::Contract::Asianu;
+use BOM::Product::Contract::Call;
+use BOM::Product::Contract::Calle;
+use BOM::Product::Contract::Pute;
+use BOM::Product::Contract::Digitdiff;
+use BOM::Product::Contract::Digiteven;
+use BOM::Product::Contract::Digitmatch;
+use BOM::Product::Contract::Digitodd;
+use BOM::Product::Contract::Digitover;
+use BOM::Product::Contract::Digitunder;
+use BOM::Product::Contract::Expirymisse;
+use BOM::Product::Contract::Expiryrangee;
+use BOM::Product::Contract::Expirymiss;
+use BOM::Product::Contract::Expiryrange;
+use BOM::Product::Contract::Invalid;
+use BOM::Product::Contract::Notouch;
+use BOM::Product::Contract::Onetouch;
+use BOM::Product::Contract::Put;
+use BOM::Product::Contract::Range;
+use BOM::Product::Contract::Upordown;
+use BOM::Product::Contract::Vanilla_call;
+use BOM::Product::Contract::Vanilla_put;
+use BOM::Product::Contract::Lbfixedcall;
+use BOM::Product::Contract::Lbfixedput;
+use BOM::Product::Contract::Lbfloatcall;
+use BOM::Product::Contract::Lbfloatput;
+use BOM::Product::Contract::Lbhighlow;
+use BOM::Product::Contract::Binaryico;
 
 =head2 produce_contract
 

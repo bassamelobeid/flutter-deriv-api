@@ -61,13 +61,10 @@ use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
 use BOM::Product::Static;
 
-# require Pricing:: modules to avoid circular dependency problems.
-UNITCHECK {
-    use BOM::Product::Pricing::Engine::Intraday::Forex;
-    use BOM::Product::Pricing::Engine::Intraday::Index;
-    use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
-    use BOM::Product::Pricing::Greeks::BlackScholes;
-}
+use BOM::Product::Pricing::Engine::Intraday::Forex;
+use BOM::Product::Pricing::Engine::Intraday::Index;
+use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
+use BOM::Product::Pricing::Greeks::BlackScholes;
 
 my $ERROR_MAPPING   = BOM::Product::Static::get_error_mapping();
 my $GENERIC_MAPPING = BOM::Product::Static::get_generic_mapping();
