@@ -5,7 +5,7 @@ use warnings;
 
 use Moo;
 use Error::Base;
-use List::Util qw(min max first);
+use List::Util qw(min max first any);
 use YAML::XS qw(LoadFile);
 
 use Format::Util::Numbers qw/formatnumber/;
@@ -127,6 +127,12 @@ sub validate_trx_buy {
 
     # no need to do the subsequent check for binaryico
     return if $self->transaction->contract->is_binaryico;
+
+    return Error::Base->cuss(
+        -type              => 'IcoOnly',
+        -mesg              => "Contract type is not allowed for this client",
+        -message_to_client => localize("This contract type is not available for this acccount"),
+    ) if any { $_->get_status('ico_only') } map { $_->{client} // () } @$clients;
 
     ### Order is very important
     ### _validate_trade_pricing_adjustment may contain some expensive calculations
