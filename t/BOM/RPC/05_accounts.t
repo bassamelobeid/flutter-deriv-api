@@ -683,8 +683,7 @@ subtest $method => sub {
     sub test_financial_assessment {
         my ($data, $is_present, $msg) = @_;
         $test_client->financial_assessment({
-            data            => encode_json $data,
-            is_professional => 0
+            data => encode_json $data,
         });
         $test_client->save();
         my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
@@ -769,8 +768,8 @@ subtest $method => sub {
                 user_pass    => $oldpass
             }
             )->{error}->{message_to_client},
-        'Password is not strong enough.',
-        'Password is not strong enough.',
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
     );
     is(
         BOM::RPC::v3::Utility::_check_password({
@@ -870,7 +869,8 @@ subtest $method => sub {
     $params->{args}{new_password} = $password;
     is($c->tcall($method, $params)->{error}{message_to_client}, 'New password is same as old password.');
     $params->{args}{new_password} = '111111111';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.');
+    is($c->tcall($method, $params)->{error}{message_to_client},
+        'Password should be at least six characters, including lower and uppercase letters with numbers.');
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
     $mailbox->clear;
@@ -945,7 +945,11 @@ subtest $method => sub {
         'return error if lock password same with user password'
     );
     $params->{args}{lock_password} = '1111111';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.', 'check strong');
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'check strong'
+    );
     $params->{args}{lock_password} = $tmp_new_password;
 
     $mailbox->clear;
@@ -1144,7 +1148,6 @@ subtest $method => sub {
             token => $token1
         });
     cmp_ok($res->{score}, "<", 60, "Got correct score");
-    is($res->{is_professional}, 0, "As score is less than 60 so its marked as not professional");
 
     # test that setting this for one client also sets it for client with different landing company
     is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
@@ -1401,15 +1404,44 @@ subtest 'get and set self_exclusion' => sub {
         token => $token_vr,
         args  => {}};
     is($c->tcall($method, $params)->{error}{message_to_client}, "Permission denied.", 'vr client cannot set exclusion');
+
     $params->{token} = $token1;
+
     is($c->tcall($method, $params)->{error}{message_to_client}, "Please provide at least one self-exclusion setting.", "need one exclusion");
+
     $params->{args} = {
         set_self_exclusion => 1,
         max_balance        => 10000,
-        max_open_bets      => 100,
+        max_open_bets      => 50,
         max_turnover       => undef,    # null should be OK to pass
         max_7day_losses    => 0,        # 0 is ok to pass but not saved
     };
+
+    # Test for Maximum bets
+    $params->{args}->{max_open_bets} = 75;
+
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "Please enter a number between 1 and 60.",
+            'details'           => 'max_open_bets',
+            'code'              => 'SetSelfExclusionError'
+        });
+
+    $params->{args}->{max_open_bets} = 50;
+
+    # Test for Maximum balance
+    $params->{args}->{max_balance} = 399999;
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "Please enter a number between 0 and 300000.",
+            'details'           => 'max_balance',
+            'code'              => 'SetSelfExclusionError'
+        });
+
+    $params->{args}->{max_balance} = 10000;
+
     is($c->tcall($method, $params)->{status}, 1, "update self_exclusion ok");
 
     $params->{args}{max_balance} = 9999.999;
@@ -1425,25 +1457,11 @@ subtest 'get and set self_exclusion' => sub {
     is_deeply(
         $c->tcall('get_self_exclusion', $params),
         {
-            'max_open_bets' => '100',
+            'max_open_bets' => '50',
             'max_balance'   => '9999.99'
         },
         'get self_exclusion ok'
     );
-
-    $params->{args} = {
-        set_self_exclusion => 1,
-        max_balance        => 10001,
-        max_turnover       => 1000,
-        max_open_bets      => 100,
-    };
-    is_deeply(
-        $c->tcall($method, $params)->{error},
-        {
-            'message_to_client' => "Please enter a number between 0 and 9999.99.",
-            'details'           => 'max_balance',
-            'code'              => 'SetSelfExclusionError'
-        });
 
     # don't send previous required fields, should be okay
     $params->{args} = {
@@ -1456,7 +1474,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440 * 42 + 1,
     };
     is_deeply(
@@ -1470,7 +1488,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         exclude_until          => '2010-01-01'
     };
@@ -1485,7 +1503,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         exclude_until          => DateTime->now()->add(months => 3)->ymd
     };
@@ -1501,7 +1519,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         exclude_until          => DateTime->now()->add(years => 6)->ymd
     };
@@ -1518,7 +1536,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         timeout_until          => time() - 86400,
     };
@@ -1534,7 +1552,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         timeout_until          => time() + 86400 * 7 * 10,    # max is 6 weeks
     };
@@ -1553,7 +1571,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9998,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         exclude_until          => $exclude_until,
         timeout_until          => $timeout_until->epoch,

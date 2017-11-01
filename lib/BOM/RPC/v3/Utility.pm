@@ -187,9 +187,6 @@ sub _check_password {
                 code              => 'PasswordError',
                 message_to_client => localize('New password is same as old password.')}) if ($new_password eq $old_password);
     }
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PasswordError',
-            message_to_client => localize('Password is not strong enough.')}) if (not Data::Password::Meter->new(14)->strong($new_password));
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PasswordError',
@@ -372,6 +369,17 @@ sub validate_make_new_account {
     # this logic should gone after we separate new_account with new_currency for account
     $request_data->{$_} = $client->$_ for qw/first_name last_name residence address_city phone date_of_birth address_line_1/;
 
+    my $error = create_error({
+            code              => 'NewAccountLimitReached',
+            message_to_client => localize('You have created all accounts available to you.')});
+
+    # Bypass currency limit checks for ICO-only accounts - you get a single CR account (one currency only)
+    if (exists $request_data->{account_type} and $request_data->{account_type} eq 'ico') {
+        my $cr_accounts = filter_siblings_by_landing_company('costarica', $siblings);
+        return $error if $cr_accounts and %$cr_accounts;
+        return undef;
+    }
+
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
     # corresponding siblings not MLT one
@@ -392,10 +400,6 @@ sub validate_make_new_account {
     # check if client has fiat currency, if not then return as we
     # allow them to open new account
     return undef unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
-
-    my $error = create_error({
-            code              => 'NewAccountLimitReached',
-            message_to_client => localize('You have created all accounts available to you.')});
 
     my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
     my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
