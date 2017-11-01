@@ -187,9 +187,6 @@ sub _check_password {
                 code              => 'PasswordError',
                 message_to_client => localize('New password is same as old password.')}) if ($new_password eq $old_password);
     }
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PasswordError',
-            message_to_client => localize('Password is not strong enough.')}) if (not Data::Password::Meter->new(14)->strong($new_password));
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PasswordError',
