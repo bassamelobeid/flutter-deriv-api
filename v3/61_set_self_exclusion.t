@@ -37,11 +37,39 @@ ok($res->{get_self_exclusion});
 test_schema('get_self_exclusion', $res);
 is_deeply $res->{get_self_exclusion}, {}, 'all are blank';
 
-# set_self_exclusion
+# Error test for open positions
 $res = $t->await::set_self_exclusion({
     set_self_exclusion => 1,
     max_balance        => 10000,
     max_open_bets      => 100,
+    max_turnover       => undef,    # null should be OK to pass
+    max_7day_losses    => 0,        # 0 is ok to pass but not saved
+});
+
+is $res->{error}->{code},  'SetSelfExclusionError';
+is $res->{error}->{field}, 'max_open_bets';
+my $max = $test_client->get_limit_for_open_positions;
+ok $res->{error}->{message} =~ /Please enter a number between 1 and $max/;
+
+# Error test for maximum balance
+$res = $t->await::set_self_exclusion({
+    set_self_exclusion => 1,
+    max_balance        => 1000000,
+    max_open_bets      => 50,
+    max_turnover       => undef,     # null should be OK to pass
+    max_7day_losses    => 0,         # 0 is ok to pass but not saved
+});
+
+is $res->{error}->{code},  'SetSelfExclusionError';
+is $res->{error}->{field}, 'max_balance';
+$max = $test_client->get_limit_for_account_balance;
+ok $res->{error}->{message} =~ /Please enter a number between 0 and $max/;
+
+# Set self-exclusion
+$res = $t->await::set_self_exclusion({
+    set_self_exclusion => 1,
+    max_balance        => 10000,
+    max_open_bets      => 50,
     max_turnover       => undef,    # null should be OK to pass
     max_7day_losses    => 0,        # 0 is ok to pass but not saved
 });
@@ -57,7 +85,7 @@ my %data = %{$res->{get_self_exclusion}};
 is $data{max_balance},     10000, 'max_balance saved ok';
 is $data{max_turnover},    undef, 'max_turnover is not there';
 is $data{max_7day_losses}, undef, 'max_7day_losses is not saved';
-is $data{max_open_bets},   100,   'max_open_bets saved';
+is $data{max_open_bets},   50,    'max_open_bets saved';
 
 $res = $t->await::set_self_exclusion({
     set_self_exclusion => 1,
@@ -83,7 +111,7 @@ $res = $t->await::set_self_exclusion({
     set_self_exclusion => 1,
     max_balance        => 9999,
     max_turnover       => 1000,
-    max_open_bets      => 100,
+    max_open_bets      => 50,
 });
 ok($res->{set_self_exclusion});
 test_schema('set_self_exclusion', $res);
@@ -95,14 +123,14 @@ test_schema('get_self_exclusion', $res);
 %data = %{$res->{get_self_exclusion}};
 is $data{max_balance},   9999, 'max_balance is updated';
 is $data{max_turnover},  1000, 'max_turnover is saved';
-is $data{max_open_bets}, 100,  'max_open_bets is untouched';
+is $data{max_open_bets}, 50,   'max_open_bets is untouched';
 
 ## do some validation
 $res = $t->await::set_self_exclusion({
     set_self_exclusion => 1,
     max_balance        => 10001,
     max_turnover       => 1000,
-    max_open_bets      => 100,
+    max_open_bets      => 50,
 });
 is $res->{error}->{code},  'SetSelfExclusionError';
 is $res->{error}->{field}, 'max_balance';
@@ -112,7 +140,7 @@ $res = $t->await::set_self_exclusion({
     set_self_exclusion     => 1,
     max_balance            => 9999,
     max_turnover           => 1000,
-    max_open_bets          => 100,
+    max_open_bets          => 50,
     session_duration_limit => 1440 * 42 + 1,
 });
 is $res->{error}->{code},  'SetSelfExclusionError';
@@ -123,7 +151,7 @@ $res = $t->await::set_self_exclusion({
     set_self_exclusion     => 1,
     max_balance            => 9999,
     max_turnover           => 1000,
-    max_open_bets          => 100,
+    max_open_bets          => 50,
     session_duration_limit => 1440,
     exclude_until          => '2010-01-01'
 });
@@ -135,7 +163,7 @@ $res = $t->await::set_self_exclusion({
     set_self_exclusion     => 1,
     max_balance            => 9999,
     max_turnover           => 1000,
-    max_open_bets          => 100,
+    max_open_bets          => 50,
     session_duration_limit => 1440,
     exclude_until          => DateTime->now()->add(months => 3)->ymd
 });
@@ -147,7 +175,7 @@ $res = $t->await::set_self_exclusion({
     set_self_exclusion     => 1,
     max_balance            => 9999,
     max_turnover           => 1000,
-    max_open_bets          => 100,
+    max_open_bets          => 50,
     session_duration_limit => 1440,
     exclude_until          => DateTime->now()->add(years => 6)->ymd
 });
@@ -160,7 +188,7 @@ $res = $t->await::set_self_exclusion({
     set_self_exclusion     => 1,
     max_balance            => 9999,
     max_turnover           => 1000,
-    max_open_bets          => 100,
+    max_open_bets          => 50,
     session_duration_limit => 1440,
     timeout_until          => time() - 86400,
 });
@@ -175,7 +203,7 @@ $res = $t->await::set_self_exclusion({
     set_self_exclusion     => 1,
     max_balance            => 9998,
     max_turnover           => 1000,
-    max_open_bets          => 100,
+    max_open_bets          => 50,
     session_duration_limit => 1440,
     exclude_until          => $exclude_until,
     timeout_until          => $timeout_until->epoch,

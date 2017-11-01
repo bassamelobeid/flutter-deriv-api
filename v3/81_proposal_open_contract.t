@@ -58,7 +58,7 @@ $client->smart_payment(
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $t->await::authorize({authorize => $token});
-my $account_id =  $client->default_account->id;
+my $account_id = $client->default_account->id;
 
 subtest 'empty POC response' => sub {
     my $data = $t->await::proposal_open_contract({proposal_open_contract => 1});
@@ -153,7 +153,6 @@ subtest 'forget' => sub {
     is(scalar @{$data->{forget_all}}, 0, 'Forget all returns empty as contracts are already sold');
 };
 
-
 subtest 'check two contracts subscription' => sub {
     my $proposal = $t->await::proposal({
         "proposal"      => 1,
@@ -193,7 +192,7 @@ subtest 'check two contracts subscription' => sub {
 
     BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json $msg);
 
-    sleep 2; ### we must wait for pricing rpc response
+    sleep 2;    ### we must wait for pricing rpc response
 
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
 
@@ -201,7 +200,6 @@ subtest 'check two contracts subscription' => sub {
 };
 
 subtest 'rpc error' => sub {
-
 
     my $proposal = $t->await::proposal({
         "proposal"      => 1,
@@ -223,17 +221,21 @@ subtest 'rpc error' => sub {
 
     my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
     $fake_rpc_response = Test::MockObject->new();
-    $fake_rpc_response->mock('is_error',      sub { 0 });
-    $fake_rpc_response->mock('result',        sub { +{ error => {
-                                                            code => 'InvalidToken',
-                                                            message_to_client => 'The token is invalid.'
-                                                }} });
+    $fake_rpc_response->mock('is_error', sub { 0 });
+    $fake_rpc_response->mock(
+        'result',
+        sub {
+            +{
+                error => {
+                    code              => 'InvalidToken',
+                    message_to_client => 'The token is invalid.'
+                }};
+        });
     $fake_rpc_response->mock('error_message', sub { 'error' });
     $fake_rpc_client = Test::MockObject->new();
     $fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
     $rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
     $rpc_client_mock->mock('new', sub { return $fake_rpc_client });
-
 
     $data = $t->await::proposal_open_contract({
         proposal_open_contract => 1,

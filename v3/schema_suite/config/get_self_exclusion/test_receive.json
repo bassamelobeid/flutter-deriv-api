@@ -45,7 +45,7 @@
         },
         "max_open_bets":{
           "type": "integer",
-          "pattern": "^1000$",
+          "pattern": "^50$",
           "required": "1"
         },
         "session_duration_limit":{
