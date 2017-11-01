@@ -346,10 +346,14 @@ sub show_client_id_docs {
 
     my @docs = $client->client_authentication_document;
     foreach my $doc (sort { $a->id <=> $b->id } @docs) {
-        my ($id, $document_path, $file_name, $file_path, $input);
+        my ($id, $file_name, $file_path, $input);
         $id            = $doc->id;
-        $document_path = $doc->document_path;
         $file_name     = $doc->file_name;
+
+        if (not $file_name) {
+            $links .= qq{<tr><td>Missing filename for a file with ID: $id</td></tr>};
+            next;
+        }
 
         my $date = $doc->expiration_date || '';
         if ($date) {
