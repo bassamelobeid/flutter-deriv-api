@@ -81,13 +81,13 @@ sub successful_upload {
         return create_upload_error();
     }
 
-    my $email_body = "New document was uploaded";
+    my $email_body = "New document was uploaded for the account: " . $client->loginid;
 
     send_email({
         'from'                  => 'no-reply@binary.com',
         'to'                    => 'authentications@binary.com',
         'subject'               => 'New uploaded document',
-        'message'               => $email_body,
+        'message'               => [$email_body],
         'use_email_template'    => 0,
         'email_content_is_html' => 0
     });
