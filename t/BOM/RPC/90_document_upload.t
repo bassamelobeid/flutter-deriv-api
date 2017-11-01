@@ -86,7 +86,7 @@ $params->{args} = $args;
 
 $mailbox->clear;
 $result = $c->call_ok($method, $params)->result;
-ok get_notification_email()->{body} =~ qr/New document was uploaded for the account: CR10000/, 'CS notification email was sent successfully';
+like(get_notification_email()->{body}, qr/New document was uploaded for the account: CR10000/, 'CS notification email was sent successfully');
 
 ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 is($doc->status,                                              'uploaded',           'document\'s status changed');
@@ -97,8 +97,7 @@ is $doc->checksum, $checksum, 'Checksum should be added correctly';
 
 $mailbox->clear;
 $result = $c->call_ok($method, $params)->result;
-my $msg = get_notification_email();
-ok(!$msg, 'CS notification email should only be sent once');
+ok(!get_notification_email(), 'CS notification email should only be sent once');
 
 $args->{file_id} = 1231531;
 $c->call_ok($method, $params)->has_error->error_message_is('Document not found.', 'error if document is not present');
