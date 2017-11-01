@@ -340,7 +340,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         phone
         secret_question
         is_vip
-        tax_residence
         tax_identification_number
         allow_omnibus
         citizen
@@ -356,6 +355,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         salutation
         /;
     exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
+
+    # Filter keys for tax residence
+    if (my @matching_keys = grep { /tax_residence/ } keys %input) {
+        my $tax_residence = join(",", sort grep { length } @input{@matching_keys});
+        $client->tax_residence($tax_residence);
+    }
 
     my @number_updates = qw/
         custom_max_acbal
