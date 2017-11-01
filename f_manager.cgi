@@ -24,18 +24,6 @@ if (length($broker) < 2) {
 }
 my $today = Date::Utility->new->date_ddmmmyy;
 
-# SHOW CLIENT DOCS
-if ((request()->param('whattodo') // '') eq 'showdocs') {
-    my $loginid = uc(request()->param('loginID'));
-    my $client = Client::Account->new({loginid => $loginid});
-    Bar("SHOW CLIENT PAYMENT DOCS FOR $loginid " . $client->full_name);
-    print "ID docs:";
-    print show_client_id_docs($client, show_delete => 1);
-    print "<hr>Payment docs:";
-    print show_client_id_docs($client, folder => 'payments');
-    code_exit_BO();
-}
-
 Bar("QUICK CHECK OF A CLIENT ACCOUNT");
 
 print "<FORM ACTION=\"" . request()->url_for('backoffice/f_manager_history.cgi') . "\" METHOD=\"POST\"><font size=2 face=verdana><B>";
@@ -52,15 +40,6 @@ print "<input type=hidden name=outputtype value=table>";
 print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
 print "<INPUT type=hidden name=\"l\" value=\"EN\">";
 print "<INPUT type=\"submit\" value=\"Go\">";
-print "</FORM>";
-
-print "<FORM ACTION=\"" . request()->url_for('backoffice/f_manager.cgi') . "\" METHOD=\"POST\"><font size=2 face=verdana><B>";
-print "Show uploaded payment supporting docs of LoginID : <input name=loginID type=text size=10 value=''>";
-print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
-print "<input type=hidden name=whattodo value=showdocs>";
-print "<INPUT type=\"submit\" value=Go> <a href='"
-    . request()->url_for('backoffice/download_document.cgi', {path => "/$broker/payments"})
-    . "'>[view complete list]</a>";
 print "</FORM>";
 
 Bar("Make Dual Control Control Code");

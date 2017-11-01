@@ -211,21 +211,33 @@ table#client_edit td{
     <tr>
         <td class="small_header" colspan="2">#TAX INFORMATION</td>
     </tr>
-    <tr>
-        <td class="label">Tax Residence</td>
-        <td>:
-            <select name="tax_residence">
-                <option value="">Not selected</option>
-            [% FOREACH country = countries %]
-                [% IF country_codes.$country == client.tax_residence %]
-                   <option value="[% country_codes.$country %]" selected="selected">[% country %]</option>
-                [% ELSE %]
-                   <option value="[% country_codes.$country %]">[% country %]</option>
+    [% IF client.tax_residence == '' %]
+        <tr>
+            <td class="label">Tax Residence #1</td>
+            <td>:
+                <select name="tax_residence_1">
+                    <option value="" selected="selected">Not selected</option>
+                [% FOREACH country IN countries %]
+                    <option value="[% country_codes.$country %]">[% country %]</option>
                 [% END %]
-            [% END %]
-            </select>
-        </td>
-    </tr>
+        </tr>
+    [% ELSE %]
+        [% FOREACH residence IN client.tax_residence.split(',') %]
+            <tr>
+                <td class="label">Tax Residence #[% loop.count %]</td>
+                <td>:  
+                    <select name="tax_residence_[% loop.count %]">
+                        <option value="">Not selected</option>
+                    [% FOREACH country IN countries %]
+                        <option value="[% country_codes.$country %]" 
+                            [% IF country_codes.$country == residence %] selected="selected" [% END %]>
+                            [% country %]
+                        </option>
+                    [% END %]
+                </td>
+            </tr>
+        [% END %]
+    [% END %]
     <tr>
         <td class="label">Tax Identification Number</td>
         <td>: <input type="text" name="tax_identification_number" value="[% client.tax_identification_number %]" size="10" /></td>
@@ -266,7 +278,8 @@ table#client_edit td{
                 {'value' => 'CLEAR_ALL', 'details' => 'Not authenticated' }
                 {'value' => 'ID_DOCUMENT', 'details' => 'Authenticated with scans' }
                 {'value' => 'ID_NOTARIZED', 'details' => 'Authenticated with Notarized docs' }
-            ]
+                {'value' => 'NEEDS_ACTION', 'details' => 'Needs Action' }
+           ]
         %]
         <td id="verification">:
             [%
