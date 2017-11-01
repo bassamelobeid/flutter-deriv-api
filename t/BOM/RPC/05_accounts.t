@@ -683,8 +683,7 @@ subtest $method => sub {
     sub test_financial_assessment {
         my ($data, $is_present, $msg) = @_;
         $test_client->financial_assessment({
-            data            => encode_json $data,
-            is_professional => 0
+            data => encode_json $data,
         });
         $test_client->save();
         my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
@@ -1144,7 +1143,6 @@ subtest $method => sub {
             token => $token1
         });
     cmp_ok($res->{score}, "<", 60, "Got correct score");
-    is($res->{is_professional}, 0, "As score is less than 60 so its marked as not professional");
 
     # test that setting this for one client also sets it for client with different landing company
     is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
