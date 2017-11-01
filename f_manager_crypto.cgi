@@ -483,13 +483,14 @@ EOF
             $rslt = $cfg->{ethereum}->{account}->{address};
             print '<p>' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
         } else {
-            print '<p style="color:red"><strong>WARNING! An address has not been found. Please contact Devops to obtain a new address to update this in the configuration.</strong></p>';
+            print
+                '<p style="color:red"><strong>WARNING! An address has not been found. Please contact Devops to obtain a new address to update this in the configuration.</strong></p>';
         }
     } else {
         $rslt = $rpc_client->getnewaddress('manual');
-         print '<p>New ' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
+        print '<p>New ' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
     }
-    
+
 } elsif ($view_action eq 'make_dcc') {
     my $amount_dcc  = request()->param('amount_dcc')  // 0;
     my $loginid_dcc = request()->param('loginid_dcc') // '';
