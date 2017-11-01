@@ -3,6 +3,7 @@ use warnings;
 use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use Email::Folder::Search;
@@ -85,9 +86,7 @@ $params->{args} = $args;
 
 $mailbox->clear;
 $result = $c->call_ok($method, $params)->result;
-my $email_body = get_notification_email()->{body};
-chomp $email_body;
-is $email_body, 'New document was uploaded for the account: CR10000', 'CS notification email was sent successfully';
+ok get_notification_email()->{body} =~ qr/New document was uploaded for the account: CR10000/, 'CS notification email was sent successfully';
 
 ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 is($doc->status,                                              'uploaded',           'document\'s status changed');
