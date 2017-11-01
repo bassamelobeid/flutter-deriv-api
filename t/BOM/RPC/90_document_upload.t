@@ -5,7 +5,11 @@ use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
+use Email::Folder::Search;
 use utf8;
+
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+$mailbox->init;
 
 my $email       = 'dummy@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -78,7 +82,15 @@ $args = {
     checksum => $checksum,
     file_id  => $result->{file_id}};
 $params->{args} = $args;
+
+$mailbox->clear;
 $result = $c->call_ok($method, $params)->result;
+my ($msg) = $mailbox->search(
+    email   => 'authentications@binary.com',
+    subject => qr/New uploaded document/
+);
+is $msg->{body}, 'New document was uploaded for the account: CR10000', 'CS notification email was sent successfully';
+
 ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 is($doc->status,                                              'uploaded',           'document\'s status changed');
 is($test_client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
