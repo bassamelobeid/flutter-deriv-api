@@ -61,7 +61,7 @@
           "description": "Lifetime withdrawal limit"
         },
         "num_of_days": {
-          "type": "number",
+          "type": "integer",
           "description": "Number of days for num_of_days_limit withdrawal limit"
         },
         "num_of_days_limit": {
