@@ -72,6 +72,8 @@ sub successful_upload {
         return create_upload_error();
     }
 
+    return $args if $client->get_status('document_under_review');
+
 # Change client's account status.
     $client->set_status('document_under_review', 'system', 'Documents uploaded');
     $client->clr_status('document_needs_action');

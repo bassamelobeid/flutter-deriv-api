@@ -85,21 +85,31 @@ $params->{args} = $args;
 
 $mailbox->clear;
 $result = $c->call_ok($method, $params)->result;
-my ($msg) = $mailbox->search(
-    email   => 'authentications@binary.com',
-    subject => qr/New uploaded document/
-);
-my $email_body = $msg->{body};
-chomp $mail_body;
+my $email_body = get_notification_email()->{body};
+chomp $email_body;
 is $email_body, 'New document was uploaded for the account: CR10000', 'CS notification email was sent successfully';
 
 ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 is($doc->status,                                              'uploaded',           'document\'s status changed');
 is($test_client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
+ok(!$test_client->get_status('document_needs_action'), 'Document should not be in needs_action state');
 ok $doc->file_name, 'Filename should not be empty';
 is $doc->checksum, $checksum, 'Checksum should be added correctly';
 
+$mailbox->clear;
+$result = $c->call_ok($method, $params)->result;
+my $msg = get_notification_email();
+ok(!$msg, 'CS notification email should only be sent once');
+
 $args->{file_id} = 1231531;
 $c->call_ok($method, $params)->has_error->error_message_is('Document not found.', 'error if document is not present');
+
+sub get_notification_email {
+    my ($msg) = $mailbox->search(
+        email   => 'authentications@binary.com',
+        subject => qr/New uploaded document/
+    );
+    return $msg;
+}
 
 done_testing();
