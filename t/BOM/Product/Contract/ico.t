@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 use Test::Deep qw( cmp_deeply );
-use Test::More tests => 3;
+use Test::More tests => 4;
+use Try::Tiny;
 use Test::Warnings;
 use Test::Exception;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -101,5 +102,33 @@ subtest 'shortcode_to_parameters' => sub {
     BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_started(0);
     $c = produce_contract($parameters);
     ok !$c->is_valid_to_buy, 'is not valid to buy as auction not started';
+};
+
+subtest 'ico with invalid landing company' => sub {
+    my $error = try {
+        produce_contract({
+                underlying                    => create_underlying('BINARYICO'),
+                shortcode                     => 'BINARYICO_1.0001_1400',
+                bet_type                      => 'BINARYICO',
+                currency                      => 'USD',
+                prediction                    => undef,
+                amount_type                   => 'stake',
+                amount                        => '1.0001',
+                binaryico_per_token_bid_price => '1.0001',
+                date_start                    => undef,
+                date_expiry                   => undef,
+                fixed_expiry                  => undef,
+                tick_count                    => undef,
+                tick_expiry                   => undef,
+                is_sold                       => undef,
+                binaryico_number_of_tokens    => 1400,
+                landing_company               => 'malta',
+            })
     }
+    catch {
+        $_;
+    };
+    isa_ok($error, 'BOM::Product::Exception');
+    is_deeply $error->message_to_client, ['The ICO is not available for the account.'], 'correct error message';
+};
 

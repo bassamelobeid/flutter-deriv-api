@@ -13,6 +13,7 @@ use Try::Tiny;
 
 use Postgres::FeedDB::Spot::Tick;
 
+use BOM::Product::Exception;
 use BOM::Product::Categorizer;
 use BOM::Product::ContractFactory::Parser qw(
     shortcode_to_parameters
@@ -96,7 +97,7 @@ sub produce_contract {
     my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
 
     # XXX Remove this after ICO finishes
-    die 'Invalid landing company ' . $landing_company . ' for coin auction'
+    BOM::Product::Exception->throw(error_code => 'IcoNotAllowed')
         if $contract_class->isa('BOM::Product::Contract::Coinauction')
         and $landing_company ne 'costarica';
 

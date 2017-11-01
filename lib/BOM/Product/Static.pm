@@ -53,6 +53,7 @@ my $config = {
         InvalidBinaryIcoBidPrice      => 'Sorry, but your bid is too low. The minimum bid allowed is USD1 (or its equivalent in another currency).',
         IcoClosed                     => 'The ICO is now closed.',
         IcoNotStarted                 => 'The ICO has not yet started.',
+        IcoNotAllowed                 => 'The ICO is not available for the account.',
         MarketIsClosed                => 'This market is presently closed.',
         MarketIsClosedTryVolatility   => 'This market is presently closed. Try out the Volatility Indices which are always open.',
         MarketNotOpen                 => 'The market must be open at the start time.',
