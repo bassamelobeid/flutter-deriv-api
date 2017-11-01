@@ -477,8 +477,21 @@ EOF
         die 'Invalid ' . $currency . ' command: ' . $cmd;
     }
 } elsif ($view_action eq 'new_deposit_address') {
-    my $rslt = $rpc_client->getnewaddress('manual');
-    print '<p>New ' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
+    my $rslt;
+    if ($currency eq 'ETH') {
+        if ($cfg->{ethereum}->{account}->{address}) {
+            $rslt = $cfg->{ethereum}->{account}->{address};
+            warn "REACHED ADDRESS FOUND. Address is $rslt\n";
+            print '<p>' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
+        } else {
+            warn "not found. Address is $rslt\n";
+            print '<p style="color:red"><strong>WARNING! An address has not been found. Please contact Devops to obtain a new address to update this in the configuration.</strong></p>';
+        }
+    } else {
+        $rslt = $rpc_client->getnewaddress('manual');
+         print '<p>New ' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
+    }
+    
 } elsif ($view_action eq 'make_dcc') {
     my $amount_dcc  = request()->param('amount_dcc')  // 0;
     my $loginid_dcc = request()->param('loginid_dcc') // '';
