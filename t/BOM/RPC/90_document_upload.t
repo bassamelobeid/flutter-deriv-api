@@ -107,7 +107,7 @@ $c->call_ok($method, $params)->has_error->error_message_is('Document not found.'
 sub get_notification_email {
     my ($msg) = $mailbox->search(
         email   => 'authentications@binary.com',
-        subject => qr/New uploaded document/
+        subject => qr/New uploaded document for: CR10000/
     );
     return $msg;
 }
