@@ -8,7 +8,6 @@ use JSON;
 use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
-use Data::Password::Meter;
 use HTML::Entities qw(encode_entities);
 use List::Util qw(any sum0);
 
@@ -752,7 +751,7 @@ sub set_settings {
                 });
         }
 
-        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
+        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && ($client->broker_code ne 'CR' or $client->get_status('ico_only'));
 
         if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
             $err = BOM::RPC::v3::Utility::create_error({
@@ -1043,7 +1042,7 @@ sub set_self_exclusion {
         qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/
         )
     {
-        $args_count++ if $args{$field};
+        $args_count++ if defined $args{$field};
     }
     return BOM::RPC::v3::Utility::create_error({
             code              => 'SetSelfExclusionError',
@@ -1053,23 +1052,37 @@ sub set_self_exclusion {
         qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/
         )
     {
-        my $val      = $args{$field};
+        # Client input
+        my $val = $args{$field};
+
+        # The minimum is 1 in case of open bets (1 for other cases)
+        my $min = $field eq 'max_open_bets' ? 1 : 0;
+
+        # Validate the client input
         my $is_valid = 0;
+
+        # Max balance and Max open bets are given default values, if not set by client
+        if ($field eq 'max_balance') {
+            $self_exclusion->{$field} //= $client->get_limit_for_account_balance;
+        } elsif ($field eq 'max_open_bets') {
+            $self_exclusion->{$field} //= $client->get_limit_for_open_positions;
+        }
+
         if ($val and $val > 0) {
             $is_valid = 1;
-            if (    $self_exclusion->{$field}
-                and $val > $self_exclusion->{$field})
-            {
+            if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
                 $is_valid = 0;
             }
         }
+
         next if $is_valid;
 
         if (defined $val and $self_exclusion->{$field}) {
-            return $error_sub->(localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
+            return $error_sub->(localize('Please enter a number between [_1] and [_2].', $min, $self_exclusion->{$field}), $field);
         } else {
             delete $args{$field};
         }
+
     }
 
     if (my $session_duration_limit = $args{session_duration_limit}) {
@@ -1131,6 +1144,11 @@ sub set_self_exclusion {
     if ($args{max_open_bets}) {
         $client->set_exclusion->max_open_bets($args{max_open_bets});
     }
+
+    if ($args{max_balance}) {
+        $client->set_exclusion->max_balance($args{max_balance});
+    }
+
     if ($args{max_turnover}) {
         $client->set_exclusion->max_turnover($args{max_turnover});
     }
@@ -1153,16 +1171,14 @@ sub set_self_exclusion {
     if ($args{max_30day_losses}) {
         $client->set_exclusion->max_30day_losses($args{max_30day_losses});
     }
-    if ($args{max_balance}) {
-        $client->set_exclusion->max_balance($args{max_balance});
-    }
+
     if ($args{session_duration_limit}) {
         $client->set_exclusion->session_duration_limit($args{session_duration_limit});
     }
     if ($args{timeout_until}) {
         $client->set_exclusion->timeout_until($args{timeout_until});
     }
-    # send to support only when client has self excluded
+# send to support only when client has self excluded
     if ($args{exclude_until}) {
         my $ret          = $client->set_exclusion->exclude_until($args{exclude_until});
         my $statuses     = join '/', map { uc $_->status_code } $client->client_status;
@@ -1369,22 +1385,18 @@ sub set_financial_assessment {
         my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
-        my $is_professional = $financial_evaluation->{total_score} < 60 ? 0 : 1;
-
         my $user = BOM::Platform::User->new({email => $client->email});
         foreach my $cli ($user->clients) {
             next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
             $cli->financial_assessment({
-                data            => encode_json $financial_evaluation->{user_data},
-                is_professional => $is_professional
+                data => encode_json $financial_evaluation->{user_data},
             });
             $cli->save;
         }
 
         $response = {
-            score           => $financial_evaluation->{total_score},
-            is_professional => $is_professional
+            score => $financial_evaluation->{total_score},
         };
         $subject = $client_loginid . ' assessment test details have been updated';
         $message = ["$client_loginid score is " . $financial_evaluation->{total_score}];
