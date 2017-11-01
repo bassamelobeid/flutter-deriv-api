@@ -768,8 +768,8 @@ subtest $method => sub {
                 user_pass    => $oldpass
             }
             )->{error}->{message_to_client},
-        'Password is not strong enough.',
-        'Password is not strong enough.',
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
     );
     is(
         BOM::RPC::v3::Utility::_check_password({
@@ -869,7 +869,8 @@ subtest $method => sub {
     $params->{args}{new_password} = $password;
     is($c->tcall($method, $params)->{error}{message_to_client}, 'New password is same as old password.');
     $params->{args}{new_password} = '111111111';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.');
+    is($c->tcall($method, $params)->{error}{message_to_client},
+        'Password should be at least six characters, including lower and uppercase letters with numbers.');
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
     $mailbox->clear;
@@ -944,7 +945,11 @@ subtest $method => sub {
         'return error if lock password same with user password'
     );
     $params->{args}{lock_password} = '1111111';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.', 'check strong');
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'check strong'
+    );
     $params->{args}{lock_password} = $tmp_new_password;
 
     $mailbox->clear;
