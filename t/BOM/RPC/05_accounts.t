@@ -1401,15 +1401,44 @@ subtest 'get and set self_exclusion' => sub {
         token => $token_vr,
         args  => {}};
     is($c->tcall($method, $params)->{error}{message_to_client}, "Permission denied.", 'vr client cannot set exclusion');
+
     $params->{token} = $token1;
+
     is($c->tcall($method, $params)->{error}{message_to_client}, "Please provide at least one self-exclusion setting.", "need one exclusion");
+
     $params->{args} = {
         set_self_exclusion => 1,
         max_balance        => 10000,
-        max_open_bets      => 100,
+        max_open_bets      => 50,
         max_turnover       => undef,    # null should be OK to pass
         max_7day_losses    => 0,        # 0 is ok to pass but not saved
     };
+
+    # Test for Maximum bets
+    $params->{args}->{max_open_bets} = 75;
+
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "Please enter a number between 1 and 60.",
+            'details'           => 'max_open_bets',
+            'code'              => 'SetSelfExclusionError'
+        });
+
+    $params->{args}->{max_open_bets} = 50;
+
+    # Test for Maximum balance
+    $params->{args}->{max_balance} = 399999;
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "Please enter a number between 0 and 300000.",
+            'details'           => 'max_balance',
+            'code'              => 'SetSelfExclusionError'
+        });
+
+    $params->{args}->{max_balance} = 10000;
+
     is($c->tcall($method, $params)->{status}, 1, "update self_exclusion ok");
 
     $params->{args}{max_balance} = 9999.999;
@@ -1425,25 +1454,11 @@ subtest 'get and set self_exclusion' => sub {
     is_deeply(
         $c->tcall('get_self_exclusion', $params),
         {
-            'max_open_bets' => '100',
+            'max_open_bets' => '50',
             'max_balance'   => '9999.99'
         },
         'get self_exclusion ok'
     );
-
-    $params->{args} = {
-        set_self_exclusion => 1,
-        max_balance        => 10001,
-        max_turnover       => 1000,
-        max_open_bets      => 100,
-    };
-    is_deeply(
-        $c->tcall($method, $params)->{error},
-        {
-            'message_to_client' => "Please enter a number between 0 and 9999.99.",
-            'details'           => 'max_balance',
-            'code'              => 'SetSelfExclusionError'
-        });
 
     # don't send previous required fields, should be okay
     $params->{args} = {
@@ -1456,7 +1471,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440 * 42 + 1,
     };
     is_deeply(
@@ -1470,7 +1485,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         exclude_until          => '2010-01-01'
     };
@@ -1485,7 +1500,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         exclude_until          => DateTime->now()->add(months => 3)->ymd
     };
@@ -1501,7 +1516,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         exclude_until          => DateTime->now()->add(years => 6)->ymd
     };
@@ -1518,7 +1533,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         timeout_until          => time() - 86400,
     };
@@ -1534,7 +1549,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         timeout_until          => time() + 86400 * 7 * 10,    # max is 6 weeks
     };
@@ -1553,7 +1568,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9998,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         exclude_until          => $exclude_until,
         timeout_until          => $timeout_until->epoch,
