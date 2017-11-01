@@ -100,7 +100,7 @@ SQL
     # Divide these items into buckets - currently hardcoded at 20c
     my %sum;
     for my $bid (nsort_by { $_->{unit_price_usd} } @$bids) {
-        my $bucket = ICO_BUCKET_SIZE * financialrounding('price', 'USD', $bid->{unit_price_usd} / ICO_BUCKET_SIZE);
+        my $bucket = financialrounding('price', 'USD', ICO_BUCKET_SIZE * int((0.001 + $bid->{unit_price_usd}) / ICO_BUCKET_SIZE));
         $sum{$bucket} += $bid->{unit_price_usd} * $bid->{tokens};
     }
     return {

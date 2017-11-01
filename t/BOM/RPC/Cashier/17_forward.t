@@ -271,11 +271,16 @@ subtest 'landing_companies_specific' => sub {
 
 subtest 'all status are covered' => sub {
     my $all_status = Client::Account::client_status_types;
-    # as social signup, jp_transaction_detail, duplicate_account, migrated_single_email
-    # are flags to represent state not status for preventing cashier access
-    # document_under_review, document_needs_action are flags that represent document_upload state
+    # Flags to represent state, rather than status for preventing cashier access:
+    # * social signup, jp_transaction_detail, duplicate_account, migrated_single_email
+    # * document_under_review, document_needs_action - for document_upload state
+    # * professional, professional_requested
+    # * ico_only
     my @temp_status =
-        grep { $_ !~ /^(?:social_signup|jp_transaction_detail|duplicate_account|migrated_single_email|document_under_review|document_needs_action)$/ }
+        grep {
+        $_ !~
+            /^(?:social_signup|jp_transaction_detail|duplicate_account|migrated_single_email|document_under_review|document_needs_action|professional|professional_requested|ico_only)$/
+        }
         keys %$all_status;
     fail("missing status $_") for sort grep !exists $seen{$_}, @temp_status;
     pass("ok to prevent warning 'no tests run");
