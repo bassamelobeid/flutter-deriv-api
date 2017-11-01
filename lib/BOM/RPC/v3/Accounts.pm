@@ -275,7 +275,9 @@ sub profit_table {
                 # this should already be localized
                 my $longcode = $res->{longcodes}->{$row->{short_code}};
                 # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
-                $longcode = 'Binary ICO: canceled bid' if ($row->{short_code} =~ /^BINARYICO/ and $row->{sell_price} == 0.98 * $row->{payout_price});
+                $longcode = 'Binary ICO: canceled bid'
+                    if ($row->{short_code} =~ /^BINARYICO/
+                    and $row->{sell_price} == financialrounding('price', $client->currency, 0.98 * $row->{payout_price}));
                 $trx{longcode} = $longcode;
 
             }
