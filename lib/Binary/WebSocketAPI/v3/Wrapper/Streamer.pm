@@ -452,6 +452,7 @@ sub _feed_channel_unsubscribe {
 
 sub transaction_channel {
     my ($c, $action, $account_id, $type, $args, $contract_id) = @_;
+    $contract_id = $args->{contract_id} // $contract_id;
     my $uuid;
 
     my $redis = shared_redis;
@@ -470,16 +471,16 @@ sub transaction_channel {
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
             $channel->{$type}->{account_id}  = $account_id;
-            $channel->{$type}->{contract_id} = $args->{contract_id} || $contract_id
-                if $args->{contract_id} || $contract_id;
+            $channel->{$type}->{contract_id} = $contract_id if $contract_id;
             $c->stash('transaction_channel', $channel);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
             delete $channel->{$type};
-            unless (keys %$channel) {
+            unless (%$channel) {
                 delete $redis->{shared_info}{$channel_name}{$c + 0};
-                $redis->unsubscribe([$channel_name], sub { });
                 delete $c->stash->{transaction_channel};
             }
+            # Unsubscribe from redis if there's no listener across connections for the channel
+            $redis->unsubscribe([$channel_name], sub { }) if not %{$redis->{shared_info}{$channel_name}};
         }
     }
 
