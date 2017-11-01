@@ -746,37 +746,15 @@ BOM::Backoffice::Request::template->process(
         countries => Brands->new(name => request()->brand)->countries_instance->countries,
     });
 
-Bar("Financial Assessment");
-print qq{
-   <form action="$self_post" method="post">
-            <input type="hidden" name="whattodo" value="update_professional_status">
-                <select name="professional_status">
-                <option value=1>YES</option>
-                <option value=0>NO</option>
-             </select>
-             <input type="submit" value="Update professional status">
-    <input type="hidden" name="broker" value="$encoded_broker">
-    <input type="hidden" name="loginID" value="$encoded_loginid">
-        </form>
-   };
-
-if ($input{whattodo} eq 'update_professional_status') {
-    $client->financial_assessment({is_professional => $input{professional_status}});
-    $client->save;
-
-}
-my $financial_assessment = $client->financial_assessment();
-if ($financial_assessment) {
+if (my $financial_assessment = $client->financial_assessment()) {
+    Bar("Financial Assessment");
     my $user_data_json = $financial_assessment->data;
-    my $is_professional = $financial_assessment->is_professional ? 'yes' : 'no';
     print qq{<table class="collapsed">
         <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
         . encode_entities($user_data_json) . qq{</textarea></td></tr>
         <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
-        <tr><td>Is professional</td><td>$is_professional</td></tr>
         </table>
     };
-
 }
 
 Bar($user->email . " Login history");
