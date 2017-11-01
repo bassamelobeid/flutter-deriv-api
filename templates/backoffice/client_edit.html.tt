@@ -278,7 +278,8 @@ table#client_edit td{
                 {'value' => 'CLEAR_ALL', 'details' => 'Not authenticated' }
                 {'value' => 'ID_DOCUMENT', 'details' => 'Authenticated with scans' }
                 {'value' => 'ID_NOTARIZED', 'details' => 'Authenticated with Notarized docs' }
-            ]
+                {'value' => 'NEEDS_ACTION', 'details' => 'Needs Action' }
+           ]
         %]
         <td id="verification">:
             [%
