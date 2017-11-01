@@ -5,6 +5,7 @@ use warnings;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
 use Date::Utility;
+use BOM::Platform::Email qw(send_email);
 
 use constant MAX_FILE_SIZE => 3 * 2**20;
 
@@ -79,6 +80,17 @@ sub successful_upload {
         warn 'Unable to change client status';
         return create_upload_error();
     }
+
+    my $email_body = "New document was uploaded";
+
+    send_email({
+        'from'                  => 'no-reply@binary.com',
+        'to'                    => 'authentications@binary.com',
+        'subject'               => 'New uploaded document',
+        'message'               => $email_body,
+        'use_email_template'    => 0,
+        'email_content_is_html' => 0
+    });
 
     return $args;
 }
