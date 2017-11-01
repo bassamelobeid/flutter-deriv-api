@@ -9,9 +9,8 @@ __PACKAGE__->meta->setup(
     schema   => 'betonmarkets',
 
     columns => [
-        client_loginid  => { type => 'varchar', length => 12, not_null => 1 },
-        data            => { type => 'scalar' },
-        is_professional => { type => 'boolean' },
+        client_loginid => { type => 'varchar', length => 12, not_null => 1 },
+        data           => { type => 'scalar' },
     ],
 
     primary_key_columns => [ 'client_loginid' ],
