@@ -8,7 +8,6 @@ use JSON;
 use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
-use Data::Password::Meter;
 use HTML::Entities qw(encode_entities);
 use List::Util qw(any sum0);
 
