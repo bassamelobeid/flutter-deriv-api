@@ -85,8 +85,9 @@ $args = {
 $params->{args} = $args;
 
 $mailbox->clear;
+my $client_id = uc $test_client->loginid;
 $result = $c->call_ok($method, $params)->result;
-like(get_notification_email()->{body}, qr/New document was uploaded for the account: CR10000/, 'CS notification email was sent successfully');
+like(get_notification_email()->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
 
 ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 is($doc->status,                                              'uploaded',           'document\'s status changed');
@@ -105,7 +106,7 @@ $c->call_ok($method, $params)->has_error->error_message_is('Document not found.'
 sub get_notification_email {
     my ($msg) = $mailbox->search(
         email   => 'authentications@binary.com',
-        subject => qr/New uploaded document for: CR10000/
+        subject => qr/New uploaded document for: $client_id/
     );
     return $msg;
 }

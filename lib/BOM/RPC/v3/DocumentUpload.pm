@@ -84,7 +84,7 @@ sub successful_upload {
     try {
         $changed_status = $client->db->dbic->run(
             fixup => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', {Slice => {}}, $client_id, 'Documents uploaded',);
+                $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', {Slice => {}}, $client_id, 'Documents uploaded');
             });
     }
     catch {
