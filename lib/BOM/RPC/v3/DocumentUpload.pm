@@ -6,6 +6,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
 use Date::Utility;
 use BOM::Platform::Email qw(send_email);
+use Try::Tiny;
 
 use constant MAX_FILE_SIZE => 3 * 2**20;
 
@@ -78,10 +79,23 @@ sub successful_upload {
 
     my $client_id = $client->loginid;
 
-    return unless $client->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', {Slice => {}}, $client_id, 'Documents uploaded',);
-        });
+    my $changed_status;
+    my $error_occured;
+    try {
+        $changed_status = $client->db->dbic->run(
+            fixup => sub {
+                $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', {Slice => {}}, $client_id, 'Documents uploaded',);
+            });
+    } catch {
+        $error_occured = 1;
+    }
+
+    if ($error_occured) {
+        warn 'Unable to change client status in the db';
+        return create_upload_error();
+    }
+
+    return $args unless $changed_status;
 
     my $email_body = "New document was uploaded for the account: " . $client_id;
 
