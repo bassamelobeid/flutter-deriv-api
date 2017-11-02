@@ -86,7 +86,8 @@ sub successful_upload {
             fixup => sub {
                 $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', {Slice => {}}, $client_id, 'Documents uploaded',);
             });
-    } catch {
+    }
+    catch {
         $error_occured = 1;
     };
 
