@@ -8,7 +8,6 @@ use JSON;
 use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
-use Data::Password::Meter;
 use HTML::Entities qw(encode_entities);
 use List::Util qw(any sum0);
 
@@ -755,7 +754,7 @@ sub set_settings {
                 });
         }
 
-        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
+        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && ($client->broker_code ne 'CR' or $client->get_status('ico_only'));
 
         if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
             $err = BOM::RPC::v3::Utility::create_error({
@@ -1389,22 +1388,18 @@ sub set_financial_assessment {
         my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
-        my $is_professional = $financial_evaluation->{total_score} < 60 ? 0 : 1;
-
         my $user = BOM::Platform::User->new({email => $client->email});
         foreach my $cli ($user->clients) {
             next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
             $cli->financial_assessment({
-                data            => encode_json $financial_evaluation->{user_data},
-                is_professional => $is_professional
+                data => encode_json $financial_evaluation->{user_data},
             });
             $cli->save;
         }
 
         $response = {
-            score           => $financial_evaluation->{total_score},
-            is_professional => $is_professional
+            score => $financial_evaluation->{total_score},
         };
         $subject = $client_loginid . ' assessment test details have been updated';
         $message = ["$client_loginid score is " . $financial_evaluation->{total_score}];

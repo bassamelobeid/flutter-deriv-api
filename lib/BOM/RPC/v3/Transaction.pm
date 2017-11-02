@@ -147,6 +147,11 @@ sub buy_contract_for_multiple_accounts {
 
     my $client = $params->{client} // die "client should be authed when get here";
 
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'IcoOnlyAccount',
+            message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
+    ) if $client->get_status('ico_only');
+
     my $tokens = $params->{args}{tokens} // [];
 
     return BOM::RPC::v3::Utility::create_error({
@@ -284,6 +289,11 @@ sub sell_contract_for_multiple_accounts {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'IcoOnlyAccount',
+            message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
+    ) if $client->get_status('ico_only');
 
     my ($source, $args) = ($params->{source}, $params->{args});
 

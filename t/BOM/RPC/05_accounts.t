@@ -683,8 +683,7 @@ subtest $method => sub {
     sub test_financial_assessment {
         my ($data, $is_present, $msg) = @_;
         $test_client->financial_assessment({
-            data            => encode_json $data,
-            is_professional => 0
+            data => encode_json $data,
         });
         $test_client->save();
         my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
@@ -769,8 +768,8 @@ subtest $method => sub {
                 user_pass    => $oldpass
             }
             )->{error}->{message_to_client},
-        'Password is not strong enough.',
-        'Password is not strong enough.',
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
     );
     is(
         BOM::RPC::v3::Utility::_check_password({
@@ -870,7 +869,8 @@ subtest $method => sub {
     $params->{args}{new_password} = $password;
     is($c->tcall($method, $params)->{error}{message_to_client}, 'New password is same as old password.');
     $params->{args}{new_password} = '111111111';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.');
+    is($c->tcall($method, $params)->{error}{message_to_client},
+        'Password should be at least six characters, including lower and uppercase letters with numbers.');
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
     $mailbox->clear;
@@ -945,7 +945,11 @@ subtest $method => sub {
         'return error if lock password same with user password'
     );
     $params->{args}{lock_password} = '1111111';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.', 'check strong');
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'check strong'
+    );
     $params->{args}{lock_password} = $tmp_new_password;
 
     $mailbox->clear;
@@ -1144,7 +1148,6 @@ subtest $method => sub {
             token => $token1
         });
     cmp_ok($res->{score}, "<", 60, "Got correct score");
-    is($res->{is_professional}, 0, "As score is less than 60 so its marked as not professional");
 
     # test that setting this for one client also sets it for client with different landing company
     is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
