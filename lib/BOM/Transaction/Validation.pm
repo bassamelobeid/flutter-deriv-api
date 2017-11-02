@@ -649,7 +649,6 @@ sub _validate_jurisdictional_restrictions {
     return;
 }
 
-
 =head2 $self->_validate_ico_jurisdictional_restrictions
 
 Validates whether a client fullfill ICO jurisdicrtional restrictions
