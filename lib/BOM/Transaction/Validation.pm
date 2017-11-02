@@ -24,28 +24,6 @@ has clients => (
 );
 has transaction => (is => 'ro');
 
-=head2 $self->_open_ico_for_european_country
-
-This is to get the number of unique users that have place ICO in a European Union country
-
-=cut
-
-sub _open_ico_for_european_country {
-    my ($self, $client_residence) = @_;
-
-    my $db = BOM::Database::ClientDB->new({
-            broker_code => 'FOG',
-            operation   => 'collector'
-        })->db;
-    my $number_of_unique_client_per_eu_country = $db->dbic->run(
-        fixup => sub {
-            $_->selectcol_arrayref(q{ SELECT cnt FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', ARRAY[?]::VARCHAR[]) },
-                undef, $client_residence);
-        })->[0];
-
-    return $number_of_unique_client_per_eu_country // 0;
-}
-
 ################ Client and transaction validation ########################
 
 sub validate_trx_sell {
@@ -106,8 +84,7 @@ sub validate_trx_buy {
     push @client_validation_method,
         qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_self_exclusion)
         unless $self->transaction->contract->is_binaryico;
-    push @client_validation_method, qw(_validate_ico_jurisdictional_restrictions _validate_ico_european_restrictions)
-        if $self->transaction->contract->is_binaryico;
+    push @client_validation_method, '_validate_ico_jurisdictional_restrictions' if $self->transaction->contract->is_binaryico;
     push @client_validation_method, '_is_valid_to_buy';    # do this is as last of the validation
 
     CLI: for my $c (@$clients) {
@@ -666,36 +643,6 @@ sub _validate_jurisdictional_restrictions {
     return;
 }
 
-=head2 $self->_validate_ico_european_restrictions
-
-Note that under the EU Prospectus Directive we can only offer the token to up to 150 persons per European Union country.
-Therefore, we need to count the bids placed by persons in EU countries and not accept any more bids if there are already 150 outstanding bidder.
-
-=cut
-
-sub _validate_ico_european_restrictions {
-    my ($self, $client) = (shift, shift);
-
-    my $residence      = $client->residence;
-    my $european_union = Geo::Region->new(EUROPEAN_UNION);
-
-    if ($european_union->contains($residence)) {
-
-        # We notice that the open_ico_for_european_country from db does not update realtime enough, hence we limit it at 145
-        if ($self->_open_ico_for_european_country($residence) > 145) {
-            return Error::Base->cuss(
-                -type => 'ExceedEuIcoLimit',
-                -mesg => 'We are exceeding the limit that EU imposed on ICO ',
-                -message_to_client =>
-                    localize('Sorry, but due to regulatory restrictions, we are no longer accepting any bids from residents of your country.'),
-            );
-
-        }
-
-    }
-    return;
-
-}
 
 =head2 $self->_validate_ico_jurisdictional_restrictions
 
