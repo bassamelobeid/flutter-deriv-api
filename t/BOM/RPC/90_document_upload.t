@@ -3,9 +3,14 @@ use warnings;
 use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
+use Email::Folder::Search;
 use utf8;
+
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+$mailbox->init;
 
 my $email       = 'dummy@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -78,14 +83,32 @@ $args = {
     checksum => $checksum,
     file_id  => $result->{file_id}};
 $params->{args} = $args;
+
+$mailbox->clear;
+my $client_id = uc $test_client->loginid;
 $result = $c->call_ok($method, $params)->result;
+like(get_notification_email()->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
+
 ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 is($doc->status,                                              'uploaded',           'document\'s status changed');
 is($test_client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
+ok(!$test_client->get_status('document_needs_action'), 'Document should not be in needs_action state');
 ok $doc->file_name, 'Filename should not be empty';
 is $doc->checksum, $checksum, 'Checksum should be added correctly';
 
+$mailbox->clear;
+$result = $c->call_ok($method, $params)->result;
+ok(!get_notification_email(), 'CS notification email should only be sent once');
+
 $args->{file_id} = 1231531;
 $c->call_ok($method, $params)->has_error->error_message_is('Document not found.', 'error if document is not present');
+
+sub get_notification_email {
+    my ($msg) = $mailbox->search(
+        email   => 'authentications@binary.com',
+        subject => qr/New uploaded document for: $client_id/
+    );
+    return $msg;
+}
 
 done_testing();
