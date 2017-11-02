@@ -506,7 +506,7 @@ sub _barrier_display_text {
     my ($self, $supplied_barrier) = @_;
 
     return $supplied_barrier if $self->category_code eq 'digits';
-    return $self->underlying->pipsized_value($supplied_barrier) if $supplied_barrier =~ /^\d+\.?\d+/;
+    return $self->underlying->pipsized_value($supplied_barrier) if $supplied_barrier =~ /^\d+(?:\.\d{0,12})?$/;
 
     my ($string, $pips);
     if ($supplied_barrier =~ /^S[-+]?\d+P$/) {
@@ -521,9 +521,11 @@ sub _barrier_display_text {
 
     if ($self->underlying->market->name eq 'forex') {
         $string = $pips > 0 ? $GENERIC_MAPPING->{entry_spot_plus_plural} : $GENERIC_MAPPING->{entry_spot_minus_plural};
+        # taking the absolute value of $pips because the sign will be taken care of in the $string, e.g. entry spot plus/minus $pips.
         $pips = abs($pips);
     } else {
         $string = $pips > 0 ? $GENERIC_MAPPING->{entry_spot_plus} : $GENERIC_MAPPING->{entry_spot_minus};
+        # $pips is multiplied by pip size to convert it back to a relative value, e.g. entry spot plus/minus 0.001.
         $pips *= $self->underlying->pip_size;
         $pips = $self->underlying->pipsized_value(abs($pips));
     }
