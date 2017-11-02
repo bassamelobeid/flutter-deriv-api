@@ -72,24 +72,16 @@ sub successful_upload {
         return create_upload_error();
     }
 
-    my $client_id = $client->loginid;
-    my $clientdb  = BOM::Database::ClientDB->new({
-            client_loginid => $client_id,
-            operation      => 'replica',
-        })->db;
+    unless ($client->get_db eq 'write') {
+        $client->set_db('write');
+    }
 
-    return unless $clientdb->dbic->run(
+    my $client_id = $client->loginid;
+
+    return unless $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', {Slice => {}}, $client_id, 'Documents uploaded',);
         });
-
-# Change client's account status.
-    $client->clr_status('document_needs_action');
-
-    if (not $client->save()) {
-        warn 'Unable to change client status';
-        return create_upload_error();
-    }
 
     my $email_body = "New document was uploaded for the account: " . $client_id;
 
