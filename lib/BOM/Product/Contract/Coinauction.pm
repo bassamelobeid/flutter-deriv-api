@@ -142,8 +142,8 @@ has build_parameters => (
 sub BUILD {
     my $self   = shift;
     my $limits = {
-        min => 1,
-        max => 1000000,
+        min => 25,
+        max => 10000000,
     };
     $self->contract_type($self->build_parameters->{bet_type});
     $self->binaryico_number_of_tokens($self->build_parameters->{binaryico_number_of_tokens});
