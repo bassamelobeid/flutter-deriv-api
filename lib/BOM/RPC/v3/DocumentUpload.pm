@@ -88,7 +88,7 @@ sub successful_upload {
             });
     } catch {
         $error_occured = 1;
-    }
+    };
 
     if ($error_occured) {
         warn 'Unable to change client status in the db';
