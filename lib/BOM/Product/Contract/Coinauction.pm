@@ -142,7 +142,7 @@ has build_parameters => (
 sub BUILD {
     my $self   = shift;
     my $limits = {
-        min => 1,
+        min => 25,
         max => 1000000,
     };
     $self->contract_type($self->build_parameters->{bet_type});
