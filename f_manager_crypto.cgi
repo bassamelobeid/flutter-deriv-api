@@ -384,7 +384,7 @@ EOF
         my $usd_amount = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_USD($db_tran->{amount}, $currency)));
         my $fee = formatnumber('amount', $currency, financialrounding('price', $currency, $db_tran->{fee}));
         if (defined $db_tran->{amount}) {
-            print '<td style="text-align:right;">' . encode_entities($_) . '</td>' for $amount, '$' . $usd_amount, $fee;
+            print '<td style="text-align:right;">' . encode_entities($_) . '</td>' for $amount, '$' . $usd_amount, $fee // '';
         } else {
             print '<td>&nbsp;</td><td>&nbsp;</td>';
         }
