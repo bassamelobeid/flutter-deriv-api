@@ -3,7 +3,6 @@
 <p>Summary of period starting at [% start_date %] and ending [% end_date %].</p>
 <div id="rd-tabs">
   <ul>
-    <li><a href="#rd-treemap">Treemap</a></li>
     <li><a href="#rd-summary">Client Summary</a></li>
     <li><a href="#rd-pivot">Pivot</a></li>
   </ul>
