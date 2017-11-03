@@ -1088,7 +1088,6 @@ sub _get_tick_details {
 
     my $epoch       = $args->{requested_epoch}{value};
     my $epoch_name  = $args->{requested_epoch}{name};
-    my $quote       = $args->{quote}{value};
     my $quote_epoch = $args->{quote}{epoch};
     my $quote_name  = $args->{quote}{name};
 
