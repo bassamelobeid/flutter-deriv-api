@@ -1115,17 +1115,18 @@ sub _get_tick_details {
             epoch => $t->epoch,
             tick  => $self->underlying->pipsized_value($t->quote),
         };
-        if ($t->quote == $quote) {
-            if ($t->epoch == $epoch) {
-                $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $epoch_name->[0], $quote_name->[0]];
-                $t_details->{flag} = "highlight_tick";
-            } elsif ($t->epoch == $quote_epoch) {
-                $t_details->{name} = $quote_name;
-                $t_details->{flag} = "highlight_tick";
-            }
-        } elsif ($t->epoch == $epoch) {
-            $t_details->{name} = $epoch_name;
-            $t_details->{flag} = "highlight_time";
+
+        if ($t->epoch == $epoch && $t->epoch == $quote_epoch) {
+          $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $epoch_name->[0], $quote_name->[0]];
+          $t_details->{flag} = "highlight_tick";
+        }
+        elsif ($t->epoch == $epoch){
+          $t_details->{name} = $epoch_name;
+          $t_details->{flag} = "highlight_time";
+        }
+        elsif($t->epoch == $quote_epoch){
+          $t_details->{name} = $quote_name;
+          $t_details->{flag} = "highlight_tick";
         }
 
         push @details, $t_details;
