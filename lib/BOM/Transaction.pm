@@ -1010,7 +1010,11 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $account  = BOM::Database::DataMapper::Account->new({
+        my $message_to_client =
+            $self->contract->is_binaryico
+            ? 'Your account balance ([_1][_2]) is insufficient to place this bid ([_1][_3]).'
+            : 'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).';
+        my $account = BOM::Database::DataMapper::Account->new({
             client_loginid => $client->loginid,
             currency_code  => $currency,
         });
@@ -1019,10 +1023,8 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -type              => 'InsufficientBalance',
             -message           => 'Client\'s account balance was insufficient to buy bet.',
             -message_to_client => BOM::Platform::Context::localize(
-                'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).',
-                $currency,
-                formatnumber('amount', $currency, $account->get_balance()),
-                formatnumber('price',  $currency, $self->price)));
+                $message_to_client, $currency,
+                formatnumber('amount', $currency, $account->get_balance()), formatnumber('price', $currency, $self->price)));
     },
     BI007 => sub {
         my $self   = shift;
