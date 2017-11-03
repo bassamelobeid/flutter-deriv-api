@@ -1117,16 +1117,14 @@ sub _get_tick_details {
         };
 
         if ($t->epoch == $epoch && $t->epoch == $quote_epoch) {
-          $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $epoch_name->[0], $quote_name->[0]];
-          $t_details->{flag} = "highlight_tick";
-        }
-        elsif ($t->epoch == $epoch){
-          $t_details->{name} = $epoch_name;
-          $t_details->{flag} = "highlight_time";
-        }
-        elsif($t->epoch == $quote_epoch){
-          $t_details->{name} = $quote_name;
-          $t_details->{flag} = "highlight_tick";
+            $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $epoch_name->[0], $quote_name->[0]];
+            $t_details->{flag} = "highlight_tick";
+        } elsif ($t->epoch == $epoch) {
+            $t_details->{name} = $epoch_name;
+            $t_details->{flag} = "highlight_time";
+        } elsif ($t->epoch == $quote_epoch) {
+            $t_details->{name} = $quote_name;
+            $t_details->{flag} = "highlight_tick";
         }
 
         push @details, $t_details;
