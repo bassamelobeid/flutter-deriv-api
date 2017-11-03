@@ -290,6 +290,12 @@ table#client_edit td{
                 IF client.get_authentication('ID_NOTARIZED').status == 'pass';
                     text = 'Authenticated with Notarized docs';
                 END;
+                IF client.get_status('document_under_review');
+                    text = 'Under Review';
+                END;
+                IF client.get_status('document_needs_action');
+                    text = 'Needs Action';
+                END;
                 IF not text;
                     text = 'Not authenticated';
                 END;
