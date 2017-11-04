@@ -868,7 +868,6 @@ sub _build_exit_tick {
         if (not $valid_exit_tick_at_expiry) {
             $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1});
         } else {
-
             $exit_tick = $valid_exit_tick_at_expiry;
             $self->is_valid_exit_tick(1);
         }
@@ -1029,6 +1028,11 @@ sub audit_details {
 
     my $start_epoch  = $self->date_start->epoch;
     my $expiry_epoch = $self->date_expiry->epoch;
+
+    # rare case: no tics between date_start and date_expiry.
+    # underlaying will return exit_tick preceding date_start
+    # no audit because such contracts are settled by CS team
+    return {} if $start_epoch > $self->exit_tick->epoch;
 
     my $details = {
         contract_start => $self->_get_tick_details({
