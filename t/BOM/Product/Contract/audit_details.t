@@ -66,7 +66,7 @@ subtest 'there are ticks with same quote' => sub {
       my @before = map { [100 + 0.001 * $_, $now->epoch + $_,    'frxUSDJPY'] } (-2 .. 2);
       my @after  = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2 .. 2);
       $before[3][0] = $before[2][0];
-      $after[3][0] = $after[2][0]
+      $after[3][0] = $after[2][0];
       create_ticks(@before, @after);
       my $c = produce_contract({%$args, date_pricing => $expiry});
       ok $c->is_expired,         'contract expired';
