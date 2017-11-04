@@ -1032,7 +1032,7 @@ sub audit_details {
     # rare case: no tics between date_start and date_expiry.
     # underlaying will return exit_tick preceding date_start
     # no audit because such contracts are settled by CS team
-    return {} if $start_epoch > $self->exit_tick->epoch;
+    return {} if $self->exit_tick and $start_epoch > $self->exit_tick->epoch;
 
     my $details = {
         contract_start => $self->_get_tick_details({
