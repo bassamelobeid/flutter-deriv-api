@@ -96,13 +96,13 @@ subtest 'longcode from params for forward starting' => sub {
 };
 
 subtest 'longcode with \'difference\' as barrier' => sub {
-    my $now = Date::Utility->new('2016-10-19 10:00:00');
+    my $now  = Date::Utility->new('2016-10-19 10:00:00');
     my $tick = Postgres::FeedDB::Spot::Tick->new({
         underlying => 'R_100',
-        quote => 100,
-        epoch => $now->epoch
-        });
-    my $c   = produce_contract({
+        quote      => 100,
+        epoch      => $now->epoch
+    });
+    my $c = produce_contract({
         bet_type     => 'CALL',
         underlying   => 'R_100',
         date_start   => $now->plus_time_interval('10m'),
@@ -144,6 +144,36 @@ subtest 'longcode with \'difference\' as barrier' => sub {
             ['2016-10-19 10:20:00 GMT'],
             ['entry spot plus [_1]',  0.32],
             ['entry spot minus [_1]', 0.42],
+        ]);
+};
+
+subtest 'zero barrier' => sub {
+    my $now  = Date::Utility->new('2016-10-19 10:00:00');
+    my $tick = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'R_100',
+        quote      => 100,
+        epoch      => $now->epoch
+    });
+    my $c = produce_contract({
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        date_start   => $now->plus_time_interval('10m'),
+        date_pricing => $now,
+        duration     => '10m',
+        currency     => 'USD',
+        barrier      => 0,
+        payout       => 10,
+        fixed_expiry => 1,
+        current_tick => $tick,
+    });
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
+            'USD', '10.00',
+            'Volatility 100 Index',
+            ['2016-10-19 10:10:00 GMT'],
+            ['10 minutes'], '0.00'
         ]);
 };
 
