@@ -239,9 +239,14 @@ sub new_account_real {
 
     # XXX If we fail after account creation then we could end up with these flags not set,
     # ideally should be handled in a single transaction
-    $new_client->set_status('ico_only',               'SYSTEM', 'ICO account requested')          if $ico_only;
-    $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
-    $new_client->save;
+    # as account is already created so no need to die on status set
+    # else it will give false impression to client
+    try {
+        $new_client->set_status('ico_only',               'SYSTEM', 'ICO account requested')          if $ico_only;
+        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
+        $new_client->save;
+        _send_professional_requested_email($new_client->loginid) if $professional_requested;
+    };
 
     if ($args->{currency}) {
         my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
@@ -344,8 +349,11 @@ sub new_account_maltainvest {
     my $user            = $acc->{user};
 
     if ($professional_requested) {
-        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
-        $new_client->save;
+        try {
+            $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
+            $new_client->save;
+            _send_professional_requested_email($new_client->loginid);
+        };
     }
 
     $user->add_login_history({
@@ -492,6 +500,20 @@ sub new_sub_account {
         landing_company_shortcode => $new_client->landing_company->short,
         oauth_token               => _create_oauth_token($new_client->loginid),
     };
+}
+
+sub _send_professional_requested_email {
+    my $loginid = shift;
+
+    return unless $loginid;
+
+    my $brand = Brands->new(name => request()->brand);
+    return send_email({
+        from    => $brand->emails('support'),
+        to      => $brand->emails('compliance'),
+        subject => "$loginid requested for professional status",
+        message => ["$loginid has requested for professional status, please check and update accordingly"],
+    });
 }
 
 1;
