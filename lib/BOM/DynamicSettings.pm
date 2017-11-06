@@ -70,6 +70,7 @@ sub save_settings {
                 next SAVESETTING unless grep { $s eq $_ } @{$settings_in_group};
                 if ($global) {
                     my ($new_value, $display_value) = parse_and_refine_setting($settings->{$s}, $dynamic_settings->{global}->{$s}->{type});
+                    $new_value += 0 if $s eq 'system.suspend.ico_final_price';
                     my $old_value = $data_set->{global}->get($s);
                     my $compare = Data::Compare->new($new_value, $old_value);
                     try {
