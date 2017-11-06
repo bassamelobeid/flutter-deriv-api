@@ -18,7 +18,6 @@ use BOM::Transaction;
 sub portfolio {
     my $params = shift;
 
-
     my $portfolio = {contracts => []};
     my $client = $params->{client} or return $portfolio;
 
@@ -29,10 +28,10 @@ sub portfolio {
     my @short_codes = map { $_->{short_code} } @rows;
 
     my $res = BOM::RPC::v3::Utility::longcode({
-            short_codes => \@short_codes,
-            currency    => $client->currency,
-            language    => $params->{language},
-        });
+        short_codes => \@short_codes,
+        currency    => $client->currency,
+        language    => $params->{language},
+    });
 
     foreach my $row (@rows) {
 
