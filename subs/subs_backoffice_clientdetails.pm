@@ -148,6 +148,7 @@ sub print_client_details {
         salutation_options     => \@salutation_options,
         secret_answer          => $secret_answer,
         self_exclusion_enabled => $self_exclusion_enabled,
+        show_allow_professional_client => $client->get_status('professional_requested'),
         show_allow_omnibus     => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of)
         ? 1
         : 0,

@@ -580,4 +580,13 @@ IF client.landing_company.short == "iom"
             <td></td>
         </tr>
     [% END %]
+    <tr>
+        <td class="small_header" colspan="2">#Client Professional</td>
+    </tr>
+    [% IF show_allow_professional_client %]
+        <tr>
+            <td class="label">Mark client as professional</td>
+            <input type="checkbox" value="1" name="professional_client" checked>
+        </tr>
+    [% END %]
 </table>
