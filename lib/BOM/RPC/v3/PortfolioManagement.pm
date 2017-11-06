@@ -31,6 +31,7 @@ sub portfolio {
         short_codes => \@short_codes,
         currency    => $client->currency,
         language    => $params->{language},
+        source      => $params->{source},
     });
 
     foreach my $row (@rows) {

@@ -253,7 +253,8 @@ sub profit_table {
             short_codes => \@short_codes,
             currency    => $client->currency,
             language    => $params->{language},
-        }) if $args->{description};
+            source      => $params->{source},
+        }) if $args->{description} and @short_codes;
 
     ## remove useless and plus new
     my @transactions;
