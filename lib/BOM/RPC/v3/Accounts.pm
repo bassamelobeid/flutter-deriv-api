@@ -14,7 +14,7 @@ use List::Util qw(any sum0);
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber financialrounding/;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 use BOM::RPC::v3::Utility;
@@ -38,6 +38,8 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Pricing;
+
+my $ICO_BID_PRICE_PERCENTAGE = 0.98;
 
 sub payout_currencies {
     my $params = shift;
@@ -193,7 +195,8 @@ sub statement {
                     my $longcode = $res->{longcode};
                     # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
                     $longcode = localize('Binary ICO: cancelled bid')
-                        if ($txn->{short_code} =~ /^BINARYICO/ and $txn->{amount} == 0.98 * $txn->{payout_price});
+                        if ($txn->{short_code} =~ /^BINARYICO/
+                        and $txn->{amount} == financialrounding('price', $account->currency_code, $ICO_BID_PRICE_PERCENTAGE * $txn->{payout_price}));
                     $struct->{longcode} = $longcode;
                 }
             }
@@ -273,7 +276,9 @@ sub profit_table {
                 # this should already be localized
                 my $longcode = $res->{longcodes}->{$row->{short_code}};
                 # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
-                $longcode = 'Binary ICO: canceled bid' if ($row->{short_code} =~ /^BINARYICO/ and $row->{sell_price} == 0.98 * $row->{payout_price});
+                $longcode = 'Binary ICO: cancelled bid'
+                    if ($row->{short_code} =~ /^BINARYICO/
+                    and $row->{sell_price} == financialrounding('price', $client->currency, $ICO_BID_PRICE_PERCENTAGE * $row->{payout_price}));
                 $trx{longcode} = $longcode;
 
             }
