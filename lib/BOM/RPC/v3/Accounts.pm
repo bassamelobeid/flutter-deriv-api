@@ -249,9 +249,7 @@ sub profit_table {
     my @short_codes = map { $_->{short_code} } @{$data};
 
     my $res;
-    $res = BOM::Platform::Pricing::call_rpc(
-        'longcode',
-        {
+    $res = BOM::RPC::v3::Utility::longcode({
             short_codes => \@short_codes,
             currency    => $client->currency,
             language    => $params->{language},
