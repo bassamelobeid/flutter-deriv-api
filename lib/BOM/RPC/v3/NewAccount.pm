@@ -505,6 +505,8 @@ sub new_sub_account {
 sub _send_professional_requested_email {
     my $loginid = shift;
 
+    return unless $loginid;
+
     my $brand = Brands->new(name => request()->brand);
     return send_email({
         from    => $brand->emails('support'),
