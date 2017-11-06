@@ -5,13 +5,17 @@ use warnings;
 
 use Data::Compare;
 use HTML::Entities;
-use JSON qw( from_json to_json );
+use JSON::MaybeXS;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 use Text::CSV;
 use Try::Tiny;
 
 use BOM::Platform::Runtime;
 
+my $json = JSON::MaybeXS->new(                    utf8      => 1,
+                                                  pretty    => 1,
+                                                  canonical => 1,
+                             );
 sub get_all_settings_list {
     my $setting = shift;
     my $ds      = BOM::Platform::Runtime->instance->app_config->dynamic_settings_info;
@@ -284,7 +288,7 @@ sub parse_and_refine_setting {
     } elsif ($type eq 'json_string') {
         my $decoded;
         try {
-            $decoded = from_json($input_value);
+            $decoded = $json->decode($input_value);
         }
         catch {
             warn("Error: decoding of $input_value failed - $_");
@@ -292,13 +296,8 @@ sub parse_and_refine_setting {
         if (not defined $input_value or not defined $decoded) {
             $input_value = '{}';
         } else {
-            $input_value = to_json(
-                $decoded,
-                {
-                    utf8      => 1,
-                    pretty    => 1,
-                    canonical => 1,
-                });
+            $input_value = $json->encode(
+                $decoded);
         }
         $display_value = $input_value;
     } else {

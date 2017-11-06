@@ -18,7 +18,7 @@ local $\ = undef;    # Sigh.
 use Moose;
 extends 'BOM::RiskReporting::Base';
 
-use JSON qw(to_json);
+use JSON::MaybeXS;
 use File::Temp;
 use POSIX qw(strftime);
 use Try::Tiny;
@@ -290,7 +290,7 @@ sub cache_daily_turnover {
     };
 
     my $cache_prefix = 'DAILY_TURNOVER';
-    Cache::RedisDB->set($cache_prefix, $pricing_date->db_timestamp, to_json($cache_query), 3600 * 5);
+    Cache::RedisDB->set($cache_prefix, $pricing_date->db_timestamp, JSON::MaybeXS->new->encode($cache_query), 3600 * 5);
 
     # when month changes
     if ($pricing_date->day_of_month == 1 and $pricing_date->hour < 3) {
