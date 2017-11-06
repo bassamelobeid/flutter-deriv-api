@@ -83,7 +83,7 @@ if ($broker eq 'MF') {
         setlocale(LC_CTYPE, 'C.UTF-8');
         $client->mifir_id(
             mifir_concat({
-                    cc         => $client->residence,
+                    cc         => $client->citizen,
                     date       => $client->date_of_birth,
                     first_name => $client->first_name,
                     last_name  => $client->last_name,
