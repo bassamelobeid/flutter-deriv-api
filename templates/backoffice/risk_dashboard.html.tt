@@ -3,7 +3,6 @@
 <p>Summary of period starting at [% start_date %] and ending [% end_date %].</p>
 <div id="rd-tabs">
   <ul>
-    <li><a href="#rd-treemap">Treemap</a></li>
     <li><a href="#rd-summary">Client Summary</a></li>
     <li><a href="#rd-pivot">Pivot</a></li>
   </ul>
@@ -57,9 +56,6 @@
 </div>
 <div id="rd-pivot">
 [% INCLUDE 'backoffice/risk_dashboard_pivot.html.tt' pivot = open_bets.pivot %]
-</div>
-<div id="rd-treemap">
-[% INCLUDE 'backoffice/risk_dashboard_treemap.html.tt' treemap = open_bets.treemap sparks = open_bets.sparks %]
 </div>
 </div>
 
