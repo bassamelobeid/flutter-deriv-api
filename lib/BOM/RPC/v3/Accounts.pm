@@ -39,6 +39,8 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Pricing;
 
+my $ICO_BID_PRICE_PERCENTAGE = 0.98;
+
 sub payout_currencies {
     my $params = shift;
 
@@ -194,7 +196,7 @@ sub statement {
                     # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
                     $longcode = localize('Binary ICO: cancelled bid')
                         if ($txn->{short_code} =~ /^BINARYICO/
-                        and $txn->{amount} == financialrounding('price', $account->currency_code, 0.98 * $txn->{payout_price}));
+                        and $txn->{amount} == financialrounding('price', $account->currency_code, $ICO_BID_PRICE_PERCENTAGE * $txn->{payout_price}));
                     $struct->{longcode} = $longcode;
                 }
             }
@@ -276,7 +278,7 @@ sub profit_table {
                 # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
                 $longcode = 'Binary ICO: cancelled bid'
                     if ($row->{short_code} =~ /^BINARYICO/
-                    and $row->{sell_price} == financialrounding('price', $client->currency, 0.98 * $row->{payout_price}));
+                    and $row->{sell_price} == financialrounding('price', $client->currency, $ICO_BID_PRICE_PERCENTAGE * $row->{payout_price}));
                 $trx{longcode} = $longcode;
 
             }
