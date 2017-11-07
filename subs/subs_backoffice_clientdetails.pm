@@ -152,7 +152,7 @@ sub print_client_details {
         self_exclusion_enabled         => $self_exclusion_enabled,
         client_professional_status     => $client->get_status('professional'),
         show_allow_professional_client => $show_allow_professional_client,
-        show_allow_omnibus => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of)
+        show_allow_omnibus             => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of)
         ? 1
         : 0,
         show_funds_message => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
