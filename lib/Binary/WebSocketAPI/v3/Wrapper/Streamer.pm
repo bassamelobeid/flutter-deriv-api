@@ -587,7 +587,7 @@ sub _create_poc_stream {
                     my $rpc_response = shift;
 
                     $payload->{longcode} = $rpc_response->{longcodes}{$payload->{short_code}};
-                    warn "Wrong longcode response: " . decode_json($rpc_response) unless $payload->{longcode};
+                    warn "Wrong longcode response: " . encode_json($rpc_response) unless $payload->{longcode};
 
                     my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::_pricing_channel_for_bid(
                         $c,
