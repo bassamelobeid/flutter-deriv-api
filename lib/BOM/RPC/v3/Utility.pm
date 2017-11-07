@@ -569,7 +569,7 @@ Returns a hashref which contains a single key with the shortcode to longcode map
 
 =cut
 
-sub longcode {
+sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
     my $params = shift;
 
     die 'Invalid currency: ' . $params->{currency} unless (my $currency = uc $params->{currency}) =~ /^[A-Z]{3}$/;
