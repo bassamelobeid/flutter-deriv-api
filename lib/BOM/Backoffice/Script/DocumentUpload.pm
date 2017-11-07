@@ -21,6 +21,8 @@ my $bucket     = $document_auth_s3->{bucket};
 sub get_s3_url {
     my $file_path = shift;
 
+    die 'Cannot get s3 url for the document because the file_name is missing' unless $file_path;
+
     my $expires_in = time + 60 * 5;
     my $method     = 'GET';
 
