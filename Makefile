@@ -1,4 +1,4 @@
-M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
+M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 MOJO_LOG_LEVEL?=info
 export MOJO_LOG_LEVEL
 P=/etc/rmg/bin/prove --timer -v -rl
