@@ -150,8 +150,8 @@ sub print_client_details {
         salutation_options             => \@salutation_options,
         secret_answer                  => $secret_answer,
         self_exclusion_enabled         => $self_exclusion_enabled,
-        client_professional_status     => 1,                         #$client->get_status('professional'),
-        show_allow_professional_client => 1,                         #$show_allow_professional_client,
+        client_professional_status     => $client->get_status('professional'),
+        show_allow_professional_client => $show_allow_professional_client,
         show_allow_omnibus => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of)
         ? 1
         : 0,

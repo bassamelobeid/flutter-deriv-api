@@ -355,6 +355,18 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         salutation
         /;
     exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
+    
+    # Handing the professional client status
+    
+    # Professional request approved
+    if ($input{professional_client}) {
+        $client->set_status('professional', $clerk, 'Mark as professional as requested');
+        $client->clr_status('professional_requested');
+        
+        # Client's professional status revoked 
+    } elsif (!$input{professional_client} && $client->get_status('professional')) {
+        $client->clr_status('professional');
+    }
 
     # Filter keys for tax residence
     if (my @matching_keys = grep { /tax_residence/ } keys %input) {
