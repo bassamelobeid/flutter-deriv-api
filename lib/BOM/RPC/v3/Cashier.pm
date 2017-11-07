@@ -25,6 +25,7 @@ use LandingCompany::Registry;
 use Client::Account::PaymentAgent;
 use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
+use BOM::MarketData qw(create_underlying);
 use BOM::Platform::User;
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
@@ -43,6 +44,7 @@ use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
+use Quant::Framework;
 
 my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 
@@ -993,6 +995,27 @@ sub transfer_between_accounts {
 
     if (BOM::Platform::Client::CashierValidation::is_system_suspended() or BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
+    }
+
+    {    # Reject all transfers when forex markets are closed
+        my $can_transfer = 0;
+        # Although this is hardcoded as BTC, the intention is that any risky transfer should be blocked at weekends.
+        # Currently, this implies crypto to fiat or vice versa, and BTC is our most volatile (and popular) crypto
+        # currency. If the exchange is updated to something other than forex, this check should start allowing
+        # transfers at weekends again - note that we expect https://trello.com/c/bvhH85GJ/5700-13-tom-centralredisexchangerates
+        # to block exchange when the quotes are too old.
+        if (my $ul = create_underlying('frxBTCUSD')) {
+            # This is protected by an `eval` call since the author is currently in Cambodia and likely to
+            # be making mistakes at this time on a Friday. Technically we should not need it - if we can't
+            # instantiate the trading calendar, we have bigger problems than a stray exception during rare
+            # RPC calls such as account transfer.
+            $can_transfer = 1
+                if eval {
+                Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader)
+                    ->is_open_at($ul->exchange, Date::Utility->new);
+                };
+        }
+        return _transfer_between_accounts_error(localize('Account transfers are currently suspended.')) unless $can_transfer;
     }
 
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
