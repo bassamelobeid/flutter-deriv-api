@@ -18,25 +18,21 @@ use BOM::Transaction;
 sub portfolio {
     my $params = shift;
 
-    my $client = $params->{client};
-
     my $portfolio = {contracts => []};
-    return $portfolio unless $client;
+    my $client = $params->{client} or return $portfolio;
 
     _sell_expired_contracts($client, $params->{source});
 
-    my @rows = @{__get_open_contracts($client)};
-    return $portfolio unless scalar @rows > 0;
+    my @rows = @{__get_open_contracts($client)} or return $portfolio;
 
     my @short_codes = map { $_->{short_code} } @rows;
 
-    my $res = BOM::Platform::Pricing::call_rpc(
-        'longcode',
-        {
-            short_codes => \@short_codes,
-            currency    => $client->currency,
-            language    => $params->{language},
-        });
+    my $res = BOM::RPC::v3::Utility::longcode({
+        short_codes => \@short_codes,
+        currency    => $client->currency,
+        language    => $params->{language},
+        source      => $params->{source},
+    });
 
     foreach my $row (@rows) {
 
