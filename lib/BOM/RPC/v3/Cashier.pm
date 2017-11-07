@@ -329,8 +329,6 @@ sub get_limits {
 
     $limit->{num_of_days} = $numdays;
 
-    # CR limits are in terms of USD.
-
     # Performs conversion of limits to the lc limits if the account currency is not the same as the lc currency
     if ($currency ne $withdrawal_limit_curr) {
         $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
