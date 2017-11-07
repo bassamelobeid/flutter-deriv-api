@@ -37,25 +37,30 @@ if ($ip ne '') {
     $logins = BOM::Database::UserDB::rose_db()->dbic->run(
         sub {
             $_->selectall_arrayref(
-                'SELECT history_date, action, email FROM users.login_history_by_ip(?, ?)',
+                "SELECT history_date, action, email FROM users.login_history_by_ip(?::INET, 'today'::TIMESTAMP - ?::INTERVAL)",
                 {Slice => {}},
-                $ip, DateTime->today()->subtract(days => $last_login_age));
+                $ip, "${last_login_age}d"
+            );
         });
 
 } elsif ($loginid ne '') {
 # for some reason we have historically passed in an email address on 'loginid'... but now we will consider either one
-    my $user = BOM::Platform::User->new($loginid =~ /@/ ? {email => $loginid} : {loginid => $loginid});
 
-    if ($user) {
-        $suspected_logins = $user->db->dbic->run(
-            sub {
-                $_->selectall_arrayref(
-                    'SELECT history_date, logins FROM users.get_login_similarities(?, ?, ?)',
-                    {Slice => {}},
-                    $user->{id}, $date_from, $date_to
-                );
-            });
-    }
+    $suspected_logins = BOM::Database::UserDB::rose_db()->dbic->run(
+        sub {
+            $_->selectall_arrayref('
+                SELECT history_date, logins
+                FROM (
+                    SELECT id FROM users.binary_user WHERE email = $1
+                    UNION ALL
+                    SELECT binary_user_id FROM users.loginid WHERE loginid = $1
+                    LIMIT 1
+                    ) u(id)
+                CROSS JOIN LATERAL users.get_login_similarities(u.id, $2, $3)',
+                {Slice => {}},
+                $loginid, $date_from, $date_to
+            );
+        });
 }
 
 BOM::Backoffice::Request::template->process(
