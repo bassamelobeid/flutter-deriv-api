@@ -573,7 +573,7 @@ sub _create_poc_stream {
     if ($poc_args && $payload->{financial_market_bet_id}) {
 
         $c->call_rpc({
-                url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
+                url         => Binary::WebSocketAPI::Hooks::rpc_url($c),
                 args        => $poc_args,
                 msg_type    => '',
                 method      => 'longcode',
