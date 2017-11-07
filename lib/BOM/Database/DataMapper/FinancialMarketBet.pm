@@ -40,7 +40,8 @@ has '_mapper_model_class' => (
 sub get_sold_bets_of_account {
     my ($self, $args) = @_;
 
-    my $limit  = int($args->{limit}  // 50);
+    my $limit = int($args->{limit} // 50);
+    $limit = 50 unless $limit > 0 and $limit <= 50;
     my $offset = int($args->{offset} // 0);
     my $sort_dir = (($args->{sort} // '') eq 'ASC') ? 'ASC' : 'DESC';
     my $before   = $args->{before};
