@@ -5,4 +5,6 @@
 -MBOM::Test::RPC::PricingRpc
 -MBOM::Test::RPC::BomRpc
 -MBOM::Test::Script::NotifyPub
+-MBOM::Test::Script::PricerDaemon
+-MBOM::Test::Script::PricerQueuePriority
 

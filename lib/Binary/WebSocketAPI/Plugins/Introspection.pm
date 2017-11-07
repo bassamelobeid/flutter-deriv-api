@@ -19,7 +19,7 @@ use Variable::Disposition qw(retain_future);
 use Socket qw(:crlf);
 use Proc::ProcessTable;
 use feature 'state';
-use Binary::WebSocketAPI::v3::Instance::Redis;
+use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
 
 # How many seconds to allow per command - anything that takes more than a few milliseconds
 # is probably a bad idea, please do not rely on this for any meaningful protection
@@ -347,6 +347,52 @@ command dumpmem => sub {
         elapsed => $elapsed,
         size    => -s $filename,
     });
+};
+
+=head2
+
+Mark an app_id for diversion to a different server.
+
+=cut
+
+command divert => sub {
+    my ($self, $app, $app_id, $service) = @_;
+    my $redis = ws_redis_master();
+    if (my $ids = $redis->get('app_id::diverted')) {
+        %Binary::WebSocketAPI::DIVERT_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
+    }
+    if ($app) {
+        if ($service) {
+            $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id} = $service;
+        } else {
+            delete $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
+        }
+        $redis->set('app_id::diverted' => Encode::encode_utf8(JSON::MaybeXS->new->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS)));
+    }
+    Future->done({diversions => \%Binary::WebSocketAPI::DIVERT_APP_IDS});
+};
+
+=head2
+
+Block an app_id from connecting.
+
+=cut
+
+command block => sub {
+    my ($self, $app, $app_id, $service) = @_;
+    my $redis = ws_redis_master();
+    if (my $ids = $redis->get('app_id::blocked')) {
+        %Binary::WebSocketAPI::BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
+    }
+    if ($app) {
+        if ($service) {
+            $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id} = $service;
+        } else {
+            delete $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id};
+        }
+        $redis->set('app_id::blocked' => Encode::encode_utf8(JSON::MaybeXS->new->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS)));
+    }
+    Future->done({blocked => \%Binary::WebSocketAPI::BLOCK_APP_IDS});
 };
 
 =head2 help

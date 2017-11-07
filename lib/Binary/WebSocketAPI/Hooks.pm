@@ -217,10 +217,22 @@ sub before_forward {
         });
 }
 
-sub rpc_url {
+sub _rpc_suffix {
     my ($c) = @_;
 
-    return $ENV{RPC_URL} || $c->app->config->{rpc_url};
+    my $suffix = $Binary::WebSocketAPI::DIVERT_APP_IDS{$c->app_id} ? '_' . $Binary::WebSocketAPI::DIVERT_APP_IDS{$c->app_id} : '';
+    unless (exists $c->app->config->{"rpc_url" . $suffix}) {
+        warn "Suffix $suffix not found in config for app ID " . $c->app_id . "\n";
+        $suffix = '';
+    }
+    return $suffix;
+}
+
+sub rpc_url {
+    my ($c, $req_storage) = @_;
+
+    my $suffix = _rpc_suffix($c);
+    return $ENV{RPC_URL} || $c->app->config->{"rpc_url" . $suffix};
 }
 
 # FIXME needs refactoring, this cannot return any values currently
@@ -234,7 +246,8 @@ sub assign_rpc_url {
 sub get_pricing_rpc_url {
     my $c = shift;
 
-    return $ENV{PRICING_RPC_URL} || $c->app->config->{pricing_rpc_url};
+    my $suffix = _rpc_suffix($c);
+    return $ENV{PRICING_RPC_URL} || $c->app->config->{"pricing_rpc_url" . $suffix};
 }
 
 sub get_doc_auth_s3_conf {
