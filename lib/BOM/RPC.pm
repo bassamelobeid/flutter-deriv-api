@@ -293,6 +293,7 @@ sub startup {
         ['copy_stop',              \&BOM::RPC::v3::CopyTrading::copy_stop, [qw(auth)]],
 
         ['document_upload', \&BOM::RPC::v3::DocumentUpload::upload, [qw(auth)]],
+        ['longcode', \&BOM::RPC::v3::Utility::longcode],
     );
     my $services = {};
     foreach my $srv (@services) {
