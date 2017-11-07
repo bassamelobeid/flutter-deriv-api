@@ -430,8 +430,9 @@ sub _process_proposal_open_contract_response {
         my $pricer_request = {%$contract};
 
         $pricer_request->{price_daemon_cmd} = 'bid';
-        $pricer_request->{short_code}       = $pricer_request->{shortcode} if $pricer_request->{shortcode};  # XXX on contract end this is shortcode, other times it's shortcode
-        $pricer_request->{landing_company}  = $c->landing_company_name;
+        $pricer_request->{short_code}       = $pricer_request->{shortcode}
+            if $pricer_request->{shortcode};    # XXX on contract end this is shortcode, other times it's shortcode
+        $pricer_request->{landing_company} = $c->landing_company_name;
 
         my $f = Binary::ContractFuture::pricing_future($pricer_request);
 
