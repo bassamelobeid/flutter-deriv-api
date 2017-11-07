@@ -313,6 +313,10 @@ sub get_bid {
     };
     return $response if $response;
 
+    # rare case: no tics between date_start and date_expiry.
+    # underlaying will return exit_tick preceding date_start
+    return _data_disruption_error() if $contract->exit_tick and $contract->date_start->epoch > $contract->exit_tick->epoch;
+
     if ($contract->is_legacy) {
         return BOM::Pricing::v3::Utility::create_error({
             message_to_client => localize($contract->longcode),
@@ -353,11 +357,7 @@ sub get_bid {
         if (not $contract->may_settle_automatically
             and $contract->missing_market_data)
         {
-            $response = BOM::Pricing::v3::Utility::create_error({
-                    code              => "GetProposalFailure",
-                    message_to_client => localize(
-                        'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
-                    )});
+            $response = _data_disruption_error();
             return;
         }
 
@@ -649,6 +649,14 @@ sub _get_error_message {
     }
 
     return ['Cannot create contract'];
+}
+
+sub _data_disruption_error {
+    return BOM::Pricing::v3::Utility::create_error({
+            code              => "GetProposalFailure",
+            message_to_client => localize(
+                'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
+            )});
 }
 
 1;
