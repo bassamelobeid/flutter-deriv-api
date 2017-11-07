@@ -221,7 +221,7 @@ sub get_rpc_url {
     my ($c, $req_storage) = @_;
 
     $req_storage->{url} = $ENV{RPC_URL} || $c->app->config->{rpc_url};
-    return;
+    return $req_storage->{url};
 }
 
 sub get_pricing_rpc_url {
