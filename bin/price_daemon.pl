@@ -4,25 +4,31 @@ use warnings;
 
 use sigtrap;
 
-use LWP::Simple;
+use DataDog::DogStatsd::Helper;
 use Getopt::Long;
-
+use LWP::Simple;
+use List::Util qw(max);
 use Parallel::ForkManager;
+use Quant::Framework::LinearCache;
+use Sys::Info;
+use Path::Tiny;
 
 use BOM::Pricing::PriceDaemon;
-use Sys::Info;
-use List::Util qw(max);
-use DataDog::DogStatsd::Helper;
-use Volatility::Seasonality;
-use Quant::Framework::LinearCache;
 
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 GetOptions(
-    "workers=i" => \my $workers,
-    "queues=s"  => \my $queues,
+    "workers=i"   => \my $workers,
+    "queues=s"    => \my $queues,
+    "pid-file=s"  => \my $pid_file,
+    "no-warmup=i" => \my $nowarmup,
 );
-$queues ||= 'pricer_jobs,pricer_jobs_jp';
+$queues ||= 'pricer_jobs_priority,pricer_jobs,pricer_jobs_jp';
 $workers ||= max(1, Sys::Info->new->device("CPU")->count);
+
+if ($pid_file) {
+    $pid_file = Path::Tiny->new($pid_file);
+    $pid_file->spew($$);
+}
 
 my @running_forks;
 my @workers = (0) x $workers;
@@ -65,7 +71,8 @@ $pm->run_on_finish(
     });
 
 # warming up cache to eliminate pricing time spike on first price of underlying
-Volatility::Seasonality::warmup_cache();
+# don't do this if no-warmup if provided
+_warmup() unless $nowarmup;
 # cache for updated seasonality in Redis not more often then 10 seconds
 $Quant::Framework::LinearCache::PERIOD_OF_CHECKING_FOR_UPDATES = 10;
 
@@ -83,3 +90,23 @@ while (1) {
     $pm->finish;
 }
 
+# best way to warmup is to use some real contracts
+sub _warmup {
+    use Volatility::Seasonality;
+    use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+    use BOM::MarketData qw( create_underlying_db);
+
+    my $start = time;
+    Volatility::Seasonality::warmup_cache();
+
+    my @forex = create_underlying_db->get_symbols_for(
+        market            => ['forex'],
+        submarket         => ['major_pairs', 'minor_pairs'],
+        contract_category => 'ANY',
+    );
+    foreach (@forex) {
+        my $test_contract = produce_contract('PUT_' . $_ . '_100_' . (time) . '_' . (time + 86400 * 6) . 'F_S10P_0', 'USD');
+        $test_contract->pricing_vol;
+    }
+    DataDog::DogStatsd::Helper::stats_gauge("pricer_daemon.warmup_time", time - $start);
+}
