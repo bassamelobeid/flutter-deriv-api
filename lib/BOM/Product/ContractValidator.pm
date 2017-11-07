@@ -790,14 +790,6 @@ sub _build_date_start_blackouts {
                 : $underlying->eod_blackout_start;
             push @periods, [$end_of_trading->minus_time_interval($eod_blackout)->epoch, $end_of_trading->epoch] if $eod_blackout;
         }
-
-        if (    $underlying->market->name eq 'indices'
-            and not $self->is_intraday
-            and not $self->is_atm_bet
-            and $self->timeindays->amount <= 7)
-        {
-            push @periods, [$end_of_trading->minus_time_interval('1h')->epoch, $end_of_trading->epoch];
-        }
     }
 
     return \@periods;
