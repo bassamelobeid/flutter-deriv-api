@@ -317,31 +317,22 @@ sub get_limits {
 
     $limit->{market_specific} = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
 
-    my $numdays       = $wl_config->{for_days};
-    my $numdayslimit  = $wl_config->{limit_for_days};
-    my $lifetimelimit = $wl_config->{lifetime_limit};
+    my $numdays               = $wl_config->{for_days};
+    my $numdayslimit          = $wl_config->{limit_for_days};
+    my $lifetimelimit         = $wl_config->{lifetime_limit};
+    my $withdrawal_limit_curr = $wl_config->{currency};
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;
         $lifetimelimit = 99999999;
     }
 
-    # Each landing company in the withdrawal limits file has its own currency.
-    my $withdrawal_limit_curr;
-    if ($landing_company eq 'japan') {
-        $withdrawal_limit_curr = $currency;
-    } elsif ($landing_company eq 'costarica') {
-        $withdrawal_limit_curr = 'USD';
-    } else {
-        # limit in EUR for: MX, MLT, MF
-        $withdrawal_limit_curr = 'EUR';
-    }
-
     $limit->{num_of_days} = $numdays;
 
     # CR limits are in terms of USD.
-    # Performs conversion of limits to USD if the account is a non-USD CR account
-    if ($landing_company eq 'costarica' and $currency ne 'USD') {
+
+    # Performs conversion of limits to the lc limits if the account currency is not the same as the lc currency
+    if ($currency ne $withdrawal_limit_curr) {
         $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
         $limit->{lifetime_limit}    = formatnumber('price', $currency, amount_from_to_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
     } else {
@@ -366,8 +357,8 @@ sub get_limits {
         $remainder = 0;
     }
 
-    # Converts the withdrawal limit back to the client's currency if the account is a non-USD CR account
-    if ($landing_company eq 'costarica' and $currency ne 'USD') {
+    # Converts the withdrawal limit back to the client's currency if the currency is not the same as the lc currency
+    if ($currency ne $withdrawal_limit_curr) {
         $withdrawal_since_inception = amount_from_to_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency);
         $withdrawal_for_x_days      = amount_from_to_currency($withdrawal_for_x_days,      $withdrawal_limit_curr, $currency);
         $remainder                  = amount_from_to_currency($remainder,                  $withdrawal_limit_curr, $currency);
