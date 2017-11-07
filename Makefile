@@ -32,10 +32,7 @@ json_schema_5:
 structure:
 	@$(PROVE) t/*.t
 
-leaktest:
-	@$(PROVE) t/leak/v3
-
-test: structure v3_1 v3_2 v3_3 json_schema_1 json_schema_2 json_schema_3 json_schema_4 json_schema_5 leaktest
+test: structure v3_1 v3_2 v3_3 json_schema_1 json_schema_2 json_schema_3 json_schema_4 json_schema_5
 
 tidy:
 	find . -name '*.p?.bak' -delete

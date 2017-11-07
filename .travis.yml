@@ -24,7 +24,6 @@ env:
         - TEST_SUITE=v3_2
         - TEST_SUITE=v3_3
         - TEST_SUITE=structure
-        - TEST_SUITE=leaktest
         - TEST_SUITE=json_schema_1
         - TEST_SUITE=json_schema_2
         - TEST_SUITE=json_schema_3
