@@ -57,8 +57,7 @@ if ($ip ne '') {
                     ) u(id)
                 CROSS JOIN LATERAL users.get_login_similarities(u.id, $2, $3)',
                 {Slice => {}},
-                $loginid, $date_from, $date_to
-            );
+                $loginid, $date_from, $date_to);
         });
 }
 
