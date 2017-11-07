@@ -239,6 +239,9 @@ subtest 'too many holiday for multiday indices contracts' => sub {
         {
             recorded_date => $monday_open,
             calendar      => {
+                $monday_open->plus_time_interval('4d')->date => {
+                    'Test Holiday' => ['HKSE'],
+                },
                 $monday_open->plus_time_interval('2d')->date => {
                     'Test Holiday' => ['HKSE'],
                 },
@@ -259,7 +262,7 @@ subtest 'too many holiday for multiday indices contracts' => sub {
         payout       => 100,
         date_start   => $monday_open,
         date_pricing => $monday_open,
-        duration     => '4d',
+        duration     => '7d',
         currency     => 'USD',
         current_tick => $hsi_tick,
     };
