@@ -217,11 +217,18 @@ sub before_forward {
         });
 }
 
+sub rpc_url {
+    my ($c) = @_;
+
+    return $ENV{RPC_URL} || $c->app->config->{rpc_url};
+}
+
+# FIXME this is a terrible name and needs refactoring, this cannot return any values currently
 sub get_rpc_url {
     my ($c, $req_storage) = @_;
 
-    $req_storage->{url} = $ENV{RPC_URL} || $c->app->config->{rpc_url};
-    return $req_storage->{url};
+    $req_storage->{url} = rpc_url($c);
+    return;
 }
 
 sub get_pricing_rpc_url {
