@@ -17,8 +17,7 @@ sub bo_js_files_for {
     );
     for ($page) {
         push @js_files, 'bbdl.js' if /f_bet_iv/;
-        push @js_files, 'risk_dashboard.js', 'external/jbpivot.min.js', 'external/raphael-min.js', 'external/treemap-squared-0.5.min.js',
-            'external/jquery.sparkline.min.js'
+        push @js_files, 'risk_dashboard.js', 'external/jbpivot.min.js', 'external/raphael-min.js', 'external/jquery.sparkline.min.js'
             if /risk_dashboard/;
         push @js_files, 'external/Duo-Web-v1.bundled.min.js'
             if /second_step_auth/;
