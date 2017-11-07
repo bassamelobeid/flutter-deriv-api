@@ -427,8 +427,13 @@ sub _process_proposal_open_contract_response {
     my ($c, $response, $req_storage) = @_;
 
     foreach my $contract (values %$response) {
-        $contract->{price_daemon_cmd} = 'bid';
-        my $f = Binary::ContractFuture::pricing_future($contract);
+        my $pricer_request = {%$contract};
+
+        $pricer_request->{price_daemon_cmd} = 'bid';
+        $pricer_request->{short_code}       = delete $pricer_request->{shortcode};
+        $pricer_request->{landing_company}  = $c->landing_company_name;
+
+        my $f = Binary::ContractFuture::pricing_future($pricer_request);
 
         $f->on_done(
             sub {
