@@ -115,16 +115,6 @@ subtest 'selling contract message' => sub {
     # It is hack to emulate contract selling and test subcribtion
     my ($url, $call_params);
 
-    my $fake_res = Test::MockObject->new();
-    $fake_res->mock('result', sub { +{ok => 1} });
-    $fake_res->mock('is_error', sub { '' });
-
-    my $fake_rpc_client = Test::MockObject->new();
-    $fake_rpc_client->mock('call', sub { shift; $url = $_[0]; $call_params = $_[1]->{params}; return $_[2]->($fake_res) });
-
-    my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
-    $module->mock('new', sub { return $fake_rpc_client });
-
     my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
         broker_code => $client->broker_code,
         operation   => 'replica'
@@ -144,8 +134,6 @@ subtest 'selling contract message' => sub {
 
     my $data = $t->await::proposal_open_contract();
     is($data->{msg_type}, 'proposal_open_contract', 'Got message about selling contract');
-
-    $module->unmock_all;
 };
 
 subtest 'forget' => sub {
