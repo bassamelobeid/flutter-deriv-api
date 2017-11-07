@@ -334,7 +334,7 @@ sub get_limits {
         $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
         $limit->{lifetime_limit}    = formatnumber('price', $currency, amount_from_to_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
     } else {
-        $limit->{num_of_days_limit} = formatnumber('price', $currency, $numdayslimit);
+        $limit->{num_of_days_limit} = $numdayslimit;
         $limit->{lifetime_limit}    = formatnumber('price', $currency, $lifetimelimit);
     }
 
