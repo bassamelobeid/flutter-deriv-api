@@ -334,8 +334,8 @@ sub get_limits {
         $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
         $limit->{lifetime_limit}    = formatnumber('price', $currency, amount_from_to_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
     } else {
-        $limit->{num_of_days_limit} = $numdayslimit;
-        $limit->{lifetime_limit} = formatnumber('price', $currency, $lifetimelimit);
+        $limit->{num_of_days_limit} = formatnumber('price', $currency, $numdayslimit);
+        $limit->{lifetime_limit}    = formatnumber('price', $currency, $lifetimelimit);
     }
 
     # Withdrawal since $numdays
@@ -357,9 +357,10 @@ sub get_limits {
 
     # Converts the withdrawal limit back to the client's currency if the currency is not the same as the lc currency
     if ($currency ne $withdrawal_limit_curr) {
-        $withdrawal_since_inception = amount_from_to_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency);
-        $withdrawal_for_x_days      = amount_from_to_currency($withdrawal_for_x_days,      $withdrawal_limit_curr, $currency);
-        $remainder                  = amount_from_to_currency($remainder,                  $withdrawal_limit_curr, $currency);
+        $withdrawal_since_inception =
+            formatnumber('price', $currency, amount_from_to_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency));
+        $withdrawal_for_x_days = formatnumber('price', $currency, amount_from_to_currency($withdrawal_for_x_days, $withdrawal_limit_curr, $currency));
+        $remainder             = formatnumber('price', $currency, amount_from_to_currency($remainder,             $withdrawal_limit_curr, $currency));
     }
 
     $limit->{withdrawal_since_inception_monetary} = formatnumber('price', $currency, $withdrawal_since_inception);
