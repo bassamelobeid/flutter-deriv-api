@@ -101,7 +101,6 @@ sub startup {
         ['send_ask',             \&BOM::Pricing::v3::Contract::send_ask],
         ['get_bid',              \&BOM::Pricing::v3::Contract::get_bid],
         ['get_contract_details', \&BOM::Pricing::v3::Contract::get_contract_details],
-        ['longcode',             \&BOM::Pricing::v3::Contract::longcode],
         ['contracts_for',        \&BOM::Pricing::v3::Contract::contracts_for],
         ['trading_times',        \&BOM::Pricing::v3::MarketData::trading_times],
         ['asset_index',          \&BOM::Pricing::v3::MarketData::asset_index],
