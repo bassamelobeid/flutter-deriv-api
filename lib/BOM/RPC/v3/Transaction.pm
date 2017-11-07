@@ -103,7 +103,7 @@ sub buy {
             $message_to_client = $_->message_to_client;
         } else {
             $message_to_client = ['Cannot create contract'];
-            warn __PACKAGE__ . " buy buy failed, parameters: " . encode_json($contract_parameters);
+            warn __PACKAGE__ . " buy failed: '$_', parameters: " . encode_json($contract_parameters);
         }
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
