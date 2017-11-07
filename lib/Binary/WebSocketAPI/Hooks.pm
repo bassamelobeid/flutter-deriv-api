@@ -223,8 +223,8 @@ sub rpc_url {
     return $ENV{RPC_URL} || $c->app->config->{rpc_url};
 }
 
-# FIXME this is a terrible name and needs refactoring, this cannot return any values currently
-sub get_rpc_url {
+# FIXME needs refactoring, this cannot return any values currently
+sub assign_rpc_url {
     my ($c, $req_storage) = @_;
 
     $req_storage->{url} = rpc_url($c);
