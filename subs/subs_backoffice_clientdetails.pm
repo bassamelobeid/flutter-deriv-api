@@ -116,7 +116,9 @@ sub print_client_details {
         $state_name = $_->{text} if $_->{value} eq $client->state;
         $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>|;
     }
+
     my $tnc_status = $client->get_status('tnc_approval');
+    my $show_allow_professional_client = ($client->get_status('professional_requested') or $client->get_status('professional')) ? 1 : 0;
 
     my @crs_tin_array = ();
     if (my $crs_tin_status = $client->get_status('crs_tin_information')) {
@@ -145,10 +147,12 @@ sub print_client_details {
         promo_code_access     => $promo_code_access,
         currency_type => (LandingCompany::Registry::get_currency_type($client->currency) // ''),
         proveID => $proveID,
-        salutation_options     => \@salutation_options,
-        secret_answer          => $secret_answer,
-        self_exclusion_enabled => $self_exclusion_enabled,
-        show_allow_omnibus     => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of)
+        salutation_options             => \@salutation_options,
+        secret_answer                  => $secret_answer,
+        self_exclusion_enabled         => $self_exclusion_enabled,
+        client_professional_status     => $client->get_status('professional'),
+        show_allow_professional_client => $show_allow_professional_client,
+        show_allow_omnibus             => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of)
         ? 1
         : 0,
         show_funds_message => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
