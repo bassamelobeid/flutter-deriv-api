@@ -387,7 +387,7 @@ sub _get_spot {
     if (!defined $spot) {
         die 'Could not retrieve tick for ' . $underlying->symbol . ' at ' . $date_start->datetime;
     }
-    warn __PACKAGE__ . " $0 [barriers-debug] :: $spot from $source ( $quote ) at $now \n";
+    print __PACKAGE__ . " $0 [barriers-debug] :: $spot from $source ( $quote ) at $now \n";
     return $spot;
 }
 
