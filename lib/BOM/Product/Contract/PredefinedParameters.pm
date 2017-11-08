@@ -417,9 +417,6 @@ sub _calculate_barriers {
     my $ttl = max(1, $trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch});
     BOM::Platform::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json(\%barriers), 'EX', $ttl);
 
-    use Path::Tiny;
-    path('/tmp/barriers-update-log.txt')->append("$0 - " . time . " - " . " updated " . $cache_namespace . '::' . $key);
-
     return \%barriers;
 }
 
