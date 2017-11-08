@@ -32,7 +32,7 @@ END;
         [% END %]
         </td>
         <td style="padding-top: 0px; padding-left: 10px">
-        [% c = client.residence.upper %]
+        [% c = client.citizen.upper %]
         [% documents_info(data => mifir_config.countries.$c) %]
         </td>
         </tr>
