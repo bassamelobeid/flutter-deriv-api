@@ -31,7 +31,7 @@ sub process_job {
     }
 
     unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
-        warn "$params->{symbol} has invalid spot tick" if $underlying->calendar->is_open($underlying->exchange);
+        warn $underlying->system_symbol . " has invalid spot tick" if $underlying->calendar->is_open($underlying->exchange);
         stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => $self->tags});
         return undef;
     }
