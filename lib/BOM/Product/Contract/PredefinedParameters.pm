@@ -6,6 +6,7 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(get_predefined_offerings get_trading_periods generate_trading_periods update_predefined_highlow next_generation_epoch);
 
+use JSON::MaybeXS qw/encode_json decode_json/;
 use JSON qw(to_json from_json);
 use Time::HiRes;
 use Date::Utility;
@@ -346,12 +347,15 @@ sub _calculate_available_barriers {
 sub _get_spot {
     my ($underlying, $trading_period) = @_;
     my $spot;
+    my ($source, $quote) = ('unknown', 'unknown');
     my $date_start = Date::Utility->new($trading_period->{date_start}->{epoch});
     # special handling at for barriers, which start at Monday at 00:00:00
     # caused by our tick storage misdesign: ticks are available only for
     # trading hours, meanwhile we have ticks from providers sinse Sunday 22:00.
     # So, ticks will be taken directly from feed-redis.
-    my $realtime = (time - $trading_period->{date_start}->{epoch} < 2);
+    my $now = time;
+    # let's use abs() to tolerate small time shifts
+    my $realtime = abs($time - $trading_period->{date_start}->{epoch});
     my $take_from_distributor =
            $realtime
         && ($date_start->day_of_week == 1)
@@ -359,23 +363,31 @@ sub _get_spot {
     if ($take_from_distributor) {
         my $redis = BOM::Platform::RedisReplicated::redis_read();
         if (my $tick_json = $redis->get('Distributor::QUOTE::' . $underlying->symbol)) {
-            $spot = decode_json($tick_json)->{quote};
+            $source = 'redis';
+            $quote  = $tick_json;
+            $spot   = decode_json($tick_json)->{quote};
         }
     }
     if ($take_from_distributor || !$spot) {
         my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
+        $source = 'feed-db';
         unless ($tick) {
             # If spot at requested time is not present, we will use current spot.
             # This should not happen in production, it is for QA purposes.
             warn
                 "using current tick to calculate barrier for period [$trading_period->{date_start}->{date} - $trading_period->{date_expiry}->{date}]";
-            $tick = $underlying->spot_tick;
+            $tick   = $underlying->spot_tick;
+            $source = 'feed-db:outdated';
         }
-        $spot = $tick->quote if $tick;
+        if ($tick) {
+            $spot = $tick->quote if $tick;
+            $quote = encode_json($tick->as_hash);
+        }
     }
     if (!defined $spot) {
         die 'Could not retrieve tick for ' . $underlying->symbol . ' at ' . $date_start->datetime;
     }
+    warn __PACKAGE__ . " $0 [barriers-debug] :: $spot from $source ( $quote ) at $now \n";
     return $spot;
 }
 
