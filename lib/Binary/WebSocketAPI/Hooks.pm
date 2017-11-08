@@ -217,17 +217,37 @@ sub before_forward {
         });
 }
 
+sub _rpc_suffix {
+    my ($c) = @_;
+
+    my $suffix = $Binary::WebSocketAPI::DIVERT_APP_IDS{$c->app_id} ? '_' . $Binary::WebSocketAPI::DIVERT_APP_IDS{$c->app_id} : '';
+    unless (exists $c->app->config->{"rpc_url" . $suffix}) {
+        warn "Suffix $suffix not found in config for app ID " . $c->app_id . "\n";
+        $suffix = '';
+    }
+    return $suffix;
+}
+
+sub rpc_url {
+    my ($c, $req_storage) = @_;
+
+    my $suffix = _rpc_suffix($c);
+    return $ENV{RPC_URL} || $c->app->config->{"rpc_url" . $suffix};
+}
+
+# FIXME this is a terrible name and needs refactoring, this cannot return any values currently
 sub get_rpc_url {
     my ($c, $req_storage) = @_;
 
-    $req_storage->{url} = $ENV{RPC_URL} || $c->app->config->{rpc_url};
+    $req_storage->{url} = rpc_url($c);
     return;
 }
 
 sub get_pricing_rpc_url {
     my $c = shift;
 
-    return $ENV{PRICING_RPC_URL} || $c->app->config->{pricing_rpc_url};
+    my $suffix = _rpc_suffix($c);
+    return $ENV{PRICING_RPC_URL} || $c->app->config->{"pricing_rpc_url" . $suffix};
 }
 
 sub get_doc_auth_s3_conf {
@@ -334,6 +354,15 @@ sub check_useragent {
     return;
 }
 
+sub _on_sanity_failed {
+    my ($c) = @_;
+    my $client_ip = $c->stash->{client_ip};
+    my $tags = ["client_ip:$client_ip", "app_name:" . ($c->stash('app_name') || ''), "app_id:" . ($c->stash('source') || ''),];
+    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.sanity_check_failed.count', {tags => $tags});
+
+    return;
+}
+
 sub on_client_connect {
     my ($c) = @_;
     # We use a weakref in case the disconnect is never called
@@ -341,6 +370,8 @@ sub on_client_connect {
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
 
     $c->app->stat->{cumulative_client_connections}++;
+    $c->on(sanity_failed => \&_on_sanity_failed);
+
     return;
 }
 
@@ -350,6 +381,9 @@ sub on_client_disconnect {
     forget_all($c);
 
     delete $c->app->active_connections->{$c};
+    if (my $tx = $c->tx) {
+        $tx->unsubscribe('sanity_failed');
+    }
 
     return;
 }

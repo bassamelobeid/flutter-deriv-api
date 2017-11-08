@@ -20,20 +20,27 @@ use Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master |;
 
-use File::Slurp;
-use JSON::Schema;
-use JSON::XS;
-use Format::Util::Strings qw( defang );
+use DataDog::DogStatsd::Helper;
 use Digest::MD5 qw(md5_hex);
+use File::Slurp;
+use Format::Util::Strings qw( defang );
+use JSON::MaybeXS;
+use JSON::Schema;
+use Mojolicious::Plugin::ClientIP::Pluggable;
 use RateLimitations::Pluggable;
-use Time::Duration::Concise;
 use Scalar::Util qw(weaken);
+use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 
-# FIXME This needs to come from config, requires chef changes
-use constant INTROSPECTION_PORT => 8801;
+# These are the apps that are hardcoded to point to a different server pool.
+# This list is overwritten by Redis.
+our %DIVERT_APP_IDS;
+
+# These apps are blocked entirely.
+# This list is also overwritten by Redis.
+our %BLOCK_APP_IDS;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -115,6 +122,11 @@ sub startup {
                 status => 401
             ) unless $app_id;
 
+            return $c->render(
+                json   => {error => 'SystemMaintenance'},
+                status => 500
+            ) if exists $BLOCK_APP_IDS{$app_id};
+
             my $client_ip = $c->client_ip;
             my $brand     = defang($c->req->param('brand'));
 
@@ -136,7 +148,11 @@ sub startup {
             );
         });
 
-    $app->plugin('ClientIP');
+    $app->plugin(
+        'Mojolicious::Plugin::ClientIP::Pluggable',
+        analyze_headers => [qw/cf-pseudo-ipv4 cf-connecting-ip true-client-ip/],
+        restrict_family => 'ipv4',
+        fallbacks       => [qw/rfc-7239 x-forwarded-for remote_address/]);
     $app->plugin('Binary::WebSocketAPI::Plugins::Helpers');
 
     my $actions = [[
@@ -481,7 +497,7 @@ sub startup {
                 # Basic sanitisation: we expect IPv4/IPv6 addresses only, reject anything else
                 $ip =~ s{[^[:xdigit:]:.]+}{_}g;
             } else {
-                $app->log->warn("cannot determine client IP-address");
+                DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.unknown_ip.count');
                 $ip = 'UNKNOWN';
             }
 
@@ -529,7 +545,15 @@ sub startup {
             skip_check_sanity => qr/password/,
         });
 
+    my $redis = ws_redis_master();
+    if (my $ids = $redis->get('app_id::diverted')) {
+        %DIVERT_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
+    }
+    if (my $ids = $redis->get('app_id::blocked')) {
+        %BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
+    }
     return;
+
 }
 
 1;
