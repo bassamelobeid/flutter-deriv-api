@@ -28,7 +28,6 @@ use File::Slurp;
 use Format::Util::Strings qw( defang );
 use JSON::MaybeXS;
 use JSON::Schema;
-use JSON::XS;
 use Mojolicious::Plugin::ClientIP::Pluggable;
 use RateLimitations::Pluggable;
 use Scalar::Util qw(weaken);
