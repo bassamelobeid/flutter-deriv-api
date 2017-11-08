@@ -679,11 +679,9 @@ sub _validate_ico_jurisdictional_restrictions {
         );
     }
 
-    my $is_professional = $client->financial_assessment && $client->financial_assessment->is_professional ? 1 : 0;
-
     # For certain country, only professional investor is allow to place ico
     if ($countries_instance->ico_restricted_professional_only_country($residence)
-        && !$is_professional)
+        && !$client->get_status('professional'))
     {
         return Error::Base->cuss(
             -type              => 'IcoProfessionalRestrictedCountry',
