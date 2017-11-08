@@ -95,6 +95,9 @@ sub get_data {
 
     while (1) {
         $t = $t->message_ok;
+        unless ($t->message) {
+            die "Socket was closed while waiting for response (timeout)";
+        }
         my $msg  = $t->message->[1];
         my $data = decode_json($msg);
 
