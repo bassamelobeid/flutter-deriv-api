@@ -260,6 +260,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        expensive_api_calls:
+          description: "Suspend all expensive API calls - portfolio, profit_table, reality_check, statement"
+          isa: Bool
+          default: 0
+          global: 1
         all_logins:
           description: "Suspend all logins to the system"
           isa: Bool
