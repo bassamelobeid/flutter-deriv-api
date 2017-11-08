@@ -385,9 +385,9 @@ subtest 'MirrorBinaryUserId' => sub {
     use BOM::Platform::Script::MirrorBinaryUserId;
     use Client::Account;
 
-    my $cfg = LoadFile '/etc/rmg/userdb.yml';
+    my $cfg            = LoadFile '/etc/rmg/userdb.yml';
     my $pgservice_conf = "/tmp/pgservice.conf.$$";
-    my $pgpass_conf = "/tmp/pgpass.conf.$$";
+    my $pgpass_conf    = "/tmp/pgpass.conf.$$";
     my $dbh;
     my $t = $ENV{DB_POSTFIX} // '';
     lives_ok {
