@@ -12,6 +12,7 @@ use List::UtilsBy qw(rev_nsort_by sort_by);
 use POSIX ();
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use YAML::XS;
+use Math::BigFloat;
 
 use Bitcoin::RPC::Client;
 use Ethereum::RPC::Client;
@@ -421,7 +422,12 @@ EOF
         if ($cmd eq 'listtransactions') {
             push @param, '', 500;
         }
-        my $rslt = $rpc_client->$cmd(@param);
+        my $rslt;
+        if ($currency eq 'ETH' and $cmd eq 'getbalance') {
+            $rslt += Math::BigFloat->from_hex($rpc_client->eth_getBalance($_, 'latest')) / 10**18 for @{$rpc_client->eth_accounts()};
+        } else {
+            $rslt = $rpc_client->$cmd(@param);
+        }
         if ($cmd eq 'listaccounts') {
             print '<table><thead><tr><th scope="col">Account</th><th scope="col">Amount</th></tr></thead><tbody>';
             for my $k (sort keys %$rslt) {
