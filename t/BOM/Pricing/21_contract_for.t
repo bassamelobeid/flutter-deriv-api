@@ -7,6 +7,7 @@ use Test::Mojo;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Date::Utility;
@@ -48,7 +49,7 @@ subtest "Request $method" => sub {
     ok @{$result->{available}}, 'It should return available contracts';
     ok !grep { $_->{contract_type} =~ /^(EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
 
-    generate_trading_periods('frxUSDJPY');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', Date::Utility->new);
     update_predefined_highlow({
         symbol => 'frxUSDJPY',
         price  => 100,

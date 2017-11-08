@@ -313,6 +313,10 @@ sub get_bid {
     };
     return $response if $response;
 
+    # rare case: no tics between date_start and date_expiry.
+    # underlaying will return exit_tick preceding date_start
+    return _data_disruption_error() if $contract->exit_tick and $contract->date_start->epoch > $contract->exit_tick->epoch;
+
     if ($contract->is_legacy) {
         return BOM::Pricing::v3::Utility::create_error({
             message_to_client => localize($contract->longcode),
@@ -353,11 +357,7 @@ sub get_bid {
         if (not $contract->may_settle_automatically
             and $contract->missing_market_data)
         {
-            $response = BOM::Pricing::v3::Utility::create_error({
-                    code              => "GetProposalFailure",
-                    message_to_client => localize(
-                        'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
-                    )});
+            $response = _data_disruption_error();
             return;
         }
 
@@ -401,8 +401,6 @@ sub get_bid {
         # sell_spot and sell_spot_time are updated if the contract is sold
         # or when the contract is expired.
         if ($sell_time or $contract->is_expired) {
-            $response->{is_expired} = 1;
-
             # path dependent contracts may have hit tick but not sell time
             my $sell_tick =
                   $sell_time
@@ -559,31 +557,6 @@ sub get_contract_details {
     return $response;
 }
 
-sub longcode {
-    my $params = shift;
-
-    my $longcodes;
-
-    my @short_codes = @{$params->{short_codes}};
-
-    foreach my $s (@short_codes) {
-        my ($contract, $longcode);
-        try {
-            $contract = produce_contract($s, $params->{currency});
-            $longcode = $contract->longcode;
-        }
-        catch {
-            warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($params);
-        };
-        $longcodes->{$s} = localize($longcode);
-    }
-
-    return {
-        longcodes => $longcodes,
-    };
-
-}
-
 sub contracts_for {
     my $params = shift;
 
@@ -653,6 +626,14 @@ sub _get_error_message {
     }
 
     return ['Cannot create contract'];
+}
+
+sub _data_disruption_error {
+    return BOM::Pricing::v3::Utility::create_error({
+            code              => "GetProposalFailure",
+            message_to_client => localize(
+                'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
+            )});
 }
 
 1;

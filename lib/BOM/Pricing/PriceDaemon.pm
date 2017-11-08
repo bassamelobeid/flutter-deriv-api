@@ -39,7 +39,13 @@ sub process_job {
     my $current_spot_ts = $underlying->spot_tick->epoch;
     my $last_price_ts = $redis->get($next) || 0;
 
-    return undef if ($current_spot_ts == $last_price_ts and $current_time - $last_price_ts <= 10);
+    if (    $current_spot_ts == $last_price_ts
+        and $current_time - $last_price_ts <= 10
+        and not $self->_is_in_priority_queue())
+    {
+        stats_inc("pricer_daemon.skipped_duplicate_spot", {tags => $self->tags});
+        return undef;
+    }
 
     if ($price_daemon_cmd eq 'price') {
         $params->{streaming_params}->{add_theo_probability} = 1;
@@ -62,7 +68,8 @@ sub process_job {
     stats_inc("pricer_daemon.$log_price_daemon_cmd.call", {tags => $self->tags});
     stats_timing("pricer_daemon.$log_price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
     $response->{price_daemon_cmd} = $price_daemon_cmd;
-    delete $response->{contract_parameters};    # contract parameters are stored after first call, no need to send them with every stream message
+    # contract parameters are stored after first call, no need to send them with every stream message
+    delete $response->{contract_parameters} if not $self->_is_in_priority_queue;
     return $response;
 }
 
@@ -89,8 +96,6 @@ sub run {
             # Will return empty if we didn't need to update, so make sure we apply actual
             # version before our check here
             $rev ||= BOM::Platform::Runtime->instance->app_config->current_revision;
-            my $age = Time::HiRes::time - $rev;
-            warn "Config age is >90s - $age\n" if $age > 90;
             $tv_appconfig = $tv_now;
         }
 
@@ -197,6 +202,11 @@ sub _validate_params {
     return 0 unless $cmd eq 'price' or $cmd eq 'bid';
     return 0 if first { not defined $params->{$_} } @{$required_params{$cmd}};
     return 1;
+}
+
+sub _is_in_priority_queue {
+    my $self = shift;
+    return $self->{current_queue} eq 'pricer_jobs_priority';
 }
 
 =head2 current_queue

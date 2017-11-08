@@ -47,7 +47,7 @@ use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
 local $ENV{PGSERVICEFILE} = '/home/nobody/.pg_service_backprice.conf';
 
-my $threshold = 0.001; 
+my $threshold = 0.001;
 
 while (<STDIN>) {
     # Get line of data from STDIN
