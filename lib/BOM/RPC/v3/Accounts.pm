@@ -690,8 +690,9 @@ sub get_settings {
                 client_tnc_status => $client_tnc_status ? $client_tnc_status->reason : '',
                 place_of_birth    => $client->place_of_birth,
                 tax_residence     => $client->tax_residence,
-                tax_identification_number => $client->tax_identification_number,
-                account_opening_reason    => $client->account_opening_reason,
+                tax_identification_number   => $client->tax_identification_number,
+                account_opening_reason      => $client->account_opening_reason,
+                request_professional_status => $client->get_status('professional_requested') ? 1 : 0,
             )
         ),
         $jp_account_status ? (jp_account_status => $jp_account_status) : (),
@@ -837,8 +838,23 @@ sub set_settings {
             . join(' ', ($address1 // ''), $address2, $addressTown, $addressState, $addressPostcode) . ']';
     }
 
+    # only allowed to set for maltainvest, costarica and only
+    # if professional status is not set or requested
+    my $update_professional_status = sub {
+        my ($client_obj) = @_;
+        if (    $args->{request_professional_status}
+            and $client_obj->landing_company->short =~ /^(?:costarica|maltainvest)$/
+            and not($client_obj->get_status('professional') or $client_obj->get_status('professional_requested')))
+        {
+            $client_obj->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
+            return 1;
+        }
+        return undef;
+    };
+
     my $user = BOM::Platform::User->new({email => $client->email});
     foreach my $cli ($user->clients) {
+        next if $cli->is_virtual;
         next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
         $cli->address_1($address1);
@@ -872,11 +888,15 @@ sub set_settings {
             $cli->tax_identification_number('') unless $tax_identification_number;
         }
 
+        my $set_status = $update_professional_status->($cli);
+
         if (not $cli->save()) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'InternalServerError',
                     message_to_client => localize('Sorry, an error occurred while processing your account.')});
         }
+
+        BOM::RPC::v3::Utility::send_professional_requested_email($cli->loginid) if ($set_status);
     }
     # update client value after latest changes
     $client = Client::Account->new({loginid => $client->loginid});
@@ -933,6 +953,13 @@ sub set_settings {
         if exists $args->{email_consent};
     push @updated_fields, [localize('Allow copiers'), $client->allow_copiers ? localize("Yes") : localize("No")]
         if defined $allow_copiers;
+    push @updated_fields,
+        [
+        localize('Requested professional status'),
+        (
+                   $args->{request_professional_status}
+                or $client->get_status('professional_requested')
+        ) ? localize("Yes") : localize("No")];
 
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
