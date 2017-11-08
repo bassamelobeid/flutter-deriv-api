@@ -101,6 +101,10 @@ subtest 'Auth client' => sub {
     $params[1]->{token} = $oauth_token;
 
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using oauth token');
+    BOM::Platform::Runtime->instance->app_config->system->suspend->expensive_api_calls(1);
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('SuspendedDueToLoad', 'error when expensive calls are disabled');
+    BOM::Platform::Runtime->instance->app_config->system->suspend->expensive_api_calls(0);
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('No error when unsuspended again');
 };
 
 subtest 'Return empty client portfolio' => sub {
