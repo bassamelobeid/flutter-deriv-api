@@ -678,7 +678,7 @@ sub _validate_ico_jurisdictional_restrictions {
             -message_to_client => localize('Sorry, but the ICO is not available in your country of residence.'),
         );
     }
-    
+
     # For certain country, only professional investor is allow to place ico
     if ($countries_instance->ico_restricted_professional_only_country($residence)
         && !$client->get_status('professional'))
