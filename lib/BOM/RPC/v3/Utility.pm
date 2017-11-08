@@ -14,27 +14,24 @@ use List::Util qw(any uniqstr shuffle);
 use List::UtilsBy qw(bundle_by);
 use URI;
 use Domain::PublicSuffix;
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc stats_gauge);
+use Time::HiRes;
+use Time::Duration::Concise::Localize;
 use Format::Util::Numbers qw/formatnumber/;
 
 use Brands;
 use LandingCompany::Registry;
-
-use BOM::Database::Model::AccessToken;
-use BOM::Database::Model::OAuth;
-use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Runtime;
-use BOM::Platform::Token;
-
-use DataDog::DogStatsd::Helper qw(stats_timing stats_inc stats_gauge);
-use Time::HiRes;
-use Time::Duration::Concise::Localize;
-
-use Format::Util::Numbers qw/formatnumber/;
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::Platform::Context qw(localize request);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::RedisReplicated;
+use BOM::Database::Model::AccessToken;
+use BOM::Database::Model::OAuth;
+use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Runtime;
+use BOM::Platform::Token;
+use BOM::Platform::Email qw(send_email);
 
 use feature "state";
 
@@ -524,6 +521,20 @@ sub should_update_account_details {
     return 1;
 }
 
+sub send_professional_requested_email {
+    my $loginid = shift;
+
+    return unless $loginid;
+
+    my $brand = Brands->new(name => request()->brand);
+    return send_email({
+        from    => $brand->emails('support'),
+        to      => join(',', $brand->emails('compliance'), $brand->emails('support')),
+        subject => "$loginid requested for professional status",
+        message => ["$loginid has requested for professional status, please check and update accordingly"],
+    });
+}
+
 =head2 _timed
 
 Helper function for recording time elapsed via statsd.
@@ -647,7 +658,6 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
     return {
         longcodes => $longcodes,
     };
-
 }
 
 1;
