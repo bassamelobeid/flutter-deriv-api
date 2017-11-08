@@ -20,7 +20,7 @@ initialize_realtime_ticks_db();
 use Finance::Asset;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY);
 my $now = Date::Utility->new;
-generate_trading_periods('frxUSDJPY');
+BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', $now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -33,7 +33,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 100,
 });
 
-generate_trading_periods('frxEURUSD');
+BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxEURUSD', $now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {

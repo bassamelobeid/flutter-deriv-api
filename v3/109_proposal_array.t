@@ -61,7 +61,7 @@ my $contract_type_pairs = {
 
 my $trading_frames = {};
 
-generate_trading_periods($symbol);
+BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, Date::Utility->new);
 initialize_realtime_ticks_db();
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY);
@@ -159,7 +159,7 @@ SKIP: {
 }
 
 # Regenerate trading periods here to try avoid below bail out.
-generate_trading_periods($symbol);
+BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, Date::Utility->new);
 
 $contracts_for = $t->await::contracts_for({
     "contracts_for"   => $symbol,
@@ -168,12 +168,12 @@ $contracts_for = $t->await::contracts_for({
     "product_type"    => $pt,
 });
 
-my $put_array = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration} eq '2h15m' } @{$contracts_for->{contracts_for}{available}}];
+my $put_array = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration} eq '2h' } @{$contracts_for->{contracts_for}{available}}];
 unless (scalar @$put_array) {
-    # fallback if there is no 2h15m contracts
+    # fallback if there is no 2h contracts
     $put_array = [grep { $_->{contract_type} eq 'PUT' and $_->{trading_period}{duration} eq '0d' } @{$contracts_for->{contracts_for}{available}}];
 }
-# Try avoid bail out below by using the latest window available for 2h15m contract duration.
+# Try avoid bail out below by using the latest window available for 2h contract duration.
 my $put = $put_array->[scalar(@{$put_array}) - 1];
 
 my $barriers = $put->{available_barriers};

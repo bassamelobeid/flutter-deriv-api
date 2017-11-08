@@ -58,7 +58,7 @@ $client->smart_payment(
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $t->await::authorize({authorize => $token});
-my $account_id =  $client->default_account->id;
+my $account_id = $client->default_account->id;
 
 subtest 'empty POC response' => sub {
     my $data = $t->await::proposal_open_contract({proposal_open_contract => 1});
@@ -115,16 +115,6 @@ subtest 'selling contract message' => sub {
     # It is hack to emulate contract selling and test subcribtion
     my ($url, $call_params);
 
-    my $fake_res = Test::MockObject->new();
-    $fake_res->mock('result', sub { +{ok => 1} });
-    $fake_res->mock('is_error', sub { '' });
-
-    my $fake_rpc_client = Test::MockObject->new();
-    $fake_rpc_client->mock('call', sub { shift; $url = $_[0]; $call_params = $_[1]->{params}; return $_[2]->($fake_res) });
-
-    my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
-    $module->mock('new', sub { return $fake_rpc_client });
-
     my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
         broker_code => $client->broker_code,
         operation   => 'replica'
@@ -144,15 +134,12 @@ subtest 'selling contract message' => sub {
 
     my $data = $t->await::proposal_open_contract();
     is($data->{msg_type}, 'proposal_open_contract', 'Got message about selling contract');
-
-    $module->unmock_all;
 };
 
 subtest 'forget' => sub {
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
     is(scalar @{$data->{forget_all}}, 0, 'Forget all returns empty as contracts are already sold');
 };
-
 
 subtest 'check two contracts subscription' => sub {
     my $proposal = $t->await::proposal({
@@ -193,7 +180,7 @@ subtest 'check two contracts subscription' => sub {
 
     BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json $msg);
 
-    sleep 2; ### we must wait for pricing rpc response
+    sleep 2;    ### we must wait for pricing rpc response
 
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
 
@@ -201,7 +188,6 @@ subtest 'check two contracts subscription' => sub {
 };
 
 subtest 'rpc error' => sub {
-
 
     my $proposal = $t->await::proposal({
         "proposal"      => 1,
@@ -223,17 +209,21 @@ subtest 'rpc error' => sub {
 
     my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
     $fake_rpc_response = Test::MockObject->new();
-    $fake_rpc_response->mock('is_error',      sub { 0 });
-    $fake_rpc_response->mock('result',        sub { +{ error => {
-                                                            code => 'InvalidToken',
-                                                            message_to_client => 'The token is invalid.'
-                                                }} });
+    $fake_rpc_response->mock('is_error', sub { 0 });
+    $fake_rpc_response->mock(
+        'result',
+        sub {
+            +{
+                error => {
+                    code              => 'InvalidToken',
+                    message_to_client => 'The token is invalid.'
+                }};
+        });
     $fake_rpc_response->mock('error_message', sub { 'error' });
     $fake_rpc_client = Test::MockObject->new();
     $fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
     $rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
     $rpc_client_mock->mock('new', sub { return $fake_rpc_client });
-
 
     $data = $t->await::proposal_open_contract({
         proposal_open_contract => 1,

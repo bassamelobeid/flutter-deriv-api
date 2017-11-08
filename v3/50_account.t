@@ -173,7 +173,6 @@ $res = $t->await::set_financial_assessment($args);
 cmp_ok($res->{set_financial_assessment}->{score}, "<", 60, "Correct score");
 note("set_financial_assessment json :: ");
 note explain $res;
-is($res->{set_financial_assessment}->{is_professional}, 0, "is_professional flag is set correctly");
 
 $t->finish_ok;
 

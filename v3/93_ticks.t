@@ -71,39 +71,39 @@ subtest 'ticks' => sub {
 };
 
 subtest 'ticks_forget_one_sub' => sub {
-        my $res = $t->await::forget_all({forget_all => 'ticks'});
-        my $req1 = {
-            "ticks_history" => "R_50",
-            "granularity"   => 60,
-            "style"         =>"candles",
-            "count"         =>1,
-            "end"           => "latest",
-            "subscribe"     => 1,
-        };
-        my $req2 = {
-            "ticks_history" => "R_50",
-            "granularity"   => 0,
-            "style"         => "ticks",
-            "count"         => 1,
-            "end"           => "latest",
-            "subscribe"     => 1,
-        };
+    my $res = $t->await::forget_all({forget_all => 'ticks'});
+    my $req1 = {
+        "ticks_history" => "R_50",
+        "granularity"   => 60,
+        "style"         => "candles",
+        "count"         => 1,
+        "end"           => "latest",
+        "subscribe"     => 1,
+    };
+    my $req2 = {
+        "ticks_history" => "R_50",
+        "granularity"   => 0,
+        "style"         => "ticks",
+        "count"         => 1,
+        "end"           => "latest",
+        "subscribe"     => 1,
+    };
 
-        $res = $t->await::candles($req1);
-        $res = $t->await::ohlc;
-        cmp_ok $res->{msg_type}, 'eq', 'ohlc', "Recived ohlc response ok";
+    $res = $t->await::candles($req1);
+    $res = $t->await::ohlc;
+    cmp_ok $res->{msg_type}, 'eq', 'ohlc', "Recived ohlc response ok";
 
-        my $id1 = $res->{ohlc}{id};
-        ok $id1, "Subscription id ok";
+    my $id1 = $res->{ohlc}{id};
+    ok $id1, "Subscription id ok";
 
-        $res = $t->await::history($req2);
-        cmp_ok $res->{msg_type}, 'eq', 'history', "Recived tick history response ok";
+    $res = $t->await::history($req2);
+    cmp_ok $res->{msg_type}, 'eq', 'history', "Recived tick history response ok";
 
-        $res = $t->await::forget({forget => $id1});
-        cmp_ok $res->{forget}, '==', 1, "One subscription deleted ok";
+    $res = $t->await::forget({forget => $id1});
+    cmp_ok $res->{forget}, '==', 1, "One subscription deleted ok";
 
-        $res = $t->await::tick;
-        cmp_ok $res->{msg_type}, 'eq', 'tick', "Second supscription is ok";
+    $res = $t->await::tick;
+    cmp_ok $res->{msg_type}, 'eq', 'tick', "Second supscription is ok";
 
 };
 
