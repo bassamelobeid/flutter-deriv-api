@@ -220,10 +220,11 @@ sub before_forward {
 sub _rpc_suffix {
     my ($c) = @_;
 
-    my $processor = $Binary::WebSocketAPI::DIVERT_APP_IDS{$c->app_id // ''};
-    my $suffix = $processor ? '_' . $processor : '';
+    my $app_id    = $c->app_id // '';
+    my $processor = $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
+    my $suffix    = $processor ? '_' . $processor : '';
     unless (exists $c->app->config->{"rpc_url" . $suffix}) {
-        warn "Suffix $suffix not found in config for app ID " . $c->app_id . "\n";
+        warn "Suffix $suffix not found in config for app ID $app_id\n";
         $suffix = '';
     }
     return $suffix;
