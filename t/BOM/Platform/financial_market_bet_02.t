@@ -50,7 +50,6 @@ sub buy_one_bet {
         bet_type          => 'CALL',
         short_code        => ('CALL_R_50_' . $payout_price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
         relative_barrier  => 'S0P',
-        quantity          => 1,
         %$args,
     };
 
@@ -78,7 +77,6 @@ sub buy_multiple_bets {
         underlying_symbol => 'frxUSDJPY',
         payout_price      => 200,
         buy_price         => 20,
-        quantity          => 1,
         remark            => 'Test Remark',
         purchase_time     => $now->db_timestamp,
         start_time        => $now->db_timestamp,
@@ -90,7 +88,6 @@ sub buy_multiple_bets {
         bet_type          => 'CALL',
         short_code        => $buy_multiple_shortcode,
         relative_barrier  => 'S0P',
-        quantity          => 1,
         };
 
     my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
@@ -114,8 +111,7 @@ sub sell_by_shortcode {
             bet_data => +{
                 'sell_price' => '18',
                 'sell_time'  => $now->db_timestamp,
-                'id'         => undef,
-                'quantity'   => 1,
+                'id'         => undef
             },
             account_data     => [map           { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
             transaction_data => {staff_loginid => 'CL001'},
@@ -219,8 +215,7 @@ lives_ok {
         {
         id         => $fmbid,
         sell_price => 0,
-        sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
-        quantity   => 1,
+        sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp
         };
 }
 'bought and sold one more bet with slightly increased max_turnover';
@@ -349,7 +344,6 @@ subtest 'more validation', sub {
             id         => $fmbid,
             sell_price => 0,
             sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
-            quantity   => 1,
             };
     }
     'buy & sell a bet';
@@ -456,7 +450,7 @@ subtest 'more validation', sub {
     # the USD account has 6 bets here, 5 of which are unsold. Let's sell them all.
     lives_ok {
         my @bets_to_sell =
-            map { {id => $_, quantity => 1, sell_price => 30, sell_time => Date::Utility->new->plus_time_interval('1s')->db_timestamp,} } @usd_bets;
+            map { {id => $_, sell_price => 30, sell_time => Date::Utility->new->plus_time_interval('1s')->db_timestamp,} } @usd_bets;
 
         my @qvs = (
             BOM::Database::Model::DataCollection::QuantsBetVariables->new({
@@ -539,7 +533,6 @@ SKIP: {
                     id         => $fmbid,
                     sell_price => 0,
                     sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
-                    quantity   => 1,
                     };
             }
         }
@@ -901,7 +894,6 @@ SKIP: {
                     id         => $fmbid,
                     sell_price => 0,
                     sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
-                    quantity   => 1,
                     };
             }
         }
@@ -1083,7 +1075,6 @@ SKIP: {
                     id         => $fmbid,
                     sell_price => 0,
                     sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
-                    quantity   => 1,
                     };
             }
         }
@@ -1240,7 +1231,6 @@ SKIP: {
                     id         => $fmbid,
                     sell_price => 50,
                     sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
-                    quantity   => 1,
                     };
                 $bal += 50;
             }

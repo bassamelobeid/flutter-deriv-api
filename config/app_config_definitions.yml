@@ -91,7 +91,7 @@ payments:
             crypto:
               description: 'Fees for transfering from crypto currency to fiat currency in percentage'
               isa: Num
-              default: 0.5
+              default: 1
               global: 1
         amount:
           isa: section
@@ -280,6 +280,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        is_auction_started:
+          description: "Enable this when we want to start ICO"
+          isa: Bool
+          default: 0
+          global: 1
         is_auction_ended:
           description: "End the ICO auction"
           isa: Bool
@@ -288,7 +293,7 @@ system:
         ico_final_price:
           description: "The final price of the  ICO auction"
           isa: Num
-          default: 10
+          default: 0
           global: 1
         mt5:
           description: "Suspend MT5 API calls"
