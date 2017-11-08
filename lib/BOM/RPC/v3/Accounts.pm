@@ -1452,6 +1452,13 @@ sub get_financial_assessment {
 sub reality_check {
     my $params = shift;
 
+    my $app_config    = BOM::Platform::Runtime->instance->app_config;
+    if ($app_config->system->suspend->expensive_api_calls) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'SuspendedDueToLoad',
+                message_to_client => localize('The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')}),
+    }
+
     my $client        = $params->{client};
     my $token_details = $params->{token_details};
 
