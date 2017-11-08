@@ -38,6 +38,7 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Pricing;
+use BOM::Platform::Runtime;
 
 my $ICO_BID_PRICE_PERCENTAGE = 0.98;
 
@@ -125,6 +126,12 @@ sub __build_landing_company {
 sub statement {
     my $params = shift;
 
+    my $app_config    = BOM::Platform::Runtime->instance->app_config;
+    if ($app_config->system->suspend->expensive_api_calls) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'SuspendedDueToLoad',
+                message_to_client => localize('The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')}),
+    }
     my $client  = $params->{client};
     my $account = $client->default_account;
     return {
@@ -200,6 +207,13 @@ sub statement {
 
 sub profit_table {
     my $params = shift;
+
+    my $app_config    = BOM::Platform::Runtime->instance->app_config;
+    if ($app_config->system->suspend->expensive_api_calls) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'SuspendedDueToLoad',
+                message_to_client => localize('The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')}),
+    }
 
     my $client         = $params->{client};
     my $client_loginid = $client->loginid;

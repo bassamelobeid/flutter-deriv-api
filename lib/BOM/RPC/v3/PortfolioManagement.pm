@@ -13,10 +13,18 @@ use BOM::RPC::v3::Accounts;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (request localize);
+use BOM::Platform::Runtime;
 use BOM::Transaction;
 
 sub portfolio {
     my $params = shift;
+
+    my $app_config    = BOM::Platform::Runtime->instance->app_config;
+    if ($app_config->system->suspend->expensive_api_calls) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'SuspendedDueToLoad',
+                message_to_client => localize('The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')}),
+    }
 
     my $portfolio = {contracts => []};
     my $client = $params->{client} or return $portfolio;
