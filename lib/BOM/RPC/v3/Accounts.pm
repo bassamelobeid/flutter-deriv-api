@@ -8,14 +8,13 @@ use JSON;
 use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
-use Data::Password::Meter;
 use HTML::Entities qw(encode_entities);
 use List::Util qw(any sum0);
 
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber financialrounding/;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 use BOM::RPC::v3::Utility;
@@ -39,6 +38,8 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Pricing;
+
+my $ICO_BID_PRICE_PERCENTAGE = 0.98;
 
 sub payout_currencies {
     my $params = shift;
@@ -135,29 +136,16 @@ sub statement {
 
     my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
 
-    my %translation = (
-        buy        => localize('Buy'),
-        sell       => localize('Sell'),
-        deposit    => localize('Deposit'),
-        withdrawal => localize('Withdrawal'),
-    );
-
     my @txns;
     for my $txn (@$results) {
         my $struct = {
             transaction_id => $txn->{id},
             reference_id   => $txn->{buy_tr_id},
             amount         => $txn->{amount},
-            # Translate according to known action types.
-            # Otherwise, log unknow so we can request translation
-            # for it in the weblate.
-            action_type => lc $translation{$txn->{action_type}} // do {
-                warn "No translation known for action_type " . $txn->{action_type};
-                $txn->{action_type};
-            },
-            balance_after => formatnumber('amount', $account->currency_code, $txn->{balance_after}),
-            contract_id   => $txn->{financial_market_bet_id},
-            payout        => $txn->{payout_price},
+            action_type    => $txn->{action_type},
+            balance_after  => formatnumber('amount', $account->currency_code, $txn->{balance_after}),
+            contract_id    => $txn->{financial_market_bet_id},
+            payout         => $txn->{payout_price},
         };
 
         my $txn_time;
@@ -190,11 +178,12 @@ sub statement {
                 if (exists $res->{error}) {
                     $struct->{longcode} = localize('Could not retrieve contract details');
                 } else {
-                    # this should be already localize
+                    # this should be already localized
                     my $longcode = $res->{longcode};
                     # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
-                    $longcode = 'Binary ICO: canceled bid'
-                        if ($txn->{short_code} =~ /^BINARYICO/ and $txn->{amount} == 0.98 * $txn->{payout_price});
+                    $longcode = localize('Binary ICO: cancelled bid')
+                        if ($txn->{short_code} =~ /^BINARYICO/
+                        and $txn->{amount} == financialrounding('price', $account->currency_code, $ICO_BID_PRICE_PERCENTAGE * $txn->{payout_price}));
                     $struct->{longcode} = $longcode;
                 }
             }
@@ -247,13 +236,12 @@ sub profit_table {
     my @short_codes = map { $_->{short_code} } @{$data};
 
     my $res;
-    $res = BOM::Platform::Pricing::call_rpc(
-        'longcode',
-        {
+    $res = BOM::RPC::v3::Utility::longcode({
             short_codes => \@short_codes,
             currency    => $client->currency,
             language    => $params->{language},
-        }) if $args->{description};
+            source      => $params->{source},
+        }) if $args->{description} and @short_codes;
 
     ## remove useless and plus new
     my @transactions;
@@ -274,7 +262,9 @@ sub profit_table {
                 # this should already be localized
                 my $longcode = $res->{longcodes}->{$row->{short_code}};
                 # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
-                $longcode = 'Binary ICO: canceled bid' if ($row->{short_code} =~ /^BINARYICO/ and $row->{sell_price} == 0.98 * $row->{payout_price});
+                $longcode = 'Binary ICO: cancelled bid'
+                    if ($row->{short_code} =~ /^BINARYICO/
+                    and $row->{sell_price} == financialrounding('price', $client->currency, $ICO_BID_PRICE_PERCENTAGE * $row->{payout_price}));
                 $trx{longcode} = $longcode;
 
             }
@@ -752,7 +742,7 @@ sub set_settings {
                 });
         }
 
-        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
+        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && ($client->broker_code ne 'CR' or $client->get_status('ico_only'));
 
         if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
             $err = BOM::RPC::v3::Utility::create_error({
@@ -1043,7 +1033,7 @@ sub set_self_exclusion {
         qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/
         )
     {
-        $args_count++ if $args{$field};
+        $args_count++ if defined $args{$field};
     }
     return BOM::RPC::v3::Utility::create_error({
             code              => 'SetSelfExclusionError',
@@ -1053,23 +1043,37 @@ sub set_self_exclusion {
         qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/
         )
     {
-        my $val      = $args{$field};
+        # Client input
+        my $val = $args{$field};
+
+        # The minimum is 1 in case of open bets (1 for other cases)
+        my $min = $field eq 'max_open_bets' ? 1 : 0;
+
+        # Validate the client input
         my $is_valid = 0;
+
+        # Max balance and Max open bets are given default values, if not set by client
+        if ($field eq 'max_balance') {
+            $self_exclusion->{$field} //= $client->get_limit_for_account_balance;
+        } elsif ($field eq 'max_open_bets') {
+            $self_exclusion->{$field} //= $client->get_limit_for_open_positions;
+        }
+
         if ($val and $val > 0) {
             $is_valid = 1;
-            if (    $self_exclusion->{$field}
-                and $val > $self_exclusion->{$field})
-            {
+            if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
                 $is_valid = 0;
             }
         }
+
         next if $is_valid;
 
         if (defined $val and $self_exclusion->{$field}) {
-            return $error_sub->(localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
+            return $error_sub->(localize('Please enter a number between [_1] and [_2].', $min, $self_exclusion->{$field}), $field);
         } else {
             delete $args{$field};
         }
+
     }
 
     if (my $session_duration_limit = $args{session_duration_limit}) {
@@ -1131,6 +1135,11 @@ sub set_self_exclusion {
     if ($args{max_open_bets}) {
         $client->set_exclusion->max_open_bets($args{max_open_bets});
     }
+
+    if ($args{max_balance}) {
+        $client->set_exclusion->max_balance($args{max_balance});
+    }
+
     if ($args{max_turnover}) {
         $client->set_exclusion->max_turnover($args{max_turnover});
     }
@@ -1153,16 +1162,14 @@ sub set_self_exclusion {
     if ($args{max_30day_losses}) {
         $client->set_exclusion->max_30day_losses($args{max_30day_losses});
     }
-    if ($args{max_balance}) {
-        $client->set_exclusion->max_balance($args{max_balance});
-    }
+
     if ($args{session_duration_limit}) {
         $client->set_exclusion->session_duration_limit($args{session_duration_limit});
     }
     if ($args{timeout_until}) {
         $client->set_exclusion->timeout_until($args{timeout_until});
     }
-    # send to support only when client has self excluded
+# send to support only when client has self excluded
     if ($args{exclude_until}) {
         my $ret          = $client->set_exclusion->exclude_until($args{exclude_until});
         my $statuses     = join '/', map { uc $_->status_code } $client->client_status;
@@ -1369,22 +1376,18 @@ sub set_financial_assessment {
         my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
-        my $is_professional = $financial_evaluation->{total_score} < 60 ? 0 : 1;
-
         my $user = BOM::Platform::User->new({email => $client->email});
         foreach my $cli ($user->clients) {
             next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
             $cli->financial_assessment({
-                data            => encode_json $financial_evaluation->{user_data},
-                is_professional => $is_professional
+                data => encode_json $financial_evaluation->{user_data},
             });
             $cli->save;
         }
 
         $response = {
-            score           => $financial_evaluation->{total_score},
-            is_professional => $is_professional
+            score => $financial_evaluation->{total_score},
         };
         $subject = $client_loginid . ' assessment test details have been updated';
         $message = ["$client_loginid score is " . $financial_evaluation->{total_score}];

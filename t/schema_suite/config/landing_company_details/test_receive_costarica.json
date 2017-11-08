@@ -31,17 +31,17 @@
             "required": "1",
             "items": {
                 "type": "string",
-                "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC|BCH)$",
+                "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH)$",
                 "required": "1"
             }
         },
         "legal_allowed_markets": {
             "type": "array",
-            "minItems": 5,
+            "minItems": 4,
             "required": "1",
             "items": {
                 "type": "string",
-                "pattern": "^(commodities|forex|indices|stocks|smarties|volidx)$",
+                "pattern": "^(commodities|forex|indices|stocks|volidx)$",
                 "required": "1"
             }
         },

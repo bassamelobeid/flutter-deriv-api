@@ -105,7 +105,7 @@ sub buy {
             $message_to_client = $_->message_to_client;
         } else {
             $message_to_client = ['Cannot create contract'];
-            warn __PACKAGE__ . " buy buy failed, parameters: " . encode_json($contract_parameters);
+            warn __PACKAGE__ . " buy failed: '$_', parameters: " . encode_json($contract_parameters);
         }
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
@@ -148,6 +148,11 @@ sub buy_contract_for_multiple_accounts {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'IcoOnlyAccount',
+            message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
+    ) if $client->get_status('ico_only');
 
     my $tokens = $params->{args}{tokens} // [];
 
@@ -286,6 +291,11 @@ sub sell_contract_for_multiple_accounts {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'IcoOnlyAccount',
+            message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
+    ) if $client->get_status('ico_only');
 
     my ($source, $args) = ($params->{source}, $params->{args});
 

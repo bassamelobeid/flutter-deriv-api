@@ -61,7 +61,8 @@ subtest $method => sub {
     $params->{args}->{verification_code} = 'wrong token';
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PasswordError', 'If password is weak it should return error')
-        ->error_message_is('Password is not strong enough.', 'If password is weak it should return error_message');
+        ->error_message_is('Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'If password is weak it should return error_message');
 
     $params->{args}->{client_password} = 'verylongandhardpasswordDDD1!';
     $rpc_ct->call_ok($method, $params)
