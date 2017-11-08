@@ -34,7 +34,6 @@ before_install:
     - sudo /etc/init.d/ntp stop
     - git clone ssh://git@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
     - /tmp/travis-scripts-init/clone_branch.sh regentmarkets/travis-scripts
-    - /tmp/travis-scripts/check-libs.sh
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
     - . /tmp/travis-scripts/setup_perl.sh
@@ -59,6 +58,7 @@ before_install:
       regentmarkets/bom-transaction
       regentmarkets/php-mt5-webapi
       binary-com/translations-websockets-api
+    - /tmp/travis-scripts/check-libs.sh
     - /tmp/travis-scripts/redis.sh
 
 install:
