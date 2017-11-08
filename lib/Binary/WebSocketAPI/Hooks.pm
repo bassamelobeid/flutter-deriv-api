@@ -228,18 +228,17 @@ sub _rpc_suffix {
     return $suffix;
 }
 
-sub rpc_url {
+sub get_rpc_url {
     my ($c, $req_storage) = @_;
 
     my $suffix = _rpc_suffix($c);
     return $ENV{RPC_URL} || $c->app->config->{"rpc_url" . $suffix};
 }
 
-# FIXME needs refactoring, this cannot return any values currently
 sub assign_rpc_url {
     my ($c, $req_storage) = @_;
 
-    $req_storage->{url} = rpc_url($c);
+    $req_storage->{url} = get_rpc_url($c);
     return;
 }
 
