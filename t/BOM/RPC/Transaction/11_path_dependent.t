@@ -122,7 +122,7 @@ subtest 'check hit tick' => sub {
     };
 
     my $result = $app->call_ok('proposal_open_contract', $params)->has_no_system_error->has_no_error->result;
-    cmp_ok $result->{$contract_id}->{sell_spot}, '==', '100.030', 'got correct sell spot';
+    cmp_ok $result->{$contract_id}->{short_code}, 'eq', 'ONETOUCH_FRXUSDJPY_10_1425945600_1425946200_S20P_0', 'got correct short code';
 };
 
 done_testing();

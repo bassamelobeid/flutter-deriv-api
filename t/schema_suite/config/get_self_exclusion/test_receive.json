@@ -4,7 +4,7 @@
   "properties": {
     "max_balance":{
       "type": "integer",
-      "pattern": "^9123123$",
+      "pattern": "^25000$",
       "required": "1"
     },
     "max_turnover":{
@@ -39,7 +39,7 @@
     },
     "max_open_bets":{
       "type": "integer",
-      "pattern": "^9123123$",
+      "pattern": "^25$",
       "required": "1"
     },
     "session_duration_limit":{

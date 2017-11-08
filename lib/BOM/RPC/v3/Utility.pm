@@ -3,10 +3,15 @@ package BOM::RPC::v3::Utility;
 use strict;
 use warnings;
 
+use utf8;
+
+no indirect;
+
+use Try::Tiny;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
-use DataDog::DogStatsd::Helper qw(stats_inc);
-use List::Util qw(any);
+use List::Util qw(any uniqstr shuffle);
+use List::UtilsBy qw(bundle_by);
 use URI;
 use Domain::PublicSuffix;
 use Format::Util::Numbers qw/formatnumber/;
@@ -19,7 +24,22 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Token;
-use utf8;
+
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc stats_gauge);
+use Time::HiRes;
+use Time::Duration::Concise::Localize;
+
+use Format::Util::Numbers qw/formatnumber/;
+use LandingCompany::Offerings qw(get_offerings_with_filter);
+
+use BOM::Platform::Context qw(localize request);
+use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Platform::RedisReplicated;
+
+use feature "state";
+
+# Number of keys to get/set per batch in Redis
+use constant LONGCODE_REDIS_BATCH => 20;
 
 # Seconds between reloads of the rate_limitations.yml file.
 # We don't want to reload too frequently, since we may see a lot of `website_status` calls.
@@ -187,9 +207,6 @@ sub _check_password {
                 code              => 'PasswordError',
                 message_to_client => localize('New password is same as old password.')}) if ($new_password eq $old_password);
     }
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PasswordError',
-            message_to_client => localize('Password is not strong enough.')}) if (not Data::Password::Meter->new(14)->strong($new_password));
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PasswordError',
@@ -328,6 +345,8 @@ sub validate_make_new_account {
     if (scalar(keys %$siblings) == 0) {
         if ($account_type eq 'real') {
             return undef if $gaming_company;
+            # for ico, &new_account_real will be called to get an ico_only CR account
+            return undef if (($request_data->{account_type} // '') eq 'ico');
             # send error as account opening for maltainvest and japan has separate call
             return create_error({
                     code              => 'InvalidAccount',
@@ -372,6 +391,17 @@ sub validate_make_new_account {
     # this logic should gone after we separate new_account with new_currency for account
     $request_data->{$_} = $client->$_ for qw/first_name last_name residence address_city phone date_of_birth address_line_1/;
 
+    my $error = create_error({
+            code              => 'NewAccountLimitReached',
+            message_to_client => localize('You have created all accounts available to you.')});
+
+    # Bypass currency limit checks for ICO-only accounts - you get a single CR account (one currency only)
+    if (exists $request_data->{account_type} and $request_data->{account_type} eq 'ico') {
+        my $cr_accounts = filter_siblings_by_landing_company('costarica', $siblings);
+        return $error if $cr_accounts and %$cr_accounts;
+        return undef;
+    }
+
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
     # corresponding siblings not MLT one
@@ -392,10 +422,6 @@ sub validate_make_new_account {
     # check if client has fiat currency, if not then return as we
     # allow them to open new account
     return undef unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
-
-    my $error = create_error({
-            code              => 'NewAccountLimitReached',
-            message_to_client => localize('You have created all accounts available to you.')});
 
     my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
     my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
@@ -496,6 +522,132 @@ sub should_update_account_details {
     }
 
     return 1;
+}
+
+=head2 _timed
+
+Helper function for recording time elapsed via statsd.
+
+=cut
+
+sub _timed(&@) {    ## no critic (ProhibitSubroutinePrototypes)
+    my ($code, $k, @args) = @_;
+    my $start = Time::HiRes::time();
+    my $exception;
+    my $rslt;
+    try {
+        $rslt = $code->();
+        $k .= '.success';
+    }
+    catch {
+        $exception = $_;
+        $k .= '.error';
+    };
+    my $elapsed = 1000.0 * (Time::HiRes::time() - $start);
+    stats_timing($k, $elapsed, @args);
+    die $exception if $exception;
+    return $rslt;
+}
+
+=head2 longcode
+
+Performs a longcode lookup for the given shortcodes.
+
+Expects the following parameters in a single hashref:
+
+=over 4
+
+=item * C<currency> - the currency for the longcode text, e.g. C<USD>
+
+=item * C<short_codes> - an arrayref of shortcode strings
+
+=item * C<source> - the original app_id requesting this, false/undef if not available
+
+=back
+
+Returns a hashref which contains a single key with the shortcode to longcode mapping.
+
+=cut
+
+sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
+    my $params = shift;
+
+    die 'Invalid currency: ' . $params->{currency} unless (my $currency = uc $params->{currency}) =~ /^[A-Z]{3}$/;
+
+    my $longcodes;
+
+    # We generate a hash, so we only need each shortcode once
+    my @short_codes = uniqstr @{$params->{short_codes}};
+
+    my $app_id = $params->{source};
+    my $redis  = BOM::Platform::RedisReplicated::redis_pricer();
+    my $lang   = do {
+        my $request = request();
+        $request ? $request->language : 'EN';
+    };
+    stats_gauge('bom.pricing_rpc.longcode.count', 0 + @short_codes, {tags => ['language:' . $lang, 'currency:' . $currency]});
+
+    # Track (key, value) pairs for the Redis ->mset write call
+    my @write;
+
+    # Split our shortcode lookups into batches, pulling several keys from Redis at once
+    bundle_by {
+        my @batch  = @_;                                                            ## no critic (RequireArgUnpacking)
+        my @keys   = map { join '::', 'shortcode', $currency, $lang, $_ } @batch;
+        my $mapped = _timed {
+            $redis->mget(map { Encode::encode_utf8($_) } @keys);
+        }
+        'bom.pricing_rpc.longcode.cache.lookup', {tags => ['language:' . $lang, 'currency:' . $currency, ($app_id ? 'app_id:' . $app_id : ())]};
+        for my $idx (0 .. $#batch) {
+            my $s        = $batch[$idx];
+            my $longcode = '';
+
+            # Include empty longcode responses, since those are cached errors (and error generation might also be a bit slow)
+            if (defined($mapped->[$idx])) {
+                stats_inc('bom.pricing_rpc.longcode.cache.hit',
+                    {tags => ['language:' . $lang, 'currency:' . $currency, ($app_id ? 'app_id:' . $app_id : ())]});
+                $longcode = Encode::decode_utf8($mapped->[$idx]);
+            } else {
+                try {
+                    my $contract = produce_contract($s, $currency);
+                    $longcode = localize($contract->longcode);
+                    stats_inc('bom.pricing_rpc.longcode.cache.miss',
+                        {tags => ['language:' . $lang, 'currency:' . $currency, ($app_id ? 'app_id:' . $app_id : ())]});
+                }
+                catch {
+                    warn __PACKAGE__ . " longcode failed: $_, parameters: " . JSON::XS->new->allow_blessed->encode($params);
+                    stats_inc('bom.pricing_rpc.longcode.cache.error',
+                        {tags => ['language:' . $lang, 'currency:' . $currency, ($app_id ? 'app_id:' . $app_id : ())]});
+                };
+                # Add this to our pending (key,value) pairs - also cache failed attempts
+                push @write, $keys[$idx] => $longcode;
+            }
+            $longcodes->{$s} = $longcode;
+
+            # If we've gathered a large-enough batch, update Redis. We map all keys and values to UTF-8 bytes here,
+            # since our Redis modules expect binary data.
+            _timed {
+                $redis->mset(map { Encode::encode_utf8($_) } splice @write, 0, LONGCODE_REDIS_BATCH);
+            }
+            'bom.pricing_rpc.longcode.cache.update', {tags => ['language:' . $lang, 'currency:' . $currency]} while @write >= LONGCODE_REDIS_BATCH;
+        }
+        # we shuffle the list in an attempt to even out the key and value sizes:
+        # the hypothesis is that the default sort order when there are many shortcodes
+        # will tend to group contracts, e.g. someone buys lots of 5-tick contracts, then
+        # some forward-starting ones
+    }
+    LONGCODE_REDIS_BATCH, shuffle(@short_codes);
+
+    # Any remaining writes need to be finished off as well
+    _timed {
+        $redis->mset(map { Encode::encode_utf8($_) } splice @write)
+    }
+    'bom.pricing_rpc.longcode.cache.update', {tags => ['language:' . $lang, 'currency:' . $currency, ($app_id ? 'app_id:' . $app_id : ())]} if @write;
+
+    return {
+        longcodes => $longcodes,
+    };
+
 }
 
 1;

@@ -5,11 +5,6 @@
     "score": {
       "type": "integer",
       "required": "1"
-    },
-    "is_professional": {
-      "type": "integer",
-      "pattern": "^0$",
-      "required": "1"
     }
   }
 }
