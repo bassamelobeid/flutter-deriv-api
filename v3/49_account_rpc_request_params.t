@@ -1,14 +1,17 @@
 use strict;
 use warnings;
-use Test::More;
-use Date::Utility;
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test/;
+
+use Date::Utility;
 use Test::MockModule;
+use Test::More;
+
+$ENV{CLIENTIP_PLUGGABLE_ALLOW_LOOPBACK} = 1;
 
 use await;
-
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);

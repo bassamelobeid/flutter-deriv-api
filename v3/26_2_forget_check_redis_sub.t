@@ -176,7 +176,7 @@ SKIP: {
         is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
         is pricer_sub_count(), 0, "price count checking";
     };
-};
+}
 
 done_testing();
 

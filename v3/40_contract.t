@@ -151,16 +151,9 @@ ok $portfolio->{portfolio}->{contracts};
 ok $portfolio->{portfolio}->{contracts}->[0]->{contract_id};
 test_schema('portfolio', $portfolio);
 
-my $res = $t->await::proposal_open_contract({
-        proposal_open_contract => 1,
-        contract_id            => $portfolio->{portfolio}->{contracts}->[0]->{contract_id}});
+# proposal_open_contract is tested in 81_proposal_open_contract.t
+my $res;
 
-if (exists $res->{proposal_open_contract}) {
-    ok $res->{proposal_open_contract}->{contract_id};
-    test_schema('proposal_open_contract', $res);
-}
-
-sleep 1;
 (undef, $call_params) = call_mocked_client(
     $t,
     {
