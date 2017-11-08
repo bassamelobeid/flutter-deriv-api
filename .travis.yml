@@ -33,11 +33,11 @@ before_install:
     - sudo mkdir -p /home/git/regentmarkets
 
     - /tmp/travis-scripts/parallel_clone_branch.sh
+      regentmarkets/bom
       regentmarkets/bom-test
       regentmarkets/bom-platform
       regentmarkets/bom-postgres
       binary-com/translations-websockets-api
-
 
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
