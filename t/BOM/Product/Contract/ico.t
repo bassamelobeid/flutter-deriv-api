@@ -32,7 +32,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my $bet_params = {
     bet_type   => 'BINARYICO',
     underlying => 'BINARYICO',
-    stake      => '1.0001',
+    stake      => '1.3501',
     currency   => 'USD',
     duration   => '1400c',
 };
@@ -41,10 +41,10 @@ subtest 'Ico variations' => sub {
     BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_started(1);
     my $c = produce_contract($bet_params);
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
-    is $c->code,      'BINARYICO',             'is a Binaryico';
-    is $c->ask_price, 1400.14,                 'correct ask price';
-    is $c->payout,    1400.14,                 'correct payout';
-    is $c->shortcode, 'BINARYICO_1.0001_1400', 'correct shortcode';
+    is $c->code,          'BINARYICO',             'is a Binaryico';
+    cmp_ok $c->ask_price, '==',                    1400 * 1.3501, 'correct ask price';
+    cmp_ok $c->payout,    '==',                    1400 * 1.3501, 'correct payout';
+    is $c->shortcode,     'BINARYICO_1.3501_1400', 'correct shortcode';
     ok $c->is_valid_to_buy, 'is valid to buy';
 
     $bet_params->{bet_type} = 'CALL';
@@ -60,20 +60,20 @@ subtest 'Ico variations' => sub {
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
     is $c->code, 'BINARYICO', 'is a Binaryico';
     ok !$c->is_valid_to_buy, 'is not valid to buy';
-    is $c->primary_validation_error->message, 'The minimum bid is USD 1 or equivalent in other currency.', 'Minimum bid of USD1';
+    is $c->primary_validation_error->message, 'The minimum bid is USD 1.35 or equivalent in other currency.', 'Minimum bid of USD 1.35';
 };
 
 subtest 'shortcode_to_parameters' => sub {
-    my $parameters = shortcode_to_parameters('BINARYICO_1.0001_1400', 'USD');
+    my $parameters = shortcode_to_parameters('BINARYICO_1.3501_1400', 'USD');
     my $expected = {
         underlying                    => create_underlying('BINARYICO'),
-        shortcode                     => 'BINARYICO_1.0001_1400',
+        shortcode                     => 'BINARYICO_1.3501_1400',
         bet_type                      => 'BINARYICO',
         currency                      => 'USD',
         prediction                    => undef,
         amount_type                   => 'stake',
-        amount                        => '1.0001',
-        binaryico_per_token_bid_price => '1.0001',
+        amount                        => '1.3501',
+        binaryico_per_token_bid_price => '1.3501',
         date_start                    => undef,
         date_expiry                   => undef,
         fixed_expiry                  => undef,
@@ -86,10 +86,10 @@ subtest 'shortcode_to_parameters' => sub {
     BOM::Platform::Runtime->instance->app_config->system->suspend->is_auction_started(1);
     my $c = produce_contract($parameters);
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
-    is $c->code,      'BINARYICO',             'is a Binaryico';
-    is $c->ask_price, 1400.14,                 'correct ask price';
-    is $c->payout,    1400.14,                 'correct payout';
-    is $c->shortcode, 'BINARYICO_1.0001_1400', 'correct shortcode';
+    is $c->code,          'BINARYICO',             'is a Binaryico';
+    cmp_ok $c->ask_price, '==',                    1400 * 1.3501, 'correct ask price';
+    cmp_ok $c->payout,    '==',                    1400 * 1.3501, 'correct payout';
+    is $c->shortcode,     'BINARYICO_1.3501_1400', 'correct shortcode';
     ok $c->is_valid_to_buy, 'is valid to buy';
 
     cmp_deeply($parameters, $expected, 'BINARYICO shortcode.');
@@ -108,13 +108,13 @@ subtest 'ico with invalid landing company' => sub {
     my $error = try {
         produce_contract({
                 underlying                    => create_underlying('BINARYICO'),
-                shortcode                     => 'BINARYICO_1.0001_1400',
+                shortcode                     => 'BINARYICO_1.3501_1400',
                 bet_type                      => 'BINARYICO',
                 currency                      => 'USD',
                 prediction                    => undef,
                 amount_type                   => 'stake',
-                amount                        => '1.0001',
-                binaryico_per_token_bid_price => '1.0001',
+                amount                        => '1.3501',
+                binaryico_per_token_bid_price => '1.3501',
                 date_start                    => undef,
                 date_expiry                   => undef,
                 fixed_expiry                  => undef,
