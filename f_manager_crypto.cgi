@@ -423,7 +423,7 @@ EOF
             push @param, '', 500;
         }
         my $rslt;
-        if ($currency eq 'ETH') {
+        if ($currency eq 'ETH' and $cmd eq 'getbalance') {
             $rslt += Math::BigFloat->from_hex($rpc_client->eth_getBalance($_, 'latest')) / 10**18 for @{$rpc_client->eth_accounts()};
         } else {
             $rslt = $rpc_client->$cmd(@param);
