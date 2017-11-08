@@ -93,6 +93,12 @@ has auction_final_price => (
     lazy_build => 1,
 );
 
+has minimum_bid_in_usd => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
 sub _build_ask_price {
     my $self = shift;
     return $self->binaryico_number_of_tokens * $self->binaryico_per_token_bid_price;
@@ -113,6 +119,10 @@ sub _build_auction_ended {
 
 sub _build_auction_final_price {
     return BOM::Platform::Runtime->instance->app_config->system->suspend->ico_final_price;
+}
+
+sub _build_minimum_bid_in_usd {
+    return BOM::Platform::Runtime->instance->app_config->system->suspend->ico_minimum_bid_in_usd;
 }
 
 sub _build_binaryico_auction_status {
@@ -263,21 +273,19 @@ sub is_settleable {
     my $self = shift;
 
     return $self->is_expired // 0;
-
 }
 
 # Validation
-
 sub _validate_price {
     my $self = shift;
 
     return if $self->_for_sale;
 
-    if ($self->binaryico_per_token_bid_price_USD < 1) {
+    if ($self->binaryico_per_token_bid_price_USD < $self->minimum_bid_in_usd) {
         return {
-            message           => 'The minimum bid is USD 1 or equivalent in other currency.',
+            message           => 'The minimum bid is USD ' . $self->minimum_bid_in_usd . ' or equivalent in other currency.',
             severity          => 99,
-            message_to_client => [$ERROR_MAPPING->{InvalidBinaryIcoBidPrice}],
+            message_to_client => [$ERROR_MAPPING->{InvalidBinaryIcoBidPrice}, $self->minimum_bid_in_usd],
         };
 
     }
@@ -298,7 +306,6 @@ sub _validate_date_pricing {
     }
 
     return;
-
 }
 
 sub pricing_details {
