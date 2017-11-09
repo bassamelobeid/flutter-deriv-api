@@ -2,10 +2,11 @@ package BOM::Test::Helper::ExchangeRates;
 
 use strict;
 use warnings;
+use Cache::RedisDB;
 use Exporter qw( import );
 our @EXPORT_OK = qw( populate_exchange_rates );
 
-# Mock exchange rates and populate in redis
+# Subroutine for populating exchange rates for tests
 sub populate_exchange_rates {
     my $rates = {
         USD => 1,
