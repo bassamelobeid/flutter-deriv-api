@@ -27,6 +27,7 @@ sub create_underlying {
     $for_date = $args->{for_date} if (exists $args->{for_date}) and not $for_date;
 
     $args->{chronicle_reader} = BOM::Platform::Chronicle::get_chronicle_reader($for_date);
+    $args->{chronicle_writer} = BOM::Platform::Chronicle::get_chronicle_writer();
 
     my $result = Quant::Framework::Underlying->new($args, $for_date);
 
