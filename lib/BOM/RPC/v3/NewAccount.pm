@@ -245,7 +245,7 @@ sub new_account_real {
         $new_client->set_status('ico_only',               'SYSTEM', 'ICO account requested')          if $ico_only;
         $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
         $new_client->save;
-        _send_professional_requested_email($new_client->loginid) if $professional_requested;
+        BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid) if $professional_requested;
     };
 
     if ($args->{currency}) {
@@ -352,7 +352,7 @@ sub new_account_maltainvest {
         try {
             $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
             $new_client->save;
-            _send_professional_requested_email($new_client->loginid);
+            BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid);
         };
     }
 
@@ -500,20 +500,6 @@ sub new_sub_account {
         landing_company_shortcode => $new_client->landing_company->short,
         oauth_token               => _create_oauth_token($new_client->loginid),
     };
-}
-
-sub _send_professional_requested_email {
-    my $loginid = shift;
-
-    return unless $loginid;
-
-    my $brand = Brands->new(name => request()->brand);
-    return send_email({
-        from    => $brand->emails('support'),
-        to      => $brand->emails('compliance'),
-        subject => "$loginid requested for professional status",
-        message => ["$loginid has requested for professional status, please check and update accordingly"],
-    });
 }
 
 1;
