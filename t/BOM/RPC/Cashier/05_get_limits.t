@@ -33,7 +33,7 @@ $mocked_CurrencyConverter->mock(
         $from_currency eq 'EUR' and return 1.1888 * $price;
         $from_currency eq 'GBP' and return 1.3333 * $price;
         $from_currency eq 'JPY' and return 0.0089 * $price;
-        $from_currency eq 'BTC' and return 6000 * $price;
+        $from_currency eq 'BTC' and return 5500 * $price;
         $from_currency eq 'USD' and return 1 * $price;
         return 0;
     });
