@@ -19,6 +19,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Product::Static;
+use Finance::Contract::Longcode;
 use BOM::Platform::Runtime;
 
 has file_container => (
@@ -276,7 +277,7 @@ sub add_longcodes {
     my $self = shift;
 
     my $fh        = $self->pot_append_fh;
-    my $longcodes = BOM::Product::Static::get_longcodes();
+    my $longcodes = Finance::Contract::Longcode::get_longcodes();
 
     foreach my $longcode (keys %$longcodes) {
         my $msgid = $self->msg_id($longcodes->{$longcode});

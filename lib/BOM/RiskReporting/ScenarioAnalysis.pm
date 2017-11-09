@@ -30,7 +30,7 @@ use Time::Duration::Concise::Localize;
 
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::MarketData::Types;
 use BOM::Backoffice::Request;
 
