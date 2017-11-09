@@ -713,6 +713,45 @@ subtest $method => sub {
     $test_client->aml_risk_classification('low');
     $test_client->save();
 
+    $test_client_cr->set_status('document_needs_action');
+    $test_client_cr->save;
+    cmp_deeply(
+        $c->tcall($method, {token => $token_21}),
+        {
+            status                        => bag(qw(financial_assessment_not_complete document_needs_action)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '1',
+        },
+        'authentication page should be shown if needs action is set regardless of balance'
+    );
+
+    $test_client_cr->clr_status('document_needs_action');
+    $test_client_cr->set_status('document_under_review');
+    $test_client_cr->save;
+    cmp_deeply(
+        $c->tcall($method, {token => $token_21}),
+        {
+            status                        => bag(qw(financial_assessment_not_complete document_under_review)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '1',
+        },
+        'authentication page should be shown if under review is set regardless of balance'
+    );
+
+    # Revert under review state
+    $test_client_cr->clr_status('document_under_review');
+    $test_client_cr->save;
+
+    cmp_deeply(
+        $c->tcall($method, {token => $token_21}),
+        {
+            status                        => bag(qw(financial_assessment_not_complete)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '0',
+        },
+        'authentication should not be shown if neither needs action nor under review is set if balance is < 4k'
+    );
+
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;
     # We are authenticated, but MF still has flag set until age_verification has been completed
