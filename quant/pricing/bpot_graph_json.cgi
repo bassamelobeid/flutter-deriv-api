@@ -23,7 +23,7 @@ use JSON qw(to_json);
 use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_JSON );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
