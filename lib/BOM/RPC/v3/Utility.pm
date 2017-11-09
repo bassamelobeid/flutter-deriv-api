@@ -364,8 +364,8 @@ sub validate_make_new_account {
         return;
     }
 
-    my @sibling_values;
     if ($client->is_virtual) {
+        my @sibling_values;
         if (@sibling_values = values %$siblings and scalar @sibling_values == 1 and $sibling_values[0]->{ico_only}) {
             return;
         } else {
