@@ -300,6 +300,7 @@ sub get_real_account_siblings_information {
             sub_account_of       => ($cl->sub_account_of // ''),
             currency             => $acc ? $acc->currency_code : '',
             balance              => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
+            ico_only => $cl->get_status('ico_only') ? 1 : 0,
         };
     }
 
@@ -363,8 +364,15 @@ sub validate_make_new_account {
         # but we do allow them to open only financial account
         return;
     }
-    # we don't allow virtual client to make this again and
-    return permission_error() if $client->is_virtual;
+
+    if ($client->is_virtual) {
+        my @sibling_values = values %$siblings;
+        if (scalar @sibling_values == 1 and $sibling_values[0]->{ico_only}) {
+            return;
+        } else {
+            return permission_error();
+        }
+    }
 
     my $landing_company_name = $client->landing_company->short;
 
