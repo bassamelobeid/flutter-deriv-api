@@ -77,7 +77,7 @@ sub successful_upload {
         $result = $client->db->dbic->run(
             fixup => sub {
                 $_->do(
-                    "UPDATE betonmarkets.client_authentication_document AS doc_table set checksum = ?, status = 'uploaded', upload_date = current_date, file_name = doc_table.client_loginid || '.' || doc_table.document_type || '.' || doc_table.id || '.' || doc_table.document_format where doc_table.id = ?",
+                    "UPDATE betonmarkets.client_authentication_document set checksum = ?, status = 'uploaded', upload_date = current_date, file_name = client_loginid || '.' || document_type || '.' || id || '.' || document_format where id = ?",
                     undef, $args->{checksum}, $args->{file_id});
             });
     }
