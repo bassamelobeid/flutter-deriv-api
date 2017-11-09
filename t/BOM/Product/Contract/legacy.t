@@ -8,7 +8,7 @@ use File::Spec;
 use JSON qw(decode_json);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 
 subtest 'BOM::Product::Contract::Invalid' => sub {
     use_ok('BOM::Product::Contract::Invalid');
