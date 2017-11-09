@@ -366,8 +366,8 @@ sub validate_make_new_account {
     }
 
     if ($client->is_virtual) {
-        my @sibling_values;
-        if (@sibling_values = values %$siblings and scalar @sibling_values == 1 and $sibling_values[0]->{ico_only}) {
+        my @sibling_values = values %$siblings;
+        if (scalar @sibling_values == 1 and $sibling_values[0]->{ico_only}) {
             return;
         } else {
             return permission_error();
