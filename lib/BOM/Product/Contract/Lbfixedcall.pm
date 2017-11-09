@@ -7,12 +7,6 @@ with 'BOM::Product::Role::Lookback', 'BOM::Product::Role::SingleBarrier', 'BOM::
 
 sub code { return 'LBFIXEDCALL'; }
 
-sub localizable_description {
-    return +{
-        intraday => 'Receive the difference of [_3]\'s maximum value during the life of the option and [_6] at [_5] after [_4].',
-    };
-}
-
 sub check_expiry_conditions {
     my $self = shift;
 

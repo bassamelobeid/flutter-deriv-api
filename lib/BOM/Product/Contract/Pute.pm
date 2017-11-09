@@ -4,7 +4,6 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Product::Static qw/get_longcodes/;
 use BOM::Product::Exception;
 
 sub ticks_to_expiry {
@@ -14,15 +13,6 @@ sub ticks_to_expiry {
         error_code => 'InvalidTickExpiry',
         error_args => [$self->code],
     );
-}
-
-sub localizable_description {
-    return +{
-        tick                  => get_longcodes()->{pute_tick},
-        daily                 => get_longcodes()->{pute_daily},
-        intraday              => get_longcodes()->{pute_intraday},
-        intraday_fixed_expiry => get_longcodes()->{pute_intraday_fixed_expiry},
-    };
 }
 
 sub check_expiry_conditions {

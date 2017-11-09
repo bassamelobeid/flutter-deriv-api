@@ -16,12 +16,12 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 use Postgres::FeedDB::Spot::Tick;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::ContractFactory::Parser qw(
+use Finance::Contract::Longcode qw(
     shortcode_to_parameters
 );
 
 subtest 'shortcode_to_parameters' => sub {
-    my $frxUSDJPY = create_underlying('frxUSDJPY');
+    my $frxUSDJPY = 'frxUSDJPY';
 
     my $legacy = shortcode_to_parameters('DOUBLEDBL_frxUSDJPY_100_10_OCT_12_I_10H10_U_11H10_D_12H10', 'USD');
     is($legacy->{bet_type}, 'Invalid', 'Legacy shortcode.');
@@ -45,7 +45,7 @@ subtest 'shortcode_to_parameters' => sub {
         fixed_expiry => undef,
         tick_count   => undef,
         tick_expiry  => undef,
-        is_sold      => undef
+        is_sold      => 0
     };
     cmp_deeply($call, $expected, 'CALL shortcode.');
 
@@ -71,7 +71,7 @@ subtest 'shortcode_to_parameters' => sub {
         fixed_expiry => undef,
         tick_count   => 9,
         tick_expiry  => 1,
-        is_sold      => undef
+        is_sold      => 0
     };
     cmp_deeply($tickup, $expected, 'FLASH tick expiry shortcode.');
 

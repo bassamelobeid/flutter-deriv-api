@@ -13,7 +13,7 @@ use Date::Utility;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);

@@ -237,7 +237,7 @@ subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday'
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'multiday contract';
     is_deeply($c2->longcode,
-        ['Win payout if [_3] is strictly lower than [_6] at [_5].', 'USD', '166.27', 'GBP/USD', [], ['close on [_1]', '2016-05-13'], ['entry spot']]);
+        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'GBP/USD', ['contract start time'], ['23 hours 54 minutes 6 seconds'], ['entry spot']]);
     diag("after again");
     is $c->expiry_type, 'daily';
     my $expiry_daily_longcode = $c2->longcode;
@@ -254,8 +254,8 @@ subtest 'longcode of daily contracts at 10 minutes before friday close' => sub {
     is_deeply(
         $c2->longcode,
         [
-            'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
-            'usd', '166.27', 'GBP/USD', ['contract start time'], ['10 minutes'], ['entry spot']]);
+            'Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].',
+            'GBP/USD', ['contract start time'], ['10 minutes'], ['entry spot']]);
     is $c2->expiry_type, 'intraday';
     ok $c2->is_intraday, 'is an intraday contract';
 };
@@ -266,8 +266,8 @@ subtest 'longcode of 22 hours contract from Thursday 3GMT' => sub {
     is_deeply(
         $c2->longcode,
         [
-            'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
-            'usd', '166.27', 'GBP/USD', ['contract start time'], ['22 hours'], ['entry spot']]);
+            'Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].',
+            'GBP/USD', ['contract start time'], ['22 hours'], ['entry spot']]);
     is $c2->expiry_type, 'intraday';
     ok $c2->is_intraday, 'is an intraday contract';
 };
@@ -280,8 +280,8 @@ subtest 'longcode of index daily contracts' => sub {
     is_deeply(
         $c2->longcode,
         [
-            'Win payout if [_3] is strictly lower than [_6] at [_5].',
-            'USD', '166.27', 'German Index', [], ['close on [_1]', '2016-07-27'],
+            'Win payout if [_1] is strictly lower than [_4] at [_3].',
+            'German Index', [], ['close on [_1]', '2016-07-27'],
             ['entry spot']]);
     is $c->expiry_type, 'daily';
     my $expiry_daily_longcode = $c2->longcode;
@@ -301,7 +301,7 @@ subtest 'longcode of daily contract on early close day' => sub {
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is a multiday contract';
     is_deeply($c2->longcode,
-        ['Win payout if [_3] is strictly lower than [_6] at [_5].', 'USD', '166.27', 'GBP/USD', [], ['close on [_1]', '2016-12-22'], ['entry spot']]);
+        ['Win payout if [_1] is strictly lower than [_4] at [_3].', 'GBP/USD', [], ['close on [_1]', '2016-12-22'], ['entry spot']]);
     is $c2->expiry_type, 'daily';
 };
 
@@ -313,8 +313,8 @@ subtest 'longcode of intraday contracts' => sub {
     is_deeply(
         $c2->longcode,
         [
-            'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
-            'USD', '166.27', 'GBP/USD', ['contract start time'], ['13 hours'], ['entry spot']]);
+            'Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].',
+            'GBP/USD', ['contract start time'], ['13 hours'], ['entry spot']]);
 };
 
 subtest 'ATM and non ATM switches on sellback' => sub {

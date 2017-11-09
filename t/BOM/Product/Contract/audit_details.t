@@ -50,8 +50,9 @@ subtest 'no audit details' => sub {
 };
 
 subtest 'when there is tick at start & expiry' => sub {
-    my @before = map { [100 + 0.001 * $_, $now->epoch + $_,    'frxUSDJPY'] } (-2 .. 2);
-    my @after  = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2 .. 2);
+    my @before =
+        map { [100 + 0.001 * $_, $now->epoch + $_, 'frxUSDJPY'] } (-2 .. 2);
+    my @after = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2 .. 2);
     create_ticks(@before, @after);
     my $c = produce_contract({%$args, date_pricing => $expiry});
     ok $c->is_expired,         'contract expired';
@@ -62,8 +63,25 @@ subtest 'when there is tick at start & expiry' => sub {
     is_deeply($c->audit_details, $expected, 'audit details as expected');
 };
 
+subtest 'there are ticks with same quote' => sub {
+    my @before =
+        map { [100 + 0.001 * $_, $now->epoch + $_, 'frxUSDJPY'] } (-2 .. 2);
+    my @after = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2 .. 2);
+    $before[3][0] = $before[2][0];
+    $after[3][0]  = $after[2][0];
+    create_ticks(@before, @after);
+    my $c = produce_contract({%$args, date_pricing => $expiry});
+    ok $c->is_expired,         'contract expired';
+    ok $c->is_valid_exit_tick, 'contract has valid exit tick';
+    my $expected = from_json(
+        '{"contract_start":[{"epoch":"1507593598","tick":"99.998"},{"epoch":"1507593599","tick":"99.999"},{"flag":"highlight_time","epoch":"1507593600","name":["Start Time"],"tick":"100.000"},{"flag":"highlight_tick","epoch":"1507593601","name":["Entry Spot"],"tick":"100.000"},{"epoch":"1507593602","tick":"100.002"},{"epoch":"1507594498","tick":"99.998"}],"contract_end":[{"epoch":"1507594498","tick":"99.998"},{"epoch":"1507594499","tick":"99.999"},{"flag":"highlight_tick","epoch":"1507594500","name":["[_1] and [_2]","End Time","Exit Spot"],"tick":"100.000"},{"epoch":"1507594501","tick":"100.000"},{"epoch":"1507594502","tick":"100.002"}]}'
+    );
+    is_deeply($c->audit_details, $expected, 'audit details as expected');
+};
+
 subtest 'no tick at start & expiry' => sub {
-    my @before = map { [100, $now->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
+    my @before =
+        map { [100, $now->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
     my @after = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
     create_ticks(@before, @after);
     my $c = produce_contract({%$args, date_pricing => $expiry});

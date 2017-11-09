@@ -15,7 +15,7 @@ use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Product::Exception;
 use BOM::Product::Categorizer;
-use BOM::Product::ContractFactory::Parser qw(
+use Finance::Contract::Longcode qw(
     shortcode_to_parameters
 );
 
