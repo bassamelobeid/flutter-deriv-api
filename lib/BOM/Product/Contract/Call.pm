@@ -4,20 +4,9 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Product::Static qw/get_longcodes/;
-
 sub ticks_to_expiry {
     # Add one since we want N ticks *after* the entry spot
     return shift->tick_count + 1;
-}
-
-sub localizable_description {
-    return +{
-        tick                  => get_longcodes()->{call_tick},
-        daily                 => get_longcodes()->{call_daily},
-        intraday              => get_longcodes()->{call_intraday},
-        intraday_fixed_expiry => get_longcodes()->{call_intraday_fixed_expiry},
-    };
 }
 
 sub check_expiry_conditions {

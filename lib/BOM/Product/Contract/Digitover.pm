@@ -6,15 +6,8 @@ with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Pr
 
 use Pricing::Engine::Digits;
 
-use BOM::Product::Static qw/get_longcodes/;
 use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Greeks::Digits;
-
-sub localizable_description {
-    return +{
-        tick => get_longcodes()->{digitover_tick},
-    };
-}
 
 sub ticks_to_expiry {
     return shift->tick_count;

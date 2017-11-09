@@ -10,6 +10,7 @@ use Scalar::Util qw(looks_like_number);
 use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::MarketData qw(create_underlying);
+use Quant::Framework::Underlying;
 use BOM::MarketData::Types;
 use BOM::Product::Static;
 
@@ -65,11 +66,12 @@ sub _build_supplied_type {
     my $self = shift;
 
     my $barrier_string = $self->supplied_barrier;
-
+    # To make things consistent, a barrier will only be treated as 'difference' if it has +/- sign.
+    # 0 as barrier will be an absolute barrier.
     return
-          ($barrier_string =~ /^S[+-]?\d+P$/i) ? 'relative'
-        : ($barrier_string =~ /^[+-](?:\d+\.?\d{0,12})/ or (looks_like_number($barrier_string) and $barrier_string == 0)) ? 'difference'
-        :                                                                                                                   'absolute';
+          ($barrier_string =~ /^S[+-]?\d+P$/i)           ? 'relative'
+        : ($barrier_string =~ /^[+-](?:\d+\.?\d{0,12})/) ? 'difference'
+        :                                                  'absolute';
 }
 
 sub _build_barrier_type {
@@ -175,64 +177,11 @@ sub _build_pip_difference {
     return $pips;
 }
 
-has for_shortcode => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_for_shortcode {
-    my $self = shift;
-
-    # We'll reapply them on rebuild.
-    my $strike = $self;
-
-    return $strike->as_relative if ($strike->supplied_type eq 'relative' or $strike->supplied_type eq 'difference');
-
-    my $sc_version;
-
-    if ($strike->underlying->market->absolute_barrier_multiplier) {
-        $sc_version = $strike->as_absolute * FOREX_BARRIER_MULTIPLIER;
-    } else {
-        # Really?
-        $sc_version = floor($strike->as_absolute);
-    }
-
-    # Make sure it's an integer
-    # There used to be a warning here if it wasn't, but the range finding set it off all the time.
-    $sc_version = roundcommon(1, $sc_version);
-
-    return $sc_version;
-}
-
-# Modifiers are limited to simple linear arthimetic adjustments.
-# Critic doesn't like eval of expressions.
-my %modifiers = (
-    'add' => {
-        display => '+',
-        code    => sub { $_[0] + $_[1]; }
-    },
-    'subtract' => {
-        display => '-',
-        code    => sub {
-            $_[0] - $_[1];
-        }
-    },
-    'multiply' => {
-        display => '*',
-        code    => sub {
-            $_[0] * $_[1];
-        }
-    },
-    'divide' => {
-        display => '/',
-        code    => sub {
-            $_[0] / $_[1];
-        }
-    },
-);
-
 sub strike_string {
-    my (undef, $string, $underlying, $bet_type_code) = @_;
+    my (undef, $string, $underlying_symbol, $bet_type_code) = @_;
+
+    # do not use create_underlying because this is going to be very slow due to dependency on chronicle.
+    my $underlying = Quant::Framework::Underlying->new($underlying_symbol);
 
     $string /= FOREX_BARRIER_MULTIPLIER
         if ($bet_type_code !~ /^DIGIT/ and $string and looks_like_number($string) and $underlying->market->absolute_barrier_multiplier);
