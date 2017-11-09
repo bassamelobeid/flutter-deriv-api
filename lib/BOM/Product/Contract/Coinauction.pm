@@ -283,7 +283,7 @@ sub _validate_price {
 
     if ($self->binaryico_per_token_bid_price_USD < $self->minimum_bid_in_usd) {
         return {
-            message           => 'The minimum bid is USD ' . $self->minimum_bid_in_usd . ' or equivalent in other currency.',
+            message           => 'The minimum price per token is USD ' . $self->minimum_bid_in_usd . ' or equivalent in other currency.',
             severity          => 99,
             message_to_client => [$ERROR_MAPPING->{InvalidBinaryIcoBidPrice}, $self->minimum_bid_in_usd],
         };

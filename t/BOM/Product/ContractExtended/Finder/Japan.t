@@ -45,7 +45,7 @@ subtest "predefined contracts for symbol" => sub {
             "2015-08-21 00:45:00", "2015-08-21 03:45:00", "2015-08-21 04:45:00", "2015-08-21 05:30:00", "2015-08-24 00:00:00",
             "2015-08-31",          "2015-08-31 00:00:01", "2015-09-04 16:30:00", time
             );
-            BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $now);
+        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $now);
     }
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -79,8 +79,8 @@ subtest "predefined contracts for symbol" => sub {
     );
     foreach my $u (keys %expected) {
         my $f = available_contracts_for_symbol({
-            symbol          => $u,
-            date            => $now,
+            symbol => $u,
+            date   => $now,
         });
         my %got;
         $got{$_->{contract_category}}++ for (@{$f->{available}});

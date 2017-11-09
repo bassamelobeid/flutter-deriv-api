@@ -153,8 +153,8 @@ subtest 'max_feed_delay_seconds' => sub {
         $c = produce_contract($bet_params);
         ok $c->_validate_feed, 'invalid if feed is more than 2 seconds old if there is a level 5 economic event';
     }
-    $tick->{epoch} = $now->epoch + 1;
-    $pg_tick = Postgres::FeedDB::Spot::Tick->new($tick);
+    $tick->{epoch}              = $now->epoch + 1;
+    $pg_tick                    = Postgres::FeedDB::Spot::Tick->new($tick);
     $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 5;
     ok !$c->_validate_feed, 'valid. maximum_feed_delay_seconds is back to 15 seconds once we receives a tick after the level 5 economic event';
 };
