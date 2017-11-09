@@ -65,7 +65,8 @@ sub get_document_age {
 
     my $now = DateTime->now;
 
-    return $now->delta_days(
+    # Counting from 1: 1 days old (uploaded today)
+    return 1 + $now->delta_days(
         DateTime->new(
             year  => $timestamp->year,
             month => $timestamp->month,
