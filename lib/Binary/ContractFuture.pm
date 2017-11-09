@@ -7,7 +7,7 @@ use JSON::MaybeXS;
 use Mojo::URL;
 use YAML::XS qw/LoadFile/;
 
-use constant PRICING_TIMEOUT => 3;
+use constant PRICING_TIMEOUT => 10;
 
 my $subscribers = {};
 
