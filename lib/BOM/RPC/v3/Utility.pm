@@ -365,8 +365,12 @@ sub validate_make_new_account {
     }
 
     my @sibling_values;
-    if ($client->is_virtual and not(@sibling_values = values %$siblings and scalar @sibling_values == 1 and $sibling_values[0]->{ico_only})) {
-        return permission_error();
+    if ($client->is_virtual) {
+        if (@sibling_values = values %$siblings and scalar @sibling_values == 1 and $sibling_values[0]->{ico_only}) {
+            return;
+        } else {
+            return permission_error();
+        }
     }
 
     my $landing_company_name = $client->landing_company->short;
