@@ -343,23 +343,35 @@ sub show_client_id_docs {
 
     return '' if $loginid =~ /^MT/;
 
-    my $client = Client::Account->new({
-        loginid      => $loginid,
-        db_operation => 'replica',
-    });
+    my $dbic = BOM::Database::ClientDB->new({
+            client_loginid => $loginid,
+            operation      => 'backoffice_replica',
+        }
+        )->db->dbic
+        or die "[$0] cannot create connection";
 
-    my @docs = $client->client_authentication_document;
-    foreach my $doc (sort { $a->id <=> $b->id } @docs) {
-        my ($id, $file_name, $file_path, $input);
-        $id        = $doc->id;
-        $file_name = $doc->file_name;
+    my $docs = $dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                "SELECT id, file_name, expiration_date, comments, document_id, upload_date FROM betonmarkets.client_authentication_document WHERE client_loginid = ?"
+                , undef, $loginid
+            );
+        });
+
+    foreach my $doc (sort { $a->[0] <=> $b->[0] } @$docs) {
+        my $id              = $doc->[0];
+        my $file_name       = $doc->[1];
+        my $expiration_date = $doc->[2];
+        my $comments        = $doc->[3];
+        my $document_id     = $doc->[4];
+        my $upload_date     = $doc->[5];
 
         if (not $file_name) {
             $links .= qq{<tr><td>Missing filename for a file with ID: $id</td></tr>};
             next;
         }
 
-        my $date = $doc->expiration_date || '';
+        my $date = $expiration_date || '';
         if ($date) {
             eval {
                 my $formatted = Date::Utility->new($date)->date_yyyymmdd;
@@ -369,15 +381,14 @@ sub show_client_id_docs {
                 }
         }
 
-        my $comments    = $doc->comments;
-        my $document_id = $doc->document_id;
-
-        $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
+        my $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
         $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
         $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
 
-        my $url = BOM::Backoffice::Script::DocumentUpload::get_s3_url($file_name);
-        $links .= qq{<tr><td><a href="$url">$file_name</a></td><td>$input};
+        my $url     = BOM::Backoffice::Script::DocumentUpload::get_s3_url($file_name);
+        my $doc_age = BOM::Backoffice::Script::DocumentUpload::get_document_age($upload_date);
+
+        $links .= qq{<tr><td><a href="$url">$file_name</a> $doc_age days old</td><td>$input};
         if ($show_delete && !$args{no_edit}) {
             my $onclick    = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
             my $delete_url = request()->url_for("backoffice/download_document.cgi?loginid=$loginid&doc_id=$id&deleteit=yes");
