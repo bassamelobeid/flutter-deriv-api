@@ -8,7 +8,7 @@ use Try::Tiny;
 use Test::Warnings;
 use Test::Exception;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::MarketData qw(create_underlying);
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
@@ -66,7 +66,7 @@ subtest 'Ico variations' => sub {
 subtest 'shortcode_to_parameters' => sub {
     my $parameters = shortcode_to_parameters('BINARYICO_1.3501_1400', 'USD');
     my $expected = {
-        underlying                    => create_underlying('BINARYICO'),
+        underlying                    => 'BINARYICO',
         shortcode                     => 'BINARYICO_1.3501_1400',
         bet_type                      => 'BINARYICO',
         currency                      => 'USD',
@@ -79,7 +79,7 @@ subtest 'shortcode_to_parameters' => sub {
         fixed_expiry                  => undef,
         tick_count                    => undef,
         tick_expiry                   => undef,
-        is_sold                       => undef,
+        is_sold                       => 0,
         binaryico_number_of_tokens    => 1400
     };
 

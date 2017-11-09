@@ -48,15 +48,15 @@ subtest 'Proper form' => sub {
     is_deeply(
         $c->longcode,
         [
-            'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
-            'USD', '100.00', 'EUR/USD', ['contract start time'], ['3 hours'], ['entry spot']]);
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
+            'EUR/USD', ['contract start time'], ['3 hours'], ['entry spot']]);
 
     $c = produce_contract($shortcodes[10], 'EUR');
     is_deeply(
         $c->longcode,
         [
-            'Win payout if [_3] touches [_6] through [_5] after [_4].', 'EUR',
-            '100.00',                                                   'AUD/JPY',
+            'Win payout if [_1] touches [_4] through [_3] after [_2].',
+            'AUD/JPY',
             ['contract start time'], ['10 hours'],
             ['entry spot plus [plural,_1,%d pip, %d pips]', 300]]);
 
@@ -64,13 +64,17 @@ subtest 'Proper form' => sub {
     is_deeply(
         $c->longcode,
         [
-            'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
-            'RUR', '100', 'EUR/NOK', ['contract start time'], ['12 minutes'], ['entry spot']]);
+            'Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].',
+            'EUR/NOK', ['contract start time'], ['12 minutes'], ['entry spot']]);
 };
 
 subtest 'longcode from params for forward starting' => sub {
     my $now = Date::Utility->new('2016-10-19 10:00:00');
-
+    my $tick = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'R_100',
+        quote      => 100,
+        epoch      => $now->epoch
+    });
     my $c = produce_contract({
         bet_type     => 'CALL',
         underlying   => 'R_100',
@@ -81,6 +85,7 @@ subtest 'longcode from params for forward starting' => sub {
         barrier      => 'S0P',
         payout       => 10,
         fixed_expiry => 1,
+        current_tick => $tick,
     });
 
     ok $c->is_forward_starting, 'is a forward starting contract';
@@ -88,8 +93,7 @@ subtest 'longcode from params for forward starting' => sub {
     is_deeply(
         $c->longcode,
         [
-            'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
-            'USD', '10.00',
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
             'Volatility 100 Index',
             ['2016-10-19 10:10:00 GMT'],
             ['10 minutes'], ['entry spot']]);
@@ -117,8 +121,7 @@ subtest 'longcode with \'difference\' as barrier' => sub {
     is_deeply(
         $c->longcode,
         [
-            'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
-            'USD', '10.00',
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
             'Volatility 100 Index',
             ['2016-10-19 10:10:00 GMT'],
             ['10 minutes'], ['entry spot plus [_1]', 0.32]]);
@@ -138,8 +141,8 @@ subtest 'longcode with \'difference\' as barrier' => sub {
     is_deeply(
         $c->longcode,
         [
-            'Win payout if [_3] ends outside [_7] to [_6] at [_5].',
-            'USD', '10.00', 'Volatility 100 Index',
+            'Win payout if [_1] ends outside [_5] to [_4] at [_3].',
+            'Volatility 100 Index',
             [],
             ['2016-10-19 10:20:00 GMT'],
             ['entry spot plus [_1]',  0.32],
@@ -169,8 +172,7 @@ subtest 'zero barrier' => sub {
     is_deeply(
         $c->longcode,
         [
-            'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
-            'USD', '10.00',
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
             'Volatility 100 Index',
             ['2016-10-19 10:10:00 GMT'],
             ['10 minutes'], '0.00'
