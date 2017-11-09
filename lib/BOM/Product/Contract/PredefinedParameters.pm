@@ -355,7 +355,7 @@ sub _get_spot {
     # So, ticks will be taken directly from feed-redis.
     my $now = time;
     # let's use abs() to tolerate small time shifts
-    my $realtime = abs($now - $trading_period->{date_start}->{epoch});
+    my $realtime = abs($now - $trading_period->{date_start}->{epoch}) < 2;
     my $take_from_distributor =
            $realtime
         && ($date_start->day_of_week == 1)
