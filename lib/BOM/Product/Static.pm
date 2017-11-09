@@ -51,7 +51,7 @@ my $config = {
         InvalidLookbacksPrice       => 'Lookbacks price cannot be zero.',
         InvalidStake                => 'Invalid stake/payout.',
         InvalidBinaryIcoBidPrice =>
-            'Sorry, but the price per token is too low. The minimum price per token allowed is USD [_1] (or its equivalent in another currency).',
+            'Sorry, but the bid per token is too low. The minimum bid per token allowed is USD [_1] (or its equivalent in another currency).',
         IcoClosed                     => 'The ICO is now closed.',
         IcoNotStarted                 => 'The ICO has not yet started.',
         IcoNotAllowed                 => 'The ICO is not available for the account.',
