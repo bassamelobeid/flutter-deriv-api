@@ -329,13 +329,7 @@ sub get_bid {
         my $is_valid_to_sell = $contract->is_valid_to_sell($params->{validation_params});
 
         $response = {
-            is_valid_to_sell => $is_valid_to_sell,
-            (
-                $is_valid_to_sell
-                ? ()
-                : (validation_error => localize($contract->primary_validation_error->message_to_client))
-            ),
-            bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
+            is_valid_to_sell    => $is_valid_to_sell,
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
             underlying          => $contract->underlying->symbol,
@@ -353,6 +347,12 @@ sub get_bid {
             payout              => $contract->payout,
             contract_type       => $contract->code,
         };
+
+        if ($is_valid_to_sell) {
+            $response->{bid_price} = formatnumber('price', $contract->currency, $contract->bid_price);
+        } else {
+            $response->{validation_error} = localize($contract->primary_validation_error->message_to_client);
+        }
 
         if (not $contract->may_settle_automatically
             and $contract->missing_market_data)
