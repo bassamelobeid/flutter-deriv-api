@@ -514,7 +514,7 @@ sub startup {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
-                \&Binary::WebSocketAPI::Hooks::before_forward,               \&Binary::WebSocketAPI::Hooks::get_rpc_url,
+                \&Binary::WebSocketAPI::Hooks::before_forward,               \&Binary::WebSocketAPI::Hooks::assign_rpc_url,
                 \&Binary::WebSocketAPI::Hooks::introspection_before_forward, \&Binary::WebSocketAPI::Hooks::check_useragent,
             ],
             before_call => [
@@ -539,7 +539,7 @@ sub startup {
             finish_connection => \&Binary::WebSocketAPI::Hooks::on_client_disconnect,
 
             # helper config
-            url => \&Binary::WebSocketAPI::Hooks::get_rpc_url,                          # make url for manually called actions
+            url => \&Binary::WebSocketAPI::Hooks::assign_rpc_url,                       # make url for manually called actions
 
             # Skip check sanity to password fields
             skip_check_sanity => qr/password/,
