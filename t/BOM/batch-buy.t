@@ -20,7 +20,7 @@ use BOM::MarketData::Types;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Password;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Transaction::Validation;
 use BOM::Transaction;
 

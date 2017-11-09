@@ -24,7 +24,7 @@ use Format::Util::Numbers qw/formatnumber financialrounding/;
 use BOM::Platform::Config;
 use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Platform::Context qw(localize request);
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
