@@ -26,7 +26,7 @@ use Try::Tiny;
 use Email::Stuffer;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Platform::Config;
@@ -91,7 +91,7 @@ sub generate {
                         return if $bet_params->{bet_type} eq 'BINARYICO';
 
                         $bet_params->{date_pricing} = $pricing_date;
-                        my $symbol = $bet_params->{underlying}->symbol;
+                        my $symbol = $bet_params->{underlying};
                         $bet_params->{underlying} = $cached_underlyings{$symbol}
                             if ($cached_underlyings{$symbol});
                         my $bet = produce_contract($bet_params);

@@ -98,7 +98,7 @@ slope:
     commission_multiplier: 1
   contract_details:
     ccy: JPY
-    description: Win payout if USD/JPY is higher than or equal to 78.300 at 2012-11-19 21:00:00 GMT.
+    description: Win payout if USD/JPY is higher than or equal to 78.300 at close on 2012-11-19.
     loginID: NA
     order_price: 928
     order_type: buy
@@ -156,7 +156,7 @@ vana_volga:
     commission_multiplier: 1
   contract_details:
     ccy: JPY
-    description: Win payout if USD/JPY touches 79.500 through 2012-11-19 21:00:00 GMT.
+    description: Win payout if USD/JPY touches 79.500 through close on 2012-11-19.
     loginID: NA
     order_price: 861
     order_type: buy
