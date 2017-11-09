@@ -18,6 +18,7 @@ sub populate_exchange_rates {
     };
 
     Cache::RedisDB->set('QUOTE', "frx${_}USD", {quote => $rates->{$_}}) for keys %$rates;
+    return;
 }
 
 1;
