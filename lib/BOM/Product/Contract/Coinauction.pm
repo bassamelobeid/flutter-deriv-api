@@ -130,7 +130,7 @@ sub _build_binaryico_auction_status {
     my $self = shift;
 
     if ($self->auction_ended) {
-        if (!$self->binaryico_per_token_bid_price_USD) {
+        if (not defined $self->binaryico_per_token_bid_price_USD) {
             $self->bid_price(0);
             return 'processing auction results';
         } elsif ($self->binaryico_per_token_bid_price_USD < $self->auction_final_price) {
@@ -303,7 +303,7 @@ sub _validate_price {
 
     return if $self->_for_sale;
 
-    if (!$self->binaryico_per_token_bid_price_USD) {
+    if (not defined $self->binaryico_per_token_bid_price_USD) {
         return {
             message           => 'Could not get exchange rate for ' . $self->currency . ' to USD',
             severity          => 100,
