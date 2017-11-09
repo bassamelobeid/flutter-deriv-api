@@ -331,14 +331,8 @@ sub get_limits {
 
     $limit->{num_of_days} = $numdays;
 
-    # Performs conversion of limits to the lc limits if the account currency is not the same as the lc currency
-    if ($currency ne $withdrawal_limit_curr) {
-        $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
-        $limit->{lifetime_limit}    = formatnumber('price', $currency, amount_from_to_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
-    } else {
-        $limit->{num_of_days_limit} = $numdayslimit;
-        $limit->{lifetime_limit} = formatnumber('price', $currency, $lifetimelimit);
-    }
+    $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
+    $limit->{lifetime_limit}    = formatnumber('price', $currency, amount_from_to_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
 
     # Withdrawal since $numdays
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
