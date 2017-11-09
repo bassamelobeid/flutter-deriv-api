@@ -11,7 +11,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 use BOM::Pricing::v3::Contract;
-use BOM::Product::ContractFactory::Parser qw(shortcode_to_parameters);
+use Finance::Contract::Longcode qw(shortcode_to_parameters);
 
 sub new { return bless {@_[1 .. $#_]}, $_[0] }
 
@@ -188,7 +188,7 @@ sub _get_underlying {
             return undef;
         }
         my $from_shortcode = shortcode_to_parameters($params->{short_code}, $params->{currency});
-        return $from_shortcode->{underlying};
+        return create_underlying($from_shortcode->{underlying});
     }
 
     return;
