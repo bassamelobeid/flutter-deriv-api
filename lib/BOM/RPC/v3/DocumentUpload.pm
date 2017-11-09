@@ -50,7 +50,7 @@ sub start_document_upload {
         $error_occured = 1;
     };
 
-    if ($error_occured or !$id) {
+    if ($error_occured or not $id) {
         warn 'start_document_upload in the db was not successful';
         return create_upload_error();
     }
@@ -85,7 +85,7 @@ sub successful_upload {
         $error_occured = 1;
     };
 
-    if ($error_occured or !$result) {
+    if ($error_occured or not $result) {
         warn 'Failed to update the uploaded document in the db';
         return create_upload_error();
     }
@@ -94,9 +94,9 @@ sub successful_upload {
 
     my $client_id = $client->loginid;
 
-    my $changed_status;
+    my @changed_status;
     try {
-        $changed_status = $client->db->dbic->run(
+        @changed_status = $client->db->dbic->run(
             fixup => sub {
                 $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', undef, $client_id, 'Documents uploaded');
             });
@@ -110,7 +110,7 @@ sub successful_upload {
         return create_upload_error();
     }
 
-    return $args unless $changed_status;
+    return $args unless @changed_status;
 
     my $email_body = "New document was uploaded for the account: " . $client_id;
 
