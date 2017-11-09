@@ -368,7 +368,7 @@ sub _get_spot {
             $spot   = decode_json($tick_json)->{quote};
         }
     }
-    if ($take_from_distributor || !$spot) {
+    if (!$take_from_distributor || !$spot) {
         my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
         $source = 'feed-db';
         unless ($tick) {
