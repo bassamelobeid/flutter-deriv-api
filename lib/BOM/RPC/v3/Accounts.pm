@@ -353,11 +353,14 @@ sub get_account_status {
 
     my $prompt_client_to_authenticate = 0;
     my $shortcode                     = $client->landing_company->short;
+    my $authentication_in_progress    = $client->get_status('document_needs_action') || $client->get_status('document_under_review');
     if ($client->client_fully_authenticated) {
         # Authenticated clients still need to go through age verification checks for IOM/MF/MLT
         if (any { $shortcode eq $_ } qw(iom malta maltainvest)) {
             $prompt_client_to_authenticate = 1 unless $client->get_status('age_verification');
         }
+    } elsif ($authentication_in_progress) {
+        $prompt_client_to_authenticate = 1;
     } else {
         if ($shortcode eq 'costarica' or $shortcode eq 'champion') {
             # Our threshold is 4000 USD, but we want to include total across all the user's currencies
