@@ -90,6 +90,8 @@ sub successful_upload {
         return create_upload_error();
     }
 
+    return create_upload_error('doc_not_found') if $result == 0;
+
     my $client_id = $client->loginid;
 
     my $changed_status;
@@ -178,6 +180,8 @@ sub create_upload_error {
         $message = localize('Expiration date is required.');
     } elsif ($reason eq 'missing_doc_id') {
         $message = localize('Document ID is required.');
+    } elsif ($reason eq 'doc_not_found') {
+        $message = localize('Document not found.');
     } elsif ($reason eq 'max_size') {
         $message = localize('Maximum file size reached. Maximum allowed is [_1]', MAX_FILE_SIZE);
     } else {    # Default
