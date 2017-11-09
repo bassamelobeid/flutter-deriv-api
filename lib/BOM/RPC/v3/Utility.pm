@@ -600,10 +600,10 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
 
     foreach my $shortcode (@short_codes) {
         try {
-            $longcodes{$shortcode} = localize(shortcode_to_longcode($shortcode));
+            $longcodes{$shortcode} = $shortcode =~ /^BINARYICO/ ? localize('Binary ICO') : localize(shortcode_to_longcode($shortcode));
         }
         catch {
-            warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode;
+            warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $_;
             $longcodes{$shortcode} = localize('No information is available for this contract.');
         }
     }
