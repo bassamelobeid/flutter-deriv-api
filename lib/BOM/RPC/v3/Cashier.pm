@@ -357,17 +357,11 @@ sub get_limits {
         $remainder = 0;
     }
 
-    # Converts the withdrawal limit back to the client's currency if the currency is not the same as the lc currency
-    if ($currency ne $withdrawal_limit_curr) {
-        $withdrawal_since_inception =
-            formatnumber('price', $currency, amount_from_to_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency));
-        $withdrawal_for_x_days = formatnumber('price', $currency, amount_from_to_currency($withdrawal_for_x_days, $withdrawal_limit_curr, $currency));
-        $remainder             = formatnumber('price', $currency, amount_from_to_currency($remainder,             $withdrawal_limit_curr, $currency));
-    }
-
-    $limit->{withdrawal_since_inception_monetary} = formatnumber('price', $currency, $withdrawal_since_inception);
-    $limit->{withdrawal_for_x_days_monetary}      = formatnumber('price', $currency, $withdrawal_for_x_days);
-    $limit->{remainder}                           = formatnumber('price', $currency, $remainder);
+    $limit->{withdrawal_since_inception_monetary} =
+        formatnumber('price', $currency, amount_from_to_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency));
+    $limit->{withdrawal_for_x_days_monetary} =
+        formatnumber('price', $currency, amount_from_to_currency($withdrawal_for_x_days, $withdrawal_limit_curr, $currency));
+    $limit->{remainder} = formatnumber('price', $currency, amount_from_to_currency($remainder, $withdrawal_limit_curr, $currency));
 
     return $limit;
 }
