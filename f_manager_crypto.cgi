@@ -271,8 +271,9 @@ if ($view_action eq 'withdrawals') {
         my $filter = sub {
             my ($transactions) = @_;
             my $res = {};
-            foreach my $tran (@$transactions) {
-                my $loginid = $database_items->{$tran->{to_address}}->{client_loginid};
+            my %address_hashes = map { $_->{address} => $_ } @$database_items;
+            for my $tran (@$transactions) {
+                my $loginid = $address_hashes{$tran->{to_address}}->{client_loginid};
 
                 # if it already exists then it means multiple transactions
                 # were performed, so just update amount and add transaction ids
