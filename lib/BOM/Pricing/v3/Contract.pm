@@ -8,7 +8,6 @@ use Scalar::Util qw(blessed);
 use Try::Tiny;
 use List::MoreUtils qw(none);
 use JSON::XS;
-use JSON::MaybeXS;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
@@ -567,7 +566,7 @@ sub contracts_for {
 
     my $contracts_for = Cache::RedisDB->get(join(':', $landing_company_name, $product_type, $symbol));
     if ($contracts_for) {
-        $contracts_for = JSON::MaybeXS->new->decode($contracts_for);
+        $contracts_for = JSON::XS->new->decode($contracts_for);
     } else {
         $contracts_for = BOM::Pricing::ContractsForGenerator::contracts_for({
             product_type    => $product_type,
