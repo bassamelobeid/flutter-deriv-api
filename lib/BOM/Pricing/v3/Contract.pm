@@ -8,6 +8,7 @@ use Scalar::Util qw(blessed);
 use Try::Tiny;
 use List::MoreUtils qw(none);
 use JSON::XS;
+use JSON::MaybeXS;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
@@ -564,21 +565,7 @@ sub contracts_for {
     my $product_type         = $args->{product_type} // 'basic';
     my $landing_company_name = $args->{landing_company} // 'costarica';
 
-    my $contracts_for;
-    my $query_args = {
-        symbol          => $symbol,
-        landing_company => $landing_company_name,
-    };
-
-    if ($product_type eq 'multi_barrier') {
-        $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol($query_args);
-    } else {
-        $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($query_args);
-        # this is temporary solution till the time front apps are fixed
-        # filter CALLE|PUTE only for non japan
-        $contracts_for->{available} = [grep { $_->{contract_type} !~ /^(?:CALLE|PUTE)$/ } @{$contracts_for->{available}}]
-            if ($contracts_for and $contracts_for->{hit_count} > 0);
-    }
+    my $contracts_for = JSON::MaybeXS->new->decode(Cache::RedisDB->get(join(':', $landing_company_name, $product_type, $symbol)));
 
     my $i = 0;
     foreach my $contract (@{$contracts_for->{available}}) {
@@ -592,12 +579,8 @@ sub contracts_for {
         return BOM::Pricing::v3::Utility::create_error({
                 code              => 'InvalidSymbol',
                 message_to_client => BOM::Platform::Context::localize('The symbol is invalid.')});
-    } else {
-        $contracts_for->{'spot'} = create_underlying($symbol)->spot();
-        return $contracts_for;
     }
-
-    return;
+    return $contracts_for;
 }
 
 sub _log_exception {
