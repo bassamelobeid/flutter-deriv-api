@@ -131,9 +131,7 @@ sub statement {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'SuspendedDueToLoad',
                 message_to_client => localize(
-                    'The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')}
-            ),
-            ;
+                    'The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')});
     }
     my $client  = $params->{client};
     my $account = $client->default_account;
@@ -176,26 +174,14 @@ sub statement {
             $struct->{shortcode} = $txn->{short_code} // '';
             if ($struct->{shortcode} && $account->currency_code) {
 
-                my $res = BOM::Platform::Pricing::call_rpc(
-                    'get_contract_details',
-                    {
-                        short_code      => $struct->{shortcode},
-                        currency        => $account->currency_code,
-                        landing_company => $client->landing_company->short,
-                        language        => $params->{language},
-                    });
+                my $res = BOM::RPC::v3::Utility::longcode({
+                    short_codes => [$struct->{shortcode}],
+                    currency    => $account->currency_code,
+                    language    => $params->{language},
+                    source      => $params->{source},
+                });
 
-                if (exists $res->{error}) {
-                    $struct->{longcode} = localize('Could not retrieve contract details');
-                } else {
-                    # this should be already localized
-                    my $longcode = $res->{longcode};
-                    # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
-                    $longcode = localize('Binary ICO: cancelled bid')
-                        if ($txn->{short_code} =~ /^BINARYICO/
-                        and $txn->{amount} == financialrounding('price', $account->currency_code, $ICO_BID_PRICE_PERCENTAGE * $txn->{payout_price}));
-                    $struct->{longcode} = $longcode;
-                }
+                $struct->{longcode} = $res->{longcodes}->{$struct->{shortcode}} // localize('Could not retrieve contract details');
             }
             $struct->{longcode} //= $txn->{payment_remark} // '';
         }
@@ -216,9 +202,7 @@ sub profit_table {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'SuspendedDueToLoad',
                 message_to_client => localize(
-                    'The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')}
-            ),
-            ;
+                    'The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')});
     }
 
     my $client         = $params->{client};
@@ -276,18 +260,7 @@ sub profit_table {
 
         if ($args->{description}) {
             $trx{shortcode} = $row->{short_code};
-            if (!$res->{longcodes}->{$row->{short_code}}) {
-                $trx{longcode} = localize('Could not retrieve contract details');
-            } else {
-                # this should already be localized
-                my $longcode = $res->{longcodes}->{$row->{short_code}};
-                # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
-                $longcode = 'Binary ICO: cancelled bid'
-                    if ($row->{short_code} =~ /^BINARYICO/
-                    and $row->{sell_price} == financialrounding('price', $client->currency, $ICO_BID_PRICE_PERCENTAGE * $row->{payout_price}));
-                $trx{longcode} = $longcode;
-
-            }
+            $trx{longcode} = $res->{longcodes}->{$row->{short_code}} // localize('Could not retrieve contract details');
         }
 
         push @transactions, \%trx;
