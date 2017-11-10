@@ -359,11 +359,10 @@ SELECT id,
        comments,
        document_id,
        upload_date,
-       age(upload_date) AS age
+       date_trunc('day', age(now(), upload_date)) AS age
   FROM betonmarkets.client_authentication_document
  WHERE client_loginid = ?
 SQL
-            );
         });
 
     foreach my $doc (sort { $a->[0] <=> $b->[0] } @$docs) {
@@ -374,6 +373,8 @@ SQL
         my $document_id     = $doc->[4];
         my $upload_date     = $doc->[5];
         my $age             = $doc->[6];
+
+        $age =~ s/[\d:]{8}//g;
 
         if (not $file_name) {
             $links .= qq{<tr><td>Missing filename for a file with ID: $id</td></tr>};
@@ -395,8 +396,9 @@ SQL
         $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
 
         my $url = BOM::Backoffice::Script::DocumentUpload::get_s3_url($file_name);
+        my $age_display = $age ? "$age old" : "today";
 
-        $links .= qq{<tr><td><a href="$url">$file_name</a> $age days old</td><td>$input};
+        $links .= qq{<tr><td><a href="$url">$file_name</a></td><td title="$upload_date">$age_display</td><td>$input};
         if ($show_delete && !$args{no_edit}) {
             my $onclick    = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
             my $delete_url = request()->url_for("backoffice/download_document.cgi?loginid=$loginid&doc_id=$id&deleteit=yes");
