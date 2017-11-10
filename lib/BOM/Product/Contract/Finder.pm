@@ -108,7 +108,7 @@ sub available_contracts_for_symbol {
                 return [$calendar, $open, $close];
             })};
 
-    my $flyby = _get_cached_or_calculate(['flyby', $landing_company],
+    my $flyby = _get_cached_or_calculate(['flyby', $landing_company // ''],
         sub { return get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company) });
     my @offerings = grep { $supported_contract_types{$_->{contract_type}} } $flyby->query({underlying_symbol => $symbol});
 
