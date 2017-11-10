@@ -118,6 +118,7 @@ SQL
             $bucket_size * int(($epsilon + $unit_price_usd) / $bucket_size));
         $sum{$bucket} += $unit_price_usd * $bid->{tokens};
         $total_usd += $unit_price_usd * $bid->{tokens};
+        $count += $bid->{tokens};
     }
     my $app_config      = BOM::Platform::Runtime->instance->app_config;
     my $minimum_bid_usd = financialrounding(
