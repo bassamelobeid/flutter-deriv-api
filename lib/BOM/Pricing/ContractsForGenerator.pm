@@ -1,7 +1,7 @@
+package BOM::Pricing::ContractsForGenerator;
+
 use strict;
 use warnings;
-
-package BOM::Pricing::ContractsForGenerator;
 
 use LandingCompany::Offerings qw(get_offerings_with_filter);
 use Time::HiRes qw/time/;
@@ -21,7 +21,7 @@ sub run {
     my $json  = JSON::MaybeXS->new;
     while (1) {
         my $start = time;
-        $ENV{ITERATION_STARTED} = int($start);
+        $ENV{ITERATION_STARTED} = int($start);    ## no critic (RequireLocalizedPunctuationVars)
         my @underlyings = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol');
         my $l;
         for my $lc (LandingCompany::Registry::all()) {
