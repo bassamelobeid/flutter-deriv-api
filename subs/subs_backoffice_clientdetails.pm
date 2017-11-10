@@ -352,9 +352,17 @@ sub show_client_id_docs {
 
     my $docs = $dbic->run(
         fixup => sub {
-            $_->selectall_arrayref(
-                "SELECT id, file_name, expiration_date, comments, document_id, upload_date FROM betonmarkets.client_authentication_document WHERE client_loginid = ?",
-                undef, $loginid
+            $_->selectall_arrayref(<<'SQL', undef, $loginid);
+SELECT id,
+       file_name,
+       expiration_date,
+       comments,
+       document_id,
+       upload_date,
+       age(upload_date) AS age
+  FROM betonmarkets.client_authentication_document
+ WHERE client_loginid = ?
+SQL
             );
         });
 
@@ -365,6 +373,7 @@ sub show_client_id_docs {
         my $comments        = $doc->[3];
         my $document_id     = $doc->[4];
         my $upload_date     = $doc->[5];
+        my $age             = $doc->[6];
 
         if (not $file_name) {
             $links .= qq{<tr><td>Missing filename for a file with ID: $id</td></tr>};
@@ -386,9 +395,8 @@ sub show_client_id_docs {
         $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
 
         my $url = BOM::Backoffice::Script::DocumentUpload::get_s3_url($file_name);
-        my $doc_age = (!$upload_date) ? "" : BOM::Backoffice::Script::DocumentUpload::get_document_age($upload_date) . " days old";
 
-        $links .= qq{<tr><td><a href="$url">$file_name</a> $doc_age</td><td>$input};
+        $links .= qq{<tr><td><a href="$url">$file_name</a> $age days old</td><td>$input};
         if ($show_delete && !$args{no_edit}) {
             my $onclick    = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
             my $delete_url = request()->url_for("backoffice/download_document.cgi?loginid=$loginid&doc_id=$id&deleteit=yes");

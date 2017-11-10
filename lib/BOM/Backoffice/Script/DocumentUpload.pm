@@ -6,8 +6,6 @@ use strict;
 use Digest::SHA qw/hmac_sha1_base64 sha1_hex/;
 use URI::Escape;
 use File::Slurp;
-use Date::Utility;
-use DateTime;
 
 use Amazon::S3;
 
@@ -58,20 +56,6 @@ sub upload {
     $s3_bucket->add_key($filename, $file) or die 'Unable to upload the file to s3.';
 
     return sha1_hex($file);
-}
-
-sub get_document_age {
-    my $timestamp = Date::Utility->new(shift);
-
-    my $now = DateTime->now;
-
-    # Counting from 1: 1 days old (uploaded today)
-    return 1 + $now->delta_days(
-        DateTime->new(
-            year  => $timestamp->year,
-            month => $timestamp->month,
-            day   => $timestamp->day_of_month,
-        ))->delta_days();
 }
 
 1;
