@@ -6,6 +6,7 @@ use warnings;
 use Format::Util::Numbers;
 use List::Util qw( min );
 use List::UtilsBy qw(nsort_by);
+use Time::HiRes ();
 
 use Brands;
 use LandingCompany::Registry;
@@ -83,6 +84,7 @@ sub _currencies_config {
 sub live_open_ico_bids {
     my ($currency) = @_;
 
+    my $start = Time::HiRes::time();
     $currency //= 'USD';
     my $clientdb = BOM::Database::ClientDB->new({
         broker_code => 'CR',
@@ -127,6 +129,8 @@ SQL
         amount_from_to_currency($minimum_bid_usd, USD => $currency));
     stats_gauge('binary.ico.bids.count', $count);
     stats_gauge('binary.ico.bids.total_usd', $total_usd);
+    my $elapsed = 1000.0 * (Time::HiRes::time() - $start);
+    stats_timing('binary.ico.bids.calculation.elapsed', $elapsed);
     return {
         currency              => $currency,
         histogram_bucket_size => $bucket_size,
