@@ -105,8 +105,8 @@ SQL
     my %sum;
     my $bucket_size = ICO_BUCKET_SIZE;
     # Tiny adjustment to ensure bucket sizes are even
-    my $epsilon = 0.001;
-    my $count = 0;
+    my $epsilon   = 0.001;
+    my $count     = 0;
     my $total_usd = 0;
     for my $bid (nsort_by { $_->{unit_price} } @$bids) {
         my $unit_price_usd = financialrounding(
@@ -127,7 +127,7 @@ SQL
     my $minimum_bid = financialrounding(
         price => $currency,
         amount_from_to_currency($minimum_bid_usd, USD => $currency));
-    stats_gauge('binary.ico.bids.count', $count);
+    stats_gauge('binary.ico.bids.count',     $count);
     stats_gauge('binary.ico.bids.total_usd', $total_usd);
     my $elapsed = 1000.0 * (Time::HiRes::time() - $start);
     stats_timing('binary.ico.bids.calculation.elapsed', $elapsed);
