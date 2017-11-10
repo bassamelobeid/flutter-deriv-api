@@ -565,7 +565,16 @@ sub contracts_for {
     my $product_type         = $args->{product_type} // 'basic';
     my $landing_company_name = $args->{landing_company} // 'costarica';
 
-    my $contracts_for = JSON::MaybeXS->new->decode(Cache::RedisDB->get(join(':', $landing_company_name, $product_type, $symbol)));
+    my $contracts_for = Cache::RedisDB->get(join(':', $landing_company_name, $product_type, $symbol));
+    if ($contracts_for) {
+        $contracts_for = JSON::MaybeXS->new->decode($contracts_for);
+    } else {
+        $contracts_for = BOM::Pricing::ContractsForGenerator::contracts_for({
+            product_type    => $product_type,
+            landing_company => $landing_company_name,
+            contracts_for   => $symbol,
+        });
+    }
 
     my $i = 0;
     foreach my $contract (@{$contracts_for->{available}}) {

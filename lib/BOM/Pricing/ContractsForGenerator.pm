@@ -34,7 +34,7 @@ sub run {
         for my $ul (@underlyings) {
             for my $lc (keys %$l) {
                 next unless $l->{$lc}->{ul}->{$ul};
-                my $contracts = _contracts_for({
+                my $contracts = contracts_for({
                     contracts_for   => $ul,
                     product_type    => $product,
                     landing_company => $lc,
@@ -48,7 +48,7 @@ sub run {
     return;
 }
 
-sub _contracts_for {
+sub contracts_for {
     my $args = shift;
 
     my $product_type = $args->{product_type};
