@@ -245,7 +245,7 @@ sub new_account_real {
         $new_client->set_status('ico_only',               'SYSTEM', 'ICO account requested')          if $ico_only;
         $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
         $new_client->save;
-        BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid) if $professional_requested;
+        BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence) if $professional_requested;
     };
 
     if ($args->{currency}) {
@@ -352,7 +352,7 @@ sub new_account_maltainvest {
         try {
             $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
             $new_client->save;
-            BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid);
+            BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence);
         };
     }
 

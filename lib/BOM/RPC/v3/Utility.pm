@@ -531,7 +531,7 @@ sub should_update_account_details {
 }
 
 sub send_professional_requested_email {
-    my $loginid = shift;
+    my ($loginid, $residence) = @_;
 
     return unless $loginid;
 
@@ -539,7 +539,7 @@ sub send_professional_requested_email {
     return send_email({
         from    => $brand->emails('support'),
         to      => join(',', $brand->emails('compliance'), $brand->emails('support')),
-        subject => "$loginid requested for professional status",
+        subject => "$loginid requested for professional status, redidence: " . ($residence // 'No residence provided'),
         message => ["$loginid has requested for professional status, please check and update accordingly"],
     });
 }
