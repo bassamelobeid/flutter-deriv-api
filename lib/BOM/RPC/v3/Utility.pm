@@ -401,13 +401,6 @@ sub validate_make_new_account {
             code              => 'NewAccountLimitReached',
             message_to_client => localize('You have created all accounts available to you.')});
 
-    # Bypass currency limit checks for ICO-only accounts - you get a single CR account (one currency only)
-    if (exists $request_data->{account_type} and $request_data->{account_type} eq 'ico') {
-        my $cr_accounts = filter_siblings_by_landing_company('costarica', $siblings);
-        return $error if $cr_accounts and %$cr_accounts;
-        return undef;
-    }
-
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
     # corresponding siblings not MLT one
