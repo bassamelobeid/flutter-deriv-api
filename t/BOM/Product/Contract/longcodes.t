@@ -46,19 +46,19 @@ subtest 'Proper form' => sub {
     # pick few random one to check complete equality
     my $c = produce_contract($shortcodes[3], 'USD');
     is_deeply($c->longcode,
-        ['Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].', 'EUR/USD', ['contract start time'], ['[plural,_1,%d hour, %d hours]', 3], ['entry spot']]);
+        ['Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].', 'EUR/USD', ['contract start time'], ['[plural,_1,%d hour,%d hours]', 3], ['entry spot']]);
 
     $c = produce_contract($shortcodes[10], 'EUR');
     is_deeply(
         $c->longcode,
         [
             'Win payout if [_1] touches [_4] through [_3] after [_2].', 'AUD/JPY',
-            ['contract start time'], ['[plural,_1,%d hour, %d hours]', 10],
+            ['contract start time'], ['[plural,_1,%d hour,%d hours]', 10],
             ['entry spot plus [plural,_1,%d pip, %d pips]', 300]]);
 
     $c = produce_contract($shortcodes[-1], 'RUR');
     is_deeply($c->longcode,
-        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'EUR/NOK', ['contract start time'], ['[plural,_1,%d minute, %d minutes]', 12], ['entry spot']]);
+        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'EUR/NOK', ['contract start time'], ['[plural,_1,%d minute,%d minutes]', 12], ['entry spot']]);
 };
 
 subtest 'longcode from params for forward starting' => sub {
@@ -89,7 +89,7 @@ subtest 'longcode from params for forward starting' => sub {
             'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
             'Volatility 100 Index',
             ['2016-10-19 10:10:00 GMT'],
-            ['[plural,_1,%d minute, %d minutes]', 10], ['entry spot']]);
+            ['[plural,_1,%d minute,%d minutes]', 10], ['entry spot']]);
 };
 
 subtest 'longcode with \'difference\' as barrier' => sub {
@@ -117,7 +117,7 @@ subtest 'longcode with \'difference\' as barrier' => sub {
             'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
             'Volatility 100 Index',
             ['2016-10-19 10:10:00 GMT'],
-            ['[plural,_1,%d minute, %d minutes]', 10], ['entry spot plus [_1]', 0.32]]);
+            ['[plural,_1,%d minute,%d minutes]', 10], ['entry spot plus [_1]', 0.32]]);
     $c = produce_contract({
         bet_type     => 'EXPIRYMISS',
         underlying   => 'R_100',
@@ -168,7 +168,7 @@ subtest 'zero barrier' => sub {
             'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
             'Volatility 100 Index',
             ['2016-10-19 10:10:00 GMT'],
-            ['[plural,_1,%d minute, %d minutes]', 10], '0.00'
+            ['[plural,_1,%d minute,%d minutes]', 10], '0.00'
         ]);
 };
 

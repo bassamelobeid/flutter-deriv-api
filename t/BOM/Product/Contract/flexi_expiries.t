@@ -43,7 +43,7 @@ subtest 'flexi expiries flashs' => sub {
     ok($contract->is_intraday,   'is an intraday bet');
     ok(!$contract->expiry_daily, 'not an expiry daily bet');
     is_deeply($contract->longcode,
-        ['Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].', 'USD/JPY', ['contract start time'], ['3 hours'], ['entry spot']]);
+        ['Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].', 'USD/JPY', ['contract start time'], ['[plural,_1,%d hour,%d hours]', 3], ['entry spot']]);
 
     $params{date_expiry} = $now->truncate_to_day->plus_time_interval('23h59m59s');
     $contract = produce_contract(\%params);
@@ -53,7 +53,7 @@ subtest 'flexi expiries flashs' => sub {
         $contract->longcode,
         [
             'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
-            'USD/JPY', ['contract start time'], ['11 hours 59 minutes 59 seconds'],
+            'USD/JPY', ['contract start time'], ['[plural,_1,%d hour,%d hours] [plural,_2,%d minute,%d minutes] [plural,_3,%d second,%d seconds]', 11,59,59],
             ['entry spot']]);
 
     $params{date_expiry}  = $now->truncate_to_day->plus_time_interval('12h30m');
@@ -82,14 +82,14 @@ subtest 'flexi expiries forward starting' => sub {
     ok($contract->is_intraday,   'is an intraday bet');
     ok(!$contract->expiry_daily, 'not an expiry daily bet');
     is_deeply($contract->longcode,
-        ['Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].', 'USD/JPY', ['2014-03-04 12:00:00 GMT'], ['1 hour'], ['entry spot']]);
+        ['Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].', 'USD/JPY', ['2014-03-04 12:00:00 GMT'], ['[plural,_1,%d hour,%d hours]', 1], ['entry spot']]);
 
     $params{fixed_expiry} = 1;
     $contract = produce_contract(\%params);
     ok($contract->is_intraday,   'is an intraday bet');
     ok(!$contract->expiry_daily, 'not an expiry daily bet');
     is_deeply($contract->longcode,
-        ['Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].', 'USD/JPY', ['2014-03-04 12:00:00 GMT'], ['1 hour'], ['entry spot']]);
+        ['Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].', 'USD/JPY', ['2014-03-04 12:00:00 GMT'], ['[plural,_1,%d hour,%d hours]', 1], ['entry spot']]);
 };
 
 subtest 'flexi expiries mutliday contracts' => sub {

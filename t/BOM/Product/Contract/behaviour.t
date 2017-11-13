@@ -240,7 +240,7 @@ subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday'
         $c2->longcode,
         [
             'Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].',
-            'GBP/USD', ['contract start time'], ['23 hours 54 minutes 6 seconds'],
+            'GBP/USD', ['contract start time'], ['[plural,_1,%d hour,%d hours] [plural,_2,%d minute,%d minutes] [plural,_3,%d second,%d seconds]', 23, 54, 6],
             ['entry spot']]);
     diag("after again");
     is $c->expiry_type, 'daily';
@@ -256,7 +256,7 @@ subtest 'longcode of daily contracts at 10 minutes before friday close' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463172600_1463173200_S0P_0', 'usd');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     is_deeply($c2->longcode,
-        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'GBP/USD', ['contract start time'], ['10 minutes'], ['entry spot']]);
+        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'GBP/USD', ['contract start time'], ['[plural,_1,%d minute,%d minutes]', 10], ['entry spot']]);
     is $c2->expiry_type, 'intraday';
     ok $c2->is_intraday, 'is an intraday contract';
 };
@@ -265,7 +265,7 @@ subtest 'longcode of 22 hours contract from Thursday 3GMT' => sub {
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463022000_1463101200_S0P_0', 'usd');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     is_deeply($c2->longcode,
-        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'GBP/USD', ['contract start time'], ['22 hours'], ['entry spot']]);
+        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'GBP/USD', ['contract start time'], ['[plural,_1,%d hour,%d hours]', 22], ['entry spot']]);
     is $c2->expiry_type, 'intraday';
     ok $c2->is_intraday, 'is an intraday contract';
 };
@@ -305,7 +305,7 @@ subtest 'longcode of intraday contracts' => sub {
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->is_intraday, 'is an contract';
     is_deeply($c2->longcode,
-        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'GBP/USD', ['contract start time'], ['13 hours'], ['entry spot']]);
+        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'GBP/USD', ['contract start time'], ['[plural,_1,%d hour,%d hours]', 13], ['entry spot']]);
 };
 
 subtest 'ATM and non ATM switches on sellback' => sub {
