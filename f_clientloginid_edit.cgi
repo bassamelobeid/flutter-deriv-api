@@ -250,28 +250,47 @@ if ($input{whattodo} eq 'uploadID') {
             next;
         }
 
-        my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
-        my $dbh = $clientdb->db->dbh;
+        unless ($client->get_db eq 'write') {
+            $client->set_db('write');
+        }
 
-        my ($id) = $dbh->selectrow_array(
-            "SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?::status_type)",
-            {Slice => {}},
-            $loginid, $doctype, $docformat, '', $expiration_date || undef,
-            'ID_DOCUMENT', $document_id || '',
-            '', 'uploaded'
-        );
+        my $id;
+        my $error_occured;
+        try {
+            ($id) = $client->db->dbic->run(
+                fixup => sub {
+                    $_->selectrow_array(
+                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?)',
+                        undef, $loginid, $doctype, $docformat, $expiration_date || undef,
+                        $document_id || '',
+                    );
+                });
+        }
+        catch {
+            $error_occured = 1;
+        };
 
-        my ($doc) = $client->find_client_authentication_document(query => [id => $id]);
+        die 'start_document_upload in the db was not successful' if ($error_occured or not $id);
 
         my $new_file_name = "$loginid.$doctype.$id.$docformat";
 
         my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload) or die "Upload failed for $filetoupload";
 
-        $doc->{file_name} = $new_file_name;
-        $doc->{checksum}  = $checksum;
-        $doc->{comments}  = $comments;
+        my $query_result;
+        try {
+            $query_result = $client->db->dbic->run(
+                fixup => sub {
+                    $_->selectrow_array(
+                        'SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)',
+                        , undef, $id, $checksum, $comments,
+                    );
+                });
+        }
+        catch {
+            $error_occured = 1;
+        };
 
-        die "Cannot record uploaded file $filetoupload in the db" unless $doc->save();
+        die "Cannot record uploaded file $filetoupload in the db" if ($error_occured or not $query_result);
 
         $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
     }
