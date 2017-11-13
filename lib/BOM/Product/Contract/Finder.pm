@@ -92,7 +92,7 @@ sub available_contracts_for_symbol {
     my $landing_company = $args->{landing_company};
 
     my $now        = Date::Utility->new;
-    my $underlying = _get_cached_or_calculate([$symbol], sub { return create_underlying($symbol) });
+    my $underlying = _get_cached_or_calculate([$symbol], sub { create_underlying($symbol) });
     my $exchange   = $underlying->exchange;
 
     my ($calendar, $open, $close) = @{
@@ -105,11 +105,11 @@ sub available_contracts_for_symbol {
                     $open = $calendar->opening_on($exchange, $now)->epoch;
                     $close = $calendar->closing_on($exchange, $now)->epoch;
                 }
-                return [$calendar, $open, $close];
+                [$calendar, $open, $close];
             })};
 
     my $flyby = _get_cached_or_calculate(['flyby', $landing_company // ''],
-        sub { return get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company) });
+        sub { get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company) });
     my @offerings = grep { $supported_contract_types{$_->{contract_type}} } $flyby->query({underlying_symbol => $symbol});
 
     for my $o (@offerings) {
@@ -202,7 +202,7 @@ sub _default_barrier {
     my ($underlying, $duration, $barrier_type) = @{$args}{'underlying', 'duration', 'barrier_type'};
 
     return _get_cached_or_calculate([$underlying->system_symbol, $duration, $barrier_type],
-        sub { return _default_barrier_calc($underlying, $duration, $barrier_type), });
+        sub { _default_barrier_calc($underlying, $duration, $barrier_type) });
 
 }
 
