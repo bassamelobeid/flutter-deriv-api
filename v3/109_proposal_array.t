@@ -40,9 +40,6 @@ for (my $epoch = time - 80 * 15; $epoch <= time; $epoch += 15) {
 
 $redis->zadd('DECIMATE_frxUSDJPY_15s_DEC', $_->{epoch}, $encoder->encode($_)) for @tick_data;
 
-#use BOM::Test::RPC::BomRpc;
-#use BOM::Test::RPC::PricingRpc;
-
 my $response;
 
 my $currency = "USD";
