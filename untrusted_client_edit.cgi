@@ -134,7 +134,6 @@ foreach my $login_id (split(/\s+/, $clientID)) {
             if ($client->save) {
                 $printline = $insert_success_msg;
                 my $m      = BOM::Database::Model::AccessToken->new;
-                my $tokens = $m->get_tokens_by_loginid;
                 $m->remove_by_loginid($client->loginid);
             } else {
                 $printline = $insert_error_msg;
