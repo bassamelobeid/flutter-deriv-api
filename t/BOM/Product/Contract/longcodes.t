@@ -172,6 +172,46 @@ subtest 'zero barrier' => sub {
         ]);
 };
 
+subtest 'intraday duration longcode variation' => sub {
+    my $now  = Date::Utility->new('2016-10-19 10:00:00');
+    my $tick = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'R_100',
+        quote      => 100,
+        epoch      => $now->epoch
+    });
+    my $args = {
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        date_start   => $now->plus_time_interval('10m'),
+        date_pricing => $now,
+        duration     => '10m1s',
+        currency     => 'USD',
+        barrier      => 0,
+        payout       => 10,
+        fixed_expiry => 1,
+        current_tick => $tick,
+    };
+    my $c = produce_contract($args);
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
+            'Volatility 100 Index',
+            ['2016-10-19 10:10:00 GMT'],
+            ['[plural,_1,%d minute,%d minutes] [plural,_2,%d second,%d seconds]', 10, 1], '0.00'
+        ]);
+
+    $c = produce_contract({%$args, duration => '10h1s'});
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
+            'Volatility 100 Index',
+            ['2016-10-19 10:10:00 GMT'],
+            ['[plural,_1,%d hour,%d hours] [plural,_2,%d second,%d seconds]', 10, 1], '0.00'
+        ]);
+};
+
 done_testing();
 
 1;
