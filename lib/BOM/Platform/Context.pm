@@ -22,6 +22,7 @@ our @EXPORT_OK = qw(request localize template);
 
 use Brands;
 
+use Time::Duration::Concise::Localize;
 use BOM::Platform::Context::Request;
 use Format::Util::Numbers;
 use BOM::Platform::Context::I18N;
@@ -106,9 +107,12 @@ sub localize {
             # some params also need localization (longcode)
             if (ref $elm eq 'ARRAY' and scalar @$elm) {
                 push @texts, $lh->maketext(@$elm);
-            } elsif (ref $elm eq 'Time::Duration::Concise::Localize') {
-                $elm->locale(lc $language);
-                push @texts, $elm->as_string;
+            } elsif (ref $elm eq 'HASH') {
+                my $l = $elm->{class}->new(
+                    interval => $elm->{value},
+                    locale   => lc $language
+                );
+                push @texts, $l->as_string;
             } else {
                 push @texts, $elm;
             }
