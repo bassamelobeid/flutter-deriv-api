@@ -86,12 +86,12 @@ sub successful_upload {
         $error_occured = 1;
     };
 
-    if ($error_occured or not $result) {
+    return create_upload_error('doc_not_found') if not $result;
+
+    if ($error_occured) {
         warn 'Failed to update the uploaded document in the db';
         return create_upload_error();
     }
-
-    return create_upload_error('doc_not_found') if $result == 0;
 
     my $client_id = $client->loginid;
 
