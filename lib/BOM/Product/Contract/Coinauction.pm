@@ -12,6 +12,7 @@ extends 'Finance::Contract';
 use BOM::MarketData::Types;
 use BOM::Product::Static qw(get_error_mapping);
 use BOM::Platform::Runtime;
+use Try::Tiny;
 
 # Actual methods for introspection purposes.
 sub is_binaryico        { return 1 }
@@ -35,7 +36,7 @@ has _for_sale => (
     default => 0,
 );
 
-has [qw(binaryico_number_of_tokens contract_type binaryico_per_token_bid_price binaryico_per_token_bid_price_USD binaryico_auction_status)] => (
+has [qw(binaryico_number_of_tokens contract_type binaryico_per_token_bid_price)] => (
     is => 'rw',
 );
 
@@ -129,7 +130,10 @@ sub _build_binaryico_auction_status {
     my $self = shift;
 
     if ($self->auction_ended) {
-        if ($self->binaryico_per_token_bid_price_USD < $self->auction_final_price) {
+        if (not defined $self->binaryico_per_token_bid_price_USD) {
+            $self->bid_price(0);
+            return 'processing auction results';
+        } elsif ($self->binaryico_per_token_bid_price_USD < $self->auction_final_price) {
             $self->bid_price($self->ask_price);
             return 'unsuccessful bid';
         } else {
@@ -158,8 +162,7 @@ sub BUILD {
     $self->contract_type($self->build_parameters->{bet_type});
     $self->binaryico_number_of_tokens($self->build_parameters->{binaryico_number_of_tokens});
     $self->binaryico_per_token_bid_price($self->build_parameters->{binaryico_per_token_bid_price});
-    $self->binaryico_per_token_bid_price_USD(
-        financialrounding('price', $self->currency, in_USD($self->binaryico_per_token_bid_price, $self->currency)));
+
     if ($self->binaryico_number_of_tokens < $limits->{min} or $self->binaryico_number_of_tokens > $limits->{max}) {
         $self->add_errors({
             message => 'number of tokens placed is not within limits '
@@ -175,6 +178,25 @@ sub BUILD {
     }
 
     return;
+}
+
+sub binaryico_per_token_bid_price_USD {
+    my $self = shift;
+
+    my $price = try {
+        financialrounding('price', $self->currency, in_USD($self->binaryico_per_token_bid_price, $self->currency));
+    }
+    catch {
+        $self->add_errors({
+            message  => 'Could not get exchange from for ' . $self->currency . ' to USD',
+            severity => 100,                                                                # severity should be higher than minimum bid error
+            message_to_client => [$ERROR_MAPPING->{IcoExceptionThrown}],
+        });
+        # undef if error
+        undef;
+    };
+
+    return $price;
 }
 
 has currency => (
@@ -281,14 +303,20 @@ sub _validate_price {
 
     return if $self->_for_sale;
 
-    if ($self->binaryico_per_token_bid_price_USD < $self->minimum_bid_in_usd) {
+    if (not defined $self->binaryico_per_token_bid_price_USD) {
+        return {
+            message           => 'Could not get exchange rate for ' . $self->currency . ' to USD',
+            severity          => 100,
+            message_to_client => [$ERROR_MAPPING->{IcoExceptionThrown}],
+        };
+    } elsif ($self->binaryico_per_token_bid_price_USD < $self->minimum_bid_in_usd) {
         return {
             message           => 'The minimum bid per token is USD ' . $self->minimum_bid_in_usd . ' or equivalent in other currency.',
             severity          => 99,
             message_to_client => [$ERROR_MAPPING->{InvalidBinaryIcoBidPrice}, $self->minimum_bid_in_usd],
         };
-
     }
+
     return;
 }
 
