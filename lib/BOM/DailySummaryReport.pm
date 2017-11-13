@@ -88,10 +88,10 @@ sub _generate_report {
                         my $bet = $bets_ref->{$bet_id};
                         my $theo;
 
-                        next if ($bet->{short_code} =~ /^BINARYICO_(\d+\.?\d*)_(\d+)$/);
-
                         try {
                             my $contract = produce_contract($bet->{short_code}, $currency);
+                            return 1 if $contract->is_binaryico;
+
                             $theo = $contract->theo_price;
                             return 0;
                         }
