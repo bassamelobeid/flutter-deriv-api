@@ -7,6 +7,7 @@ use List::MoreUtils qw(uniq);
 use Time::HiRes;
 use LWP::Simple;
 use List::UtilsBy qw(extract_by);
+use JSON::MaybeXS;
 
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $redis       = BOM::Platform::RedisReplicated::redis_pricer;
@@ -22,7 +23,6 @@ my $iteration = 0;
 while (1) {
     _sleep_to_next_second();
     my $overflow = $redis->llen('pricer_jobs');
-    DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.overflow', $overflow, {tags => ['tag:' . $internal_ip]});
 
     # If we didn't manage to process everything within 1s, we'll allow 1s extra - this will cause price update rates to
     # be halved on the UI.
@@ -44,8 +44,7 @@ while (1) {
     }
     @keys;
 
-    DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.size', 0 + @keys, {tags => ['tag:' . $internal_ip]});
-    DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.not_processed', $redis->llen('pricer_jobs'), {tags => ['tag:' . $internal_ip]});
+    my $not_processed = $redis->llen('pricer_jobs');
 
     $redis->del('pricer_jobs');
     $redis->lpush('pricer_jobs', @keys) if @keys;
@@ -62,5 +61,17 @@ while (1) {
         $redis->del('pricer_jobs_jp');
         $redis->lpush('pricer_jobs_jp', @jp_keys) if @jp_keys;
     }
+    DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.overflow',      $overflow,      {tags => ['tag:' . $internal_ip]});
+    DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.size',          0 + @keys,      {tags => ['tag:' . $internal_ip]});
+    DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.not_processed', $not_processed, {tags => ['tag:' . $internal_ip]});
+
+    $redis->set(
+        'pricer_daemon_queue_stats',
+        JSON::MaybeXS->new->encode({
+                overflow      => $overflow,
+                not_processed => $not_processed,
+                size          => 0 + @keys,
+                updated       => time,
+            }));
 }
 
