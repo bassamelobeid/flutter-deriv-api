@@ -131,15 +131,13 @@ foreach my $login_id (split(/\s+/, $clientID)) {
     } elsif ($client_status_type eq 'duplicateaccount') {
         if ($action eq 'insert_data') {
             $client->set_status('duplicate_account', $clerk, $reason);
-            # here
-            if($client->save){
-              $printline = $insert_success_msg;
-              my $m = BOM::Database::Model::AccessToken->new;
-              my $tokens = $m->get_tokens_by_loginid;
-              $m->remove_by_loginid($client->loginid);
-            }
-            else{
-              $printline = $insert_error_msg;
+            if ($client->save) {
+                $printline = $insert_success_msg;
+                my $m      = BOM::Database::Model::AccessToken->new;
+                my $tokens = $m->get_tokens_by_loginid;
+                $m->remove_by_loginid($client->loginid);
+            } else {
+                $printline = $insert_error_msg;
             }
         } elsif ($action eq 'remove_data') {
             $client->clr_status('duplicate_account');
