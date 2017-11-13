@@ -19,11 +19,11 @@ our @EXPORT_OK = qw( set_date set_date_from_file sleep_till_next_second );
 
 =head
 
-The logic on mocking time in RPC and PricingRPC follows.
+The logic on mocking time in RPC follows.
 
 RPC.pm code can be called in two ways:
 
-- through normal way - via bin/binary_rpc.pl or binary_pricing_rpc.pl. In theese scripts we're checking
+- through normal way - via bin/binary_rpc.pl. In this script we're checking
    if there is $ENV{MOCKTIME} defined. If it is - we load BOM::Test::Time and have mocked time.
    MOCKTIME is set only when services are started via BOM::Test::Service::BomRpc or PricingRpc.
 
