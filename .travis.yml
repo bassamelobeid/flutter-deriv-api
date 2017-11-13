@@ -34,6 +34,7 @@ before_install:
       regentmarkets/bom-postgres
       regentmarkets/bom-platform
       regentmarkets/bom-feed
+      regentmarkets/bom-rpc
       binary-com/translations-websockets-api
       regentmarkets/bom-market
 
