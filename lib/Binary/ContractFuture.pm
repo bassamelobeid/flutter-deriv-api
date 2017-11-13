@@ -6,6 +6,7 @@ use Future::Mojo;
 use JSON::MaybeXS;
 use Mojo::URL;
 use YAML::XS qw/LoadFile/;
+use Encode;
 
 use constant PRICING_TIMEOUT => 10;
 
@@ -23,10 +24,11 @@ sub _connect {
     $redis->on(
         message => sub {
             my ($self, $msg, $channel) = @_;
-            $msg = JSON::MaybeXS->new->decode($msg);
+            $msg = JSON::MaybeXS->new->decode(Encode::decode_utf8($msg));
 
-            for (@{$subscribers->{$channel}}) {
-                $_->[1]->done($msg);
+            for my $f (map { $_->[1] } @{$subscribers->{$channel} || []}) {
+                # Might be cancelled if the client disconnected
+                $f->done($msg) unless $f->is_ready;
             }
 
         });
@@ -59,8 +61,8 @@ sub pricing_future {
 
     my $f = Future::Mojo->new;
     my $combined_future =
-        Future->wait_any(Future::Mojo->new_timer(PRICING_TIMEOUT)->then(sub { Future->fail('Timeout') }), $f);
-    $combined_future->on_ready(sub { _clear($channel); });
+        Future->wait_any(Future::Mojo->new_timer(PRICING_TIMEOUT)->then(sub { Future->fail('Timeout') }), $f)->on_ready(sub { _clear($channel); })
+        ->on_cancel(sub { $f->cancel unless $f->is_ready });
     push @{$subscribers->{$channel}}, [$combined_future, $f];
 
     return $combined_future;

@@ -435,10 +435,16 @@ sub _process_proposal_open_contract_response {
         $pricer_request->{landing_company} = $c->landing_company_name;
 
         my $f = Binary::ContractFuture::pricing_future($pricer_request);
+        $c->on(
+            finish => sub {
+                $f->cancel unless $f->is_ready;
+            });
 
         $f->on_done(
             sub {
                 my $r = shift;
+                # Client may have disconnected by now
+                return unless $c and $c->tx;
                 delete @{$r}{qw/price_daemon_cmd ask_price/};
                 for (qw/account_id buy_price sell_price sell_time purchase_time is_sold transaction_ids/) {
                     $r->{$_} = $contract->{$_} if defined $contract->{$_};
@@ -448,6 +454,8 @@ sub _process_proposal_open_contract_response {
         $f->on_fail(
             sub {
                 stats_inc('bom_websocket_api.v_3.pricing_first.fails', {tags => ['bid']});
+                # Client may have disconnected by now
+                return unless $c and $c->tx;
                 my $error =
                     $c->new_error('proposal_open_contract', 'GetProposalFailure', $c->l('Sorry, an error occurred while processing your request.'));
                 $c->send({json => $error}, $req_storage);
