@@ -33,17 +33,20 @@ sub start_document_upload {
     my $document_format = $args->{document_format};
     my $loginid         = $client->loginid;
 
+    unless ($client->get_db eq 'write') {
+        $client->set_db('write');
+    }
+
     my $id;
     my $error_occured;
     try {
         ($id) = $client->db->dbic->run(
             fixup => sub {
                 $_->selectrow_array(
-                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?::status_type)',
-                    undef, $loginid, $document_type, $document_format, '', $args->{expiration_date},
-                    'ID_DOCUMENT', ($args->{document_id} || ''),
-                    '', 'uploading'
-                );
+                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?)',
+                    undef, $loginid, $document_type, $document_format,
+                    $args->{expiration_date},
+                    ($args->{document_id} || ''));
             });
     }
     catch {
@@ -76,14 +79,7 @@ sub successful_upload {
     try {
         $result = $client->db->dbic->run(
             fixup => sub {
-                $_->do(<<'SQL', undef, $args->{checksum}, $args->{file_id});
-UPDATE betonmarkets.client_authentication_document
-   SET checksum = ?,
-       status = 'uploaded',
-       upload_date = now(),
-       file_name = client_loginid || '.' || document_type || '.' || id || '.' || document_format
- WHERE id = ?
-SQL
+                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)',, undef, $args->{file_id}, $args->{checksum},);
             });
     }
     catch {
