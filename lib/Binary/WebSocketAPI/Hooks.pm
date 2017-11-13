@@ -231,7 +231,7 @@ sub _rpc_suffix {
 }
 
 sub get_rpc_url {
-    my ($c, $req_storage) = @_;
+    my ($c) = @_;
 
     my $suffix = _rpc_suffix($c);
     return $ENV{RPC_URL} || $c->app->config->{"rpc_url" . $suffix};

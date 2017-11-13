@@ -6,6 +6,8 @@ use Future::Mojo;
 use JSON::MaybeXS;
 use Mojo::URL;
 use YAML::XS qw/LoadFile/;
+use Mojo::Redis2;
+use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
 use constant PRICING_TIMEOUT => 10;
 
