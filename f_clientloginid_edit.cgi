@@ -258,7 +258,7 @@ if ($input{whattodo} eq 'uploadID') {
         my $error_occured;
         try {
             ($id) = $client->db->dbic->run(
-                fixup => sub {
+                ping => sub {
                     $_->selectrow_array(
                         'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?)',
                         undef, $loginid, $doctype, $docformat,
@@ -280,7 +280,7 @@ if ($input{whattodo} eq 'uploadID') {
         my $query_result;
         try {
             ($query_result) = $client->db->dbic->run(
-                fixup => sub {
+                ping => sub {
                     $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)', undef, $id, $checksum, $comments);
                 });
         }
