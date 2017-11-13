@@ -45,31 +45,24 @@ subtest 'Proper form' => sub {
 
     # pick few random one to check complete equality
     my $c = produce_contract($shortcodes[3], 'USD');
-    is_deeply(
-        $c->longcode,
-        [
-            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
-            'EUR/USD', ['contract start time'], ['3 hours'], ['entry spot']]);
+    is_deeply($c->longcode,
+        ['Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].', 'EUR/USD', ['contract start time'], ['3 hours'], ['entry spot']]);
 
     $c = produce_contract($shortcodes[10], 'EUR');
     is_deeply(
         $c->longcode,
         [
-            'Win payout if [_1] touches [_4] through [_3] after [_2].',
-            'AUD/JPY',
+            'Win payout if [_1] touches [_4] through [_3] after [_2].', 'AUD/JPY',
             ['contract start time'], ['10 hours'],
             ['entry spot plus [plural,_1,%d pip, %d pips]', 300]]);
 
     $c = produce_contract($shortcodes[-1], 'RUR');
-    is_deeply(
-        $c->longcode,
-        [
-            'Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].',
-            'EUR/NOK', ['contract start time'], ['12 minutes'], ['entry spot']]);
+    is_deeply($c->longcode,
+        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'EUR/NOK', ['contract start time'], ['12 minutes'], ['entry spot']]);
 };
 
 subtest 'longcode from params for forward starting' => sub {
-    my $now = Date::Utility->new('2016-10-19 10:00:00');
+    my $now  = Date::Utility->new('2016-10-19 10:00:00');
     my $tick = Postgres::FeedDB::Spot::Tick->new({
         underlying => 'R_100',
         quote      => 100,

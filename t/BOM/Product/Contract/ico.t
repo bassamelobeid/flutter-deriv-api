@@ -60,7 +60,7 @@ subtest 'Ico variations' => sub {
     isa_ok $c, 'BOM::Product::Contract::Binaryico', 'is a Binaryico';
     is $c->code, 'BINARYICO', 'is a Binaryico';
     ok !$c->is_valid_to_buy, 'is not valid to buy';
-    is $c->primary_validation_error->message, 'The minimum bid is USD 1.35 or equivalent in other currency.', 'Minimum bid of USD 1.35';
+    is $c->primary_validation_error->message, 'The minimum bid per token is USD 1.35 or equivalent in other currency.', 'Minimum bid of USD 1.35';
 };
 
 subtest 'shortcode_to_parameters' => sub {
