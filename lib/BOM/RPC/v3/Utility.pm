@@ -376,6 +376,12 @@ sub validate_make_new_account {
 
     my $landing_company_name = $client->landing_company->short;
 
+    if (exists $request_data->{account_type} and $request_data->{account_type} eq 'ico') {
+        $landing_company_name = 'costarica';
+    } else {
+        $landing_company_name = $client->landing_company->short;
+    }
+
     # as maltainvest can be opened in few ways, upgrade from malta,
     # directly from virtual for Germany as residence
     # or from maltainvest itself as we support multiple account now
@@ -422,7 +428,7 @@ sub validate_make_new_account {
     # allow them to open new account
     return undef unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
 
-    my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
+    my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
     my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
     # check if landing company supports crypto currency
     # else return error as client exhausted fiat currency
