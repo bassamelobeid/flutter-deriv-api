@@ -192,7 +192,7 @@ sub available_contracts_for_symbol {
         open         => $open,
         close        => $close,
         feed_license => $underlying->feed_license,
-        spot         => _get_cached_or_calculate([$symbol, 'spot'], sub { $underlying->spot }),
+        @offerings ? (spot => _get_cached_or_calculate([$symbol, 'spot'], sub { $underlying->spot })) : (),
     };
 }
 

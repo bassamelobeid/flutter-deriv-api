@@ -48,7 +48,7 @@ sub available_contracts_for_symbol {
         open         => $open,
         close        => $close,
         feed_license => $underlying->feed_license,
-        spot         => $underlying->spot,
+        @$offerings ? (spot => $underlying->spot) : (),
     };
 }
 
