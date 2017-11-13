@@ -41,7 +41,7 @@ sub start_document_upload {
     my $error_occured;
     try {
         ($id) = $client->db->dbic->run(
-            fixup => sub {
+            ping => sub {
                 $_->selectrow_array(
                     'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?)',
                     undef, $loginid, $document_type, $document_format,
@@ -78,7 +78,7 @@ sub successful_upload {
     my $error_occured;
     try {
         ($result) = $client->db->dbic->run(
-            fixup => sub {
+            ping => sub {
                 $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)', undef, $args->{file_id}, $args->{checksum}, undef);
             });
     }
@@ -98,7 +98,7 @@ sub successful_upload {
     my $status_changed;
     try {
         ($status_changed) = $client->db->dbic->run(
-            fixup => sub {
+            ping => sub {
                 $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', undef, $client_id, 'Documents uploaded');
             });
     }
