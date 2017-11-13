@@ -374,12 +374,12 @@ SQL
         my $upload_date     = $doc->[5];
         my $age             = $doc->[6];
 
-        $age =~ s/[\d:]{8}//g;
-
         if (not $file_name) {
             $links .= qq{<tr><td>Missing filename for a file with ID: $id</td></tr>};
             next;
         }
+
+        $age =~ s/[\d:]{8}//g;
 
         my $date = $expiration_date || '';
         if ($date) {
