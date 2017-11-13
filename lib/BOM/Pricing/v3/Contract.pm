@@ -28,6 +28,7 @@ use BOM::Product::Contract::Finder::Japan;
 use BOM::Product::Contract::Finder;
 use BOM::Product::Contract::Offerings;
 use BOM::Pricing::v3::Utility;
+use BOM::Pricing::ContractsForGenerator;
 
 use feature "state";
 
