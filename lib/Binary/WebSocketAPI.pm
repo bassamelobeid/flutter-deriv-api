@@ -16,7 +16,6 @@ use Binary::WebSocketAPI::v3::Wrapper::Transaction;
 use Binary::WebSocketAPI::v3::Wrapper::Authorize;
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Accounts;
-use Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
@@ -169,16 +168,12 @@ sub startup {
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
             },
         ],
+        ['trading_times'],
+        ['asset_index'],
         [
-            'trading_times',
+            'contracts_for',
             {
-                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times,
-            },
-        ],
-        [
-            'asset_index',
-            {
-                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,
+                stash_params => [qw/ token /],
             }
         ],
         ['active_symbols', {stash_params => [qw/ token /]}],
@@ -192,13 +187,6 @@ sub startup {
         ['ping',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
         ['time',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
         ['website_status', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::website_status}],
-        [
-            'contracts_for',
-            {
-                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::contracts_for,
-                stash_params       => [qw/ token /],
-            }
-        ],
         ['ico_status'],
         ['residence_list'],
         ['states_list'],
