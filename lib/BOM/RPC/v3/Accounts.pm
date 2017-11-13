@@ -37,7 +37,6 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
-use BOM::Platform::Pricing;
 use BOM::Platform::Runtime;
 
 my $ICO_BID_PRICE_PERCENTAGE = 0.98;
