@@ -25,12 +25,12 @@ RPC.pm code can be called in two ways:
 
 - through normal way - via bin/binary_rpc.pl. In this script we're checking
    if there is $ENV{MOCKTIME} defined. If it is - we load BOM::Test::Time and have mocked time.
-   MOCKTIME is set only when services are started via BOM::Test::Service::BomRpc or PricingRpc.
+   MOCKTIME is set only when services are started via BOM::Test::Service::BomRpc.
 
 - in-process from bom-rpc tests. Here we already have BOM::Test::Time module loaded and don't have $ENV{MOCKTIME}
 
 
-During handling RPC calls in bom-rpc and bom-pricing code we check if BOM::Test::Time is loaded though checking %INC
+During handling RPC calls in bom-rpc code we check if BOM::Test::Time is loaded though checking %INC
 and if yes, then set time to the requested one via set_date_from_file().
 
 
