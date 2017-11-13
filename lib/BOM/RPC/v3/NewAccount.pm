@@ -372,7 +372,7 @@ sub new_account_maltainvest {
 
     try {
         set_professional($user, $new_client, $professional_requested);
-    }
+    };
 
     $user->add_login_history({
         action      => 'login',
