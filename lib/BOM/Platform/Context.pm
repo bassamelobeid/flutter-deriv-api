@@ -106,6 +106,9 @@ sub localize {
             # some params also need localization (longcode)
             if (ref $elm eq 'ARRAY' and scalar @$elm) {
                 push @texts, $lh->maketext(@$elm);
+            } elsif (ref $elm eq 'Time::Duration::Concise::Localize') {
+                $elm->locale(lc $language);
+                push @texts, $elm->as_string;
             } else {
                 push @texts, $elm;
             }
