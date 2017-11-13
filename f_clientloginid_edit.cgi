@@ -376,12 +376,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         $client->tax_residence($tax_residence);
     }
 
-    # Filter keys for tax residence
-    if (my @matching_keys = grep { /tax_residence/ } keys %input) {
-        my $tax_residence = join(",", sort grep { length } @input{@matching_keys});
-        $client->tax_residence($tax_residence);
-    }
-
     my @number_updates = qw/
         custom_max_acbal
         custom_max_daily_turnover
