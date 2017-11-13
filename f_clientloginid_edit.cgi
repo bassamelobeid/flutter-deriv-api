@@ -365,7 +365,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $existing_cli->clr_status('professional_requested');
 
             # Client's professional status revoked
-        } elsif (!$input{professional_client} && $existing_client->get_status('professional')) {
+        } elsif (!$input{professional_client} && $existing_cli->get_status('professional')) {
             $existing_cli->clr_status('professional');
         }
     }
