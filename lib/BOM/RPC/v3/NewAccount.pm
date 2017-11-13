@@ -184,7 +184,9 @@ sub set_professional {
     my ($user, $new_client, $professional_requested) = @_;
 
     foreach my $cli ($user->clients) {
-        next if $cli->landing_company->short !~ /^(?:virtual|malta|maltainvest)$/;
+
+        # MLT, MX, JP, VRTC are excluded
+        next unless $cli->landing_company->short !~ /^(?:virtual|malta|iom|japan)$/;
 
         # Scenario 1: Check for client's professional status
         if ($cli->get_status('professional')) {
@@ -336,7 +338,7 @@ sub new_account_maltainvest {
     # send error if anyone other than maltainvest, virtual, malta
     # tried to make this call
     return BOM::RPC::v3::Utility::permission_error()
-        if ($client->landing_company->short !~ /^(?:virtual|iom|malta)$/);
+        if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest)$/);
 
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'maltainvest', $args);
     return $error if $error;
