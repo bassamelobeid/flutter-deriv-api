@@ -360,6 +360,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     my $user = BOM::Platform::User->new({email => $client->email});
 
     foreach my $existing_cli ($user->clients) {
+        next if $existing_cli->landing_company->short !~ /^(?:virtual|iom|malta)$/;
         if ($input{professional_client}) {
             $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested');
             $existing_cli->clr_status('professional_requested');
@@ -368,7 +369,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         } elsif (!$input{professional_client} && $existing_cli->get_status('professional')) {
             $existing_cli->clr_status('professional');
         }
-        
+
         $existing_cli->save;
     }
 
