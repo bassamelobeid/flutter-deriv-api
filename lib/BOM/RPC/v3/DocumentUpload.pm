@@ -77,9 +77,9 @@ sub successful_upload {
     my $result;
     my $error_occured;
     try {
-        $result = $client->db->dbic->run(
+        ($result) = $client->db->dbic->run(
             fixup => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)',, undef, $args->{file_id}, $args->{checksum},);
+                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)', undef, $args->{file_id}, $args->{checksum}, undef);
             });
     }
     catch {
