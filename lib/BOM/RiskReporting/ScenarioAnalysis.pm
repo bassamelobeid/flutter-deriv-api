@@ -59,8 +59,7 @@ sub generate {
 
     my $csv = Text::CSV_XS->new({eol => "\n"});
     my ($scenario_analysis, $sum_of_buyprice, $sum_of_payout);
-    my $ignored = 0;
-    my %cached_underlyings;
+    my $ignored          = 0;
     my $subject          = 'Scenario analysis as of ' . $pricing_date->db_timestamp;
     my $scenario_message = $subject . ":\n\n";
     my $raw_fh           = File::Temp->new(
@@ -77,11 +76,8 @@ sub generate {
         next if !grep { $broker_code =~ $_ } qw(CR MLT MX MF);
         my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
         $bet_params->{date_pricing} = $pricing_date;
-        my $underlying_symbol = $bet_params->{underlying}->symbol;
-        $bet_params->{underlying} = $cached_underlyings{$underlying_symbol}
-            if ($cached_underlyings{$underlying_symbol});
-        my $bet = produce_contract($bet_params);
-        $cached_underlyings{$underlying_symbol} ||= $bet->underlying;
+        my $bet               = produce_contract($bet_params);
+        my $underlying_symbol = $bet->underlying->symbol;
 
         if (   not $bet->underlying->spot
             or $bet->is_expired
