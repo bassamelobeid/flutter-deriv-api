@@ -39,7 +39,7 @@ sub run {
                     product_type    => $product,
                     landing_company => $lc,
                 });
-                $redis->set(join(':', $lc, $product, $ul), $json->encode($contracts));
+                $redis->set(join(':', 'contracts_for', $lc, $product, $ul), $json->encode($contracts));
             }
         }
         stats_timing('pricing.contracts_for.timing', time - $start, {tags => ["product:$product"]});

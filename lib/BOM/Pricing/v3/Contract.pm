@@ -565,7 +565,8 @@ sub contracts_for {
     my $product_type         = $args->{product_type} // 'basic';
     my $landing_company_name = $args->{landing_company} // 'costarica';
 
-    my $contracts_for = BOM::Platform::RedisReplicated::redis_pricer()->get(join(':', $landing_company_name, $product_type, $symbol));
+    my $contracts_for =
+        BOM::Platform::RedisReplicated::redis_pricer()->get(join(':', 'contracts_for', $landing_company_name, $product_type, $symbol));
     if ($contracts_for) {
         $contracts_for = JSON::XS->new->decode($contracts_for);
         $contracts_for = undef if $contracts_for->{_generated} < time - 30;
