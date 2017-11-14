@@ -60,11 +60,9 @@ sub payout_currencies {
     my $lc = $client ? $client->landing_company : LandingCompany::Registry::get($params->{landing_company_name} || 'costarica');
     # ... but we fall back to Costa Rica as a useful default, since it has most
     # currencies enabled.
-    $lc ||= LandingCompany::Registry::get('costarica');
 
     # Remove cryptocurrencies that have been suspended
-    my @payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies(keys %{$lc->legal_allowed_currencies});
-    return \@payout_currencies;
+    return BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies('costarica');
 }
 
 sub landing_company {
@@ -113,7 +111,7 @@ sub __build_landing_company {
     my ($lc) = @_;
 
     # Get suspended currencies and remove them from list of legal currencies
-    my @payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies(keys %{$lc->legal_allowed_currencies});
+    my $payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);
 
     return {
         shortcode                         => $lc->short,
@@ -121,7 +119,7 @@ sub __build_landing_company {
         address                           => $lc->address,
         country                           => $lc->country,
         legal_default_currency            => $lc->legal_default_currency,
-        legal_allowed_currencies          => \@payout_currencies,
+        legal_allowed_currencies          => $payout_currencies,
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0
