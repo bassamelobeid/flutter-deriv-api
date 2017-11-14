@@ -12,6 +12,7 @@ use Time::HiRes ();
 use Try::Tiny;
 
 use BOM::MarketData qw(create_underlying);
+use BOM::Platform::Context;
 use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 use BOM::Pricing::v3::Contract;
@@ -70,6 +71,10 @@ sub process_job {
             return $last_priced_contract->{contract};
         }
     }
+
+    my $r = BOM::Platform::Context::Request->new({language => $params->{language} // 'EN'});
+    BOM::Platform::Context::request($r);
+
     if ($price_daemon_cmd eq 'price') {
         $params->{streaming_params}->{add_theo_probability} = 1;
         $response = BOM::Pricing::v3::Contract::send_ask({args => $params});
