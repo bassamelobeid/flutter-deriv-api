@@ -77,8 +77,8 @@ sub validate {
             unless $client->get_status('crs_tin_information');
     }
 
-    if ($client->residence eq 'gb' and not $client->get_status('ico_only')) {
-        unless ($client->get_status('ukgc_funds_protection')) {
+    if ($client->residence eq 'gb') {
+        unless ($client->get_status('ico_only') or $client->get_status('ukgc_funds_protection')) {
             return _create_error(localize('Please accept Funds Protection.'), 'ASK_UK_FUNDS_PROTECTION');
         }
 
