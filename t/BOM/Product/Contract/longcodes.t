@@ -46,19 +46,19 @@ subtest 'Proper form' => sub {
     # pick few random one to check complete equality
     my $c = produce_contract($shortcodes[3], 'USD');
     is_deeply($c->longcode,
-        ['Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].', 'EUR/USD', ['contract start time'], ['3 hours'], ['entry spot']]);
+        ['Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].', 'EUR/USD', ['contract start time'], {class => 'Time::Duration::Concise::Localize', value => 3*3600}, ['entry spot']]);
 
     $c = produce_contract($shortcodes[10], 'EUR');
     is_deeply(
         $c->longcode,
         [
             'Win payout if [_1] touches [_4] through [_3] after [_2].', 'AUD/JPY',
-            ['contract start time'], ['10 hours'],
+            ['contract start time'], {class => 'Time::Duration::Concise::Localize', value => 10*3600},
             ['entry spot plus [plural,_1,%d pip, %d pips]', 300]]);
 
     $c = produce_contract($shortcodes[-1], 'RUR');
     is_deeply($c->longcode,
-        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'EUR/NOK', ['contract start time'], ['12 minutes'], ['entry spot']]);
+        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'EUR/NOK', ['contract start time'], {class => 'Time::Duration::Concise::Localize', value => 12*60}, ['entry spot']]);
 };
 
 subtest 'longcode from params for forward starting' => sub {
@@ -89,7 +89,7 @@ subtest 'longcode from params for forward starting' => sub {
             'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
             'Volatility 100 Index',
             ['2016-10-19 10:10:00 GMT'],
-            ['10 minutes'], ['entry spot']]);
+            {class => 'Time::Duration::Concise::Localize', value => 10*60}, ['entry spot']]);
 };
 
 subtest 'longcode with \'difference\' as barrier' => sub {
@@ -117,7 +117,7 @@ subtest 'longcode with \'difference\' as barrier' => sub {
             'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
             'Volatility 100 Index',
             ['2016-10-19 10:10:00 GMT'],
-            ['10 minutes'], ['entry spot plus [_1]', 0.32]]);
+            {class => 'Time::Duration::Concise::Localize', value => 10*60}, ['entry spot plus [_1]', 0.32]]);
     $c = produce_contract({
         bet_type     => 'EXPIRYMISS',
         underlying   => 'R_100',
@@ -168,7 +168,47 @@ subtest 'zero barrier' => sub {
             'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
             'Volatility 100 Index',
             ['2016-10-19 10:10:00 GMT'],
-            ['10 minutes'], '0.00'
+            {class => 'Time::Duration::Concise::Localize', value => 10*60}, '0.00'
+        ]);
+};
+
+subtest 'intraday duration longcode variation' => sub {
+    my $now  = Date::Utility->new('2016-10-19 10:00:00');
+    my $tick = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'R_100',
+        quote      => 100,
+        epoch      => $now->epoch
+    });
+    my $args = {
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        date_start   => $now->plus_time_interval('10m'),
+        date_pricing => $now,
+        duration     => '10m1s',
+        currency     => 'USD',
+        barrier      => 0,
+        payout       => 10,
+        fixed_expiry => 1,
+        current_tick => $tick,
+    };
+    my $c = produce_contract($args);
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
+            'Volatility 100 Index',
+            ['2016-10-19 10:10:00 GMT'],
+            {class => 'Time::Duration::Concise::Localize', value => 10*60+1}, '0.00'
+        ]);
+
+    $c = produce_contract({%$args, duration => '10h1s'});
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
+            'Volatility 100 Index',
+            ['2016-10-19 10:10:00 GMT'],
+            {class => 'Time::Duration::Concise::Localize', value => 10*3600+1}, '0.00'
         ]);
 };
 
