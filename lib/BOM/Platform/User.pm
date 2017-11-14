@@ -158,7 +158,7 @@ sub clients {
         next if grep { $cl->get_status($_) } @do_not_display_status;
 
         my $is_disabled = $cl->get_status('disabled');
-        push @parts, join(':', $cl->loginid, $cl->is_virtual ? 'V' : 'R', $is_disabled ? 'D' : 'E');
+        push @parts, join(':', $cl->loginid, $cl->is_virtual ? 'V' : 'R', $is_disabled ? 'D' : 'E', $cl->get_status('ico_only') ? 'I' : 'N');
 
         next if (not $args{disabled_ok} and $is_disabled);
 
