@@ -1017,8 +1017,6 @@ sub transfer_between_accounts {
         if $client->get_status('disabled');
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is cashier locked.'))
         if $client->get_status('cashier_locked');
-    return _transfer_between_accounts_error(localize('This is an ICO-only account which does not support transfers.'))
-        if $client->get_status('ico_only');
 
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if $client->get_status('withdrawal_locked');
