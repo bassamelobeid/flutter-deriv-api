@@ -872,7 +872,7 @@ sub set_settings {
                     message_to_client => localize('Sorry, an error occurred while processing your account.')});
         }
 
-        BOM::RPC::v3::Utility::send_professional_requested_email($cli->loginid) if ($set_status);
+        BOM::RPC::v3::Utility::send_professional_requested_email($cli->loginid, $cli->residence) if ($set_status);
     }
     # update client value after latest changes
     $client = Client::Account->new({loginid => $client->loginid});
