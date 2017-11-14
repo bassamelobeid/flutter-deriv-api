@@ -113,13 +113,17 @@ sub landing_company_details {
 sub __build_landing_company {
     my ($lc) = @_;
 
+    # Get hash of suspended currencies
+    my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    my @payout_currencies = sort grep { !exists $suspended_currencies{$_} } keys %{$lc->legal_allowed_currencies};
+
     return {
         shortcode                         => $lc->short,
         name                              => $lc->name,
         address                           => $lc->address,
         country                           => $lc->country,
         legal_default_currency            => $lc->legal_default_currency,
-        legal_allowed_currencies          => [keys %{$lc->legal_allowed_currencies}],
+        legal_allowed_currencies          => \@payout_currencies,
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0
@@ -1369,7 +1373,7 @@ sub set_account_currency {
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidCurrency',
             message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)})
-        if !($client->landing_company->is_currency_legal($currency))
+        if not $client->landing_company->is_currency_legal($currency)
         and exists $suspended_currencies{$currency};
 
     # bail out if default account is already set

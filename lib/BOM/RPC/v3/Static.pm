@@ -70,14 +70,18 @@ sub _currencies_config {
     # As a stake_default (amount, which will be pre-populated for this currency on our website,
     # if there were no amount entered by client), we get max out of two minimal possible stakes.
     # Logic is copied from _build_staking_limits
+
+    my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    my @payout_currencies =
+        sort grep { !exists $suspended_currencies{$_} } keys %{LandingCompany::Registry::get('costarica')->legal_allowed_currencies};
+
     my %currencies_config = map {
         $_ => {
             fractional_digits => $amt_precision->{$_},
             type              => LandingCompany::Registry::get_currency_type($_),
             stake_default     => min($bet_limits->{min_payout}->{volidx}->{$_}, $bet_limits->{min_payout}->{default}->{$_}) / 2,
             }
-        }
-        keys LandingCompany::Registry::get('costarica')->legal_allowed_currencies;
+    } @payout_currencies;
     return \%currencies_config;
 }
 
