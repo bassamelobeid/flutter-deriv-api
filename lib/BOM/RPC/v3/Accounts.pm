@@ -51,7 +51,7 @@ sub payout_currencies {
         $client = Client::Account->new({loginid => $token_details->{loginid}});
     }
 
-    # if client has default_account he had already choosed his currency..
+    # if client has default_account he has already chosen his currency..
     return [$client->currency] if $client && $client->default_account;
 
     # or if client has not yet selected currency - we will use list from his LC
@@ -62,7 +62,10 @@ sub payout_currencies {
     # currencies enabled.
     $lc ||= LandingCompany::Registry::get('costarica');
 
-    return [sort keys %{$lc->legal_allowed_currencies}];
+    # Remove cryptocurrencies that have been suspended
+    my %suspended_currencies = map {$_ => 1} split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    my @payout_currencies = sort grep { ! exists $suspended_currencies{$_} } keys %{$lc->legal_allowed_currencies};
+    return [@payout_currencies];
 }
 
 sub landing_company {
