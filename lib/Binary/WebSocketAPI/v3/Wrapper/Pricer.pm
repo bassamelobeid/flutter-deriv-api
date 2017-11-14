@@ -61,7 +61,7 @@ sub proposal {
                 language              => $c->stash('language'),
                 app_markup_percentage => $c->stash('app_markup_percentage'),
                 landing_company       => $c->landing_company_name,
-                country_code          => $c->stash('country') // $c->stash('country_code'),
+                country_code          => $c->stash('country_code'),
             },
             success => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
@@ -228,7 +228,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             language              => $c->stash('language'),
                             app_markup_percentage => $c->stash('app_markup_percentage'),
                             landing_company       => $c->landing_company_name,
-                            country_code          => $c->stash('country') // $c->stash('country_code'),
+                            country_code          => $c->stash('country_code'),
                             proposal_array        => 1,
                         },
                         error    => $create_price_channel,
@@ -553,7 +553,7 @@ sub _pricing_channel_for_ask {
     $args_hash{language}               = $c->stash('language') || 'EN';
     $args_hash{price_daemon_cmd}       = $price_daemon_cmd;
     $args_hash{landing_company}        = $c->landing_company_name;
-    $args_hash{country_code}           = $c->stash('country') // $c->stash('country_code');
+    $args_hash{country_code}           = $c->stash('country_code');
     $args_hash{skips_price_validation} = 1;
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel    = $args->{amount};
@@ -575,7 +575,7 @@ sub _pricing_channel_for_bid {
     $hash{language}         = $c->stash('language') || 'EN';
     $hash{price_daemon_cmd} = $price_daemon_cmd;
     $hash{landing_company}  = $c->landing_company_name;
-    $hash{country_code}     = $c->stash('country');
+    $hash{country_code}     = $c->stash('country_code');
     my $redis_channel = _serialized_args(\%hash);
 
     %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
