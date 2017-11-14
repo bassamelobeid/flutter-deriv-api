@@ -71,6 +71,7 @@ sub _currencies_config {
     # if there were no amount entered by client), we get max out of two minimal possible stakes.
     # Logic is copied from _build_staking_limits
 
+    # Get suspended currencies and remove them from list of legal currencies
     my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
     my @payout_currencies =
         sort grep { !exists $suspended_currencies{$_} } keys %{LandingCompany::Registry::get('costarica')->legal_allowed_currencies};
