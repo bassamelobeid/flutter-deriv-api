@@ -192,7 +192,7 @@ sub set_professional {
         if ($cli->get_status('professional')) {
             $new_client->set_status('professional', 'SYSTEM', 'Mark as professional as per existing accounts');
             $new_client->save;
-            return;
+            return 1;
         }
 
         # Scenario 2: Check if there is request for client to be professional
@@ -201,11 +201,11 @@ sub set_professional {
             $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
             $new_client->save;
             BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence);
-            return;
+            return 1;
         }
     }
 
-    return;
+    return undef;
 }
 
 sub new_account_real {
@@ -271,7 +271,7 @@ sub new_account_real {
     # else it will give false impression to client
     try {
         $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
-        set_professional($user, $new_client, $professional_requested);
+        $new_client->save unless set_professional($user, $new_client, $professional_requested);
     };
 
     if ($args->{currency}) {
