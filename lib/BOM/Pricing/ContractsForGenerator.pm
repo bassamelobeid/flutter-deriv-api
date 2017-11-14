@@ -67,9 +67,11 @@ sub contracts_for {
         $contracts_for->{available} = [grep { $_->{contract_type} !~ /^(?:CALLE|PUTE)$/ } @{$contracts_for->{available}}]
             if ($contracts_for and $contracts_for->{hit_count} > 0);
     }
-    $contracts_for->{_generated} = time;
 
-    return $contracts_for;
+    return {
+        _generated => time,
+        value      => $contracts_for
+    };
 }
 
 1;

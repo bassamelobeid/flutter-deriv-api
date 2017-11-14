@@ -577,7 +577,7 @@ sub contracts_for {
             contracts_for   => $symbol,
         });
     }
-    delete $contracts_for->{_generated};
+    $contracts_for = $contracts_for->{value};
 
     my $i = 0;
     foreach my $contract (@{$contracts_for->{available}}) {
