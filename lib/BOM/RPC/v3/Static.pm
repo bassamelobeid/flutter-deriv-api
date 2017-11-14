@@ -177,7 +177,7 @@ sub ico_status {
     ) ? 'closed' : 'open';
 
     $ico_info->{ico_countries_config} = {
-        restricted => [$countries_instance->ico_countries_by_investor('none')],
+        restricted   => [$countries_instance->ico_countries_by_investor('none')],
         professional => [$countries_instance->ico_countries_by_investor('professional')],
     };
 
