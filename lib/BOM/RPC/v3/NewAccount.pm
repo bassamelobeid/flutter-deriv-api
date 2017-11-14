@@ -262,7 +262,7 @@ sub new_account_real {
     });
     $user->save;
 
-    if ($new_client->residence eq 'gb') {    # RTS 12 - Financial Limits - UK Clients
+    if ($new_client->residence eq 'gb' and not $ico_only) {    # RTS 12 - Financial Limits - UK Clients
         $new_client->set_status('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit');
         $new_client->save;
     }
