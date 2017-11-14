@@ -360,8 +360,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     my $user = BOM::Platform::User->new({email => $client->email});
 
     foreach my $existing_cli ($user->clients) {
-        # MLT, MX, JP, VRTC are excluded
-        next unless $existing_cli->landing_company->short !~ /^(?:virtual|iom|malta|japan)$/;
+        # Only allow CR and MF
+        next unless $cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
         if ($input{professional_client}) {
             $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested');
             $existing_cli->clr_status('professional_requested');
