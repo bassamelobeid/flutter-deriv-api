@@ -185,8 +185,8 @@ sub set_professional {
 
     foreach my $cli ($user->clients) {
 
-        # MLT, MX, JP, VRTC are excluded
-        next unless $cli->landing_company->short !~ /^(?:virtual|malta|iom|japan)$/;
+        # Only allow CR and MF
+        next unless $cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
 
         # Scenario 1: Check for client's professional status
         if ($cli->get_status('professional')) {
