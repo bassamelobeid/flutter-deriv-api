@@ -145,8 +145,6 @@ sub website_status {
     my $params = shift;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
-    my $ico_info   = live_open_ico_bids('USD');
-    $ico_info->{final_price} = $app_config->system->suspend->ico_final_price;
 
     return {
         terms_conditions_version => $app_config->cgi->terms_conditions_version,
@@ -154,11 +152,6 @@ sub website_status {
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
-        ico_info                 => $ico_info,
-        ico_status               => (
-            $app_config->system->suspend->is_auction_ended
-                or not $app_config->system->suspend->is_auction_started
-        ) ? 'closed' : 'open',
     };
 }
 
