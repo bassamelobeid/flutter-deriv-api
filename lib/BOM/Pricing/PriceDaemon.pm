@@ -52,7 +52,7 @@ sub process_job {
     }
 
     my $current_spot_ts      = $underlying->spot_tick->epoch;
-    my $last_priced_contract = try { $json->decode(Encode::decode_utf8($redis->get($next))) } catch { {time => 0} };
+    my $last_priced_contract = try { $json->decode(Encode::decode_utf8($redis->get($next)) // '') } catch { {time => 0} };
     my $last_price_ts        = $last_priced_contract->{time};
 
     # For plain queue, if we have request for a price, and tick has not changed since last one, and it was not more
