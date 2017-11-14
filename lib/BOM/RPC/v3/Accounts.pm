@@ -62,7 +62,7 @@ sub payout_currencies {
     # currencies enabled.
 
     # Remove cryptocurrencies that have been suspended
-    return BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies('costarica');
+    return BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);
 }
 
 sub landing_company {
