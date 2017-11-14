@@ -367,7 +367,9 @@ sub validate_make_new_account {
 
     if ($client->is_virtual) {
         my @sibling_values = values %$siblings;
-        if (scalar @sibling_values == 1 and $sibling_values[0]->{ico_only}) {
+        # if we have only ico_only account then we should allow to
+        # open other real accounts
+        if (scalar @sibling_values and ((scalar @sibling_values) == (grep { $_->{ico_only} } @sibling_values))) {
             return;
         } else {
             return permission_error();
