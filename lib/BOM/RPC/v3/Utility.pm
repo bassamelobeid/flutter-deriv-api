@@ -370,7 +370,7 @@ sub validate_make_new_account {
         # if we have only ico_only account then we should allow to
         # open other real accounts
         if (scalar @sibling_values and ((scalar @sibling_values) == (grep { $_->{ico_only} } @sibling_values))) {
-            return;
+            return undef;
         } else {
             return permission_error();
         }

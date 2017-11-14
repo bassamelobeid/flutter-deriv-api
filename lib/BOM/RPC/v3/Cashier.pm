@@ -1286,7 +1286,7 @@ sub _validate_transfer_between_accounts {
     # block if client wants to transfer from ico to other or vice versa
     # above check should block it but adding additional one
     return _transfer_between_accounts_error()
-        if (($client_from->get_status('ico_only') ? 1 : 0) != ($client_to->get_status('ico_only') ? 1 : 0));
+        if !!$client_from->get_status('ico_only') != !!$client_to->get_status('ico_only');
 
     # error if currency is not legal for landing company
     return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
