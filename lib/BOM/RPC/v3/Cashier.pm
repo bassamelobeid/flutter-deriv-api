@@ -1283,6 +1283,11 @@ sub _validate_transfer_between_accounts {
         if (($lc_from->short ne $lc_to->short)
         and ($lc_from->short !~ /^(?:malta|maltainvest)$/ or $lc_to->short !~ /^(?:malta|maltainvest)$/));
 
+    # block if client wants to transfer from ico to other or vice versa
+    # above check should block it but adding additional one
+    return _transfer_between_accounts_error()
+        if (($client_from->get_status('ico_only') ? 1 : 0) != ($client_to->get_status('ico_only') ? 1 : 0));
+
     # error if currency is not legal for landing company
     return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
         if (not $lc_from->is_currency_legal($currency) or not $lc_to->is_currency_legal($currency));
