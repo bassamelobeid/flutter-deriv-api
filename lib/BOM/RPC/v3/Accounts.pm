@@ -1363,10 +1363,14 @@ sub set_account_currency {
 
     my ($client, $currency) = @{$params}{qw/client currency/};
 
+    # Get hash of suspended currencies
+    my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidCurrency',
-            message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)}
-    ) unless $client->landing_company->is_currency_legal($currency);
+            message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)})
+        if !($client->landing_company->is_currency_legal($currency))
+        and exists $suspended_currencies{$currency};
 
     # bail out if default account is already set
     return {status => 0} if $client->default_account;
