@@ -3,15 +3,23 @@ package BOM::Pricing::PriceDaemon;
 use strict;
 use warnings;
 
+use DataDog::DogStatsd::Helper qw/stats_inc stats_gauge stats_count stats_timing/;
+use Encode;
+use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use JSON::MaybeXS;
 use List::Util qw(first);
 use Time::HiRes ();
-use JSON::XS qw/encode_json decode_json/;
-use DataDog::DogStatsd::Helper qw/stats_inc stats_gauge stats_count stats_timing/;
+use Try::Tiny;
+
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 use BOM::Pricing::v3::Contract;
-use Finance::Contract::Longcode qw(shortcode_to_parameters);
+
+use constant {
+    DURATION_DONT_PRICE_SAME_SPOT                        => 10,
+    DURATION_RETURN_SAME_PRICE_ON_SAME_SPOT_FOR_PRIORITY => 2,
+};
 
 sub new { return bless {@_[1 .. $#_]}, $_[0] }
 
@@ -23,9 +31,10 @@ sub process_job {
     my $response;
 
     my $underlying = $self->_get_underlying($params) or return undef;
+    my $json = JSON::MaybeXS->new();
 
     if (!ref($underlying)) {
-        warn "Have legacy underlying - $underlying with params " . encode_json($params) . "\n";
+        warn "Have legacy underlying - $underlying with params " . $json->encode($params) . "\n";
         stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => $self->tags});
         return undef;
     }
@@ -41,17 +50,26 @@ sub process_job {
         return undef;
     }
 
-    my $current_spot_ts = $underlying->spot_tick->epoch;
-    my $last_price_ts = $redis->get($next) || 0;
+    my $current_spot_ts      = $underlying->spot_tick->epoch;
+    my $last_priced_contract = try { $json->decode(Encode::decode_utf8($redis->get($next))) } catch { {time => 0} };
+    my $last_price_ts        = $last_priced_contract->{time};
 
-    if (    $current_spot_ts == $last_price_ts
-        and $current_time - $last_price_ts <= 10
-        and not $self->_is_in_priority_queue())
-    {
-        stats_inc("pricer_daemon.skipped_duplicate_spot", {tags => $self->tags});
-        return undef;
+    # For plain queue, if we have request for a price, and tick has not changed since last one, and it was not more
+    # than 10 seconds ago - just ignore it.
+    # For priority, we're sending rnevious request at this case
+    if ($current_spot_ts == $last_price_ts) {
+        if ($current_time - $last_price_ts <= DURATION_DONT_PRICE_SAME_SPOT
+            and not $self->_is_in_priority_queue())
+        {
+            stats_inc("pricer_daemon.skipped_duplicate_spot", {tags => $self->tags});
+            return undef;
+        } elsif ($current_time - $last_price_ts <= DURATION_RETURN_SAME_PRICE_ON_SAME_SPOT_FOR_PRIORITY
+            and $self->_is_in_priority_queue())
+        {
+            stats_inc("pricer_daemon.existing_price_used", {tags => $self->tags});
+            return $last_priced_contract->{contract};
+        }
     }
-
     if ($price_daemon_cmd eq 'price') {
         $params->{streaming_params}->{add_theo_probability} = 1;
         $response = BOM::Pricing::v3::Contract::send_ask({args => $params});
@@ -66,15 +84,23 @@ sub process_job {
         return undef;
     }
 
-    # when it reaches here, contract is considered priced.
-    $redis->set($next, $current_time);
-    $redis->expire($next, 300);
-
-    stats_inc("pricer_daemon.$log_price_daemon_cmd.call", {tags => $self->tags});
-    stats_timing("pricer_daemon.$log_price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
     $response->{price_daemon_cmd} = $price_daemon_cmd;
     # contract parameters are stored after first call, no need to send them with every stream message
     delete $response->{contract_parameters} if not $self->_is_in_priority_queue;
+
+    # when it reaches here, contract is considered priced.
+    $redis->set(
+        $next => Encode::encode_utf8(
+            $json->encode({
+                    time     => $current_time,
+                    contract => $response,
+                })
+        ),
+        'EX' => DURATION_DONT_PRICE_SAME_SPOT
+    );
+
+    stats_inc("pricer_daemon.$log_price_daemon_cmd.call", {tags => $self->tags});
+    stats_timing("pricer_daemon.$log_price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
     return $response;
 }
 
@@ -86,6 +112,7 @@ sub run {
     my $tv                    = [Time::HiRes::gettimeofday];
     my $stat_count            = {};
     my $current_pricing_epoch = time;
+    my $json                  = JSON::MaybeXS->new();
     while (my $key = $redis->brpop(@{$args{queues}}, 0)) {
         # Remember that we had some jobs
         my $tv_now = [Time::HiRes::gettimeofday];
@@ -106,7 +133,7 @@ sub run {
 
         my $next = $key->[1];
         next unless $next =~ s/^PRICER_KEYS:://;
-        my $payload       = decode_json($next);
+        my $payload       = $json->decode(Encode::decode_utf8($next));
         my $params        = {@{$payload}};
         my $contract_type = $params->{contract_type};
 
@@ -129,7 +156,7 @@ sub run {
                 {tags => $self->tags('contract_type:' . $contract_type_string, 'currency:' . $params->{currency})});
         }
 
-        my $subscribers_count = $redis->publish($key->[1], encode_json($response));
+        my $subscribers_count = $redis->publish($key->[1], Encode::encode_utf8($json->encode($response)));
         # if None was subscribed, so delete the job
         if ($subscribers_count == 0) {
             $redis->del($key->[1], $next);
@@ -152,7 +179,7 @@ sub run {
             process_end_time => 1000 * ($end_time - int($end_time)),
             time             => time,
             fork_index       => $args{fork_index});
-        $redis->set("PRICER_STATUS::$args{ip}-$args{fork_index}", encode_json(\@stat_redis));
+        $redis->set("PRICER_STATUS::$args{ip}-$args{fork_index}", Encode::encode_utf8($json->encode(\@stat_redis)));
 
         if ($current_pricing_epoch != time) {
 
