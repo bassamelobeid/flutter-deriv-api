@@ -358,30 +358,34 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
     # Handing the professional client status (For all existing clients)
     my $user = BOM::Platform::User->new({email => $client->email});
+    my $result = "";
 
     foreach my $existing_cli ($user->clients) {
         # Only allow CR and MF
         next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
-
         my $existing_cli_loginid = encode_entities($existing_cli->loginid);
-        if ($input{professional_client}) {
-            $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested');
-            $existing_cli->clr_status('professional_requested');
+        try {
 
-            # Client's professional status revoked
-        } elsif (!$input{professional_client} && $existing_cli->get_status('professional')) {
-            $existing_cli->clr_status('professional');
-        }
+            if ($input{professional_client}) {
+                $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested');
+                $existing_cli->clr_status('professional_requested');
 
-        if (not $existing_cli->save) {
-            code_exit_BO(
-                "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $existing_cli_loginid</p></p>");
+                # Client's professional status revoked
+            } elsif (!$input{professional_client} && $existing_cli->get_status('professional')) {
+                $existing_cli->clr_status('professional');
+            }
+
         }
+        catch {
+            $result .= "<p>Failed to update professional status of client: $existing_cli_loginid</p>";
+        };
     }
+
+    print $result;
 
     # Filter keys for tax residence
     if (my @matching_keys = grep { /tax_residence/ } keys %input) {
-        my $tax_residence = join(",", sort grep { length } @input{@matching_keys});
+        my $tax_residence = join(", ", sort grep { length } @input{@matching_keys});
         $client->tax_residence($tax_residence);
     }
 
@@ -394,7 +398,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
             $client->$key($input{$key});
         } else {
-            code_exit_BO(qq{<p style="color:red">ERROR: Invalid $key, minimum value is 1 and it can be integer only</p>});
+            code_exit_BO(qq{<p style=" color : red ">ERROR: Invalid $key, minimum value is 1 and it can be integer only</p>});
         }
     }
 
@@ -402,7 +406,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     foreach my $key (keys %input) {
         if ($key eq 'dob_day') {
             my $date_of_birth;
-            $date_of_birth = sprintf "%04d-%02d-%02d", $input{'dob_year'}, $input{'dob_month'}, $input{'dob_day'}
+            $date_of_birth = sprintf " % 04 d- %02d - %02d ", $input{'dob_year'}, $input{'dob_month'}, $input{'dob_day'}
                 if $input{'dob_day'} && $input{'dob_month'} && $input{'dob_year'};
 
             $client->date_of_birth($date_of_birth);
@@ -419,8 +423,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                     $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
                 }
                 catch {
-                    my $err = (split "\n", $_)[0];                                         #handle Date::Utility's confess() call
-                    print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
+                    my $err = (split " \n ", $_)[0];                                       #handle Date::Utility's confess() call
+                    print qq{<p style=" color : red ">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
                     next CLIENT_KEY;
                 };
             } elsif ($document_field eq 'comments') {
@@ -433,7 +437,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $doc->$document_field($new_value);
             }
             catch {
-                print qq{<p style="color:red">ERROR: Could not set $document_field for doc $id with $val: $_</p>};
+                print qq{<p style=" color : red ">ERROR: Could not set $document_field for doc $id with $val: $_</p>};
                 next CLIENT_KEY;
             };
             $doc->db($client->set_db('write'));
@@ -445,7 +449,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             # so we update this encrypted field only on value change - we don't want our trigger log trash
 
             my $secret_answer = BOM::Platform::Client::Utility::decrypt_secret_answer($client->secret_answer);
-            $secret_answer = Encode::decode("UTF-8", $secret_answer)
+            $secret_answer = Encode::decode(" UTF- 8 ", $secret_answer)
                 unless (Encode::is_utf8($secret_answer));
 
             $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer($input{$key}))
@@ -492,7 +496,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         if ($input{mifir_id} and $client->mifir_id eq '' and $broker eq 'MF') {
             if (length($input{mifir_id}) > 35) {
                 code_exit_BO(
-                    "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p></p>"
+                    " < p style =
+                \"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p></p>"
                 );
             }
             $client->mifir_id($input{mifir_id});
@@ -526,6 +531,7 @@ for (1 .. $attempts) {
     $prev_loginid = sprintf "$client_broker%0*d", $len, $number - $_;
     last if $prev_client = Client::Account->new({loginid => $prev_loginid});
 }
+
 for (1 .. $attempts) {
     $next_loginid = sprintf "$client_broker%0*d", $len, $number + $_;
     last if $next_client = Client::Account->new({loginid => $next_loginid});
@@ -672,6 +678,7 @@ if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
     $link_loginid = $1;
     $link_acc     = "<p>UK account, has been moved to ";
 }
+
 if ($link_acc) {
     $link_loginid =~ /(\D+)\d+/;
     my $link_href = request()->url_for(
