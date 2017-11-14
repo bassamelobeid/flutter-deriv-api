@@ -377,8 +377,8 @@ sub startup {
         });
 
     # set $0 after forking children
-    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-rpc: (new)" })
-        if $on_production;                                                                           ## no critic (RequireLocalizedPunctuationVars)
+    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-rpc: (new)" })   ## no critic (RequireLocalizedPunctuationVars)
+        if $on_production;
 
     return;
 }
