@@ -197,7 +197,7 @@ sub set_professional {
 
         # Scenario 2: Check if there is request for client to be professional
         # Scenario 3: Take into consideration that this could be the FIRST real account
-        if ($cli->get_status('professional_requested') or $professional_requested) {
+        if ($professional_requested or $cli->get_status('professional_requested')) {
             $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
             $new_client->save;
             BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence);
