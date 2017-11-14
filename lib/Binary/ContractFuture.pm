@@ -2,13 +2,18 @@ package Binary::ContractFuture;
 
 use strict;
 use warnings;
-use Future::Mojo;
-use JSON::MaybeXS;
-use Mojo::URL;
-use YAML::XS qw/LoadFile/;
-use Mojo::Redis2;
+use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Encode;
+use Encode;
+use Future::Mojo;
+use JSON::MaybeXS;
+use List::UtilsBy;
+use Mojo::Redis2;
+use Mojo::Redis2;
+use Mojo::URL;
+use Scalar::Util qw/ refaddr /;
+use YAML::XS qw/LoadFile/;
 
 use constant PRICING_TIMEOUT => 10;
 
@@ -39,9 +44,16 @@ sub _connect {
 
 sub _clear {
     my $channel = shift;
-    $redis->unsubscribe($channel);
-    #XXX: remove specific future instead of all?
-    delete $subscribers->{$channel};
+    my $f       = shift;
+    my $refaddr = refaddr($f);
+    List::UtilsBy::extract_by { refaddr($_->[1]) == $refaddr } @{$subscribers->{$channel}}
+        or warn "ContractFuture::_clear future was not found";
+
+    # unsubscribe when there are no requests anymore
+    if (not @{$subscribers->{$channel}}) {
+        $redis->unsubscribe($channel);
+        delete $subscribers->{$channel};
+    }
     return;
 }
 
@@ -58,13 +70,14 @@ sub pricing_future {
     $args->{language}         //= 'EN';
 
     my $channel = Binary::WebSocketAPI::v3::Wrapper::Pricer::_serialized_args($args);
-    $redis->subscribe([$channel]);
-    $redis->publish('high_priority_prices', $channel);
-
+    if (not $subscribers->{$channel}) {
+        $redis->subscribe([$channel]);
+        $redis->publish('high_priority_prices', $channel);
+    }
     my $f = Future::Mojo->new;
     my $combined_future =
-        Future->wait_any(Future::Mojo->new_timer(PRICING_TIMEOUT)->then(sub { Future->fail('Timeout') }), $f)->on_ready(sub { _clear($channel); })
-        ->on_cancel(sub { $f->cancel unless $f->is_ready });
+        Future->wait_any(Future::Mojo->new_timer(PRICING_TIMEOUT)->then(sub { Future->fail('Timeout') }), $f)
+        ->on_ready(sub { _clear($channel, $f); })->on_cancel(sub { $f->cancel unless $f->is_ready });
     push @{$subscribers->{$channel}}, [$combined_future, $f];
 
     return $combined_future;
