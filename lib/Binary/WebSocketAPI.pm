@@ -199,6 +199,7 @@ sub startup {
                 stash_params       => [qw/ token /],
             }
         ],
+        ['ico_status'],
         ['residence_list'],
         ['states_list'],
         ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
