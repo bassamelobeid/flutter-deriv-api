@@ -362,6 +362,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     foreach my $existing_cli ($user->clients) {
         # Only allow CR and MF
         next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
+
+        my $existing_cli_loginid = encode_entities($existing_cli->loginid);
         if ($input{professional_client}) {
             $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested');
             $existing_cli->clr_status('professional_requested');
@@ -371,7 +373,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $existing_cli->clr_status('professional');
         }
 
-        $existing_cli->save;
+        if (not $existing_cli->save) {
+            code_exit_BO(
+                "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $existing_cli_loginid</p></p>");
+        }
     }
 
     # Filter keys for tax residence
