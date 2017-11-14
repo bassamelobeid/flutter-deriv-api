@@ -300,6 +300,7 @@ sub get_real_account_siblings_information {
             sub_account_of       => ($cl->sub_account_of // ''),
             currency             => $acc ? $acc->currency_code : '',
             balance              => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
+            ico_only => $cl->get_status('ico_only') ? 1 : 0,
         };
     }
 
@@ -363,8 +364,15 @@ sub validate_make_new_account {
         # but we do allow them to open only financial account
         return;
     }
-    # we don't allow virtual client to make this again and
-    return permission_error() if $client->is_virtual;
+
+    if ($client->is_virtual) {
+        my @sibling_values = values %$siblings;
+        if (scalar @sibling_values == 1 and $sibling_values[0]->{ico_only}) {
+            return;
+        } else {
+            return permission_error();
+        }
+    }
 
     my $landing_company_name = $client->landing_company->short;
 
@@ -523,7 +531,7 @@ sub should_update_account_details {
 }
 
 sub send_professional_requested_email {
-    my $loginid = shift;
+    my ($loginid, $residence) = @_;
 
     return unless $loginid;
 
@@ -531,7 +539,7 @@ sub send_professional_requested_email {
     return send_email({
         from    => $brand->emails('support'),
         to      => join(',', $brand->emails('compliance'), $brand->emails('support')),
-        subject => "$loginid requested for professional status",
+        subject => "$loginid requested for professional status, redidence: " . ($residence // 'No residence provided'),
         message => ["$loginid has requested for professional status, please check and update accordingly"],
     });
 }
@@ -592,10 +600,10 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
 
     foreach my $shortcode (@short_codes) {
         try {
-            $longcodes{$shortcode} = localize(shortcode_to_longcode($shortcode));
+            $longcodes{$shortcode} = $shortcode =~ /^BINARYICO/ ? localize('Binary ICO') : localize(shortcode_to_longcode($shortcode));
         }
         catch {
-            warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode;
+            warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $_;
             $longcodes{$shortcode} = localize('No information is available for this contract.');
         }
     }

@@ -6,11 +6,13 @@ use warnings;
 use Format::Util::Numbers;
 use List::Util qw( min );
 use List::UtilsBy qw(nsort_by);
+use Time::HiRes ();
 
 use Brands;
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/financialrounding/;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
+use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
@@ -80,6 +82,10 @@ sub _currencies_config {
 }
 
 sub live_open_ico_bids {
+    my ($currency) = @_;
+
+    my $start = Time::HiRes::time();
+    $currency //= 'USD';
     my $clientdb = BOM::Database::ClientDB->new({
         broker_code => 'CR',
         operation   => 'replica',
@@ -95,17 +101,42 @@ JOIN    data_collection.quants_bet_variables as qbv ON txn.id = qbv.transaction_
 WHERE   fmb.bet_class = 'coinauction_bet'
 SQL
 
-    $_->{unit_price_usd} = financialrounding('price', 'USD', in_USD($_->{unit_price}, $_->{currency})) for @$bids;
-
-    # Divide these items into buckets - currently hardcoded at 20c
+    # Divide these items into buckets - currently hardcoded at currency equivalent of 20c
     my %sum;
-    for my $bid (nsort_by { $_->{unit_price_usd} } @$bids) {
-        my $bucket = financialrounding('price', 'USD', ICO_BUCKET_SIZE * int((0.001 + $bid->{unit_price_usd}) / ICO_BUCKET_SIZE));
-        $sum{$bucket} += $bid->{unit_price_usd} * $bid->{tokens};
+    my $bucket_size = ICO_BUCKET_SIZE;
+    # Tiny adjustment to ensure bucket sizes are even
+    my $epsilon   = 0.001;
+    my $count     = 0;
+    my $total_usd = 0;
+    for my $bid (nsort_by { $_->{unit_price} } @$bids) {
+        my $unit_price_usd = financialrounding(
+            price => $currency,
+            in_USD($bid->{unit_price}, $bid->{currency}));
+
+        my $bucket = financialrounding(
+            price => 'USD',
+            $bucket_size * int(($epsilon + $unit_price_usd) / $bucket_size));
+        $sum{$bucket} += $unit_price_usd * $bid->{tokens};
+        $total_usd    += $unit_price_usd * $bid->{tokens};
+        $count        += $bid->{tokens};
     }
+    my $app_config      = BOM::Platform::Runtime->instance->app_config;
+    my $minimum_bid_usd = financialrounding(
+        price => 'USD',
+        $app_config->system->suspend->ico_minimum_bid_in_usd
+    );
+    my $minimum_bid = financialrounding(
+        price => $currency,
+        amount_from_to_currency($minimum_bid_usd, USD => $currency));
+    stats_gauge('binary.ico.bids.count',     $count);
+    stats_gauge('binary.ico.bids.total_usd', $total_usd);
+    my $elapsed = 1000.0 * (Time::HiRes::time() - $start);
+    stats_timing('binary.ico.bids.calculation.elapsed', $elapsed);
     return {
-        bids                  => $bids,
-        histogram_bucket_size => ICO_BUCKET_SIZE,
+        currency              => $currency,
+        histogram_bucket_size => $bucket_size,
+        minimum_bid           => $minimum_bid,
+        minimum_bid_usd       => $minimum_bid_usd,
         histogram             => \%sum
     };
 }
@@ -114,7 +145,7 @@ sub website_status {
     my $params = shift;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
-    my $ico_info   = live_open_ico_bids();
+    my $ico_info   = live_open_ico_bids('USD');
     $ico_info->{final_price} = $app_config->system->suspend->ico_final_price;
 
     return {
@@ -129,6 +160,22 @@ sub website_status {
                 or not $app_config->system->suspend->is_auction_started
         ) ? 'closed' : 'open',
     };
+}
+
+sub ico_status {
+    my $params = shift;
+
+    my $currency   = $params->{args}{currency} || 'USD';
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $ico_info   = live_open_ico_bids($currency);
+    $ico_info->{final_price_usd} = $app_config->system->suspend->ico_final_price;
+    $ico_info->{final_price}     = amount_from_to_currency($ico_info->{final_price_usd}, USD => $currency);
+    $ico_info->{ico_status}      = (
+        $app_config->system->suspend->is_auction_ended
+            or not $app_config->system->suspend->is_auction_started
+    ) ? 'closed' : 'open';
+
+    return $ico_info;
 }
 
 1;
