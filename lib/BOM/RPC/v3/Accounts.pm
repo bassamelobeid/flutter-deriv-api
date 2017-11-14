@@ -65,7 +65,7 @@ sub payout_currencies {
     # Remove cryptocurrencies that have been suspended
     my %suspended_currencies = map {$_ => 1} split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
     my @payout_currencies = sort grep { ! exists $suspended_currencies{$_} } keys %{$lc->legal_allowed_currencies};
-    return [@payout_currencies];
+    return \@payout_currencies;
 }
 
 sub landing_company {
