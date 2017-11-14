@@ -72,9 +72,8 @@ sub _currencies_config {
     # Logic is copied from _build_staking_limits
 
     # Get suspended currencies and remove them from list of legal currencies
-    my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
     my @payout_currencies =
-        sort grep { !exists $suspended_currencies{$_} } keys %{LandingCompany::Registry::get('costarica')->legal_allowed_currencies};
+        BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies(keys %{LandingCompany::Registry::get('costarica')->legal_allowed_currencies});
 
     my %currencies_config = map {
         $_ => {
