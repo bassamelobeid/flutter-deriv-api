@@ -361,7 +361,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
     foreach my $existing_cli ($user->clients) {
         # Only allow CR and MF
-        next unless $cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
+        next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
         if ($input{professional_client}) {
             $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested');
             $existing_cli->clr_status('professional_requested');
