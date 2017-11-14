@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 30;
+use Test::More tests => 31;
 use Test::Exception;
 use Test::Warnings;
 
@@ -23,7 +23,7 @@ my $index5 = new_ok('Quant::Framework::Underlying' => [{symbol => $index_symbol}
 my $index6 = new_ok(
     'Quant::Framework::Underlying' => [{
             symbol         => $index_symbol,
-            weekend_weight => 0.75
+            chronicle_reader => 1
         }]);
 
 is $index->for_date,      undef,           'for_date undef when not included in constructor';
@@ -34,7 +34,8 @@ isnt $index3, $index,  'Dated object is not cached copy of first';
 isnt $index4, $index3, 'Dated objects are not cached';
 
 is $index5,   $index,  'Symbol-only hashref is same as just symbol';
-isnt $index6, $index5, 'Different objects with extra arguments in the hashref';
+is $index6, $index5, 'returns the same object';
+ok $index6->chronicle_reader, 'chronicle_reader is set';
 
 my $forex  = new_ok('Quant::Framework::Underlying' => [$forex_symbol]);
 my $forex2 = new_ok('Quant::Framework::Underlying' => [$forex_symbol]);
@@ -71,10 +72,10 @@ new_ok(
             symbol => 'frxUSDJPY',
             market => $market
         }]);
-throws_ok { create_underlying({symbol => $unknown_symbol, market => 'bomba'}) } qr/Attribute \(market\) does not pass the type constraint/;
+throws_ok { create_underlying({symbol => 'ABCS', market => 'bomba'}) } qr/Attribute \(market\) does not pass the type constraint/;
 
 my $fake_market = Date::Utility->new();
-throws_ok { create_underlying({symbol => $unknown_symbol, market => $fake_market}) } qr/Attribute \(market\) does not pass the type constraint/;
+throws_ok { create_underlying({symbol => 'DCSA', market => $fake_market}) } qr/Attribute \(market\) does not pass the type constraint/;
 new_ok(
     'Quant::Framework::Underlying' => [{
             symbol => 'frxUSDJPY',
