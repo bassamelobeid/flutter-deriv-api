@@ -212,6 +212,16 @@ subtest 'intraday duration longcode variation' => sub {
         ]);
 };
 
+subtest 'legacy shortcode to longcode' => sub {
+    foreach my $shortcode (qw(RUNBET_DOUBLEDOWN_USD200_R_50_5 FLASHU_R_75_9.34_1420452541_6T_S0P_0 INTRADU_R_75_9.34_1420452541_1420452700_S0P_0)) {
+        my $c = produce_contract($shortcode, 'USD');
+        is_deeply(
+            $c->longcode,
+            ['Legacy contract. No further information is available.'],
+            'does not throw exception for legacy contract [' . $shortcode . ']'
+        );
+    }
+};
 done_testing();
 
 1;
