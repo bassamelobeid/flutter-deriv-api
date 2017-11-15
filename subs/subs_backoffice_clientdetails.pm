@@ -29,7 +29,7 @@ sub print_client_details {
 
     my $client = shift;
 
-    # IDENTITY sECTION
+    # IDENTITY SECTION
     my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
 
     # Extract year/month/day if we have them
@@ -232,8 +232,10 @@ sub build_client_warning_message {
     ###############################################
     ## UNTRUSTED SECTION
     ###############################################
+    my %client_status = map { $_->status_code => $_ } @{$client->client_status || []};
     foreach my $type (@{get_untrusted_types()}) {
         if (my $disabled = $client->get_status($type->{code})) {
+            delete $client_status{$type->{code}};
             push(
                 @output,
                 {
@@ -267,7 +269,7 @@ sub build_client_warning_message {
             $output .= '<tr>'
                 . '<td align="left" style="color:'
                 . $output_rows->{'warning'}
-                . ';"><strong>WARNING : '
+                . ';"><strong>'
                 . (uc $output_rows->{'section'})
                 . '</strong></td>'
                 . '<td><b>'
@@ -284,6 +286,20 @@ sub build_client_warning_message {
                 . '</b></td></tr>';
         }
 
+# Show all remaining status info
+        for my $status (sort keys %client_status) {
+            my $info = $client_status{$status};
+            $output .= '<tr>'
+                . '<td align="left">'
+                . $status . '</td>'
+                . '<td><b>'
+                . $info->reason
+                . '</b></td>'
+                . '<td><b>'
+                . $info->staff_name
+                . '</b></td>'
+                . '<td colspan="2">&nbsp;</td>' . '</tr>';
+        }
         $output .= '</table>';
 
         $output .= qq~
