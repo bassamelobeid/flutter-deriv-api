@@ -168,6 +168,7 @@ sub website_status {
 sub ico_status {
     my $params = shift;
 
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
     my $currency   = $params->{args}{currency} || 'USD';
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     my $ico_info   = live_open_ico_bids($currency);
@@ -177,6 +178,11 @@ sub ico_status {
         $app_config->system->suspend->is_auction_ended
             or not $app_config->system->suspend->is_auction_started
     ) ? 'closed' : 'open';
+
+    $ico_info->{ico_countries_config} = {
+        restricted   => [$countries_instance->ico_countries_by_investor('none')],
+        professional => [$countries_instance->ico_countries_by_investor('professional')],
+    };
 
     return $ico_info;
 }
