@@ -183,21 +183,29 @@ sub verify_email {
 sub set_professional {
     my ($user, $new_client, $professional_requested) = @_;
 
-    foreach my $cli ($user->clients) {
+    foreach my $existing_cli ($user->clients) {
 
         # Only allow CR and MF
-        next unless $cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
+        next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
 
-        # Scenario 1: Check for client's professional status
-        if ($cli->get_status('professional')) {
+        # Account A was created with no professional request
+        # However, a future account was created with professional request
+        if (!$existing_cli->get_status('professional_requested') && $professional_requested) {
+            $existing_cli->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
+            $existing_cli->save;
+            BOM::RPC::v3::Utility::send_professional_requested_email($existing_cli->loginid, $existing_cli->residence);
+        }
+
+        # Check for client's professional status
+        if ($existing_cli->get_status('professional')) {
             $new_client->set_status('professional', 'SYSTEM', 'Mark as professional as per existing accounts');
             $new_client->save;
             return 1;
         }
 
-        # Scenario 2: Check if there is request for client to be professional
-        # Scenario 3: Take into consideration that this could be the FIRST real account
-        if ($professional_requested or $cli->get_status('professional_requested')) {
+        # Check if there is request for client to be professional
+        # Take into consideration that this could be the FIRST real account
+        if ($professional_requested or $existing_cli->get_status('professional_requested')) {
             $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
             $new_client->save;
             BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence);
