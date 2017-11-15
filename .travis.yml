@@ -11,9 +11,7 @@ services:
 cache: apt
 env:
     - TEST_SUITE=test SH=bash
-    - TEST_SUITE=json_schema_1
-    - TEST_SUITE=json_schema_2
-
+    - TEST_SUITE=json_schemas
 notifications:
     slack:
         rooms:
