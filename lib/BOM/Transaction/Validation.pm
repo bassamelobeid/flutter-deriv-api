@@ -5,7 +5,7 @@ use warnings;
 
 use Moo;
 use Error::Base;
-use List::Util qw(min max first);
+use List::Util qw(min max first any);
 use YAML::XS qw(LoadFile);
 use JSON::MaybeXS;
 
@@ -25,26 +25,7 @@ has clients => (
 );
 has transaction => (is => 'ro');
 
-=head2 $self->_open_ico_for_european_country
-
-This is to get the number of unique users that have place ICO in a European Union country
-
-=cut
 my $json = JSON::MaybeXS->new;
-sub _open_ico_for_european_country {
-    my ($self, $client_residence) = @_;
-
-    my $db = BOM::Database::ClientDB->new({
-            broker_code => 'FOG',
-            operation   => 'collector'
-        })->db;
-    my $number_of_unique_client_per_eu_country =
-        $db->dbh->selectcol_arrayref(q{ SELECT cnt FROM accounting.get_uniq_users_per_country_for_ico('coinauction_bet', ARRAY[?]::VARCHAR[]) },
-        undef, $client_residence)->[0];
-
-    return $number_of_unique_client_per_eu_country // 0;
-}
-
 ################ Client and transaction validation ########################
 
 sub validate_trx_sell {
@@ -105,8 +86,7 @@ sub validate_trx_buy {
     push @client_validation_method,
         qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_self_exclusion)
         unless $self->transaction->contract->is_binaryico;
-    push @client_validation_method, qw(_validate_ico_jurisdictional_restrictions _validate_ico_european_restrictions)
-        if $self->transaction->contract->is_binaryico;
+    push @client_validation_method, '_validate_ico_jurisdictional_restrictions' if $self->transaction->contract->is_binaryico;
     push @client_validation_method, '_is_valid_to_buy';    # do this is as last of the validation
 
     CLI: for my $c (@$clients) {
@@ -126,6 +106,12 @@ sub validate_trx_buy {
 
     # no need to do the subsequent check for binaryico
     return if $self->transaction->contract->is_binaryico;
+
+    return Error::Base->cuss(
+        -type              => 'IcoOnly',
+        -mesg              => "Contract type is not allowed for this client",
+        -message_to_client => localize("This contract type is not available for this acccount"),
+    ) if any { $_->get_status('ico_only') } map { $_->{client} // () } @$clients;
 
     ### Order is very important
     ### _validate_trade_pricing_adjustment may contain some expensive calculations
@@ -665,37 +651,6 @@ sub _validate_jurisdictional_restrictions {
     return;
 }
 
-=head2 $self->_validate_ico_european_restrictions
-
-Note that under the EU Prospectus Directive we can only offer the token to up to 150 persons per European Union country.
-Therefore, we need to count the bids placed by persons in EU countries and not accept any more bids if there are already 150 outstanding bidder.
-
-=cut
-
-sub _validate_ico_european_restrictions {
-    my ($self, $client) = (shift, shift);
-
-    my $residence      = $client->residence;
-    my $european_union = Geo::Region->new(EUROPEAN_UNION);
-
-    if ($european_union->contains($residence)) {
-
-        # We notice that the open_ico_for_european_country from db does not update realtime enough, hence we limit it at 145
-        if ($self->_open_ico_for_european_country($residence) > 145) {
-            return Error::Base->cuss(
-                -type => 'ExceedEuIcoLimit',
-                -mesg => 'We are exceeding the limit that EU imposed on ICO ',
-                -message_to_client =>
-                    localize('Sorry, but due to regulatory restrictions, we are no longer accepting any bids from residents of your country.'),
-            );
-
-        }
-
-    }
-    return;
-
-}
-
 =head2 $self->_validate_ico_jurisdictional_restrictions
 
 Validates whether a client fullfill ICO jurisdicrtional restrictions
@@ -726,11 +681,9 @@ sub _validate_ico_jurisdictional_restrictions {
         );
     }
 
-    my $is_professional = $client->financial_assessment && $client->financial_assessment->is_professional ? 1 : 0;
-
     # For certain country, only professional investor is allow to place ico
     if ($countries_instance->ico_restricted_professional_only_country($residence)
-        && !$is_professional)
+        and not($client->get_status('professional') or $client->get_status('professional_requested')))
     {
         return Error::Base->cuss(
             -type              => 'IcoProfessionalRestrictedCountry',

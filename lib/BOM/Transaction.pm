@@ -24,7 +24,7 @@ use Format::Util::Numbers qw/formatnumber financialrounding/;
 use BOM::Platform::Config;
 use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Platform::Context qw(localize request);
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
@@ -1010,7 +1010,11 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $account  = BOM::Database::DataMapper::Account->new({
+        my $message_to_client =
+            $self->contract->is_binaryico
+            ? 'Your account balance ([_1][_2]) is insufficient to place this bid ([_1][_3]).'
+            : 'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).';
+        my $account = BOM::Database::DataMapper::Account->new({
             client_loginid => $client->loginid,
             currency_code  => $currency,
         });
@@ -1019,10 +1023,8 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -type              => 'InsufficientBalance',
             -message           => 'Client\'s account balance was insufficient to buy bet.',
             -message_to_client => BOM::Platform::Context::localize(
-                'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).',
-                $currency,
-                formatnumber('amount', $currency, $account->get_balance()),
-                formatnumber('price',  $currency, $self->price)));
+                $message_to_client, $currency,
+                formatnumber('amount', $currency, $account->get_balance()), formatnumber('price', $currency, $self->price)));
     },
     BI007 => sub {
         my $self   = shift;
@@ -1425,8 +1427,8 @@ sub sell_expired_contracts {
             if ($err =~ /^Requesting for historical period data without a valid DB connection/) {
                 # seems an issue in /Quant/Framework/EconomicEventCalendar.pm get_latest_events_for_period:
                 # live pricing condition was not ok and get_for_period was called for
-                # Data::Chronicle::Reader without dbh
-                $err .= "Data::Chronicle::Reader get_for_period call without dbh: Details: contract shortcode: " . $contract->shortcode . "\n";
+                # Data::Chronicle::Reader without dbic
+                $err .= "Data::Chronicle::Reader get_for_period call without dbic: Details: contract shortcode: " . $contract->shortcode . "\n";
             }
             warn 'SellExpiredContract Exception: ' . __PACKAGE__ . ':(' . __LINE__ . '): ' . $err;    # log it
         };
