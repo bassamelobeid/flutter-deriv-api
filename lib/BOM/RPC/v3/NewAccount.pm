@@ -180,40 +180,34 @@ sub verify_email {
     return {status => 1};    # always return 1, so not to leak client's email
 }
 
-sub set_professional {
-    my ($user, $new_client, $professional_requested) = @_;
+sub get_existing_professional_details {
+    my ($user, $professional_requested) = @_;
+    my $professional_status;
 
     foreach my $existing_cli ($user->clients) {
 
         # Only allow CR and MF
         next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
 
-        # Account A was created with no professional request
-        # However, a future account was created with professional request
-        if (!$existing_cli->get_status('professional_requested') && $professional_requested) {
-            $existing_cli->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
+        # Check 1: Is the existing client a professional?
+        if ($existing_cli->get_status('professional')) {
+            $professional_status = 1;
+        }
+
+        # Check 2: Does the existing client have a professional request?
+        if ($existing_cli->get_status('professional_requested')) {
+            $professional_requested = 1;
+        }
+
+        # Check 3: Update clients that have no professional request
+        if ($professional_requested && !$existing_cli->get_status('professional_requested')) {
+            $existing_cli->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
             $existing_cli->save;
             BOM::RPC::v3::Utility::send_professional_requested_email($existing_cli->loginid, $existing_cli->residence);
         }
-
-        # Check for client's professional status
-        if ($existing_cli->get_status('professional')) {
-            $new_client->set_status('professional', 'SYSTEM', 'Mark as professional as per existing accounts');
-            $new_client->save;
-            return 1;
-        }
-
-        # Check if there is request for client to be professional
-        # Take into consideration that this could be the FIRST real account
-        if ($professional_requested or $existing_cli->get_status('professional_requested')) {
-            $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
-            $new_client->save;
-            BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence);
-            return 1;
-        }
     }
 
-    return undef;
+    return ($professional_requested, $professional_status);
 }
 
 sub new_account_real {
@@ -278,8 +272,10 @@ sub new_account_real {
     # as account is already created so no need to die on status set
     # else it will give false impression to client
     try {
-        $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
-        $new_client->save unless set_professional($user, $new_client, $professional_requested);
+        $new_client->set_status('ico_only',               'SYSTEM', 'ICO account requested')          if $ico_only;
+        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
+        $new_client->save;
+        BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence) if $professional_requested;
     };
 
     if ($args->{currency}) {
@@ -383,7 +379,9 @@ sub new_account_maltainvest {
     my $user            = $acc->{user};
 
     try {
-        set_professional($user, $new_client, $professional_requested);
+        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
+        $new_client->save;
+        BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence);
     };
 
     $user->add_login_history({
