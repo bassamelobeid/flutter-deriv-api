@@ -611,4 +611,20 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
     return {longcodes => \%longcodes};
 }
 
+=head2 
+This subroutine checks for suspended cryptocurrencies 
+Accepts: Landing company name
+Returns: Arrayref of valid CR currencies.
+=cut
+
+sub filter_out_suspended_cryptocurrencies {
+    my $landing_company_name = shift;
+    my @currencies           = keys %{LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies};
+
+    my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    my @payout_currencies =
+        sort grep { !exists $suspended_currencies{$_} } @currencies;
+    return \@payout_currencies;
+}
+
 1;
