@@ -44,6 +44,7 @@ before_install:
     - /tmp/travis-scripts/fixHostName.sh
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
 
+    - export API_TOKEN=cd1bec02529c7f8780ef5fbb41dc48cacc4d4942
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom-test
       regentmarkets/bom-websocket-tests
