@@ -276,6 +276,7 @@ if ($input{whattodo} eq 'uploadID') {
         $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
     }
     print $result;
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
 }
 
 # PERFORM ON-DEMAND ID CHECKS
@@ -494,6 +495,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     }
 
     print "<p style=\"color:#eeee00; font-weight:bold;\">Client details saved</p>";
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
 }
 
 Bar("NAVIGATION");
@@ -564,7 +566,7 @@ print qq{<br/>
     <div class="flat">
     <form action="$risk_report_url" method="POST">
     <input type="hidden" name="loginid" value="$encoded_loginid">
-    <input type="submit" name="action" value="show risk repot">
+    <input type="submit" name="action" value="show risk report">
     </form>
     </div>
 
