@@ -615,7 +615,6 @@ subtest $method => sub {
     $res = $c->call_ok('get_bid', $params)->result;
     $expected_result = {
         'barrier'         => '0.99360',
-        'bid_price'       => '0.00',
         'is_expired'      => 1,
         'contract_id'     => 10,
         'currency'        => 'USD',
