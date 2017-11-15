@@ -27,8 +27,8 @@
     <option value="vf_id">Video Verification Screenshot - ID</option>
     <option value="vf_poa">Video Verification Screenshot - POA</option>
     <option value="professional_eu_qualified_investor">EU qualified investor</option>
-    <option value="professional_uk_high_net_worth">UK High net worth</option>
-    <option value="professional_uk_self_certified_sophisticated">UK Self-certified sophisticated</option>
+    <option value="professional_uk_high_net_worth">UK high net worth</option>
+    <option value="professional_uk_self_certified_sophisticated">UK self-certified sophisticated</option>
     <option value="other">Other</option>
   </select>
   <select name=docformat_[% n %]>
