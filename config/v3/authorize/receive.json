@@ -58,6 +58,38 @@
           "pattern": "^(1|0)$",
           "description": "1 for omnibus account, 0 for normal clients"
         },
+        "account_list": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "currency": {
+                "type": "string",
+                "description": "Currency of corresponding account"
+              },
+              "is_disabled": {
+                "pattern": "^(1|0)$",
+                "description": "Boolean value: 1 or 0, indicating whether it is a virtual-money account"
+              },
+              "ico_only": {
+                "pattern": "^(1|0)$",
+                "description": "Boolean value: 1 or 0, indicating whether it is a virtual-money account"
+              },
+              "is_virtual": {
+                "pattern": "^(1|0)$",
+                "description": "Boolean value: 1 or 0, indicating whether it is a virtual-money account"
+              },
+              "landing_company_name": {
+                "type": "string",
+                "description": "Landing company shortcode the account belongs to"
+              },
+              "loginid": {
+                "type": "string",
+                "description": "The account id of corresponding account"
+              }
+            }
+          }
+        },
         "sub_accounts": {
           "type": "array",
           "description": "Sub accounts for omnibus account if any",
