@@ -50,8 +50,6 @@ sub authorize {
                 message_to_client => BOM::Platform::Context::localize("Sorry, you have excluded yourself until [_1].", $limit_excludeuntil)});
     }
 
-    my $account = $client->default_account;
-
     my ($user, $token_type) = (BOM::Platform::User->new({email => $client->email}));
     if (length $token == 15) {
         $token_type = 'api_token';
@@ -68,20 +66,41 @@ sub authorize {
         $token_type = 'oauth_token';
     }
 
-    my @sub_accounts = ();
-    if ($client->allow_omnibus) {
-        my %siblings = map { $_->loginid => $_ } $user->clients;
-        foreach my $account (values %siblings) {
-            if ($client->loginid eq ($account->sub_account_of // '')) {
-                push @sub_accounts,
-                    {
-                    loginid  => $account->loginid,
-                    currency => $account->default_account ? $account->default_account->currency_code : '',
-                    };
-            }
+    my (@sub_accounts, @accounts) = ((), ());
+    my ($is_omnibus, $currency) = ($client->allow_omnibus);
+
+    my %siblings = map { $_->loginid => $_ } $user->clients;
+
+    # need to sort so that virtual is last one
+    foreach my $key (sort keys %siblings) {
+        my $account = $siblings{$key};
+        $currency = $account->default_account ? $account->default_account->currency_code : '';
+        if ($is_omnibus and $loginid eq ($account->sub_account_of // '')) {
+            push @sub_accounts,
+                {
+                loginid  => $account->loginid,
+                currency => $currency,
+                };
         }
+
+        my ($self_exclusion, $self_exclusion_epoch, $until);
+        $self_exclusion = $account->get_self_exclusion;
+        if ($self_exclusion = $account->get_self_exclusion and $until = ($self_exclusion->timeout_until // $self_exclusion->exclude_until)) {
+            $self_exclusion_epoch = Date::Utility->new($until)->epoch if Date::Utility->new($until)->is_after(Date::Utility->new);
+        }
+
+        push @accounts,
+            {
+            loginid              => $account->loginid,
+            currency             => $currency,
+            landing_company_name => $account->landing_company->short,
+            disabled             => $account->get_status('disabled') ? 1 : 0,
+            ico_only             => $account->get_status('ico_only') ? 1 : 0,
+            is_virtual           => $client->is_virtual ? 1 : 0,
+            $self_exclusion_epoch ? (excluded_until => $self_exclusion_epoch) : ()};
     }
 
+    my $account = $client->default_account;
     return {
         fullname => $client->full_name,
         loginid  => $client->loginid,
@@ -94,6 +113,7 @@ sub authorize {
         scopes                   => $scopes,
         is_virtual               => $client->is_virtual ? 1 : 0,
         allow_omnibus            => $client->allow_omnibus ? 1 : 0,
+        account_list             => \@accounts,
         sub_accounts             => \@sub_accounts,
         stash                    => {
             loginid              => $client->loginid,
