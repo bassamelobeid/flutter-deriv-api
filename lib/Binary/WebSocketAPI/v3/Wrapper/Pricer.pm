@@ -522,12 +522,12 @@ sub _proposal_open_contract_cb {
 }
 
 sub _serialized_args {
-    my $copy          = {%{+shift}};
-    my $keep_language = shift;
-    my @arr           = ();
+    my $copy = {%{+shift}};
+    my $args = shift;
+    my @arr  = ();
 
     delete $copy->{req_id};
-    delete $copy->{language} unless $keep_language;
+    delete $copy->{language} unless $args->{keep_language};
 
     # We want to handle similar contracts together, so we do this and sort by
     # key in the price_queue.pl daemon

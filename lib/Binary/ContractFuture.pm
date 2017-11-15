@@ -66,7 +66,7 @@ sub pricing_future {
     $args->{price_daemon_cmd} //= 'price';
     $args->{language}         //= 'EN';
 
-    my $channel = Binary::WebSocketAPI::v3::Wrapper::Pricer::_serialized_args($args, 1);
+    my $channel = Binary::WebSocketAPI::v3::Wrapper::Pricer::_serialized_args($args, {keep_language => 1});
     if (not $subscribers->{$channel}) {
         $redis->subscribe([$channel]);
         $redis->publish('high_priority_prices', $channel);
