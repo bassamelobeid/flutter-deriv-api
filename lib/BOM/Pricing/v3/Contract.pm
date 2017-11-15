@@ -354,6 +354,7 @@ sub get_bid {
             $response->{status} = 'sold';
         } else {    # not sold
             $response->{status} = 'open';
+        }
 
         if ($is_valid_to_sell) {
             $response->{bid_price} = formatnumber('price', $contract->currency, $contract->bid_price);
