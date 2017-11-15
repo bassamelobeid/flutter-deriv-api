@@ -118,7 +118,7 @@ sub print_client_details {
     }
 
     my $tnc_status = $client->get_status('tnc_approval');
-    my $show_allow_professional_client = ($client->get_status('professional_requested') or $client->get_status('professional')) ? 1 : 0;
+    my $show_allow_professional_client = $client->landing_company->short =~ /^(?:costarica|maltainvest)$/ ? 1 : 0;
 
     my @crs_tin_array = ();
     if (my $crs_tin_status = $client->get_status('crs_tin_information')) {
