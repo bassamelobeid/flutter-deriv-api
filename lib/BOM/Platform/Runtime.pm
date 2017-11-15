@@ -37,11 +37,6 @@ sub _build_app_config {
 sub get_offerings_config {
     my $runtime = shift;
 
-    my $config_args = {
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    };
-
     $config_args->{suspend_trading}        = $runtime->app_config->system->suspend->trading;
     $config_args->{suspend_trades}         = $runtime->app_config->quants->underlyings->suspend_trades;
     $config_args->{suspend_buy}            = $runtime->app_config->quants->underlyings->suspend_buy;
