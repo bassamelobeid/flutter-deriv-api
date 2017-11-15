@@ -239,9 +239,14 @@ sub new_account_real {
 
     # XXX If we fail after account creation then we could end up with these flags not set,
     # ideally should be handled in a single transaction
-    $new_client->set_status('ico_only',               'SYSTEM', 'ICO account requested')          if $ico_only;
-    $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
-    $new_client->save;
+    # as account is already created so no need to die on status set
+    # else it will give false impression to client
+    try {
+        $new_client->set_status('ico_only',               'SYSTEM', 'ICO account requested')          if $ico_only;
+        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
+        $new_client->save;
+        BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence) if $professional_requested;
+    };
 
     if ($args->{currency}) {
         my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
@@ -257,7 +262,7 @@ sub new_account_real {
     });
     $user->save;
 
-    if ($new_client->residence eq 'gb') {    # RTS 12 - Financial Limits - UK Clients
+    if ($new_client->residence eq 'gb' and not $ico_only) {    # RTS 12 - Financial Limits - UK Clients
         $new_client->set_status('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit');
         $new_client->save;
     }
@@ -344,8 +349,11 @@ sub new_account_maltainvest {
     my $user            = $acc->{user};
 
     if ($professional_requested) {
-        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
-        $new_client->save;
+        try {
+            $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
+            $new_client->save;
+            BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence);
+        };
     }
 
     $user->add_login_history({

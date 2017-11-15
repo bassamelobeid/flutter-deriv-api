@@ -13,30 +13,37 @@ use BOM::RPC::v3::Accounts;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (request localize);
+use BOM::Platform::Runtime;
 use BOM::Transaction;
 
 sub portfolio {
     my $params = shift;
 
-    my $client = $params->{client};
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    if ($app_config->system->suspend->expensive_api_calls) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'SuspendedDueToLoad',
+                message_to_client => localize(
+                    'The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')}
+            ),
+            ;
+    }
 
     my $portfolio = {contracts => []};
-    return $portfolio unless $client;
+    my $client = $params->{client} or return $portfolio;
 
     _sell_expired_contracts($client, $params->{source});
 
-    my @rows = @{__get_open_contracts($client)};
-    return $portfolio unless scalar @rows > 0;
+    my @rows = @{__get_open_contracts($client)} or return $portfolio;
 
     my @short_codes = map { $_->{short_code} } @rows;
 
-    my $res = BOM::Platform::Pricing::call_rpc(
-        'longcode',
-        {
-            short_codes => \@short_codes,
-            currency    => $client->currency,
-            language    => $params->{language},
-        });
+    my $res = BOM::RPC::v3::Utility::longcode({
+        short_codes => \@short_codes,
+        currency    => $client->currency,
+        language    => $params->{language},
+        source      => $params->{source},
+    });
 
     foreach my $row (@rows) {
 
@@ -129,40 +136,26 @@ sub proposal_open_contract {
         my $id = $fmb->{id};
         my $sell_time;
         $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
-        my $bid = BOM::Platform::Pricing::call_rpc(
-            'get_bid',
-            {
-                short_code            => $fmb->{short_code},
-                contract_id           => $id,
-                currency              => $currency,
-                is_sold               => $fmb->{is_sold},
-                is_expired            => $fmb->{is_expired},
-                sell_time             => $sell_time,
-                sell_price            => $fmb->{sell_price},
-                buy_price             => $fmb->{buy_price},
-                app_markup_percentage => $params->{app_markup_percentage},
-                landing_company       => $lc_name,
-            });
+        my $bid = {
+            short_code            => $fmb->{short_code},
+            contract_id           => $id,
+            currency              => $currency,
+            is_expired            => $fmb->{is_expired},
+            is_sold               => $fmb->{is_sold},
+            buy_price             => $fmb->{buy_price},
+            app_markup_percentage => $params->{app_markup_percentage},
+            landing_company       => $lc_name,
+            account_id            => $fmb->{account_id},
+            purchase_time         => Date::Utility->new($fmb->{purchase_time})->epoch,
+        };
+        my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
+        $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
 
-        if (exists $bid->{error}) {
-            $response->{$id} = $bid;
-        } else {
-            my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
-            $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
+        $bid->{transaction_ids} = $transaction_ids;
+        $bid->{sell_time}       = $sell_time if $sell_time;
+        $bid->{sell_price}      = formatnumber('price', $currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
 
-            # ask_price doesn't make any sense for contract that are already bought or sold
-            delete $bid->{ask_price};
-
-            $bid->{transaction_ids} = $transaction_ids;
-            $bid->{buy_price}       = $fmb->{buy_price};
-            $bid->{purchase_time}   = Date::Utility->new($fmb->{purchase_time})->epoch;
-            $bid->{account_id}      = $fmb->{account_id};
-            $bid->{is_sold}         = $fmb->{is_sold};
-            $bid->{sell_time}       = $sell_time if $sell_time;
-            $bid->{sell_price}      = formatnumber('price', $currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
-
-            $response->{$id} = $bid;
-        }
+        $response->{$id} = $bid;
     }
     return $response;
 }
