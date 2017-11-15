@@ -564,7 +564,7 @@ print qq{<br/>
     <div class="flat">
     <form action="$risk_report_url" method="POST">
     <input type="hidden" name="loginid" value="$encoded_loginid">
-    <input type="submit" name="action" value="show risk repot">
+    <input type="submit" name="action" value="show risk report">
     </form>
     </div>
 
