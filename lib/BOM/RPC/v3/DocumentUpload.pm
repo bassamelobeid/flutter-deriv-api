@@ -5,6 +5,8 @@ use warnings;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
 use Date::Utility;
+use BOM::Platform::Email qw(send_email);
+use Try::Tiny;
 
 use constant MAX_FILE_SIZE => 3 * 2**20;
 
@@ -71,14 +73,41 @@ sub successful_upload {
         return create_upload_error();
     }
 
-# Change client's account status.
-    $client->set_status('document_under_review', 'system', 'Documents uploaded');
-    $client->clr_status('document_needs_action');
+    unless ($client->get_db eq 'write') {
+        $client->set_db('write');
+    }
 
-    if (not $client->save()) {
-        warn 'Unable to change client status';
+    my $client_id = $client->loginid;
+
+    my $changed_status;
+    my $error_occured;
+    try {
+        $changed_status = $client->db->dbic->run(
+            fixup => sub {
+                $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', {Slice => {}}, $client_id, 'Documents uploaded');
+            });
+    }
+    catch {
+        $error_occured = 1;
+    };
+
+    if ($error_occured) {
+        warn 'Unable to change client status in the db';
         return create_upload_error();
     }
+
+    return $args unless $changed_status;
+
+    my $email_body = "New document was uploaded for the account: " . $client_id;
+
+    send_email({
+        'from'                  => 'no-reply@binary.com',
+        'to'                    => 'authentications@binary.com',
+        'subject'               => 'New uploaded document for: ' . $client_id,
+        'message'               => [$email_body],
+        'use_email_template'    => 0,
+        'email_content_is_html' => 0
+    });
 
     return $args;
 }

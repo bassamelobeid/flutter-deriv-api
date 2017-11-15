@@ -17,7 +17,7 @@ use BOM::Transaction;
     use BOM::Database::Model::AccessToken;
 
     # cleanup
-    BOM::Database::Model::AccessToken->new->dbh->do('DELETE FROM auth.access_token');
+    BOM::Database::Model::AccessToken->new->dbic->dbh->do('DELETE FROM auth.access_token');
 }
 
 my $clm = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

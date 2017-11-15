@@ -204,6 +204,7 @@ sub startup {
         ['residence_list', \&BOM::RPC::v3::Static::residence_list],
         ['states_list',    \&BOM::RPC::v3::Static::states_list],
         ['website_status', \&BOM::RPC::v3::Static::website_status],
+        ['ico_status',     \&BOM::RPC::v3::Static::ico_status],
 
         ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
         ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
@@ -293,6 +294,7 @@ sub startup {
         ['copy_stop',              \&BOM::RPC::v3::CopyTrading::copy_stop, [qw(auth)]],
 
         ['document_upload', \&BOM::RPC::v3::DocumentUpload::upload, [qw(auth)]],
+        ['longcode', \&BOM::RPC::v3::Utility::longcode],
     );
     my $services = {};
     foreach my $srv (@services) {
