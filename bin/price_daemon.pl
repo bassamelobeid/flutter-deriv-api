@@ -5,6 +5,7 @@ use warnings;
 use sigtrap;
 
 use DataDog::DogStatsd::Helper;
+use Date::Utility;
 use Getopt::Long;
 use LWP::Simple;
 use List::Util qw(max);
@@ -54,7 +55,7 @@ $pm->run_on_start(
         $workers[$index] = $pid;
         push @running_forks, $pid;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => ['tag:' . $internal_ip]});
-        warn "Started a new fork [$pid]\n";
+        warn Date::Utility->new->datetime, " Started a new fork [$pid]\n";
     });
 $pm->run_on_finish(
     sub {
@@ -67,7 +68,7 @@ $pm->run_on_finish(
         }
         @running_forks = grep { $_ != $pid } @running_forks;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => ['tag:' . $internal_ip]});
-        warn "Fork [$pid] ended with exit code [$exit_code]\n";
+        warn Date::Utility->new->datetime, " Fork [$pid] ended with exit code [$exit_code]\n";
     });
 
 # warming up cache to eliminate pricing time spike on first price of underlying
