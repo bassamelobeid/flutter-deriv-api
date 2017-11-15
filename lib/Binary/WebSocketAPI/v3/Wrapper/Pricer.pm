@@ -431,6 +431,7 @@ sub _process_proposal_open_contract_response {
         $pricer_request->{short_code}       = $pricer_request->{shortcode}
             if $pricer_request->{shortcode};    # XXX on contract end this is shortcode, other times it's shortcode
         $pricer_request->{landing_company} = $c->landing_company_name;
+        $pricer_request->{language}        = $c->stash('language');
 
         my $f = Binary::ContractFuture::pricing_future($pricer_request);
         $c->on(
@@ -520,9 +521,11 @@ sub _proposal_open_contract_cb {
 
 sub _serialized_args {
     my $copy = {%{+shift}};
+    my $args = shift;
     my @arr  = ();
 
-    delete @{$copy}{qw(language req_id)};
+    delete $copy->{req_id};
+    delete $copy->{language} unless $args->{keep_language};
 
     # We want to handle similar contracts together, so we do this and sort by
     # key in the price_queue.pl daemon
