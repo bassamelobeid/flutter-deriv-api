@@ -8,7 +8,7 @@ use Brands;
 use Client::Account;
 use Data::Password::Meter;
 use Date::Utility;
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber financialrounding/;
 use HTML::Entities qw(encode_entities);
 use JSON::MaybeXS;
 use LandingCompany::Registry;
@@ -38,6 +38,9 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Pricing;
+use BOM::Platform::Runtime;
+
+my $ICO_BID_PRICE_PERCENTAGE = 0.98;
 
 my $json = JSON::MaybeXS->new;
 
@@ -50,7 +53,7 @@ sub payout_currencies {
         $client = Client::Account->new({loginid => $token_details->{loginid}});
     }
 
-    # if client has default_account he had already choosed his currency..
+    # if client has default_account he has already chosen his currency..
     return [$client->currency] if $client && $client->default_account;
 
     # or if client has not yet selected currency - we will use list from his LC
@@ -59,9 +62,9 @@ sub payout_currencies {
     my $lc = $client ? $client->landing_company : LandingCompany::Registry::get($params->{landing_company_name} || 'costarica');
     # ... but we fall back to Costa Rica as a useful default, since it has most
     # currencies enabled.
-    $lc ||= LandingCompany::Registry::get('costarica');
 
-    return [sort keys %{$lc->legal_allowed_currencies}];
+    # Remove cryptocurrencies that have been suspended
+    return BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);
 }
 
 sub landing_company {
@@ -109,13 +112,16 @@ sub landing_company_details {
 sub __build_landing_company {
     my ($lc) = @_;
 
+    # Get suspended currencies and remove them from list of legal currencies
+    my $payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);
+
     return {
         shortcode                         => $lc->short,
         name                              => $lc->name,
         address                           => $lc->address,
         country                           => $lc->country,
         legal_default_currency            => $lc->legal_default_currency,
-        legal_allowed_currencies          => [keys %{$lc->legal_allowed_currencies}],
+        legal_allowed_currencies          => $payout_currencies,
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0
@@ -125,6 +131,13 @@ sub __build_landing_company {
 sub statement {
     my $params = shift;
 
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    if ($app_config->system->suspend->expensive_api_calls) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'SuspendedDueToLoad',
+                message_to_client => localize(
+                    'The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')});
+    }
     my $client  = $params->{client};
     my $account = $client->default_account;
     return {
@@ -136,29 +149,16 @@ sub statement {
 
     my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
 
-    my %translation = (
-        buy        => localize('Buy'),
-        sell       => localize('Sell'),
-        deposit    => localize('Deposit'),
-        withdrawal => localize('Withdrawal'),
-    );
-
     my @txns;
     for my $txn (@$results) {
         my $struct = {
             transaction_id => $txn->{id},
             reference_id   => $txn->{buy_tr_id},
             amount         => $txn->{amount},
-            # Translate according to known action types.
-            # Otherwise, log unknow so we can request translation
-            # for it in the weblate.
-            action_type => lc $translation{$txn->{action_type}} // do {
-                warn "No translation known for action_type " . $txn->{action_type};
-                $txn->{action_type};
-            },
-            balance_after => formatnumber('amount', $account->currency_code, $txn->{balance_after}),
-            contract_id   => $txn->{financial_market_bet_id},
-            payout        => $txn->{payout_price},
+            action_type    => $txn->{action_type},
+            balance_after  => formatnumber('amount', $account->currency_code, $txn->{balance_after}),
+            contract_id    => $txn->{financial_market_bet_id},
+            payout         => $txn->{payout_price},
         };
 
         my $txn_time;
@@ -179,25 +179,14 @@ sub statement {
             $struct->{shortcode} = $txn->{short_code} // '';
             if ($struct->{shortcode} && $account->currency_code) {
 
-                my $res = BOM::Platform::Pricing::call_rpc(
-                    'get_contract_details',
-                    {
-                        short_code      => $struct->{shortcode},
-                        currency        => $account->currency_code,
-                        landing_company => $client->landing_company->short,
-                        language        => $params->{language},
-                    });
+                my $res = BOM::RPC::v3::Utility::longcode({
+                    short_codes => [$struct->{shortcode}],
+                    currency    => $account->currency_code,
+                    language    => $params->{language},
+                    source      => $params->{source},
+                });
 
-                if (exists $res->{error}) {
-                    $struct->{longcode} = localize('Could not retrieve contract details');
-                } else {
-                    # this should be already localized
-                    my $longcode = $res->{longcode};
-                    # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
-                    $longcode = localize('Binary ICO: cancelled bid')
-                        if ($txn->{short_code} =~ /^BINARYICO/ and $txn->{amount} == 0.98 * $txn->{payout_price});
-                    $struct->{longcode} = $longcode;
-                }
+                $struct->{longcode} = $res->{longcodes}->{$struct->{shortcode}} // localize('Could not retrieve contract details');
             }
             $struct->{longcode} //= $txn->{payment_remark} // '';
         }
@@ -212,6 +201,14 @@ sub statement {
 
 sub profit_table {
     my $params = shift;
+
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    if ($app_config->system->suspend->expensive_api_calls) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'SuspendedDueToLoad',
+                message_to_client => localize(
+                    'The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')});
+    }
 
     my $client         = $params->{client};
     my $client_loginid = $client->loginid;
@@ -248,13 +245,12 @@ sub profit_table {
     my @short_codes = map { $_->{short_code} } @{$data};
 
     my $res;
-    $res = BOM::Platform::Pricing::call_rpc(
-        'longcode',
-        {
+    $res = BOM::RPC::v3::Utility::longcode({
             short_codes => \@short_codes,
             currency    => $client->currency,
             language    => $params->{language},
-        }) if $args->{description};
+            source      => $params->{source},
+        }) if $args->{description} and @short_codes;
 
     ## remove useless and plus new
     my @transactions;
@@ -269,16 +265,7 @@ sub profit_table {
 
         if ($args->{description}) {
             $trx{shortcode} = $row->{short_code};
-            if (!$res->{longcodes}->{$row->{short_code}}) {
-                $trx{longcode} = localize('Could not retrieve contract details');
-            } else {
-                # this should already be localized
-                my $longcode = $res->{longcodes}->{$row->{short_code}};
-                # This is needed as we do not want to show the cancel bid as successful or unsuccessful at the end of the auction
-                $longcode = 'Binary ICO: canceled bid' if ($row->{short_code} =~ /^BINARYICO/ and $row->{sell_price} == 0.98 * $row->{payout_price});
-                $trx{longcode} = $longcode;
-
-            }
+            $trx{longcode} = $res->{longcodes}->{$row->{short_code}} // localize('Could not retrieve contract details');
         }
 
         push @transactions, \%trx;
@@ -344,11 +331,14 @@ sub get_account_status {
 
     my $prompt_client_to_authenticate = 0;
     my $shortcode                     = $client->landing_company->short;
+    my $authentication_in_progress    = $client->get_status('document_needs_action') || $client->get_status('document_under_review');
     if ($client->client_fully_authenticated) {
         # Authenticated clients still need to go through age verification checks for IOM/MF/MLT
         if (any { $shortcode eq $_ } qw(iom malta maltainvest)) {
             $prompt_client_to_authenticate = 1 unless $client->get_status('age_verification');
         }
+    } elsif ($authentication_in_progress) {
+        $prompt_client_to_authenticate = 1;
     } else {
         if ($shortcode eq 'costarica' or $shortcode eq 'champion') {
             # Our threshold is 4000 USD, but we want to include total across all the user's currencies
@@ -681,8 +671,9 @@ sub get_settings {
                 client_tnc_status => $client_tnc_status ? $client_tnc_status->reason : '',
                 place_of_birth    => $client->place_of_birth,
                 tax_residence     => $client->tax_residence,
-                tax_identification_number => $client->tax_identification_number,
-                account_opening_reason    => $client->account_opening_reason,
+                tax_identification_number   => $client->tax_identification_number,
+                account_opening_reason      => $client->account_opening_reason,
+                request_professional_status => $client->get_status('professional_requested') ? 1 : 0,
             )
         ),
         $jp_account_status ? (jp_account_status => $jp_account_status) : (),
@@ -753,7 +744,7 @@ sub set_settings {
                 });
         }
 
-        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && $client->broker_code ne 'CR';
+        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && ($client->broker_code ne 'CR' or $client->get_status('ico_only'));
 
         if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
             $err = BOM::RPC::v3::Utility::create_error({
@@ -828,8 +819,23 @@ sub set_settings {
             . join(' ', ($address1 // ''), $address2, $addressTown, $addressState, $addressPostcode) . ']';
     }
 
+    # only allowed to set for maltainvest, costarica and only
+    # if professional status is not set or requested
+    my $update_professional_status = sub {
+        my ($client_obj) = @_;
+        if (    $args->{request_professional_status}
+            and $client_obj->landing_company->short =~ /^(?:costarica|maltainvest)$/
+            and not($client_obj->get_status('professional') or $client_obj->get_status('professional_requested')))
+        {
+            $client_obj->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
+            return 1;
+        }
+        return undef;
+    };
+
     my $user = BOM::Platform::User->new({email => $client->email});
     foreach my $cli ($user->clients) {
+        next if $cli->is_virtual;
         next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
         $cli->address_1($address1);
@@ -863,11 +869,15 @@ sub set_settings {
             $cli->tax_identification_number('') unless $tax_identification_number;
         }
 
+        my $set_status = $update_professional_status->($cli);
+
         if (not $cli->save()) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'InternalServerError',
                     message_to_client => localize('Sorry, an error occurred while processing your account.')});
         }
+
+        BOM::RPC::v3::Utility::send_professional_requested_email($cli->loginid, $cli->residence) if ($set_status);
     }
     # update client value after latest changes
     $client = Client::Account->new({loginid => $client->loginid});
@@ -924,6 +934,13 @@ sub set_settings {
         if exists $args->{email_consent};
     push @updated_fields, [localize('Allow copiers'), $client->allow_copiers ? localize("Yes") : localize("No")]
         if defined $allow_copiers;
+    push @updated_fields,
+        [
+        localize('Requested professional status'),
+        (
+                   $args->{request_professional_status}
+                or $client->get_status('professional_requested')
+        ) ? localize("Yes") : localize("No")];
 
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
@@ -1044,7 +1061,7 @@ sub set_self_exclusion {
         qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/
         )
     {
-        $args_count++ if $args{$field};
+        $args_count++ if defined $args{$field};
     }
     return BOM::RPC::v3::Utility::create_error({
             code              => 'SetSelfExclusionError',
@@ -1054,23 +1071,37 @@ sub set_self_exclusion {
         qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/
         )
     {
-        my $val      = $args{$field};
+        # Client input
+        my $val = $args{$field};
+
+        # The minimum is 1 in case of open bets (1 for other cases)
+        my $min = $field eq 'max_open_bets' ? 1 : 0;
+
+        # Validate the client input
         my $is_valid = 0;
+
+        # Max balance and Max open bets are given default values, if not set by client
+        if ($field eq 'max_balance') {
+            $self_exclusion->{$field} //= $client->get_limit_for_account_balance;
+        } elsif ($field eq 'max_open_bets') {
+            $self_exclusion->{$field} //= $client->get_limit_for_open_positions;
+        }
+
         if ($val and $val > 0) {
             $is_valid = 1;
-            if (    $self_exclusion->{$field}
-                and $val > $self_exclusion->{$field})
-            {
+            if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
                 $is_valid = 0;
             }
         }
+
         next if $is_valid;
 
         if (defined $val and $self_exclusion->{$field}) {
-            return $error_sub->(localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
+            return $error_sub->(localize('Please enter a number between [_1] and [_2].', $min, $self_exclusion->{$field}), $field);
         } else {
             delete $args{$field};
         }
+
     }
 
     if (my $session_duration_limit = $args{session_duration_limit}) {
@@ -1132,6 +1163,11 @@ sub set_self_exclusion {
     if ($args{max_open_bets}) {
         $client->set_exclusion->max_open_bets($args{max_open_bets});
     }
+
+    if ($args{max_balance}) {
+        $client->set_exclusion->max_balance($args{max_balance});
+    }
+
     if ($args{max_turnover}) {
         $client->set_exclusion->max_turnover($args{max_turnover});
     }
@@ -1154,16 +1190,14 @@ sub set_self_exclusion {
     if ($args{max_30day_losses}) {
         $client->set_exclusion->max_30day_losses($args{max_30day_losses});
     }
-    if ($args{max_balance}) {
-        $client->set_exclusion->max_balance($args{max_balance});
-    }
+
     if ($args{session_duration_limit}) {
         $client->set_exclusion->session_duration_limit($args{session_duration_limit});
     }
     if ($args{timeout_until}) {
         $client->set_exclusion->timeout_until($args{timeout_until});
     }
-    # send to support only when client has self excluded
+# send to support only when client has self excluded
     if ($args{exclude_until}) {
         my $ret          = $client->set_exclusion->exclude_until($args{exclude_until});
         my $statuses     = join '/', map { uc $_->status_code } $client->client_status;
@@ -1331,10 +1365,15 @@ sub set_account_currency {
 
     my ($client, $currency) = @{$params}{qw/client currency/};
 
+    # Get suspended currencies
+    my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+
+    # Return an error if the currency is a suspended currency or if the currency chosen is not a legal currency
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidCurrency',
-            message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)}
-    ) unless $client->landing_company->is_currency_legal($currency);
+            message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)})
+        if (not $client->landing_company->is_currency_legal($currency)
+        or exists $suspended_currencies{$currency});
 
     # bail out if default account is already set
     return {status => 0} if $client->default_account;
@@ -1370,22 +1409,18 @@ sub set_financial_assessment {
         my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
-        my $is_professional = $financial_evaluation->{total_score} < 60 ? 0 : 1;
-
         my $user = BOM::Platform::User->new({email => $client->email});
         foreach my $cli ($user->clients) {
             next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
             $cli->financial_assessment({
                 data            => $json->encode($financial_evaluation->{user_data}),
-                is_professional => $is_professional
             });
             $cli->save;
         }
 
         $response = {
-            score           => $financial_evaluation->{total_score},
-            is_professional => $is_professional
+            score => $financial_evaluation->{total_score},
         };
         $subject = $client_loginid . ' assessment test details have been updated';
         $message = ["$client_loginid score is " . $financial_evaluation->{total_score}];
@@ -1435,6 +1470,16 @@ sub get_financial_assessment {
 
 sub reality_check {
     my $params = shift;
+
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    if ($app_config->system->suspend->expensive_api_calls) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'SuspendedDueToLoad',
+                message_to_client => localize(
+                    'The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')}
+            ),
+            ;
+    }
 
     my $client        = $params->{client};
     my $token_details = $params->{token_details};

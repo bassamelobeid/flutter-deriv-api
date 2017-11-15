@@ -3,23 +3,41 @@ package BOM::RPC::v3::Utility;
 use strict;
 use warnings;
 
+use utf8;
+
+no indirect;
+
+use Try::Tiny;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
-use DataDog::DogStatsd::Helper qw(stats_inc);
-use List::Util qw(any);
+use List::Util qw(any uniqstr shuffle);
+use List::UtilsBy qw(bundle_by);
 use URI;
 use Domain::PublicSuffix;
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc stats_gauge);
+use Time::HiRes;
+use Time::Duration::Concise::Localize;
 use Format::Util::Numbers qw/formatnumber/;
 
 use Brands;
 use LandingCompany::Registry;
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 
+use BOM::Platform::Context qw(localize request);
+use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Platform::RedisReplicated;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Token;
-use utf8;
+use Finance::Contract::Longcode qw(shortcode_to_longcode);
+use BOM::Platform::Email qw(send_email);
+
+use feature "state";
+
+# Number of keys to get/set per batch in Redis
+use constant LONGCODE_REDIS_BATCH => 20;
 
 # Seconds between reloads of the rate_limitations.yml file.
 # We don't want to reload too frequently, since we may see a lot of `website_status` calls.
@@ -187,9 +205,6 @@ sub _check_password {
                 code              => 'PasswordError',
                 message_to_client => localize('New password is same as old password.')}) if ($new_password eq $old_password);
     }
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PasswordError',
-            message_to_client => localize('Password is not strong enough.')}) if (not Data::Password::Meter->new(14)->strong($new_password));
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PasswordError',
@@ -285,6 +300,7 @@ sub get_real_account_siblings_information {
             sub_account_of       => ($cl->sub_account_of // ''),
             currency             => $acc ? $acc->currency_code : '',
             balance              => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
+            ico_only => $cl->get_status('ico_only') ? 1 : 0,
         };
     }
 
@@ -328,6 +344,8 @@ sub validate_make_new_account {
     if (scalar(keys %$siblings) == 0) {
         if ($account_type eq 'real') {
             return undef if $gaming_company;
+            # for ico, &new_account_real will be called to get an ico_only CR account
+            return undef if (($request_data->{account_type} // '') eq 'ico');
             # send error as account opening for maltainvest and japan has separate call
             return create_error({
                     code              => 'InvalidAccount',
@@ -346,8 +364,15 @@ sub validate_make_new_account {
         # but we do allow them to open only financial account
         return;
     }
-    # we don't allow virtual client to make this again and
-    return permission_error() if $client->is_virtual;
+
+    if ($client->is_virtual) {
+        my @sibling_values = values %$siblings;
+        if (scalar @sibling_values == 1 and $sibling_values[0]->{ico_only}) {
+            return;
+        } else {
+            return permission_error();
+        }
+    }
 
     my $landing_company_name = $client->landing_company->short;
 
@@ -372,6 +397,17 @@ sub validate_make_new_account {
     # this logic should gone after we separate new_account with new_currency for account
     $request_data->{$_} = $client->$_ for qw/first_name last_name residence address_city phone date_of_birth address_line_1/;
 
+    my $error = create_error({
+            code              => 'NewAccountLimitReached',
+            message_to_client => localize('You have created all accounts available to you.')});
+
+    # Bypass currency limit checks for ICO-only accounts - you get a single CR account (one currency only)
+    if (exists $request_data->{account_type} and $request_data->{account_type} eq 'ico') {
+        my $cr_accounts = filter_siblings_by_landing_company('costarica', $siblings);
+        return $error if $cr_accounts and %$cr_accounts;
+        return undef;
+    }
+
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
     # corresponding siblings not MLT one
@@ -392,10 +428,6 @@ sub validate_make_new_account {
     # check if client has fiat currency, if not then return as we
     # allow them to open new account
     return undef unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
-
-    my $error = create_error({
-            code              => 'NewAccountLimitReached',
-            message_to_client => localize('You have created all accounts available to you.')});
 
     my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
     my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
@@ -496,6 +528,103 @@ sub should_update_account_details {
     }
 
     return 1;
+}
+
+sub send_professional_requested_email {
+    my ($loginid, $residence) = @_;
+
+    return unless $loginid;
+
+    my $brand = Brands->new(name => request()->brand);
+    return send_email({
+        from    => $brand->emails('support'),
+        to      => join(',', $brand->emails('compliance'), $brand->emails('support')),
+        subject => "$loginid requested for professional status, redidence: " . ($residence // 'No residence provided'),
+        message => ["$loginid has requested for professional status, please check and update accordingly"],
+    });
+}
+
+=head2 _timed
+
+Helper function for recording time elapsed via statsd.
+
+=cut
+
+sub _timed(&@) {    ## no critic (ProhibitSubroutinePrototypes)
+    my ($code, $k, @args) = @_;
+    my $start = Time::HiRes::time();
+    my $exception;
+    my $rslt;
+    try {
+        $rslt = $code->();
+        $k .= '.success';
+    }
+    catch {
+        $exception = $_;
+        $k .= '.error';
+    };
+    my $elapsed = 1000.0 * (Time::HiRes::time() - $start);
+    stats_timing($k, $elapsed, @args);
+    die $exception if $exception;
+    return $rslt;
+}
+
+=head2 longcode
+
+Performs a longcode lookup for the given shortcodes.
+
+Expects the following parameters in a single hashref:
+
+=over 4
+
+=item * C<currency> - the currency for the longcode text, e.g. C<USD>
+
+=item * C<short_codes> - an arrayref of shortcode strings
+
+=item * C<source> - the original app_id requesting this, false/undef if not available
+
+=back
+
+Returns a hashref which contains a single key with the shortcode to longcode mapping.
+
+=cut
+
+sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
+    my $params = shift;
+
+    die 'Invalid currency: ' . $params->{currency} unless (my $currency = uc $params->{currency}) =~ /^[A-Z]{3}$/;
+
+    # We generate a hash, so we only need each shortcode once
+    my @short_codes = uniqstr @{$params->{short_codes}};
+    my %longcodes;
+
+    foreach my $shortcode (@short_codes) {
+        try {
+            $longcodes{$shortcode} = $shortcode =~ /^BINARYICO/ ? localize('Binary ICO') : localize(shortcode_to_longcode($shortcode));
+        }
+        catch {
+            warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $_;
+            $longcodes{$shortcode} = localize('No information is available for this contract.');
+        }
+    }
+
+    return {longcodes => \%longcodes};
+}
+
+=head2 
+This subroutine checks for suspended cryptocurrencies 
+Accepts: Landing company name
+Returns: Arrayref of valid CR currencies.
+=cut
+
+sub filter_out_suspended_cryptocurrencies {
+    my $landing_company_name = shift;
+    my @currencies           = keys %{LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies};
+
+    my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    my @payout_currencies =
+        sort grep { !exists $suspended_currencies{$_} } @currencies;
+    return \@payout_currencies;
 }
 
 1;
