@@ -254,8 +254,8 @@ sub build_client_warning_message {
     if (@output) {
         $output =
               '<br /><table border="1" cellpadding="2" style="background-color:#cccccc">' . '<tr>'
-            . '<th>SECTION</th>'
-            . '<th>REASON</th>'
+            . '<th>STATUS</th>'
+            . '<th>REASON/INFO</th>'
             . '<th>STAFF</th>'
             . '<th>EDIT</th>'
             . '<th>REMOVE</th>' . '</tr>';
@@ -300,7 +300,7 @@ sub build_client_warning_message {
                 . '</b></td>'
                 . '<td colspan="2">&nbsp;</td>' . '</tr>';
         }
-        $output .= '</table>';
+        $output .= '</table><br>';
 
         $output .= qq~
         <script type="text/javascript" language="javascript">
