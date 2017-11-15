@@ -13,6 +13,8 @@ BOM::RiskReport::MarkedToModel->new->generate;
 use strict;
 use warnings;
 
+no indirect;
+
 local $\ = undef;    # Sigh.
 
 use Moose;
@@ -26,7 +28,7 @@ use Try::Tiny;
 use Email::Stuffer;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Platform::Config;
@@ -91,7 +93,7 @@ sub generate {
                         return if $bet_params->{bet_type} eq 'BINARYICO';
 
                         $bet_params->{date_pricing} = $pricing_date;
-                        my $symbol = $bet_params->{underlying}->symbol;
+                        my $symbol = $bet_params->{underlying};
                         $bet_params->{underlying} = $cached_underlyings{$symbol}
                             if ($cached_underlyings{$symbol});
                         my $bet = produce_contract($bet_params);
@@ -223,21 +225,32 @@ sub sell_expired_contracts {
             $bet_infos{$fmb_id} = $bet_info;
         }
 
-        my $result = BOM::Transaction::sell_expired_contracts({
-            client       => $client,
-            contract_ids => \@fmb_ids_to_be_sold,
-            source       => 3,                      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
-        });
-        for my $failure (@{$result->{failures}}) {
-            my $bet_info = $bet_infos{$failure->{fmb_id}};
-            $bet_info->{reason} = $failure->{reason};
-            push @error_lines, $bet_info;
+        # We may end up with no contracts to sell at this point.
+        if (@fmb_ids_to_be_sold) {
+            try {
+                my $result = BOM::Transaction::sell_expired_contracts({
+                    client       => $client,
+                    contract_ids => \@fmb_ids_to_be_sold,
+                    source       => 3,                      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
+                });
+                for my $failure (@{$result->{failures}}) {
+                    my $bet_info = $bet_infos{$failure->{fmb_id}};
+                    $bet_info->{reason} = $failure->{reason};
+                    push @error_lines, $bet_info;
+                }
+            }
+            catch {
+                warn "Failed to sell expired contracts for "
+                    . $client->loginid
+                    . " - IDs were "
+                    . join(',', @fmb_ids_to_be_sold)
+                    . " and error was $_\n";
+            }
         }
-
     }
 
     if (scalar @error_lines) {
-        local ($/, $\) = ("\n", undef);                 # in case overridden elsewhere
+        local ($/, $\) = ("\n", undef);    # in case overridden elsewhere
         Cache::RedisDB->set('AUTOSELL', 'ERRORS', \@error_lines, 3600);
         my $sep     = '---';
         my $subject = 'AutoSell Failures during riskd operation';

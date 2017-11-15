@@ -564,10 +564,10 @@ IF client.landing_company.short == "iom"
     </tr>
     [% IF show_allow_omnibus %]
         <tr>
-            <td class="label">Allow Omnibus</td>
-            <td>
+            <td class="label">
                 <input type="checkbox" value="1" name="allow_omnibus" [% IF client.allow_omnibus %]checked[% END %]/>
             </td>
+            <td>Allow Omnibus</td>
         </tr>
     [% ELSIF client.sub_account_of %]
         <tr>
@@ -578,6 +578,21 @@ IF client.landing_company.short == "iom"
         <tr>
             <td class="label">Facility not available</td>
             <td></td>
+        </tr>
+    [% END %]
+    <tr>
+        <td class="small_header" colspan="2">#Client Professional</td>
+    </tr>
+    [% IF show_allow_professional_client %]
+        <tr>
+            <td class="label">
+                <input type="checkbox" value="1" name="professional_client" [% IF client_professional_status %]checked[% END %]/>
+            </td>
+            <td>Mark client as a professional investor</td>
+        </tr>
+    [% ELSE %]
+        <tr>
+            <td class="label">Facility is not available</td>
         </tr>
     [% END %]
 </table>

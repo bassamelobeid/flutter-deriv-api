@@ -12,6 +12,7 @@ use List::UtilsBy qw(rev_nsort_by sort_by);
 use POSIX ();
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use YAML::XS;
+use Math::BigFloat;
 
 use Bitcoin::RPC::Client;
 use Ethereum::RPC::Client;
@@ -270,8 +271,9 @@ if ($view_action eq 'withdrawals') {
         my $filter = sub {
             my ($transactions) = @_;
             my $res = {};
-            foreach my $tran (@$transactions) {
-                my $loginid = $database_items->{$tran->{to_address}}->{client_loginid};
+            my %address_hashes = map { $_->{address} => $_ } @$database_items;
+            for my $tran (@$transactions) {
+                my $loginid = $address_hashes{$tran->{to_address}}->{client_loginid};
 
                 # if it already exists then it means multiple transactions
                 # were performed, so just update amount and add transaction ids
@@ -421,7 +423,12 @@ EOF
         if ($cmd eq 'listtransactions') {
             push @param, '', 500;
         }
-        my $rslt = $rpc_client->$cmd(@param);
+        my $rslt;
+        if ($currency eq 'ETH' and $cmd eq 'getbalance') {
+            $rslt += Math::BigFloat->from_hex($rpc_client->eth_getBalance($_, 'latest')) / 10**18 for @{$rpc_client->eth_accounts()};
+        } else {
+            $rslt = $rpc_client->$cmd(@param);
+        }
         if ($cmd eq 'listaccounts') {
             print '<table><thead><tr><th scope="col">Account</th><th scope="col">Amount</th></tr></thead><tbody>';
             for my $k (sort keys %$rslt) {
