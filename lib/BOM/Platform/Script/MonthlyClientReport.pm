@@ -107,36 +107,39 @@ sub go {
 
 HERE
 
-    my $dbh = BOM::Database::ClientDB->new({
+    my $dbic = BOM::Database::ClientDB->new({
             broker_code => $broker,
             operation   => 'backoffice_replica',
-        })->db->dbh;
+        })->db->dbic;
 
-    my $sth   = $dbh->prepare($sql);
-    my @binds = (
-        $start_date->ymd,    # b0
-        $until_date->ymd,    # b1
-        $buy_sell,           # b2
-        $broker,             # b3
-        $start_date->ymd,    # b4
-        $until_date->ymd,    # b5
-        $broker,             # b6
-    );
+    return $dbic->run(
+        fixup => sub {
+            my $sth   = $_->prepare($sql);
+            my @binds = (
+                $start_date->ymd,    # b0
+                $until_date->ymd,    # b1
+                $buy_sell,           # b2
+                $broker,             # b3
+                $start_date->ymd,    # b4
+                $until_date->ymd,    # b5
+                $broker,             # b6
+            );
 
-    $sth->execute(@binds);
+            $sth->execute(@binds);
 
-    my @headers = qw/Date Loginid Description CrDr_Amount Amount Currency Broker Type/;
-    my $csv = Text::CSV->new({eol => "\n"});
-    my $fh;
-    while (my $row = $sth->fetchrow_arrayref) {
-        unless ($fh) {
-            $fh = IO::File->new($csv_name, 'w') || die "writing $csv_name: $!";
-            $csv->print($fh, \@headers);
-        }
-        $csv->print($fh, $row);
-    }
-    $fh->close if $fh;
-    return $sth->rows;
+            my @headers = qw/Date Loginid Description CrDr_Amount Amount Currency Broker Type/;
+            my $csv = Text::CSV->new({eol => "\n"});
+            my $fh;
+            while (my $row = $sth->fetchrow_arrayref) {
+                unless ($fh) {
+                    $fh = IO::File->new($csv_name, 'w') || die "writing $csv_name: $!";
+                    $csv->print($fh, \@headers);
+                }
+                $csv->print($fh, $row);
+            }
+            $fh->close if $fh;
+            return $sth->rows;
+        });
 }
 
 sub run {

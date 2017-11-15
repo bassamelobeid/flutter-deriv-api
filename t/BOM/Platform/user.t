@@ -7,13 +7,14 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 10;
+use Test::More tests => 11;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
 use Test::Warnings;
 
 use Cache::RedisDB;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
 use BOM::Platform::Password;
@@ -77,7 +78,7 @@ subtest 'default loginid & cookie' => sub {
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $vr_1, 'no real acc, VR as default';
 
-        my $cookie_str = "$vr_1:V:E";
+        my $cookie_str = "$vr_1:V:E:N";
         is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
     };
 
@@ -91,7 +92,7 @@ subtest 'default loginid & cookie' => sub {
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $cr_1, 'real acc as default';
 
-        my $cookie_str = "$cr_1:R:E+$vr_1:V:E";
+        my $cookie_str = "$cr_1:R:E:N+$vr_1:V:E:N";
         is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
     };
 
@@ -106,13 +107,16 @@ subtest 'default loginid & cookie' => sub {
         $user->add_loginid({loginid => $cr_2});
         $user->save;
 
+        $client_cr_new->set_status('ico_only', 'SYSTEM', 'mark as ico');
+        $client_cr_new->save;
+
         push @loginids, $cr_2;
         cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
 
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $cr_1, 'still first real acc as default';
 
-        my $cookie_str = "$cr_1:R:E+$cr_2:R:E+$vr_1:V:E";
+        my $cookie_str = "$cr_1:R:E:N+$cr_2:R:E:I+$vr_1:V:E:N";
         is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
     };
 
@@ -129,7 +133,7 @@ subtest 'default loginid & cookie' => sub {
             my $def_client = ($user->clients)[0];
             is $def_client->loginid, $cr_2, '2nd real acc as default';
 
-            my $cookie_str = "$cr_1:R:D+$cr_2:R:E+$vr_1:V:E";
+            my $cookie_str = "$cr_1:R:D:N+$cr_2:R:E:I+$vr_1:V:E:N";
             is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
         };
 
@@ -145,7 +149,7 @@ subtest 'default loginid & cookie' => sub {
             my $def_client = ($user->clients)[0];
             is $def_client->loginid, $vr_1, 'VR acc as default';
 
-            my $cookie_str = "$cr_1:R:D+$cr_2:R:D+$vr_1:V:E";
+            my $cookie_str = "$cr_1:R:D:N+$cr_2:R:D:I+$vr_1:V:E:N";
             is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
         };
 
@@ -161,7 +165,7 @@ subtest 'default loginid & cookie' => sub {
             my $def_client = ($user->clients)[0];
             is $def_client, undef, 'all acc disabled, no default';
 
-            my $cookie_str = "$cr_1:R:D+$cr_2:R:D+$vr_1:V:D";
+            my $cookie_str = "$cr_1:R:D:N+$cr_2:R:D:I+$vr_1:V:D:N";
             is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
         };
     };
@@ -367,4 +371,62 @@ subtest 'Champion fx users' => sub {
         is $user_ch->email,    $email_ch, 'email ok';
         is $user_ch->password, $hash_pwd, 'password ok';
     };
+};
+
+sub write_file {
+    my ($name, $content) = @_;
+
+    open my $f, '>', $name or die "Cannot open $name for write: $!";
+    print $f $content or die "Cannot write $name: $!";
+    close $f or die "Cannot write/close $name: $!";
+    return;
+}
+
+subtest 'MirrorBinaryUserId' => sub {
+    plan tests => 12;
+    use YAML::XS qw/LoadFile/;
+    use BOM::Platform::Script::MirrorBinaryUserId;
+    use Client::Account;
+
+    my $cfg            = LoadFile '/etc/rmg/userdb.yml';
+    my $pgservice_conf = "/tmp/pgservice.conf.$$";
+    my $pgpass_conf    = "/tmp/pgpass.conf.$$";
+    my $dbh;
+    my $t = $ENV{DB_POSTFIX} // '';
+    lives_ok {
+        write_file $pgservice_conf, <<"CONF";
+[user01]
+host=$cfg->{ip}
+port=5436
+user=write
+dbname=users$t
+CONF
+
+        write_file $pgpass_conf, <<"CONF";
+$cfg->{ip}:5436:users$t:write:$cfg->{password}
+CONF
+        chmod 0400, $pgpass_conf;
+
+        @ENV{qw/PGSERVICEFILE PGPASSFILE/} = ($pgservice_conf, $pgpass_conf);
+
+        $dbh = BOM::Platform::Script::MirrorBinaryUserId::userdb;
+    }
+    'setup';
+
+    # at this point we have 9 rows in the queue: 2x VRTC, 4x CR, 2x MT and 1x VRCH
+    my $queue = $dbh->selectall_arrayref('SELECT binary_user_id, loginid FROM q.add_loginid');
+
+    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 9, 'got expected number of queue entries';
+
+    BOM::Platform::Script::MirrorBinaryUserId::run_once $dbh;
+    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';
+
+    for my $el (@$queue) {
+        if ($el->[1] =~ /^MT/) {
+            ok 1, "survived MT account $el->[1]";
+        } else {
+            my $client = Client::Account->new({loginid => $el->[1]});
+            is $client->binary_user_id, $el->[0], "$el->[1] has binary_user_id $el->[0]";
+        }
+    }
 };

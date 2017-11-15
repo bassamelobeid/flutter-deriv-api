@@ -159,7 +159,6 @@ quants:
                   isa: Num
                   default: 100
                   global: 1
-
             global_scaling:
               description: "The scaling factor for all commissions. (percent of commission)"
               isa: Num
@@ -260,6 +259,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        expensive_api_calls:
+          description: "Suspend all expensive API calls - portfolio, profit_table, reality_check, statement"
+          isa: Bool
+          default: 0
+          global: 1
         all_logins:
           description: "Suspend all logins to the system"
           isa: Bool
@@ -293,7 +297,12 @@ system:
         ico_final_price:
           description: "The final price of the  ICO auction"
           isa: Num
-          default: 10
+          default: 0
+          global: 1
+        ico_minimum_bid_in_usd:
+          description: 'Minimum ico bid amount in USD'
+          isa: Num
+          default: 1.35
           global: 1
         mt5:
           description: "Suspend MT5 API calls"

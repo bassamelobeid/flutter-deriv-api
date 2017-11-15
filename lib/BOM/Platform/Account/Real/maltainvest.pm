@@ -46,11 +46,8 @@ sub create_account {
     my $client = $register->{client};
     $client->financial_assessment({
         data            => $json->encode($financial_assessment->{user_data}),
-        is_professional => $financial_assessment->{total_score} < 60 ? 0 : 1,
     });
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
-    # this will be always true as max score client can get is less than 60
-    # but to be on safer side for future added if condition
     $client->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure') if $accept_risk;
     $client->save;
 

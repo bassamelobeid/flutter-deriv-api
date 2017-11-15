@@ -116,7 +116,7 @@ sub dbic {
     # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
     return undef if not defined $ENV{PGSERVICEFILE} and not -e $ENV{HOME} . '/.pg_service.conf';
     $dbic //= DBIx::Connector::Pg->new(
-        _dbh_dsn(),
+        _dbic_dsn(),
         # User and password are part of the DSN
         '', '',
         {
@@ -132,7 +132,7 @@ sub clear_connections {
     return;
 }
 
-sub _dbh_dsn {
+sub _dbic_dsn {
     return "dbi:Pg:service=chronicle";
 }
 

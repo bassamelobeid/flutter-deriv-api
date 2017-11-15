@@ -77,15 +77,12 @@ sub validate {
             unless $client->get_status('crs_tin_information');
     }
 
-    if ($client->residence eq 'gb') {
-        unless ($client->get_status('ukgc_funds_protection')) {
-            return _create_error(localize('Please accept Funds Protection.'), 'ASK_UK_FUNDS_PROTECTION');
-        }
-
-        if ($client->get_status('ukrts_max_turnover_limit_not_set')) {
-            return _create_error(localize('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.'),
-                'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET');
-        }
+    if ($client->residence eq 'gb' and not $client->get_status('ico_only')) {
+        return _create_error(localize('Please accept Funds Protection.'), 'ASK_UK_FUNDS_PROTECTION')
+            unless $client->get_status('ukgc_funds_protection');
+        return _create_error(localize('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.'),
+            'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET')
+            if $client->get_status('ukrts_max_turnover_limit_not_set');
     }
 
     if ($client->residence eq 'jp') {
