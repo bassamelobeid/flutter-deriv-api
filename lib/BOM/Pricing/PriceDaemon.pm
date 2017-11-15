@@ -12,6 +12,7 @@ use Time::HiRes ();
 use Try::Tiny;
 
 use BOM::MarketData qw(create_underlying);
+use BOM::Platform::Context;
 use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 use BOM::Pricing::v3::Contract;
@@ -51,7 +52,7 @@ sub process_job {
     }
 
     my $current_spot_ts      = $underlying->spot_tick->epoch;
-    my $last_priced_contract = try { $json->decode(Encode::decode_utf8($redis->get($next))) } catch { {time => 0} };
+    my $last_priced_contract = try { $json->decode(Encode::decode_utf8($redis->get($next) || return {time => 0})) } catch { {time => 0} };
     my $last_price_ts        = $last_priced_contract->{time};
 
     # For plain queue, if we have request for a price, and tick has not changed since last one, and it was not more
@@ -70,6 +71,10 @@ sub process_job {
             return $last_priced_contract->{contract};
         }
     }
+
+    my $r = BOM::Platform::Context::Request->new({language => $params->{language} // 'EN'});
+    BOM::Platform::Context::request($r);
+
     if ($price_daemon_cmd eq 'price') {
         $params->{streaming_params}->{add_theo_probability} = 1;
         $response = BOM::Pricing::v3::Contract::send_ask({args => $params});
