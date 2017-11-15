@@ -8,6 +8,7 @@ no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix the
 use HTML::Entities;
 
 use List::MoreUtils qw(any);
+use Try::Tiny;
 use DateTime;
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -133,8 +134,14 @@ Bar("USEFUL EXCHANGE RATES");
 print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . ")" . "<ul>";
 
 foreach my $curr (qw(GBPUSD EURUSD USDHKD USDCNY AUDUSD GBPHKD AUDHKD EURHKD BTCUSD)) {
-    my $underlying = create_underlying('frx' . $curr);
-    print "<li>$curr: " . $underlying->spot . "</li>";
+    try {
+        my $underlying = create_underlying('frx' . $curr);
+        print "<li>$curr: " . $underlying->spot . "</li>";
+    }
+    catch {
+        warn "Failed to get exchange rate for $curr - $_\n";
+        print '<li>' . $curr . ': <span style="color:red;">ERROR</span></li>';
+    }
 }
 print "</ul>";
 
@@ -142,18 +149,25 @@ print "<p>Inter-bank interest rates (from BBDL=Bloomberg Data License):</p>";
 print "<table><tr><th>Currency</th><th>1 week</th><th>1 month</th></tr>";
 
 foreach my $currency_symbol (qw(AUD GBP EUR USD HKD)) {
-    my $currency = Quant::Framework::Currency->new({
-        symbol           => $currency_symbol,
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    });
-    print '<tr><td>'
-        . $currency_symbol
-        . '</td><td>'
-        . $currency->rate_for(7 / 365) * 100
-        . '%</td><td>'
-        . $currency->rate_for(30 / 365) * 100
-        . '%</td></tr>';
+    try {
+        my $currency = Quant::Framework::Currency->new({
+            symbol           => $currency_symbol,
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        });
+        print '<tr><td>'
+            . $currency_symbol
+            . '</td><td>'
+            . $currency->rate_for(7 / 365) * 100
+            . '%</td><td>'
+            . $currency->rate_for(30 / 365) * 100
+            . '%</td></tr>';
+    }
+    catch {
+        warn "Failed to get currency interest rates for $currency_symbol - $_\n";
+        print '<tr><td>' . $currency_symbol . '</td><td colspan="2" style="color:red;">ERROR</td></tr>';
+
+    }
 }
 print '</table>';
 
