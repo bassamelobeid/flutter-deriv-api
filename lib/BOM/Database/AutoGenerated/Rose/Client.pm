@@ -55,6 +55,7 @@ __PACKAGE__->meta->setup(
         tax_identification_number                => { type => 'varchar', length => 255 },
         account_opening_reason                   => { type => 'varchar', length => 100 },
         mifir_id                                 => { type => 'varchar', length => 35 },
+        binary_user_id                           => { type => 'bigint' },
     ],
 
     primary_key_columns => [ 'loginid' ],

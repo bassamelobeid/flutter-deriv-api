@@ -9,15 +9,14 @@ __PACKAGE__->meta->setup(
     schema   => 'audit',
 
     columns => [
-        operation       => { type => 'varchar', length => 10, not_null => 1 },
-        stamp           => { type => 'timestamp', not_null => 1 },
-        pg_userid       => { type => 'text', not_null => 1 },
-        client_addr     => { type => 'scalar' },
-        client_port     => { type => 'integer' },
-        client_loginid  => { type => 'varchar', length => 12 },
-        data            => { type => 'scalar' },
-        is_professional => { type => 'boolean' },
-        remote_addr     => { type => 'scalar' },
+        operation      => { type => 'varchar', length => 10, not_null => 1 },
+        stamp          => { type => 'timestamp', not_null => 1 },
+        pg_userid      => { type => 'text', not_null => 1 },
+        client_addr    => { type => 'scalar' },
+        client_port    => { type => 'integer' },
+        client_loginid => { type => 'varchar', length => 12 },
+        data           => { type => 'scalar' },
+        remote_addr    => { type => 'scalar' },
     ],
 
     primary_key_columns => [ 'remote_addr' ],

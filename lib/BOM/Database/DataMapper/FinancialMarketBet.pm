@@ -39,7 +39,8 @@ has '_mapper_model_class' => (
 sub get_sold_bets_of_account {
     my ($self, $args) = @_;
 
-    my $limit  = int($args->{limit}  // 50);
+    my $limit = int($args->{limit} // 50);
+    $limit = 50 unless $limit > 0 and $limit <= 50;
     my $offset = int($args->{offset} // 0);
     my $sort_dir = (($args->{sort} // '') eq 'ASC') ? 'ASC' : 'DESC';
     my $before   = $args->{before};
@@ -67,7 +68,7 @@ sub get_sold_bets_of_account {
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare("
         SELECT fmb.*, t.id txn_id, t.source
         $sql
@@ -185,7 +186,7 @@ sub get_sold {
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
 
             $sth->bind_param(1, $self->account->id);
@@ -220,7 +221,7 @@ sub get_contract_details_with_transaction_ids {
     };
 
     my @fmbs = $self->db->dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare($sql);
             $sth->execute($contract_id);
             return @{$sth->fetchall_arrayref({})};

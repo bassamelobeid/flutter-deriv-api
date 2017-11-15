@@ -13,14 +13,6 @@ sub _build_dbic {
     return BOM::Database::UserDB::rose_db->dbic;
 }
 
-# TODO chylli/dbix_connector
-# should remove this atribute after the whole dbix_connector project finished
-
-sub dbh {
-    my $self = shift;
-    return $self->dbic->dbh;
-}
-
 my $json = JSON::MaybeXS->new;
 
 sub insert_connect {
@@ -35,7 +27,7 @@ sub insert_connect {
     return {error => 'CONNECTED_BY_OTHER'} if ($connected_user_id && $connected_user_id != $user_id);
 
     $self->dbic->run(
-        sub {
+        ping => sub {
             if ($connected_user_id) {
                 $_->do("
             UPDATE users.binary_user_connects
@@ -61,7 +53,7 @@ sub get_user_id_by_connect {
     my $provider_identity_uid = $provider_data->{user}->{identity}->{provider_identity_uid};
 
     return $self->dbic->run(
-        sub {
+        fixup => sub {
             $_->selectrow_array("
         SELECT binary_user_id FROM users.binary_user_connects WHERE provider = ? AND provider_identity_uid = ?
     ", undef, $provider, $provider_identity_uid);
@@ -72,7 +64,7 @@ sub get_connects_by_user_id {
     my ($self, $user_id) = @_;
 
     my @providers = $self->dbic->run(
-        sub {
+        fixup => sub {
             my $sth = $_->prepare("SELECT provider FROM users.binary_user_connects WHERE binary_user_id = ?");
             $sth->execute($user_id);
             my @providers;
@@ -89,7 +81,7 @@ sub remove_connect {
     my ($self, $user_id, $provider) = @_;
 
     return $self->dbic->run(
-        sub {
+        ping => sub {
             $_->do("
         DELETE FROM users.binary_user_connects WHERE binary_user_id = ? AND provider = ?
     ", undef, $user_id, $provider);
