@@ -375,7 +375,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             } elsif (!$input{professional_client} && $existing_cli->get_status('professional')) {
                 $existing_cli->clr_status('professional');
             }
-            
+
             $existing_cli->save;
 
         }
