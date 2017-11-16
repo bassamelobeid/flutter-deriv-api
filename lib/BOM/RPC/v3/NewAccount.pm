@@ -187,10 +187,10 @@ sub get_existing_professional_details {
     my $professional_status;
 
     foreach my $lid ($user->loginid) {
-        
+
         # Load client object
         my $existing_cli = Client::Account->new({loginid => $lid->loginid});
-        
+
         # Only allow CR and MF
         next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
 
