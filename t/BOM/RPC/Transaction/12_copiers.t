@@ -95,6 +95,7 @@ sub sell_one_bet {
 
     my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
     $mock_validation->mock(_is_valid_to_sell => sub { note "mocked Transaction::Validation->_is_valid_to_sell returning nothing"; undef });
+    $mock_validation->mock(_validate_offerings => sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; undef });
     my $mock_transaction = Test::MockModule->new('BOM::Transaction');
     $mock_transaction->mock(_is_valid_to_sell => sub { note "mocked Transaction::Validation->_is_valid_to_sell returning nothing"; undef });
 
