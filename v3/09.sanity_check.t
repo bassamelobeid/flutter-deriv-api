@@ -15,8 +15,10 @@ use utf8;
 my $t = build_wsapi_test();
 
 my $res = request({ping => '௰'});
-is $res->{error}->{code}, 'SanityCheckFailed';
-ok ref($res->{echo_req}) eq 'HASH' && !keys %{$res->{echo_req}};
+is $res->{error}->{code}, 'SanityCheckFailed', 'result error code';
+ok ref($res->{echo_req}) eq 'HASH', 'result echo_req is a HASH';
+ok !keys %{$res->{echo_req}}, 'result echo_req has no keys'
+    or diag 'Keys were ' . join ', ', keys %{$res->{echo_req}};
 test_schema('ping', $res);
 
 # undefs are fine for some values

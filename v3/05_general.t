@@ -15,40 +15,60 @@ $system->mock('server_time', sub { +{msg_type => 'time', time => ('1' x 600000)}
 
 my $t = build_wsapi_test();
 
-my $res = $t->await::error('notjson');
-is $res->{error}->{code}, 'BadRequest';
-ok ref($res->{echo_req}) eq 'HASH' && !keys %{$res->{echo_req}};
+{
+    my $res = $t->await::error('notjson');
+    is $res->{error}->{code}, 'BadRequest';
+    ok ref($res->{echo_req}) eq 'HASH' && !keys %{$res->{echo_req}};
+}
 
-$res = $t->await::error({UnrecognisedRequest => 1});
-is $res->{error}->{code}, 'UnrecognisedRequest';
+{
+    my $res = $t->await::error({UnrecognisedRequest => 1, req_id => 1});
+    is $res->{error}->{code}, 'UnrecognisedRequest';
+    is $res->{req_id}, 1, 'Response contains matching req_id';
+}
 
-$res = $t->await::ping({ping => 1});
-is $res->{msg_type}, 'ping';
-is $res->{ping},     'pong';
-test_schema('ping', $res);
+{
+    my $res = $t->await::ping({ping => 1, req_id => 2});
+    is $res->{msg_type}, 'ping';
+    is $res->{ping},     'pong';
+    is $res->{req_id}, 2, 'Response contains matching req_id';
+    test_schema('ping', $res);
+}
 
-$res = $t->await::time({time => 1});
+{
+    my $res = $t->await::time({time => 1});
 
-is $res->{error}->{code}, 'ResponseTooLarge', 'API response without RPC forwarding should be checked to size';
+    is $res->{error}->{code}, 'ResponseTooLarge', 'API response without RPC forwarding should be checked to size';
+}
 
-my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
-$fake_rpc_response = Test::MockObject->new();
-$fake_rpc_response->mock('is_error', sub { '' });
-$fake_rpc_response->mock('result', sub { +{ok => ('1' x 600000)} });
-$fake_rpc_client = Test::MockObject->new();
-$fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
-$rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
-$rpc_client_mock->mock('new', sub { return $fake_rpc_client });
+{
+    my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
+    $fake_rpc_response = Test::MockObject->new();
+    $fake_rpc_response->mock('is_error', sub { '' });
+    $fake_rpc_response->mock('result', sub { +{ok => ('1' x 600000)} });
+    $fake_rpc_client = Test::MockObject->new();
+    $fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
+    $rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
+    $rpc_client_mock->mock('new', sub { return $fake_rpc_client });
 
-$res = $t->await::website_status({
-    website_status => 1,
-    req_id         => 3
-});
+    my $res = $t->await::website_status({
+        website_status => 1,
+        req_id         => 3
+    });
 
-is $res->{echo_req}->{website_status}, 1;
-is $res->{req_id}, 3;
+    is $res->{echo_req}->{website_status}, 1;
+    is $res->{req_id}, 3;
 
-$rpc_client_mock->unmock_all;
+    $rpc_client_mock->unmock_all;
+}
+
+{
+    # Some Unicode character that will fail sanity check
+    my $res = $t->await::sanity_check({ping => "\x{0BF0}", req_id => 4});
+    is $res->{error}->{code}, 'SanityCheckFailed';
+    is $res->{req_id}, 4, 'Response contains matching req_id';
+}
+
 
 $t->finish_ok;
 
