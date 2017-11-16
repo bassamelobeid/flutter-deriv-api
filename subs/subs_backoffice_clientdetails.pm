@@ -382,13 +382,7 @@ SQL
         });
 
     foreach my $doc (sort { $a->[0] <=> $b->[0] } @$docs) {
-        my $id              = $doc->[0];
-        my $file_name       = $doc->[1];
-        my $expiration_date = $doc->[2];
-        my $comments        = $doc->[3];
-        my $document_id     = $doc->[4];
-        my $upload_date     = $doc->[5];
-        my $age             = $doc->[6];
+        my ($id, $file_name, $expiration_date, $comment, $document_id, $upload_date, $age) = @$doc;
 
         if (not $file_name) {
             $links .= qq{<tr><td>Missing filename for a file with ID: $id</td></tr>};
@@ -404,7 +398,7 @@ SQL
                 $date = $formatted;
             } or do {
                 warn "Invalid date, using original information: $date\n";
-                }
+            };
         }
 
         my $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
