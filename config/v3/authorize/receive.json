@@ -60,6 +60,7 @@
         },
         "account_list": {
           "type": "array",
+          "description": "List of accounts for current client",
           "items": {
             "type": "object",
             "properties": {
@@ -86,6 +87,10 @@
               "loginid": {
                 "type": "string",
                 "description": "The account id of corresponding account"
+              },
+              "excluded_until": {
+                "type": "integer",
+                "description": "Epoch of date till client has excluded him/herself from website, only present if client has self excluded"
               }
             }
           }
