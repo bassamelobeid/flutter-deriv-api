@@ -3,7 +3,7 @@
 Websocket API tests
 
 To run Websocket API tests on QA devbox, please do:
-- cd `/home/git/bom-websocket-tests`
-- prove -vl `v3/schema_suite/suite.t`
+- cd `/home/git/regentmarkets/binary-websocket-api`
+- prove -vl `../bom-websocket-tests/v3/[testfile].t`
 
-It will includ dependecies from `.proverc` file.
+It will include dependencies from `.proverc` file in the `binary-websocket-api`.
