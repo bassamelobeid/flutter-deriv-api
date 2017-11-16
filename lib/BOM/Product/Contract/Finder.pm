@@ -45,7 +45,7 @@ my %supported_contract_types = (
 );
 
 my $cache = Cache::LRU->new(
-    size => 10000,
+    size => 1000,
 );
 
 sub _get_cached_or_calculate {
