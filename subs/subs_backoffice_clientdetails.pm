@@ -382,7 +382,7 @@ SQL
         });
 
     foreach my $doc (sort { $a->[0] <=> $b->[0] } @$docs) {
-        my ($id, $file_name, $expiration_date, $comment, $document_id, $upload_date, $age) = @$doc;
+        my ($id, $file_name, $expiration_date, $comments, $document_id, $upload_date, $age) = @$doc;
 
         if (not $file_name) {
             $links .= qq{<tr><td>Missing filename for a file with ID: $id</td></tr>};
