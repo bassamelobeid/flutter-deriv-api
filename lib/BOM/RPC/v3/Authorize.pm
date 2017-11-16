@@ -31,7 +31,10 @@ sub authorize {
 
     my ($loginid, $scopes) = @{$token_details}{qw/loginid scopes/};
 
-    my $client = Client::Account->new({loginid => $loginid});
+    my $client = Client::Account->new({
+        loginid      => $loginid,
+        db_operation => 'replica'
+    });
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
     my ($lc, $brand_name) = ($client->landing_company, request()->brand);
@@ -69,11 +72,17 @@ sub authorize {
     my (@sub_accounts, @accounts) = ((), ());
     my ($is_omnibus, $currency) = ($client->allow_omnibus);
 
-    my %siblings = map { $_->loginid => $_ } $user->clients;
+    my $siblings = $user->loginid_details;
 
     # need to sort so that virtual is last one
-    foreach my $key (sort keys %siblings) {
-        my $account = $siblings{$key};
+    foreach my $key (sort keys %$siblings) {
+        my $account = Client::Account->new({
+            loginid      => $key,
+            db_operation => 'replica'
+        });
+
+        next if not $account or $account->get_status('duplicate_account');
+
         $currency = $account->default_account ? $account->default_account->currency_code : '';
         if ($is_omnibus and $loginid eq ($account->sub_account_of // '')) {
             push @sub_accounts,
