@@ -18,6 +18,9 @@ use Brands;
 use LandingCompany::Registry;
 
 use f_brokerincludeall;
+
+use Client::Account;
+
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::User;
@@ -361,9 +364,14 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     my $user = BOM::Platform::User->new({email => $client->email});
     my $result = "";
 
-    foreach my $existing_cli ($user->clients) {
+    foreach my $lid ($user->loginid) {
+
+        # Load client object
+        my $existing_cli = Client::Account->new({loginid => $lid->loginid});
+
         # Only allow CR and MF
         next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
+
         my $existing_cli_loginid = encode_entities($existing_cli->loginid);
         try {
 
