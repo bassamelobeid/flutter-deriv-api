@@ -42,6 +42,8 @@ our %DIVERT_APP_IDS;
 # This list is also overwritten by Redis.
 our %BLOCK_APP_IDS;
 
+my $json = JSON::MaybeXS->new;
+
 sub apply_usergroup {
     my ($cf, $log) = @_;
 
@@ -460,8 +462,8 @@ sub startup {
 
     for my $action (@$actions) {
         my $f             = '/home/git/regentmarkets/binary-websocket-api/config/v3/' . $action->[0];
-        my $in_validator  = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")), format => \%JSON::Schema::FORMATS);
-        my $out_validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")), format => \%JSON::Schema::FORMATS);
+        my $in_validator  = JSON::Schema->new($json->decode(File::Slurp::read_file("$f/send.json")), format => \%JSON::Schema::FORMATS);
+        my $out_validator = JSON::Schema->new($json->decode(File::Slurp::read_file("$f/receive.json")), format => \%JSON::Schema::FORMATS);
 
         my $action_options = $action->[1] ||= {};
         $action_options->{in_validator}  = $in_validator;
@@ -548,10 +550,10 @@ sub startup {
 
     my $redis = ws_redis_master();
     if (my $ids = $redis->get('app_id::diverted')) {
-        %DIVERT_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
+        %DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
     }
     if (my $ids = $redis->get('app_id::blocked')) {
-        %BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
+        %BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
     }
     return;
 

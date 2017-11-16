@@ -5,7 +5,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use YAML::XS;
 use Mojo::Redis2;
-use JSON::XS qw | encode_json |;
+use JSON::MaybeXS;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 
 STDOUT->autoflush(1);
@@ -56,7 +56,7 @@ if ( $status || $message ) {
     my $is_on_value = $is_on;
     print $ws_redis_master->set($is_on_key, $is_on_value), "\n" if $is_on_value;
 
-    my $mess_obj = encode_json ( {
+    my $mess_obj = JSON::MaybeXS->new->encode( {
         site_status => $status  // "up",
         message     => $message // ""
     } );

@@ -7,7 +7,7 @@ no indirect;
 use Try::Tiny;
 use Data::Dumper;
 use Mojo::Redis::Processor;
-use JSON::XS qw(encode_json decode_json);
+use JSON::MaybeXS;
 use Time::HiRes qw(gettimeofday tv_interval);
 use Math::Util::CalculatedValue::Validatable;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
@@ -42,6 +42,8 @@ use constant BARRIERS_PER_BATCH => 16;
 # Sanity check - if we have more than this many barriers, reject
 # the request entirely.
 use constant BARRIER_LIMIT => 16;
+
+my $json = JSON::MaybeXS->new->allow_blessed;
 
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
@@ -306,7 +308,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                         } else {
                             # We've already done the check for top-level { error => { ... } } by this point,
                             # so if we don't have the proposals key then something very unexpected happened.
-                            warn "Invalid entry in proposal_array response - " . encode_json($res);
+                            warn "Invalid entry in proposal_array response - " . $json->encode($res);
                             $c->send({
                                     json => $c->wsp_error(
                                         $msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))}
@@ -476,8 +478,8 @@ sub _proposal_open_contract_cb {
         my %copy_req = %$req_storage;
         delete @copy_req{qw(in_validator out_validator)};
         $copy_req{loginid} = $c->stash('loginid') if $c->stash('loginid');
-        warn "undef shortcode. req_storage is: " . encode_json(\%copy_req);
-        warn "undef shortcode. response is: " . encode_json($contract);
+        warn "undef shortcode. req_storage is: " . $json->encode(\%copy_req);
+        warn "undef shortcode. response is: " . $json->encode($contract);
         my $error = $c->new_error('proposal_open_contract', 'GetProposalFailure', $c->l('Sorry, an error occurred while processing your request.'));
         $c->send({json => $error}, $req_storage);
     } else {
@@ -535,7 +537,7 @@ sub _serialized_args {
     foreach my $k (sort keys %$copy) {
         push @arr, ($k, $copy->{$k});
     }
-    return 'PRICER_KEYS::' . encode_json(\@arr);
+    return 'PRICER_KEYS::' . $json->encode(\@arr);
 }
 
 sub _pricing_channel_for_ask {
@@ -631,7 +633,7 @@ sub process_pricing_events {
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$channel_name};
 
-    my $response = decode_json($message);
+    my $response = $json->decode($message);
     my $price_daemon_cmd = delete $response->{price_daemon_cmd} // '';
 
     my $pricing_channel_updated = undef;
@@ -707,7 +709,7 @@ sub process_proposal_array_event {
         unless (ref($stash_data) eq 'HASH') {
             warn __PACKAGE__
                 . " process_proposal_array_event: HASH not found as redis_channel data: "
-                . JSON::XS->new->allow_blessed->encode($stash_data);
+                . $json->encode($stash_data);
             delete $pricing_channel->{$redis_channel}{$stash_data_key};
             $pricing_channel_updated = 1;
             next;
@@ -721,7 +723,7 @@ sub process_proposal_array_event {
                     if (my $invalid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
                         warn __PACKAGE__
                             . " process_proposal_array_event: _get_validation_for_type failed, results: "
-                            . JSON::XS->new->allow_blessed->encode($invalid);
+                            . $json->encode($invalid);
                         return $invalid;
                     } elsif (exists $price->{error}) {
                         return $price;
@@ -785,7 +787,7 @@ sub process_ask_event {
     for my $stash_data_key (keys %{$pricing_channel->{$redis_channel}}) {
         my $stash_data = $pricing_channel->{$redis_channel}{$stash_data_key};
         unless (ref($stash_data) eq 'HASH') {
-            warn __PACKAGE__ . " process_ask_event: HASH not found as redis_channel data: " . JSON::XS->new->allow_blessed->encode($stash_data);
+            warn __PACKAGE__ . " process_ask_event: HASH not found as redis_channel data: " . $json->encode($stash_data);
             delete $pricing_channel->{$redis_channel}{$stash_data_key};
             $pricing_channel_updated = 1;
             next;
@@ -833,9 +835,9 @@ sub _price_stream_results_adjustment {
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
         warn 'missing theo probability from pricer. Contract parameter dump '
-            . encode_json($contract_parameters)
+            . $json->encode($contract_parameters)
             . ', pricer response: '
-            . encode_json($results);
+            . $json->encode($results);
         stats_inc('price_adjustment.missing_theo_probability');
     }
 
