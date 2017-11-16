@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use JSON qw(to_json);
+use JSON::MaybeXS;
 use LandingCompany::Offerings qw(get_offerings_flyby);
 use List::Util qw(first);
 use Quant::Framework::EconomicEventCalendar;
@@ -15,6 +15,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Chronicle;
 use BOM::Platform::Runtime;
 
+my $json = JSON::MaybeXS->new;
 sub get_economic_events_for_date {
     my $date = shift;
 
@@ -36,8 +37,8 @@ sub get_economic_events_for_date {
         (values %{$eec->_get_deleted()});
 
     return {
-        categorized_events => to_json(\@events),
-        deleted_events     => to_json(\@deleted_events),
+        categorized_events => $json->encode(\@events),
+        deleted_events     => $json->encode(\@deleted_events),
     };
 }
 
@@ -75,7 +76,7 @@ sub get_info {
     foreach my $symbol (_get_affected_underlying_symbols()) {
         my %cat = map { $symbol => 'magnitude: ' . int($_->{magnitude}) . ' duration: ' . int($_->{duration}) . 's' }
             @{Volatility::Seasonality::categorize_events($symbol, [$event])};
-        push @by_symbols, to_json(\%cat) if %cat;
+        push @by_symbols, $json->encode(\%cat) if %cat;
     }
     $event->{info}            = \@by_symbols;
     $event->{release_date}    = Date::Utility->new($event->{release_date})->datetime;
