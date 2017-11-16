@@ -68,6 +68,10 @@
                 "type": "string",
                 "description": "Currency of corresponding account"
               },
+              "excluded_until": {
+                "type": "integer",
+                "description": "Epoch of date till client has excluded him/herself from website, only present if client has self excluded"
+              },
               "is_disabled": {
                 "pattern": "^(1|0)$",
                 "description": "Boolean value: 1 or 0, indicating whether it is a virtual-money account"
@@ -87,10 +91,6 @@
               "loginid": {
                 "type": "string",
                 "description": "The account id of corresponding account"
-              },
-              "excluded_until": {
-                "type": "integer",
-                "description": "Epoch of date till client has excluded him/herself from website, only present if client has self excluded"
               }
             }
           }
