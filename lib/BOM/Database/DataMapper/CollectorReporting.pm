@@ -98,13 +98,16 @@ sub get_active_accounts_payment_profit {
     my $self = shift;
     my $args = shift;
 
-    return $self->db->dbic->run(
+    my $result = $self->db->dbic->run(
         fixup => sub {
-            my $sql = q{ SELECT * FROM accounting.get_active_accounts_payment_profit(?, ?) };
-            my $sth = $_->prepare($sql);
-            $sth->execute($args->{start_time}->db_timestamp, $args->{end_time}->db_timestamp);
-            return values %{$sth->fetchall_hashref('account_id')};
+            return $_->selectall_arrayref(
+                q{ SELECT * FROM accounting.get_active_accounts_payment_profit(?, ?) },
+                {Slice => {}},
+                $args->{start_time}->db_timestamp,
+                $args->{end_time}->db_timestamp
+            );
         });
+    return @$result;
 }
 
 sub turnover_in_period {
