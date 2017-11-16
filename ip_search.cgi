@@ -43,8 +43,12 @@ if ($ip ne '') {
         });
 
 } elsif ($loginid ne '') {
-# for some reason we have historically passed in an email address on 'loginid'... but now we will consider either one
-
+    if ($date_to !~ /^\d{4}-\d{2}-\d{2}$/ || $date_from !~ /^\d{4}-\d{2}-\d{2}$/) {
+        print "Invalid date. Date format should be YYYY-MM-DD";
+        code_exit_BO();
+    }
+    
+    # for some reason we have historically passed in an email address on 'loginid'... but now we will consider either one
     $suspected_logins = BOM::Database::UserDB::rose_db()->dbic->run(
         sub {
             $_->selectall_arrayref('
@@ -55,7 +59,7 @@ if ($ip ne '') {
                     SELECT binary_user_id FROM users.loginid WHERE loginid = $1
                     LIMIT 1
                     ) u(id)
-                CROSS JOIN LATERAL users.get_login_similarities(u.id, $2, $3)',
+                CROSS JOIN LATERAL users.get_login_similarities(u.id, $2::TIMESTAMP, $3::TIMESTAMP)',
                 {Slice => {}},
                 $loginid, $date_from, $date_to);
         });
