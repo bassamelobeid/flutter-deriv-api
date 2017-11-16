@@ -5,7 +5,6 @@ use warnings;
 
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::UnitTestRedis;
 use Test::More (tests => 5);

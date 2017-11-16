@@ -6,7 +6,6 @@ use Test::Warnings qw/warning/;
 use Test::Exception;
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 use Try::Tiny;
 
 use Postgres::FeedDB::Spot::Tick;

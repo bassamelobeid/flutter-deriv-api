@@ -9,7 +9,6 @@ use Test::Most 0.22 (tests => 131);
 use Test::Warnings;
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 use Date::Utility;
 use Path::Tiny;
 use YAML::XS qw(LoadFile);

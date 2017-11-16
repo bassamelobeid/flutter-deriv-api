@@ -10,7 +10,7 @@ use Test::Warnings;
 use Cache::RedisDB;
 use List::Util qw(first);
 use Date::Utility;
-use JSON::XS;
+use JSON::MaybeXS;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::MarketData qw(create_underlying);
@@ -284,7 +284,7 @@ sub setup_ticks {
         if ($quote) {
             BOM::Platform::RedisReplicated::redis_write()->set(
                 "Distributor::QUOTE::$symbol",
-                encode_json({
+                JSON::MaybeXS->new->encode({
                         quote => $quote,
                         epcoh => $date->epoch,
                     }));

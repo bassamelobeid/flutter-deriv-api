@@ -15,7 +15,6 @@ use Test::Most;
 use Test::Warnings;
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::MarketData qw(create_underlying_db);

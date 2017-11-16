@@ -7,7 +7,7 @@ use Test::More tests => 3;
 use Test::Warnings;
 use Test::Exception;
 use Date::Utility;
-use JSON qw(to_json);
+use JSON::MaybeXS;
 use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -20,7 +20,7 @@ my $now = Date::Utility->new('10-Mar-2015');
 
 my %custom_otm =
     map { rand(1234) => {conditions => {market => $_, expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
-BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json(\%custom_otm));
+BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(JSON::MaybeXS->new->encode(\%custom_otm));
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
