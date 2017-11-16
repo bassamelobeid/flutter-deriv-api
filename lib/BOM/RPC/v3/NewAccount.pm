@@ -191,17 +191,20 @@ sub get_existing_professional_details {
 
         # Check 1: Is the existing client a professional?
         if ($existing_cli->get_status('professional')) {
-            $professional_status = 1;
+            $professional_status    = 1;
+            $professional_requested = 0;
+            last;
         }
 
         # Check 2: Does the existing client have a professional request?
         if ($existing_cli->get_status('professional_requested')) {
             $professional_requested = 1;
+            last;
         }
 
-        # Check 3: Update clients that have no professional request
+        # Check 3: Update existing clients that have no professional request
         if ($professional_requested && !$existing_cli->get_status('professional_requested')) {
-            $existing_cli->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
+            $existing_cli->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
             $existing_cli->save;
             BOM::RPC::v3::Utility::send_professional_requested_email($existing_cli->loginid, $existing_cli->residence);
         }
@@ -249,6 +252,9 @@ sub new_account_real {
         return $error if $error;
     }
 
+    # Get the professional flags, based on existing clients (if any)
+    my ($professional_requested, $professional_status) = get_existing_professional_details($user, $professional_requested);
+
     my $acc = BOM::Platform::Account::Real::default::create_account({
         ip => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),
@@ -272,9 +278,13 @@ sub new_account_real {
     # as account is already created so no need to die on status set
     # else it will give false impression to client
     try {
-        $new_client->set_status('ico_only',               'SYSTEM', 'ICO account requested')          if $ico_only;
-        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
+        $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
+
+        $new_client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional_status;
+        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
+
         $new_client->save;
+
         BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence) if $professional_requested;
     };
 
@@ -358,6 +368,9 @@ sub new_account_maltainvest {
 
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
+    # Get the professional flags, based on existing clients (if any)
+    my ($professional_requested, $professional_status) = get_existing_professional_details($user, $professional_requested);
+
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         ip => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),
@@ -379,9 +392,12 @@ sub new_account_maltainvest {
     my $user            = $acc->{user};
 
     try {
-        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
+        $new_client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional_status;
+        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
+
         $new_client->save;
-        BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence);
+
+        BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence) if $professional_requested;
     };
 
     $user->add_login_history({
