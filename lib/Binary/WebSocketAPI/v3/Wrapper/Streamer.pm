@@ -41,7 +41,7 @@ sub website_status {
                     my $website_status = {};
                     $rpc_response->{clients_country} //= '';
                     $website_status->{$_} = $rpc_response->{$_}
-                        for qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config ico_status ico_info|;
+                        for qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config|;
 
                     $shared_info->{broadcast_notifications}{$c + 0}{'c'}            = $c;
                     $shared_info->{broadcast_notifications}{$c + 0}{echo}           = $args;
@@ -452,6 +452,7 @@ sub _feed_channel_unsubscribe {
 
 sub transaction_channel {
     my ($c, $action, $account_id, $type, $args, $contract_id) = @_;
+    $contract_id = $args->{contract_id} // $contract_id;
     my $uuid;
 
     my $redis = shared_redis;
@@ -470,16 +471,16 @@ sub transaction_channel {
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
             $channel->{$type}->{account_id}  = $account_id;
-            $channel->{$type}->{contract_id} = $args->{contract_id} || $contract_id
-                if $args->{contract_id} || $contract_id;
+            $channel->{$type}->{contract_id} = $contract_id if $contract_id;
             $c->stash('transaction_channel', $channel);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
             delete $channel->{$type};
-            unless (keys %$channel) {
+            unless (%$channel) {
                 delete $redis->{shared_info}{$channel_name}{$c + 0};
-                $redis->unsubscribe([$channel_name], sub { });
                 delete $c->stash->{transaction_channel};
             }
+            # Unsubscribe from redis if there's no listener across connections for the channel
+            $redis->unsubscribe([$channel_name], sub { }) if not %{$redis->{shared_info}{$channel_name}};
         }
     }
 
@@ -572,7 +573,7 @@ sub _create_poc_stream {
     if ($poc_args && $payload->{financial_market_bet_id}) {
 
         $c->call_rpc({
-                url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
+                url         => Binary::WebSocketAPI::Hooks::get_rpc_url($c),
                 args        => $poc_args,
                 msg_type    => '',
                 method      => 'longcode',
@@ -586,7 +587,7 @@ sub _create_poc_stream {
                     my $rpc_response = shift;
 
                     $payload->{longcode} = $rpc_response->{longcodes}{$payload->{short_code}};
-                    warn "Wrong longcode response: " . decode_json($rpc_response) unless $payload->{longcode};
+                    warn "Wrong longcode response: " . encode_json($rpc_response) unless $payload->{longcode};
 
                     my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::_pricing_channel_for_bid(
                         $c,
