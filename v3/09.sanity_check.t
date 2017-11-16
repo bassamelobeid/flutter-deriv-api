@@ -18,8 +18,8 @@ my $req = {ping => '௰', req_id => 1};
 my $res = request($req);
 is $res->{error}->{code}, 'SanityCheckFailed', 'result error code';
 ok ref($res->{echo_req}) eq 'HASH', 'result echo_req is a HASH';
-is $res->{req_id}, $req->{req_id}, 'Includes req_id';
-is_deeply $res->{echo_req}, $req, 'includes the correct echo_req';
+is $res->{req_id}, $req->{req_id}, 'Includes the correct req_id';
+is_deeply $res->{echo_req}, $req, 'Includes the correct echo_req';
 test_schema('ping', $res);
 
 # undefs are fine for some values
