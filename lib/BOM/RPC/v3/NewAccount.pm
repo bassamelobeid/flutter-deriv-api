@@ -256,7 +256,7 @@ sub new_account_real {
     }
 
     # Get the professional flags, based on existing clients (if any)
-    my ($professional_requested, $professional_status) = get_existing_professional_details($user, $professional_requested);
+    ($professional_requested, my $professional_status) = get_existing_professional_details($user, $professional_requested);
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
         ip => $params->{client_ip} // '',
@@ -372,7 +372,7 @@ sub new_account_maltainvest {
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     # Get the professional flags, based on existing clients (if any)
-    my ($professional_requested, $professional_status) = get_existing_professional_details($user, $professional_requested);
+    ($professional_requested, my $professional_status) = get_existing_professional_details($user, $professional_requested);
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         ip => $params->{client_ip} // '',
