@@ -6,6 +6,7 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(get_predefined_offerings get_trading_periods generate_trading_periods update_predefined_highlow next_generation_epoch);
 
+use JSON::MaybeXS qw/encode_json decode_json/;
 use JSON qw(to_json from_json);
 use Time::HiRes;
 use Date::Utility;
@@ -48,7 +49,6 @@ Each offering has the following additional keys:
  - available_barriers
  - expired_barriers
  - trading_period
-
 ->get_predefined_offerings({symbol => 'frxUSDJPY'}); # get latest predefined offerings
 ->get_predefined_offerings({symbol => 'frxUSDJPY', date => $date}); # historical predefined offerings
 ->get_predefined_offerings({symbol => 'frxUSDJPY', date => $date, landing_company => 'costarica'}); # specific landing_company
@@ -73,12 +73,10 @@ sub get_predefined_offerings {
 
 Returns an array reference of trading period for an underlying symbol from redis cache.
 Returns an empty array reference if request period is not found in cache.
-
 Each trading period a hash reference with  the following keys:
  - date_start
  - date_expiry
  - duration
-
 ->get_trading_periods('frxUSDJPY'); # get latest trading period
 ->get_trading_periods('frxUSDJPY', $date); # historical trading period
 
@@ -90,21 +88,19 @@ sub get_trading_periods {
     my $underlying = create_underlying($symbol, $date);
     $date //= Date::Utility->new;
 
-    return generate_trading_periods($underlying->symbol, $underlying->for_date) if $underlying->for_date;
+    my $for_date = $underlying->for_date;
+    my $method   = $for_date ? 'get_for' : 'get';
+    my $key      = trading_period_key($underlying->symbol, $date);
+    my $cache    = BOM::Platform::Chronicle::get_chronicle_reader($for_date)->$method($cache_namespace, $key, $for_date);
 
-    my $key = join '_', ('trading_period', $underlying->symbol, $date->date, $date->hour);
-    my $cache = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
-
-    return from_json($cache) if ($cache);
-
-    return [];
+    return $cache // [];
 }
 
 =head2 generate_trading_periods
 
 Generates and returns an array reference of trading period for an underlying symbol.
+Each trading period a hash reference with the following keys:
 
-Each trading period a hash reference with  the following keys:
  - date_start
  - date_expiry
  - duration
@@ -112,20 +108,12 @@ Each trading period a hash reference with  the following keys:
 ->generate_trading_periods('frxUSDJPY'); # generates latest trading period
 ->generate_trading_periods('frxUSDJPY', $date); # generates trading period based on historical conditions
 
-Generation algorithm are based on the Japan regulators requirements:
-Intraday contract:
-1) Start at 15 min before closest even hour and expires with duration of 2 hours and 15 min.
-   Mon-Friday
-   00:00-02:00, 01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00 <break>23:45-02:00, 01:45-04:00,
-
-   For AUDJPY,USDJPY,AUDUSD, it will be:
-    00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00 <break> 21:45:00-23:59:59, 23:45-02:00,01:45-04:00, 03:45-06:00
-
-
-2) Start at 00:45 and expires with durarion of 5 hours and 15 min and spaces the next available trading window by 4 hours.
-   Example: 00:45-06:00 ; 04:45-10:00 ; 08:45-14:00 ; 12:45-18:00
-
-
+Generation algorithm are based on the Japan regulators' requirements:
+Intraday trading period is from 00 GMT to 18 GMT. We offer two intraday windows at any given time:
+1) 2-hour window:
+- 00:00-02:00, 02:00-04:00, 04:00-06:00, 06:00-08:00, 08:00-10:00 ... 16:00-18:00
+2) 6-hour window:
+- 00:00-06:00, 06:00-12:00, 12:00-18:00
 Daily contract:
 1) Daily contract: Start at 00:00GMT and end at 23:59:59GMT of the day
 2) Weekly contract: Start at 00:00GMT first trading day of the week and end at the close of last trading day of the week
@@ -144,22 +132,22 @@ sub generate_trading_periods {
 
     return [] unless $trading_calendar->trades_on($underlying->exchange, $date);
 
-    my $key = join '_', ('trading_period', $underlying->symbol, $date->date, $date->hour);
     my @trading_periods = _get_daily_trading_window($underlying, $date);
     my @intraday_periods = _get_intraday_trading_window($underlying, $date);
     push @trading_periods, @intraday_periods if @intraday_periods;
 
-    my $next = next_generation_epoch($date);
-    my $ttl = max(1, $next - $date->epoch);
-    BOM::Platform::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([grep { defined } @trading_periods]), 'EX', $ttl);
-
     return \@trading_periods;
 }
 
+sub trading_period_key {
+    my ($underlying_symbol, $date) = @_;
+
+    my $key = join '_', ('trading_period', $underlying_symbol, $date->date, $date->hour);
+    return ($cache_namespace, $key);
+}
+
 =head2 update_predefined_highlow
-
 For a given tick, it updates a list of relevant high-low period.
-
 =cut
 
 sub update_predefined_highlow {
@@ -218,29 +206,22 @@ sub _get_predefined_highlow {
 }
 
 =head2 next_generation_interval
-
-Returns XX:45 if requested date is before XX:45, else returns XX:00
-
+Always the next hour.
 =cut
 
 sub next_generation_epoch {
     my $from_date = shift;
 
-    my $minute = $from_date->minute;
+    my $hour = $from_date->hour;
 
-    my $next_gen_epoch =
-        ($minute < 45)
-        ? Date::Utility->new->today->plus_time_interval($from_date->hour . 'h45m')->epoch
-        : Date::Utility->new->today->plus_time_interval($from_date->hour + 1 . 'h')->epoch;
-
-    return $next_gen_epoch;
+    return $from_date->truncate_to_day->plus_time_interval($hour + 1 . 'h')->epoch;
 }
 
 sub _flyby {
     my $landing_company = shift;
 
     $landing_company //= 'costarica';
-    return get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company);
+    return get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company, 'multi_barrier');
 }
 
 sub supported_symbols {
@@ -363,6 +344,53 @@ sub _calculate_available_barriers {
     return $available_barriers;
 }
 
+sub _get_spot {
+    my ($underlying, $trading_period) = @_;
+    my $spot;
+    my ($source, $quote) = ('unknown', 'unknown');
+    my $date_start = Date::Utility->new($trading_period->{date_start}->{epoch});
+    # special handling at for barriers, which start at Monday at 00:00:00
+    # caused by our tick storage misdesign: ticks are available only for
+    # trading hours, meanwhile we have ticks from providers sinse Sunday 22:00.
+    # So, ticks will be taken directly from feed-redis.
+    my $now = time;
+    # let's use abs() to tolerate small time shifts
+    my $realtime = abs($now - $trading_period->{date_start}->{epoch}) < 2;
+    my $take_from_distributor =
+           $realtime
+        && ($date_start->day_of_week == 1)
+        && ($date_start->time_hhmmss eq '00:00:00');
+    if ($take_from_distributor) {
+        my $redis = BOM::Platform::RedisReplicated::redis_read();
+        if (my $tick_json = $redis->get('Distributor::QUOTE::' . $underlying->symbol)) {
+            $source = 'redis';
+            $quote  = $tick_json;
+            $spot   = decode_json($tick_json)->{quote};
+        }
+    }
+    if (!$take_from_distributor || !$spot) {
+        my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
+        $source = 'feed-db';
+        unless ($tick) {
+            # If spot at requested time is not present, we will use current spot.
+            # This should not happen in production, it is for QA purposes.
+            warn
+                "using current tick to calculate barrier for period [$trading_period->{date_start}->{date} - $trading_period->{date_expiry}->{date}]";
+            $tick   = $underlying->spot_tick;
+            $source = 'feed-db:outdated';
+        }
+        if ($tick) {
+            $spot = $tick->quote if $tick;
+            $quote = encode_json($tick->as_hash);
+        }
+    }
+    if (!defined $spot) {
+        die 'Could not retrieve tick for ' . $underlying->symbol . ' at ' . $date_start->datetime;
+    }
+    print __PACKAGE__ . " $0 [barriers-debug] :: $spot from $source ( $quote ) at $now \n";
+    return $spot;
+}
+
 sub _calculate_barriers {
     my $args = shift;
 
@@ -372,20 +400,9 @@ sub _calculate_barriers {
 
     return from_json($cache) if $cache;
 
-    my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
-
-    unless ($tick) {
-        # If spot at requested time is not present, we will use current spot.
-        # This should not happen in production, it is for QA purposes.
-        warn "using current tick to calculate barrier for period [$trading_period->{date_start}->{date} - $trading_period->{date_expiry}->{date}]";
-        $tick = $underlying->spot_tick
-            or die 'Could not retrieve tick for '
-            . $underlying->symbol . ' at '
-            . Date::Utility->new($trading_period->{date_start}->{epoch})->datetime;
-    }
-    my $spot_at_start = $tick->quote;
     my $tiy = ($trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch}) / (365 * 86400);
 
+    my $spot_at_start = _get_spot($underlying, $trading_period);
     my @initial_barriers = map { _get_strike_from_call_bs_price($_, $tiy, $spot_at_start, 0.1) } (0.05, 0.95);
 
     # Split the boundaries barriers into 9 barriers by divided the distance of boundaries by 95 (45 each side) - to be used as increment.
@@ -404,9 +421,7 @@ sub _calculate_barriers {
 }
 
 =head2 _get_strike_from_call_bs_price
-
 To get the strike that associated with a given call bs price.
-
 =cut
 
 sub _get_strike_from_call_bs_price {
@@ -422,108 +437,54 @@ sub _get_strike_from_call_bs_price {
 }
 
 # Japan's intraday predefined trading window are as follow:
-# 2 hours and 15 min duration:
-# For AUDJPY, USDJPY, AUDUSD
-# 00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00,21:45- 23:59:59, 23:45-02:00,01:45-04:00, 03:45-06:00
 #
-# For other pairs:
-# 00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00,23:45-02:00,01:45-04:00, 03:45-06:00
+# Intraday trading period is from 00 GMT to 18 GMT. We offer two intraday windows at any given time:
+# - 2-hour window
+# - 6-hour window
 #
-# 5 hours and 15 min duration:
-# 00:45-06:00 ; 04:45-10:00 ; 08:45-14:00 ; 12:45-18:00
+# 2-hour window:
+# - 00:00-02:00, 02:00-04:00, 04:00-06:00, 06:00-08:00, 08:00-10:00 ... 16:00-18:00
 #
-# Hence, we will generate the window at HH::45 (HH is the predefined trading hour) to include any new trading window and will also generate the trading window again at the next HH:00 to remove any expired trading window.
+# 6-hour window:
+# - 00:00-06:00, 06:00-12:00, 12:00-18:00
+#
 
 sub _get_intraday_trading_window {
     my ($underlying, $date) = @_;
-    my @intraday_windows;
 
+    my $tc           = _trading_calendar($underlying->for_date);
     my $start_of_day = $date->truncate_to_day;
-    my ($current_hour, $minute) = ($date->hour, $date->minute);
-    my $hour = $minute < 45 ? $current_hour : $current_hour + 1;
-    my $even_hour = $hour - ($hour % 2);
+    my $hour         = $date->hour;
+    my @windows      = ();
 
-    # We only want odd hour of 1, 5, 9, 13
-    my $odd_hour = ($hour % 2) ? $hour : $hour - 1;
-    $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
+    # intraday trading period from 00 GMT to 18 GMT
+    return @windows if $hour >= 18;
+    # 2-hour window & 6-hour window
+    foreach my $interval (2, 6) {
+        my $start_of_interval = $start_of_day->plus_time_interval($hour - ($hour % $interval) . 'h');
+        my $end_of_interval = $start_of_interval->plus_time_interval($interval . 'h');
 
-    # We did not offer intraday contract after NY16. However, we turn on these three pairs on Japan
-    my @skips_hour = (first { $_ eq $underlying->symbol } qw(frxUSDJPY frxAUDJPY frxAUDUSD)) ? (18, 20) : (18, 20, 22);
-    my $skips_intraday = first { $even_hour == $_ } @skips_hour;
-
-    # At 17:45GMT, we should still have the one that expired on 18GMT
-    if ($even_hour == 18 and $current_hour == 17) {
-        push @intraday_windows,
-            _get_intraday_window({
-                now        => $date,
-                date_start => $start_of_day->plus_time_interval(($even_hour - 2) . 'h'),
-                duration   => '2h',
-                underlying => $underlying,
-            });
-
-        push @intraday_windows,
-            _get_intraday_window({
-                now        => $date,
-                underlying => $underlying,
-                date_start => $start_of_day->plus_time_interval($odd_hour - 4 . 'h'),
-                duration   => '5h'
-            });
-
-    }
-
-    return @intraday_windows if $skips_intraday;
-
-    my $window_2h = _get_intraday_window({
-        now        => $date,
-        underlying => $underlying,
-        date_start => $start_of_day->plus_time_interval($even_hour . 'h'),
-        duration   => '2h'
-    });
-
-    if ($window_2h) {
-        # Previous 2 hours contract should be always available in the first 15 minutes of the next one
-        # (except start of the trading day and also the first window after the break)
-        my $skips_prev_window = first { $even_hour - 2 == $_ } @skips_hour;
-        if (($date->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0 && !$skips_prev_window) {
-            push @intraday_windows,
-                _get_intraday_window({
-                    now        => $date,
-                    underlying => $underlying,
-                    date_start => $start_of_day->plus_time_interval(($even_hour - 2) . 'h'),
-                    duration   => '2h'
-                });
+        if ($tc->is_open_at($underlying->exchange, $end_of_interval) && $date->is_before($end_of_interval)) {
+            push @windows,
+                +{
+                date_start => {
+                    date  => $start_of_interval->datetime,
+                    epoch => $start_of_interval->epoch
+                },
+                date_expiry => {
+                    date  => $end_of_interval->datetime,
+                    epoch => $end_of_interval->epoch,
+                },
+                duration => $interval . 'h',
+                };
         }
-
-        push @intraday_windows, $window_2h;
-    }
-    if ($odd_hour >= 1 and $odd_hour < 17) {
-        push @intraday_windows,
-            _get_intraday_window({
-                now        => $date,
-                underlying => $underlying,
-                date_start => $start_of_day->plus_time_interval($odd_hour . 'h'),
-                duration   => '5h'
-            });
     }
 
-    my $previous_odd_hour = $odd_hour - 4;
-    if ($previous_odd_hour >= 1 and $previous_odd_hour <= 13) {
-        push @intraday_windows,
-            _get_intraday_window({
-                now        => $date,
-                underlying => $underlying,
-                date_start => $start_of_day->plus_time_interval($previous_odd_hour . 'h'),
-                duration   => '5h'
-            });
-    }
-
-    return @intraday_windows;
+    return @windows;
 }
 
 =head2 _get_daily_trading_window
-
 To get the end of day, weekly, monthly , quarterly, and yearly trading window.
-
 =cut
 
 sub _get_daily_trading_window {
@@ -597,52 +558,8 @@ sub _get_daily_trading_window {
     return @daily_duration;
 }
 
-=head2 _get_intraday_window
-
-To get the intraday trading window of a trading duration. Start at 15 minute before the date_start
-
-=cut
-
-sub _get_intraday_window {
-    my $args             = shift;
-    my $date_start       = $args->{date_start};
-    my $duration         = $args->{duration};
-    my $underlying       = $args->{underlying};
-    my $exchange         = $underlying->exchange;
-    my $trading_calendar = _trading_calendar($underlying->for_date);
-    my $now              = $args->{now};
-    my $is_early_close   = $trading_calendar->closes_early_on($exchange, $now);
-
-    # If it is early close on the day before, it should start at 00GMT.
-    my $start_at_00 = (
-               $date_start->day_of_week == 1
-            or $trading_calendar->closes_early_on($exchange, $date_start->minus_time_interval('1d'))) && $date_start->hour == 0;
-    my $early_date_start = $start_at_00 ? $date_start : $date_start->minus_time_interval('15m');
-    my $date_expiry = $date_start->hour == 22 ? $date_start->plus_time_interval('1h59m59s') : $date_start->plus_time_interval($duration);
-
-    if ($is_early_close and $is_early_close->is_before($date_expiry)) {
-        return;
-    }
-    if ($now->is_before($date_expiry)) {
-
-        return {
-            date_start => {
-                date  => $early_date_start->datetime,
-                epoch => $early_date_start->epoch
-            },
-            date_expiry => {
-                date  => $date_expiry->datetime,
-                epoch => $date_expiry->epoch,
-            },
-            duration => $duration . (!$start_at_00 ? '15m' : ''),
-        };
-    }
-}
-
 =head2 _get_trade_date_of_daily_window
-
 To get the trade date of supplied start and end of the window
-
 =cut
 
 sub _get_trade_date_of_daily_window {

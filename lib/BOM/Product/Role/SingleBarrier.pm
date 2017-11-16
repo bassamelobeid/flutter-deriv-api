@@ -50,7 +50,13 @@ sub _validate_barrier {
 
     my ($min_move, $max_move) = (0.25, 2.5);
     my $abs_barrier = (defined $barrier) ? $barrier->as_absolute : undef;
-    if ($abs_barrier and $current_spot and ($abs_barrier > $max_move * $current_spot or $abs_barrier < $min_move * $current_spot)) {
+    if (defined $barrier and $barrier->supplied_barrier eq '0' and not $self->is_intraday) {
+        return {
+            message           => 'Absolute barrier cannot be zero',
+            severity          => 1,
+            message_to_client => [$ERROR_MAPPING->{ZeroAbsoluteBarrier}],
+        };
+    } elsif ($abs_barrier and $current_spot and ($abs_barrier > $max_move * $current_spot or $abs_barrier < $min_move * $current_spot)) {
         return {
             message => 'Barrier too far from spot '
                 . "[move: "
@@ -71,12 +77,6 @@ sub _validate_barrier {
                 . $pip_move . "]",
             severity          => 1,
             message_to_client => [$ERROR_MAPPING->{InvalidBarrierForSpot}, $self->minimum_allowable_move],
-        };
-    } elsif (defined $barrier and $barrier->supplied_barrier eq '0' and not $self->is_intraday) {
-        return {
-            message           => 'Absolute barrier cannot be zero',
-            severity          => 1,
-            message_to_client => [$ERROR_MAPPING->{ZeroAbsoluteBarrier}],
         };
     }
 

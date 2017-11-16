@@ -4,14 +4,6 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Product::Static qw/get_longcodes/;
-
-sub localizable_description {
-    return +{
-        tick => get_longcodes()->{asianu_tick},
-    };
-}
-
 sub ticks_to_expiry {
     return shift->tick_count;
 }

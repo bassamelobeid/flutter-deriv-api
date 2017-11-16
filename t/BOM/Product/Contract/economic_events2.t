@@ -21,7 +21,7 @@ my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked_decimate->mock(
     'get',
     sub {
-        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005*$_} } (0 .. 80)];
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
     });
 reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
@@ -88,11 +88,7 @@ sub test_economic_events_markup {
     is($bet->pricing_engine->economic_events_spot_risk_markup->amount, $expected_ee_srmarkup, 'correct spot risk markup');
 
     my $amount;
-    like(
-        warning { $amount = $bet->pricing_engine->event_markup->amount },
-        qr/No basis tick for/,
-        'Got warning for no basis tick'
-    );
+    like(warning { $amount = $bet->pricing_engine->event_markup->amount }, qr/No basis tick for/, 'Got warning for no basis tick');
     cmp_ok($amount, '<', $bet->pricing_engine->economic_events_spot_risk_markup->amount, 'vol risk markup is lower than higher range');
     is($bet->pricing_engine->economic_events_markup->amount, $expected_ee_markup, 'economic events markup is max of spot or vol risk markup');
 }

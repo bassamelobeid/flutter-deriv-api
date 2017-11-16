@@ -95,7 +95,6 @@ sub _confirm_validity {
     push @validation_methods, '_validate_feed';
     push @validation_methods, '_validate_price' unless $self->skips_price_validation;
     push @validation_methods, '_validate_volsurface' unless $self->volsurface->type eq 'flat';
-    push @validation_methods, '_validate_appconfig_age';
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method($args)) {
@@ -700,25 +699,6 @@ sub _validate_volsurface {
     return;
 }
 
-=head2 _validate_appconfig_age
-
-We also want to guard against old appconfig.
-
-=cut
-
-sub _validate_appconfig_age {
-    my $rev = BOM::Platform::Runtime->instance->app_config->current_revision;
-    my $age = Time::HiRes::time - $rev;
-    if ($age > 300) {
-        warn "Config age is >300s - $age - is bin/update_appconfig_rev.pl running?\n";
-        return {
-            message           => "appconfig is out of date - age is now $age seconds",
-            message_to_client => [$ERROR_MAPPING->{TradingSuspended}],
-        };
-    }
-    return;
-}
-
 =head2 market_risk_blackouts
 
 Periods of which we decide to stay out of the market due to high uncertainty.
@@ -809,14 +789,6 @@ sub _build_date_start_blackouts {
                 ? $self->_max_tick_expiry_duration
                 : $underlying->eod_blackout_start;
             push @periods, [$end_of_trading->minus_time_interval($eod_blackout)->epoch, $end_of_trading->epoch] if $eod_blackout;
-        }
-
-        if (    $underlying->market->name eq 'indices'
-            and not $self->is_intraday
-            and not $self->is_atm_bet
-            and $self->timeindays->amount <= 7)
-        {
-            push @periods, [$end_of_trading->minus_time_interval('1h')->epoch, $end_of_trading->epoch];
         }
     }
 

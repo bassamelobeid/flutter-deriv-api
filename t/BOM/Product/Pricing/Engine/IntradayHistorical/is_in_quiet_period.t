@@ -12,7 +12,7 @@ use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
 subtest 'is_in_quiet_period' => sub {
-    my $non_dst       = Date::Utility->new('2017-04-03');
+    my $non_dst = Date::Utility->new('2017-04-03');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $non_dst});
     my $traded_start  = $non_dst->truncate_to_day->plus_time_interval('7h');
     my $traded_end    = $non_dst->truncate_to_day->plus_time_interval('21h');

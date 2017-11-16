@@ -272,7 +272,7 @@ my %historical = (
 # Now we'll muck up any historical data in the chronicle unit test DB and
 # replace it with our own crazy values.
 foreach my $fixture_type (keys %historical) {
-  for my $symbol (sort keys %{$historical{$fixture_type}}){
+    for my $symbol (sort keys %{$historical{$fixture_type}}) {
         my $fixtures = $historical{$fixture_type}{$symbol};
         foreach my $fixture (@{$fixtures}) {
             $fixture->{symbol} = $symbol;

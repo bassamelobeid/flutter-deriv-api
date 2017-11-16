@@ -7,12 +7,14 @@ use Test::More;
 use Test::Deep;
 use Test::Warnings;
 
+use Cache::RedisDB;
 use List::Util qw(first);
 use Date::Utility;
+use JSON::XS;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::MarketData qw(create_underlying);
-use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods get_predefined_offerings update_predefined_highlow);
+use BOM::Product::Contract::PredefinedParameters qw(get_predefined_offerings update_predefined_highlow);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -24,14 +26,14 @@ my $monday           = Date::Utility->new('2016-11-14');    # monday
 
 subtest 'non trading day' => sub {
     my $saturday = Date::Utility->new('2016-11-19');        # saturday
-    generate_trading_periods($supported_symbol, $saturday);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($supported_symbol, $saturday);
     my $offerings = get_predefined_offerings({
         symbol => $supported_symbol,
         date   => $saturday
     });
     ok !@$offerings, 'no offerings were generated on non trading day';
     setup_ticks($supported_symbol, [[$monday->minus_time_interval('400d')], [$monday]]);
-    generate_trading_periods($supported_symbol, $monday);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($supported_symbol, $monday);
     $offerings = get_predefined_offerings({
         symbol => $supported_symbol,
         date   => $monday
@@ -48,63 +50,68 @@ subtest 'intraday trading period' => sub {
     my @test_inputs = (
         # monday at 00:00GMT
         [
-            'frxUSDJPY', 'callput', '2016-11-14 00:00:00',
-            2, [['2016-11-14 00:00:00', '2016-11-14 02:00:00'], ['2016-11-14 00:00:00', '2016-11-14 02:00:00']]
-        ],
-        # monday at 00:44GMT
-        [
-            'frxUSDJPY', 'callput', '2016-11-14 00:44:00',
-            2, [['2016-11-14 00:00:00', '2016-11-14 02:00:00'], ['2016-11-14 00:00:00', '2016-11-14 02:00:00']]
-        ],
-        # monday at 00:45GMT
-        [
             'frxUSDJPY',
             'callput',
-            '2016-11-14 00:45:00',
+            '2016-11-14 00:00:00',
             4,
             [
                 ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:45:00', '2016-11-14 06:00:00'],
+                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
                 ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:45:00', '2016-11-14 06:00:00']]
+                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+            ]
         ],
-        # monday at 01:45GMT
+        # monday at 00:59GMT
         [
             'frxUSDJPY',
             'callput',
-            '2016-11-14 01:45:00',
-            6,
-            [
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 01:45:00', '2016-11-14 04:00:00'],
-                ['2016-11-14 00:45:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 01:45:00', '2016-11-14 04:00:00'],
-                ['2016-11-14 00:45:00', '2016-11-14 06:00:00']]
-        ],
-        # monday at 02:00GMT
-        [
-            'frxUSDJPY',
-            'callput',
-            '2016-11-14 02:00:00',
+            '2016-11-14 00:59:00',
             4,
             [
-                ['2016-11-14 01:45:00', '2016-11-14 04:00:00'],
-                ['2016-11-14 00:45:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 01:45:00', '2016-11-14 04:00:00'],
-                ['2016-11-14 00:45:00', '2016-11-14 06:00:00']]
+                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
+                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
+                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+            ]
         ],
-        # monday at 18:00GMT
-        ['frxUSDJPY', 'callput', '2016-11-14 18:00:00', 0, [],],
-        # monday at 21:44GMT
-        ['frxUSDJPY', 'callput', '2016-11-14 21:44:00', 0, [],],
-        # monday at 21:45GMT
+        # monday at 01:59GMT
         [
-            'frxUSDJPY', 'callput', '2016-11-14 21:45:00',
-            2, [['2016-11-14 21:45:00', '2016-11-14 23:59:59'], ['2016-11-14 21:45:00', '2016-11-14 23:59:59'],],
+            'frxUSDJPY',
+            'callput',
+            '2016-11-14 01:59:00',
+            4,
+            [
+                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
+                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
+                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+            ]
         ],
-        # monday at 21:45GMT
-        ['frxGBPJPY', 'callput', '2016-11-14 21:45:00', 0, [],],
+        [
+            'frxUSDJPY',
+            'callput',
+            '2016-11-14 05:59:00',
+            4,
+            [
+                ['2016-11-14 04:00:00', '2016-11-14 06:00:00'],
+                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+                ['2016-11-14 04:00:00', '2016-11-14 06:00:00'],
+                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+            ]
+        ],
+        [
+            'frxUSDJPY',
+            'callput',
+            '2016-11-14 17:59:00',
+            4,
+            [
+                ['2016-11-14 16:00:00', '2016-11-14 18:00:00'],
+                ['2016-11-14 12:00:00', '2016-11-14 18:00:00'],
+                ['2016-11-14 16:00:00', '2016-11-14 18:00:00'],
+                ['2016-11-14 12:00:00', '2016-11-14 18:00:00'],
+            ]
+        ],
+        ['frxUSDJPY', 'callput', '2016-11-14 18:00:00', 0, []],
     );
 
     foreach my $input (@test_inputs) {
@@ -112,13 +119,13 @@ subtest 'intraday trading period' => sub {
         $date = Date::Utility->new($date);
         setup_ticks($symbol, [[$date->minus_time_interval('400d')], [$date]]);
         note('generating for ' . $symbol . '. Time set to ' . $date->day_as_string . ' at ' . $date->time);
-        generate_trading_periods($symbol, $date);
+        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $date);
         my $offerings = get_predefined_offerings({
             symbol => $symbol,
             date   => $date
         });
         my @intraday = grep { $_->{expiry_type} eq 'intraday' } @$offerings;
-        is scalar(@intraday), $count, 'expected two offerings on intraday at 00:00GMT';
+        is scalar(@intraday), $count, 'expected ' . $count . ' offerings on intraday at 00:00GMT';
 
         if ($count == 0 and scalar(@intraday) == 0) {
             pass('no intraday offerings found for ' . $symbol);
@@ -142,11 +149,11 @@ subtest 'predefined barriers' => sub {
     my @inputs = ({
             match => {
                 contract_category => 'callput',
-                duration          => '5h15m',
+                duration          => '2h',
                 expiry_type       => 'intraday'
             },
             ticks => [[$date->minus_time_interval('400d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]],
-            available_barriers => [1.15141, 1.15241, 1.15341, 1.15471, 1.15591, 1.15711, 1.15841, 1.15941, 1.16041,],
+            available_barriers => ['1.14940', '1.15000', '1.15060', '1.15138', '1.15210', '1.15282', '1.15360', '1.15420', '1.15480'],
             expired_barriers   => [],
         },
         {
@@ -215,7 +222,7 @@ subtest 'predefined barriers' => sub {
         });
 
     my $generation_date = $date->plus_time_interval('1h');
-    generate_trading_periods($symbol, $generation_date);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $generation_date);
 
     foreach my $test (@inputs) {
         setup_ticks($symbol, $test->{ticks});
@@ -248,7 +255,7 @@ subtest 'update_predefined_highlow' => sub {
             epoch  => $now->plus_time_interval('30s')->epoch,
             quote  => 69.2
         };
-        my $tp = generate_trading_periods($symbol);
+        my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $now);
         ok update_predefined_highlow($new_tick), 'updated highlow';
         my $offering = get_predefined_offerings({symbol => $symbol});
         my $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
@@ -273,6 +280,15 @@ sub setup_ticks {
             epoch      => $date->epoch,
             $quote ? (quote => $quote) : (),
         });
+        # simulate distributor work
+        if ($quote) {
+            BOM::Platform::RedisReplicated::redis_write()->set(
+                "Distributor::QUOTE::$symbol",
+                encode_json({
+                        quote => $quote,
+                        epcoh => $date->epoch,
+                    }));
+        }
     }
 }
 

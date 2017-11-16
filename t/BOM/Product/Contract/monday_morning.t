@@ -27,7 +27,7 @@ subtest 'monday mornings intraday' => sub {
     my $c = produce_contract($args);
     isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
     my $vol;
-    warning_like {is $c->pricing_vol, 0.104126793548484, 'seasonalized 10% vol' } qr/Insufficient ticks to calculate historical volatility/, 'warns';
+    warning_like { is $c->pricing_vol, 0.104126793548484, 'seasonalized 10% vol' } qr/Insufficient ticks to calculate historical volatility/, 'warns';
     is $c->empirical_volsurface->validation_error, 'Insufficient ticks to calculate historical volatility.',
         'error at first 20 minutes on a tuesday morning';
     $dp = Date::Utility->new('2017-06-12 00:19:59');
@@ -39,13 +39,13 @@ subtest 'monday mornings intraday' => sub {
     $dp = Date::Utility->new('2017-06-12 00:20:01');
     $args->{date_pricing} = $args->{date_start} = $dp;
     $c = produce_contract($args);
-    warning_like { is $c->pricing_vol, 0.10410700957774, 'seasonalized 10% vol'} qr/Insufficient ticks to calculate historical volatility/, 'warns';
+    warning_like { is $c->pricing_vol, 0.10410700957774, 'seasonalized 10% vol' } qr/Insufficient ticks to calculate historical volatility/, 'warns';
     is $c->empirical_volsurface->validation_error, 'Insufficient ticks to calculate historical volatility.',
         'warn if historical tick not found after first 20 minutes of a monday morning';
     $mocked->mock(
         'get',
         sub {
-            [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005*$_} } (0 .. 80)];
+            [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
         });
     $c = produce_contract($args);
     ok $c->pricing_vol, 'no warnings';

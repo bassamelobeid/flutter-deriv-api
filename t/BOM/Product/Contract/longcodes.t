@@ -45,32 +45,29 @@ subtest 'Proper form' => sub {
 
     # pick few random one to check complete equality
     my $c = produce_contract($shortcodes[3], 'USD');
-    is_deeply(
-        $c->longcode,
-        [
-            'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
-            'USD', '100.00', 'EUR/USD', ['contract start time'], ['3 hours'], ['entry spot']]);
+    is_deeply($c->longcode,
+        ['Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].', 'EUR/USD', ['contract start time'], {class => 'Time::Duration::Concise::Localize', value => 3*3600}, ['entry spot']]);
 
     $c = produce_contract($shortcodes[10], 'EUR');
     is_deeply(
         $c->longcode,
         [
-            'Win payout if [_3] touches [_6] through [_5] after [_4].', 'EUR',
-            '100.00',                                                   'AUD/JPY',
-            ['contract start time'], ['10 hours'],
+            'Win payout if [_1] touches [_4] through [_3] after [_2].', 'AUD/JPY',
+            ['contract start time'], {class => 'Time::Duration::Concise::Localize', value => 10*3600},
             ['entry spot plus [plural,_1,%d pip, %d pips]', 300]]);
 
     $c = produce_contract($shortcodes[-1], 'RUR');
-    is_deeply(
-        $c->longcode,
-        [
-            'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
-            'RUR', '100', 'EUR/NOK', ['contract start time'], ['12 minutes'], ['entry spot']]);
+    is_deeply($c->longcode,
+        ['Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].', 'EUR/NOK', ['contract start time'], {class => 'Time::Duration::Concise::Localize', value => 12*60}, ['entry spot']]);
 };
 
 subtest 'longcode from params for forward starting' => sub {
-    my $now = Date::Utility->new('2016-10-19 10:00:00');
-
+    my $now  = Date::Utility->new('2016-10-19 10:00:00');
+    my $tick = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'R_100',
+        quote      => 100,
+        epoch      => $now->epoch
+    });
     my $c = produce_contract({
         bet_type     => 'CALL',
         underlying   => 'R_100',
@@ -81,23 +78,150 @@ subtest 'longcode from params for forward starting' => sub {
         barrier      => 'S0P',
         payout       => 10,
         fixed_expiry => 1,
+        current_tick => $tick,
     });
 
     ok $c->is_forward_starting, 'is a forward starting contract';
 
-    my $longcode;
-    like(warning { $longcode = $c->longcode }, qr/No basis tick for/, 'Got warning for no basis tick');
-
     is_deeply(
-        $longcode,
+        $c->longcode,
         [
-            'Win payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
-            'USD', '10.00',
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
             'Volatility 100 Index',
             ['2016-10-19 10:10:00 GMT'],
-            ['10 minutes'], ['entry spot']]);
+            {class => 'Time::Duration::Concise::Localize', value => 10*60}, ['entry spot']]);
 };
 
+subtest 'longcode with \'difference\' as barrier' => sub {
+    my $now  = Date::Utility->new('2016-10-19 10:00:00');
+    my $tick = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'R_100',
+        quote      => 100,
+        epoch      => $now->epoch
+    });
+    my $c = produce_contract({
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        date_start   => $now->plus_time_interval('10m'),
+        date_pricing => $now,
+        duration     => '10m',
+        currency     => 'USD',
+        barrier      => '+0.32',
+        payout       => 10,
+        fixed_expiry => 1,
+        current_tick => $tick,
+    });
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
+            'Volatility 100 Index',
+            ['2016-10-19 10:10:00 GMT'],
+            {class => 'Time::Duration::Concise::Localize', value => 10*60}, ['entry spot plus [_1]', 0.32]]);
+    $c = produce_contract({
+        bet_type     => 'EXPIRYMISS',
+        underlying   => 'R_100',
+        date_start   => $now->plus_time_interval('10m'),
+        date_pricing => $now,
+        duration     => '10m',
+        currency     => 'USD',
+        high_barrier => '+0.32',
+        low_barrier  => '-0.42',
+        payout       => 10,
+        fixed_expiry => 1,
+        current_tick => $tick,
+    });
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_1] ends outside [_5] to [_4] at [_3].',
+            'Volatility 100 Index',
+            [],
+            ['2016-10-19 10:20:00 GMT'],
+            ['entry spot plus [_1]',  0.32],
+            ['entry spot minus [_1]', 0.42],
+        ]);
+};
+
+subtest 'zero barrier' => sub {
+    my $now  = Date::Utility->new('2016-10-19 10:00:00');
+    my $tick = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'R_100',
+        quote      => 100,
+        epoch      => $now->epoch
+    });
+    my $c = produce_contract({
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        date_start   => $now->plus_time_interval('10m'),
+        date_pricing => $now,
+        duration     => '10m',
+        currency     => 'USD',
+        barrier      => 0,
+        payout       => 10,
+        fixed_expiry => 1,
+        current_tick => $tick,
+    });
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
+            'Volatility 100 Index',
+            ['2016-10-19 10:10:00 GMT'],
+            {class => 'Time::Duration::Concise::Localize', value => 10*60}, '0.00'
+        ]);
+};
+
+subtest 'intraday duration longcode variation' => sub {
+    my $now  = Date::Utility->new('2016-10-19 10:00:00');
+    my $tick = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'R_100',
+        quote      => 100,
+        epoch      => $now->epoch
+    });
+    my $args = {
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        date_start   => $now->plus_time_interval('10m'),
+        date_pricing => $now,
+        duration     => '10m1s',
+        currency     => 'USD',
+        barrier      => 0,
+        payout       => 10,
+        fixed_expiry => 1,
+        current_tick => $tick,
+    };
+    my $c = produce_contract($args);
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
+            'Volatility 100 Index',
+            ['2016-10-19 10:10:00 GMT'],
+            {class => 'Time::Duration::Concise::Localize', value => 10*60+1}, '0.00'
+        ]);
+
+    $c = produce_contract({%$args, duration => '10h1s'});
+    is_deeply(
+        $c->longcode,
+        [
+            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
+            'Volatility 100 Index',
+            ['2016-10-19 10:10:00 GMT'],
+            {class => 'Time::Duration::Concise::Localize', value => 10*3600+1}, '0.00'
+        ]);
+};
+
+subtest 'legacy shortcode to longcode' => sub {
+    foreach my $shortcode (qw(RUNBET_DOUBLEDOWN_USD200_R_50_5 FLASHU_R_75_9.34_1420452541_6T_S0P_0 INTRADU_R_75_9.34_1420452541_1420452700_S0P_0)) {
+        my $c = produce_contract($shortcode, 'USD');
+        is_deeply(
+            $c->longcode,
+            ['Legacy contract. No further information is available.'],
+            'does not throw exception for legacy contract [' . $shortcode . ']'
+        );
+    }
+};
 done_testing();
 
 1;

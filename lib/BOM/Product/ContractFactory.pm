@@ -13,8 +13,9 @@ use Try::Tiny;
 
 use Postgres::FeedDB::Spot::Tick;
 
+use BOM::Product::Exception;
 use BOM::Product::Categorizer;
-use BOM::Product::ContractFactory::Parser qw(
+use Finance::Contract::Longcode qw(
     shortcode_to_parameters
 );
 
@@ -36,41 +37,36 @@ BEGIN {
     our @EXPORT_OK = qw( produce_contract make_similar_contract produce_batch_contract );
 }
 
-# Defer these until after we've compiled all our modules, since that way they can find the make_similar_contract
-# function. Ideally, no pricing engine would need to use BOM::Product::Contract code, so we expect this UNITCHECK
-# block to be redundant once those are split out.
-UNITCHECK {
-    use BOM::Product::Contract::Batch;
-    use BOM::Product::Contract::Asiand;
-    use BOM::Product::Contract::Asianu;
-    use BOM::Product::Contract::Call;
-    use BOM::Product::Contract::Calle;
-    use BOM::Product::Contract::Pute;
-    use BOM::Product::Contract::Digitdiff;
-    use BOM::Product::Contract::Digiteven;
-    use BOM::Product::Contract::Digitmatch;
-    use BOM::Product::Contract::Digitodd;
-    use BOM::Product::Contract::Digitover;
-    use BOM::Product::Contract::Digitunder;
-    use BOM::Product::Contract::Expirymisse;
-    use BOM::Product::Contract::Expiryrangee;
-    use BOM::Product::Contract::Expirymiss;
-    use BOM::Product::Contract::Expiryrange;
-    use BOM::Product::Contract::Invalid;
-    use BOM::Product::Contract::Notouch;
-    use BOM::Product::Contract::Onetouch;
-    use BOM::Product::Contract::Put;
-    use BOM::Product::Contract::Range;
-    use BOM::Product::Contract::Upordown;
-    use BOM::Product::Contract::Vanilla_call;
-    use BOM::Product::Contract::Vanilla_put;
-    use BOM::Product::Contract::Lbfixedcall;
-    use BOM::Product::Contract::Lbfixedput;
-    use BOM::Product::Contract::Lbfloatcall;
-    use BOM::Product::Contract::Lbfloatput;
-    use BOM::Product::Contract::Lbhighlow;
-    use BOM::Product::Contract::Binaryico;
-}
+use BOM::Product::Contract::Batch;
+use BOM::Product::Contract::Asiand;
+use BOM::Product::Contract::Asianu;
+use BOM::Product::Contract::Call;
+use BOM::Product::Contract::Calle;
+use BOM::Product::Contract::Pute;
+use BOM::Product::Contract::Digitdiff;
+use BOM::Product::Contract::Digiteven;
+use BOM::Product::Contract::Digitmatch;
+use BOM::Product::Contract::Digitodd;
+use BOM::Product::Contract::Digitover;
+use BOM::Product::Contract::Digitunder;
+use BOM::Product::Contract::Expirymisse;
+use BOM::Product::Contract::Expiryrangee;
+use BOM::Product::Contract::Expirymiss;
+use BOM::Product::Contract::Expiryrange;
+use BOM::Product::Contract::Invalid;
+use BOM::Product::Contract::Notouch;
+use BOM::Product::Contract::Onetouch;
+use BOM::Product::Contract::Put;
+use BOM::Product::Contract::Range;
+use BOM::Product::Contract::Upordown;
+use BOM::Product::Contract::Vanilla_call;
+use BOM::Product::Contract::Vanilla_put;
+use BOM::Product::Contract::Lbfixedcall;
+use BOM::Product::Contract::Lbfixedput;
+use BOM::Product::Contract::Lbfloatcall;
+use BOM::Product::Contract::Lbfloatput;
+use BOM::Product::Contract::Lbhighlow;
+use BOM::Product::Contract::Binaryico;
 
 =head2 produce_contract
 
@@ -99,6 +95,12 @@ sub produce_contract {
     $params_ref->{'_produce_contract_ref'} = \&produce_contract;
 
     my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
+
+    # XXX Remove this after ICO finishes
+    BOM::Product::Exception->throw(error_code => 'IcoNotAllowed')
+        if $contract_class->isa('BOM::Product::Contract::Coinauction')
+        and $landing_company ne 'costarica';
+
     return $contract_class->new($params_ref) unless $role_exists;
 
     # we're applying role. For speed reasons, we're not using $role->meta->apply($contract_obj),

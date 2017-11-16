@@ -22,7 +22,7 @@ my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked->mock(
     'get',
     sub {
-        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005*$_} } (0 .. 80)];
+        [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
     });
 
 my $trading_calendar    = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
@@ -279,7 +279,7 @@ subtest 'date start blackouts' => sub {
     $bet_params->{duration} = '5d';
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '06:40:00', '07:40:00']);
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not offered for this duration.']);
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
@@ -450,7 +450,7 @@ subtest 'date expiry blackout - year end holidays for equity' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_atm_bet,      'not ATM contract';
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Contract may not expire between [_1] and [_2].', '2016-12-30', '2017-01-05']);
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not offered for this duration.']);
     $bet_params->{barrier} = 'S0P';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for ATM';

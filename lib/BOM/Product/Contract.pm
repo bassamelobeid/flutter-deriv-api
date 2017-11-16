@@ -60,14 +60,12 @@ use BOM::Product::Types;
 use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
 use BOM::Product::Static;
+use Finance::Contract::Longcode qw(shortcode_to_longcode);
 
-# require Pricing:: modules to avoid circular dependency problems.
-UNITCHECK {
-    use BOM::Product::Pricing::Engine::Intraday::Forex;
-    use BOM::Product::Pricing::Engine::Intraday::Index;
-    use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
-    use BOM::Product::Pricing::Greeks::BlackScholes;
-}
+use BOM::Product::Pricing::Engine::Intraday::Forex;
+use BOM::Product::Pricing::Engine::Intraday::Index;
+use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
+use BOM::Product::Pricing::Greeks::BlackScholes;
 
 my $ERROR_MAPPING   = BOM::Product::Static::get_error_mapping();
 my $GENERIC_MAPPING = BOM::Product::Static::get_generic_mapping();
@@ -466,40 +464,7 @@ May throw an exception if an invalid expiry type is requested for this contract 
 sub longcode {
     my $self = shift;
 
-    # When we are building the longcode, we should always take the date_start to date_expiry as duration.
-    # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
-    my $forward_starting_contract = ($self->starts_as_forward_starting or $self->is_forward_starting);
-    my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
-    $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $forward_starting_contract and $self->fixed_expiry;
-    my $description = $self->localizable_description->{$expiry_type} // die "Unknown expiry_type $expiry_type for " . ref($self);
-    my @longcode = ($description, $self->currency, formatnumber('price', $self->currency, $self->payout), $self->underlying->display_name);
-
-    my ($when_end, $when_start, $generic_mapping) = ([], [], $GENERIC_MAPPING);
-    if ($expiry_type eq 'intraday_fixed_expiry') {
-        $when_end = [$self->date_expiry->datetime . ' GMT'];
-    } elsif ($expiry_type eq 'intraday') {
-        $when_end = [$self->get_time_to_expiry({from => $self->date_start})->as_string];
-        $when_start = ($forward_starting_contract) ? [$self->date_start->db_timestamp . ' GMT'] : [$generic_mapping->{contract_start_time}];
-    } elsif ($expiry_type eq 'daily') {
-        my $close = $self->trading_calendar->closing_on($self->underlying->exchange, $self->date_expiry);
-        if ($close and $close->epoch != $self->date_expiry->epoch) {
-            $when_end = [$self->date_expiry->datetime . ' GMT'];
-        } else {
-            $when_end = [$generic_mapping->{close_on}, $self->date_expiry->date];
-        }
-    } elsif ($expiry_type eq 'tick') {
-        $when_end   = [$self->tick_count];
-        $when_start = [$generic_mapping->{first_tick}];
-    }
-    push @longcode, ($when_start, $when_end);
-
-    if ($self->two_barriers) {
-        push @longcode, ($self->high_barrier->display_text, $self->low_barrier->display_text);
-    } elsif ($self->barrier) {
-        push @longcode, $self->barrier->display_text;
-    }
-
-    return \@longcode;
+    return shortcode_to_longcode($self->shortcode, $self->currency);
 }
 
 =head2 allowed_slippage
@@ -554,8 +519,7 @@ sub _check_is_intraday {
     # An intraday if the market is close on expiry
     return 1 unless $closing;
     # daily trading seconds based on the market's trading hour
-    my $daily_trading_seconds =
-        $trading_calendar->closing_on($exchange, $date_expiry)->epoch - $trading_calendar->opening_on($exchange, $date_expiry)->epoch;
+    my $daily_trading_seconds = $closing->epoch - $trading_calendar->opening_on($exchange, $date_expiry)->epoch;
     return 0 if $closing->is_same_as($self->date_expiry) and $contract_duration >= $daily_trading_seconds;
 
     return 1;
@@ -838,7 +802,6 @@ sub _build_exit_tick {
         if (not $valid_exit_tick_at_expiry) {
             $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1});
         } else {
-
             $exit_tick = $valid_exit_tick_at_expiry;
             $self->is_valid_exit_tick(1);
         }
@@ -1000,6 +963,11 @@ sub audit_details {
     my $start_epoch  = $self->date_start->epoch;
     my $expiry_epoch = $self->date_expiry->epoch;
 
+    # rare case: no tics between date_start and date_expiry.
+    # underlaying will return exit_tick preceding date_start
+    # no audit because such contracts are settled by CS team
+    return {} if $self->exit_tick and $start_epoch > $self->exit_tick->epoch;
+
     my $details = {
         contract_start => $self->_get_tick_details({
                 requested_epoch => {
@@ -1027,6 +995,7 @@ sub audit_details {
                 epoch => $hit_tick->epoch,
                 tick  => $self->underlying->pipsized_value($hit_tick->quote),
                 name  => [$GENERIC_MAPPING->{exit_spot}],
+                flag  => 'highlight_tick',
             }];
     } elsif ($self->expiry_daily) {
         my $closing_tick = $self->underlying->closing_tick_on($self->date_expiry->date);
@@ -1034,6 +1003,7 @@ sub audit_details {
                 epoch => $closing_tick->epoch,
                 tick  => $self->underlying->pipsized_value($closing_tick->quote),
                 name  => [$GENERIC_MAPPING->{closing_spot}],
+                flag  => 'highlight_tick',
             }];
     } else {
         $details->{contract_end} = $self->_get_tick_details({
@@ -1056,7 +1026,6 @@ sub _get_tick_details {
 
     my $epoch       = $args->{requested_epoch}{value};
     my $epoch_name  = $args->{requested_epoch}{name};
-    my $quote       = $args->{quote}{value};
     my $quote_epoch = $args->{quote}{epoch};
     my $quote_name  = $args->{quote}{name};
 
@@ -1083,14 +1052,16 @@ sub _get_tick_details {
             epoch => $t->epoch,
             tick  => $self->underlying->pipsized_value($t->quote),
         };
-        if ($t->quote == $quote) {
-            if ($t->epoch == $epoch) {
-                $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $epoch_name->[0], $quote_name->[0]];
-            } elsif ($t->epoch == $quote_epoch) {
-                $t_details->{name} = $quote_name;
-            }
+
+        if ($t->epoch == $epoch && $t->epoch == $quote_epoch) {
+            $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $epoch_name->[0], $quote_name->[0]];
+            $t_details->{flag} = "highlight_tick";
         } elsif ($t->epoch == $epoch) {
             $t_details->{name} = $epoch_name;
+            $t_details->{flag} = "highlight_time";
+        } elsif ($t->epoch == $quote_epoch) {
+            $t_details->{name} = $quote_name;
+            $t_details->{flag} = "highlight_tick";
         }
 
         push @details, $t_details;
@@ -1099,6 +1070,7 @@ sub _get_tick_details {
         if ((!$t2 && $epoch > $t->epoch) || ($epoch > $t->epoch && $epoch < $t2->epoch)) {
             push @details,
                 +{
+                flag  => "highlight_time",
                 name  => $epoch_name,
                 epoch => $epoch
                 };

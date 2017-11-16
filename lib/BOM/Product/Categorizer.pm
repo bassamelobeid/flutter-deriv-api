@@ -186,18 +186,16 @@ sub _initialize_contract_parameters {
         }
     }
 
-    my $for_date = $pp->{underlying}->for_date;
-    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
-
     if (defined $pp->{date_expiry}) {
         # to support legacy shortcode where expiry date is date string in dd-mmm-yy format
         if (Date::Utility::is_ddmmmyy($pp->{date_expiry})) {
             my $exchange    = $pp->{underlying}->exchange;
             my $date_expiry = Date::Utility->new($pp->{date_expiry});
-            if (my $closing = $trading_calendar->closing_on($exchange, $date_expiry)) {
+            if (my $closing = $self->_trading_calendar->closing_on($exchange, $date_expiry)) {
                 $pp->{date_expiry} = $closing;
             } else {
-                my $regular_close = $trading_calendar->closing_on($exchange, $trading_calendar->regular_trading_day_after($exchange, $date_expiry));
+                my $regular_close =
+                    $self->_trading_calendar->closing_on($exchange, $self->_trading_calendar->regular_trading_day_after($exchange, $date_expiry));
                 $pp->{date_expiry} = Date::Utility->new($date_expiry->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
             }
         } else {
@@ -257,12 +255,12 @@ sub _initialize_contract_parameters {
                 # Since we return the day AFTER, we pass one day ahead of expiry.
                 my $expiry_date = Date::Utility->new($start_epoch)->plus_time_interval($duration);
                 # Daily bet expires at the end of day, so here you go
-                if (my $closing = $trading_calendar->closing_on($underlying->exchange, $expiry_date)) {
+                if (my $closing = $self->_trading_calendar->closing_on($underlying->exchange, $expiry_date)) {
                     $expiry = $closing->epoch;
                 } else {
                     $expiry = $expiry_date->epoch;
-                    my $regular_day = $trading_calendar->regular_trading_day_after($underlying->exchange, $expiry_date);
-                    my $regular_close = $trading_calendar->closing_on($underlying->exchange, $regular_day);
+                    my $regular_day = $self->_trading_calendar->regular_trading_day_after($underlying->exchange, $expiry_date);
+                    my $regular_close = $self->_trading_calendar->closing_on($underlying->exchange, $regular_day);
                     $expiry = Date::Utility->new($expiry_date->date_yyyymmdd . ' ' . $regular_close->time_hhmmss)->epoch;
                 }
             } else {
@@ -325,6 +323,18 @@ sub _initialize_barrier {
     }
 
     return $barrier_info;
+}
+
+has _trading_calendar => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__trading_calendar {
+    my $self = shift;
+
+    my $for_date = $self->parameters->{date_pricing} ? Date::Utility->new($self->parameters->{date_pricing}) : undef;
+    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
 }
 
 no Moose;
