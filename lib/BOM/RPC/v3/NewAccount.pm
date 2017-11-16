@@ -203,10 +203,13 @@ sub get_existing_professional_details {
         }
 
         # Check 3: Update existing clients that have no professional request
-        if ($professional_requested && !$existing_cli->get_status('professional_requested')) {
-            $existing_cli->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
-            $existing_cli->save;
-            BOM::RPC::v3::Utility::send_professional_requested_email($existing_cli->loginid, $existing_cli->residence);
+        if ($professional_requested) {
+
+            try {
+                $existing_cli->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
+                $existing_cli->save;
+                BOM::RPC::v3::Utility::send_professional_requested_email($existing_cli->loginid, $existing_cli->residence);
+            };
         }
     }
 
