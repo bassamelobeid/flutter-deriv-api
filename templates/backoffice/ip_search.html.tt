@@ -8,8 +8,8 @@
 <b>Get accounts logged in with the same IPs</b>
 <form action="[% ip_search_url %]" method="post">
 <input type=text size=50 maxlength=50 name=loginid value='[% loginid %]' placeholder="CR12345 -or- user@binary.com"><br>
-<input type=text size=15 maxlength=15 name=date_from placeholder="2016-01-01" value='[% date_from %]'>
-<input type=text size=15 maxlength=15 name=date_to placeholder="2017-01-01" value='[% date_to %]'>
+<input type="date" name="date_from" placeholder="2016-01-01" value='[% date_from %]' required>
+<input type="date" name="date_to" placeholder="2017-01-01" value='[% date_to %]' required>
 <input type="submit" value="Search for evidences">
 </form>
 With the help of this tool you can find all other accounts, who were logging into the system from the same IPs, that the stated user had.<br>
