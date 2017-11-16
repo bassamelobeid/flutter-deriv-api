@@ -25,7 +25,7 @@ use List::Util qw(min);
 use BOM::Platform::Config;
 use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Platform::Context qw(localize request);
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
@@ -848,6 +848,7 @@ sub sell {
         currency_code  => $self->contract->currency,
     };
 
+    $bet_data->{bet_data}{is_expired} = $self->contract->is_expired;
     $self->stats_validation_done($stats_data);
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
@@ -899,7 +900,7 @@ sub sell_by_shortcode {
     my $stats_data = $self->stats_start('sell');
 
     my ($error_status, $bet_data) = $self->prepare_sell($options{skip});
-
+    $bet_data->{bet_data}{is_expired} = $self->contract->is_expired;
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
@@ -1040,7 +1041,11 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $account  = BOM::Database::DataMapper::Account->new({
+        my $message_to_client =
+            $self->contract->is_binaryico
+            ? 'Your account balance ([_1][_2]) is insufficient to place this bid ([_1][_3]).'
+            : 'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).';
+        my $account = BOM::Database::DataMapper::Account->new({
             client_loginid => $client->loginid,
             currency_code  => $currency,
         });
@@ -1049,10 +1054,8 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -type              => 'InsufficientBalance',
             -message           => 'Client\'s account balance was insufficient to buy bet.',
             -message_to_client => BOM::Platform::Context::localize(
-                'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).',
-                $currency,
-                formatnumber('amount', $currency, $account->get_balance()),
-                formatnumber('price',  $currency, $self->price)));
+                $message_to_client, $currency,
+                formatnumber('amount', $currency, $account->get_balance()), formatnumber('price', $currency, $self->price)));
     },
     BI007 => sub {
         my $self   = shift;
@@ -1327,12 +1330,14 @@ sub _build_pricing_comment {
 }
 
 =head2 sell_expired_contracts
+
 Static function: Sells expired contracts.
 For contracts with missing market data, settle them manually for real money accounts, but sell with purchase price for virtual account
 Returns: HashRef, with:
 'total_credited', total amount credited to Client
 'skip_contract', count for expired contracts that failed to be sold
 'failures', the failure information
+
 =cut
 
 my %source_to_sell_type = (
@@ -1406,7 +1411,7 @@ sub sell_expired_contracts {
 
         try {
             if ($contract->is_valid_to_sell) {
-                @{$bet}{qw/sell_price sell_time/} = ($contract->bid_price, $contract->date_pricing->db_timestamp);
+                @{$bet}{qw/sell_price sell_time is_expired/} = ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute
                     if $contract->category_code eq 'asian' and $contract->is_after_settlement;
                 $bet->{quantity} = 1;
@@ -1434,10 +1439,9 @@ sub sell_expired_contracts {
 
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
-                @{$bet}{qw/sell_price sell_time/} = ($bet->{buy_price}, $now->db_timestamp);
+                @{$bet}{qw/sell_price sell_time is_expired/} = ($bet->{buy_price}, $now->db_timestamp, $contract->is_expired);
                 $bet->{quantity} = 1;
                 $bet->{quantity} = $contract->unit if not $contract->is_binary;
-
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
@@ -1470,8 +1474,8 @@ sub sell_expired_contracts {
             if ($err =~ /^Requesting for historical period data without a valid DB connection/) {
                 # seems an issue in /Quant/Framework/EconomicEventCalendar.pm get_latest_events_for_period:
                 # live pricing condition was not ok and get_for_period was called for
-                # Data::Chronicle::Reader without dbh
-                $err .= "Data::Chronicle::Reader get_for_period call without dbh: Details: contract shortcode: " . $contract->shortcode . "\n";
+                # Data::Chronicle::Reader without dbic
+                $err .= "Data::Chronicle::Reader get_for_period call without dbic: Details: contract shortcode: " . $contract->shortcode . "\n";
             }
             warn 'SellExpiredContract Exception: ' . __PACKAGE__ . ':(' . __LINE__ . '): ' . $err;    # log it
         };
