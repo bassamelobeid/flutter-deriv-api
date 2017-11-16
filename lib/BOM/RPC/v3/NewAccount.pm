@@ -14,6 +14,8 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use Brands;
 
+use Client::Account;
+
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
 use BOM::RPC::v3::Accounts;
@@ -184,8 +186,11 @@ sub get_existing_professional_details {
     my ($user, $professional_requested) = @_;
     my $professional_status;
 
-    foreach my $existing_cli ($user->clients) {
-
+    foreach my $lid ($user->loginid) {
+        
+        # Load client object
+        my $existing_cli = Client::Account->new({loginid => $lid->loginid});
+        
         # Only allow CR and MF
         next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
 
