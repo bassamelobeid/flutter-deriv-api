@@ -17,7 +17,7 @@ my $t = build_wsapi_test();
 my $req = {ping => '௰'};
 my $res = request($req);
 is $res->{error}->{code}, 'SanityCheckFailed', 'result error code';
-is_deeply $res->{echo_req}, $req, 'includes the correct echo_req';
+is_deeply $res->{echo_req}, $req, 'Includes the correct echo_req';
 test_schema('ping', $res);
 $req = {ping => '௰', req_id => 1};
 $res = request($req);
