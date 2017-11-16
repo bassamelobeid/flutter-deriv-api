@@ -256,13 +256,14 @@ sub new_account_real {
     }
 
     # Get the professional flags, based on existing clients (if any)
+    my $user = BOM::Platform::User->new({email => $client->email});
     ($professional_requested, my $professional_status) = get_existing_professional_details($user, $professional_requested);
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
         ip => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),
         from_client => $client,
-        user        => BOM::Platform::User->new({email => $client->email}),
+        user        => $user,
         details     => $details_ref->{details},
     });
 
@@ -274,7 +275,6 @@ sub new_account_real {
 
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
-    my $user            = $acc->{user};
 
     # XXX If we fail after account creation then we could end up with these flags not set,
     # ideally should be handled in a single transaction
@@ -372,13 +372,14 @@ sub new_account_maltainvest {
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     # Get the professional flags, based on existing clients (if any)
+    my $user = BOM::Platform::User->new({email => $client->email});
     ($professional_requested, my $professional_status) = get_existing_professional_details($user, $professional_requested);
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         ip => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),
         from_client    => $client,
-        user           => BOM::Platform::User->new({email => $client->email}),
+        user           => $user,
         details        => $details_ref->{details},
         accept_risk    => $args->{accept_risk},
         financial_data => \%financial_data,
@@ -392,7 +393,6 @@ sub new_account_maltainvest {
 
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
-    my $user            = $acc->{user};
 
     try {
         $new_client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional_status;
