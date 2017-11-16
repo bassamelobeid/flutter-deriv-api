@@ -21,7 +21,7 @@ sub run {
     my $json  = JSON::MaybeXS->new;
     while (1) {
         my $start = time;
-        $ENV{ITERATION_STARTED} = int($start);    ## no critic (RequireLocalizedPunctuationVars)
+        local $ENV{ITERATION_STARTED} = int($start);
         my @underlyings = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol');
         my $l;
         for my $lc (LandingCompany::Registry::all()) {
@@ -39,7 +39,7 @@ sub run {
                     product_type    => $product,
                     landing_company => $lc,
                 });
-                $redis->set(join(':', 'contracts_for', $lc, $product, $ul), $json->encode($contracts));
+                $redis->set(join(':', 'contracts_for', $lc, $product, $ul), $json->encode($contracts), EX => 60);
             }
         }
         stats_timing('pricing.contracts_for.timing', time - $start, {tags => ["product:$product"]});
