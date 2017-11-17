@@ -367,14 +367,22 @@ sub validate_make_new_account {
 
     if ($client->is_virtual) {
         my @sibling_values = values %$siblings;
-        if (scalar @sibling_values == 1 and $sibling_values[0]->{ico_only}) {
-            return;
+        # if we have only ico_only account then we should allow to
+        # open other real accounts
+        if (scalar @sibling_values and ((scalar @sibling_values) == (grep { $_->{ico_only} } @sibling_values))) {
+            return undef;
         } else {
             return permission_error();
         }
     }
 
     my $landing_company_name = $client->landing_company->short;
+
+    if (exists $request_data->{account_type} and $request_data->{account_type} eq 'ico') {
+        $landing_company_name = 'costarica';
+    } else {
+        $landing_company_name = $client->landing_company->short;
+    }
 
     # as maltainvest can be opened in few ways, upgrade from malta,
     # directly from virtual for Germany as residence
@@ -401,13 +409,6 @@ sub validate_make_new_account {
             code              => 'NewAccountLimitReached',
             message_to_client => localize('You have created all accounts available to you.')});
 
-    # Bypass currency limit checks for ICO-only accounts - you get a single CR account (one currency only)
-    if (exists $request_data->{account_type} and $request_data->{account_type} eq 'ico') {
-        my $cr_accounts = filter_siblings_by_landing_company('costarica', $siblings);
-        return $error if $cr_accounts and %$cr_accounts;
-        return undef;
-    }
-
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
     # corresponding siblings not MLT one
@@ -429,7 +430,7 @@ sub validate_make_new_account {
     # allow them to open new account
     return undef unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
 
-    my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
+    my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
     my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
     # check if landing company supports crypto currency
     # else return error as client exhausted fiat currency
@@ -609,6 +610,22 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
     }
 
     return {longcodes => \%longcodes};
+}
+
+=head2 
+This subroutine checks for suspended cryptocurrencies 
+Accepts: Landing company name
+Returns: Arrayref of valid CR currencies.
+=cut
+
+sub filter_out_suspended_cryptocurrencies {
+    my $landing_company_name = shift;
+    my @currencies           = keys %{LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies};
+
+    my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    my @payout_currencies =
+        sort grep { !exists $suspended_currencies{$_} } @currencies;
+    return \@payout_currencies;
 }
 
 1;
