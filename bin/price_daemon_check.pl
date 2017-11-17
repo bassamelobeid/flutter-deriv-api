@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use BOM::Platform::RedisReplicated;
 use DataDog::DogStatsd::Helper;
-use JSON::XS qw/decode_json/;
+use JSON::MaybeXS;
 use Date::Utility;
 use Time::HiRes ();
 use Mojo::UserAgent;
@@ -22,7 +22,7 @@ for (
 {
     my $e = 0;
     try {
-        %entry = @{decode_json($redis->get($_))};
+        %entry = @{JSON::MaybeXS->new->decode($redis->get($_))};
     }
     catch {
         $e = 1;

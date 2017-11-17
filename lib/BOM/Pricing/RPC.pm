@@ -8,7 +8,7 @@ use Proc::CPUUsage;
 use Time::HiRes;
 use Try::Tiny;
 use Carp qw(cluck);
-use JSON;
+use JSON::MaybeXS;
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
@@ -42,6 +42,7 @@ sub apply_usergroup {
 sub register {
     my ($method, $code) = @_;
 
+    my $json = JSON::MaybeXS->new;
     return MojoX::JSON::RPC::Service->new->register(
         $method,
         sub {
@@ -55,7 +56,7 @@ sub register {
                 $code->(@call_args);
             }
             catch {
-                warn "Exception when handling $method - $_ with parameters " . encode_json \@call_args;
+                warn "Exception when handling $method - $_ with parameters " . $json->encode(\@call_args);
                 BOM::Pricing::v3::Utility::create_error({
                         code              => 'InternalServerError',
                         message_to_client => localize("Sorry, an error occurred while processing your account.")})
