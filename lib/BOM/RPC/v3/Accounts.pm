@@ -4,18 +4,18 @@ use 5.014;
 use strict;
 use warnings;
 
-use Brands;
-use Client::Account;
-use Data::Password::Meter;
-use Date::Utility;
-use Format::Util::Numbers qw/formatnumber financialrounding/;
-use HTML::Entities qw(encode_entities);
 use JSON::MaybeXS;
-use LandingCompany::Registry;
-use List::Util qw(any sum0);
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use Try::Tiny;
 use WWW::OneAll;
+use Date::Utility;
+use HTML::Entities qw(encode_entities);
+use List::Util qw(any sum0);
+
+use Brands;
+use Client::Account;
+use LandingCompany::Registry;
+use Format::Util::Numbers qw/formatnumber financialrounding/;
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
