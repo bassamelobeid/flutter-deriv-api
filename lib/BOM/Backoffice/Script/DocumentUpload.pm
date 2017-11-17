@@ -16,19 +16,24 @@ my $secret_key = $document_auth_s3->{secret_key};
 my $region     = $document_auth_s3->{region};
 my $bucket     = $document_auth_s3->{bucket};
 
-my $generator = Amazon::S3::SignedURLGenerator->new(
-    aws_access_key_id     => $access_key,
-    aws_secret_access_key => $secret_key,
-    prefix => "https://s3-$region.amazonaws.com/",
-    expires => 600, # 10 minutes
-);
+my $generator;
+
+sub get_generator {
+    $generator //= Amazon::S3::SignedURLGenerator->new(
+        aws_access_key_id     => $access_key,
+        aws_secret_access_key => $secret_key,
+        prefix                => "https://s3-$region.amazonaws.com/",
+        expires               => 600,                                   # 10 minutes
+    );
+    return $generator;
+}
 
 sub get_s3_url {
     my $file_name = shift;
 
     die 'Cannot get s3 url for the document because the file_name is missing' unless $file_name;
 
-    return $generator->generate_url('GET', "$bucket/$file_name", {});
+    return get_generator()->generate_url('GET', "$bucket/$file_name", {});
 }
 
 sub upload {
