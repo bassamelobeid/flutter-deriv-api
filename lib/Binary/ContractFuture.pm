@@ -36,6 +36,8 @@ sub _connect {
             }
 
         });
+    $redis->on(error => sub { my ($self, $err) = @_; warn $err; });
+
     return $redis;
 }
 
@@ -68,8 +70,16 @@ sub pricing_future {
 
     my $channel = Binary::WebSocketAPI::v3::Wrapper::Pricer::_serialized_args($args, {keep_language => 1});
     if (not $subscribers->{$channel}) {
-        $redis->subscribe([$channel]);
-        $redis->publish('high_priority_prices', $channel);
+        $redis->subscribe(
+            [$channel],
+            sub {
+                my ($self, $err) = @_;
+                if ($err) {
+                    warn $err;
+                    return;
+                }
+                $redis->publish('high_priority_prices', $channel);
+            });
     }
     my $f = Future::Mojo->new;
     my $combined_future =
