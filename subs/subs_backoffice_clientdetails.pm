@@ -395,7 +395,7 @@ SQL
             $age_display = $age ? "$age old" : "today";
             $age_display = qq{<td title="$upload_date">$age_display</td>};
         } else {
-            $age_display = '';
+            $age_display = '<td></td>';
         }
 
         my $date = $expiration_date || '';
