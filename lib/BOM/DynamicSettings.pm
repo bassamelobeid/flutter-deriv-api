@@ -74,6 +74,7 @@ sub save_settings {
                 next SAVESETTING unless grep { $s eq $_ } @{$settings_in_group};
                 if ($global) {
                     my ($new_value, $display_value) = parse_and_refine_setting($settings->{$s}, $dynamic_settings->{global}->{$s}->{type});
+                    $new_value += 0 if $s eq 'system.suspend.ico_final_price';
                     my $old_value = $data_set->{global}->get($s);
                     my $compare = Data::Compare->new($new_value, $old_value);
                     try {
@@ -183,9 +184,11 @@ sub get_settings_by_group {
                 system.suspend.cryptocashier
                 system.suspend.cryptocurrencies
                 system.suspend.new_accounts
+                system.suspend.expensive_api_calls
                 system.suspend.is_auction_ended
                 system.suspend.is_auction_started
                 system.suspend.ico_final_price
+                system.suspend.ico_minimum_bid_in_usd
                 system.suspend.all_logins
                 system.suspend.social_logins
                 system.suspend.logins

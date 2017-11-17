@@ -62,7 +62,7 @@ has _usd_rates => (
 );
 
 sub _build__usd_rates {
-    return {map { $_ => in_USD(1, $_) } grep { $_ !~ /^(?:ETC|BCH)$/ } LandingCompany::Registry->new()->all_currencies};
+    return {map { $_ => in_USD(1, $_) } grep { $_ ne 'ETC' } LandingCompany::Registry->new()->all_currencies};
 }
 
 sub amount_in_usd {
@@ -72,23 +72,22 @@ sub amount_in_usd {
 }
 
 sub _db {
-    return shift->_connection_builder->db;
-}
-
-has _connection_builder => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__connection_builder {
     my $self = shift;
 
     my $cdb = BOM::Database::ClientDB->new({
         broker_code => $self->_db_broker_code,
         operation   => $self->_db_operation,
     });
-    $cdb->db->dbh->do("SET statement_timeout TO 0");
-    return $cdb;
+    $cdb->db->connect_option(
+        Callbacks => {
+            connected => sub {
+                shift->do("SET statement_timeout TO 0");
+                return;
+            }
+        });
+    # Maybe the connection got from cache, set it for safe
+    $cdb->db->dbic->run(fixup => sub { $_->do("SET statement_timeout TO 0") });
+    return $cdb->db;
 }
 
 sub _db_write {
@@ -107,7 +106,7 @@ has live_open_bets => (
 
 sub _build_live_open_bets {
     my $self = shift;
-    return $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id');
+    return $self->_db->dbic->run(fixup => sub { $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id') });
 }
 
 has live_open_ico => (
@@ -118,7 +117,7 @@ has live_open_ico => (
 
 sub _build_live_open_ico {
     my $self = shift;
-    my $live_open_ico = $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id');
+    my $live_open_ico = $self->_db->dbic->run(fixup => sub { $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id') });
 
     foreach my $c (keys %$live_open_ico) {
         $live_open_ico->{$c}->{per_token_bid_price_USD} =

@@ -33,6 +33,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
+use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 BOM::Backoffice::Sysinit::init();
@@ -82,7 +83,7 @@ if ($broker eq 'MF') {
         setlocale(LC_CTYPE, 'C.UTF-8');
         $client->mifir_id(
             mifir_concat({
-                    cc         => $client->residence,
+                    cc         => $client->citizen,
                     date       => $client->date_of_birth,
                     first_name => $client->first_name,
                     last_name  => $client->last_name,
@@ -188,7 +189,6 @@ if ($input{whattodo} eq 'uploadID') {
     my $cgi            = CGI->new;
     my $docnationality = $cgi->param('docnationality');
     my $result         = "";
-    my $used_doctypes  = {};                              #we need to keep list of used doctypes to provide for them uniq filenames
 
     foreach my $i (1 .. 4) {
         my $doctype         = $cgi->param('doctype_' . $i);
@@ -250,42 +250,33 @@ if ($input{whattodo} eq 'uploadID') {
             next;
         }
 
-        my $path = "$dbloc/clientIDscans/$broker";
+        my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+        my $dbh = $clientdb->db->dbh;
 
-        if (not -d $path) {
-            system("mkdir -p $path");
-        }
+        my ($id) = $dbh->selectrow_array(
+            "SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?::status_type)",
+            {Slice => {}},
+            $loginid, $doctype, $docformat, '', $expiration_date || undef,
+            'ID_DOCUMENT', $document_id || '',
+            '', 'uploaded'
+        );
 
-        # we use N seconds after current time, where N is number of same type documents uploaded before
-        # we don't flag such files with anything different (like _1) for it not to affect any other legacy code
-        my $time = time() + $used_doctypes->{$doctype}++;
+        my ($doc) = $client->find_client_authentication_document(query => [id => $id]);
 
-        my $newfilename = "$path/$loginid.$doctype.$time.$docformat";
-        copy($filetoupload, $newfilename) or die "[$0] could not copy uploaded file to $newfilename: $!";
-        my $filesize = (stat $newfilename)[7];
+        my $new_file_name = "$loginid.$doctype.$id.$docformat";
 
-        my $upload_submission = {
-            document_type              => $doctype,
-            document_format            => $docformat,
-            document_path              => $newfilename,
-            authentication_method_code => 'ID_DOCUMENT',
-            expiration_date            => $expiration_date,
-            document_id                => $document_id,
-            comments                   => $comments,
-        };
+        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload) or die "Upload failed for $filetoupload";
 
-        #needed because CR based submissions don't return a result when an empty string is submitted in expiration_date;
-        if ($expiration_date eq '') {
-            delete $upload_submission->{'expiration_date'};
-        }
+        $doc->{file_name} = $new_file_name;
+        $doc->{checksum}  = $checksum;
+        $doc->{comments}  = $comments;
 
-        $client->add_client_authentication_document($upload_submission);
+        die "Cannot record uploaded file $filetoupload in the db" unless $doc->save();
 
-        $client->save;
-
-        $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $newfilename is uploaded (filesize $filesize).</p><br />";
+        $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
     }
     print $result;
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
 }
 
 # PERFORM ON-DEMAND ID CHECKS
@@ -350,7 +341,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         phone
         secret_question
         is_vip
-        tax_residence
         tax_identification_number
         allow_omnibus
         citizen
@@ -366,6 +356,24 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         salutation
         /;
     exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
+
+    # Handing the professional client status
+
+    # Professional request approved
+    if ($input{professional_client}) {
+        $client->set_status('professional', $clerk, 'Mark as professional as requested');
+        $client->clr_status('professional_requested');
+
+        # Client's professional status revoked
+    } elsif (!$input{professional_client} && $client->get_status('professional')) {
+        $client->clr_status('professional');
+    }
+
+    # Filter keys for tax residence
+    if (my @matching_keys = grep { /tax_residence/ } keys %input) {
+        my $tax_residence = join(",", sort grep { length } @input{@matching_keys});
+        $client->tax_residence($tax_residence);
+    }
 
     my @number_updates = qw/
         custom_max_acbal
@@ -449,15 +457,22 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->aml_risk_classification($input{$key});
         }
 
-        if ($key eq 'client_authentication') {
+        if ($key eq 'client_authentication' and $input{$key}) {
             if ($input{$key} eq 'ID_DOCUMENT' or $input{$key} eq 'ID_NOTARIZED') {
                 $client->set_authentication($input{$key})->status('pass');
-            }
-            if ($input{$key} eq 'CLEAR_ALL') {
+            } else {
                 foreach my $m (@{$client->client_authentication_method}) {
                     $m->delete;
                 }
             }
+
+            if ($input{$key} eq 'NEEDS_ACTION') {
+                $client->set_status('document_needs_action', $clerk, 'Documents uploaded');
+            } else {
+                $client->clr_status('document_needs_action');
+            }
+
+            $client->clr_status('document_under_review');
         }
         if ($key eq 'myaffiliates_token') {
             # $client->myaffiliates_token_registered(1);
@@ -480,6 +495,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     }
 
     print "<p style=\"color:#eeee00; font-weight:bold;\">Client details saved</p>";
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
 }
 
 Bar("NAVIGATION");
@@ -550,7 +566,7 @@ print qq{<br/>
     <div class="flat">
     <form action="$risk_report_url" method="POST">
     <input type="hidden" name="loginid" value="$encoded_loginid">
-    <input type="submit" name="action" value="show risk repot">
+    <input type="submit" name="action" value="show risk report">
     </form>
     </div>
 
@@ -744,37 +760,15 @@ BOM::Backoffice::Request::template->process(
         countries => Brands->new(name => request()->brand)->countries_instance->countries,
     });
 
-Bar("Financial Assessment");
-print qq{
-   <form action="$self_post" method="post">
-            <input type="hidden" name="whattodo" value="update_professional_status">
-                <select name="professional_status">
-                <option value=1>YES</option>
-                <option value=0>NO</option>
-             </select>
-             <input type="submit" value="Update professional status">
-    <input type="hidden" name="broker" value="$encoded_broker">
-    <input type="hidden" name="loginID" value="$encoded_loginid">
-        </form>
-   };
-
-if ($input{whattodo} eq 'update_professional_status') {
-    $client->financial_assessment({is_professional => $input{professional_status}});
-    $client->save;
-
-}
-my $financial_assessment = $client->financial_assessment();
-if ($financial_assessment) {
+if (my $financial_assessment = $client->financial_assessment()) {
+    Bar("Financial Assessment");
     my $user_data_json = $financial_assessment->data;
-    my $is_professional = $financial_assessment->is_professional ? 'yes' : 'no';
     print qq{<table class="collapsed">
         <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
         . encode_entities($user_data_json) . qq{</textarea></td></tr>
         <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
-        <tr><td>Is professional</td><td>$is_professional</td></tr>
         </table>
     };
-
 }
 
 Bar($user->email . " Login history");

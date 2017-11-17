@@ -13,6 +13,8 @@ BOM::RiskReport::MarkedToModel->new->generate;
 use strict;
 use warnings;
 
+no indirect;
+
 local $\ = undef;    # Sigh.
 
 use Moose;
@@ -26,7 +28,7 @@ use Try::Tiny;
 use Email::Stuffer;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Platform::Config;
@@ -72,81 +74,83 @@ sub generate {
     while ($pricing_date->epoch + 5 > time) {
         sleep 1;
     }
-    my $dbh = $self->_db->dbh;
+    my $dbic = $self->_db->dbic;
     try {
-        # This seems to be the recommended way to do transactions
-        $dbh->{AutoCommit} = 0;
-        $dbh->{RaiseError} = 1;
+        # There is side-effect in block, so I use ping mode here.
+        $dbic->txn(
+            ping => sub {
+                my $dbh = $_;
+                # This seems to be the recommended way to do transactions
+                $dbh->do(qq{DELETE FROM accounting.expired_unsold});
+                $dbh->do(qq{DELETE FROM accounting.realtime_book});
 
-        $dbh->do(qq{DELETE FROM accounting.expired_unsold});
-        $dbh->do(qq{DELETE FROM accounting.realtime_book});
+                foreach my $open_fmb_id (@keys) {
+                    $last_fmb_id = $open_fmb_id;
+                    my $open_fmb = $open_bets_ref->{$open_fmb_id};
+                    try {
+                        my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
 
-        foreach my $open_fmb_id (@keys) {
-            $last_fmb_id = $open_fmb_id;
-            my $open_fmb = $open_bets_ref->{$open_fmb_id};
-            try {
-                my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
-                $bet_params->{date_pricing} = $pricing_date;
-                my $symbol = $bet_params->{underlying}->symbol;
-                $bet_params->{underlying} = $cached_underlyings{$symbol}
-                    if ($cached_underlyings{$symbol});
-                my $bet = produce_contract($bet_params);
-                $cached_underlyings{$symbol} ||= $bet->underlying;
+                        return if $bet_params->{bet_type} eq 'BINARYICO';
 
-                my $current_value = $bet->theo_price;
-                my $value = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
-                $totals{value} += $value;
+                        $bet_params->{date_pricing} = $pricing_date;
+                        my $symbol = $bet_params->{underlying};
+                        $bet_params->{underlying} = $cached_underlyings{$symbol}
+                            if ($cached_underlyings{$symbol});
+                        my $bet = produce_contract($bet_params);
+                        $cached_underlyings{$symbol} ||= $bet->underlying;
 
-                if ($bet->is_settleable) {
-                    $total_expired++;
-                    $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
-                        undef, $open_fmb_id, $value);
-                    # We only sell the contracts that already expired for 10+ seconds #
-                    # Those other contracts will be sold by expiryd #
-                    if (time - $bet->date_expiry->epoch > 15) {
-                        $open_fmb->{market_price}                                           = $value;
-                        $open_fmb->{bet}                                                    = $bet;
-                        $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
+                        my $current_value = $bet->theo_price;
+                        my $value = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
+                        $totals{value} += $value;
+
+                        if ($bet->is_settleable) {
+                            $total_expired++;
+                            $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
+                                undef, $open_fmb_id, $value);
+                            # We only sell the contracts that already expired for 10+ seconds #
+                            # Those other contracts will be sold by expiryd #
+                            if (time - $bet->date_expiry->epoch > 15) {
+                                $open_fmb->{market_price}                                           = $value;
+                                $open_fmb->{bet}                                                    = $bet;
+                                $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
+                            }
+                        } else {
+                            # spreaed does not have greeks
+                            map { $totals{$_} += $bet->$_ } qw(delta theta vega gamma);
+                            $dbh->do(
+                                qq{INSERT INTO accounting.realtime_book (financial_market_bet_id, market_price, delta, theta, vega, gamma)  VALUES(?, ?, ?, ?, ?, ?)},
+                                undef, $open_fmb_id, $value, $bet->delta, $bet->theta, $bet->vega, $bet->gamma
+                            );
+                        }
                     }
-                } else {
-                    # spreaed does not have greeks
-                    map { $totals{$_} += $bet->$_ } qw(delta theta vega gamma);
-                    $dbh->do(
-                        qq{INSERT INTO accounting.realtime_book (financial_market_bet_id, market_price, delta, theta, vega, gamma)  VALUES(?, ?, ?, ?, ?, ?)},
-                        undef, $open_fmb_id, $value, $bet->delta, $bet->theta, $bet->vega, $bet->gamma
-                    );
+                    catch {
+                        $error_count++;
+                        $mail_content .= "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $_ ]\n";
+                    };
                 }
-            }
-            catch {
-                $error_count++;
-                $mail_content .= "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $_ ]\n";
-            };
-        }
 
-        $dbh->do(
-            qq{
+                $dbh->do(
+                    qq{
         INSERT INTO accounting.historical_marked_to_market(calculation_time, market_value, delta, theta, vega, gamma)
         VALUES(?, ?, ?, ?, ?, ?)
         }, undef, $pricing_date->db_timestamp,
-            map { $totals{$_} } qw(value delta theta vega gamma)
-        );
+                    map { $totals{$_} } qw(value delta theta vega gamma)
+                );
 
-        $dbh->commit;
-        if ($mail_content and $self->send_alerts) {
-            my $from    = 'Risk reporting <risk-reporting@binary.com>';
-            my $to      = 'Quants <x-quants-alert@binary.com>';
-            my $subject = 'Problem in MtM bets pricing';
+                if ($mail_content and $self->send_alerts) {
+                    my $from    = 'Risk reporting <risk-reporting@binary.com>';
+                    my $to      = 'Quants <x-quants-alert@binary.com>';
+                    my $subject = 'Problem in MtM bets pricing';
 
-            Email::Stuffer->from($from)->to($to)->subject($subject)->text_body($mail_content)->send
-                || warn "Sending email from $from to $to subject $subject failed";
-        }
+                    Email::Stuffer->from($from)->to($to)->subject($subject)->text_body($mail_content)->send
+                        || warn "Sending email from $from to $to subject $subject failed";
+                }
 
-        $dbh->disconnect;
+            });
     }
     catch {
         my $errmsg = ref $_ ? $_->trace : $_;
         warn('Updating realtime book transaction aborted while processing bet [' . $last_fmb_id . '] because ' . $errmsg);
-        try { $dbh->rollback };
     };
 
     $self->cache_daily_turnover($pricing_date);
@@ -221,21 +225,32 @@ sub sell_expired_contracts {
             $bet_infos{$fmb_id} = $bet_info;
         }
 
-        my $result = BOM::Transaction::sell_expired_contracts({
-            client       => $client,
-            contract_ids => \@fmb_ids_to_be_sold,
-            source       => 3,                      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
-        });
-        for my $failure (@{$result->{failures}}) {
-            my $bet_info = $bet_infos{$failure->{fmb_id}};
-            $bet_info->{reason} = $failure->{reason};
-            push @error_lines, $bet_info;
+        # We may end up with no contracts to sell at this point.
+        if (@fmb_ids_to_be_sold) {
+            try {
+                my $result = BOM::Transaction::sell_expired_contracts({
+                    client       => $client,
+                    contract_ids => \@fmb_ids_to_be_sold,
+                    source       => 3,                      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
+                });
+                for my $failure (@{$result->{failures}}) {
+                    my $bet_info = $bet_infos{$failure->{fmb_id}};
+                    $bet_info->{reason} = $failure->{reason};
+                    push @error_lines, $bet_info;
+                }
+            }
+            catch {
+                warn "Failed to sell expired contracts for "
+                    . $client->loginid
+                    . " - IDs were "
+                    . join(',', @fmb_ids_to_be_sold)
+                    . " and error was $_\n";
+            }
         }
-
     }
 
     if (scalar @error_lines) {
-        local ($/, $\) = ("\n", undef);                 # in case overridden elsewhere
+        local ($/, $\) = ("\n", undef);    # in case overridden elsewhere
         Cache::RedisDB->set('AUTOSELL', 'ERRORS', \@error_lines, 3600);
         my $sep     = '---';
         my $subject = 'AutoSell Failures during riskd operation';

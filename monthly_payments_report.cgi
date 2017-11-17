@@ -82,22 +82,25 @@ FILTER
     order by 1,2,3
 END
 
-my $dbh = BOM::Database::ClientDB->new({
+my $dbic = BOM::Database::ClientDB->new({
         broker_code => $broker,
-    })->db->dbh;
+    })->db->dbic;
 
-my $sth = $dbh->prepare($sql);
-$sth->execute(@binds);
+$dbic->run(
+    fixup => sub {
+        my $sth = $_->prepare($sql);
+        $sth->execute(@binds);
 
-my @headers = qw/Broker Loginid Residence Timestamp PaymentGateway PaymentType Currency Amount Remark/;
-{
-    my $csv = Text::CSV->new({eol => "\n"});
-    $csv->print(\*STDOUT, \@headers);
-    while (my $row = $sth->fetchrow_arrayref) {
-        s/\s*$// for @$row;    # removes some nasty trailing white-space in historical affiliate records
-        $csv->print(\*STDOUT, $row);
-    }
-}
+        my @headers = qw/Broker Loginid Residence Timestamp PaymentGateway PaymentType Currency Amount Remark/;
+
+        my $csv = Text::CSV->new({eol => "\n"});
+        $csv->print(\*STDOUT, \@headers);
+        while (my $row = $sth->fetchrow_arrayref) {
+            s/\s*$// for @$row;    # removes some nasty trailing white-space in historical affiliate records
+            $csv->print(\*STDOUT, $row);
+        }
+
+    });
 
 1;
 

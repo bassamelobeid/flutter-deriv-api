@@ -13,6 +13,7 @@ use Format::Util::Numbers;
 
 our @EXPORT_OK = qw(request localize template);
 
+use Time::Duration::Concise::Localize;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context::I18N;
 use BOM::Backoffice::Request::Base;
@@ -49,6 +50,8 @@ sub _configure_for_request {
 sub localize {
     my ($content, @params) = @_;
 
+    return '' unless $content;
+
     my $request = request();
     my $language = $request ? $request->language : 'EN';
 
@@ -57,6 +60,7 @@ sub localize {
 
     my @texts = ();
     if (ref $content eq 'ARRAY') {
+        return '' unless scalar @$content;
         # first one is always text string
         push @texts, shift @$content;
         # followed by parameters
@@ -64,6 +68,12 @@ sub localize {
             # some params also need localization (longcode)
             if (ref $elm eq 'ARRAY' and scalar @$elm) {
                 push @texts, $lh->maketext(@$elm);
+            } elsif (ref $elm eq 'HASH') {
+                my $l = $elm->{class}->new(
+                    interval => $elm->{value},
+                    locale   => lc $language
+                );
+                push @texts, $l->as_string;
             } else {
                 push @texts, $elm;
             }

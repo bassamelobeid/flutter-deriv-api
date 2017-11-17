@@ -19,7 +19,7 @@ use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
 
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::PricingDetails;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);

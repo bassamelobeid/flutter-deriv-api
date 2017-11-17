@@ -12,6 +12,7 @@ use List::UtilsBy qw(rev_nsort_by sort_by);
 use POSIX ();
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use YAML::XS;
+use Math::BigFloat;
 
 use Bitcoin::RPC::Client;
 use Ethereum::RPC::Client;
@@ -87,7 +88,7 @@ catch {
 };
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
-my $dbh = $clientdb->db->dbh;
+my $dbic = $clientdb->db->dbic;
 
 my $rpc_client_builders = {
     BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}},      timeout => 5)) },
@@ -165,9 +166,9 @@ if ($view_action eq 'withdrawals') {
         code_exit_BO($error->get_mesg()) if $error;
 
         my $found;
-        ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency)
+        ($found) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency) })
             if $action eq 'verify';
-        ($found) = $dbh->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency)
+        ($found) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency) })
             if $action eq 'reject';
 
         code_exit_BO("ERROR: No record found. Please check with someone from IT team before proceeding.")
@@ -176,11 +177,14 @@ if ($view_action eq 'withdrawals') {
 
     my $ctc_status = $view_type eq 'pending' ? 'LOCKED' : uc($view_type);
     # Fetch transactions according to filter option
-    my $trxns = $dbh->selectall_arrayref(
-        "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
-        {Slice => {}},
-        $currency, $ctc_status
-    );
+    my $trxns = $dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
+                {Slice => {}},
+                $currency, $ctc_status
+            );
+        });
     $display_transactions->($trxns);
 } elsif ($view_action eq 'deposits') {
     Bar("LIST OF TRANSACTIONS - DEPOSITS");
@@ -188,11 +192,14 @@ if ($view_action eq 'withdrawals') {
     code_exit_BO("Invalid selection to view type of transactions.") if $view_type !~ /^(?:new|pending|confirmed|error)$/;
 
     # Fetch all deposit transactions matching specified currency and status
-    my $trxns = $dbh->selectall_arrayref(
-        "SELECT * FROM payment.ctc_bo_get_deposit(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
-        {Slice => {}},
-        $currency, uc $view_type
-    );
+    my $trxns = $dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                "SELECT * FROM payment.ctc_bo_get_deposit(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
+                {Slice => {}},
+                $currency, uc $view_type
+            );
+        });
     $display_transactions->($trxns);
 
 } elsif ($view_action eq 'search') {
@@ -206,13 +213,31 @@ if ($view_action eq 'withdrawals') {
 
     # Fetch all transactions matching specified searching details
     @trxns = (
-        @{$dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, ?)", {Slice => {}}, $search_query, $currency)},
-        @{$dbh->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, ?)",    {Slice => {}}, $search_query, $currency)},
+        @{
+            $dbic->run(
+                fixup =>
+                    sub { $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, ?)", {Slice => {}}, $search_query, $currency) }
+            )
+        },
+        @{
+            $dbic->run(
+                fixup =>
+                    sub { $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, ?)", {Slice => {}}, $search_query, $currency) })
+        },
     ) if ($search_type eq 'address');
 
     @trxns = (
-        @{$dbh->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, ?)', {Slice => {}}, $search_query, $currency)},
-        @{$dbh->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, ?)',    {Slice => {}}, $search_query, $currency)},
+        @{
+            $dbic->run(
+                fixup =>
+                    sub { $_->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, ?)', {Slice => {}}, $search_query, $currency) }
+            )
+        },
+        @{
+            $dbic->run(
+                fixup =>
+                    sub { $_->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, ?)', {Slice => {}}, $search_query, $currency) })
+        },
     ) if ($search_type eq 'loginid');
 
     $display_transactions->(\@trxns);
@@ -225,11 +250,17 @@ if ($view_action eq 'withdrawals') {
         currency => $currency,
     );
 
-    my $sth = $dbh->prepare('SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)');
-    $sth->execute($currency, $start_date->iso8601, $end_date->iso8601);
-    my $database_items = $sth->fetchall_hashref('address') or die 'failed to run ctc_bo_transactions_for_reconciliation';
+    my $database_items = $dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
+                {Slice => {}},
+                $currency, $start_date->iso8601, $end_date->iso8601
+            );
+        }) or die 'failed to run ctc_bo_transactions_for_reconciliation';
+
     # First, we get a mapping from address to database transaction information
-    $recon->from_database_items([values %$database_items]);
+    $recon->from_database_items($database_items);
 
     # TODO: once we move all currencies to our bookkeeping
     # we need to remove this currency specific check
@@ -240,8 +271,9 @@ if ($view_action eq 'withdrawals') {
         my $filter = sub {
             my ($transactions) = @_;
             my $res = {};
-            foreach my $tran (@$transactions) {
-                my $loginid = $database_items->{$tran->{to_address}}->{client_loginid};
+            my %address_hashes = map { $_->{address} => $_ } @$database_items;
+            for my $tran (@$transactions) {
+                my $loginid = $address_hashes{$tran->{to_address}}->{client_loginid};
 
                 # if it already exists then it means multiple transactions
                 # were performed, so just update amount and add transaction ids
@@ -326,7 +358,7 @@ if ($view_action eq 'withdrawals') {
 
     my @hdr = (
         'Client ID', 'Type', $currency . ' Address',
-        'Amount', 'Amount USD', 'Status', 'Payment date', 'Blockchain date',
+        'Amount', 'Amount USD', 'Fee', 'Status', 'Payment date', 'Blockchain date',
         'Status date', 'Confirmations', 'Transactions',
         'Blockchain transaction ID',
         'DB Payment ID', 'Errors'
@@ -350,23 +382,11 @@ EOF
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(loginid type)};
         print '<td><a href="' . $address_uri . $_ . '" target="_blank">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
+        my $amount = formatnumber('amount', $currency, financialrounding('price', $currency, $db_tran->{amount}));
+        my $usd_amount = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_USD($db_tran->{amount}, $currency)));
+        my $fee = formatnumber('amount', $currency, financialrounding('price', $currency, $db_tran->{fee}));
         if (defined $db_tran->{amount}) {
-            print '<td style="text-align:right;">'
-                . encode_entities($_)
-                . '</td>'
-                for formatnumber(
-                'amount',
-                $currency,
-                financialrounding(
-                    price => $currency,
-                    $db_tran->{amount})
-                ),
-                '$'
-                . formatnumber(
-                amount => 'USD',
-                financialrounding(
-                    price => 'USD',
-                    in_USD($db_tran->{amount}, $currency)));
+            print '<td style="text-align:right;">' . encode_entities($_) . '</td>' for $amount, '$' . $usd_amount, $fee // '';
         } else {
             print '<td>&nbsp;</td><td>&nbsp;</td>';
         }
@@ -403,7 +423,12 @@ EOF
         if ($cmd eq 'listtransactions') {
             push @param, '', 500;
         }
-        my $rslt = $rpc_client->$cmd(@param);
+        my $rslt;
+        if ($currency eq 'ETH' and $cmd eq 'getbalance') {
+            $rslt += Math::BigFloat->from_hex($rpc_client->eth_getBalance($_, 'latest')) / 10**18 for @{$rpc_client->eth_accounts()};
+        } else {
+            $rslt = $rpc_client->$cmd(@param);
+        }
         if ($cmd eq 'listaccounts') {
             print '<table><thead><tr><th scope="col">Account</th><th scope="col">Amount</th></tr></thead><tbody>';
             for my $k (sort keys %$rslt) {
@@ -447,8 +472,25 @@ EOF
         die 'Invalid ' . $currency . ' command: ' . $cmd;
     }
 } elsif ($view_action eq 'new_deposit_address') {
-    my $rslt = $rpc_client->getnewaddress('manual');
-    print '<p>New ' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
+    my $rslt;
+
+    # For ETH, a single address is used. This is read from a config file.
+    # If no address is found in the config file, an error will be shown.
+    # A new address will be generated by Devops and placed into the config file.
+    if ($currency eq 'ETH') {
+        if (my $config_address = $cfg->{ethereum}->{account}->{address}) {
+            $rslt = $config_address;
+            print '<p>' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
+        } else {
+            print
+                '<p style="color:red"><strong>WARNING! An address has not been found. Please contact Devops to obtain a new address to update this in the configuration.</strong></p>';
+        }
+        # For BTC, LTC, and BCH, a new address is generated.
+    } else {
+        $rslt = $rpc_client->getnewaddress('manual');
+        print '<p>New ' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
+    }
+
 } elsif ($view_action eq 'make_dcc') {
     my $amount_dcc  = request()->param('amount_dcc')  // 0;
     my $loginid_dcc = request()->param('loginid_dcc') // '';

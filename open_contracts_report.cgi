@@ -5,7 +5,7 @@ use warnings;
 
 use File::Temp;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Database::ClientDB;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_XSendfile/;
 use BOM::Backoffice::Sysinit ();
@@ -95,13 +95,16 @@ if ($loginid) {
     $sql =~ s/##LOGINID_ONLY##//g;
 }
 
-my $dbh = BOM::Database::ClientDB->new({
+my $dbic = BOM::Database::ClientDB->new({
         broker_code => 'JP',
-    })->db->dbh;
-my $sth = $dbh->prepare($sql);
+    })->db->dbic;
+my $open_contracts = $dbic->run(
+    fixup => sub {
+        my $sth = $_->prepare($sql);
 
-$sth->execute(@params);
-my $open_contracts = $sth->fetchall_arrayref({});
+        $sth->execute(@params);
+        return $sth->fetchall_arrayref({});
+    });
 
 foreach my $ref (@$open_contracts) {
     my $bet_params = shortcode_to_parameters($ref->{short_code}, $ref->{currency_code});
@@ -142,7 +145,7 @@ open my $fh, '>:encoding(UTF-8)', $filename;
 print $fh join(',', @fields);
 
 foreach my $ref (@$open_contracts) {
-    print $fh join(',', map { $ref->{$_} } @fields);
+    print $fh join(',', map { $ref->{$_} // '' } @fields);
 }
 close $fh;
 

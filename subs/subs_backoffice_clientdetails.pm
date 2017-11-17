@@ -6,6 +6,7 @@ use Encode;
 use Format::Util::Strings qw( set_selected_item );
 use Date::Utility;
 use Brands;
+
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -13,6 +14,7 @@ use BOM::Platform::Client::Utility ();
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::Backoffice::FormAccounts;
+use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 sub get_currency_options {
@@ -27,7 +29,7 @@ sub print_client_details {
 
     my $client = shift;
 
-    # IDENTITY sECTION
+    # IDENTITY SECTION
     my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
 
     # Extract year/month/day if we have them
@@ -114,7 +116,9 @@ sub print_client_details {
         $state_name = $_->{text} if $_->{value} eq $client->state;
         $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>|;
     }
+
     my $tnc_status = $client->get_status('tnc_approval');
+    my $show_allow_professional_client = $client->landing_company->short =~ /^(?:costarica|maltainvest)$/ ? 1 : 0;
 
     my @crs_tin_array = ();
     if (my $crs_tin_status = $client->get_status('crs_tin_information')) {
@@ -143,10 +147,12 @@ sub print_client_details {
         promo_code_access     => $promo_code_access,
         currency_type => (LandingCompany::Registry::get_currency_type($client->currency) // ''),
         proveID => $proveID,
-        salutation_options     => \@salutation_options,
-        secret_answer          => $secret_answer,
-        self_exclusion_enabled => $self_exclusion_enabled,
-        show_allow_omnibus     => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of)
+        salutation_options             => \@salutation_options,
+        secret_answer                  => $secret_answer,
+        self_exclusion_enabled         => $self_exclusion_enabled,
+        client_professional_status     => $client->get_status('professional'),
+        show_allow_professional_client => $show_allow_professional_client,
+        show_allow_omnibus             => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of)
         ? 1
         : 0,
         show_funds_message => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
@@ -226,8 +232,10 @@ sub build_client_warning_message {
     ###############################################
     ## UNTRUSTED SECTION
     ###############################################
+    my %client_status = map { $_->status_code => $_ } @{$client->client_status || []};
     foreach my $type (@{get_untrusted_types()}) {
         if (my $disabled = $client->get_status($type->{code})) {
+            delete $client_status{$type->{code}};
             push(
                 @output,
                 {
@@ -246,8 +254,8 @@ sub build_client_warning_message {
     if (@output) {
         $output =
               '<br /><table border="1" cellpadding="2" style="background-color:#cccccc">' . '<tr>'
-            . '<th>SECTION</th>'
-            . '<th>REASON</th>'
+            . '<th>STATUS</th>'
+            . '<th>REASON/INFO</th>'
             . '<th>STAFF</th>'
             . '<th>EDIT</th>'
             . '<th>REMOVE</th>' . '</tr>';
@@ -261,7 +269,7 @@ sub build_client_warning_message {
             $output .= '<tr>'
                 . '<td align="left" style="color:'
                 . $output_rows->{'warning'}
-                . ';"><strong>WARNING : '
+                . ';"><strong>'
                 . (uc $output_rows->{'section'})
                 . '</strong></td>'
                 . '<td><b>'
@@ -278,7 +286,21 @@ sub build_client_warning_message {
                 . '</b></td></tr>';
         }
 
-        $output .= '</table>';
+# Show all remaining status info
+        for my $status (sort keys %client_status) {
+            my $info = $client_status{$status};
+            $output .= '<tr>'
+                . '<td align="left">'
+                . $status . '</td>'
+                . '<td><b>'
+                . $info->reason
+                . '</b></td>'
+                . '<td><b>'
+                . $info->staff_name
+                . '</b></td>'
+                . '<td colspan="2">&nbsp;</td>' . '</tr>';
+        }
+        $output .= '</table><br>';
 
         $output .= qq~
         <script type="text/javascript" language="javascript">
@@ -326,14 +348,11 @@ sub get_untrusted_client_reason {
 ## show_client_id_docs #######################################
 # Purpose : generate the html to display client's documents.
 # Relocated to here from Client module.
-# If 'folder' arg present, this is a request to show docs from that folder.
-# Otherwise it's a request to show the client's authentication docs.
 ##############################################################
 sub show_client_id_docs {
     my ($loginid, %args) = @_;
     my $show_delete = $args{show_delete};
     my $extra       = $args{no_edit} ? 'disabled' : '';
-    my $folder      = $args{folder};
     my $links       = '';
 
     return unless $loginid;
@@ -345,53 +364,40 @@ sub show_client_id_docs {
         db_operation => 'replica',
     });
 
-    my @docs;
-    if ($folder) {
-        my $path = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/clientIDscans/" . $client->broker . "/$folder";
-        @docs = glob("$path/$loginid*");
-        for (@docs) {
-            s/\s/+/g;
-            s/\&/%26/g;
-        }
-    } else {
-        @docs = $client->client_authentication_document;
-    }
+    my @docs = $client->client_authentication_document;
     foreach my $doc (sort { $a->id <=> $b->id } @docs) {
-        my ($id, $document_file, $file_name, $download_file, $input);
-        if ($folder) {
-            $id            = 0;
-            $document_file = $doc;
-            ($file_name) = $document_file =~ m[clientIDscans/\w+/\w+/(.+)$];
-            $download_file = $client->broker . "/$folder/$file_name";
-            $input         = '';
-        } else {
-            $id            = $doc->id;
-            $document_file = $doc->document_path;
-            ($file_name) = $document_file =~ m[clientIDscans/\w+/(.+)$];
-            $download_file = $client->broker . "/$file_name";
-            my $date = $doc->expiration_date || '';
-            if ($date) {
-                eval {
-                    my $formatted = Date::Utility->new($date)->date_yyyymmdd;
-                    $date = $formatted;
-                } or do {
-                    warn "Invalid date, using original information: $date\n";
-                    }
-            }
-            my $comments    = $doc->comments;
-            my $document_id = $doc->document_id;
-            $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
-            $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
-            $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
+        my ($id, $file_name, $file_path, $input);
+        $id        = $doc->id;
+        $file_name = $doc->file_name;
+
+        if (not $file_name) {
+            $links .= qq{<tr><td>Missing filename for a file with ID: $id</td></tr>};
+            next;
         }
-        my $file_size = -s $document_file || next;
-        my $file_age  = int(-M $document_file);
-        my $url       = request()->url_for("backoffice/download_document.cgi?path=$download_file");
-        $links .= qq{<tr><td><a href="$url">$file_name</a> $file_size bytes, $file_age days old</td><td>$input};
+
+        my $date = $doc->expiration_date || '';
+        if ($date) {
+            eval {
+                my $formatted = Date::Utility->new($date)->date_yyyymmdd;
+                $date = $formatted;
+            } or do {
+                warn "Invalid date, using original information: $date\n";
+                }
+        }
+
+        my $comments    = $doc->comments;
+        my $document_id = $doc->document_id;
+
+        $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
+        $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
+        $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
+
+        my $url = BOM::Backoffice::Script::DocumentUpload::get_s3_url($file_name);
+        $links .= qq{<tr><td><a href="$url">$file_name</a></td><td>$input};
         if ($show_delete && !$args{no_edit}) {
-            $url .= qq{&loginid=$loginid&doc_id=$id&deleteit=yes};
-            my $onclick = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
-            $links .= qq{[<a onclick="$onclick" href="$url">Delete</a>]};
+            my $onclick    = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
+            my $delete_url = request()->url_for("backoffice/download_document.cgi?loginid=$loginid&doc_id=$id&deleteit=yes");
+            $links .= qq{[<a onclick="$onclick" href="$delete_url">Delete</a>]};
         }
         $links .= "</td></tr>";
     }

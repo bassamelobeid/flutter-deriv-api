@@ -119,9 +119,8 @@ sub _open_bets_report {
     my $report = {
         mover_limit => 100,
     };
-    my $spark_info   = {};
-    my $treemap_info = {};
-    my $pivot_info   = {
+    my $spark_info = {};
+    my $pivot_info = {
         fields => {
             login_id => {
                 field => 'login_id',
@@ -247,7 +246,6 @@ sub _open_bets_report {
             mtm_usd       => $normalized_mtm,
             mtm_profit    => $mtm_profit,
             };
-        $treemap_info->{$bet_cat->display_order}->{$underlying->display_name . ' | ' . $bet_cat->code} += $normalized_mtm;
         my $days_hence = $bet->date_expiry->days_between($today);
         $spark_info->{$days_hence}->{mtm} += $normalized_mtm;
     }
@@ -269,33 +267,8 @@ sub _open_bets_report {
         push @{$sparks->{days}}, $days;
     }
 
-    # This should probably be done with B::P::Offerings,
-    #  but I am just trying it.
-    my $treemap = {
-        data   => [],
-        labels => [],
-    };
-
-    foreach my $cat (sort { $a <=> $b } keys %$treemap_info) {
-        my (@ul_data, @ul_labels);
-        foreach my $symbol_cat (
-            sort { $treemap_info->{$cat}->{$b} <=> $treemap_info->{$cat}->{$a} }
-            keys %{$treemap_info->{$cat}})
-        {
-            if (my $amount = roundcommon(1, $treemap_info->{$cat}->{$symbol_cat})) {
-                push @ul_data,   $amount;
-                push @ul_labels, $symbol_cat;
-            }
-        }
-        push @{$treemap->{data}},   \@ul_data;
-        push @{$treemap->{labels}}, \@ul_labels;
-    }
-
-    push @{$treemap->{labels}}, 'NO DATA' unless @{$treemap->{labels}};
-    push @{$treemap->{data}},   '1'       unless @{$treemap->{data}};
-    $report->{pivot}   = $json->encode($pivot_info);
-    $report->{treemap} = $json->encode($treemap);
-    $report->{sparks}  = $json->encode($sparks);
+    $report->{pivot}  = $json->encode($pivot_info);
+    $report->{sparks} = $json->encode($sparks);
 
     return $report;
 }
