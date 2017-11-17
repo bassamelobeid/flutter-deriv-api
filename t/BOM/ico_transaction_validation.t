@@ -109,7 +109,28 @@ subtest 'validate client error message' => sub {
 
     like($error->{-message_to_client}, qr/Sorry, but the ICO is not available in your country of residence./, 'Not available for client residence');
 
-    $cr->residence('au');
+    $cr->residence('gb');
+    $cr->save;
+
+    $contract    = produce_contract($bet_params);
+    $transaction = BOM::Transaction->new({
+        client        => $cr,
+        contract      => $contract,
+        purchase_date => $now,
+    });
+
+    $error = BOM::Transaction::Validation->new({
+            clients     => [$cr],
+            transaction => $transaction
+        })->_validate_ico_jurisdictional_restrictions($cr);
+
+    like(
+        $error->{-message_to_client},
+        qr/The ICO is only available to professional investors in your country of residence. If you are a professional investor, please contact our customer support team to verify your account status./,
+        'need to be professional'
+    );
+
+    $cr->set_status('professional');
     $cr->save;
 
     $contract    = produce_contract($bet_params);
