@@ -52,7 +52,7 @@ sub create_account {
 
     my $client = $register->{client};
     $client->financial_assessment({
-        data => $json->encode($financial_assessment),
+        data => JSON::MaybeXS->new->encode($financial_assessment),
     });
 
     $client->set_exclusion->max_losses($daily_loss_limit);
