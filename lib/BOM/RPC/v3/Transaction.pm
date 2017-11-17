@@ -64,6 +64,9 @@ sub buy {
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
+    $contract_parameters->{binaryico_deposit_percentage} =
+        BOM::Platform::Runtime->instance->app_config->system->suspend->ico_initial_deposit_percentage
+        if $contract_parameters->{contract_type} eq 'BINARYICO';
     my $amount_type = $contract_parameters->{amount_type};
     my $response;
 
