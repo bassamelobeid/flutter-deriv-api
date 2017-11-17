@@ -15,10 +15,11 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my $ip        = request()->param('ip')        // '';
-my $loginid   = request()->param('loginid')   // '';
-my $date_from = request()->param('date_from') // '2016-01-01';
-my $date_to   = request()->param('date_to')   // '2018-01-01';
+my $ip          = request()->param('ip')          // '';
+my $loginid     = request()->param('loginid')     // '';
+my $search_type = request()->param('search_type') // '';
+my $date_from   = request()->param('date_from')   // '2016-01-01';
+my $date_to     = request()->param('date_to')     // '2018-01-01';
 Bar("IP Search");
 BrokerPresentation("IP SEARCH FOR");
 my $broker = request()->broker_code;
@@ -27,7 +28,7 @@ my $last_login_age = request()->param('lastndays') || 10;
 my $logins;
 my $suspected_logins;
 # IP search from users.login_history table
-if ($ip ne '') {
+if ($search_type eq 'ip') {
     my $encoded_ip = encode_entities($ip);
     if ($ip !~ /^\d+\.\d+\.\d+\.\d+$/) {
         print "Invalid IP $encoded_ip";
@@ -42,12 +43,16 @@ if ($ip ne '') {
             );
         });
 
-} elsif ($loginid ne '') {
+} elsif ($search_type eq 'client') {
+    unless ($loginid) {
+        print 'You must enter an email address or client loginid';
+        code_exit_BO();
+    }
     if ($date_to !~ /^\d{4}-\d{2}-\d{2}$/ || $date_from !~ /^\d{4}-\d{2}-\d{2}$/) {
         print "Invalid date. Date format should be YYYY-MM-DD";
         code_exit_BO();
     }
-    
+
     # for some reason we have historically passed in an email address on 'loginid'... but now we will consider either one
     $suspected_logins = BOM::Database::UserDB::rose_db()->dbic->run(
         sub {
