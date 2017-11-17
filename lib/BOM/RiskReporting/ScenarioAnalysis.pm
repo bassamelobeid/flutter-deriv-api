@@ -75,6 +75,7 @@ sub generate {
         my ($broker_code) = $open_fmb->{client_loginid} =~ /^([A-Z]+)/;
         next if !grep { $broker_code =~ $_ } qw(CR MLT MX MF);
         my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
+        next if $bet_params->{bet_type} eq 'BINARYICO';
         $bet_params->{date_pricing} = $pricing_date;
         my $bet               = produce_contract($bet_params);
         my $underlying_symbol = $bet->underlying->symbol;
