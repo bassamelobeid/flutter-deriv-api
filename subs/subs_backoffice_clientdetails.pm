@@ -389,7 +389,14 @@ SQL
             next;
         }
 
-        $age =~ s/[\d:]{8}//g;
+        my $age_display;
+        if ($age) {
+            $age =~ s/[\d:]{8}//g;
+            $age_display = $age ? "$age old" : "today";
+            $age_display = qq{<td title="$upload_date">$age_display</td>};
+        } else {
+            $age_display = '';
+        }
 
         my $date = $expiration_date || '';
         if ($date) {
@@ -406,9 +413,8 @@ SQL
         $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
 
         my $url = BOM::Backoffice::Script::DocumentUpload::get_s3_url($file_name);
-        my $age_display = $age ? "$age old" : "today";
 
-        $links .= qq{<tr><td><a href="$url">$file_name</a></td><td title="$upload_date">$age_display</td><td>$input};
+        $links .= qq{<tr><td><a href="$url">$file_name</a></td>$age_display<td>$input};
         if ($show_delete && !$args{no_edit}) {
             my $onclick    = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
             my $delete_url = request()->url_for("backoffice/download_document.cgi?loginid=$loginid&doc_id=$id&deleteit=yes");
