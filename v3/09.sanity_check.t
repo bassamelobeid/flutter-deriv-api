@@ -14,10 +14,14 @@ use utf8;
 
 my $t = build_wsapi_test();
 
-my $res = request({ping => '௰'});
-is $res->{error}->{code}, 'SanityCheckFailed';
-ok ref($res->{echo_req}) eq 'HASH' && !keys %{$res->{echo_req}};
+my $req = {ping => '௰'};
+my $res = request($req);
+is $res->{error}->{code}, 'SanityCheckFailed', 'result error code';
+is_deeply $res->{echo_req}, $req, 'Includes the correct echo_req';
 test_schema('ping', $res);
+$req = {ping => '௰', req_id => 1};
+$res = request($req);
+is $res->{req_id}, $req->{req_id}, 'Includes req_id';
 
 # undefs are fine for some values
 request({ping => {key => undef}});
