@@ -105,7 +105,7 @@ sub send_notification {
             return unless ws_redis_master()->get($is_on_key);    ### Need 1 for continuing
         }
 
-        $message = eval { $json->decode $message } unless ref $message eq 'HASH';
+        $message = eval { $json->decode($message) } unless ref $message eq 'HASH';
         delete $message->{message} if $message->{site_status} ne 'down';
 
         $client_shared->{c}->send({
