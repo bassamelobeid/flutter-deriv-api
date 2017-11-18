@@ -1013,8 +1013,6 @@ sub transfer_between_accounts {
         if $client->get_status('disabled');
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is cashier locked.'))
         if $client->get_status('cashier_locked');
-    return _transfer_between_accounts_error(localize('This is an ICO-only account which does not support transfers.'))
-        if $client->get_status('ico_only');
 
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if $client->get_status('withdrawal_locked');
@@ -1280,6 +1278,11 @@ sub _validate_transfer_between_accounts {
     return _transfer_between_accounts_error()
         if (($lc_from->short ne $lc_to->short)
         and ($lc_from->short !~ /^(?:malta|maltainvest)$/ or $lc_to->short !~ /^(?:malta|maltainvest)$/));
+
+    # block if client wants to transfer from ico to other or vice versa
+    # above check should block it but adding additional one
+    return _transfer_between_accounts_error()
+        if !!$client_from->get_status('ico_only') != !!$client_to->get_status('ico_only');
 
     # error if currency is not legal for landing company
     return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
