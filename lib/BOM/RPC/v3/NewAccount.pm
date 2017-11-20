@@ -212,7 +212,13 @@ sub get_existing_professional_details {
 
             try {
                 $existing_cli->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
-                $existing_cli->save;
+
+                if (not $existing_cli->save()) {
+                    return BOM::RPC::v3::Utility::create_error({
+                            code              => 'InternalServerError',
+                            message_to_client => localize('Sorry, an error occurred while processing your account.')});
+                }
+
                 BOM::RPC::v3::Utility::send_professional_requested_email($existing_cli->loginid, $existing_cli->residence);
             };
         }
@@ -285,16 +291,18 @@ sub new_account_real {
     # ideally should be handled in a single transaction
     # as account is already created so no need to die on status set
     # else it will give false impression to client
-    try {
-        $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
+    $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
 
-        $new_client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional_status;
-        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
+    $new_client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional_status;
+    $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
 
-        $new_client->save;
+    if (not $client->save()) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InternalServerError',
+                message_to_client => localize('Sorry, an error occurred while processing your account.')});
+    }
 
-        BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence) if $professional_requested;
-    };
+    BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence) if $professional_requested;
 
     if ($args->{currency}) {
         my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
@@ -312,7 +320,12 @@ sub new_account_real {
 
     if ($new_client->residence eq 'gb' and not $ico_only) {    # RTS 12 - Financial Limits - UK Clients
         $new_client->set_status('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit');
-        $new_client->save;
+
+        if (not $client->save()) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize('Sorry, an error occurred while processing your account.')});
+        }
     }
 
     BOM::Platform::AuditLog::log("successful login", "$client->email");
@@ -399,14 +412,16 @@ sub new_account_maltainvest {
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
 
-    try {
-        $new_client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional_status;
-        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
+    $new_client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional_status;
+    $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
 
-        $new_client->save;
+    if (not $client->save()) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InternalServerError',
+                message_to_client => localize('Sorry, an error occurred while processing your account.')});
+    }
 
-        BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence) if $professional_requested;
-    };
+    BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence) if $professional_requested;
 
     $user->add_login_history({
         action      => 'login',
