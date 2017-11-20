@@ -3,29 +3,31 @@
 <INPUT type=text size=15 maxlength=15 name=ip value='[% ip %]'>
 <br>Ignore clients who didn't log in during last <input type=text size=6 value=10 name=lastndays> days
 <input type=submit value='Search for Email'>
+<input type="hidden" name="search_type" value="ip">
 </form>
 <hr>
 <b>Get accounts logged in with the same IPs</b>
 <form action="[% ip_search_url %]" method="post">
-<input type=text size=50 maxlength=50 name=loginid value='[% loginid %]' placeholder="user@binary.com"><br>
-<input type=text size=15 maxlength=15 name=date_from placeholder="2016-01-01" value='[% date_from %]'>
-<input type=text size=15 maxlength=15 name=date_to placeholder="2017-01-01" value='[% date_to %]'>
+<input type=text size=50 maxlength=50 name=loginid value='[% loginid %]' placeholder="CR12345 -or- user@binary.com" required><br>
+<input type="date" name="date_from" placeholder="2016-01-01" value='[% date_from %]' required pattern="\d{4}-\d{2}-\d{2}">
+<input type="date" name="date_to" placeholder="2017-01-01" value='[% date_to %]' required pattern="\d{4}-\d{2}-\d{2}">
 <input type="submit" value="Search for evidences">
+<input type="hidden" name="search_type" value="client">
 </form>
-With the help of this tool you can find all other accounts, who was logging into the system from the same IPs, that the stated user had.<br>
+With the help of this tool you can find all other accounts, who were logging into the system from the same IPs, that the stated user had.<br>
 Can be useful in finding duplicates.
 <br>
 <hr>
 
 [% IF logins.defined %]
 [% IF logins %]
-<b>Emails who has logged in in last [% days %] days from [% ip %]</b><br>
+<b>Emails who have logged in over the last [% days %] days from [% ip %]</b><br>
 <table class="collapsed">
     [% FOREACH l IN logins %]
         <tr>
             <td>[% l.history_date %]</td>
             <td>[% l.action %]</td>
-            <td>[% l.binary_user.email %]</td>
+            <td>[% l.email %]</td>
         </tr>
     [% END %]
 </table>
@@ -36,11 +38,11 @@ No logins found for IP address [% ip %] in the last [% days %] days
 
 [% IF suspected_logins.defined %]
 [% IF suspected_logins %]
-<b>Users who has logged in from [% date_from %] to [% date_to %] fro the same ips as [% loginid %]
+<b>Users who have logged in from [% date_from %] to [% date_to %] from the same IPs as [% loginid %]
 <table class="collapsed">
 [% FOREACH l IN suspected_logins %]
     <tr>
-        <td>[% l.date %]</td>
+        <td>[% l.history_date %]</td>
         <td>
             [% FOREACH id IN l.logins %]
             [% id %]
@@ -50,7 +52,7 @@ No logins found for IP address [% ip %] in the last [% days %] days
 [% END %]
 </table>
 [% ELSE %]
-No clients have logged in from [% date_from %] to [% date_to %] from the same ips as [% loginid %]
+No clients have logged in from [% date_from %] to [% date_to %] from the same IPs as [% loginid %]
 [% END %]
 [% END %]
 
