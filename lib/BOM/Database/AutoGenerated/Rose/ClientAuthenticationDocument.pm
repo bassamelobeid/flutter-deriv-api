@@ -21,6 +21,7 @@ __PACKAGE__->meta->setup(
         status                     => { type => 'enum', check_in => [ 'uploading', 'uploaded' ], db_type => 'status_type' },
         file_name                  => { type => 'varchar', length => 100 },
         checksum                   => { type => 'varchar', length => 40 },
+        upload_date                => { type => 'timestamp' },
     ],
 
     primary_key_columns => [ 'id' ],
