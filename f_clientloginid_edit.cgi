@@ -393,7 +393,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         # Mark client as professional, if checkbox marked
         $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested') if $input{professional_client};
-        $existing_cli->clr_status('professional_requested') if ($input{professional_client} && $existing_cli->get_status('professional'));
+        $existing_cli->clr_status('professional_requested') if ($input{professional_client} && $existing_cli->get_status('professional_requested'));
 
         # Revoke client's professional status, if checkbox unmarked
         $existing_cli->clr_status('professional') if (!$input{professional_client} && $existing_cli->get_status('professional'));
