@@ -110,7 +110,7 @@ sub _build_ask_price {
     return financialrounding('price', $self->currency,
         $self->binaryico_number_of_tokens *
             $self->binaryico_per_token_bid_price *
-            ($self->binaryico_deposit_percentage ? 100 / $self->binaryico_deposit_percentage : 1));
+            ($self->binaryico_deposit_percentage ? $self->binaryico_deposit_percentage / 100 : 1));
 }
 
 sub _build_payout {
@@ -286,7 +286,15 @@ has [qw(shortcode)] => (
 
 sub _build_shortcode {
     my $self = shift;
-    return join '_', uc($self->contract_type), $self->binaryico_per_token_bid_price, $self->binaryico_number_of_tokens;
+
+    my $token_bid_price = sprintf("%0.8f", $self->binaryico_per_token_bid_price);
+    $token_bid_price =~ s/\.(?:|.*[^0]\K)0*\z//;
+
+    my @sc_params = (uc($self->contract_type), $token_bid_price, sprintf("%d", $self->binaryico_number_of_tokens));
+
+    push @sc_params, $self->binaryico_deposit_percentage if $self->binaryico_deposit_percentage;
+
+    return join '_', @sc_params;
 }
 
 sub longcode {
