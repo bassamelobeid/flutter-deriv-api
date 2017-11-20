@@ -295,14 +295,14 @@ sub parse_and_refine_setting {
         };
         if (not defined $input_value or not defined $decoded) {
             $input_value = '{}';
-          } else {
-            my $json = 
+        } else {
+            my $json =
 
-            $input_value = JSON::MaybeXS->new(                    utf8      => 1,
-                                                                  pretty    => 1,
-                                                                  canonical => 1,
-                                             )->encode(
-                $decoded);
+                $input_value = JSON::MaybeXS->new(
+                utf8      => 1,
+                pretty    => 1,
+                canonical => 1,
+                )->encode($decoded);
         }
         $display_value = $input_value;
     } else {

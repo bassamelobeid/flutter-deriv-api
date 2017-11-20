@@ -16,6 +16,7 @@ use BOM::Platform::Chronicle;
 use BOM::Platform::Runtime;
 
 my $json = JSON::MaybeXS->new;
+
 sub get_economic_events_for_date {
     my $date = shift;
 
