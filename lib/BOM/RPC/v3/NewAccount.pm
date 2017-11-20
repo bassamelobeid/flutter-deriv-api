@@ -182,28 +182,6 @@ sub verify_email {
     return {status => 1};    # always return 1, so not to leak client's email
 }
 
-sub set_professional_status {
-    my ($client, %args) = shift;
-
-    my ($professional, $professional_requested) = @args{qw/professional professional_requested/};
-
-    # Nothing to be set
-    return undef if not($professional or $professional_requested);
-
-    $client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional;
-    $client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
-
-    if (not $client->save) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InternalServerError',
-                message_to_client => localize('Sorry, an error occurred while processing your account.')});
-    }
-
-    BOM::RPC::v3::Utility::send_professional_requested_email($client->loginid, $client->residence) if $professional_requested;
-
-    return undef;
-}
-
 sub get_existing_professional_details {
     my ($user, $check_professional_requested) = @_;
     my ($professional_status, @mf_cr_clients);

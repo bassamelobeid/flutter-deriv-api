@@ -531,21 +531,24 @@ sub should_update_account_details {
     return 1;
 }
 
-sub update_existing_clients {
-    my (@mf_cr_clients) = @_;
+sub set_professional_status {
+    my ($client, %args) = shift;
 
-    foreach my $existing_cli (@mf_cr_clients) {
+    my ($professional, $professional_requested) = @args{qw/professional professional_requested/};
 
-        $existing_cli->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
+    # Nothing to be set
+    return undef if not($professional or $professional_requested);
 
-        if (not $existing_cli->save) {
-            return create_error({
-                    code              => 'InternalServerError',
-                    message_to_client => localize('Sorry, an error occurred while processing your account.')});
-        }
+    $client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional;
+    $client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
 
-        BOM::RPC::v3::Utility::send_professional_requested_email($existing_cli->loginid, $existing_cli->residence);
+    if (not $client->save) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InternalServerError',
+                message_to_client => localize('Sorry, an error occurred while processing your account.')});
     }
+
+    BOM::RPC::v3::Utility::send_professional_requested_email($client->loginid, $client->residence) if $professional_requested;
 
     return undef;
 }
