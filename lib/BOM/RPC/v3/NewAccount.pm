@@ -182,9 +182,28 @@ sub verify_email {
     return {status => 1};    # always return 1, so not to leak client's email
 }
 
+sub update_existing_clients {
+    my (@mf_cr_clients) = @_;
+
+    foreach my $existing_cli (@mf_cr_clients) {
+
+        $existing_cli->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
+
+        if (not $existing_cli->save) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize('Sorry, an error occurred while processing your account.')});
+        }
+
+        BOM::RPC::v3::Utility::send_professional_requested_email($existing_cli->loginid, $existing_cli->residence);
+    }
+
+    return undef;
+}
+
 sub get_existing_professional_details {
-    my ($user, $professional_requested) = @_;
-    my $professional_status;
+    my ($user, $check_professional_requested) = @_;
+    my ($professional_status, @mf_cr_clients);
 
     foreach my $lid ($user->loginid) {
 
@@ -196,35 +215,23 @@ sub get_existing_professional_details {
 
         # Check 1: Is the existing MF/CR client a professional?
         if ($existing_cli->get_status('professional')) {
-            $professional_status    = 1;
-            $professional_requested = 0;
+            $professional_status          = 1;
+            $check_professional_requested = 0;
             last;
         }
 
         # Check 2: Does the existing MF/CR client have a professional request?
         if ($existing_cli->get_status('professional_requested')) {
-            $professional_requested = 1;
+            $check_professional_requested = 1;
             last;
         }
 
-        # Check 3: Update existing MF/CR clients that have no professional request
-        if ($professional_requested) {
-
-            try {
-                $existing_cli->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
-
-                if (not $existing_cli->save()) {
-                    return BOM::RPC::v3::Utility::create_error({
-                            code              => 'InternalServerError',
-                            message_to_client => localize('Sorry, an error occurred while processing your account.')});
-                }
-
-                BOM::RPC::v3::Utility::send_professional_requested_email($existing_cli->loginid, $existing_cli->residence);
-            };
-        }
+        # Store clients that have no professional requests
+        # These clients will get updated, if the new client has a professional request
+        push @mf_cr_clients, $existing_cli;
     }
 
-    return ($professional_requested, $professional_status);
+    return ($check_professional_requested, $professional_status, @mf_cr_clients);
 }
 
 sub new_account_real {
@@ -268,7 +275,13 @@ sub new_account_real {
 
     # Get the professional flags, based on existing clients (if any)
     my $user = BOM::Platform::User->new({email => $client->email});
-    ($professional_requested, my $professional_status) = get_existing_professional_details($user, $professional_requested);
+    ($professional_requested, my $professional_status, my @existing_clients) = get_existing_professional_details($user, $professional_requested);
+
+    # Update MF/CR clients that have no professional request
+    if ($professional_requested && @existing_clients) {
+        $error = update_existing_clients(@existing_clients);
+        return $error if $error;
+    }
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
         ip => $params->{client_ip} // '',
@@ -296,7 +309,7 @@ sub new_account_real {
     $new_client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional_status;
     $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
 
-    if (not $client->save()) {
+    if (not $client->save) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InternalServerError',
                 message_to_client => localize('Sorry, an error occurred while processing your account.')});
@@ -321,7 +334,7 @@ sub new_account_real {
     if ($new_client->residence eq 'gb' and not $ico_only) {    # RTS 12 - Financial Limits - UK Clients
         $new_client->set_status('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit');
 
-        if (not $client->save()) {
+        if (not $client->save) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'InternalServerError',
                     message_to_client => localize('Sorry, an error occurred while processing your account.')});
@@ -391,7 +404,12 @@ sub new_account_maltainvest {
 
     # Get the professional flags, based on existing clients (if any)
     my $user = BOM::Platform::User->new({email => $client->email});
-    ($professional_requested, my $professional_status) = get_existing_professional_details($user, $professional_requested);
+    ($professional_requested, my $professional_status, my @existing_clients) = get_existing_professional_details($user, $professional_requested);
+
+    if ($professional_requested && @existing_clients) {
+        $error = update_existing_clients(@existing_clients);
+        return $error if $error;
+    }
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         ip => $params->{client_ip} // '',
@@ -415,7 +433,7 @@ sub new_account_maltainvest {
     $new_client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional_status;
     $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
 
-    if (not $client->save()) {
+    if (not $client->save) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InternalServerError',
                 message_to_client => localize('Sorry, an error occurred while processing your account.')});
