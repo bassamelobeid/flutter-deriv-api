@@ -76,7 +76,7 @@ sub _publish {
     my $msg   = shift;
     my $encoded_msg  = $json->encode($msg);
 
-    return $redis->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $encoded_json);
+    return $redis->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $encoded_msg);
 }
 
 sub _msg {
