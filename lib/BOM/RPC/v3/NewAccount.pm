@@ -194,20 +194,20 @@ sub get_existing_professional_details {
         # Only allow CR and MF
         next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
 
-        # Check 1: Is the existing client a professional?
+        # Check 1: Is the existing MF/CR client a professional?
         if ($existing_cli->get_status('professional')) {
             $professional_status    = 1;
             $professional_requested = 0;
             last;
         }
 
-        # Check 2: Does the existing client have a professional request?
+        # Check 2: Does the existing MF/CR client have a professional request?
         if ($existing_cli->get_status('professional_requested')) {
             $professional_requested = 1;
             last;
         }
 
-        # Check 3: Update existing clients that have no professional request
+        # Check 3: Update existing MF/CR clients that have no professional request
         if ($professional_requested) {
 
             try {
