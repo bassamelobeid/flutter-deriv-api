@@ -12,6 +12,7 @@ use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::ContractInfo;
+use BOM::Database::DataMapper::Payment qw/get_total_withdrawal/;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -76,10 +77,16 @@ my $summary = client_statement_summary({
     before   => Date::Utility->new()->datetime,
 });
 
+my $payment_mapper = BOM::Database::DataMapper::Payment->new({
+            client_loginid => $client->loginid,
+            currency_code  => $currency,
+        });
+
 BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
     {
         transactions            => $statement->{transactions},
+        withdrawals_to_date     => $payment_mapper->get_total_withdrawal(),
         balance                 => $statement->{balance},
         currency                => $currency,
         loginid                 => $client->loginid,
