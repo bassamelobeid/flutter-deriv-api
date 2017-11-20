@@ -233,7 +233,7 @@ sub new_account_real {
 
     # Update MF/CR clients that have no professional request
     if ($professional_requested && @clients) {
-        for my $client (@$clients) {
+        foreach my $client (@clients) {
             $error = BOM::RPC::v3::Utility::set_professional_status($client, professional_requested => 1);
             return $error if $error;
         }
@@ -366,7 +366,7 @@ sub new_account_maltainvest {
 
     # Update MF/CR clients that have no professional request
     if ($professional_requested && @clients) {
-        for my $client (@$clients) {
+        foreach my $client (@clients) {
             $error = BOM::RPC::v3::Utility::set_professional_status($client, professional_requested => 1);
             return $error if $error;
         }
