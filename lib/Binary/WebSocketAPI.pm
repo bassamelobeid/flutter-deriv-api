@@ -42,7 +42,7 @@ our %DIVERT_APP_IDS;
 # This list is also overwritten by Redis.
 our %BLOCK_APP_IDS;
 
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -550,10 +550,10 @@ sub startup {
 
     my $redis = ws_redis_master();
     if (my $ids = $redis->get('app_id::diverted')) {
-        %DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
+        %DIVERT_APP_IDS = %{$json->decode($ids)};
     }
     if (my $ids = $redis->get('app_id::blocked')) {
-        %BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
+        %BLOCK_APP_IDS = %{$json->decode($ids)};
     }
     return;
 
