@@ -225,7 +225,7 @@ sub new_account_real {
 
     # Filter out MF/CR clients
     my @clients = map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
-    @clients = grep($_->landing_company->short =~ /^(?:costarica|maltainvest)$/, @clients);
+    @clients = grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } @clients;
 
     # Get the professional flags
     my $professional_requested = ($args->{client_type} eq 'professional') || scalar grep { $_->get_status('professional_requested') } @clients;
@@ -358,7 +358,7 @@ sub new_account_maltainvest {
 
     # Filter out MF/CR clients
     my @clients = map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
-    @clients = grep($_->landing_company->short =~ /^(?:costarica|maltainvest)$/, @clients);
+    @clients = @clients = grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } @clients;
 
     # Get the professional flags
     my $professional_requested = ($args->{client_type} eq 'professional') || scalar grep { $_->get_status('professional_requested') } @clients;
