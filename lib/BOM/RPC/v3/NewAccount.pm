@@ -182,39 +182,6 @@ sub verify_email {
     return {status => 1};    # always return 1, so not to leak client's email
 }
 
-sub get_existing_professional_details {
-    my ($user, $check_professional_requested) = @_;
-    my ($professional_status, @mf_cr_clients);
-
-    foreach my $lid ($user->loginid) {
-
-        # Load client object
-        my $existing_cli = Client::Account->new({loginid => $lid->loginid});
-
-        # Only allow CR and MF
-        next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
-
-        # Check 1: Is the existing MF/CR client a professional?
-        if ($existing_cli->get_status('professional')) {
-            $professional_status          = 1;
-            $check_professional_requested = 0;
-            last;
-        }
-
-        # Check 2: Does the existing MF/CR client have a professional request?
-        if ($existing_cli->get_status('professional_requested')) {
-            $check_professional_requested = 1;
-            last;
-        }
-
-        # Store clients that have no professional requests
-        # These clients will get updated, if the new client has a professional request
-        push @mf_cr_clients, $existing_cli;
-    }
-
-    return ($check_professional_requested, $professional_status, @mf_cr_clients);
-}
-
 sub new_account_real {
     my $params = shift;
 
@@ -223,8 +190,8 @@ sub new_account_real {
     $args->{account_type} //= 'default';
     $args->{client_type}  //= 'retail';
 
-    my $ico_only               = $args->{account_type} eq 'ico';
-    my $professional_requested = $args->{client_type} eq 'professional';
+    my $ico_only = $args->{account_type} eq 'ico';
+
     # send error if maltainvest and japan client tried to make this call
     # as they have their own separate api call for account opening
     return BOM::RPC::v3::Utility::permission_error()
@@ -254,14 +221,23 @@ sub new_account_real {
         return $error if $error;
     }
 
-    # Get the professional flags, based on existing clients (if any)
     my $user = BOM::Platform::User->new({email => $client->email});
-    ($professional_requested, my $professional_status, my @existing_clients) = get_existing_professional_details($user, $professional_requested);
+
+    # Filter out MF/CR clients
+    my @clients = map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
+    @clients = grep($_->landing_company->short =~ /^(?:costarica|maltainvest)$/, @clients);
+
+    # Get the professional flags
+    my $professional_requested = ($args->{client_type} eq 'professional') || scalar grep { $_->get_status('professional_requested') } @clients;
+    my $professional_status = scalar grep { $_->get_status('professional') } @clients;
 
     # Update MF/CR clients that have no professional request
-    if ($professional_requested && @existing_clients) {
-        $error = update_existing_clients(@existing_clients);
-        return $error if $error;
+    if ($professional_requested && @clients) {
+        for my $client (@$clients) {
+            $error = BOM::RPC::v3::Utility::set_professional_status($client, professional_requested => 1);
+            return $error if $error;
+        }
+
     }
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
@@ -359,8 +335,6 @@ sub new_account_maltainvest {
 
     $args->{client_type} //= 'retail';
 
-    my $professional_requested = $args->{client_type} eq 'professional';
-
     # send error if anyone other than maltainvest, virtual, malta
     # tried to make this call
     return BOM::RPC::v3::Utility::permission_error()
@@ -380,13 +354,23 @@ sub new_account_maltainvest {
 
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
-    # Get the professional flags, based on existing clients (if any)
     my $user = BOM::Platform::User->new({email => $client->email});
-    ($professional_requested, my $professional_status, my @existing_clients) = get_existing_professional_details($user, $professional_requested);
 
-    if ($professional_requested && @existing_clients) {
-        $error = update_existing_clients(@existing_clients);
-        return $error if $error;
+    # Filter out MF/CR clients
+    my @clients = map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
+    @clients = grep($_->landing_company->short =~ /^(?:costarica|maltainvest)$/, @clients);
+
+    # Get the professional flags
+    my $professional_requested = ($args->{client_type} eq 'professional') || scalar grep { $_->get_status('professional_requested') } @clients;
+    my $professional_status = scalar grep { $_->get_status('professional') } @clients;
+
+    # Update MF/CR clients that have no professional request
+    if ($professional_requested && @clients) {
+        for my $client (@$clients) {
+            $error = BOM::RPC::v3::Utility::set_professional_status($client, professional_requested => 1);
+            return $error if $error;
+        }
+
     }
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
