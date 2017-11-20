@@ -78,9 +78,9 @@ my $summary = client_statement_summary({
 });
 
 my $payment_mapper = BOM::Database::DataMapper::Payment->new({
-            client_loginid => $client->loginid,
-            currency_code  => $currency,
-        });
+    client_loginid => $client->loginid,
+    currency_code  => $currency,
+});
 
 BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
