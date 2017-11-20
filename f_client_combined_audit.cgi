@@ -269,7 +269,7 @@ sub _get_desk_com_entries {
     my $response     = `curl $curl_url`;
     my @desk_entries = ();
     try {
-        $response = $json->decode($response);
+        $response = JSON::MaybeXS->new->utf8(1)->decode($response);
         if ($response->{total_entries} > 0 and $response->{_embedded} and $response->{_embedded}->{entries}) {
             foreach (sort { Date::Utility->new($a->{created_at})->epoch <=> Date::Utility->new($b->{created_at})->epoch }
                 @{$response->{_embedded}->{entries}})

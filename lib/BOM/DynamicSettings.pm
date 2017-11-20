@@ -12,10 +12,6 @@ use Try::Tiny;
 
 use BOM::Platform::Runtime;
 
-my $json = JSON::MaybeXS->new(                    utf8      => 1,
-                                                  pretty    => 1,
-                                                  canonical => 1,
-                             );
 sub get_all_settings_list {
     my $setting = shift;
     my $ds      = BOM::Platform::Runtime->instance->app_config->dynamic_settings_info;
@@ -292,15 +288,20 @@ sub parse_and_refine_setting {
     } elsif ($type eq 'json_string') {
         my $decoded;
         try {
-            $decoded = $json->decode($input_value);
+            $decoded = JSON::MaybeXS->new->decode($input_value);
         }
         catch {
             warn("Error: decoding of $input_value failed - $_");
         };
         if (not defined $input_value or not defined $decoded) {
             $input_value = '{}';
-        } else {
-            $input_value = $json->encode(
+          } else {
+            my $json = 
+
+            $input_value = JSON::MaybeXS->new(                    utf8      => 1,
+                                                                  pretty    => 1,
+                                                                  canonical => 1,
+                                             )->encode(
                 $decoded);
         }
         $display_value = $input_value;
