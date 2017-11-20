@@ -707,9 +707,7 @@ sub process_proposal_array_event {
     for my $stash_data_key (keys %{$pricing_channel->{$redis_channel}}) {
         my $stash_data = $pricing_channel->{$redis_channel}{$stash_data_key};
         unless (ref($stash_data) eq 'HASH') {
-            warn __PACKAGE__
-                . " process_proposal_array_event: HASH not found as redis_channel data: "
-                . $json->encode($stash_data);
+            warn __PACKAGE__ . " process_proposal_array_event: HASH not found as redis_channel data: " . $json->encode($stash_data);
             delete $pricing_channel->{$redis_channel}{$stash_data_key};
             $pricing_channel_updated = 1;
             next;
@@ -721,9 +719,7 @@ sub process_proposal_array_event {
             for my $price (@{$response->{proposals}{$contract_type}}) {
                 my $result = try {
                     if (my $invalid = _get_validation_for_type($type)->($c, $response, $stash_data, {args => 'contract_type'})) {
-                        warn __PACKAGE__
-                            . " process_proposal_array_event: _get_validation_for_type failed, results: "
-                            . $json->encode($invalid);
+                        warn __PACKAGE__ . " process_proposal_array_event: _get_validation_for_type failed, results: " . $json->encode($invalid);
                         return $invalid;
                     } elsif (exists $price->{error}) {
                         return $price;
