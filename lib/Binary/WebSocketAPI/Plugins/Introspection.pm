@@ -32,7 +32,7 @@ taken by something else and we have no SO_REUSEPORT on our current kernel.
 
 =cut
 
-my $json = JSON::MaybeXS->new;
+my $utf8_json = JSON::MaybeXS->new->utf8(1);
 
 sub start_server {
     my ($self, $app, $conf) = @_;
@@ -73,14 +73,14 @@ sub start_server {
                                 Future->wait_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->then(
                                     sub {
                                         my ($resp) = @_;
-                                        my $output = $json->encode($resp);
+                                        my $output = $utf8_json->encode($resp);
                                         warn "$command (@args) - $output\n" if $write_to_log;
                                         $stream->write("OK - $output$CRLF");
                                         Future->done;
                                     },
                                     sub {
                                         my ($exception, $category, @details) = @_;
-                                        my $output = $json->encode({
+                                        my $output = $utf8_json->encode({
                                             error    => $exception,
                                             category => $category,
                                             details  => \@details
@@ -361,7 +361,7 @@ command divert => sub {
     my ($self, $app, $app_id, $service) = @_;
     my $redis = ws_redis_master();
     if (my $ids = $redis->get('app_id::diverted')) {
-        %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
+        %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$utf8_json->decode($ids)};
     }
     if ($app) {
         if ($service) {
@@ -369,7 +369,7 @@ command divert => sub {
         } else {
             delete $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
         }
-        $redis->set('app_id::diverted' => Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS)));
+        $redis->set('app_id::diverted' => $utf8_json->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS));
     }
     Future->done({diversions => \%Binary::WebSocketAPI::DIVERT_APP_IDS});
 };
@@ -384,7 +384,7 @@ command block => sub {
     my ($self, $app, $app_id, $service) = @_;
     my $redis = ws_redis_master();
     if (my $ids = $redis->get('app_id::blocked')) {
-        %Binary::WebSocketAPI::BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
+        %Binary::WebSocketAPI::BLOCK_APP_IDS = %{$utf8_json->decode($ids)};
     }
     if ($app) {
         if ($service) {
@@ -392,7 +392,7 @@ command block => sub {
         } else {
             delete $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id};
         }
-        $redis->set('app_id::blocked' => Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS)));
+        $redis->set('app_id::blocked' => $utf8_json->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS));
     }
     Future->done({blocked => \%Binary::WebSocketAPI::BLOCK_APP_IDS});
 };

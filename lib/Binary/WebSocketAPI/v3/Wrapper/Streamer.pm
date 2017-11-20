@@ -18,7 +18,7 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw( ws_redis_master shared_redis )
 use utf8;
 use Try::Tiny;
 
-my $json = JSON::MaybeXS->new;
+my $utf8_json = JSON::MaybeXS->new->utf8(1);
 
 sub website_status {
     my ($c, $req_storage) = @_;
@@ -53,7 +53,7 @@ sub website_status {
                     ### to config
                     my $current_state = ws_redis_master()->get("NOTIFY::broadcast::state");
 
-                    $current_state = eval { $json->decode($current_state) }
+                    $current_state = eval { $utf8_json->decode($current_state) }
                         if $current_state && !ref $current_state;
                     $website_status->{site_status} = $current_state->{site_status} // 'up';
                     $website_status->{message}     = $current_state->{message}     // ''
@@ -105,7 +105,7 @@ sub send_notification {
             return unless ws_redis_master()->get($is_on_key);    ### Need 1 for continuing
         }
 
-        $message = eval { $json->decode($message) } unless ref $message eq 'HASH';
+        $message = eval { $utf8_json->decode($message) } unless ref $message eq 'HASH';
         delete $message->{message} if $message->{site_status} ne 'down';
 
         $client_shared->{c}->send({
@@ -272,7 +272,7 @@ sub ticks_history {
 
 sub process_realtime_events {
     my ($shared_info, $msg, $chan) = @_;
-    my $payload = $json->decode($msg);
+    my $payload = $utf8_json->decode($msg);
 
     # pick the per-user controller to send-back notifications to
     # related users only
@@ -496,7 +496,7 @@ sub process_transaction_updates {
 
     return unless $channel;
 
-    my $payload = $json->decode($message);
+    my $payload = JSON::MaybeXS->new->decode($message);
 
     return unless $payload && ref $payload eq 'HASH';
 

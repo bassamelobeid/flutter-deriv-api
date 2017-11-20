@@ -56,7 +56,7 @@ if ( $status || $message ) {
     my $is_on_value = $is_on;
     print $ws_redis_master->set($is_on_key, $is_on_value), "\n" if $is_on_value;
 
-    my $mess_obj = JSON::MaybeXS->new->encode( {
+    my $mess_obj = JSON::MaybeXS->new->utf8(1)->encode( {
         site_status => $status  // "up",
         message     => $message // ""
     } );
