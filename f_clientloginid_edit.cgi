@@ -390,26 +390,24 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
 
         my $existing_cli_loginid = encode_entities($existing_cli->loginid);
-        try {
 
-            if ($input{professional_client}) {
-                $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested');
-                $existing_cli->clr_status('professional_requested');
+        if ($input{professional_client}) {
+            $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested');
+            $existing_cli->clr_status('professional_requested');
 
-                # Client's professional status revoked
-            } elsif (!$input{professional_client} && $existing_cli->get_status('professional')) {
-                $existing_cli->clr_status('professional');
-            }
-
-            $existing_cli->save;
-
+            # Client's professional status revoked
+        } elsif (!$input{professional_client} && $existing_cli->get_status('professional')) {
+            $existing_cli->clr_status('professional');
         }
-        catch {
+
+        if (not $existing_cli->save) {
             $result .= "<p>Failed to update professional status of client: $existing_cli_loginid</p>";
-        };
+        }
     }
 
-    print $result;
+    if ($result) {
+        print $result;
+    }
 
     # Filter keys for tax residence
     if (my @matching_keys = grep { /tax_residence/ } keys %input) {
