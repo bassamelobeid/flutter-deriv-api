@@ -107,7 +107,10 @@ has binaryico_deposit_percentage => (
 
 sub _build_ask_price {
     my $self = shift;
-    return $self->binaryico_number_of_tokens * $self->binaryico_per_token_bid_price;
+    return financialrounding('price', $self->currency,
+        $self->binaryico_number_of_tokens *
+            $self->binaryico_per_token_bid_price *
+            ($self->binaryico_deposit_percentage ? 100 / $self->binaryico_deposit_percentage : 1));
 }
 
 sub _build_payout {
