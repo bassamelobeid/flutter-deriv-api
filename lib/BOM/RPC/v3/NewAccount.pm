@@ -311,7 +311,7 @@ sub new_account_real {
 
     $error = BOM::RPC::v3::Utility::set_professional_status(
         $new_client,
-        professional           => $professional,
+        professional           => $professional_status,
         professional_requested => $professional_requested
     );
 
@@ -432,7 +432,7 @@ sub new_account_maltainvest {
 
     $error = BOM::RPC::v3::Utility::set_professional_status(
         $new_client,
-        professional           => $professional,
+        professional           => $professional_status,
         professional_requested => $professional_requested
     );
 
