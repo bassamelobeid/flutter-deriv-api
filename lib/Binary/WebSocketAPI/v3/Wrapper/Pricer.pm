@@ -43,8 +43,8 @@ use constant BARRIERS_PER_BATCH => 16;
 # the request entirely.
 use constant BARRIER_LIMIT => 16;
 
-my $utf8_json = JSON::MaybeXS->new->utf8(1)->allow_blessed;
-my $json = JSON::MaybeXS->new->utf8(0)->allow_blessed;
+my $utf8_json          = JSON::MaybeXS->new->utf8(1)->allow_blessed;
+my $json               = JSON::MaybeXS->new->utf8(0)->allow_blessed;
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
     bid   => \&process_bid_event,
