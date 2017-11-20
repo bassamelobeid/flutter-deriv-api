@@ -391,20 +391,19 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         my $existing_cli_loginid = encode_entities($existing_cli->loginid);
 
-        if ($input{professional_client}) {
-            $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested');
-            $existing_cli->clr_status('professional_requested');
+        # Mark client as professional, if checkbox marked
+        $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested') if $input{professional_client};
+        $existing_cli->clr_status('professional_requested') if ($input{professional_client} && $existing_cli->get_status('professional'));
 
-            # Client's professional status revoked
-        } elsif (!$input{professional_client} && $existing_cli->get_status('professional')) {
-            $existing_cli->clr_status('professional');
-        }
+        # Revoke client's professional status, if checkbox unmarked
+        $existing_cli->clr_status('professional') if (!$input{professional_client} && $existing_cli->get_status('professional'));
 
         if (not $existing_cli->save) {
             $result .= "<p>Failed to update professional status of client: $existing_cli_loginid</p>";
         }
     }
 
+    # Print clients that were not updated
     if ($result) {
         print $result;
     }
