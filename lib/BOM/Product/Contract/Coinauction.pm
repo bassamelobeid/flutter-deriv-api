@@ -100,6 +100,11 @@ has minimum_bid_in_usd => (
     lazy_build => 1,
 );
 
+has binaryico_deposit_percentage => (
+    is  => 'rw',
+    isa => 'Maybe[Num]',
+);
+
 sub _build_ask_price {
     my $self = shift;
     return $self->binaryico_number_of_tokens * $self->binaryico_per_token_bid_price;
@@ -162,6 +167,7 @@ sub BUILD {
     $self->contract_type($self->build_parameters->{bet_type});
     $self->binaryico_number_of_tokens($self->build_parameters->{binaryico_number_of_tokens});
     $self->binaryico_per_token_bid_price($self->build_parameters->{binaryico_per_token_bid_price});
+    $self->binaryico_deposit_percentage($self->build_parameters->{binaryico_deposit_percentage});
 
     if ($self->binaryico_number_of_tokens < $limits->{min} or $self->binaryico_number_of_tokens > $limits->{max}) {
         $self->add_errors({
