@@ -182,21 +182,24 @@ sub verify_email {
     return {status => 1};    # always return 1, so not to leak client's email
 }
 
-sub update_existing_clients {
-    my (@mf_cr_clients) = @_;
+sub set_professional_status {
+    my ($client, %args) = shift;
 
-    foreach my $existing_cli (@mf_cr_clients) {
+    my ($professional, $professional_requested) = @args{qw/professional professional_requested/};
 
-        $existing_cli->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
+    # Nothing to be set
+    return undef if not($professional or $professional_requested);
 
-        if (not $existing_cli->save) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'InternalServerError',
-                    message_to_client => localize('Sorry, an error occurred while processing your account.')});
-        }
+    $client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional;
+    $client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
 
-        BOM::RPC::v3::Utility::send_professional_requested_email($existing_cli->loginid, $existing_cli->residence);
+    if (not $client->save) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InternalServerError',
+                message_to_client => localize('Sorry, an error occurred while processing your account.')});
     }
+
+    BOM::RPC::v3::Utility::send_professional_requested_email($client->loginid, $client->residence) if $professional_requested;
 
     return undef;
 }
@@ -306,16 +309,13 @@ sub new_account_real {
     # else it will give false impression to client
     $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
 
-    $new_client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional_status;
-    $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
+    $error = BOM::RPC::v3::Utility::set_professional_status(
+        $new_client,
+        professional           => $professional,
+        professional_requested => $professional_requested
+    );
 
-    if (not $client->save) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InternalServerError',
-                message_to_client => localize('Sorry, an error occurred while processing your account.')});
-    }
-
-    BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence) if $professional_requested;
+    return $error if $error;
 
     if ($args->{currency}) {
         my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
@@ -430,16 +430,13 @@ sub new_account_maltainvest {
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
 
-    $new_client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional_status;
-    $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
+    $error = BOM::RPC::v3::Utility::set_professional_status(
+        $new_client,
+        professional           => $professional,
+        professional_requested => $professional_requested
+    );
 
-    if (not $client->save) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InternalServerError',
-                message_to_client => localize('Sorry, an error occurred while processing your account.')});
-    }
-
-    BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence) if $professional_requested;
+    return $error if $error;
 
     $user->add_login_history({
         action      => 'login',
