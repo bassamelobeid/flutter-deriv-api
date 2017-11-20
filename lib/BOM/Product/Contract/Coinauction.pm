@@ -149,7 +149,7 @@ sub _build_binaryico_auction_status {
             return 'successful bid';
         }
     } else {
-        $self->bid_price($self->ask_price * 0.98);
+        $self->bid_price($self->ask_price);
         return 'bid';
     }
 
