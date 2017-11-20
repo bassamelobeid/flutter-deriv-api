@@ -231,6 +231,8 @@ sub new_account_real {
     my $professional_requested = ($args->{client_type} eq 'professional') || scalar grep { $_->get_status('professional_requested') } @clients;
     my $professional_status = scalar grep { $_->get_status('professional') } @clients;
 
+    $professional_requested = $professional_status ? 0 : 1;
+
     # Update MF/CR clients that have no professional request
     if ($professional_requested && @clients) {
         foreach my $client (@clients) {
@@ -363,6 +365,7 @@ sub new_account_maltainvest {
     # Get the professional flags
     my $professional_requested = ($args->{client_type} eq 'professional') || scalar grep { $_->get_status('professional_requested') } @clients;
     my $professional_status = scalar grep { $_->get_status('professional') } @clients;
+    $professional_requested = $professional_status ? 0 : 1;
 
     # Update MF/CR clients that have no professional request
     if ($professional_requested && @clients) {
