@@ -2,17 +2,17 @@ package BOM::Product::Contract::Coinauction;
 
 use Moose;
 use Date::Utility;
+use Try::Tiny;
+
 use Quant::Framework::Underlying;
 use Format::Util::Numbers qw/financialrounding/;
-
 use Postgres::FeedDB::CurrencyConverter qw (in_USD);
 
 with 'MooseX::Role::Validatable';
 extends 'Finance::Contract';
 use BOM::MarketData::Types;
-use BOM::Product::Static qw(get_error_mapping);
+use BOM::Product::Static;
 use BOM::Platform::Runtime;
-use Try::Tiny;
 
 # Actual methods for introspection purposes.
 sub is_binaryico        { return 1 }
