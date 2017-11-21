@@ -35,7 +35,7 @@ my %supported_contract_types = (
 
 my $cache_namespace = 'predefined_parameters';
 my $json = JSON::MaybeXS->new;
-
+my $utf8_json = JSON::MaybeXS->new->utf8(1);
 sub _trading_calendar {
     my $for_date = shift;
 
@@ -365,7 +365,7 @@ sub _get_spot {
         if (my $tick_json = $redis->get('Distributor::QUOTE::' . $underlying->symbol)) {
             $source = 'redis';
             $quote  = $tick_json;
-            $spot   = $json->decode($tick_json)->{quote};
+            $spot   = $utf8_json->decode($tick_json)->{quote};
         }
     }
     if (!$take_from_distributor || !$spot) {
@@ -381,7 +381,7 @@ sub _get_spot {
         }
         if ($tick) {
             $spot = $tick->quote if $tick;
-            $quote = $json->encode($tick->as_hash);
+            $quote = $utf8_json->encode($tick->as_hash);
         }
     }
     if (!defined $spot) {
