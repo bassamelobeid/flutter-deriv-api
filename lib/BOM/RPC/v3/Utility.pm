@@ -540,7 +540,7 @@ sub send_professional_requested_email {
     return send_email({
         from    => $brand->emails('support'),
         to      => join(',', $brand->emails('compliance'), $brand->emails('support')),
-        subject => "$loginid requested for professional status, redidence: " . ($residence // 'No residence provided'),
+        subject => "$loginid requested for professional status, residence: " . ($residence // 'No residence provided'),
         message => ["$loginid has requested for professional status, please check and update accordingly"],
     });
 }
