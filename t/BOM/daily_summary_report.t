@@ -184,6 +184,7 @@ sub buy_one_bet {
         bet_type          => $args->{bet_type},
         short_code        => $shortcode,
         relative_barrier  => $relative_barrier,
+        quantity          => 1,
     };
 
     my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
