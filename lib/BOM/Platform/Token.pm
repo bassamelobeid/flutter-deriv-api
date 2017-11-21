@@ -43,7 +43,8 @@ sub new {                                    ## no critic (RequireArgUnpack)
 
     my $self = ref $_[0] ? $_[0] : {@_};
     if ($self->{token}) {
-        $self = eval { $json->decode(BOM::Platform::RedisReplicated::redis_read()->get('VERIFICATION_TOKEN::' . $self->{token})) } || {};
+        use JSON;
+        $self = eval { JSON::from_json(BOM::Platform::RedisReplicated::redis_read()->get('VERIFICATION_TOKEN::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
         return bless $self, $package;
     }
