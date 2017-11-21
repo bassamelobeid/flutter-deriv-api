@@ -253,6 +253,8 @@ sub create_fmb {
 
     my %trans = (transaction_time => $fmb_data->{transaction_time});
 
+    $bet{quantity} = $args->{quantity} // 1;
+
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new({
             account_data => {
                 client_loginid => $client_loginid,
@@ -272,7 +274,7 @@ sub create_fmb {
         $bet{sell_time}          = Date::Utility->new->db_timestamp;
         $bet{is_sold}            = 1;
         $trans{transaction_time} = $sell_time;
-
+        $fmb_helper->bet_data->{quantity} = $args->{quantity} // 1;
         ($fmb_rec, $trx_rec) = $fmb_helper->sell_bet;
     }
 
