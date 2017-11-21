@@ -67,6 +67,7 @@ lives_ok {
         bet => $financial_market_bet,
         db  => $connection_builder->db,
     });
+    $financial_market_bet_helper->bet_data->{quantity} = 1;
     $financial_market_bet_helper->buy_bet;
 
     $financial_market_bet_id = $financial_market_bet->financial_market_bet_open_record->id;
@@ -95,6 +96,7 @@ lives_ok {
         bet => $financial_market_bet,
         db  => $connection_builder->db,
     });
+    $financial_market_bet_helper->bet_data->{quantity} = 1;
     $financial_market_bet_helper->sell_bet // die "Bet not sold";
 
     $financial_market_bet = BOM::Database::Model::FinancialMarketBet->new({
@@ -157,6 +159,7 @@ lives_ok {
         bet => $financial_market_bet,
         db  => $connection_builder->db,
     });
+    $financial_market_bet_helper->bet_data->{quantity} = 1;
     $financial_market_bet_helper->buy_bet;
 
     $financial_market_bet = BOM::Database::Model::FinancialMarketBetOpen->new({
@@ -171,6 +174,7 @@ lives_ok {
     $financial_market_bet->sell_price(40);
     $financial_market_bet_helper->clear_bet_data;
     $financial_market_bet_helper->bet($financial_market_bet);
+    $financial_market_bet_helper->bet_data->{quantity} = 1;
     $financial_market_bet_helper->sell_bet // die "Bet not sold";
 
 }
@@ -201,6 +205,7 @@ lives_ok {
         bet => $financial_market_bet,
         db  => $connection_builder->db,
     });
+    $financial_market_bet_helper->bet_data->{quantity} = 1;
     $financial_market_bet_helper->buy_bet;
 
     $financial_market_bet = BOM::Database::Model::FinancialMarketBetOpen->new({
@@ -216,6 +221,7 @@ lives_ok {
     $financial_market_bet->sell_price(40);
     $financial_market_bet_helper->clear_bet_data;
     $financial_market_bet_helper->bet($financial_market_bet);
+    $financial_market_bet_helper->bet_data->{quantity} = 1;
     $financial_market_bet_helper->sell_bet // die "Bet not sold";
 }
 'Buy a non legacy bet and sell it (not expired).';
@@ -275,8 +281,10 @@ lives_ok {
         bet => $financial_market_bet,
         db  => $connection_builder->db,
     });
-    push @fmbs, ($financial_market_bet_helper->buy_bet)[0];    # buy 1st bet
-    push @fmbs, ($financial_market_bet_helper->buy_bet)[0];    # and the 2nd one
+
+    $financial_market_bet_helper->bet_data->{quantity} = 1;
+    push @fmbs, ($financial_market_bet_helper->buy_bet)[0]; # buy 1st bet
+    push @fmbs, ($financial_market_bet_helper->buy_bet)[0]; # and the 2nd one
 
     cmp_ok $fmbs[0]->{id}, '>', 0, 'got 1st fmb id';
     cmp_ok $fmbs[1]->{id}, '>', 0, 'got 2nd fmb id';
@@ -284,12 +292,14 @@ lives_ok {
     $financial_market_bet->id($fmbs[0]->{id});
     $financial_market_bet->sell_price(20);
     $financial_market_bet_helper->clear_bet_data;
-    push @fmbs, ($financial_market_bet_helper->sell_bet)[0];    # sell 1st bet
+    $financial_market_bet_helper->bet_data->{quantity} = 1;
+    push @fmbs, ($financial_market_bet_helper->sell_bet)[0]; # sell 1st bet
 
     $financial_market_bet->id($fmbs[1]->{id});
     $financial_market_bet->sell_price(20);
     $financial_market_bet_helper->clear_bet_data;
-    push @fmbs, ($financial_market_bet_helper->sell_bet)[0];    # sell 1st bet
+    $financial_market_bet_helper->bet_data->{quantity} = 1;
+    push @fmbs, ($financial_market_bet_helper->sell_bet)[0]; # sell 1st bet
 
     is $fmbs[0]->{id}, $fmbs[2]->{id}, 'sold 1st bet';
     is $fmbs[1]->{id}, $fmbs[3]->{id}, 'sold 2nd bet';
