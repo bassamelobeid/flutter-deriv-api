@@ -224,8 +224,7 @@ sub new_account_real {
     my $user = BOM::Platform::User->new({email => $client->email});
 
     # Filter out MF/CR clients
-    my @clients = map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
-    @clients = grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } @clients;
+    my @clients = grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
 
     # Get the professional flags
     my $professional_status = scalar grep { $_->get_status('professional') } @clients;
@@ -358,8 +357,7 @@ sub new_account_maltainvest {
     my $user = BOM::Platform::User->new({email => $client->email});
 
     # Filter out MF/CR clients
-    my @clients = map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
-    @clients = grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } @clients;
+    my @clients = grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
 
     # Get the professional flags
     my $professional_status = scalar grep { $_->get_status('professional') } @clients;
