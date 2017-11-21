@@ -94,6 +94,7 @@ lives_ok {
         'bet_type'         => 'PUT',
         'absolute_barrier' => '78.46',
         'short_code'       => $short_code,
+        'quantity'         => 1,
     };
 }
 'buy higher lower absolute barrier bet';
@@ -121,6 +122,7 @@ lives_ok {
         'bet_type'         => 'CALL',
         'relative_barrier' => 'S10P',
         'short_code'       => $short_code,
+        'quantity'         => 1,
     };
     push @fmb_id, $fmb->{id};
 }
@@ -143,6 +145,7 @@ lives_ok {
         'bet_type'         => 'CALL',
         'relative_barrier' => 'S10P',
         'short_code'       => $short_code,
+        'quantity'         => 1,
     };
     push @fmb_id, $fmb->{id};
 }
@@ -153,7 +156,8 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell 1 bet & test
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 20
+        sell_price => 20,
+        quantity   => 1,
     }
     ),
     undef, 'sell 1 bet';
@@ -163,7 +167,8 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell the other bet too
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 20
+        sell_price => 20,
+        quantity   => 1,
     }
     ),
     undef, 'sell 1 bet';
@@ -187,6 +192,7 @@ lives_ok {
         'bet_type'         => 'ONETOUCH',
         'absolute_barrier' => '7435',
         'short_code'       => $short_code,
+        'quantity'         => 1,
     };
     push @fmb_id, $fmb->{id};
 }
@@ -197,7 +203,8 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell it
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 2
+        sell_price => 2,
+        quantity   => 1,
     }
     ),
     undef, 'sell 1 bet';
@@ -221,6 +228,7 @@ lives_ok {
         'bet_type'         => 'NOTOUCH',
         'relative_barrier' => 'S5004P',
         'short_code'       => $short_code,
+        'quantity'         => 1,
     };
     push @fmb_id, $fmb->{id};
 }
@@ -231,7 +239,8 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell it
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 2
+        sell_price => 2,
+        quantity   => 1,
     }
     ),
     undef, 'sell 1 bet';
@@ -256,6 +265,7 @@ lives_ok {
         'absolute_lower_barrier'  => '5801',
         'absolute_higher_barrier' => '6064',
         'short_code'              => $short_code,
+        'quantity'                => 1,
     };
     push @fmb_id, $fmb->{id};
 }
@@ -266,7 +276,8 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell it
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 2.5
+        sell_price => 2.5,
+        quantity   => 1,
     }
     ),
     undef, 'sell 1 bet';
@@ -291,6 +302,7 @@ lives_ok {
         'relative_lower_barrier'  => 'S-7148P',
         'relative_higher_barrier' => 'S7147P',
         'short_code'              => $short_code,
+        'quantity'                => 1,
     };
     push @fmb_id, $fmb->{id};
 }
@@ -301,7 +313,8 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 # sell it
 isnt scalar sell({
         id         => shift(@fmb_id),
-        sell_price => 2.5
+        sell_price => 2.5,
+        quantity   => 1,
     }
     ),
     undef, 'sell 1 bet';
@@ -335,6 +348,7 @@ subtest 'digits' => sub {
                     'last_digit'    => 7,
                     'prediction'    => $type_prediction{$type},
                     'short_code'    => $short_code,
+                    'quantity'      => 1,
                 };
                 push @fmb_id, $fmb->{id};
             }
@@ -344,7 +358,8 @@ subtest 'digits' => sub {
 
             isnt scalar sell({
                     id         => shift(@fmb_id),
-                    sell_price => 2.5
+                    sell_price => 2.5,
+                    quantity   => 1,
                 }
                 ),
                 undef, 'sell';

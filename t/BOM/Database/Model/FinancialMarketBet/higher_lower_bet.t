@@ -71,6 +71,7 @@ lives_ok {
         bet => $higher_lower,
         db  => $connection_builder->db,
     });
+    $higher_lower_helper->bet_data->{quantity} = 1;
     $higher_lower_helper->buy_bet;
 
     $higher_lower_id = $higher_lower->financial_market_bet_open_record->id;
@@ -124,14 +125,12 @@ lives_ok {
     $higher_lower->sell_price(40);
 
     my $higher_lower_helper = BOM::Database::Helper::FinancialMarketBet->new({
-            %account_data,
-            bet_data => {
-                is_expired => 1,
-            },
-            bet => $higher_lower,
-            db  => $connection_builder->db,
-        });
-
+        %account_data,
+        bet => $higher_lower,
+        db  => $connection_builder->db,
+    });
+    $higher_lower_helper->bet_data->{quantity} = 1;
+    $higher_lower_helper->bet_data->{is_expired} = 1;
     $higher_lower_helper->sell_bet() // die "Bet not sold";
 }
 'expect to sell';
