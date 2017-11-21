@@ -40,10 +40,7 @@ use BOM::Database::Model::UserConnect;
 use BOM::Platform::Pricing;
 use BOM::Platform::Runtime;
 
-my $ICO_BID_PRICE_PERCENTAGE = 0.98;
-
 my $json = JSON::MaybeXS->new;
-
 sub payout_currencies {
     my $params = shift;
 
