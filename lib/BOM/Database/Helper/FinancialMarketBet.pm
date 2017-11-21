@@ -413,7 +413,7 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
             $transdata->{source},                                                         # -- 11
             $self->bet_data->{quantity},
             $qv ? $json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,    # -- 12
-            map { $_->{client_loginid} } @{$self->account_data}                                                       # -- 13...
+            map { $_->{client_loginid} } @{$self->account_data}                                               # -- 13...
         );
         my $all_rows = $stmt->fetchall_arrayref;
         $stmt->finish;

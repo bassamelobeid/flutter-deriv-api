@@ -17,15 +17,16 @@ my @payments = $report_mapper->get_active_accounts_payment_profit({
         end_time   => Date::Utility->new('2017-11-14 12:00:00')});
 @payments = sort { $a->{account_id} <=> $b->{account_id} } @payments;
 
-my ($repetitions) = $test_client->db->dbic->run(fixup => sub{
-                                                  $_->selectrow_array("select count(*) from betonmarkets.production_servers where real_money = 't'");
-                                                });
+my ($repetitions) = $test_client->db->dbic->run(
+    fixup => sub {
+        $_->selectrow_array("select count(*) from betonmarkets.production_servers where real_money = 't'");
+    });
 
 is(scalar @payments, 34 * $repetitions, "number of rows is correct");
 is_deeply(
     [sort keys %{$payments[0]}],
     [
-        'account_id', 'affiliate_email', 'affiliate_username', 'affiliation',  'currency',     'loginid',
+        'account_id', 'affiliate_email', 'affiliate_username', 'affiliation',  'currency', 'loginid',
         'name',       'payments',        'profit',             'usd_payments', 'usd_profit'
     ],
     "key is correct"

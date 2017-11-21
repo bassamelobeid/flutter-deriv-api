@@ -130,7 +130,8 @@ sub sample_oneall_data {
                             'provider_identity_uid' => 'PIUE74DCA7D9BDE86F517BB6401BCAF3209',
                             'emails'                => [{
                                     'value'       => 'fayland@regentmarkets.com',
-                                    'is_verified' => JSON->true]
+                                    'is_verified' => JSON->true
+                                }]
                         },
                         'identities' => [{
                                 'provider'       => 'google',
