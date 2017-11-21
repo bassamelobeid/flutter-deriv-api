@@ -1321,6 +1321,7 @@ subtest 'max_turnover validation', sub {
                             bet_type          => 'CALL',
                             short_code        => 'test',
                             relative_barrier  => 'S0P',
+                            quantity          => 1,
                         },
                         account_data => {
                             client_loginid => $acc_usd->client_loginid,

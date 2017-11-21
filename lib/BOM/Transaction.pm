@@ -1416,7 +1416,6 @@ sub sell_expired_contracts {
                     if $contract->category_code eq 'asian' and $contract->is_after_settlement;
                 $bet->{quantity} = 1;
                 $bet->{quantity} = $contract->unit if not $contract->is_binary;
-
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
