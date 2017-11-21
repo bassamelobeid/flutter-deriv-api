@@ -208,7 +208,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
 
             # JSON by default
             my $code = delete $r->{status_code} || 200;
-            my $body = JSON::MaybeXS->new->encode($r);
+            my $body = JSON::MaybeXS->new->utf8(1)->encode($r);
             return [$code, ['Content-Type' => 'application/json; charset=utf-8'], [$body]];
         };
     };

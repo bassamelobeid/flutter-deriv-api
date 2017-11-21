@@ -14,7 +14,7 @@ my $r                = deposit(
     is_validate => 1
 );
 is($r->code,                            200,                   'correct status code');
-is(JSON::MaybeXS->new->decode($r->content)->{allowed}, 1,                     'validate pass');
+is(JSON::MaybeXS->new->utf8(1)->decode($r->content)->{allowed}, 1,                     'validate pass');
 is(0 + balance($loginid),               $starting_balance + 0, 'balance is not changed.');
 
 $r = deposit(

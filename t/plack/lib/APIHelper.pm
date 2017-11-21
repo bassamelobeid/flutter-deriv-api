@@ -87,7 +87,7 @@ sub __request {
 }
 
 sub decode_json {
-    eval { JSON::MaybeXS->new->decode($_[0]) };
+    eval { JSON::MaybeXS->new->utf8(1)->decode($_[0]) };
 }
 
 ## common
