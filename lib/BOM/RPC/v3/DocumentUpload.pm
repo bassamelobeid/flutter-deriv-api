@@ -31,20 +31,30 @@ sub start_document_upload {
     my $args            = $params->{args};
     my $document_type   = $args->{document_type};
     my $document_format = $args->{document_format};
+    my $loginid         = $client->loginid;
 
-    my $dbh = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db->dbh;
-    my $loginid = $client->loginid;
+    unless ($client->get_db eq 'write') {
+        $client->set_db('write');
+    }
 
-    my ($id) = $dbh->selectrow_array(
-        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?::status_type)',
-        undef, $loginid, $document_type, $document_format, '', $args->{expiration_date},
-        'ID_DOCUMENT', ($args->{document_id} || ''),
-        '', 'uploading'
-    );
+    my $id;
+    my $error_occured;
+    try {
+        ($id) = $client->db->dbic->run(
+            ping => sub {
+                $_->selectrow_array(
+                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?)',
+                    undef, $loginid, $document_type, $document_format,
+                    $args->{expiration_date},
+                    ($args->{document_id} || ''));
+            });
+    }
+    catch {
+        $error_occured = 1;
+    };
 
-# ID should always be returned by above call
-    if (!$id) {
-        warn 'betonmarkets.start_document_upload should return the ID';
+    if ($error_occured or not $id) {
+        warn 'start_document_upload in the db was not successful';
         return create_upload_error();
     }
 
@@ -60,31 +70,36 @@ sub successful_upload {
     my $client = $params->{client};
     my $args   = $params->{args};
 
-    my ($doc) = $client->find_client_authentication_document(query => [id => $args->{file_id}]);
-
-    return create_upload_error('doc_not_found') if not $doc;
-
-    $doc->{file_name} = join '.', $client->loginid, $doc->{document_type}, $doc->{id}, $doc->{document_format};
-    $doc->{checksum}  = $args->{checksum};
-    $doc->{status}    = 'uploaded';
-
-    if (not $doc->save()) {
-        warn 'Unable to save upload information in the db';
-        return create_upload_error();
-    }
-
     unless ($client->get_db eq 'write') {
         $client->set_db('write');
     }
 
-    my $client_id = $client->loginid;
-
-    my $changed_status;
+    my $result;
     my $error_occured;
     try {
-        $changed_status = $client->db->dbic->run(
-            fixup => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', {Slice => {}}, $client_id, 'Documents uploaded');
+        ($result) = $client->db->dbic->run(
+            ping => sub {
+                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)', undef, $args->{file_id}, $args->{checksum}, undef);
+            });
+    }
+    catch {
+        $error_occured = 1;
+    };
+
+    return create_upload_error('doc_not_found') if not $result;
+
+    if ($error_occured) {
+        warn 'Failed to update the uploaded document in the db';
+        return create_upload_error();
+    }
+
+    my $client_id = $client->loginid;
+
+    my $status_changed;
+    try {
+        ($status_changed) = $client->db->dbic->run(
+            ping => sub {
+                $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', undef, $client_id, 'Documents uploaded');
             });
     }
     catch {
@@ -96,7 +111,7 @@ sub successful_upload {
         return create_upload_error();
     }
 
-    return $args unless $changed_status;
+    return $args unless $status_changed;
 
     my $email_body = "New document was uploaded for the account: " . $client_id;
 
@@ -166,8 +181,6 @@ sub create_upload_error {
         $message = localize('Expiration date is required.');
     } elsif ($reason eq 'missing_doc_id') {
         $message = localize('Document ID is required.');
-    } elsif ($reason eq 'doc_not_found') {
-        $message = localize('Document not found.');
     } elsif ($reason eq 'doc_not_found') {
         $message = localize('Document not found.');
     } elsif ($reason eq 'max_size') {
