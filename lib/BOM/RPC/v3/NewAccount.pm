@@ -182,6 +182,34 @@ sub verify_email {
     return {status => 1};    # always return 1, so not to leak client's email
 }
 
+sub _get_professional_details_clients {
+
+    my ($user, $args) = @_;
+
+    # Filter out MF/CR clients
+    my @clients =
+        grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
+
+    # Get the professional flags
+    my $professional_status = any { $_->get_status('professional') } @clients;
+    my $professional_requested =
+        !$professional_status && ($args->{client_type} eq 'professional') || any { $_->get_status('professional_requested') } @clients;
+
+    # Update MF/CR clients that have no professional request
+    if ($professional_requested && @clients) {
+        foreach my $client (@clients) {
+            $error = BOM::RPC::v3::Utility::set_professional_status($client, professional_requested => $professional_requested);
+            return $error if $error;
+        }
+
+    }
+
+    return {
+        professional_status    => $professional_status,
+        professional_requested => $professional_requested
+    };
+}
+
 sub new_account_real {
     my $params = shift;
 
@@ -223,23 +251,11 @@ sub new_account_real {
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    # Filter out MF/CR clients
-    my @clients =
-        grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
+    my $val = _get_professional_details_clients($user, $args);
 
-    # Get the professional flags
-    my $professional_status = any { $_->get_status('professional') } @clients;
-    my $professional_requested =
-        !$professional_status && ($args->{client_type} eq 'professional') || any { $_->get_status('professional_requested') } @clients;
+    return $val if exists $val->{error};
 
-    # Update MF/CR clients that have no professional request
-    if ($professional_requested && @clients) {
-        foreach my $client (@clients) {
-            $error = BOM::RPC::v3::Utility::set_professional_status($client, professional_requested => 1);
-            return $error if $error;
-        }
-
-    }
+    my ($professional_requested, $professional_status) = @{$val}{qw/professional_requested professional_status/};
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
         ip => $params->{client_ip} // '',
@@ -357,23 +373,11 @@ sub new_account_maltainvest {
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    # Filter out MF/CR clients
-    my @clients =
-        grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
+    my $val = _get_professional_details_clients($user, $args);
 
-    # Get the professional flags
-    my $professional_status = any { $_->get_status('professional') } @clients;
-    my $professional_requested =
-        !$professional_status && ($args->{client_type} eq 'professional') || any { $_->get_status('professional_requested') } @clients;
+    return $val if exists $val->{error};
 
-    # Update MF/CR clients that have no professional request
-    if ($professional_requested && @clients) {
-        foreach my $client (@clients) {
-            $error = BOM::RPC::v3::Utility::set_professional_status($client, professional_requested => 1);
-            return $error if $error;
-        }
-
-    }
+    my ($professional_requested, $professional_status) = @{$val}{qw/professional_requested professional_status/};
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         ip => $params->{client_ip} // '',
