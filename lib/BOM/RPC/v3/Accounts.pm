@@ -40,8 +40,6 @@ use BOM::Database::Model::UserConnect;
 use BOM::Platform::Pricing;
 use BOM::Platform::Runtime;
 
-my $ICO_BID_PRICE_PERCENTAGE = 0.98;
-
 sub payout_currencies {
     my $params = shift;
 
@@ -51,7 +49,7 @@ sub payout_currencies {
         $client = Client::Account->new({loginid => $token_details->{loginid}});
     }
 
-    # if client has default_account he had already choosed his currency..
+    # if client has default_account he has already chosen his currency..
     return [$client->currency] if $client && $client->default_account;
 
     # or if client has not yet selected currency - we will use list from his LC
@@ -60,9 +58,9 @@ sub payout_currencies {
     my $lc = $client ? $client->landing_company : LandingCompany::Registry::get($params->{landing_company_name} || 'costarica');
     # ... but we fall back to Costa Rica as a useful default, since it has most
     # currencies enabled.
-    $lc ||= LandingCompany::Registry::get('costarica');
 
-    return [sort keys %{$lc->legal_allowed_currencies}];
+    # Remove cryptocurrencies that have been suspended
+    return BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);
 }
 
 sub landing_company {
@@ -110,13 +108,16 @@ sub landing_company_details {
 sub __build_landing_company {
     my ($lc) = @_;
 
+    # Get suspended currencies and remove them from list of legal currencies
+    my $payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);
+
     return {
         shortcode                         => $lc->short,
         name                              => $lc->name,
         address                           => $lc->address,
         country                           => $lc->country,
         legal_default_currency            => $lc->legal_default_currency,
-        legal_allowed_currencies          => [keys %{$lc->legal_allowed_currencies}],
+        legal_allowed_currencies          => $payout_currencies,
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0
@@ -1360,10 +1361,15 @@ sub set_account_currency {
 
     my ($client, $currency) = @{$params}{qw/client currency/};
 
+    # Get suspended currencies
+    my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+
+    # Return an error if the currency is a suspended currency or if the currency chosen is not a legal currency
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidCurrency',
-            message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)}
-    ) unless $client->landing_company->is_currency_legal($currency);
+            message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)})
+        if (not $client->landing_company->is_currency_legal($currency)
+        or exists $suspended_currencies{$currency});
 
     # bail out if default account is already set
     return {status => 0} if $client->default_account;

@@ -70,14 +70,17 @@ sub _currencies_config {
     # As a stake_default (amount, which will be pre-populated for this currency on our website,
     # if there were no amount entered by client), we get max out of two minimal possible stakes.
     # Logic is copied from _build_staking_limits
+
+    # Get available currencies
+    my $payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies('costarica');
+
     my %currencies_config = map {
         $_ => {
             fractional_digits => $amt_precision->{$_},
             type              => LandingCompany::Registry::get_currency_type($_),
             stake_default     => min($bet_limits->{min_payout}->{volidx}->{$_}, $bet_limits->{min_payout}->{default}->{$_}) / 2,
             }
-        }
-        keys LandingCompany::Registry::get('costarica')->legal_allowed_currencies;
+    } @{$payout_currencies};
     return \%currencies_config;
 }
 
@@ -145,8 +148,6 @@ sub website_status {
     my $params = shift;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
-    my $ico_info   = live_open_ico_bids('USD');
-    $ico_info->{final_price} = $app_config->system->suspend->ico_final_price;
 
     return {
         terms_conditions_version => $app_config->cgi->terms_conditions_version,
@@ -154,17 +155,13 @@ sub website_status {
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
-        ico_info                 => $ico_info,
-        ico_status               => (
-            $app_config->system->suspend->is_auction_ended
-                or not $app_config->system->suspend->is_auction_started
-        ) ? 'closed' : 'open',
     };
 }
 
 sub ico_status {
     my $params = shift;
 
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
     my $currency   = $params->{args}{currency} || 'USD';
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     my $ico_info   = live_open_ico_bids($currency);
@@ -174,6 +171,13 @@ sub ico_status {
         $app_config->system->suspend->is_auction_ended
             or not $app_config->system->suspend->is_auction_started
     ) ? 'closed' : 'open';
+
+    $ico_info->{ico_countries_config} = {
+        restricted   => [$countries_instance->ico_countries_by_investor('none')],
+        professional => [$countries_instance->ico_countries_by_investor('professional')],
+    };
+
+    $ico_info->{initial_deposit_percentage} = $app_config->system->suspend->ico_initial_deposit_percentage;
 
     return $ico_info;
 }
