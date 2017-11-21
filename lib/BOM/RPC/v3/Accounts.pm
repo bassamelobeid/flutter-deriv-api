@@ -39,8 +39,6 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
-my $ICO_BID_PRICE_PERCENTAGE = 0.98;
-
 sub payout_currencies {
     my $params = shift;
 

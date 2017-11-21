@@ -177,6 +177,8 @@ sub ico_status {
         professional => [$countries_instance->ico_countries_by_investor('professional')],
     };
 
+    $ico_info->{initial_deposit_percentage} = $app_config->system->suspend->ico_initial_deposit_percentage;
+
     return $ico_info;
 }
 
