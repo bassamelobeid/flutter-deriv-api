@@ -15,6 +15,7 @@ use BOM::ContractInfo;
 use BOM::Database::DataMapper::Payment qw/get_total_withdrawal/;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
+use Format::Util::Numbers qw/formatnumber/;
 
 PrintContentType();
 
@@ -86,7 +87,7 @@ BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
     {
         transactions            => $statement->{transactions},
-        withdrawals_to_date     => $payment_mapper->get_total_withdrawal(),
+        withdrawals_to_date     => formatnumber('amount', $currency, $payment_mapper->get_total_withdrawal()),
         balance                 => $statement->{balance},
         currency                => $currency,
         loginid                 => $client->loginid,
