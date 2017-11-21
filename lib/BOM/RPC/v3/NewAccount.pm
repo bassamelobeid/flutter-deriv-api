@@ -193,7 +193,7 @@ sub _get_professional_details_clients {
     # Get the professional flags
     my $professional_status = any { $_->get_status('professional') } @clients;
     my $professional_requested =
-        !$professional_status && ($args->{client_type} eq 'professional') || any { $_->get_status('professional_requested') } @clients;
+        !$professional_status && (($args->{client_type} eq 'professional') || any { $_->get_status('professional_requested') } @clients);
 
     # Update MF/CR clients that have no professional request
     if ($professional_requested && @clients) {
