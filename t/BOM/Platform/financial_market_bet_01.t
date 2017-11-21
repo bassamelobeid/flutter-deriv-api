@@ -68,6 +68,7 @@ subtest 'buy and sell without setting transaction time' => sub {
             bet          => $fmb,
             db           => $account->db,
         });
+        $fmb_helper->bet_data->{quantity} = 1;
         $txn_id = $fmb_helper->buy_bet;
     }
     'Buy fmb successfully';
@@ -101,13 +102,15 @@ subtest 'buy and sell without setting transaction time' => sub {
 
 subtest 'sell open expired bet' => sub {
     $expired_fmb->sell_price($expired_fmb->payout_price);
-    isnt(
-        BOM::Database::Helper::FinancialMarketBet->new({
+    my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new({
                 account_data => $account_data,
                 bet          => $expired_fmb,
                 db           => $account->db,
             }
-            )->sell_bet,
+            );
+    $fmb_helper->bet_data->{quantity} = 1;
+    isnt(
+        $fmb_helper->sell_bet,
         undef,
         'Sell expired fmb successfully'
     );
@@ -123,6 +126,7 @@ subtest 'buy and sell by setting transaction time' => sub {
             bet          => $fmb2,
             db           => $account->db,
         });
+        $fmb_helper->bet_data->{quantity} = 1;
         $txn_id = $fmb_helper->buy_bet;
     }
     'Buy fmb and set transaction time successfully';
