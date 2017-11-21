@@ -198,7 +198,7 @@ sub _get_professional_details_clients {
     # Update MF/CR clients that have no professional request
     if ($professional_requested && @clients) {
         foreach my $client (@clients) {
-            $error = BOM::RPC::v3::Utility::set_professional_status($client, professional_requested => $professional_requested);
+            my $error = BOM::RPC::v3::Utility::set_professional_status($client, professional_requested => $professional_requested);
             return $error if $error;
         }
 
