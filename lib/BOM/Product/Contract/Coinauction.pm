@@ -2,17 +2,17 @@ package BOM::Product::Contract::Coinauction;
 
 use Moose;
 use Date::Utility;
+use Try::Tiny;
+
 use Quant::Framework::Underlying;
 use Format::Util::Numbers qw/financialrounding/;
-
 use Postgres::FeedDB::CurrencyConverter qw (in_USD);
 
 with 'MooseX::Role::Validatable';
 extends 'Finance::Contract';
 use BOM::MarketData::Types;
-use BOM::Product::Static qw(get_error_mapping);
+use BOM::Product::Static;
 use BOM::Platform::Runtime;
-use Try::Tiny;
 
 # Actual methods for introspection purposes.
 sub is_binaryico        { return 1 }
@@ -100,9 +100,17 @@ has minimum_bid_in_usd => (
     lazy_build => 1,
 );
 
+has binaryico_deposit_percentage => (
+    is  => 'rw',
+    isa => 'Maybe[Num]',
+);
+
 sub _build_ask_price {
     my $self = shift;
-    return $self->binaryico_number_of_tokens * $self->binaryico_per_token_bid_price;
+    return financialrounding('price', $self->currency,
+        $self->binaryico_number_of_tokens *
+            $self->binaryico_per_token_bid_price *
+            ($self->binaryico_deposit_percentage ? $self->binaryico_deposit_percentage / 100 : 1));
 }
 
 sub _build_payout {
@@ -141,7 +149,7 @@ sub _build_binaryico_auction_status {
             return 'successful bid';
         }
     } else {
-        $self->bid_price($self->ask_price * 0.98);
+        $self->bid_price($self->ask_price);
         return 'bid';
     }
 
@@ -162,6 +170,7 @@ sub BUILD {
     $self->contract_type($self->build_parameters->{bet_type});
     $self->binaryico_number_of_tokens($self->build_parameters->{binaryico_number_of_tokens});
     $self->binaryico_per_token_bid_price($self->build_parameters->{binaryico_per_token_bid_price});
+    $self->binaryico_deposit_percentage($self->build_parameters->{binaryico_deposit_percentage});
 
     if ($self->binaryico_number_of_tokens < $limits->{min} or $self->binaryico_number_of_tokens > $limits->{max}) {
         $self->add_errors({
@@ -277,7 +286,15 @@ has [qw(shortcode)] => (
 
 sub _build_shortcode {
     my $self = shift;
-    return join '_', uc($self->contract_type), $self->binaryico_per_token_bid_price, $self->binaryico_number_of_tokens;
+
+    my $token_bid_price = sprintf("%0.8f", $self->binaryico_per_token_bid_price);
+    $token_bid_price =~ s/\.(?:|.*[^0]\K)0*\z//;
+
+    my @sc_params = (uc($self->contract_type), $token_bid_price, sprintf("%d", $self->binaryico_number_of_tokens));
+
+    push @sc_params, $self->binaryico_deposit_percentage if $self->binaryico_deposit_percentage;
+
+    return join '_', @sc_params;
 }
 
 sub longcode {
