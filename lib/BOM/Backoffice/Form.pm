@@ -90,8 +90,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => '^(\d*(\.?\d{1,8}))$',
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
@@ -116,8 +116,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => '^(\d*(\.?\d{1,8}))$',
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
@@ -142,8 +142,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => '^(\d*(\.?\d{1,8}))$',
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
@@ -168,8 +168,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => '^(\d*(\.?\d{1,8}))$',
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
@@ -194,8 +194,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => '^(\d*(\.?\d{1,8}))$',
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
@@ -220,8 +220,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => '^(\d*(\.?\d{1,8}))$',
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
@@ -246,8 +246,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => '^(\d*(\.?\d{1,8}))$',
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
