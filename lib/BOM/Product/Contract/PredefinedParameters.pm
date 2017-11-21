@@ -34,8 +34,9 @@ my %supported_contract_types = (
 );
 
 my $cache_namespace = 'predefined_parameters';
-my $json = JSON::MaybeXS->new;
-my $utf8_json = JSON::MaybeXS->new->utf8(1);
+my $json            = JSON::MaybeXS->new;
+my $utf8_json       = JSON::MaybeXS->new->utf8(1);
+
 sub _trading_calendar {
     my $for_date = shift;
 
