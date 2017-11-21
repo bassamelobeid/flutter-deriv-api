@@ -8,7 +8,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use Path::Tiny;
 
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 sub log {    ## no critic (ProhibitBuiltinHomonyms)
     my $log   = shift;
     my $user  = shift || '';
