@@ -22,7 +22,7 @@ for (
 {
     my $e = 0;
     try {
-        %entry = @{JSON::MaybeXS->new->decode($redis->get($_))};
+        %entry = @{JSON::MaybeXS->new->utf8(1)->decode($redis->get($_))};
     }
     catch {
         $e = 1;

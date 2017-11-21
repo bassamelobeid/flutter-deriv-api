@@ -169,7 +169,7 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
                     trading_period_start   => $contract_parameters->{trading_period}{date_start}{epoch},
                 );
                 $log->tracef("Contract parameters will be %s", \@pricing_queue_args);
-                push @jobs, "PRICER_KEYS::" . JSON::MaybeXS->new->encode(\@pricing_queue_args);
+                push @jobs, "PRICER_KEYS::" . JSON::MaybeXS->new->utf8(1)->encode(\@pricing_queue_args);
             }
         }
     }
