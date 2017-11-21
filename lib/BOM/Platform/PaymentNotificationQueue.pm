@@ -101,7 +101,9 @@ Usage:
  $class->publish({ source => 'doughflow', amount => 123.45 });
 
 =cut
+
 my $json = JSON::MaybeXS->new->utf8(1);
+
 sub publish {
     my ($class, $data) = @_;
     my $bytes = $json->encode($data);

@@ -33,6 +33,7 @@ use warnings;
  Creates a new token and stores it in redis.
 
 =cut
+
 my $json = JSON::MaybeXS->new;
 sub email { $_[0]->{email} if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)
 sub token { $_[0]->{token} if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)

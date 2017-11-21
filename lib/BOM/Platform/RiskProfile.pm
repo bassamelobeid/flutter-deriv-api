@@ -114,7 +114,7 @@ sub _build_raw_custom_profiles {
     my $self = shift;
 
     my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;    # use a pointer to avoid copying
-    $product_profiles_compiled = $json->decode($product_profiles_txt = $$ptr)                        # copy and compile
+    $product_profiles_compiled = $json->decode($product_profiles_txt = $$ptr)                    # copy and compile
         unless $$ptr eq $product_profiles_txt;
 
     return $product_profiles_compiled;
@@ -199,7 +199,7 @@ sub get_client_profiles {
 
     if ($loginid && $landing_company_short) {
         my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
-        $custom_limits_compiled = $json->decode($custom_limits_txt = $$ptr)                             # copy and compile
+        $custom_limits_compiled = $json->decode($custom_limits_txt = $$ptr)                         # copy and compile
             unless $$ptr eq $custom_limits_txt;
 
         my @client_limits = do {
