@@ -224,12 +224,13 @@ sub new_account_real {
     my $user = BOM::Platform::User->new({email => $client->email});
 
     # Filter out MF/CR clients
-    my @clients = grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
+    my @clients =
+        grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
 
     # Get the professional flags
-    my $professional_status = scalar grep { $_->get_status('professional') } @clients;
+    my $professional_status = any { $_->get_status('professional') } @clients;
     my $professional_requested =
-        !$professional_status && ($args->{client_type} eq 'professional') || scalar grep { $_->get_status('professional_requested') } @clients;
+        !$professional_status && ($args->{client_type} eq 'professional') || any { $_->get_status('professional_requested') } @clients;
 
     # Update MF/CR clients that have no professional request
     if ($professional_requested && @clients) {
@@ -357,12 +358,13 @@ sub new_account_maltainvest {
     my $user = BOM::Platform::User->new({email => $client->email});
 
     # Filter out MF/CR clients
-    my @clients = grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
+    my @clients =
+        grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
 
     # Get the professional flags
-    my $professional_status = scalar grep { $_->get_status('professional') } @clients;
+    my $professional_status = any { $_->get_status('professional') } @clients;
     my $professional_requested =
-        !$professional_status && ($args->{client_type} eq 'professional') || scalar grep { $_->get_status('professional_requested') } @clients;
+        !$professional_status && ($args->{client_type} eq 'professional') || any { $_->get_status('professional_requested') } @clients;
 
     # Update MF/CR clients that have no professional request
     if ($professional_requested && @clients) {
