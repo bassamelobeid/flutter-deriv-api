@@ -13,7 +13,7 @@ sub _build_dbic {
     return BOM::Database::UserDB::rose_db->dbic;
 }
 
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 
 sub insert_connect {
     my ($self, $user_id, $provider_data) = @_;

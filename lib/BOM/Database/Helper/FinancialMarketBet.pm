@@ -46,7 +46,7 @@ has 'quants_bet_variables' => (
     default => undef,
 );
 
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 
 sub _build_bet_data {
     my $self = shift;
