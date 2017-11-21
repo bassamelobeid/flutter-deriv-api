@@ -32,6 +32,7 @@ use BOM::Pricing::v3::Utility;
 use feature "state";
 
 my $json = JSON::MaybeXS->new->allow_blessed;
+
 sub _create_error {
     my $args = shift;
     stats_inc("bom_pricing_rpc.v_3.error", {tags => ['code:' . $args->{code},]});
