@@ -20,7 +20,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::AuditLog;
 use BOM::Database::Helper::QuestionsAnswered;
 
-my $json = JSON::MaybeXS->new;
+my $json      = JSON::MaybeXS->new;
 my $utf8_json = JSON::MaybeXS->new->utf8(1);
 
 sub get_jp_account_status {
