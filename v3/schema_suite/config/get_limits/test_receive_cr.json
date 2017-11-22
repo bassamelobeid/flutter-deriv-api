@@ -114,8 +114,8 @@
                   "required": "1"
                 },
                 "num_of_days_limit": {
-                  "type": "integer",
-                  "pattern": "^10000$",
+                  "type": "number",
+                  "pattern": "^10000.00$",
                   "required": "1"
                 },
                 "open_positions": {
