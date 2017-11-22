@@ -302,7 +302,7 @@ sub new_account_real {
     if ($new_client->residence eq 'gb' and not $ico_only) {    # RTS 12 - Financial Limits - UK Clients
         $new_client->set_status('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit');
 
-        if (not $client->save) {
+        if (not $new_client->save) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'InternalServerError',
                     message_to_client => localize('Sorry, an error occurred while processing your account.')});

@@ -534,12 +534,10 @@ sub should_update_account_details {
 sub set_professional_status {
     my ($client, $professional, $professional_requested) = @_;
 
-    # Nothing to be set
-    return undef if not($professional or $professional_requested);
-
     # Set checks in variables
-    my $set_prof_status  = $professional           && !$client->get_status('professional');
-    my $set_prof_request = $professional_requested && !$client->get_status('professional_requested');
+    my $cr_mf_valid      = $client->landing_company->short =~ /^(?:costarica|maltainvest)$/;
+    my $set_prof_status  = $professional && !$client->get_status('professional') && $cr_mf_valid;
+    my $set_prof_request = $professional_requested && !$client->get_status('professional_requested') && $cr_mf_valid;
 
     $client->set_status('professional', 'SYSTEM', 'Mark as professional as requested') if $set_prof_status;
 
