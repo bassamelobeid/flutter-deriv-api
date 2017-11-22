@@ -18,6 +18,7 @@ use BOM::Platform::RedisReplicated;
 use BOM::Test::Helper qw/build_wsapi_test/;
 
 my $json = JSON::MaybeXS->new;
+my $utf8_json = JSON::MaybeXS->new->utf8(1);
 initialize_realtime_ticks_db();
 
 # R_50 is used in example.json for ticks and ticks_history Websocket API calls
@@ -41,7 +42,7 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
         bid    => $i + 1,
         ohlc   => $ohlc_sample,
     };
-    BOM::Platform::RedisReplicated::redis_write->publish("FEED::$symbol", $json->encode($payload));
+    BOM::Platform::RedisReplicated::redis_write->publish("FEED::$symbol", $utf8_json->encode($payload));
 }
 
 my ($t, $test_name, $response) = (build_wsapi_test());
@@ -73,9 +74,9 @@ foreach my $f (grep { -d } glob "$v/*") {
     $t->message_ok("$test_name got a response");
     $str = File::Slurp::read_file("$f/receive.json");
     my $validator = JSON::Schema->new($json->decode($str));
-    my $result    = $validator->validate($json->decode($t->message->[1]));
+    my $result    = $validator->validate($utf8_json->decode($t->message->[1]));
     ok $result, "$f response is valid";
-    if (not $result) { print " - $_\n" foreach $result->errors; print Data::Dumper::Dumper($json->decode($t->message->[1])) }
+    if (not $result) { print " - $_\n" foreach $result->errors; print Data::Dumper::Dumper($json->utf8_decode($t->message->[1])) }
 }
 
 done_testing;

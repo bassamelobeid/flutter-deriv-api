@@ -22,7 +22,7 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client->email($email);
 $test_client->save;
 
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 my $test_loginid = $test_client->loginid;
 my $user         = BOM::Platform::User->create(
     email    => $email,

@@ -11,7 +11,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Platform::RedisReplicated;
 use await;
 my $t = build_wsapi_test();
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',

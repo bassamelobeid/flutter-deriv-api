@@ -14,7 +14,7 @@ use BOM::Database::Model::OAuth;
 
 my $t    = build_wsapi_test();
 my $cr_1 = create_test_user();
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 # cleanup
 my $oauth = BOM::Database::Model::OAuth->new();
 my $dbh   = $oauth->dbic->dbh;

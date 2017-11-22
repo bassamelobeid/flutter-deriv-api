@@ -19,7 +19,7 @@ set_fixed_time($test_date->epoch);
 
 my $t = build_wsapi_test();
 my ($req_storage, $res, $start, $end);
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 
 # as these validations are in websocket so test it
 subtest 'validations' => sub {

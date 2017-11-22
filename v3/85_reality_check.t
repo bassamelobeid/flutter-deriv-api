@@ -13,7 +13,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 my $t = build_wsapi_test();
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 
 # check for authenticated call
 $t = $t->send_ok({json => {reality_check => 1}})->message_ok;

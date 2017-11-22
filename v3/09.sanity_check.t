@@ -42,6 +42,6 @@ is $res->{error}->{code}, 'SanityCheckFailed', 'Should be failed if paswword key
 
 $t->finish_ok;
 
-sub request { JSON::MaybeXS->new->decode($t->send_ok({json => shift})->message_ok->message->[1]) }
+sub request { JSON::MaybeXS->new->utf8(1)->decode($t->send_ok({json => shift})->message_ok->message->[1]) }
 
 done_testing();

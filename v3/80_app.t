@@ -19,7 +19,7 @@ use Test::Deep;
 use Test::Warnings qw(warnings);
 
 my $t = build_wsapi_test();
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 
 # cleanup
 my $oauth = BOM::Database::Model::OAuth->new;

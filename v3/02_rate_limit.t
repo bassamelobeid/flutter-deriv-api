@@ -191,7 +191,7 @@ subtest "get error code (verify_email)" => sub {
                     type         => 'account_opening'
                 }})->message_ok;
     }
-    my $res = JSON::MaybeXS->new->decode($t->message->[1]);
+    my $res = JSON::MaybeXS->new->utf8(1)->decode($t->message->[1]);
     is $res->{error}->{code}, 'RateLimit';
 };
 

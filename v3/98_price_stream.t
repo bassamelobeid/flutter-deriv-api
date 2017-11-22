@@ -27,7 +27,7 @@ build_test_R_50_data();
 
 my $t = build_wsapi_test();
 my $token = BOM::Database::Model::AccessToken->new->create_token("CR2002", 'Test', ['price', 'trade']);
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
 my ($req, $res, $start, $end);

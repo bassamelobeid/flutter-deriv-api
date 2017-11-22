@@ -13,7 +13,7 @@ use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 for my $symbol (qw/R_50 R_100/) {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => $symbol,

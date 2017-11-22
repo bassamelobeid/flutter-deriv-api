@@ -18,7 +18,7 @@ use BOM::Platform::Runtime;
 
 build_test_R_50_data();
 my $t = build_wsapi_test();
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',

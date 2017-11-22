@@ -11,7 +11,7 @@ use Mojo::Redis2;
 use Clone;
 use BOM::Platform::Chronicle;
 
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 my $t = build_wsapi_test();
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
 my $res = $json->decode($t->message->[1]);
