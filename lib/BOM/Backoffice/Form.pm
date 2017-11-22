@@ -75,7 +75,7 @@ sub get_self_exclusion_form {
         my %htmlesc = (qw/< &lt; > &gt; " &quot; & &amp;/);
         $se_map =~ s/([<>"&])/$htmlesc{$1}/ge;
     }
-    
+
     my $is_currency_fiat = 'fiat' eq LandingCompany::Registry::get_currency_type($client->currency);
 
     #input field for Maximum account cash balance
