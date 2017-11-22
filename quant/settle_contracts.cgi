@@ -61,6 +61,7 @@ if (request()->param('perform_actions')) {
                         sell_price => $action eq 'win' ? $bet_info->{payout} : 0,
                         sell_time  => Date::Utility->new->db_timestamp,
                         is_expired => 1,
+                        quantity   => 1,
                     },
                     account_data => {
                         client_loginid => $bet_info->{loginid},
