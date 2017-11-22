@@ -537,8 +537,11 @@ sub set_professional_status {
     # Nothing to be set
     return undef if not($professional or $professional_requested);
 
-    $client->set_status('professional',           'SYSTEM', 'Mark as professional as requested') if $professional;
-    $client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')    if $professional_requested;
+    $client->set_status('professional', 'SYSTEM', 'Mark as professional as requested')
+        if ($professional && !$client->get_status('professional'));
+
+    $client->set_status('professional_requested', 'SYSTEM', 'Professional account requested')
+        if ($professional_requested && !$client->get_status('professional_requested'));
 
     if (not $client->save) {
         return BOM::RPC::v3::Utility::create_error({
@@ -546,7 +549,8 @@ sub set_professional_status {
                 message_to_client => localize('Sorry, an error occurred while processing your account.')});
     }
 
-    BOM::RPC::v3::Utility::send_professional_requested_email($client->loginid, $client->residence) if $professional_requested;
+    BOM::RPC::v3::Utility::send_professional_requested_email($client->loginid, $client->residence)
+        if ($professional_requested && !$client->get_status('professional_requested'));
 
     return undef;
 }
