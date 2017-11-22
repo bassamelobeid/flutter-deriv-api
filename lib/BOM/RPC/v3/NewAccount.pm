@@ -182,7 +182,7 @@ sub verify_email {
     return {status => 1};    # always return 1, so not to leak client's email
 }
 
-sub update_professional_existing_clients {
+sub _update_professional_existing_clients {
 
     my ($clients, $professional_status, $professional_requested) = @_;
 
@@ -259,7 +259,7 @@ sub new_account_real {
 
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
 
-    my $val = update_professional_existing_clients($clients, $professional_status, $professional_requested);
+    my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
 
     return $val if $val;
 
@@ -377,7 +377,7 @@ sub new_account_maltainvest {
 
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
 
-    my $val = update_professional_existing_clients($clients, $professional_status, $professional_requested);
+    my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
 
     return $val if $val;
 
