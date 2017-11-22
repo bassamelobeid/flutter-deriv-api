@@ -41,6 +41,7 @@ use BOM::Platform::Pricing;
 use BOM::Platform::Runtime;
 
 my $json = JSON::MaybeXS->new;
+my $utf8_json = JSON::MaybeXS->new->utf8(1);
 
 sub payout_currencies {
     my $params = shift;
@@ -1412,7 +1413,7 @@ sub set_financial_assessment {
             next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
             $cli->financial_assessment({
-                data => $json->encode($financial_evaluation->{user_data}),
+                data => $utf8_json->encode($financial_evaluation->{user_data}),
             });
             $cli->save;
         }

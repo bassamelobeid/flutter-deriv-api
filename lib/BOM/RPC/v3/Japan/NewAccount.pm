@@ -21,6 +21,7 @@ use BOM::Platform::AuditLog;
 use BOM::Database::Helper::QuestionsAnswered;
 
 my $json = JSON::MaybeXS->new;
+my $utf8_json = JSON::MaybeXS->new->utf8(1);
 
 sub get_jp_account_status {
     my $client = shift;
@@ -175,7 +176,7 @@ sub jp_knowledge_test {
         epoch  => $now->epoch,
         };
     $financial_data->{jp_knowledge_test} = $results;
-    $jp_client->financial_assessment({data => $json->encode($financial_data)});
+    $jp_client->financial_assessment({data => $utf8_json->encode($financial_data)});
 
     #save the questions here.
     if ($questions) {
@@ -382,7 +383,7 @@ sub set_jp_settings {
                 $new_fin->{$_} = $ori_fin->{$_};
             }
         }
-        $client->financial_assessment({data => $json->encode($new_fin)});
+        $client->financial_assessment({data => $utf8_json->encode($new_fin)});
     }
 
     $client->latest_environment(Date::Utility->new->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);

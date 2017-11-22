@@ -16,6 +16,7 @@ use BOM::RPC::v3::Accounts;
 my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
 my $json              = JSON::MaybeXS->new;
+my $utf8_json              = JSON::MaybeXS->new->utf8(1);
 my %jp_client_details = (
     gender                                      => 'f',
     first_name                                  => 'first\'name',
@@ -157,7 +158,7 @@ subtest 'Test is allowed after 1 day' => sub {
         push @{$results}, $last_test;
 
         $financial_data->{jp_knowledge_test} = $results;
-        $jp_client->financial_assessment({data => $json->encode($financial_data)});
+        $jp_client->financial_assessment({data => $utf8_json->encode($financial_data)});
 
         $jp_client->save();
     }

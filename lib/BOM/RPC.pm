@@ -39,7 +39,7 @@ use BOM::RPC::v3::CopyTrading;
 use BOM::Transaction::Validation;
 use BOM::RPC::v3::DocumentUpload;
 
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->utf8(1);
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
