@@ -198,7 +198,7 @@ sub call_mocked_client {
     $module->mock('new', sub { return $fake_rpc_client });
 
     $t = $t->send_ok({json => $json})->message_ok;
-    my $res = JSON::MaybeXS->new->decode($t->message->[1]);
+    my $res = JSON::MaybeXS->new->utf8(1)->decode($t->message->[1]);
 
     $module->unmock_all;
     return ($res, $call_params);

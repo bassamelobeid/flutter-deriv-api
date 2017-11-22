@@ -97,7 +97,7 @@ sub get_data {
             die "Socket was closed while waiting for response (timeout)";
         }
         my $msg  = $t->message->[1];
-        my $data = JSON::MaybeXS->new->decode($msg);
+        my $data = JSON::MaybeXS->new->utf8(1)->decode($msg);
 
         return $data if not exists($params->{req_id}) or (exists($data->{req_id}) and $data->{req_id} == $params->{req_id});
 
