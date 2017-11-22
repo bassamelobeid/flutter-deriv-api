@@ -25,7 +25,6 @@ my $self_excluded_client = BOM::Test::Data::Utility::UnitTestDatabase::create_cl
 $self_excluded_client->email($email);
 my $exclude_until = Date::Utility->new->epoch + 2 * 86400;
 $self_excluded_client->set_exclusion->timeout_until($exclude_until);
-$self_excluded_client->save;
 $self_excluded_client->set_status('disabled', 'SYSTEM', 'testing');
 $self_excluded_client->save;
 
@@ -89,7 +88,7 @@ subtest $method => sub {
         'sub_accounts'             => [],
         'account_list'             => [{
                 'currency'             => '',
-                'ico_only'             => '0',
+                'is_ico_only'          => '0',
                 'is_disabled'          => '0',
                 'is_virtual'           => '0',
                 'landing_company_name' => 'costarica',
@@ -98,7 +97,7 @@ subtest $method => sub {
             {
                 'currency'             => '',
                 'excluded_until'       => $exclude_until,
-                'ico_only'             => '0',
+                'is_ico_only'          => '0',
                 'is_disabled'          => '1',
                 'is_virtual'           => '0',
                 'landing_company_name' => 'costarica',
@@ -265,5 +264,9 @@ subtest 'self_exclusion' => sub {
     $c->call_ok($method, $params)
         ->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01.', 'check if authorize check self exclusion');
 };
+
+$self_excluded_client->set_exclusion->timeout_until(Date::Utility->new->epoch - 2 * 86400);
+$self_excluded_client->clr_status('disabled');
+$self_excluded_client->save;
 
 done_testing();

@@ -104,7 +104,7 @@ sub authorize {
             currency             => $currency,
             landing_company_name => $account->landing_company->short,
             is_disabled          => $account->get_status('disabled') ? 1 : 0,
-            ico_only             => $account->get_status('ico_only') ? 1 : 0,
+            is_ico_only          => $account->get_status('ico_only') ? 1 : 0,
             is_virtual           => $client->is_virtual ? 1 : 0,
             $self_exclusion_epoch ? (excluded_until => $self_exclusion_epoch) : ()};
     }
