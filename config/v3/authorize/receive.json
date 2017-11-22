@@ -37,7 +37,7 @@
           "type": "string",
           "description": "Landing company name the account belongs to"
         },
-        "country":{
+        "country": {
           "type": "string",
           "pattern": "^[a-z]{0,2}$",
           "description": "2-letter country code ISO standard"
@@ -73,14 +73,17 @@
                 "description": "Epoch of date till client has excluded him/herself from website, only present if client has self excluded"
               },
               "is_disabled": {
+                "type": "integer",
                 "pattern": "^(1|0)$",
                 "description": "Boolean value: 1 or 0, indicating whether its marked as disabled or not"
               },
               "is_ico_only": {
+                "type": "integer",
                 "pattern": "^(1|0)$",
                 "description": "Boolean value: 1 or 0, indicating whether its ico specific account"
               },
               "is_virtual": {
+                "type": "integer",
                 "pattern": "^(1|0)$",
                 "description": "Boolean value: 1 or 0, indicating whether it is a virtual-money account"
               },
