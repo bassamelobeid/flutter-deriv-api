@@ -76,8 +76,7 @@ sub get_self_exclusion_form {
         $se_map =~ s/([<>"&])/$htmlesc{$1}/ge;
     }
 
-    my $is_currency_fiat = 'fiat' eq LandingCompany::Registry::get_currency_type($client->currency);
-    my $curr_regex = $is_currency_fiat ? '^(\d*(\.?\d{1,2}))$' : '^(\d*(\.?\d{1,8}))$';
+    my $curr_regex = LandingCompany::Registry::get_currency_type($client->currency) eq 'fiat' ? '^(\d*(\.?\d{1,2}))$' : '^(\d*(\.?\d{1,8}))$';
 
     #input field for Maximum account cash balance
     my $input_field_maximum_account_cash_balance = {
