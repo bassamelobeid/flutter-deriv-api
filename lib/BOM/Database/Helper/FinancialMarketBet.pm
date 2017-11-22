@@ -114,7 +114,7 @@ sub buy_bet {
 
         # transaction table
         @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source app_markup/},
-        $bet->{quantity} // 1,
+        $bet{quantity} // 1,
 
         # data_collection.quants_bet_variables
         defined $qv
@@ -225,7 +225,7 @@ sub batch_buy_bet {
         $transdata->{transaction_time},
         $staff_loginid,
         @{$transdata}{qw/remark source app_markup/},
-        $bet->{quantity} // 1,
+        $bet{quantity} // 1,
 
         # data_collection.quants_bet_variables
         $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
