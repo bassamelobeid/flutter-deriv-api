@@ -12,7 +12,7 @@ use Proc::CPUUsage;
 use Time::HiRes;
 use Try::Tiny;
 use Path::Tiny;
-use JSON::XS;
+use JSON::MaybeXS;
 use Scalar::Util q(blessed);
 
 use BOM::Platform::Context qw(localize);
@@ -38,6 +38,8 @@ use BOM::RPC::v3::CopyTrading::Statistics;
 use BOM::RPC::v3::CopyTrading;
 use BOM::Transaction::Validation;
 use BOM::RPC::v3::DocumentUpload;
+
+my $json = JSON::MaybeXS->new->utf8(1);
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -155,7 +157,7 @@ sub register {
                 $params->{client} = blessed($params->{client}) . ' object: ' . $params->{client}->loginid
                     if eval { $params->{client}->can('loginid') };
                 defined blessed($_) and $_ = blessed($_) . ' object' for (values %$params);
-                warn "Exception when handling $method - $_ with parameters " . encode_json $params;
+                warn "Exception when handling $method - $_ with parameters " . $json->encode($params);
                 BOM::RPC::v3::Utility::create_error({
                         code              => 'InternalServerError',
                         message_to_client => localize("Sorry, an error occurred while processing your account.")});
