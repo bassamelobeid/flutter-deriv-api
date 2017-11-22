@@ -198,7 +198,7 @@ sub _get_professional_details_clients {
     # Update MF/CR clients that have no professional request
     if ($professional_requested && @clients) {
         foreach my $client (@clients) {
-            my $error = BOM::RPC::v3::Utility::set_professional_status($client, professional_requested => $professional_requested);
+            my $error = BOM::RPC::v3::Utility::set_professional_status($client, $professional_status, $professional_requested);
             return $error if $error;
         }
 
@@ -233,6 +233,7 @@ sub new_account_real {
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
     my $company = $countries_instance->gaming_company_for_country($residence) // $countries_instance->financial_company_for_country($residence);
     my $broker  = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+
     # EU clients signing up for ICO get a CR account with trading disabled
     $broker = 'CR' if $ico_only;
 
@@ -280,11 +281,7 @@ sub new_account_real {
     # else it will give false impression to client
     $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
 
-    $error = BOM::RPC::v3::Utility::set_professional_status(
-        $new_client,
-        professional           => $professional_status,
-        professional_requested => $professional_requested
-    );
+    $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
     return $error if $error;
 
@@ -398,11 +395,7 @@ sub new_account_maltainvest {
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
 
-    $error = BOM::RPC::v3::Utility::set_professional_status(
-        $new_client,
-        professional           => $professional_status,
-        professional_requested => $professional_requested
-    );
+    $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
     return $error if $error;
 

@@ -532,9 +532,7 @@ sub should_update_account_details {
 }
 
 sub set_professional_status {
-    my ($client, %args) = shift;
-
-    my ($professional, $professional_requested) = @args{qw/professional professional_requested/};
+    my ($client, $professional, $professional_requested) = @_;
 
     # Nothing to be set
     return undef if not($professional or $professional_requested);
