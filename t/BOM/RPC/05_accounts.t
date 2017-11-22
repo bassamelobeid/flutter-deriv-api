@@ -683,7 +683,7 @@ subtest $method => sub {
     sub test_financial_assessment {
         my ($data, $is_present, $msg) = @_;
         $test_client->financial_assessment({
-            data            => JSON::MaybeXS->new->encode($data),
+            data => JSON::MaybeXS->new->encode($data),
         });
         $test_client->save();
         my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
