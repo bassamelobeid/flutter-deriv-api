@@ -57,7 +57,7 @@ subtest 'what happens to an undefined symbol name' => sub {
     is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
     is($symbol_undefined->display_decimals, 4,          'an undefined symbol has correct display_decimals');
 
-    throws_ok{$symbol_undefined->pipsized_value(100.1234567)} qr/unknown underlying/, 'dies if unnown underlying calls pipsize';;
+    throws_ok { $symbol_undefined->pipsized_value(100.1234567) } qr/unknown underlying/, 'dies if unnown underlying calls pipsize';
 
     is($symbol_undefined->spot_spread_size, 50,    'an undefined symbol has correct spot_spread_size');
     is($symbol_undefined->spot_spread,      0.005, 'an undefined symbol has correct spot_spread');

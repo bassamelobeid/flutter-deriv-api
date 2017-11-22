@@ -47,6 +47,7 @@ has _jump_threshold => (
 );
 
 my $json = JSON::MaybeXS->new;
+
 sub BUILD {
     my $self = shift;
 
