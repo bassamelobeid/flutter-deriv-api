@@ -355,11 +355,18 @@ sub show_client_id_docs {
     my $extra       = $args{no_edit} ? 'disabled' : '';
     my $links       = '';
 
-    return '' if !$loginid || $loginid =~ /^MT/;
+    return unless $loginid;
 
-    my $client = Client::Account->new({loginid => $loginid});
+    return '' if $loginid =~ /^MT/;
 
-    my $docs = $client->db->dbic->run(
+    my $dbic = BOM::Database::ClientDB->new({
+            client_loginid => $loginid,
+            operation      => 'backoffice_replica',
+        }
+        )->db->dbic
+        or die "[$0] cannot create connection";
+
+    my $docs = $dbic->run(
         fixup => sub {
             $_->selectall_arrayref(<<'SQL', undef, $loginid);
 SELECT id,
