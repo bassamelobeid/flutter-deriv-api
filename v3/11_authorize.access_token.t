@@ -32,8 +32,8 @@ $user->save;
 my $token = BOM::Database::Model::AccessToken->new->create_token($loginid, 'Test', ['trade']);
 
 my $authorize = $t->await::authorize({authorize => $token});
-is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
-is $authorize->{authorize}->{loginid}, 'CR2002';
+is $authorize->{authorize}->{email},   $email;
+is $authorize->{authorize}->{loginid}, $loginid;
 test_schema('authorize', $authorize);
 
 ## it's ok after authorize

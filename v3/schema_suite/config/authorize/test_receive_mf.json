@@ -95,7 +95,7 @@
               },
               "loginid": {
                 "type": "string",
-                "pattern": "^CR\\d+$"
+                "pattern": "^[A-Z]{2,4}\\d+$"
               }
             }
           }
