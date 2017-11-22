@@ -6,6 +6,7 @@ no indirect;
 
 use Try::Tiny;
 use List::MoreUtils qw(none);
+use JSON::XS;
 use Date::Utility;
 use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
