@@ -14,8 +14,8 @@ use Client::Account;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Password;
 
-my $email       = 'dummy@binary.com';
-my $password    = 'jskjd8292922';
+my $email    = 'dummy@binary.com';
+my $password = 'jskjd8292922';
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -23,7 +23,7 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client->email($email);
 $test_client->save;
 
-my $user    = BOM::Platform::User->create(
+my $user = BOM::Platform::User->create(
     email    => $email,
     password => $password,
 );
