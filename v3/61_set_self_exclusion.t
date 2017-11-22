@@ -1,18 +1,20 @@
 use strict;
 use warnings;
 use Test::More;
+use Date::Utility;
+use DateTime;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 
+use Client::Account;
+
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use Client::Account;
-use Date::Utility;
-use DateTime;
+use BOM::Platform::User;
 
 use await;
 
