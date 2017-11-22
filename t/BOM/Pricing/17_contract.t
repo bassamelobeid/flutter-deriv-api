@@ -87,7 +87,6 @@ subtest 'validate_symbol' => sub {
     );
 };
 
-# We dont write unit test. We fuck unit tests.
 set_fixed_time(Date::Utility->new()->epoch);
 
 subtest 'prepare_ask' => sub {
@@ -310,8 +309,6 @@ subtest 'send_ask' => sub {
         'long code  is correct'
     );
 };
-
-#ToDo: Later add app_markup test
 
 done_testing();
 
