@@ -319,28 +319,22 @@ sub get_limits {
 
     $limit->{market_specific} = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
 
-    my $numdays       = $wl_config->{for_days};
-    my $numdayslimit  = $wl_config->{limit_for_days};
-    my $lifetimelimit = $wl_config->{lifetime_limit};
+    my $numdays               = $wl_config->{for_days};
+    my $numdayslimit          = $wl_config->{limit_for_days};
+    my $lifetimelimit         = $wl_config->{lifetime_limit};
+    my $withdrawal_limit_curr = $wl_config->{currency};
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;
         $lifetimelimit = 99999999;
     }
 
-    my $withdrawal_limit_curr;
-    if (first { $client->landing_company->short eq $_ } ('costarica', 'japan')) {
-        $withdrawal_limit_curr = $currency;
-    } else {
-        # limit in EUR for: MX, MLT, MF
-        $withdrawal_limit_curr = 'EUR';
-    }
+    $limit->{num_of_days} = $numdays;
 
-    $limit->{num_of_days}       = $numdays;
-    $limit->{num_of_days_limit} = $numdayslimit;
-    $limit->{lifetime_limit}    = formatnumber('price', $currency, $lifetimelimit);
+    $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
+    $limit->{lifetime_limit}    = formatnumber('price', $currency, amount_from_to_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
 
-    # withdrawal since $numdays
+    # Withdrawal since $numdays
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
     my $withdrawal_for_x_days = $payment_mapper->get_total_withdrawal({
         start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
@@ -357,9 +351,11 @@ sub get_limits {
         $remainder = 0;
     }
 
-    $limit->{withdrawal_since_inception_monetary} = formatnumber('price', $currency, $withdrawal_since_inception);
-    $limit->{withdrawal_for_x_days_monetary}      = formatnumber('price', $currency, $withdrawal_for_x_days);
-    $limit->{remainder}                           = formatnumber('price', $currency, $remainder);
+    $limit->{withdrawal_since_inception_monetary} =
+        formatnumber('price', $currency, amount_from_to_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency));
+    $limit->{withdrawal_for_x_days_monetary} =
+        formatnumber('price', $currency, amount_from_to_currency($withdrawal_for_x_days, $withdrawal_limit_curr, $currency));
+    $limit->{remainder} = formatnumber('price', $currency, amount_from_to_currency($remainder, $withdrawal_limit_curr, $currency));
 
     return $limit;
 }
