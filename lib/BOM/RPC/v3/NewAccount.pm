@@ -261,7 +261,7 @@ sub new_account_real {
 
     my $val = update_professional_existing_clients($clients, $professional_status, $professional_requested);
 
-    return $val if exists $val->{error};
+    return $val if $val;
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
         ip => $params->{client_ip} // '',
@@ -379,7 +379,7 @@ sub new_account_maltainvest {
 
     my $val = update_professional_existing_clients($clients, $professional_status, $professional_requested);
 
-    return $val if exists $val->{error};
+    return $val if $val;
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         ip => $params->{client_ip} // '',
