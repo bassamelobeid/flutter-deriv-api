@@ -42,11 +42,11 @@ use JSON::MaybeXS;
 my $json = JSON::MaybeXS->new;
 my $datadog_mock = Test::MockModule->new('DataDog::DogStatsd');
 my @datadog_actions;
-$datadog_mock->mock(increment => sub { shift; push @datadog_actions, $json->encode({increment => [@_]}; return; }));
-$datadog_mock->mock(decrement => sub { shift; push @datadog_actions, $json->encode({decrement => [@_]}; return; }));
-$datadog_mock->mock(timing    => sub { shift; push @datadog_actions, $json->encode({timing    => [@_]}; return; }));
-$datadog_mock->mock(gauge     => sub { shift; push @datadog_actions, $json->encode({gauge     => [@_]}; return; }));
-$datadog_mock->mock(count     => sub { shift; push @datadog_actions, $json->encode({count     => [@_]}; return; }));
+$datadog_mock->mock(increment => sub { shift; push @datadog_actions, $json->encode({increment => [@_]}); return; });
+$datadog_mock->mock(decrement => sub { shift; push @datadog_actions, $json->encode({decrement => [@_]}); return; });
+$datadog_mock->mock(timing    => sub { shift; push @datadog_actions, $json->encode({timing    => [@_]}); return; });
+$datadog_mock->mock(gauge     => sub { shift; push @datadog_actions, $json->encode({gauge     => [@_]}); return; });
+$datadog_mock->mock(count     => sub { shift; push @datadog_actions, $json->encode({count     => [@_]}); return; });
 
 {
     no warnings 'redefine';
