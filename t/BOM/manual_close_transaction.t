@@ -43,9 +43,10 @@ sub batch_sell {
                 currency_code  => $account->currency_code,
             },
             transaction_data => [{
-                transaction_time => scalar $bet_data->{transaction_time},
-                staff_loginid    => scalar $bet_data->{staff_loginid},
-            }],
+                    transaction_time => scalar $bet_data->{transaction_time},
+                    staff_loginid    => scalar $bet_data->{staff_loginid},
+                }
+            ],
             bet_data => [$bet_data],
             db       => $connection_builder->db,
         })->batch_sell_bet;
@@ -112,6 +113,5 @@ isnt scalar batch_sell({
     undef, 'sell 1 bet';
 cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', ['CR0021', 'USD', 'false'])},
     '==', 0, 'check qty open bet = 0. Successfully close txn manually');
-
 
 1;
