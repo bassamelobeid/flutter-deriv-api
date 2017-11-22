@@ -16,12 +16,19 @@ use BOM::Platform::Password;
 
 my $email       = 'dummy@binary.com';
 my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::Platform::Password::hashpw($password);
+
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 $test_client->email($email);
 $test_client->save;
+
+my $user    = BOM::Platform::User->create(
+    email    => $email,
+    password => $password,
+);
+$user->add_loginid({loginid => $test_client->loginid});
+$user->save;
 
 is $test_client->default_account, undef, 'new client has no default account';
 
@@ -31,6 +38,7 @@ my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $res = decode_json($t->message->[1]);
+note explain $res;
 is $res->{authorize}->{email}, 'dummy@binary.com', 'Correct email for session cookie token';
 test_schema('authorize', $res);
 
