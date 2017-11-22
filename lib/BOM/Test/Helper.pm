@@ -142,7 +142,8 @@ sub test_schema {
     my ($type, $data) = @_;
 
     my $validator =
-        JSON::Schema->new(JSON::MaybeXS->new->decode(File::Slurp::read_file($ENV{WEBSOCKET_API_REPO_PATH} . "/config/$version/$type/receive.json") . ''));
+        JSON::Schema->new(
+        JSON::MaybeXS->new->decode(File::Slurp::read_file($ENV{WEBSOCKET_API_REPO_PATH} . "/config/$version/$type/receive.json") . ''));
     my $result = $validator->validate($data);
     ok $result, "$type response is valid";
     if (not $result) {
