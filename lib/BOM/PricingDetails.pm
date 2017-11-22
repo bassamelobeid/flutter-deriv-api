@@ -90,18 +90,24 @@ sub debug_link {
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
     });
-    my $events = $EEC->get_latest_events_for_period({
-            from => $bet->date_start,
-            to   => $bet->date_start->plus_time_interval('6d'),
-        },
-        $bet->underlying->for_date
-    );
-    Volatility::Seasonality::generate_economic_event_seasonality({
-        underlying_symbols => [$bet->underlying->symbol],
-        economic_events    => $events,
-        date               => $bet->date_start,
-        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
-    });
+
+    foreach my $pair (qw(fordom domqqq forqqq)) {
+        my $pair_ref = $bet->$pair;
+
+        my $events = $EEC->get_latest_events_for_period({
+                from => $bet->date_start,
+                to   => $bet->date_start->plus_time_interval('6d'),
+            },
+            $pair_ref->{underlying}->for_date
+        );
+        Volatility::Seasonality::generate_economic_event_seasonality({
+            underlying_symbols => [$pair_ref->{underlying}->system_symbol],
+            economic_events    => $events,
+            date               => $bet->date_start,
+            chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+        });
+
+    }
 
     my $attr_content = $self->_get_overview();
 
