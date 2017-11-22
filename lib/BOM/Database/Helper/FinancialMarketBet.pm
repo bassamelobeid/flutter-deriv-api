@@ -114,7 +114,7 @@ sub buy_bet {
 
         # transaction table
         @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source app_markup/},
-        @bet{qw/quantity/},
+        $bet{quantity} // 1,
 
         # data_collection.quants_bet_variables
         defined $qv
@@ -225,7 +225,7 @@ sub batch_buy_bet {
         $transdata->{transaction_time},
         $staff_loginid,
         @{$transdata}{qw/remark source app_markup/},
-        @bet{qw/quantity/},
+        $bet{quantity} // 1,
 
         # data_collection.quants_bet_variables
         $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
@@ -311,7 +311,7 @@ sub sell_bet {
 
         # transaction table
         @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source/},
-        $bet->{quantity},
+        $bet->{quantity} // 1,
 
         # data_collection.quants_bet_variables
         $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
@@ -409,7 +409,7 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
             $transdata->{staff_loginid} ? ('#' . $transdata->{staff_loginid}) : undef,    # -- 9
             $transdata->{remark} // '',                                                   # -- 10
             $transdata->{source},                                                         # -- 11
-            $self->bet_data->{quantity},
+            $self->bet_data->{quantity} // 1,
             $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,    # -- 12
             map { $_->{client_loginid} } @{$self->account_data}                                                       # -- 13...
         );
@@ -552,7 +552,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
 
             # transaction table
             @{$transdata || {}}{qw/transaction_time staff_loginid remark source/},
-            @{$bet}{qw/quantity/},
+            $bet->{quantity} // 1,
 
             # data_collection.quants_bet_variables
             $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
