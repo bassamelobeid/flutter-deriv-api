@@ -311,7 +311,7 @@ sub sell_bet {
 
         # transaction table
         @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source/},
-        $bet->{quantity},
+        $bet->{quantity} // 1,
 
         # data_collection.quants_bet_variables
         $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
