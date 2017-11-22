@@ -76,6 +76,8 @@ sub get_self_exclusion_form {
         $se_map =~ s/([<>"&])/$htmlesc{$1}/ge;
     }
 
+    my $curr_regex = LandingCompany::Registry::get_currency_type($client->currency) eq 'fiat' ? '^\d*\.?\d{1,2}$' : '^\d*\.?\d{1,8}$';
+
     #input field for Maximum account cash balance
     my $input_field_maximum_account_cash_balance = {
         'label' => {
@@ -90,8 +92,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => $curr_regex,
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
@@ -116,8 +118,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => $curr_regex,
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
@@ -142,8 +144,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => $curr_regex,
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
@@ -168,8 +170,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => $curr_regex,
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
@@ -194,8 +196,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => $curr_regex,
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
@@ -220,8 +222,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => $curr_regex,
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
@@ -246,8 +248,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => $curr_regex,
+                'err_msg' => localize('Please enter a numeric value.'),
             },
         ],
         'error' => {
