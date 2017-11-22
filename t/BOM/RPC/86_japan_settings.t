@@ -3,6 +3,7 @@ use warnings;
 use Test::More tests => 5;
 use Test::Warnings;
 use Test::Exception;
+use JSON;
 
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

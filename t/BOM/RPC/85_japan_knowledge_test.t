@@ -3,7 +3,7 @@ use warnings;
 use Test::More tests => 9;
 use Test::Warnings;
 use Test::Exception;
-use JSON::MaybeXS;
+use JSON;
 
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -15,8 +15,7 @@ use BOM::RPC::v3::Accounts;
 ## do not send email
 my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
-my $json              = JSON::MaybeXS->new;
-my $utf8_json         = JSON::MaybeXS->new->utf8(1);
+
 my %jp_client_details = (
     gender                                      => 'f',
     first_name                                  => 'first\'name',
@@ -125,7 +124,7 @@ subtest 'First Test taken: fail test' => sub {
 
     subtest 'Test result exists in financial assessment' => sub {
         $jp_client = Client::Account->new({loginid => $jp_loginid});
-        my $financial_data = $json->decode($jp_client->financial_assessment->data);
+        my $financial_data = from_json($jp_client->financial_assessment->data);
 
         my $tests = $financial_data->{jp_knowledge_test};
         is @{$tests}, 1, '1 test record';
@@ -149,7 +148,7 @@ subtest 'No test allow within same day' => sub {
 
 subtest 'Test is allowed after 1 day' => sub {
     lives_ok {
-        my $financial_data = $json->decode($jp_client->financial_assessment->data);
+        my $financial_data = from_json($jp_client->financial_assessment->data);
 
         my $results   = $financial_data->{jp_knowledge_test};
         my $last_test = pop @$results;
@@ -158,7 +157,7 @@ subtest 'Test is allowed after 1 day' => sub {
         push @{$results}, $last_test;
 
         $financial_data->{jp_knowledge_test} = $results;
-        $jp_client->financial_assessment({data => $utf8_json->encode($financial_data)});
+        $jp_client->financial_assessment({data => encode_json($financial_data)});
 
         $jp_client->save();
     }
@@ -183,7 +182,7 @@ subtest 'Test is allowed after 1 day' => sub {
 
     subtest '2 Tests result in financial assessment' => sub {
         $jp_client = Client::Account->new({loginid => $jp_loginid});
-        my $financial_data = $json->decode($jp_client->financial_assessment->data);
+        my $financial_data = from_json($jp_client->financial_assessment->data);
 
         my $tests = $financial_data->{jp_knowledge_test};
         is @{$tests}, 2, '2 test records';
