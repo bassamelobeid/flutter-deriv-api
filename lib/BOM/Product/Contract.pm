@@ -499,8 +499,7 @@ sub _offering_specifics {
             expiry_type       => $self->expiry_type,
             start_type        => ($self->is_forward_starting ? 'forward' : 'spot'),
             contract_category => $self->category->code,
-            ($self->can('landing_company') ? (landing_company => $self->landing_company) : $self->is_binary ? () : (landing_company => 'virtual'))
-            ,    # this is done for japan
+            ($self->can('landing_company') ? (landing_company => $self->landing_company) : $self->is_binary ? () : (landing_company => 'virtual')),
         });
 }
 
