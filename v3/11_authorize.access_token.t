@@ -29,7 +29,7 @@ my $user    = BOM::Platform::User->create(
 $user->add_loginid({loginid => $loginid});
 $user->save;
 
-my $token = BOM::Database::Model::AccessToken->new->create_token($loginid, 'Test', ['trade']);
+my $token = BOM::Database::Model::AccessToken->new->create_token($loginid, 'Test', ['read']);
 
 my $authorize = $t->await::authorize({authorize => $token});
 is $authorize->{authorize}->{email},   $email;
