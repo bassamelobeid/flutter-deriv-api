@@ -27,13 +27,13 @@ sub active_symbols {
     my $language = $params->{language} || 'EN';
     my $token_details = $params->{token_details};
 
-    my $client;
+    my $offerings_obj;
     if ($token_details and exists $token_details->{loginid}) {
-        $client = Client::Account->new({loginid => $token_details->{loginid}});
+        my $client = Client::Account->new({loginid => $token_details->{loginid}});
+        $offerings_obj = $client->landing_company->offerings_for_country($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
     }
 
-    my $offerings_obj = $client->landing_company->offerings_for_country($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
-
+    $offerings_obj //= LandingCompany::Offerings->get($landing_company_name, BOM::Platform::Runtime->instance->get_offerings_config);
     my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
     my ($namespace, $key) = (
         'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
