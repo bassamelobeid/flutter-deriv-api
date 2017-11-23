@@ -368,9 +368,9 @@ sub calculate_limits {
     };
 
     if (not $contract->is_binary) {
-        my $is_intraday = $contract->is_intraday ? 'intraday' : 'daily';
+        my $expiry_type = $contract->is_intraday ? 'intraday' : 'daily';
         $limits{lookback_open_position_limit} = $static_config->{lookback_limits}{open_position_limits}{$currency};
-        $limits{lookback_var_for_underlying}  = $static_config->{lookback_limits}{var}{$is_intraday}{$contract->underlying->symbol};
+        $limits{lookback_var_for_underlying}  = $static_config->{lookback_limits}{var}{$expiry_type}{$contract->underlying->symbol};
     }
 
     if (not $contract->tick_expiry) {
