@@ -31,7 +31,10 @@ sub authorize {
 
     my ($loginid, $scopes) = @{$token_details}{qw/loginid scopes/};
 
-    my $client = Client::Account->new({loginid => $loginid});
+    my $client = Client::Account->new({
+        loginid      => $loginid,
+        db_operation => 'replica'
+    });
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
     my ($lc, $brand_name) = ($client->landing_company, request()->brand);
