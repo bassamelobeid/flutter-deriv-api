@@ -159,7 +159,10 @@ sub _get_csv_line_from_txn {
     # loginid
     my $loginid = _get_loginid_from_txn($transaction);
     die 'Could not extract BOM loginid from transaction. Full transaction details: ' . Dumper($transaction) unless $loginid;
-    my $client = Client::Account::get_instance({loginid => $loginid});
+    my $client = Client::Account::get_instance({
+        loginid      => $loginid,
+        db_operation => 'replica'
+    });
     if (not $client) {
         die 'Could not instantiate client from extracted BOM loginid. Full transaction details: ' . Dumper($transaction);
     }
