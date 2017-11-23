@@ -13,6 +13,8 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use Brands;
 
+use Client::Account;
+
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
 use BOM::RPC::v3::Accounts;
@@ -179,6 +181,39 @@ sub verify_email {
     return {status => 1};    # always return 1, so not to leak client's email
 }
 
+sub _update_professional_existing_clients {
+
+    my ($clients, $professional_status, $professional_requested) = @_;
+
+    if ($professional_requested && $clients) {
+
+        foreach my $client (@{$clients}) {
+            my $error = BOM::RPC::v3::Utility::set_professional_status($client, $professional_status, $professional_requested);
+            return $error if $error;
+        }
+
+    }
+
+    return undef;
+
+}
+
+sub _get_professional_details_clients {
+
+    my ($user, $args) = @_;
+
+    # Filter out MF/CR clients
+    my @clients =
+        grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
+
+    # Get the professional flags
+    my $professional_status = any { $_->get_status('professional') } @clients;
+    my $professional_requested =
+        !$professional_status && (($args->{client_type} eq 'professional') || any { $_->get_status('professional_requested') } @clients);
+
+    return (\@clients, $professional_status, $professional_requested);
+}
+
 sub new_account_real {
     my $params = shift;
 
@@ -187,8 +222,8 @@ sub new_account_real {
     $args->{account_type} //= 'default';
     $args->{client_type}  //= 'retail';
 
-    my $ico_only               = $args->{account_type} eq 'ico';
-    my $professional_requested = $args->{client_type} eq 'professional';
+    my $ico_only = $args->{account_type} eq 'ico';
+
     # send error if maltainvest and japan client tried to make this call
     # as they have their own separate api call for account opening
     return BOM::RPC::v3::Utility::permission_error()
@@ -202,6 +237,7 @@ sub new_account_real {
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
     my $company = $countries_instance->gaming_company_for_country($residence) // $countries_instance->financial_company_for_country($residence);
     my $broker  = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+
     # EU clients signing up for ICO get a CR account with trading disabled
     $broker = 'CR' if $ico_only;
 
@@ -218,11 +254,19 @@ sub new_account_real {
         return $error if $error;
     }
 
+    my $user = BOM::Platform::User->new({email => $client->email});
+
+    my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
+
+    my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
+
+    return $val if $val;
+
     my $acc = BOM::Platform::Account::Real::default::create_account({
         ip => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),
         from_client => $client,
-        user        => BOM::Platform::User->new({email => $client->email}),
+        user        => $user,
         details     => $details_ref->{details},
     });
 
@@ -234,18 +278,16 @@ sub new_account_real {
 
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
-    my $user            = $acc->{user};
 
     # XXX If we fail after account creation then we could end up with these flags not set,
     # ideally should be handled in a single transaction
     # as account is already created so no need to die on status set
     # else it will give false impression to client
-    try {
-        $new_client->set_status('ico_only',               'SYSTEM', 'ICO account requested')          if $ico_only;
-        $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $professional_requested;
-        $new_client->save;
-        BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence) if $professional_requested;
-    };
+    $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
+
+    $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
+
+    return $error if $error;
 
     if ($args->{currency}) {
         my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
@@ -263,7 +305,12 @@ sub new_account_real {
 
     if ($new_client->residence eq 'gb' and not $ico_only) {    # RTS 12 - Financial Limits - UK Clients
         $new_client->set_status('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit');
-        $new_client->save;
+
+        if (not $new_client->save) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize('Sorry, an error occurred while processing your account.')});
+        }
     }
 
     BOM::Platform::AuditLog::log("successful login", "$client->email");
@@ -306,8 +353,6 @@ sub new_account_maltainvest {
 
     $args->{client_type} //= 'retail';
 
-    my $professional_requested = $args->{client_type} eq 'professional';
-
     # send error if anyone other than maltainvest, virtual, malta
     # tried to make this call
     return BOM::RPC::v3::Utility::permission_error()
@@ -327,11 +372,19 @@ sub new_account_maltainvest {
 
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
+    my $user = BOM::Platform::User->new({email => $client->email});
+
+    my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
+
+    my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
+
+    return $val if $val;
+
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         ip => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),
         from_client    => $client,
-        user           => BOM::Platform::User->new({email => $client->email}),
+        user           => $user,
         details        => $details_ref->{details},
         accept_risk    => $args->{accept_risk},
         financial_data => \%financial_data,
@@ -345,15 +398,10 @@ sub new_account_maltainvest {
 
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
-    my $user            = $acc->{user};
 
-    if ($professional_requested) {
-        try {
-            $new_client->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
-            $new_client->save;
-            BOM::RPC::v3::Utility::send_professional_requested_email($new_client->loginid, $new_client->residence);
-        };
-    }
+    $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
+
+    return $error if $error;
 
     $user->add_login_history({
         action      => 'login',
