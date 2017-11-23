@@ -149,8 +149,7 @@ has unit => (
 
 sub _build_unit {
     my $self = shift;
-    return $self->contract->unit if not $self->contract->is_binary;
-    return 0;
+    return $self->contract->is_binary ? 0 : $self->contract->unit;
 }
 
 has amount_type => (
