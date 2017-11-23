@@ -4,8 +4,11 @@ use Moose::Role;
 use Time::Duration::Concise;
 use List::Util qw(min max first);
 use Format::Util::Numbers qw/financialrounding/;
+use YAML::XS qw(LoadFile);
 
 use BOM::Product::Static;
+
+my $multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_contract_multiplier.yml');
 
 has [qw(spot_min spot_max)] => (
     is         => 'ro',
@@ -16,6 +19,18 @@ has unit => (
     is  => 'ro',
     isa => 'Num',
 );
+
+has multiplier => (
+    is  => 'ro',
+    isa => 'Num',
+);
+
+sub _build_multiplier {
+    my $self = shift;
+
+    my $symbol = $self->underlying->symbol;
+    return $multiplier_config->{$symbol};
+}
 
 sub _build_spot_min {
     my $self = shift;
@@ -65,7 +80,7 @@ sub get_ohlc_for_period {
 override _build_theo_price => sub {
     my $self = shift;
 
-    return $self->pricing_engine->theo_price * $self->unit;
+    return $self->pricing_engine->theo_price * $self->unit * $self->multiplier;
 };
 
 override _build_ask_price => sub {
