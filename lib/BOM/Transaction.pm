@@ -1438,8 +1438,7 @@ sub sell_expired_contracts {
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
                 @{$bet}{qw/sell_price sell_time is_expired/} = ($bet->{buy_price}, $now->db_timestamp, $contract->is_expired);
-                $bet->{quantity} = 1;
-                $bet->{quantity} = $contract->unit if not $contract->is_binary;
+                $contract->is_binary ? $bet->{quantity} = 1 : $bet->{quantity} = $contract->unit;
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
