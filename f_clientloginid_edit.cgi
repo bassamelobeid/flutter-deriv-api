@@ -18,6 +18,9 @@ use Brands;
 use LandingCompany::Registry;
 
 use f_brokerincludeall;
+
+use Client::Account;
+
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::User;
@@ -374,17 +377,34 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         /;
     exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
 
-    # Handing the professional client status
+    # Handing the professional client status (For all existing clients)
+    my $user = BOM::Platform::User->new({email => $client->email});
+    my $result = "";
 
-    # Professional request approved
-    if ($input{professional_client}) {
-        $client->set_status('professional', $clerk, 'Mark as professional as requested');
-        $client->clr_status('professional_requested');
+    foreach my $lid ($user->loginid) {
 
-        # Client's professional status revoked
-    } elsif (!$input{professional_client} && $client->get_status('professional')) {
-        $client->clr_status('professional');
+        # Load client object
+        my $existing_cli = Client::Account->new({loginid => $lid->loginid});
+
+        # Only allow CR and MF
+        next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
+
+        my $existing_cli_loginid = encode_entities($existing_cli->loginid);
+
+        if ($input{professional_client}) {
+            $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested');
+            $existing_cli->clr_status('professional_requested');
+        } else {
+            $existing_cli->clr_status('professional');
+        }
+
+        if (not $existing_cli->save) {
+            $result .= "<p>Failed to update professional status of client: $existing_cli_loginid</p>";
+        }
     }
+
+    # Print clients that were not updated
+    print $result if $result;
 
     # Filter keys for tax residence
     if (my @matching_keys = grep { /tax_residence/ } keys %input) {
@@ -534,6 +554,7 @@ for (1 .. $attempts) {
     $prev_loginid = sprintf "$client_broker%0*d", $len, $number - $_;
     last if $prev_client = Client::Account->new({loginid => $prev_loginid});
 }
+
 for (1 .. $attempts) {
     $next_loginid = sprintf "$client_broker%0*d", $len, $number + $_;
     last if $next_client = Client::Account->new({loginid => $next_loginid});
@@ -680,6 +701,7 @@ if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
     $link_loginid = $1;
     $link_acc     = "<p>UK account, has been moved to ";
 }
+
 if ($link_acc) {
     $link_loginid =~ /(\D+)\d+/;
     my $link_href = request()->url_for(
