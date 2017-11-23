@@ -547,12 +547,24 @@ sub startup {
         });
 
     my $redis = ws_redis_master();
-    if (my $ids = $redis->get('app_id::diverted')) {
-        %DIVERT_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
-    }
-    if (my $ids = $redis->get('app_id::blocked')) {
-        %BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
-    }
+    $redis->get(
+        'app_id::diverted',
+        sub {
+            my ($redis, $ids) = @_;
+            return unless $ids;
+            warn "Have diverted app_ids, applying: $ids\n";
+            # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
+            # No value => no update.
+            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
+        });
+    $redis->get(
+        'app_id::blocked',
+        sub {
+            my ($redis, $ids) = @_;
+            return unless $ids;
+            warn "Have blocked app_ids, applying: $ids\n";
+            %BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
+        });
     return;
 
 }

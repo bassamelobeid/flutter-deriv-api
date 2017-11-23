@@ -358,18 +358,43 @@ Mark an app_id for diversion to a different server.
 command divert => sub {
     my ($self, $app, $app_id, $service) = @_;
     my $redis = ws_redis_master();
-    if (my $ids = $redis->get('app_id::diverted')) {
-        %Binary::WebSocketAPI::DIVERT_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
-    }
-    if ($app) {
-        if ($service) {
-            $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id} = $service;
-        } else {
-            delete $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
-        }
-        $redis->set('app_id::diverted' => Encode::encode_utf8(JSON::MaybeXS->new->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS)));
-    }
-    Future->done({diversions => \%Binary::WebSocketAPI::DIVERT_APP_IDS});
+    my $f     = Future::Mojo->new;
+    $redis->get(
+        'app_id::diverted',
+        sub {
+            my ($redis, $ids) = @_;
+            # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
+            # No value => no update.
+            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))} if $ids;
+            my $rslt = {diversions => \%Binary::WebSocketAPI::DIVERT_APP_IDS};
+            if ($app_id) {
+                if ($service) {
+                    $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id} = $service;
+                } else {
+                    delete $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
+                }
+                $redis->set(
+                    'app_id::diverted' => Encode::encode_utf8(JSON::MaybeXS->new->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS)),
+                    sub {
+                        my ($redis, $err) = @_;
+                        unless ($err) {
+                            # Since this contains a reference rather than a copy of the diversion hash,
+                            # it'll pick up the change we just made
+                            $f->done($rslt);
+                            return;
+                        }
+                        warn "Redis error when recording diverted app_id - $err";
+                        $f->fail(
+                            $err,
+                            redis => $app_id,
+                            $service
+                        );
+                    });
+            } else {
+                $f->done($rslt);
+            }
+        });
+    return $f;
 };
 
 =head2
@@ -381,18 +406,39 @@ Block an app_id from connecting.
 command block => sub {
     my ($self, $app, $app_id, $service) = @_;
     my $redis = ws_redis_master();
-    if (my $ids = $redis->get('app_id::blocked')) {
-        %Binary::WebSocketAPI::BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
-    }
-    if ($app) {
-        if ($service) {
-            $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id} = $service;
-        } else {
-            delete $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id};
-        }
-        $redis->set('app_id::blocked' => Encode::encode_utf8(JSON::MaybeXS->new->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS)));
-    }
-    Future->done({blocked => \%Binary::WebSocketAPI::BLOCK_APP_IDS});
+    my $f     = Future::Mojo->new;
+    $redis->get(
+        'app_id::blocked',
+        sub {
+            my ($redis, $ids) = @_;
+            %Binary::WebSocketAPI::BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))} if $ids;
+            my $rslt = {blocked => \%Binary::WebSocketAPI::BLOCK_APP_IDS};
+            if ($app_id) {
+                if ($service) {
+                    $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id} = 1;
+                } else {
+                    delete $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id};
+                }
+                $redis->set(
+                    'app_id::blocked' => Encode::encode_utf8(JSON::MaybeXS->new->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS)),
+                    sub {
+                        my ($redis, $err) = @_;
+                        unless ($err) {
+                            $f->done($rslt);
+                            return;
+                        }
+                        warn "Redis error when recording blocked app_id - $err";
+                        $f->fail(
+                            $err,
+                            redis => $app_id,
+                            $service
+                        );
+                    });
+            } else {
+                $f->done($rslt);
+            }
+        });
+    return $f;
 };
 
 =head2 help
