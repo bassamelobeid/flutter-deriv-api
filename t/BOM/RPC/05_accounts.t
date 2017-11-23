@@ -1,6 +1,8 @@
 use strict;
 use warnings;
-
+use JSON::XS;
+ # TODO NOTE this fix the error of encode_json temporarily: Cpanel::JSON::XS::encode_json (or encode) will encode the string epoch as a float number. So here we load JSON::XS first to avoid using Cpanel::JSON::XS
+# the place is here https://github.com/regentmarkets/bom-postgres/blob/master/lib/BOM/Database/Helper/FinancialMarketBet.pm#L413
 use utf8;
 use Test::Most;
 use Test::Deep;
