@@ -9,7 +9,8 @@ use Try::Tiny;
 use Date::Utility;
 use Brands;
 use HTML::Entities;
-use Format::Util::Numbers qw/financialrounding formatnumber/;
+use Format::Util::Numbers qw/formatnumber/;
+use Scalar::Util qw(looks_like_number);
 use LandingCompany::Registry;
 
 use f_brokerincludeall;
@@ -111,8 +112,8 @@ read_csv_row_and_callback(
         my $error;
         {
             my $curr_regex = LandingCompany::Registry::get_currency_type($currency) eq 'fiat' ? '^\d*\.?\d{1,2}$' : '^\d*\.?\d{1,8}$';
-            $amount = financialrounding('price', $currency, $amount);
-            
+            $amount = formatnumber('price', $currency, $amount) if looks_like_number($amount);
+
             # TODO fix this critic
             ## no critic (ProhibitCommaSeparatedStatements, ProhibitMixedBooleanOperators)
             $cols_found == $cols_expected or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
