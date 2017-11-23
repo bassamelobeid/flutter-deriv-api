@@ -17,6 +17,7 @@ use LandingCompany::Offerings;
 use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
 use Quant::Framework;
+use LandingCompany::Registry;
 
 sub active_symbols {
     my $params = shift;
@@ -25,21 +26,23 @@ sub active_symbols {
     my $product_type = $params->{args}->{product_type} // 'basic';
     my $language = $params->{language} || 'EN';
     my $token_details = $params->{token_details};
+
+    my $client;
     if ($token_details and exists $token_details->{loginid}) {
-        my $client = Client::Account->new({loginid => $token_details->{loginid}});
-        $landing_company_name = $client->landing_company->short if $client;
+        $client = Client::Account->new({loginid => $token_details->{loginid}});
     }
+
+    my $offerings_obj = $client->landing_company->offerings_for_country($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
 
     my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
     my ($namespace, $key) = (
-        'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $landing_company_name, $product_type, $appconfig_revision))
+        'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
     );
 
     my $active_symbols;
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
         $active_symbols = $cached_symbols;
     } else {
-        my $offerings_obj = LandingCompany::Offerings->get($landing_company_name, BOM::Platform::Runtime->instance->get_offerings_config);
         # For multi_barrier product_type, we can only offer major forex pairs as of now.
         my @all_active =
               $product_type eq 'multi_barrier'
