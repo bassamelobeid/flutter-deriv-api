@@ -109,11 +109,13 @@ read_csv_row_and_callback(
         my $client;
         my $error;
         {
+            my $curr_regex = LandingCompany::Registry::get_currency_type($currency) eq 'fiat' ? '^\d*\.?\d{1,2}$' : '^\d*\.?\d{1,8}$';
+
             # TODO fix this critic
             ## no critic (ProhibitCommaSeparatedStatements, ProhibitMixedBooleanOperators)
             $cols_found == $cols_expected or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
             $action !~ /^(debit|credit)$/ and $error = "Invalid transaction type [$action]", last;
-            $amount !~ /^\d+\.?\d?\d?$/ || $amount == 0 and $error = "Invalid amount [$amount]", last;
+            $amount !~ $curr_regex || $amount == 0 and $error = "Invalid amount [$amount]", last;
             !$statement_comment and $error = 'Statement comment can not be empty', last;
             $client = eval { Client::Account->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
