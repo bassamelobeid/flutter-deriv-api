@@ -22,7 +22,7 @@ for my $broker (LandingCompany::Registry::all_broker_codes) {
         sub {
             my ($loginid, $search_option) = $_ =~ /^([^.]+)[.]([^.]+)$/;
             my $result_as_xml = read_file($_);
-            my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
+            my $client = eval { Client::Account->new({loginid => $loginid, db_operation => 'replica'}) } || do {
                 my $err = $@;
                 warn("Error: can't identify client $loginid: $err");
                 return;
