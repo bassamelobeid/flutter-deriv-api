@@ -21,13 +21,13 @@ has unit => (
 );
 
 has multiplier => (
-    is  => 'ro',
-    isa => 'Num',
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
 );
 
 sub _build_multiplier {
-    my $self = shift;
-
+    my $self   = shift;
     my $symbol = $self->underlying->symbol;
     return $multiplier_config->{$symbol};
 }

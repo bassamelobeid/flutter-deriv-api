@@ -66,8 +66,7 @@ subtest 'lbfixedcall' => sub {
     is $c->payouttime,   'end';
     is $c->code,         'LBFIXEDCALL';
     is $c->pricing_code, 'LBFIXEDCALL';
-
-    is roundnear(0.00001, $c->theo_price),  0.67032;
+    is roundnear(0.00001, $c->theo_price),  0.0067;
     is roundnear(0.001,   $c->pricing_vol), 1.0;
 
     is $c->sentiment, undef;
