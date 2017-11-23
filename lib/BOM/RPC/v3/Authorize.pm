@@ -69,7 +69,7 @@ sub authorize {
         $token_type = 'oauth_token';
     }
 
-    my (@sub_accounts, @accounts) = ((), ());
+    my ($sub_accounts, $accounts) = ({}, {});
     my ($is_omnibus, $currency) = ($client->allow_omnibus);
 
     my $siblings = $user->loginid_details;
@@ -85,11 +85,10 @@ sub authorize {
 
         $currency = $account->default_account ? $account->default_account->currency_code : '';
         if ($is_omnibus and $loginid eq ($account->sub_account_of // '')) {
-            push @sub_accounts,
-                {
+            $sub_accounts->{$account->loginid} = {
                 loginid  => $account->loginid,
                 currency => $currency,
-                };
+            };
         }
 
         my ($self_exclusion, $self_exclusion_epoch, $until);
@@ -98,15 +97,14 @@ sub authorize {
             $self_exclusion_epoch = Date::Utility->new($until)->epoch if Date::Utility->new($until)->is_after(Date::Utility->new);
         }
 
-        push @accounts,
-            {
-            loginid              => $account->loginid,
+        $accounts->{$account->loginid} = {
             currency             => $currency,
             landing_company_name => $account->landing_company->short,
             is_disabled          => $account->get_status('disabled') ? 1 : 0,
             is_ico_only          => $account->get_status('ico_only') ? 1 : 0,
             is_virtual           => $client->is_virtual ? 1 : 0,
-            $self_exclusion_epoch ? (excluded_until => $self_exclusion_epoch) : ()};
+            $self_exclusion_epoch ? (excluded_until => $self_exclusion_epoch) : (),
+        };
     }
 
     my $account = $client->default_account;
@@ -122,8 +120,8 @@ sub authorize {
         scopes                   => $scopes,
         is_virtual               => $client->is_virtual ? 1 : 0,
         allow_omnibus            => $client->allow_omnibus ? 1 : 0,
-        account_list             => \@accounts,
-        sub_accounts             => \@sub_accounts,
+        account_list             => $accounts,
+        sub_accounts             => $sub_accounts,
         stash                    => {
             loginid              => $client->loginid,
             email                => $client->email,

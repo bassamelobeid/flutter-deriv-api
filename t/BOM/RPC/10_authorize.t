@@ -85,26 +85,24 @@ subtest $method => sub {
         'country'                  => 'id',
         'landing_company_fullname' => 'Binary (C.R.) S.A.',
         'allow_omnibus'            => 0,
-        'sub_accounts'             => [],
-        'account_list'             => [{
+        'sub_accounts'             => {},
+        'account_list'             => {
+            $test_client->loginid => {
                 'currency'             => '',
                 'is_ico_only'          => '0',
                 'is_disabled'          => '0',
                 'is_virtual'           => '0',
                 'landing_company_name' => 'costarica',
-                'loginid'              => $test_client->loginid
             },
-            {
+            $self_excluded_client->loginid => {
                 'currency'             => '',
                 'excluded_until'       => $exclude_until,
                 'is_ico_only'          => '0',
                 'is_disabled'          => '1',
                 'is_virtual'           => '0',
                 'landing_company_name' => 'costarica',
-                'loginid'              => $self_excluded_client->loginid,
-            }
-        ],
-    };
+            },
+        }};
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
 
     $test_client->set_default_account('USD');
@@ -118,7 +116,7 @@ subtest $method => sub {
     $expected_result->{currency} = $expected_result->{stash}->{currency} = 'USD';
     $expected_result->{balance} = '1000.00';
 
-    $expected_result->{account_list}[0]->{currency} = 'USD';
+    $expected_result->{account_list}->{$test_client->loginid}->{currency} = 'USD';
 
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
 
