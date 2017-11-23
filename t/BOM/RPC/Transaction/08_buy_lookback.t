@@ -61,7 +61,7 @@ subtest 'buy' => sub {
     $params->{contract_parameters} = {
         "proposal"      => 1,
         "unit"          => "100",
-        "contract_type" => "LBFIXEDCALL",
+        "contract_type" => "LBFLOATCALL",
         "currency"      => "USD",
         "duration"      => "120",
         "duration_unit" => "s",
@@ -70,7 +70,7 @@ subtest 'buy' => sub {
         "barrier"       => "S20P",
     };
 
-    $params->{args}{price} = 74.79; 
+    $params->{args}{price} = 7.48; 
     my $old_balance = $client->default_account->load->balance;
     my $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
@@ -89,10 +89,10 @@ subtest 'buy' => sub {
     my $new_balance = formatnumber('amount', 'USD', $client->default_account->load->balance);
     is($new_balance, $result->{balance_after}, 'balance is changed');
     ok($old_balance - $new_balance - $result->{buy_price} < 0.0001, 'balance reduced');
-    like($result->{shortcode}, qr/LBFIXEDCALL_R_50_100_\d{10}_\d{10}_S20P_0/, 'shortcode is correct');
+    like($result->{shortcode}, qr/LBFLOATCALL_R_50_100_\d{10}_\d{10}_S20P_0/, 'shortcode is correct');
     is(
         $result->{longcode},
-        'Receive the difference of Volatility 50 Index\'s maximum value during the life of the option and entry spot plus 0.0020 at 2 minutes after contract start time.',
+        'Receive the difference of Volatility 50 Index\'s final value and its minimum value during the life of the option at 2 minutes after contract start time.',
         'longcode is correct'
     );
 
