@@ -82,7 +82,7 @@ if ($confirm) {
     }
 }
 
-my @hdgs = ('Line Number', 'Login Id', 'Name', 'debit/credit', 'Payment Type', 'Trace ID', 'Payment Processor', 'Currency', 'Amount', 'Comment');
+my @hdgs = ('Line Number', 'Login Id', 'Name', 'debit/credit', 'Payment Type', 'Trace ID', 'Payment Processor', 'Currency', 'Amount', 'Comment', 'Notes');
 my $client_account_table =
     '<table border="1" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;margin-bottom:20px"><caption>Batch Credit/Debit details</caption>'
     . '<tr>'
@@ -317,7 +317,8 @@ sub construct_row_line {
         <td>$args{payment_type}</td>
         <td>$args{trace_id}</td>
         <td>$args{payment_processor}</td>
-        <td>$args{currency} $args{amount}</td>
+        <td>$args{currency}</td>
+        <td>$args{amount}</td>
         <td>$args{comment}</td>
         <td style="color:$color">$notes</td>
     </tr>];
