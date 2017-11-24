@@ -579,7 +579,11 @@ sub contracts_for {
         $contracts_for = JSON::XS->new->decode($contracts_for);
         $contracts_for = undef if $contracts_for->{_generated} < time - 30;
     }
-    unless ($contracts_for) {
+
+    if ($contracts_for) {
+        stats_inc('bom_pricing.precalculated_data.used', {tags => ['data:' . 'contracts_for',]});
+    } else {
+        stats_inc('bom_pricing.precalculated_data.missed', {tags => ['data:' . 'contracts_for',]});
         $contracts_for = BOM::Pricing::ContractsForGenerator::contracts_for({
             product_type    => $product_type,
             landing_company => $landing_company_name,
@@ -588,12 +592,10 @@ sub contracts_for {
     }
     $contracts_for = $contracts_for->{value};
 
-    my $i = 0;
     foreach my $contract (@{$contracts_for->{available}}) {
         if (exists $contract->{payout_limit}) {
-            $contracts_for->{available}->[$i]->{payout_limit} = $contract->{payout_limit}->{$currency};
+            $contract->{payout_limit} = $contract->{payout_limit}->{$currency};
         }
-        $i++;
     }
 
     if (not $contracts_for or $contracts_for->{hit_count} == 0) {
