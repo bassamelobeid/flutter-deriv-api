@@ -47,10 +47,11 @@ my %supported_contract_types = (
 my $cache = Cache::LRU->new(
     size => 1000,
 );
+my $iteration_started;
 
 sub _get_cached_or_calculate {
     my $k = shift;
-    $k = join '_', ($ENV{ITERATION_STARTED} // time), @$k;
+    $k = join '_', ($iteration_started // time), @$k;
     my $r;
     return $r if $r = $cache->get($k);
     $cache->set($k => shift->());
@@ -59,37 +60,40 @@ sub _get_cached_or_calculate {
 
 sub _forward_starting_options {
     my ($underlying, $calendar, $exchange) = @_;
+
     my $now = Date::Utility->new;
     my $sod = $now->truncate_to_day->epoch;
+
     my @blackout_periods;
     if (my @inefficient_periods = @{$underlying->forward_inefficient_periods}) {
         push @blackout_periods, [Date::Utility->new($sod + $_->{start})->time_hhmmss, Date::Utility->new($sod + $_->{end})->time_hhmmss]
             for @inefficient_periods;
     }
+
     my @trade_dates;
     for (my $date = $now; @trade_dates < 3; $date = $date->plus_time_interval('1d')) {
         $date = $calendar->trade_date_after($exchange, $date) unless $calendar->trades_on($exchange, $date);
         push @trade_dates, $date;
     }
 
-    my $v = [
-        map { {
-                date  => Date::Utility->new($_->{open})->truncate_to_day->epoch,
-                open  => $_->{open},
-                close => $_->{close},
-                @blackout_periods ? (blackouts => \@blackout_periods) : ()}
-            }
-            map {
-            @{$calendar->trading_period($exchange, $_)}
-            } @trade_dates
-    ];
-    return $v;
+    my @trading_periods = map { @{$calendar->trading_period($exchange, $_)} } @trade_dates;
+
+    my @options = map { {
+            date  => Date::Utility->new($_->{open})->truncate_to_day->epoch,
+            open  => $_->{open},
+            close => $_->{close},
+            @blackout_periods ? (blackouts => \@blackout_periods) : (),
+        }
+    } @trading_periods;
+
+    return \@options;
 }
 
 sub available_contracts_for_symbol {
     my $args            = shift;
     my $symbol          = $args->{symbol} || die 'no symbol';
     my $landing_company = $args->{landing_company};
+    $iteration_started = delete $args->{iteration_started};
 
     my $now        = Date::Utility->new;
     my $underlying = _get_cached_or_calculate([$symbol], sub { create_underlying($symbol) });
@@ -97,11 +101,11 @@ sub available_contracts_for_symbol {
 
     my ($calendar, $open, $close) = @{
         _get_cached_or_calculate(
-            [$underlying->exchange],
+            [$exchange],
             sub {
                 my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
                 my ($open, $close);
-                if ($calendar->trades_on($underlying->exchange, $now)) {
+                if ($calendar->trades_on($exchange, $now)) {
                     $open = $calendar->opening_on($exchange, $now)->epoch;
                     $close = $calendar->closing_on($exchange, $now)->epoch;
                 }
