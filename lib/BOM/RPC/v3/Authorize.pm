@@ -93,7 +93,6 @@ sub authorize {
         }
 
         my ($self_exclusion, $self_exclusion_epoch, $until);
-        $self_exclusion = $account->get_self_exclusion;
         if ($self_exclusion = $account->get_self_exclusion and $until = ($self_exclusion->timeout_until // $self_exclusion->exclude_until)) {
             $self_exclusion_epoch = Date::Utility->new($until)->epoch if Date::Utility->new($until)->is_after(Date::Utility->new);
         }
