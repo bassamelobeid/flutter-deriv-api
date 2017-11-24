@@ -584,7 +584,7 @@ sub contracts_for {
         $contracts_for = BOM::Pricing::ContractsForGenerator::contracts_for({
             product_type    => $product_type,
             landing_company => $landing_company_name,
-            contracts_for   => $symbol,
+            symbol          => $symbol,
         });
     }
     $contracts_for = $contracts_for->{value};
