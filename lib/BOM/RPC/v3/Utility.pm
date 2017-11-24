@@ -530,6 +530,29 @@ sub should_update_account_details {
     return 1;
 }
 
+sub set_professional_status {
+    my ($client, $professional, $professional_requested) = @_;
+
+    # Set checks in variables
+    my $cr_mf_valid      = $client->landing_company->short =~ /^(?:costarica|maltainvest)$/;
+    my $set_prof_status  = $professional && !$client->get_status('professional') && $cr_mf_valid;
+    my $set_prof_request = $professional_requested && !$client->get_status('professional_requested') && $cr_mf_valid;
+
+    $client->set_status('professional', 'SYSTEM', 'Mark as professional as requested') if $set_prof_status;
+
+    $client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $set_prof_request;
+
+    if (not $client->save) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InternalServerError',
+                message_to_client => localize('Sorry, an error occurred while processing your account.')});
+    }
+
+    BOM::RPC::v3::Utility::send_professional_requested_email($client->loginid, $client->residence) if $set_prof_request;
+
+    return undef;
+}
+
 sub send_professional_requested_email {
     my ($loginid, $residence) = @_;
 

@@ -140,6 +140,7 @@ sub proposal_open_contract {
             short_code            => $fmb->{short_code},
             contract_id           => $id,
             currency              => $currency,
+            is_expired            => $fmb->{is_expired},
             is_sold               => $fmb->{is_sold},
             buy_price             => $fmb->{buy_price},
             app_markup_percentage => $params->{app_markup_percentage},
