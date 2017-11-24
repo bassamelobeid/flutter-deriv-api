@@ -390,8 +390,8 @@ subtest 'get_bid' => sub {
         contract_id => $contract->id,
         currency    => 'USD',
         is_sold     => 0,
+        sell_price  => $contract->payout,
     };
-
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
             bid_price
@@ -421,10 +421,11 @@ subtest 'get_bid' => sub {
             current_spot
             entry_spot
             barrier_count
+            status
             audit_details
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
-
+    is($result->{status}, 'open', 'get the right status');
     $contract = _create_contract();
 
     $params = {
@@ -432,12 +433,13 @@ subtest 'get_bid' => sub {
         contract_id => $contract->id,
         currency    => 'USD',
         is_sold     => 0,
+        sell_price  => $contract->payout,
     };
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
 
     cmp_bag([sort keys %{$result}], [sort @expected_keys], 'keys of result is correct');
-
+    is($result->{status}, 'open', 'get the right status');
 };
 
 subtest 'get_bid_skip_barrier_validation' => sub {
@@ -459,6 +461,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
         contract_id => $contract->id,
         currency    => 'USD',
         is_sold     => 0,
+        sell_price => $contract->value,
     };
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
@@ -468,7 +471,15 @@ subtest 'get_bid_skip_barrier_validation' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     ok(!exists $result->{validation_error}, "No barrier validation error")
         or diag "validatione error: " . ($result->{validation_error} // '<undef>');
+    is($result->{status}, 'open', 'status is open');
 
+    $params->{sell_time}  = $now->epoch;
+    $params->{is_sold}    = 1;
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    is($result->{status}, 'sold', 'contract sold');
+    $params->{is_expired} = 1;
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    is($result->{status}, 'lost', 'contract lost');
     restore_time();
 };
 
@@ -540,6 +551,7 @@ subtest $method => sub {
         'shortcode'       => 'CALL_FRXAUDCAD_156.48_1127287260_1127287660_S0P_0',
         'underlying'      => 'frxAUDCAD',
         is_valid_to_sell  => 1,
+        'status'          => 'open',
     };
 
     foreach my $key (keys %$expected_result) {

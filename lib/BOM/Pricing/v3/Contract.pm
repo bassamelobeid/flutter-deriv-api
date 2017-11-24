@@ -283,8 +283,8 @@ sub handle_batch_contract {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage, $landing_company) =
-        @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage landing_company/};
+    my ($short_code, $contract_id, $currency, $is_sold, $is_expired, $sell_time, $sell_price, $app_markup_percentage, $landing_company) =
+        @{$params}{qw/short_code contract_id currency is_sold is_expired sell_time sell_price app_markup_percentage landing_company/};
 
     my ($response, $contract, $bet_params);
     my $tv = [Time::HiRes::gettimeofday];
@@ -327,7 +327,6 @@ sub get_bid {
     try {
         $params->{validation_params}->{landing_company} = $landing_company;
         my $is_valid_to_sell = $contract->is_valid_to_sell($params->{validation_params});
-
         $response = {
             is_valid_to_sell    => $is_valid_to_sell,
             current_spot_time   => $contract->current_tick->epoch,
@@ -347,6 +346,15 @@ sub get_bid {
             payout              => $contract->payout,
             contract_type       => $contract->code,
         };
+
+        if ($is_sold and $is_expired) {
+            # here sell_price is used to parse the status of contracts that settled from bo
+            $response->{status} = $sell_price == $contract->payout ? "won" : "lost";
+        } elsif ($is_sold and not $is_expired) {
+            $response->{status} = 'sold';
+        } else {    # not sold
+            $response->{status} = 'open';
+        }
 
         if ($is_valid_to_sell) {
             $response->{bid_price} = formatnumber('price', $contract->currency, $contract->bid_price);
