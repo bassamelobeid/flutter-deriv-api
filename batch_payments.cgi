@@ -82,7 +82,8 @@ if ($confirm) {
     }
 }
 
-my @hdgs = ('Line Number', 'Login Id', 'Name', 'debit/credit', 'Payment Type', 'Trace ID', 'Payment Processor', 'Currency', 'Amount', 'Comment', 'Notes');
+my @hdgs =
+    ('Line Number', 'Login Id', 'Name', 'debit/credit', 'Payment Type', 'Trace ID', 'Payment Processor', 'Currency', 'Amount', 'Comment', 'Notes');
 my $client_account_table =
     '<table border="1" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;margin-bottom:20px"><caption>Batch Credit/Debit details</caption>'
     . '<tr>'
