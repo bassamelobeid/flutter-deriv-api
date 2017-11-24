@@ -16,8 +16,8 @@
         </div>
         [% FOREACH open_bet IN open_bets %]
             [%
-                    total_in = total_in + open_bet.buy_price;
-                    total_value_now = total_value_now + open_bet.sale_price;
+                    total_in = total_in + (open_bet.buy_price || 0);
+                    total_value_now = total_value_now + (open_bet.sale_price || 0);
             %]
             <div class="grd-parent grd-grid-12 table-body table-body-lines">
                 <div class="grd-grid-1">
