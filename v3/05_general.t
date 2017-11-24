@@ -22,16 +22,22 @@ my $t = build_wsapi_test();
 }
 
 {
-    my $res = $t->await::error({UnrecognisedRequest => 1, req_id => 1});
+    my $res = $t->await::error({
+        UnrecognisedRequest => 1,
+        req_id              => 1
+    });
     is $res->{error}->{code}, 'UnrecognisedRequest';
     is $res->{req_id}, 1, 'Response contains matching req_id';
 }
 
 {
-    my $res = $t->await::ping({ping => 1, req_id => 2});
+    my $res = $t->await::ping({
+        ping   => 1,
+        req_id => 2
+    });
     is $res->{msg_type}, 'ping';
     is $res->{ping},     'pong';
-    is $res->{req_id}, 2, 'Response contains matching req_id';
+    is $res->{req_id},   2, 'Response contains matching req_id';
     test_schema('ping', $res);
 }
 
@@ -64,11 +70,13 @@ my $t = build_wsapi_test();
 
 {
     # Some Unicode character that will fail sanity check
-    my $res = $t->await::sanity_check({ping => "\x{0BF0}", req_id => 4});
+    my $res = $t->await::sanity_check({
+        ping   => "\x{0BF0}",
+        req_id => 4
+    });
     is $res->{error}->{code}, 'SanityCheckFailed';
     is $res->{req_id}, 4, 'Response contains matching req_id';
 }
-
 
 $t->finish_ok;
 
