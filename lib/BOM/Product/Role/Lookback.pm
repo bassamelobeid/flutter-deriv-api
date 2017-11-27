@@ -134,6 +134,10 @@ override shortcode => sub {
         push @shortcode_elements, ($self->_barrier_for_shortcode_string($self->supplied_barrier), 0);
     }
 
+    if (defined $self->multiplier) {
+        push @shortcode_elements, $self->multiplier;
+    }
+
     return uc join '_', @shortcode_elements;
 };
 
