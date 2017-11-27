@@ -27,12 +27,8 @@ if (request()->param('restore_event')) {
 
 ## Update with custom magnitude
 if (request()->param('update_event')) {
-    my $args = {
-        id                             => request()->param('event_id'),
-        custom_magnitude_direct        => request()->param('custom_magnitude_direct'),
-        custom_magnitude_indirect      => request()->param('custom_magnitude_indirect'),
-        custom_magnitude_indirect_list => request()->param('custom_magnitude_indirect_list'),
-    };
+    my $args =
+        {map { $_ => request()->param($_) } qw/id vol_change duration decay_factor vol_change_before duration_before decay_factor_before underlying/};
     print $json->encode(BOM::Backoffice::EconomicEventTool::update_by_id($args));
 }
 
@@ -43,7 +39,7 @@ if (request()->param('save_event')) {
         impact       => request()->param('impact'),
         event_name   => request()->param('event_name'),
         source       => request()->param('source'),
-        release_date => (request()->param('release_date') || 0),
+        release_date => request()->param('release_date'),
     };
     print $json->encode(BOM::Backoffice::EconomicEventTool::save_new_event($param));
 }
