@@ -1,10 +1,10 @@
 ---
 intraday_historical:
   ask_probability:
-    bs_probability: 0.494205635723264
+    bs_probability: 0.477038914004955
     commission_markup: 0.035
-    intraday_delta_correction: 0.0069636890849807
-    intraday_vega_correction: 7.6060257790718e-05
+    intraday_delta_correction: 0.00828448554641108
+    intraday_vega_correction: 0.00162296060969017
     risk_markup: 0.01
   bs_probability:
     K: 79.820
@@ -13,7 +13,7 @@ intraday_historical:
     mu: 0
     payout: 1000
     t: 2.85388127853881e-05
-    vol: 0.537515091222819
+    vol: 0.122873909065588
   commission_markup:
     base_commission: 0.035
     commission_multiplier: 1
@@ -35,17 +35,17 @@ intraday_historical:
     trade_time: 2012-11-08 03:25:45
     trans_id: NA
   intraday_delta_correction:
-    long_term_delta_correction: 0.000784156253251456
+    long_term_delta_correction: 0.00342574917611221
     short_term_delta_correction: 0.0131432219167099
   intraday_vega_correction:
     historical_vol_mean_reversion: 0.10
-    intraday_vega: 0.00864815798920136
+    intraday_vega: 0.184532897606929
     long_term_prediction: 0.0879496626746316
   opposite_contract:
     opposite_contract_K: 79.820
     opposite_contract_S: 79.817
     opposite_contract_base_commission: 0.035
-    opposite_contract_bs_probability: 0.505794364276736
+    opposite_contract_bs_probability: 0.522961085995045
     opposite_contract_commission_markup: 0.035
     opposite_contract_commission_multiplier: 1
     opposite_contract_discount_rate: 0
@@ -54,22 +54,22 @@ intraday_historical:
     opposite_contract_event_markup: 0
     opposite_contract_historical_vol_markup: 0
     opposite_contract_historical_vol_mean_reversion: 0.10
-    opposite_contract_intraday_delta_correction: -0.0069636890849807
+    opposite_contract_intraday_delta_correction: -0.00828448554641105
     opposite_contract_intraday_eod_markup: 0
     opposite_contract_intraday_historical_iv_risk: 0
-    opposite_contract_intraday_vega: -0.00864815798920136
-    opposite_contract_intraday_vega_correction: -7.6060257790718e-05
-    opposite_contract_long_term_delta_correction: -0.000784156253251456
+    opposite_contract_intraday_vega: -0.184532897606929
+    opposite_contract_intraday_vega_correction: -0.00162296060969017
+    opposite_contract_long_term_delta_correction: -0.00342574917611216
     opposite_contract_long_term_prediction: 0.0879496626746316
     opposite_contract_mu: 0
     opposite_contract_payout: 1000
     opposite_contract_quiet_period_markup: 0
-    opposite_contract_risk_markup: 0.0104324078994601
+    opposite_contract_risk_markup: 0.0192266448803464
     opposite_contract_short_term_delta_correction: -0.0131432219167099
     opposite_contract_short_term_kurtosis_risk_markup: 0
     opposite_contract_t: 2.85388127853881e-05
-    opposite_contract_vol: 0.537515091222819
-    opposite_contract_vol_spread_markup: 0.000432407899460068
+    opposite_contract_vol: 0.122873909065588
+    opposite_contract_vol_spread_markup: 0.00922664488034643
   risk_markup:
     economic_events_markup: 0.01
     economic_events_spot_risk_markup: 0.01

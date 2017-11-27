@@ -8,6 +8,7 @@ use JSON qw(to_json);
 use LandingCompany::Offerings qw(get_offerings_flyby);
 use List::Util qw(first);
 use Quant::Framework::EconomicEventCalendar;
+use Try::Tiny;
 use Volatility::Seasonality;
 
 use BOM::Backoffice::Request;
@@ -34,10 +35,11 @@ sub get_economic_events_for_date {
         map { get_info($_) }
         grep { Date::Utility->new($_->{release_date})->epoch >= $from->epoch && Date::Utility->new($_->{release_date})->epoch <= $to->epoch }
         (values %{$eec->_get_deleted()});
-
+    my @l = _get_affected_underlying_symbols();
     return {
         categorized_events => to_json(\@events),
         deleted_events     => to_json(\@deleted_events),
+        underlying_symbols => to_json([sort @l]),
     };
 }
 
@@ -58,28 +60,30 @@ sub generate_economic_event_tool {
     ) || die BOM::Backoffice::Request::template->error;
 }
 
-sub is_categorized {
-    my $event = shift;
-
-    $event->{event_name} =~ s/\s/_/g;
-    my @categories = keys %{Volatility::Seasonality::get_economic_event_categories()};
-    return 1 if first { $_ =~ /$event->{event_name}$/ } @categories;
-    return 0;
-}
-
 # get the calibration magnitude and duration factor of the given economic event, if any.
 sub get_info {
     my $event = shift;
 
-    my @by_symbols;
+    $event->{release_date} = Date::Utility->new($event->{release_date})->datetime;
+    $event->{not_categorized} = !Volatility::EconomicEvents::is_defined($event->{symbol}, $event->{event_name});
     foreach my $symbol (_get_affected_underlying_symbols()) {
-        my %cat = map { $symbol => 'magnitude: ' . int($_->{magnitude}) . ' duration: ' . int($_->{duration}) . 's' }
-            @{Volatility::Seasonality::categorize_events($symbol, [$event])};
-        push @by_symbols, to_json(\%cat) if %cat;
+        my ($ev) = @{Volatility::EconomicEvents::categorize_events($symbol, [$event])};
+        next unless $ev;
+        delete $ev->{release_epoch};
+        unless ($ev->{vol_change_before}) { delete @{$ev}{qw/vol_change_before duration_before/} }
+        $event->{info}->{$symbol} = $ev;
     }
-    $event->{info}            = \@by_symbols;
-    $event->{release_date}    = Date::Utility->new($event->{release_date})->datetime;
-    $event->{not_categorized} = !is_categorized($event);
+
+    for my $key (qw/info custom/) {
+        next unless defined $event->{$key};
+        my $data = $event->{$key};
+        for my $ul (keys %$data) {
+            for (keys %{$data->{$ul}}) {
+                $data->{$ul}->{$_} = $_ =~ /vol/ ? $data->{$ul}->{$_} * 100 : $_ =~ /duration/ ? $data->{$ul}->{$_} / 60 : $data->{$ul}->{$_}
+                    if defined $data->{$ul}->{$_};
+            }
+        }
+    }
 
     return $event;
 }
@@ -105,15 +109,15 @@ sub delete_by_id {
 sub update_by_id {
     my $args = shift;
 
-    return _err("ID is not found.") unless $args->{id};
+    return _err("ID is not found.")           unless $args->{id};
+    return _err("underlying is not provided") unless $args->{underlying};
 
-    if ($args->{custom_magnitude_indirect_list} && !$args->{custom_magnitude_indirect}) {
-        return _err('Please specify magnitude for indirect underlying pairs');
-    }
+    my $ul = delete $args->{underlying};
+    $args->{custom}->{$ul} =
+        {map { my $v = delete $args->{$_}; $v ne '' ? ($_ => $_ =~ /vol/ ? $v / 100 : $_ =~ /duration/ ? $v * 60 : $v) : () }
+            qw/vol_change duration vol_change_before duration_before decay_factor decay_factor_before/};
 
-    unless (exists $args->{custom_magnitude_direct} || exists $args->{custom_magnitude_indirect}) {
-        return _err('Please specify magnitude to update');
-    }
+    return _err('Please specify at least one change') unless %{$args->{custom}};
 
     my $eec     = _eec();
     my $updated = $eec->update_event($args);
@@ -127,12 +131,18 @@ sub update_by_id {
 
 sub save_new_event {
     my $args = shift;
+    my $error;
 
     if (not $args->{release_date}) {
         return _err('Must specify announcement date for economic events');
     }
-
-    $args->{release_date} = Date::Utility->new($args->{release_date})->epoch if $args->{release_date};
+    try {
+        $args->{release_date} = Date::Utility->new($args->{release_date})->epoch if $args->{release_date};
+    }
+    catch {
+        $error = (split "\n", $_)[0];    #handle Date::Utility's confess() call
+    };
+    return _err($error) if $error;
 
     my $eec   = _eec();
     my $added = $eec->add_event($args);
@@ -160,10 +170,9 @@ sub restore_by_id {
 
 sub _regenerate {
     my $events = shift;
-
     # update economic events impact curve with the newly added economic event
-    Volatility::Seasonality::generate_economic_event_seasonality({
-        underlying_symbols => [create_underlying_db->symbols_for_intraday_fx],
+    Volatility::EconomicEvents::generate_variance({
+        underlying_symbols => [_get_affected_underlying_symbols()],
         economic_events    => $events,
         chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
     });
