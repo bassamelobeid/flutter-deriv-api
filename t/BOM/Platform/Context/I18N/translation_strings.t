@@ -3,7 +3,6 @@ use Test::Warn;
 use Test::MockModule;
 use Test::Warnings;
 use File::Spec;
-use JSON::MaybeXS;
 
 use utf8;
 binmode STDIN,  ":utf8";

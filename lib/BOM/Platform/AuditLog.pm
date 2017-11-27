@@ -8,7 +8,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use Path::Tiny;
 
-my $json = JSON::MaybeXS->new->utf8(1);
+my $json = JSON::MaybeXS->new;
 
 sub log {    ## no critic (ProhibitBuiltinHomonyms)
     my $log   = shift;
@@ -17,7 +17,7 @@ sub log {    ## no critic (ProhibitBuiltinHomonyms)
 
     Path::Tiny::path('/var/log/fixedodds/audit.log')->append(
         # UTF-8 bytes, in case message or staff/user include non-ASCII chars
-        $json->encode({
+        Encode::encode_utf8($json->encode({
                 timestamp    => Date::Utility->new->datetime_iso8601,
                 hostname     => Sys::Hostname::hostname,
                 staff        => $staff,
@@ -30,7 +30,7 @@ sub log {    ## no critic (ProhibitBuiltinHomonyms)
                 uri          => $ENV{REQUEST_URI} || '',
                 log          => $log,
                 cf_ipcountry => $ENV{HTTP_CF_IPCOUNTRY},
-            })
+            }))
             . "\n"
     );
     return;

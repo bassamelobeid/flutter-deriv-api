@@ -102,11 +102,11 @@ Usage:
 
 =cut
 
-my $json = JSON::MaybeXS->new->utf8(1);
+my $json = JSON::MaybeXS->new;
 
 sub publish {
     my ($class, $data) = @_;
-    my $bytes = $json->encode($data);
+    my $bytes = Encode::encode_utf8($json->encode($data));
     $sock->send($bytes);
     return;
 }
