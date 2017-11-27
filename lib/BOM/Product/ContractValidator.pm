@@ -223,7 +223,7 @@ sub maximum_feed_delay_seconds {
 
     my $effective_epoch = $self->effective_start->epoch;
     my @events_in_the_last_15_seconds =
-        grep { $_->{release_date} >= $effective_epoch - 15 && $_->{release_date} <= $effective_epoch && $_->{impact} == 5 }
+        grep { $_->{release_date} >= $effective_epoch - 15 && $_->{release_date} <= $effective_epoch && $_->{vol_change} > 0.25 }
         @{$self->_applicable_economic_events};
 
     # We want to have a stricter feed delay threshold (2 seconds) if there's a level 5 economic event.

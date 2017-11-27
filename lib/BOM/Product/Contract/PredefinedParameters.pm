@@ -354,8 +354,10 @@ sub _get_spot {
     # trading hours, meanwhile we have ticks from providers sinse Sunday 22:00.
     # So, ticks will be taken directly from feed-redis.
     my $now = time;
-    # let's use abs() to tolerate small time shifts
-    my $realtime = abs($now - $trading_period->{date_start}->{epoch}) < 2;
+    # let's use abs() to tolerate time shifts; we tolerate upto 5m difference
+    # as there are not guarantee that the method will be invoked exactly at 00:00:00
+    # as well as for cases like restarts etc.
+    my $realtime = abs($now - $trading_period->{date_start}->{epoch}) < 5 * 60;
     my $take_from_distributor =
            $realtime
         && ($date_start->day_of_week == 1)
