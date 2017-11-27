@@ -18,7 +18,7 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw( ws_redis_master shared_redis )
 use utf8;
 use Try::Tiny;
 
-my $utf8_json = JSON::MaybeXS->new->utf8(1);
+my $json = JSON::MaybeXS->new;
 
 sub website_status {
     my ($c, $req_storage) = @_;
@@ -53,7 +53,7 @@ sub website_status {
                     ### to config
                     my $current_state = ws_redis_master()->get("NOTIFY::broadcast::state");
 
-                    $current_state = eval { $utf8_json->decode($current_state) }
+                    $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
                     $website_status->{site_status} = $current_state->{site_status} // 'up';
                     $website_status->{message}     = $current_state->{message}     // ''
@@ -105,7 +105,7 @@ sub send_notification {
             return unless ws_redis_master()->get($is_on_key);    ### Need 1 for continuing
         }
 
-        $message = eval { $utf8_json->decode($message) } unless ref $message eq 'HASH';
+        $message = eval { $json->decode(Encode::decode_utf8($message)) } unless ref $message eq 'HASH';
         delete $message->{message} if $message->{site_status} ne 'down';
 
         $client_shared->{c}->send({
@@ -272,7 +272,7 @@ sub ticks_history {
 
 sub process_realtime_events {
     my ($shared_info, $msg, $chan) = @_;
-    my $payload = $utf8_json->decode($msg);
+    my $payload = $json->decode(Encode::decode_utf8($msg));
 
     # pick the per-user controller to send-back notifications to
     # related users only
@@ -496,7 +496,7 @@ sub process_transaction_updates {
 
     return unless $channel;
 
-    my $payload = JSON::MaybeXS->new->decode($message);
+    my $payload = $json->decode($message);
 
     return unless $payload && ref $payload eq 'HASH';
 
@@ -588,7 +588,7 @@ sub _create_poc_stream {
                     my $rpc_response = shift;
 
                     $payload->{longcode} = $rpc_response->{longcodes}{$payload->{short_code}};
-                    warn "Wrong longcode response: " . encode_json($rpc_response) unless $payload->{longcode};
+                    warn "Wrong longcode response: " . $json->encode($rpc_response) unless $payload->{longcode};
 
                     my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::_pricing_channel_for_bid(
                         $c,

@@ -39,7 +39,7 @@ taken by something else and we have no SO_REUSEPORT on our current kernel.
 
 =cut
 
-my $utf8_json = JSON::MaybeXS->new->utf8(1);
+my $json = JSON::MaybeXS->new;
 
 sub start_server {
     my ($self, $app) = @_;
@@ -50,7 +50,7 @@ sub start_server {
             sub {
                 my ($app, $redis, $msg, $channel) = @_;
                 return unless $channel eq INTROSPECTION_CHANNEL;
-                my $request        = $utf8_json->decode($msg);
+                my $request        = $json->decode(Encode::decode_utf8($msg));
                 my $command        = $request->{command};
                 my $return_channel = $request->{channel};
                 my $id             = $request->{id};
@@ -61,7 +61,7 @@ sub start_server {
                             my ($resp) = @_;
                             $resp->{id} = $id;
                             $redis->publish(
-                                $return_channel => $utf8_json->encode($resp),
+                                $return_channel => Encode::encode_utf8($json->encode($resp)),
                                 # We'd like this to be nonblocking
                                 sub {
                                     my ($redis, $err) = @_;
@@ -72,7 +72,7 @@ sub start_server {
                             my ($resp) = @_;
                             $resp->{id} = $id;
                             $redis->publish(
-                                $return_channel => $utf8_json->encode($resp),
+                                $return_channel => Encode::encode_utf8($json->encode($resp)),
                                 # We'd like this to be nonblocking
                                 sub {
                                     my ($redis, $err) = @_;
@@ -406,7 +406,7 @@ command divert => sub {
             my ($redis, $ids) = @_;
             # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
             # No value => no update.
-            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$utf8_json->decode($ids)} if $ids;
+            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))} if $ids;
             my $rslt = {diversions => \%Binary::WebSocketAPI::DIVERT_APP_IDS};
             if ($app_id) {
                 if ($service) {
@@ -415,7 +415,7 @@ command divert => sub {
                     delete $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
                 }
                 $redis->set(
-                    'app_id::diverted' => $utf8_json->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS),
+                    'app_id::diverted' => Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS)),
                     sub {
                         my ($redis, $err) = @_;
                         unless ($err) {
@@ -452,7 +452,7 @@ command block => sub {
         'app_id::blocked',
         sub {
             my ($redis, $ids) = @_;
-            %Binary::WebSocketAPI::BLOCK_APP_IDS = %{$utf8_json->ecode($ids)} if $ids;
+            %Binary::WebSocketAPI::BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))} if $ids;
             my $rslt = {blocked => \%Binary::WebSocketAPI::BLOCK_APP_IDS};
             if ($app_id) {
                 if ($service) {
@@ -461,7 +461,7 @@ command block => sub {
                     delete $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id};
                 }
                 $redis->set(
-                    'app_id::blocked' => $utf8_json->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS),
+                    'app_id::blocked' => Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS)),
                     sub {
                         my ($redis, $err) = @_;
                         unless ($err) {

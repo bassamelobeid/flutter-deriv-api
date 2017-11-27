@@ -42,7 +42,7 @@ our %DIVERT_APP_IDS;
 # This list is also overwritten by Redis.
 our %BLOCK_APP_IDS;
 
-my $json = JSON::MaybeXS->new->utf8(1);
+my $json = JSON::MaybeXS->new;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -557,7 +557,7 @@ sub startup {
             warn "Have diverted app_ids, applying: $ids\n";
             # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
             # No value => no update.
-            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$json->decode($ids)};
+            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
         });
     $redis->get(
         'app_id::blocked',
@@ -565,7 +565,7 @@ sub startup {
             my ($redis, $ids) = @_;
             return unless $ids;
             warn "Have blocked app_ids, applying: $ids\n";
-            %BLOCK_APP_IDS = %{$json->decode($ids)};
+            %BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
         });
     return;
 

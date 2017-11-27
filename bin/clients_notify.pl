@@ -56,10 +56,10 @@ if ( $status || $message ) {
     my $is_on_value = $is_on;
     print $ws_redis_master->set($is_on_key, $is_on_value), "\n" if $is_on_value;
 
-    my $mess_obj = JSON::MaybeXS->new->utf8(1)->encode( {
+    my $mess_obj = Encode::encode_utf8(JSON::MaybeXS->new->encode( {
         site_status => $status  // "up",
         message     => $message // ""
-    } );
+    } ));
     print $ws_redis_master->set($state_key, $mess_obj), "\n";
 
     my $subscribes_count =  $ws_redis_master->publish($channel_name, $mess_obj);

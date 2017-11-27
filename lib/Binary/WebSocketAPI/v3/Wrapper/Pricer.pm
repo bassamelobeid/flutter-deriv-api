@@ -43,8 +43,7 @@ use constant BARRIERS_PER_BATCH => 16;
 # the request entirely.
 use constant BARRIER_LIMIT => 16;
 
-my $utf8_json          = JSON::MaybeXS->new->utf8(1)->allow_blessed;
-my $json               = JSON::MaybeXS->new->utf8(0)->allow_blessed;
+my $json               = JSON::MaybeXS->new->allow_blessed;
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
     bid   => \&process_bid_event,
@@ -537,7 +536,7 @@ sub _serialized_args {
     foreach my $k (sort keys %$copy) {
         push @arr, ($k, $copy->{$k});
     }
-    return 'PRICER_KEYS::' . $utf8_json->encode(\@arr);
+    return 'PRICER_KEYS::' . Encode::encode_utf8($json->encode(\@arr));
 }
 
 sub _pricing_channel_for_ask {
@@ -633,7 +632,7 @@ sub process_pricing_events {
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$channel_name};
 
-    my $response = $utf8_json->decode($message);
+    my $response = $json->decode(Encode::decode_utf8($message));
     my $price_daemon_cmd = delete $response->{price_daemon_cmd} // '';
 
     my $pricing_channel_updated = undef;
