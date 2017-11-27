@@ -347,6 +347,7 @@ sub get_bid {
             shortcode           => $short_code,
             payout              => $contract->payout,
             contract_type       => $contract->code,
+            bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
         };
 
         if ($is_sold and $is_expired) {
@@ -358,11 +359,7 @@ sub get_bid {
             $response->{status} = 'open';
         }
 
-        if ($is_valid_to_sell) {
-            $response->{bid_price} = formatnumber('price', $contract->currency, $contract->bid_price);
-        } else {
-            $response->{validation_error} = localize($contract->primary_validation_error->message_to_client);
-        }
+        $response->{validation_error} = localize($contract->primary_validation_error->message_to_client) unless $is_valid_to_sell;
 
         if (not $contract->may_settle_automatically
             and $contract->missing_market_data)
