@@ -1,18 +1,20 @@
 use strict;
 use warnings;
 use Test::More;
+use Date::Utility;
+use DateTime;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 
+use Client::Account;
+
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use Client::Account;
-use Date::Utility;
-use DateTime;
+use BOM::Platform::User;
 
 use await;
 
@@ -23,9 +25,22 @@ $client_mocked->mock('add_note', sub { return 1 });
 
 my $t = build_wsapi_test();
 
+my $email       = 'test-binary' . rand(999) . '@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+$test_client->email($email);
+$test_client->save;
+$test_client->set_default_account('USD');
+
+my $loginid = $test_client->loginid;
+my $user    = BOM::Platform::User->create(
+    email    => $email,
+    password => '1234',
+);
+$user->add_loginid({loginid => $loginid});
+$user->save;
+
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
 # authorize ok
