@@ -8,13 +8,13 @@ use POSIX qw(floor);
 use Time::Duration::Concise;
 use List::Util qw(first);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
-use Cache::LRU;
 
 use Quant::Framework;
 use BOM::Platform::Chronicle;
 use Finance::Contract::Category;
 use LandingCompany::Offerings qw(get_offerings_flyby);
 
+use BOM::Cacher qw(get_or_calculate);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -43,20 +43,6 @@ my %supported_contract_types = (
     ONETOUCH    => 1,
     NOTOUCH     => 1,
 );
-
-my $cache = Cache::LRU->new(
-    size => 1000,
-);
-my $iteration_started;
-
-sub _get_cached_or_calculate {
-    my $k = shift;
-    $k = join '_', ($iteration_started // time), @$k;
-    my $r;
-    return $r if $r = $cache->get($k);
-    $cache->set($k => shift->());
-    return $cache->get($k);
-}
 
 sub _forward_starting_options {
     my ($underlying, $calendar, $exchange) = @_;
@@ -93,14 +79,15 @@ sub available_contracts_for_symbol {
     my $args            = shift;
     my $symbol          = $args->{symbol} || die 'no symbol';
     my $landing_company = $args->{landing_company};
-    $iteration_started = delete $args->{iteration_started};
+
+    BOM::Cacher::set_key_prefix(delete $args->{iteration_started} // time);
 
     my $now        = Date::Utility->new;
-    my $underlying = _get_cached_or_calculate([$symbol], sub { create_underlying($symbol) });
+    my $underlying = get_or_calculate([$symbol], sub { create_underlying($symbol) });
     my $exchange   = $underlying->exchange;
 
     my ($calendar, $open, $close) = @{
-        _get_cached_or_calculate(
+        get_or_calculate(
             [$exchange],
             sub {
                 my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
@@ -112,7 +99,7 @@ sub available_contracts_for_symbol {
                 [$calendar, $open, $close];
             })};
 
-    my $flyby = _get_cached_or_calculate(['flyby', $landing_company // ''],
+    my $flyby = get_or_calculate(['flyby', $landing_company // ''],
         sub { get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company) });
     my @offerings = grep { $supported_contract_types{$_->{contract_type}} } $flyby->query({underlying_symbol => $symbol});
 
@@ -120,13 +107,13 @@ sub available_contracts_for_symbol {
         my $cc = $o->{contract_category};
         my $bc = $o->{barrier_category};
 
-        my $cat = _get_cached_or_calculate(['category', $cc], sub { Finance::Contract::Category->new($cc) });
+        my $cat = get_or_calculate(['category', $cc], sub { Finance::Contract::Category->new($cc) });
         $o->{contract_category_display} = $cat->display_name;
         $o->{contract_display}          = $o->{contract_display};
 
         if ($o->{start_type} eq 'forward') {
             $o->{forward_starting_options} =
-                _get_cached_or_calculate(['forward_starting_options', $symbol], sub { _forward_starting_options($underlying, $calendar, $exchange) });
+                get_or_calculate(['forward_starting_options', $symbol], sub { _forward_starting_options($underlying, $calendar, $exchange) });
         }
 
         # This key is being used to decide whether to show additional
@@ -196,7 +183,7 @@ sub available_contracts_for_symbol {
         open         => $open,
         close        => $close,
         feed_license => $underlying->feed_license,
-        @offerings ? (spot => _get_cached_or_calculate([$symbol, 'spot'], sub { $underlying->spot })) : (),
+        @offerings ? (spot => get_or_calculate([$symbol, 'spot'], sub { $underlying->spot })) : (),
     };
 }
 
@@ -205,7 +192,7 @@ sub _default_barrier {
 
     my ($underlying, $duration, $barrier_type) = @{$args}{'underlying', 'duration', 'barrier_type'};
 
-    return _get_cached_or_calculate([$underlying->system_symbol, $duration, $barrier_type],
+    return get_or_calculate([$underlying->system_symbol, $duration, $barrier_type],
         sub { _default_barrier_calc($underlying, $duration, $barrier_type) });
 
 }
