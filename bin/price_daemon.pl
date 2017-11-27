@@ -10,11 +10,12 @@ use Getopt::Long;
 use LWP::Simple;
 use List::Util qw(max);
 use Parallel::ForkManager;
-use Quant::Framework::LinearCache;
 use Sys::Info;
 use Path::Tiny;
+use Volatility::LinearCache;
 
 use BOM::Pricing::PriceDaemon;
+
 
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 GetOptions(
@@ -75,7 +76,7 @@ $pm->run_on_finish(
 # don't do this if no-warmup if provided
 _warmup() unless $nowarmup;
 # cache for updated seasonality in Redis not more often then 10 seconds
-$Quant::Framework::LinearCache::PERIOD_OF_CHECKING_FOR_UPDATES = 10;
+$Volatility::LinearCache::PERIOD_OF_CHECKING_FOR_UPDATES = 10;
 
 while (1) {
     $pm->start and next;
