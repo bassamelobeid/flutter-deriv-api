@@ -3,5 +3,6 @@
     "paymentagent_loginid": "CR100001",
     "currency": "USD",
     "amount": 1000,
-    "verification_code": "Ag76JL9B"
+    "verification_code": "Ag76JL9B",
+    "dry_run": 1
 }
