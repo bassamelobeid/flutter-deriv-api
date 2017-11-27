@@ -110,7 +110,7 @@ sub prepare_market_data {
             recorded_date => $date
         }) for ('USD', 'JPY-USD', 'JPY');
 
-    Volatility::Seasonality::generate_economic_event_seasonality({
+    Volatility::EconomicEvents::generate_variance({
         chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer,
         underlying_symbols => [$underlying->symbol],
         economic_events    => $news->{$date->epoch},
@@ -144,7 +144,7 @@ subtest 'verify_with_shortcode_IH' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundcommon(1, $ask_prob * 1000), 546, 'Ask price is matching');
+    is(roundcommon(1, $ask_prob * 1000), 532, 'Ask price is matching');
 
     check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
