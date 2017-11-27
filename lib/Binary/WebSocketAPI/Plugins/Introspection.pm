@@ -39,8 +39,6 @@ taken by something else and we have no SO_REUSEPORT on our current kernel.
 
 =cut
 
-my $json = JSON::MaybeXS->new;
-
 sub start_server {
     my ($self, $app) = @_;
 
