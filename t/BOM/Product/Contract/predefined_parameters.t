@@ -284,10 +284,10 @@ sub setup_ticks {
         if ($quote) {
             BOM::Platform::RedisReplicated::redis_write()->set(
                 "Distributor::QUOTE::$symbol",
-                JSON::MaybeXS->new->utf8(1)->encode({
+                Encode::encode_utf8(JSON::MaybeXS->new->encode({
                         quote => $quote,
                         epcoh => $date->epoch,
-                    }));
+                    })));
         }
     }
 }
