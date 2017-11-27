@@ -12,6 +12,7 @@ use warnings;
 use Path::Tiny;
 use Excel::Writer::XLSX;
 use LandingCompany::Registry;
+use Volatility::EconomicEvents;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Platform::Runtime;
@@ -147,7 +148,7 @@ sub verify_with_shortcode {
 
     my $seasonality_prefix = 'bo_' . time . '_';
 
-    Volatility::Seasonality::set_prefix($seasonality_prefix);
+    Volatility::EconomicEvents::set_prefix($seasonality_prefix);
     my $EEC = Quant::Framework::EconomicEventCalendar->new({
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
@@ -158,7 +159,7 @@ sub verify_with_shortcode {
         },
         $contract->underlying->for_date
     );
-    Volatility::Seasonality::generate_economic_event_seasonality({
+    Volatility::EconomicEvents::generate_variance({
         underlying_symbols => [$contract->underlying->symbol],
         economic_events    => $events,
         date               => $contract->date_start,
