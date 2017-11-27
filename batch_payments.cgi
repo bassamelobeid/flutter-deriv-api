@@ -10,6 +10,8 @@ use Date::Utility;
 use Brands;
 use HTML::Entities;
 use Format::Util::Numbers qw/formatnumber/;
+use Scalar::Util qw(looks_like_number);
+use LandingCompany::Registry;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
@@ -80,7 +82,8 @@ if ($confirm) {
     }
 }
 
-my @hdgs = ('Line Number', 'Login Id', 'Name', 'debit/credit', 'Payment Type', 'Trace ID', 'Payment Processor', 'Currency', 'Amount', 'Comment');
+my @hdgs =
+    ('Line Number', 'Login Id', 'Name', 'debit/credit', 'Payment Type', 'Trace ID', 'Payment Processor', 'Currency', 'Amount', 'Comment', 'Notes');
 my $client_account_table =
     '<table border="1" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;margin-bottom:20px"><caption>Batch Credit/Debit details</caption>'
     . '<tr>'
@@ -109,11 +112,14 @@ read_csv_row_and_callback(
         my $client;
         my $error;
         {
+            my $curr_regex = LandingCompany::Registry::get_currency_type($currency) eq 'fiat' ? '^\d*\.?\d{1,2}$' : '^\d*\.?\d{1,8}$';
+            $amount = formatnumber('price', $currency, $amount) if looks_like_number($amount);
+
             # TODO fix this critic
             ## no critic (ProhibitCommaSeparatedStatements, ProhibitMixedBooleanOperators)
             $cols_found == $cols_expected or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
             $action !~ /^(debit|credit)$/ and $error = "Invalid transaction type [$action]", last;
-            $amount !~ /^\d+\.?\d?\d?$/ || $amount == 0 and $error = "Invalid amount [$amount]", last;
+            $amount !~ $curr_regex || $amount == 0 and $error = "Invalid amount [$amount]", last;
             !$statement_comment and $error = 'Statement comment can not be empty', last;
             $client = eval { Client::Account->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
@@ -312,7 +318,8 @@ sub construct_row_line {
         <td>$args{payment_type}</td>
         <td>$args{trace_id}</td>
         <td>$args{payment_processor}</td>
-        <td>$args{currency} $args{amount}</td>
+        <td>$args{currency}</td>
+        <td>$args{amount}</td>
         <td>$args{comment}</td>
         <td style="color:$color">$notes</td>
     </tr>];
