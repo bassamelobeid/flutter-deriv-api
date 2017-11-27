@@ -41,7 +41,7 @@ $user->save;
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $res = json->decode($t->message->[1]);
+my $res = $json->decode($t->message->[1]);
 is $res->{authorize}->{loginid}, $loginid;
 
 $t = $t->send_ok({json => {reality_check => 1}})->message_ok;
