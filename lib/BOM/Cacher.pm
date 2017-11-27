@@ -5,7 +5,7 @@ use warnings;
 
 use Cache::LRU;
 
-use Exporter;
+use base qw( Exporter );
 our @EXPORT_OK = qw(get_or_calculate);
 
 my $cache = Cache::LRU->new(
