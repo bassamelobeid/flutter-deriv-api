@@ -19,7 +19,8 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 local $\ = "\n";
-my $loginID         = uc(request()->param('loginID')) if request()->param('loginID');
+my $ID_request      = request()->param('loginID');
+my $loginID         = uc(request()->param('loginID')) if $ID_request;
 my $encoded_loginID = encode_entities($loginID);
 my $outputtype      = request()->param('outputtype');
 if (not $outputtype) {
