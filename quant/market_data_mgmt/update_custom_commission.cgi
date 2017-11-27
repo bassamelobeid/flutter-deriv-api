@@ -6,11 +6,10 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/regentmarkets/bom/cgi/oop);
 
-use JSON::MaybeXS;
+use JSON qw(to_json);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::CustomCommissionTool;
 BOM::Backoffice::Sysinit::init();
-my $json = JSON::MaybeXS->new;
 
 my $args = {
     name              => request()->param('name'),
@@ -28,13 +27,13 @@ my $args = {
 };
 
 if (request()->param('save_config')) {
-    print $json->encode(BOM::Backoffice::CustomCommissionTool::save_commission($args));
+    print to_json(BOM::Backoffice::CustomCommissionTool::save_commission($args));
 }
 
 if (request()->param('draw_chart')) {
-    print $json->encode(BOM::Backoffice::CustomCommissionTool::get_chart_params($args));
+    print to_json(BOM::Backoffice::CustomCommissionTool::get_chart_params($args));
 }
 
 if (request()->param('delete_config')) {
-    print $json->encode(BOM::Backoffice::CustomCommissionTool::delete_commission($args->{name}));
+    print to_json(BOM::Backoffice::CustomCommissionTool::delete_commission($args->{name}));
 }

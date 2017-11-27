@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use Scalar::Util 'looks_like_number';
-use JSON::MaybeXS;
+use JSON;
 use Brands;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -65,7 +65,7 @@ if ($input{save}) {
                     delete $pc->{_json}{$_};
                 }
             }
-            $pc->promo_code_config(JSON::MaybeXS->new->encode($pc->{_json}));
+            $pc->promo_code_config(JSON::to_json($pc->{_json}));
             $pc->save;
         };
         push @messages, ($@ || 'Save completed');

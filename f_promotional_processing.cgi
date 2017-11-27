@@ -3,7 +3,7 @@ package main;
 use strict;
 use warnings;
 
-use JSON::MaybeXS;
+use JSON;
 
 use Brands;
 use f_brokerincludeall;
@@ -42,7 +42,7 @@ foreach my $loginid (@approved, @rejected) {
 
         my $cpc = $client->client_promo_code || die "no promocode for client $client";
         my $pc = $cpc->promotion;
-        $pc->{_json} = eval { JSON::MaybeXS->new->decode($pc->promo_code_config) } || {};
+        $pc->{_json} = eval { JSON::from_json($pc->promo_code_config) } || {};
 
         my $amount   = $pc->{_json}->{amount}   || die "no amount for promocode $pc";
         my $currency = $pc->{_json}->{currency} || die "no currency for promocode $pc";

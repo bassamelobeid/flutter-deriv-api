@@ -19,7 +19,7 @@ use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
 
 use List::Util qw( min max );
-use JSON::MaybeXS;
+use JSON qw(to_json);
 use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
@@ -141,5 +141,5 @@ my $data = {
 Volatility::EconomicEvents::set_prefix();
 
 PrintContentType_JSON();
-print JSON::MaybeXS->new->encode($data);
+print to_json($data);
 

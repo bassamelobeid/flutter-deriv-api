@@ -5,7 +5,7 @@ use warnings;
 
 use Data::Compare;
 use HTML::Entities;
-use JSON::MaybeXS;
+use JSON qw( from_json to_json );
 use LandingCompany::Offerings qw(reinitialise_offerings);
 use Text::CSV;
 use Try::Tiny;
@@ -288,7 +288,7 @@ sub parse_and_refine_setting {
     } elsif ($type eq 'json_string') {
         my $decoded;
         try {
-            $decoded = JSON::MaybeXS->new->decode($input_value);
+            $decoded = from_json($input_value);
         }
         catch {
             warn("Error: decoding of $input_value failed - $_");
@@ -296,13 +296,13 @@ sub parse_and_refine_setting {
         if (not defined $input_value or not defined $decoded) {
             $input_value = '{}';
         } else {
-            my $json =
-
-                $input_value = JSON::MaybeXS->new(
-                utf8      => 1,
-                pretty    => 1,
-                canonical => 1,
-                )->encode($decoded);
+            $input_value = to_json(
+                $decoded,
+                {
+                    utf8      => 1,
+                    pretty    => 1,
+                    canonical => 1,
+                });
         }
         $display_value = $input_value;
     } else {

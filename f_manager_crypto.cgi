@@ -6,7 +6,7 @@ use warnings;
 use Client::Account;
 use Date::Utility;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
-use JSON::MaybeXS;
+use JSON::XS;
 use HTML::Entities;
 use List::UtilsBy qw(rev_nsort_by sort_by);
 use POSIX ();
@@ -466,7 +466,7 @@ EOF
             }
             print '</tbody></table>';
         } else {
-            print '<pre>' . encode_entities(JSON::MaybeXS->new->allow_blessed->pretty(1)->encode($rslt)) . '</pre>';
+            print '<pre>' . encode_entities(JSON::XS->new->allow_blessed->pretty(1)->encode($rslt)) . '</pre>';
         }
     } else {
         die 'Invalid ' . $currency . ' command: ' . $cmd;

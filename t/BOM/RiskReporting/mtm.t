@@ -9,6 +9,7 @@ use Test::Warnings qw/warning/;
 use Email::Folder::Search;
 use File::Spec;
 use Path::Tiny;
+use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);

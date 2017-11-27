@@ -6,7 +6,7 @@ use warnings;
 use BOM::Backoffice::Request;
 use BOM::Platform::QuantsConfig;
 use BOM::Platform::Chronicle;
-use JSON::MaybeXS;
+use JSON qw(to_json);
 use Try::Tiny;
 use List::Util qw(max);
 use BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -39,13 +39,12 @@ sub generate_commission_form {
     my $url = shift;
 
     my @config = map { _get_info($_) } @{_qc()->get_config('commission')};
-    my $json = JSON::MaybeXS->new;
     return BOM::Backoffice::Request::template->process(
         'backoffice/custom_commission_form.html.tt',
         {
             upload_url    => $url,
-            static_config => $json->encode($static_config),
-            config        => $json->encode(\@config),
+            static_config => to_json($static_config),
+            config        => to_json(\@config),
         },
     ) || die BOM::Backoffice::Request::template->error;
 }

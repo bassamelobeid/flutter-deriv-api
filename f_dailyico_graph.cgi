@@ -18,7 +18,7 @@ use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw(PrintContentType_JSON);
 use BOM::Backoffice::Request;
 use BOM::Backoffice::Sysinit ();
-use JSON::MaybeXS;
+use JSON qw(to_json);
 BOM::Backoffice::Sysinit::init();
 use BOM::RiskReporting::BinaryIco;
 use BOM::Platform::Runtime;
@@ -26,7 +26,7 @@ use BOM::Platform::Runtime;
 try {
     my $data = BOM::RiskReporting::BinaryIco->new->generate_output_in_histogram;
     PrintContentType_JSON();
-    print JSON::MaybeXS->new->encode($data);
+    print to_json($data);
 }
 
 catch { warn "Error $_"; };

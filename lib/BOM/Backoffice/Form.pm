@@ -7,7 +7,7 @@ use Date::Utility;
 use HTML::FormBuilder;
 use HTML::FormBuilder::Validation;
 use HTML::FormBuilder::Select;
-use JSON::MaybeXS;
+use JSON qw(to_json);
 use Locale::SubCountry;
 
 use BOM::Backoffice::Request qw(request localize template);
@@ -70,7 +70,7 @@ sub get_self_exclusion_form {
             'EXCLUDEUNTIL'       => $limit_exclude_until    // '',
             'TIMEOUTUNTIL'       => $limit_timeout_until    // '',
         };
-        $se_map = JSON::MaybeXS->new->encode($se_map);
+        $se_map = to_json($se_map);
 
         my %htmlesc = (qw/< &lt; > &gt; " &quot; & &amp;/);
         $se_map =~ s/([<>"&])/$htmlesc{$1}/ge;
