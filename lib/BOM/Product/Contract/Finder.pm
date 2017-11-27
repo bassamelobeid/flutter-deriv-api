@@ -14,7 +14,7 @@ use BOM::Platform::Chronicle;
 use Finance::Contract::Category;
 use LandingCompany::Offerings qw(get_offerings_flyby);
 
-use BOM::Cacher qw(get_or_calculate);
+use BOM::Product::IterationCacher qw(get_or_calculate);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -80,7 +80,7 @@ sub available_contracts_for_symbol {
     my $symbol          = $args->{symbol} || die 'no symbol';
     my $landing_company = $args->{landing_company};
 
-    BOM::Cacher::set_key_prefix(delete $args->{iteration_started} // time);
+    BOM::Product::IterationCacher::set_key_prefix(delete $args->{iteration_started} // time);
 
     my $now        = Date::Utility->new;
     my $underlying = get_or_calculate([$symbol], sub { create_underlying($symbol) });

@@ -1,4 +1,4 @@
-package BOM::Cacher;
+package BOM::Product::IterationCacher;
 
 use strict;
 use warnings;
