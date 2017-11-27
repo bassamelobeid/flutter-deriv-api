@@ -4,7 +4,7 @@ package main;
 use strict;
 use warnings;
 use open qw[ :encoding(UTF-8) ];
-use JSON;
+use JSON::MaybeXS;
 use Date::Utility;
 use Try::Tiny;
 use Data::Dumper;
@@ -45,7 +45,7 @@ my $curl_url =
 
 my $response = `curl $curl_url`;
 try {
-    $response = decode_json $response;
+    $response = JSON::MaybeXS->new->utf8(1)->decode($response);
     if ($response->{total_entries} > 0 and $response->{_embedded} and $response->{_embedded}->{entries}) {
         print '<table>';
         foreach (sort { Date::Utility->new($a->{created_at})->epoch <=> Date::Utility->new($b->{created_at})->epoch }

@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use JSON qw(to_json);
+use JSON::MaybeXS;
 use LandingCompany::Offerings qw(get_offerings_flyby);
 use List::Util qw(first);
 use Quant::Framework::EconomicEventCalendar;
@@ -15,6 +15,8 @@ use BOM::Backoffice::Request;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Chronicle;
 use BOM::Platform::Runtime;
+
+my $json = JSON::MaybeXS->new;
 
 sub get_economic_events_for_date {
     my $date = shift;
@@ -37,8 +39,8 @@ sub get_economic_events_for_date {
         (values %{$eec->_get_deleted()});
     my @l = _get_affected_underlying_symbols();
     return {
-        categorized_events => to_json(\@events),
-        deleted_events     => to_json(\@deleted_events),
+        categorized_events => $json->encode(\@events),
+        deleted_events     => $json->encode(\@deleted_events),
         underlying_symbols => to_json([sort @l]),
     };
 }

@@ -16,10 +16,11 @@ use Moose;
 extends 'BOM::RiskReporting::Base';
 use BOM::Platform::User;
 use Date::Utility;
-use JSON::XS;
+use JSON::MaybeXS;
 use Excel::Writer::XLSX;
 use File::Temp;
 
+my $utf8_json = JSON::MaybeXS->new;
 has client => (
     is         => 'rw',
     lazy_build => 1,
@@ -96,7 +97,7 @@ sub _financial_assessment {
     my @filter = qw(account_turnover education_level employment_industry estimated_worth income_source net_income occupation);
     my %f;
     if ($self->client->financial_assessment) {
-        my $h = JSON::XS::decode_json($self->client->financial_assessment->data);
+        my $h = $utf8_json->decode($self->client->financial_assessment->data);
         %f = map { $_ => $h->{$_}->{answer} } @filter;
     }
     return \%f;
@@ -127,7 +128,7 @@ sub get {
             fixup => sub { $_->selectrow_hashref("SELECT report FROM betonmarkets.risk_report WHERE client_loginid= ?", {}, $self->client->loginid) })
         )
     {
-        $data = JSON::XS::decode_json($rows->{report});
+        $data = $utf8_json->decode($rows->{report});
         $self->_update(1);
     }
 
@@ -145,7 +146,7 @@ sub _save {
             } else {
                 $sth = $_->prepare('insert into betonmarkets.risk_report values ($2, $1)');
             }
-            $sth->execute(JSON::XS::encode_json($data), $self->client->loginid);
+            $sth->execute($utf8_json->encode($data), $self->client->loginid);
         });
     return;
 }
