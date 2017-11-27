@@ -7,6 +7,7 @@ use parent qw(Mojolicious::Plugin);
 
 no indirect;
 
+use curry::weak;
 use Mojo::IOLoop;
 use Future;
 use Future::Mojo;
@@ -25,6 +26,12 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
 # is probably a bad idea, please do not rely on this for any meaningful protection
 use constant MAX_REQUEST_SECONDS => 5;
 
+use constant INTROSPECTION_CHANNEL => 'introspection';
+
+my $json = JSON::MaybeXS->new;
+
+our $INTROSPECTION_REDIS;
+
 =head2 start_server
 
 Tries to start the introspection endpoint. May fail on hot restart, since the port will be
@@ -35,69 +42,100 @@ taken by something else and we have no SO_REUSEPORT on our current kernel.
 my $utf8_json = JSON::MaybeXS->new->utf8(1);
 
 sub start_server {
-    my ($self, $app, $conf) = @_;
-    my $id = Mojo::IOLoop->server({
-            port => $conf->{port},
-        } => sub {
-            my (undef, $stream) = @_;
+    my ($self, $app) = @_;
 
-            # Client has connected, wait for commands and send responses back
-            my $buffer = '';
-            $stream->on(
-                read => sub {
-                    my ($stream, $bytes) = @_;
-
-                    $buffer .= $bytes;
-                    # One command per line
-                    while ($buffer =~ s/^([^\x0D\x0A]+)\x0D?\x0A//) {
-                        my ($command, @args) = split /[ =]/, $1;
-                        my $write_to_log = 0;
-                        if ($command eq 'log') {
-                            $write_to_log = 1;
-                            $command      = shift @args;
-                        }
-                        if (is_valid_command($command)) {
-                            my $rslt = try {
-                                $self->$command($app, @args);
-                            }
-                            catch {
-                                Future->fail(
-                                    $_,
-                                    introspection => $command,
-                                    @args
-                                );
-                            };
-                            # Allow deferred results
-                            $rslt = Future->done($rslt) unless blessed($rslt) && $rslt->isa('Future');
-                            retain_future(
-                                Future->wait_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->then(
-                                    sub {
-                                        my ($resp) = @_;
-                                        my $output = $utf8_json->encode($resp);
-                                        warn "$command (@args) - $output\n" if $write_to_log;
-                                        $stream->write("OK - $output$CRLF");
-                                        Future->done;
-                                    },
-                                    sub {
-                                        my ($exception, $category, @details) = @_;
-                                        my $output = $utf8_json->encode({
-                                            error    => $exception,
-                                            category => $category,
-                                            details  => \@details
-                                        });
-                                        warn "$command (@args) failed - $output\n";
-                                        $stream->write("ERR - $output$CRLF");
-                                        Future->done;
-                                    }));
-                        } else {
-                            warn "Invalid command: $command @args\n";
-                            $stream->write(sprintf "Invalid command [%s]", $command);
-                        }
-                    }
-                });
+    $INTROSPECTION_REDIS = Binary::WebSocketAPI::v3::Instance::Redis::create('ws_redis_master');
+    $INTROSPECTION_REDIS->on(
+        message => $app->$curry::weak(
+            sub {
+                my ($app, $redis, $msg, $channel) = @_;
+                return unless $channel eq INTROSPECTION_CHANNEL;
+                my $request        = $utf8_json->decode($msg);
+                my $command        = $request->{command};
+                my $return_channel = $request->{channel};
+                my $id             = $request->{id};
+                my @args           = @{$request->{args} || []};
+                retain_future(
+                    $self->handle_command($app, $command => @args)->transform(
+                        done => sub {
+                            my ($resp) = @_;
+                            $resp->{id} = $id;
+                            $redis->publish(
+                                $return_channel => $utf8_json->encode($resp),
+                                # We'd like this to be nonblocking
+                                sub {
+                                    my ($redis, $err) = @_;
+                                    warn "Publish response - $err" if $err;
+                                });
+                        },
+                        fail => sub {
+                            my ($resp) = @_;
+                            $resp->{id} = $id;
+                            $redis->publish(
+                                $return_channel => $utf8_json->encode($resp),
+                                # We'd like this to be nonblocking
+                                sub {
+                                    my ($redis, $err) = @_;
+                                    warn "Publish failure response - $err" if $err;
+                                });
+                        }));
+            }));
+    $INTROSPECTION_REDIS->subscribe(
+        [INTROSPECTION_CHANNEL],
+        sub {
+            my ($redis, $err) = @_;
+            return unless $err;
+            warn "Failed to subscribe to introspection endpoint: " . $err;
         });
-    $app->log->info("Introspection listening on :" . Mojo::IOLoop->acceptor($id)->port);
+    $app->log->info("Introspection listening on: " . INTROSPECTION_CHANNEL);
     return;
+}
+
+sub handle_command {
+    my ($self, $app, $command, @args) = @_;
+    my $write_to_log = 0;
+    if ($command eq 'log') {
+        $write_to_log = 1;
+        $command      = shift @args;
+    }
+
+    unless (is_valid_command($command)) {
+        warn "Invalid command: $command @args\n";
+        return Future->fail(
+            sprintf("Invalid command [%s]", $command),
+            invalid_command => $command,
+            @args
+        );
+    }
+
+    my $rslt = try {
+        $self->$command($app, @args);
+    }
+    catch {
+        Future->fail(
+            $_,
+            introspection => $command,
+            @args
+        );
+    };
+    # Allow deferred results
+    $rslt = Future->done($rslt) unless blessed($rslt) && $rslt->isa('Future');
+    return Future->wait_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->on_done(
+        sub {
+            my ($resp) = @_;
+            warn "$command (@args) - " . $json->encode($resp) . "\n" if $write_to_log;
+        }
+        )->else(
+        sub {
+            my ($exception, $category, @details) = @_;
+            my $rslt = {
+                error    => $exception,
+                category => $category,
+                details  => \@details
+            };
+            warn "$command (@args) failed - $exception\n";
+            return Future->fail($rslt, $category, @details);
+        });
 }
 
 =head2 register
@@ -111,7 +149,7 @@ port would not be as convenient.
 =cut
 
 sub register {
-    my ($self, $app, $conf) = @_;
+    my ($self, $app) = @_;
 
     my $retries = 100;
     my $code;
@@ -119,7 +157,8 @@ sub register {
         Mojo::IOLoop->timer(
             2 => sub {
                 try {
-                    $self->start_server($app, $conf);
+                    $self->start_server($app);
+                    undef $code;
                 }
                 catch {
                     return unless $code;
@@ -360,6 +399,7 @@ Mark an app_id for diversion to a different server.
 command divert => sub {
     my ($self, $app, $app_id, $service) = @_;
     my $redis = ws_redis_master();
+<<<<<<< HEAD
     if (my $ids = $redis->get('app_id::diverted')) {
         %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$utf8_json->decode($ids)};
     }
@@ -372,6 +412,45 @@ command divert => sub {
         $redis->set('app_id::diverted' => $utf8_json->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS));
     }
     Future->done({diversions => \%Binary::WebSocketAPI::DIVERT_APP_IDS});
+=======
+    my $f     = Future::Mojo->new;
+    $redis->get(
+        'app_id::diverted',
+        sub {
+            my ($redis, $ids) = @_;
+            # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
+            # No value => no update.
+            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))} if $ids;
+            my $rslt = {diversions => \%Binary::WebSocketAPI::DIVERT_APP_IDS};
+            if ($app_id) {
+                if ($service) {
+                    $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id} = $service;
+                } else {
+                    delete $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
+                }
+                $redis->set(
+                    'app_id::diverted' => Encode::encode_utf8(JSON::MaybeXS->new->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS)),
+                    sub {
+                        my ($redis, $err) = @_;
+                        unless ($err) {
+                            # Since this contains a reference rather than a copy of the diversion hash,
+                            # it'll pick up the change we just made
+                            $f->done($rslt);
+                            return;
+                        }
+                        warn "Redis error when recording diverted app_id - $err";
+                        $f->fail(
+                            $err,
+                            redis => $app_id,
+                            $service
+                        );
+                    });
+            } else {
+                $f->done($rslt);
+            }
+        });
+    return $f;
+>>>>>>> origin/master
 };
 
 =head2
@@ -383,6 +462,7 @@ Block an app_id from connecting.
 command block => sub {
     my ($self, $app, $app_id, $service) = @_;
     my $redis = ws_redis_master();
+<<<<<<< HEAD
     if (my $ids = $redis->get('app_id::blocked')) {
         %Binary::WebSocketAPI::BLOCK_APP_IDS = %{$utf8_json->decode($ids)};
     }
@@ -395,6 +475,41 @@ command block => sub {
         $redis->set('app_id::blocked' => $utf8_json->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS));
     }
     Future->done({blocked => \%Binary::WebSocketAPI::BLOCK_APP_IDS});
+=======
+    my $f     = Future::Mojo->new;
+    $redis->get(
+        'app_id::blocked',
+        sub {
+            my ($redis, $ids) = @_;
+            %Binary::WebSocketAPI::BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))} if $ids;
+            my $rslt = {blocked => \%Binary::WebSocketAPI::BLOCK_APP_IDS};
+            if ($app_id) {
+                if ($service) {
+                    $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id} = 1;
+                } else {
+                    delete $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id};
+                }
+                $redis->set(
+                    'app_id::blocked' => Encode::encode_utf8(JSON::MaybeXS->new->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS)),
+                    sub {
+                        my ($redis, $err) = @_;
+                        unless ($err) {
+                            $f->done($rslt);
+                            return;
+                        }
+                        warn "Redis error when recording blocked app_id - $err";
+                        $f->fail(
+                            $err,
+                            redis => $app_id,
+                            $service
+                        );
+                    });
+            } else {
+                $f->done($rslt);
+            }
+        });
+    return $f;
+>>>>>>> origin/master
 };
 
 =head2 help
