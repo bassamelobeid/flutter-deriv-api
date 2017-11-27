@@ -1,28 +1,26 @@
 use strict;
 use warnings;
 
+use Data::Decimate qw(decimate);
+use Date::Utility;
+use File::Spec;
+use LandingCompany::Offerings qw(get_offerings_with_filter);
 use Test::Most tests => 5;
 use Test::Warnings;
-use File::Spec;
+use Volatility::EconomicEvents;
 use YAML::XS qw(LoadFile);
-use LandingCompany::Offerings qw(get_offerings_with_filter);
-use Date::Utility;
-use BOM::Product::ContractFactory qw( produce_contract );
 
-use BOM::MarketData qw(create_underlying_db);
-use BOM::MarketData qw(create_underlying);
+use BOM::Market::DataDecimate;
+use BOM::MarketData qw(create_underlying_db create_underlying);
 use BOM::MarketData::Types;
-
-use Test::BOM::UnitTestPrice;
-use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Platform::Chronicle;
+use BOM::Platform::RedisReplicated;
+use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use Volatility::Seasonality;
-use BOM::Platform::Chronicle;
+use BOM::Test::Data::Utility::UnitTestRedis;
 
-use BOM::Platform::RedisReplicated;
-use BOM::Market::DataDecimate;
-use Data::Decimate qw(decimate);
+use Test::BOM::UnitTestPrice;
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
@@ -202,7 +200,7 @@ subtest 'atm prices without economic events' => sub {
 };
 
 subtest 'prices with economic events' => sub {
-    Volatility::Seasonality::generate_economic_event_seasonality({
+    Volatility::EconomicEvents::generate_variance({
         underlying_symbols => [$underlying->symbol],
         economic_events    => $news,
         chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer,

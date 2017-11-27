@@ -23,15 +23,17 @@ subtest 'skips economic event with impact 1 in volatility calculation' => sub {
             recorded_date => $event_date,
             events        => [{
                     symbol       => 'USD',
-                    impact       => 5,
                     release_date => $event_date->epoch,
-                    event_name   => 'Construction Spending m/m'
+                    event_name   => 'Construction Spending m/m',
+                    custom       => {
+                        DIRECT => {
+                            vol_change => 0.5,
+                        }}
                 },
                 {
                     symbol       => 'USD',
-                    impact       => 1,
                     release_date => $event_date->epoch,
-                    event_name   => 'CB Leading Index m/m'
+                    event_name   => 'CB Leading Index m/m test'
                 },
             ]});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -57,11 +59,11 @@ subtest 'skips economic event with impact 1 in volatility calculation' => sub {
         currency     => 'USD',
         payout       => 1,
     });
-    is scalar(@{$c->_applicable_economic_events}),                2, 'two economic events recorded';
+    is scalar(@{$c->_applicable_economic_events}),                1, 'two economic events recorded';
     is scalar(@{$c->economic_events_for_volatility_calculation}), 1, 'one economic event left for volatility calculation';
     my $e = $c->economic_events_for_volatility_calculation->[0];
-    is $e->{impact}, 5, 'impact 5';
-    is $e->{event_name}, 'Construction Spending m/m', 'correct event name';
+    is $e->{vol_change}, 0.5, 'vol_change 0.5';
+    is $e->{release_epoch}, $event_date->epoch, 'correct event time';
 };
 
 done_testing();

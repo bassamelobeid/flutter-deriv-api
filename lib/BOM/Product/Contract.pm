@@ -727,7 +727,7 @@ sub _build_applicable_economic_events {
     my $start = $current_epoch - $max_lookback_seconds;
     my $end   = $current_epoch + $seconds_to_expiry;
 
-    return Quant::Framework::EconomicEventCalendar->new({
+    my $events = Quant::Framework::EconomicEventCalendar->new({
             chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
         }
         )->get_latest_events_for_period({
@@ -736,6 +736,8 @@ sub _build_applicable_economic_events {
         },
         $self->underlying->for_date
         );
+    $events = Volatility::EconomicEvents::categorize_events($self->underlying->system_symbol, $events);
+    return $events;
 }
 
 sub _build_pricing_spot {
@@ -935,14 +937,6 @@ sub pricing_details {
         } else {
             push @comment_fields, (barrier => $self->barrier->as_absolute) if $self->barrier;
         }
-    }
-
-    my $news_factor;
-    $news_factor = $self->ask_probability->peek('news_factor') if $self->is_binary();
-    if ($news_factor) {
-        push @comment_fields, news_fct => $news_factor->amount;
-        my $news_impact = $news_factor->peek('news_impact');
-        push @comment_fields, news_impact => $news_impact->amount if $news_impact;
     }
 
     if ($self->entry_spot) {

@@ -7,29 +7,31 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Test::MockModule;
 use Date::Utility;
 
-my $mocked_seasonality = Test::MockModule->new('Volatility::Seasonality');
-my $mocked_c           = Test::MockModule->new('BOM::Product::Contract');
-$mocked_c->mock('_applicable_economic_events', sub { [] });
-my $now = Date::Utility->new->truncate_to_day;
+my $mocked_economic_events = Test::MockModule->new('Volatility::EconomicEvents');
+my $now                    = Date::Utility->new->truncate_to_day;
+my $period;
 
-my $c = produce_contract({
-    bet_type     => 'CALL',
-    underlying   => 'frxUSDJPY',
-    date_start   => $now,
-    date_pricing => $now,
-    duration     => '1h',
-    barrier      => 'S0P',
-    currency     => 'USD',
-    payout       => 100,
-});
-
-my $period = {
-    from => $c->effective_start->minus_time_interval('20m'),
-    to   => $c->effective_start
-};
+sub get_contract {
+    my $c = produce_contract({
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        date_start   => $now,
+        date_pricing => $now,
+        duration     => '1h',
+        barrier      => 'S0P',
+        currency     => 'USD',
+        payout       => 100,
+    });
+    $period //= {
+        from => $c->effective_start->minus_time_interval('20m'),
+        to   => $c->effective_start
+    };
+    return $c;
+}
 
 subtest 'no events' => sub {
-    $mocked_seasonality->mock('categorized_events', sub { [] });
+    my $c = get_contract();
+    $mocked_economic_events->mock('categorized_events', sub { [] });
     my $windows = $c->_get_tick_windows($period);
     is scalar(@$windows), 1, 'only one window';
     is $windows->[0][0], $now->minus_time_interval('20m')->epoch, 'correct start of period';
@@ -37,7 +39,8 @@ subtest 'no events' => sub {
 };
 
 subtest 'event spans contract pricing time' => sub {
-    $mocked_seasonality->mock(
+    my $c = get_contract();
+    $mocked_economic_events->mock(
         'categorize_events',
         sub {
             [{
@@ -53,7 +56,8 @@ subtest 'event spans contract pricing time' => sub {
 };
 
 subtest 'one event which does not span the contract pricing time - so two windows' => sub {
-    $mocked_seasonality->mock(
+    my $c = get_contract();
+    $mocked_economic_events->mock(
         'categorize_events',
         sub {
             [{
@@ -71,7 +75,8 @@ subtest 'one event which does not span the contract pricing time - so two window
 };
 
 subtest 'two overlapping events - two windows' => sub {
-    $mocked_seasonality->mock(
+    my $c = get_contract();
+    $mocked_economic_events->mock(
         'categorize_events',
         sub {
             [{
@@ -95,7 +100,8 @@ subtest 'two overlapping events - two windows' => sub {
 };
 
 subtest 'two overlapping events, second event\'s duration cross first event - two windows' => sub {
-    $mocked_seasonality->mock(
+    my $c = get_contract();
+    $mocked_economic_events->mock(
         'categorize_events',
         sub {
             [{
@@ -119,7 +125,8 @@ subtest 'two overlapping events, second event\'s duration cross first event - tw
 };
 
 subtest '3 events with two overlapping events - three windows' => sub {
-    $mocked_seasonality->mock(
+    my $c = get_contract();
+    $mocked_economic_events->mock(
         'categorize_events',
         sub {
             [{
@@ -150,7 +157,8 @@ subtest '3 events with two overlapping events - three windows' => sub {
 };
 
 subtest 'indentical release date with different duration impact - two windows' => sub {
-    $mocked_seasonality->mock(
+    my $c = get_contract();
+    $mocked_economic_events->mock(
         'categorize_events',
         sub {
             [{
