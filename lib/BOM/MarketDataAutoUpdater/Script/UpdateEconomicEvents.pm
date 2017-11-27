@@ -16,7 +16,7 @@ use List::Util qw(first uniq max);
 use Sys::Info;
 use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::VolSurface::Delta;
-use Volatility::Seasonality;
+use Volatility::EconomicEvents;
 
 sub documentation { return 'This script runs economic events update from forex factory at 00:00 GMT'; }
 
@@ -52,10 +52,11 @@ sub script_run {
 
         my @underlying_symbols = create_underlying_db->symbols_for_intraday_fx;
 
-        Volatility::Seasonality::generate_economic_event_seasonality({
+        Volatility::EconomicEvents::generate_variance({
             underlying_symbols => \@underlying_symbols,
             economic_events    => $events_received,
             chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+            strict             => 1,
         });
 
         print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.\n";
