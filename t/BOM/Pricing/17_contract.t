@@ -192,6 +192,7 @@ subtest 'get_bid' => sub {
             entry_spot
             barrier_count
             audit_details
+            status
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
