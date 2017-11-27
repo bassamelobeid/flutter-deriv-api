@@ -381,25 +381,24 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     my $user = BOM::Platform::User->new({email => $client->email});
     my $result = "";
 
-    foreach my $lid ($user->loginid) {
-
+    foreach my $lid (keys %{$user->loginid_details}) {
         # Load client object
-        my $existing_cli = Client::Account->new({loginid => $lid->loginid});
+        my $existing_client = Client::Account->new({loginid => $lid});
 
         # Only allow CR and MF
-        next unless $existing_cli->landing_company->short =~ /^(?:costarica|maltainvest)$/;
+        next unless $existing_client->landing_company->short =~ /^(?:costarica|maltainvest)$/;
 
-        my $existing_cli_loginid = encode_entities($existing_cli->loginid);
+        my $existing_client_loginid = encode_entities($existing_client->loginid);
 
         if ($input{professional_client}) {
-            $existing_cli->set_status('professional', $clerk, 'Mark as professional as requested');
-            $existing_cli->clr_status('professional_requested');
+            $existing_client->set_status('professional', $clerk, 'Mark as professional as requested');
+            $existing_client->clr_status('professional_requested');
         } else {
-            $existing_cli->clr_status('professional');
+            $existing_client->clr_status('professional');
         }
 
-        if (not $existing_cli->save) {
-            $result .= "<p>Failed to update professional status of client: $existing_cli_loginid</p>";
+        if (not $existing_client->save) {
+            $result .= "<p>Failed to update professional status of client: $existing_client_loginid</p>";
         }
     }
 

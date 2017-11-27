@@ -29,6 +29,7 @@ use VolSurface::Utils qw( get_delta_for_strike get_strike_for_spot_delta get_1vo
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 use BOM::Platform::Chronicle;
+use Volatility::EconomicEvents;
 
 use BOM::MarketData::Display::VolatilitySurface;
 use Try::Tiny;
@@ -85,7 +86,7 @@ sub debug_link {
 
     my $seasonality_prefix = 'bo_' . time . '_';
 
-    Volatility::Seasonality::set_prefix($seasonality_prefix);
+    Volatility::EconomicEvents::set_prefix($seasonality_prefix);
     my $EEC = Quant::Framework::EconomicEventCalendar->new({
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
         chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
@@ -100,7 +101,7 @@ sub debug_link {
             },
             $pair_ref->{underlying}->for_date
         );
-        Volatility::Seasonality::generate_economic_event_seasonality({
+        Volatility::EconomicEvents::generate_variance({
             underlying_symbols => [$pair_ref->{underlying}->system_symbol],
             economic_events    => $events,
             date               => $bet->date_start,
@@ -172,7 +173,7 @@ sub debug_link {
         \$debug_link
     ) || die BOM::Backoffice::Request::template->error;
 
-    Volatility::Seasonality::set_prefix('');
+    Volatility::EconomicEvents::set_prefix('');
     return $debug_link;
 }
 
