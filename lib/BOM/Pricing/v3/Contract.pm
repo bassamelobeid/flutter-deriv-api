@@ -345,7 +345,7 @@ sub get_bid {
             shortcode           => $contract->shortcode,
             ($contract->is_binary) ? (payout => $contract->payout) : (),
             contract_type => $contract->code,
-            bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
+            bid_price     => formatnumber('price', $contract->currency, $contract->bid_price),
         };
 
         if ($is_sold and $is_expired) {
