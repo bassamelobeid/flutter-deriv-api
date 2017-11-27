@@ -4,8 +4,9 @@ use warnings;
 use strict;
 
 use File::Slurp;
-use Amazon::S3::SignedURLGenerator;
 use Amazon::S3;
+use Amazon::S3::SignedURLGenerator;
+use Digest::SHA qw(sha1_hex);
 
 use BOM::Backoffice::Config;
 
