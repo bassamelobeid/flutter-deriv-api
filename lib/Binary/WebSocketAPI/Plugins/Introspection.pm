@@ -399,20 +399,6 @@ Mark an app_id for diversion to a different server.
 command divert => sub {
     my ($self, $app, $app_id, $service) = @_;
     my $redis = ws_redis_master();
-<<<<<<< HEAD
-    if (my $ids = $redis->get('app_id::diverted')) {
-        %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$utf8_json->decode($ids)};
-    }
-    if ($app) {
-        if ($service) {
-            $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id} = $service;
-        } else {
-            delete $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
-        }
-        $redis->set('app_id::diverted' => $utf8_json->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS));
-    }
-    Future->done({diversions => \%Binary::WebSocketAPI::DIVERT_APP_IDS});
-=======
     my $f     = Future::Mojo->new;
     $redis->get(
         'app_id::diverted',
@@ -420,7 +406,7 @@ command divert => sub {
             my ($redis, $ids) = @_;
             # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
             # No value => no update.
-            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))} if $ids;
+            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$utf8_json->decode($ids)} if $ids;
             my $rslt = {diversions => \%Binary::WebSocketAPI::DIVERT_APP_IDS};
             if ($app_id) {
                 if ($service) {
@@ -429,7 +415,7 @@ command divert => sub {
                     delete $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
                 }
                 $redis->set(
-                    'app_id::diverted' => Encode::encode_utf8(JSON::MaybeXS->new->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS)),
+                    'app_id::diverted' => $utf8_json->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS),
                     sub {
                         my ($redis, $err) = @_;
                         unless ($err) {
@@ -450,7 +436,6 @@ command divert => sub {
             }
         });
     return $f;
->>>>>>> origin/master
 };
 
 =head2
@@ -462,26 +447,12 @@ Block an app_id from connecting.
 command block => sub {
     my ($self, $app, $app_id, $service) = @_;
     my $redis = ws_redis_master();
-<<<<<<< HEAD
-    if (my $ids = $redis->get('app_id::blocked')) {
-        %Binary::WebSocketAPI::BLOCK_APP_IDS = %{$utf8_json->decode($ids)};
-    }
-    if ($app) {
-        if ($service) {
-            $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id} = $service;
-        } else {
-            delete $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id};
-        }
-        $redis->set('app_id::blocked' => $utf8_json->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS));
-    }
-    Future->done({blocked => \%Binary::WebSocketAPI::BLOCK_APP_IDS});
-=======
     my $f     = Future::Mojo->new;
     $redis->get(
         'app_id::blocked',
         sub {
             my ($redis, $ids) = @_;
-            %Binary::WebSocketAPI::BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))} if $ids;
+            %Binary::WebSocketAPI::BLOCK_APP_IDS = %{$utf8_json->ecode($ids)} if $ids;
             my $rslt = {blocked => \%Binary::WebSocketAPI::BLOCK_APP_IDS};
             if ($app_id) {
                 if ($service) {
@@ -490,7 +461,7 @@ command block => sub {
                     delete $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id};
                 }
                 $redis->set(
-                    'app_id::blocked' => Encode::encode_utf8(JSON::MaybeXS->new->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS)),
+                    'app_id::blocked' => $utf8_json->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS),
                     sub {
                         my ($redis, $err) = @_;
                         unless ($err) {
@@ -509,7 +480,6 @@ command block => sub {
             }
         });
     return $f;
->>>>>>> origin/master
 };
 
 =head2 help
