@@ -361,7 +361,7 @@ sub show_client_id_docs {
 
     my $dbic = BOM::Database::ClientDB->new({
             client_loginid => $loginid,
-            operation      => 'backoffice_replica',
+            operation      => 'replica',
         }
         )->db->dbic
         or die "[$0] cannot create connection";
