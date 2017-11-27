@@ -40,13 +40,13 @@ $test_client->payment_free_gift(
 
 # Mock exchange rates and populate in redis
 my $rates = {
-            USD => 1,
-            EUR => 1.1888,
-            GBP => 1.3333,
-            JPY => 0.0089,
-            BTC => 6000,
-        };
-        
+    USD => 1,
+    EUR => 1.1888,
+    GBP => 1.3333,
+    JPY => 0.0089,
+    BTC => 6000,
+};
+
 Cache::RedisDB->set('QUOTE', "frx${_}USD", {quote => $rates->{$_}}) for keys %$rates;
 
 my $hash_pwd = BOM::Platform::Password::hashpw('jskjd8292922');
