@@ -298,11 +298,10 @@ sub parse_and_refine_setting {
         } else {
             my $json =
 
-                $input_value = JSON::MaybeXS->new(
-                utf8      => 1,
+                $input_value = Encode::encode_utf8(JSON::MaybeXS->new(
                 pretty    => 1,
                 canonical => 1,
-                )->encode($decoded);
+                )->encode($decoded));
         }
         $display_value = $input_value;
     } else {

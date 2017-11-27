@@ -31,7 +31,7 @@ sub login {
     my $user = BOM::Backoffice::Auth0::user_by_access_token($access_token);
     if ($user) {
         $user->{token} = $access_token;
-        BOM::Platform::RedisReplicated::redis_write->set("BINARYBOLOGIN::" . $user->{nickname}, JSON::MaybeXS->new->utf8->encode($user));
+        BOM::Platform::RedisReplicated::redis_write->set("BINARYBOLOGIN::" . $user->{nickname}, Encode::encode_utf8(JSON::MaybeXS->new->encode($user)));
         BOM::Platform::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $user->{nickname}, 24 * 3600);
 
         return $user;
@@ -44,7 +44,7 @@ sub from_cookie {
 
     my $user;
     if ($staff and $user = BOM::Platform::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $staff)) {
-        return JSON::MaybeXS->new->utf8->decode($user);
+        return JSON::MaybeXS->new->decode(Encode::decode_utf8($user));
     }
     return;
 }
@@ -67,7 +67,7 @@ sub has_authorisation {
 
     my $cache = BOM::Platform::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $staff);
     my $user;
-    if ($cache and $user = JSON::MaybeXS->new->utf8->decode($cache) and $user->{token} = $auth_token) {
+    if ($cache and $user = JSON::MaybeXS->new->decode(Encode::decode_utf8($cache)) and $user->{token} = $auth_token) {
         BOM::Platform::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $staff, 24 * 3600);
         if (not $groups or not BOM::Platform::Config::on_production()) {
             return 1;
