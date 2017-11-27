@@ -616,6 +616,7 @@ subtest $method => sub {
     $expected_result = {
         'barrier'         => '0.99360',
         'is_expired'      => 1,
+        'bid_price'       => '0.00',
         'contract_id'     => 10,
         'currency'        => 'USD',
         'payout'          => '191.82',
