@@ -46,7 +46,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 symbol       => 'USD',
                 release_date => $now->epoch,
                 event_name   => 'Construction Spending m/m',
-                impact       => 5,
+                vol_change   => 0.5,
             }]
     },
 );
