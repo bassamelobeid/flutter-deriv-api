@@ -4,15 +4,15 @@ use strict;
 use warnings;
 
 use List::MoreUtils qw(none all);
-use BOM::Market::DataDecimate;
-use VolSurface::Empirical;
-use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Product::Static;
-use Quant::Framework::VolSurface;
 use Quant::Framework::VolSurface::Utils qw(effective_date_for);
-use Volatility::Seasonality;
+use Quant::Framework::VolSurface;
+use VolSurface::Empirical;
+use Volatility::EconomicEvents;
+
 use BOM::Market::DataDecimate;
+use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Platform::Chronicle;
+use BOM::Product::Static;
 
 ## ATTRIBUTES  #######################
 
@@ -129,11 +129,10 @@ sub _build_pricing_vol {
 
     if ($self->priced_with_intraday_model) {
         $vol = $self->empirical_volsurface->get_volatility({
-            from                          => $self->effective_start,
-            to                            => $self->date_expiry,
-            delta                         => 50,
-            ticks                         => $self->ticks_for_short_term_volatility_calculation,
-            include_economic_event_impact => 1,
+            from  => $self->effective_start,
+            to    => $self->date_expiry,
+            delta => 50,
+            ticks => $self->ticks_for_short_term_volatility_calculation,
         });
         $volatility_error = $self->empirical_volsurface->validation_error if $self->empirical_volsurface->validation_error;
     } else {
@@ -181,7 +180,7 @@ sub _build_economic_events_for_volatility_calculation {
     # If news occurs 5 minutes before/after the contract expiration time, we shift the news triangle to 5 minutes before the contract expiry.
     my $end = $current_epoch + $seconds_to_expiry + 300;
 
-    return [grep { $_->{release_date} >= $start and $_->{release_date} <= $end and $_->{impact} > 1 } @$all_events];
+    return [grep { $_->{release_epoch} >= $start and $_->{release_epoch} <= $end } @$all_events];
 }
 
 sub _build_pricing_vol_for_two_barriers {
@@ -284,11 +283,9 @@ sub _get_tick_windows {
     my $diff = $to - $from;
 
     # just take events from two hour back and sort it in descending order
-    my $categorized_events = Volatility::Seasonality::categorize_events(
-        $self->underlying->symbol,
-        [
-            sort { $b->{release_date} <=> $a->{release_date} }
-            grep { $_->{release_date} > $to - 2 * 3600 && $_->{release_date} < $to } @{$self->_applicable_economic_events}]);
+    my $categorized_events = [
+        sort { $b->{release_epoch} <=> $a->{release_epoch} }
+        grep { $_->{release_epoch} > $to - 2 * 3600 && $_->{release_epoch} < $to } @{$self->_applicable_economic_events}];
 
     return [[$from, $to]] unless @$categorized_events;
 

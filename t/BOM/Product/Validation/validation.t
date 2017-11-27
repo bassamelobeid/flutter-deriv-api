@@ -58,7 +58,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 symbol       => 'USD',
                 release_date => 1,
                 source       => 'forexfactory',
-                impact       => 1,
                 event_name   => 'FOMC',
             }
         ],
@@ -1212,7 +1211,7 @@ subtest 'tentative events' => sub {
                     blankout_end           => $blackout_end->epoch,
                     is_tentative           => 1,
                     event_name             => 'Test tentative',
-                    impact                 => 5,
+                    vol_change             => 0.5,
                 }
             ],
         });
@@ -1346,7 +1345,6 @@ subtest 'zero payout' => sub {
                     symbol       => 'USD',
                     release_date => 1,
                     source       => 'forexfactory',
-                    impact       => 1,
                     event_name   => 'FOMC',
                 }]});
 

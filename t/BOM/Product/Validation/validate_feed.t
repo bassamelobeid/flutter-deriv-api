@@ -139,7 +139,7 @@ subtest 'max_feed_delay_seconds' => sub {
         ok $c->_validate_feed, 'invalid if feed is more than 30 seconds delay';
         my $event = {
             event_name   => 'test',
-            impact       => 5,
+            vol_change   => 0.5,
             release_date => $now->epoch
         };
         $mock->mock('_applicable_economic_events', sub { [$event] });

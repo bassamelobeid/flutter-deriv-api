@@ -50,13 +50,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         events        => [{
                 symbol       => 'USD',
                 release_date => $now->minus_time_interval('3h')->epoch,
-                impact       => 5,
+                vol_change   => 0.5,
                 event_name   => 'Unemployment Rate',
             },
             {
                 symbol       => 'USD',
                 release_date => $now->epoch,
-                impact       => 5,
+                vol_change   => 0.5,
                 event_name   => 'Unemployment Rate',
             }
         ],
