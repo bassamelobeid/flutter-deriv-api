@@ -573,8 +573,13 @@ sub contracts_for {
     my $contracts_for =
         BOM::Platform::RedisReplicated::redis_pricer()->get(join(':', 'contracts_for', $landing_company_name, $product_type, $symbol));
     if ($contracts_for) {
-        $contracts_for = JSON::XS->new->decode($contracts_for);
-        $contracts_for = undef if $contracts_for->{_generated} < time - 30;
+        try {
+            $contracts_for = JSON::XS->new->decode($contracts_for);
+            $contracts_for = undef if $contracts_for->{_generated} < time - 30;
+        }
+        catch {
+            warn "contracts_for form redis json_decode error: $_";
+        };
     }
 
     if ($contracts_for) {
