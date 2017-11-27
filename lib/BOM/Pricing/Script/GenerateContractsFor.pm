@@ -15,6 +15,7 @@ sub run {
     my $products = {map { $_ => 1 } qw/basic multi_barrier/};
     die "$0 <product>" unless defined $products->{$ARGV[0]};
     do_loop($ARGV[0]);
+    return;
 }
 
 sub do_loop {
