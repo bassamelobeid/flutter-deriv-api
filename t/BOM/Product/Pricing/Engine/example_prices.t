@@ -49,7 +49,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 symbol       => 'USD',
                 release_date => 1,
                 source       => 'forexfactory',
-                impact       => 1,
                 event_name   => 'FOMC',
             }]});
 

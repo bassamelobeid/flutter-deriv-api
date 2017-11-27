@@ -39,7 +39,7 @@ subtest 'monday mornings intraday' => sub {
     $dp = Date::Utility->new('2017-06-12 00:20:01');
     $args->{date_pricing} = $args->{date_start} = $dp;
     $c = produce_contract($args);
-    warning_like { is $c->pricing_vol, 0.10410700957774, 'seasonalized 10% vol' } qr/Insufficient ticks to calculate historical volatility/, 'warns';
+    warning_like { is $c->pricing_vol, 0.104107009577741, 'seasonalized 10% vol' } qr/Insufficient ticks to calculate historical volatility/, 'warns';
     is $c->empirical_volsurface->validation_error, 'Insufficient ticks to calculate historical volatility.',
         'warn if historical tick not found after first 20 minutes of a monday morning';
     $mocked->mock(
