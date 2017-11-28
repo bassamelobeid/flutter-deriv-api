@@ -20,8 +20,10 @@ our @EXPORT_OK = qw( create_client top_up );
 sub create_client {
     my $broker   = shift || 'CR';
     my $skipauth = shift;
+    my $args     = shift;
     my $client   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => $broker,
+            ($args ? %$args : ()),    # modification to default client info
         },
         $skipauth ? undef : 1
     );

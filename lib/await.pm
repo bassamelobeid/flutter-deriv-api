@@ -67,13 +67,11 @@ sub AUTOLOAD {
 
     return unless ref $self;
 
-    $req_id += 1;
-
     my $payload_copy = ref $payload eq 'HASH' ? {%{$payload}} : $payload;
     my $params_copy = $params ? {%{$params}} : {};
 
     if (ref $payload_copy eq 'HASH') {
-        $payload_copy->{req_id} //= $req_id;
+        $payload_copy->{req_id} //= ++$req_id;
         $params_copy->{req_id} = $payload_copy->{req_id};
     }
 
@@ -95,10 +93,13 @@ sub get_data {
 
     while (1) {
         $t = $t->message_ok;
+        unless ($t->message) {
+            die "Socket was closed while waiting for response (timeout)";
+        }
         my $msg  = $t->message->[1];
         my $data = decode_json($msg);
 
-        return $data if not exists($params->{req_id}) or $data->{req_id} == $params->{req_id};
+        return $data if not exists($params->{req_id}) or (exists($data->{req_id}) and $data->{req_id} == $params->{req_id});
 
         note "We're looking for this req_id: " . $params->{req_id} . ", skipping $msg" if $ENV{BINARY_AWAIT_DEBUG};
     }

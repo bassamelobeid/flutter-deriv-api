@@ -99,15 +99,18 @@ sub create_client {
         operation   => 'write',
     });
 
-    my $db  = $connection_builder->db;
-    my $dbh = $db->dbh;
+    my $db   = $connection_builder->db;
+    my $dbic = $db->dbic;
 
     my $sequence_name        = 'sequences.loginid_sequence_' . $broker_code;
     my $loginid_sequence_sql = "SELECT nextval('$sequence_name')";
-    my $loginid_sequence_sth = $dbh->prepare($loginid_sequence_sql);
-    $loginid_sequence_sth->execute();
-    my @loginid_sequence = $loginid_sequence_sth->fetchrow_array();
-    my $new_loginid      = $broker_code . $loginid_sequence[0];
+    my @loginid_sequence     = $dbic->run(
+        sub {
+            my $loginid_sequence_sth = $_->prepare($loginid_sequence_sql);
+            $loginid_sequence_sth->execute();
+            return $loginid_sequence_sth->fetchrow_array();
+        });
+    my $new_loginid = $broker_code . $loginid_sequence[0];
 
     $client_data->{loginid} = $new_loginid;
 
@@ -250,6 +253,8 @@ sub create_fmb {
 
     my %trans = (transaction_time => $fmb_data->{transaction_time});
 
+    $bet{quantity} = $args->{quantity} // 1;
+
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new({
             account_data => {
                 client_loginid => $client_loginid,
@@ -269,7 +274,7 @@ sub create_fmb {
         $bet{sell_time}          = Date::Utility->new->db_timestamp;
         $bet{is_sold}            = 1;
         $trans{transaction_time} = $sell_time;
-
+        $fmb_helper->bet_data->{quantity} = $args->{quantity} // 1;
         ($fmb_rec, $trx_rec) = $fmb_helper->sell_bet;
     }
 
