@@ -11,6 +11,7 @@ use Variable::Disposition qw/retain_future/;
 
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::Hooks;
+use BOM::Platform::User;
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -30,7 +31,22 @@ $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'TestingS3Bucket';
 
 my $t = build_wsapi_test();
 
-my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, 'CR0021');
+my $email       = 'test-binary' . rand(999) . '@binary.com';
+my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+$test_client->email($email);
+$test_client->save;
+
+my $loginid = $test_client->loginid;
+my $user    = BOM::Platform::User->create(
+    email    => $email,
+    password => '1234',
+);
+$user->add_loginid({loginid => $loginid});
+$user->save;
+
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 

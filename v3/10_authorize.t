@@ -82,6 +82,7 @@ ok exists $stash->{is_virtual}, 'Should store is_virtual to stash';
 ok !$authorize->{authorize}->{account_id}, 'Shouldnt return account_id';
 is $authorize->{authorize}->{allow_omnibus}, 0, 'correct flag for allow_omnibus';
 is scalar @{$authorize->{authorize}->{sub_accounts}}, 0, 'correct number of sub accounts';
+is scalar @{$authorize->{authorize}->{account_list}}, 1, 'correct number of corresponding account';
 
 ## it's ok after authorize
 $balance = $t->await::balance({balance => 1});

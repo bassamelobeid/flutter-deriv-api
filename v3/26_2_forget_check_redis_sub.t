@@ -22,6 +22,8 @@ use await;
 use Test::MockModule;
 use Mojo::Redis2;
 
+my $t = build_wsapi_test();
+
 my $redis2_module = Test::MockModule->new('Mojo::Redis2');
 my $keys_hash     = {};
 $redis2_module->mock(
@@ -114,8 +116,6 @@ for my $s (@symbols) {
 }
 
 build_test_R_50_data();
-
-my $t = build_wsapi_test();
 
 # prepare client
 my $email  = 'test-binary@binary.com';
