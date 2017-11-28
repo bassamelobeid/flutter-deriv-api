@@ -9,7 +9,7 @@ use DBD::Pg;
 use IO::Select;
 use Try::Tiny;
 use RedisDB;
-use JSON::MaybeXS;
+use JSON;
 
 my $conn;
 
@@ -70,14 +70,12 @@ sub run {
     return 0;
 }
 
-my $json = JSON::MaybeXS->new;
-
 sub _publish {
-    my $redis       = shift;
-    my $msg         = shift;
-    my $encoded_msg = $json->encode($msg);
+    my $redis = shift;
+    my $msg   = shift;
+    my $json  = JSON::to_json($msg);
 
-    return $redis->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $encoded_msg);
+    return $redis->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
 }
 
 sub _msg {

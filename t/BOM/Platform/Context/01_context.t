@@ -7,6 +7,7 @@ use Test::More (tests => 2);
 use Test::Exception;
 use Test::MockModule;
 use Test::Warnings;
+use JSON qw(decode_json);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;

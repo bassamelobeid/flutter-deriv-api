@@ -71,6 +71,7 @@ Returns a Data::Chronicle::Writer object.
 use strict;
 use warnings;
 
+use JSON;
 use DBIx::Connector::Pg;
 use DateTime;
 use Date::Utility;

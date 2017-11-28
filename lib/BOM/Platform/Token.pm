@@ -5,17 +5,15 @@ package BOM::Platform::Token;
 Email verification token handler
 
 =head1 SYNOPSIS
-
  my $token = BOM::Platform::Token->new({created_for => 'lost_password', email => 'abc@binary.com', expires_in => 3600});
  my $token = BOM::Platform::Token->new({token => $token});
 
  The resulting token is a simple hashref, stored in Redis for a period of time
  and retrieved with a token.
-
 =cut
 
 use Bytes::Random::Secure;
-use JSON::MaybeXS;
+use JSON;
 use Array::Utils qw (array_minus);
 use Digest::MD5 qw(md5_hex);
 
@@ -34,7 +32,6 @@ use warnings;
 
 =cut
 
-my $json = JSON::MaybeXS->new;
 sub email { $_[0]->{email} if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)
 sub token { $_[0]->{token} if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)
 
@@ -43,8 +40,7 @@ sub new {                                    ## no critic (RequireArgUnpack)
 
     my $self = ref $_[0] ? $_[0] : {@_};
     if ($self->{token}) {
-        # the method 'decode' will emit a warn if the argument is undef. "// ''" is added here to avoid the warn.
-        $self = eval { $json->decode(BOM::Platform::RedisReplicated::redis_read()->get('VERIFICATION_TOKEN::' . $self->{token}) // '') } || {};
+        $self = eval { JSON::from_json(BOM::Platform::RedisReplicated::redis_read()->get('VERIFICATION_TOKEN::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
         return bless $self, $package;
     }
@@ -69,7 +65,7 @@ sub new {                                    ## no critic (RequireArgUnpack)
     }
 
     $self->{expires_in} ||= 3600;
-    BOM::Platform::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN::' . $self->{token}, $json->encode($self));
+    BOM::Platform::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN::' . $self->{token}, JSON::to_json($self));
     BOM::Platform::RedisReplicated::redis_write()->expire('VERIFICATION_TOKEN::' . $self->{token}, $self->{expires_in});
     BOM::Platform::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN_INDEX::' . $key, $self->{token});
     BOM::Platform::RedisReplicated::redis_write()->expire('VERIFICATION_TOKEN_INDEX::' . $key, $self->{expires_in});
