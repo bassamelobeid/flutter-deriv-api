@@ -78,7 +78,7 @@ sub _currencies_config {
         $_ => {
             fractional_digits => $amt_precision->{$_},
             type              => LandingCompany::Registry::get_currency_type($_),
-            stake_default     => min($bet_limits->{min_payout}->{volidx}->{$_}, $bet_limits->{min_payout}->{default}->{$_}) / 2,
+            stake_default     => max($bet_limits->{min_payout}->{volidx}->{$_}, $bet_limits->{min_payout}->{default}->{$_}) / 2,
             }
     } @{$payout_currencies};
     return \%currencies_config;
