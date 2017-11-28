@@ -11,7 +11,6 @@ use Test::MockTime qw( restore_time set_absolute_time );
 use Test::More qw( no_plan );
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 use Postgres::FeedDB::Spot;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
