@@ -13,6 +13,7 @@ use JSON::MaybeXS qw/decode_json/;
 use Binary::WebSocketAPI::Hooks;
 
 use constant MAX_CHUNK_SIZE => 2**17;    #100KB
+use constant UPLOAD_TIMEOUT => 120;      #2 minutes
 
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
@@ -237,10 +238,10 @@ sub clean_up_on_finish {
 
     delete $stash->{$upload_info->{upload_id}} if exists $upload_info->{upload_id};
 
-    for my $f (@{$upload_info->{pending_futures}}) {
-        $f->cancel;
-    }
+    $_->cancel for @{$upload_info->{pending_futures}}, $upload_info->{put_future};
+
     delete $upload_info->{pending_futures};
+    delete $upload_info->{put_future};
 
     $c->loop->remove($upload_info->{s3});
     delete $upload_info->{s3};
@@ -277,18 +278,11 @@ sub last_chunk_received {
 
     return if $upload_info->{chunk_size} != 0;
 
-    # Breaking the ref cycle for the timeout future
-    my $put_future = $upload_info->{put_future};
-    delete $upload_info->{put_future};
-
     return retain_future(
-        Future->wait_any($put_future, $c->loop->timeout_future(after => 120),)->then(
-            sub {
-                send_upload_successful($c, $upload_info, 'success');
-            },
-            sub {
-                send_upload_failure($c, $upload_info, 'unknown');
-            }));
+        Future->wait_any(
+            $upload_info->{put_future}, $c->loop->timeout_future(after => UPLOAD_TIMEOUT))
+                ->then_with_f(sub { send_upload_successful($c, $upload_info, 'success'); shift })
+                ->else_with_f(sub { send_upload_failure($c, $upload_info, 'unknown'); shift }));
 }
 
 sub add_upload_future {
