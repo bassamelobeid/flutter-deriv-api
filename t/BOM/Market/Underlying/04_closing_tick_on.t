@@ -4,6 +4,7 @@ use Test::FailWarnings;
 use Test::MockObject;
 use Test::MockModule;
 use File::Spec;
+use JSON qw(decode_json);
 use Date::Parse;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
