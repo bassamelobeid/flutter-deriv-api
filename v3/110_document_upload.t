@@ -21,6 +21,9 @@ use constant MAX_CHUNK_SIZE => 2**17;
 warning_like { override_subs() }[qr/Subroutine.*redefined.*/, qr/Subroutine.*redefined.*/],
     'We override last_chunk_received and create_s3_instance to avoid using s3 for tests';
 
+# Test should fail if Future DEBUG mode shows any warning
+$ENV{PERL_FUTURE_DEBUG} = 1;
+
 $ENV{DOCUMENT_AUTH_S3_ACCESS} = 'TestingS3Access';
 $ENV{DOCUMENT_AUTH_S3_SECRET} = 'TestingS3Secret';
 $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'TestingS3Bucket';
