@@ -39,6 +39,9 @@ sub validate_trx_sell {
 
     my @contract_validation_method = qw/_is_valid_to_sell/;
     # For ICO, there is no need to have slippage, date pricing validation
+    push @contract_validation_method, '_validate_sell_pricing_adjustment'           if $self->transaction->contract->is_binary;
+    push @contract_validation_method, '_validate_sell_pricing_adjustment_lookbacks' if not $self->transaction->contract->is_binary;
+
     push @contract_validation_method, qw(_validate_date_pricing)
         unless $self->transaction->contract->is_binaryico;
 
@@ -55,10 +58,6 @@ sub validate_trx_sell {
             return $res;
         }
     }
-
-#    my @validation_methods = qw/ _is_valid_to_sell  _validate_date_pricing /;
-    push @contract_validation_method, '_validate_sell_pricing_adjustment'           if $self->transaction->contract->is_binary;
-    push @contract_validation_method, '_validate_sell_pricing_adjustment_lookbacks' if not $self->transaction->contract->is_binary;
 
     foreach my $c_method (@contract_validation_method) {
         my $res = $self->$c_method();
