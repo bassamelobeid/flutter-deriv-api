@@ -35,7 +35,7 @@ use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::Utils::Test;
 use Quant::Framework::Asset;
 
-use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
+use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods generate_barriers_for_window);
 
 BEGIN {
     die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
@@ -208,6 +208,21 @@ sub create_trading_periods {
     BOM::Platform::Chronicle::get_chronicle_writer()->set(@redis_key, [grep { defined } @$periods], $date, 1, 300);
 
     return $periods;
+}
+
+sub create_predefined_barriers {
+    my ($symbol, $trading_window, $date) = @_;
+
+    $date //= Date::Utility->new;
+    my $barriers = BOM::Product::Contract::PredefinedParameters::generate_barriers_for_window($symbol, $trading_window);
+    return unless $barriers;
+    my @redis_key = BOM::Product::Contract::PredefinedParameters::predefined_barriers_key($symbol, $trading_window);
+
+    # 1 - to save to chronicle database
+    # ttl - set to 5 minutes
+    BOM::Platform::Chronicle::get_chronicle_writer()->set(@redis_key, $barriers, $date, 1, 300);
+
+    return $barriers;
 }
 
 sub import {
