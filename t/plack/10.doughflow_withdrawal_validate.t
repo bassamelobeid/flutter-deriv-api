@@ -4,7 +4,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
 use APIHelper qw(balance deposit withdraw);
-use JSON;
+use JSON::MaybeXS;
 
 my $loginid = 'CR0011';
 
