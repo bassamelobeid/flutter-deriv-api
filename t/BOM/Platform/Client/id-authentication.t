@@ -3,7 +3,6 @@ use Test::FailWarnings;
 use Test::MockObject::Extends;
 use Carp;
 use File::Spec;
-use JSON qw(decode_json);
 
 use Client::Account;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

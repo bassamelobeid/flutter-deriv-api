@@ -11,7 +11,7 @@ A risk profile defines the maximum payout per contract and/or daily turnover lim
 use Moose;
 
 use List::Util qw(first);
-use JSON qw(from_json);
+use JSON::MaybeXS;
 use Format::Util::Numbers qw/formatnumber/;
 
 use Finance::Asset::Market::Registry;
@@ -23,6 +23,7 @@ use BOM::Platform::Config;
 
 use constant RISK_PROFILES => [qw(no_business extreme_risk high_risk medium_risk low_risk)];
 
+my $json = JSON::MaybeXS->new;
 my %risk_profile_rank;
 for (my $i = 0; $i < @{RISK_PROFILES()}; $i++) {
     $risk_profile_rank{RISK_PROFILES->[$i]} = $i;
@@ -105,7 +106,7 @@ has raw_custom_profiles => (
     lazy_build => 1,
 );
 
-# this is a cache to avoid from_json for each contract
+# this is a cache to avoid decode for each contract
 my $product_profiles_txt      = '';
 my $product_profiles_compiled = {};
 
@@ -113,7 +114,7 @@ sub _build_raw_custom_profiles {
     my $self = shift;
 
     my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;    # use a pointer to avoid copying
-    $product_profiles_compiled = from_json($product_profiles_txt = $$ptr)                        # copy and compile
+    $product_profiles_compiled = $json->decode($product_profiles_txt = $$ptr)                    # copy and compile
         unless $$ptr eq $product_profiles_txt;
 
     return $product_profiles_compiled;
@@ -189,7 +190,7 @@ sub get_turnover_limit_parameters {
     ];
 }
 
-# this is a cache to avoid from_json for each contract
+# this is a cache to avoid decode for each contract
 my $custom_limits_txt      = '';
 my $custom_limits_compiled = {};
 
@@ -198,7 +199,7 @@ sub get_client_profiles {
 
     if ($loginid && $landing_company_short) {
         my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
-        $custom_limits_compiled = from_json($custom_limits_txt = $$ptr)                             # copy and compile
+        $custom_limits_compiled = $json->decode($custom_limits_txt = $$ptr)                         # copy and compile
             unless $$ptr eq $custom_limits_txt;
 
         my @client_limits = do {

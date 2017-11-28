@@ -18,7 +18,7 @@ no indirect;
 
 use Try::Tiny;
 
-use JSON::XS qw(encode_json);
+use JSON::MaybeXS;
 use YAML::XS qw(LoadFile);
 use IO::Socket::IP;
 use Client::Account;
@@ -102,9 +102,11 @@ Usage:
 
 =cut
 
+my $json = JSON::MaybeXS->new;
+
 sub publish {
     my ($class, $data) = @_;
-    my $bytes = encode_json($data);
+    my $bytes = Encode::encode_utf8($json->encode($data));
     $sock->send($bytes);
     return;
 }
