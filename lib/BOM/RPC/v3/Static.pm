@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Format::Util::Numbers;
-use List::Util qw( min );
+use List::Util qw( min max );
 use List::UtilsBy qw(nsort_by);
 use Time::HiRes ();
 
