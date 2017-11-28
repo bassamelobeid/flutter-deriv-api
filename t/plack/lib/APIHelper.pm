@@ -11,7 +11,7 @@ use Test::More;
 use Plack::Test;
 use Plack::Util;
 use URI;
-use JSON::MaybeXS ();
+use JSON ();
 use HTTP::Headers;
 use HTTP::Request;
 use Digest::MD5 qw/md5_hex/;
@@ -87,7 +87,7 @@ sub __request {
 }
 
 sub decode_json {
-    eval { JSON::MaybeXS->new->decode(Encode::decode_utf8($_[0])) };
+    eval { JSON::decode_json($_[0]) };
 }
 
 ## common

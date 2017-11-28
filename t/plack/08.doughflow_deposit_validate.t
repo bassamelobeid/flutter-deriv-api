@@ -4,7 +4,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
 use APIHelper qw(balance deposit);
-use JSON::MaybeXS;
+use JSON;
 
 my $loginid = 'CR0011';
 
@@ -14,7 +14,7 @@ my $r                = deposit(
     is_validate => 1
 );
 is($r->code,                            200,                   'correct status code');
-is(JSON::MaybeXS->new->decode(Encode::decode_utf8($r->content))->{allowed}, 1,                     'validate pass');
+is(decode_json($r->content)->{allowed}, 1,                     'validate pass');
 is(0 + balance($loginid),               $starting_balance + 0, 'balance is not changed.');
 
 $r = deposit(
