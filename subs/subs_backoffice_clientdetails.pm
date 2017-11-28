@@ -377,7 +377,7 @@ SELECT id,
        upload_date,
        date_trunc('day', age(now(), upload_date)) AS age
   FROM betonmarkets.client_authentication_document
- WHERE client_loginid = ?
+ WHERE client_loginid = ? AND status != 'uploading'
 SQL
         });
 
