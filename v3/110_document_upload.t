@@ -3,6 +3,9 @@ use warnings;
 
 use Test::Most;
 use Test::Warn;
+
+no warnings qw/redefine/;
+
 use JSON::MaybeXS qw/decode_json encode_json/;
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Digest::SHA qw/sha1_hex/;
@@ -18,8 +21,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use constant MAX_FILE_SIZE  => 2**20 * 3;    # 3MB
 use constant MAX_CHUNK_SIZE => 2**17;
 
-warning_like { override_subs() }[qr/Subroutine.*redefined.*/, qr/Subroutine.*redefined.*/],
-    'We override last_chunk_received and create_s3_instance to avoid using s3 for tests';
+override_subs();
 
 # Test should fail if Future DEBUG mode shows any warning
 $ENV{PERL_FUTURE_DEBUG} = 1;
