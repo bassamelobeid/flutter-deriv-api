@@ -27,16 +27,20 @@ sub active_symbols {
     my $token_details = $params->{token_details};
 
     my $offerings_obj;
-    my $country_code = '';
     if ($token_details and exists $token_details->{loginid}) {
         my $client = Client::Account->new({loginid => $token_details->{loginid}});
-        $country_code         = $client->residence;
-        $landing_company_name = $client->landing_company->short;
-        $offerings_obj = $client->landing_company->offerings_for_country($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
+        my $method = $product_type eq 'basic' ? 'offerings_for_country' : 'multi_barrier_offerings_for_country';
+        $offerings_obj = $client->landing_company->$method($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
     }
 
-    $offerings_obj = LandingCompany::Registry::get($landing_company_name)
-        ->offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
+    unless ($offerings_obj) {
+        my $landing_company = LandingCompany::Registry::get($landing_company_name);
+        my $method = $product_type eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
+        $offerings_obj = $landing_company->$method(BOM::Platform::Runtime->instance->get_offerings_config);
+    }
+
+    die 'Could not retrieve offerings for landing_company[' . $landing_company_name . '] product_type[' . $product_type . ']' unless ($offerings_obj);
+
     my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
     my ($namespace, $key) = (
         'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
