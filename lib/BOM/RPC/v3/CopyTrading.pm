@@ -30,7 +30,7 @@ sub copy_start {
 
     my $trader_token  = $args->{copy_start};
     my $token_details = BOM::RPC::v3::Utility::get_token_details($trader_token);
-    my $trader        = try { Client::Account->new({loginid => $token_details->{loginid}}) };
+    my $trader        = try { Client::Account->new({loginid => $token_details->{loginid}, db_operation => 'replica'}) };
     unless ($token_details && $trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidToken',
@@ -99,7 +99,7 @@ sub copy_stop {
 
     my $trader_token  = $args->{copy_stop};
     my $token_details = BOM::RPC::v3::Utility::get_token_details($trader_token);
-    my $trader        = try { Client::Account->new({loginid => $token_details->{loginid}}) };
+    my $trader        = try { Client::Account->new({loginid => $token_details->{loginid}, db_operation => 'replica'}) };
     unless ($token_details && $trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidToken',

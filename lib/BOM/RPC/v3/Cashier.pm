@@ -367,7 +367,10 @@ sub paymentagent_list {
 
     my $client;
     if ($token_details and exists $token_details->{loginid}) {
-        $client = Client::Account->new({loginid => $token_details->{loginid}});
+        $client = Client::Account->new({
+            loginid      => $token_details->{loginid},
+            db_operation => 'replica'
+        });
     }
 
     my $broker_code = $client ? $client->broker_code : 'CR';
@@ -483,7 +486,7 @@ sub paymentagent_transfer {
 
     return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client_fm->documents_expired;
 
-    my $client_to = try { Client::Account->new({loginid => $loginid_to}) };
+    my $client_to = try { Client::Account->new({loginid => $loginid_to, db_operation => 'replica'}) };
     return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to)) unless $client_to;
 
     return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
@@ -736,8 +739,10 @@ sub paymentagent_withdraw {
     return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
         if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum});
 
-    my $paymentagent = Client::Account::PaymentAgent->new({'loginid' => $paymentagent_loginid})
-        or return $error_sub->(localize('The payment agent account does not exist.'));
+    my $paymentagent = Client::Account::PaymentAgent->new({
+            'loginid'    => $paymentagent_loginid,
+            db_operation => 'replica'
+        }) or return $error_sub->(localize('The payment agent account does not exist.'));
 
     return $error_sub->(localize('Payment agent transfers are not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
 
