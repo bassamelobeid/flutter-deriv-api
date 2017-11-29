@@ -47,7 +47,8 @@ sub available_contracts_for_symbol {
         hit_count    => scalar(@$offerings),
         open         => $open,
         close        => $close,
-        feed_license => $underlying->feed_license
+        feed_license => $underlying->feed_license,
+        @$offerings ? (spot => $underlying->spot) : (),
     };
 }
 
