@@ -22,6 +22,8 @@ sub contracts_for {
             if ($contracts_for and $contracts_for->{hit_count} > 0);
     }
 
+    $contracts_for->{$_} += 0 for qw/open close/;    # make it integer in json encoding
+
     return {
         _generated => time,
         value      => $contracts_for
