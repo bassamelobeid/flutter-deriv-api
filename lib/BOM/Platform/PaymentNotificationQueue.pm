@@ -18,6 +18,7 @@ no indirect;
 
 use Try::Tiny;
 
+use Encode;
 use JSON::MaybeXS;
 use YAML::XS qw(LoadFile);
 use IO::Socket::IP;

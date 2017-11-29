@@ -3,6 +3,7 @@ package BOM::Platform::Account::Real::maltainvest;
 use strict;
 use warnings;
 
+use Encode;
 use JSON::MaybeXS;
 use Date::Utility;
 

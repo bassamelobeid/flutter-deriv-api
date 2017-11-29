@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Sys::Hostname;
+use Encode;
 use JSON::MaybeXS;
 use Date::Utility;
 use Path::Tiny;

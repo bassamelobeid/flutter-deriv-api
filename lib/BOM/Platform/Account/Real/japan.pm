@@ -3,6 +3,7 @@ package BOM::Platform::Account::Real::japan;
 use strict;
 use warnings;
 
+use Encode;
 use JSON::MaybeXS;
 use BOM::Platform::Account::Real::default;
 
