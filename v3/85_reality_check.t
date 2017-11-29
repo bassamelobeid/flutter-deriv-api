@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Encode;
 use JSON::MaybeXS;
 use Data::Dumper;
 use Date::Utility;
@@ -14,11 +15,11 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 my $t = build_wsapi_test();
-my $json = JSON::MaybeXS->new->utf8(1);
+my $json = JSON::MaybeXS->new;
 
 # check for authenticated call
 $t = $t->send_ok({json => {reality_check => 1}})->message_ok;
-my $response = $json->decode($t->message->[1]);
+my $response = $json->decode(Encode::decode_utf8($t->message->[1]));
 
 is $response->{error}->{code},    'AuthorizationRequired';
 is $response->{error}->{message}, 'Please log in.';
@@ -41,11 +42,11 @@ $user->save;
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $res = $json->decode($t->message->[1]);
+my $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{authorize}->{loginid}, $loginid;
 
 $t = $t->send_ok({json => {reality_check => 1}})->message_ok;
-$res = $json->decode($t->message->[1]);
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
 test_schema('reality_check', $res);
 
 done_testing();

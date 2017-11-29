@@ -3,6 +3,7 @@ use warnings;
 
 use Test::Most;
 use Test::MockTime qw/:all/;
+use Encode;
 use JSON::MaybeXS;
 use Date::Utility;
 use FindBin qw/$Bin/;
@@ -19,7 +20,7 @@ set_fixed_time($test_date->epoch);
 
 my $t = build_wsapi_test();
 my ($req_storage, $res, $start, $end);
-my $json = JSON::MaybeXS->new->utf8(1);
+my $json = JSON::MaybeXS->new;
 
 # as these validations are in websocket so test it
 subtest 'validations' => sub {
@@ -31,19 +32,19 @@ subtest 'validations' => sub {
 
     $t->send_ok({json => $req_storage});
     $t   = $t->message_ok;
-    $res = $json->decode($t->message->[1]);
+    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code}, 'InvalidGranularity', "Correct error code for granularity";
     delete $req_storage->{granularity};
 
     $t->send_ok({json => $req_storage});
     $t   = $t->message_ok;
-    $res = $json->decode($t->message->[1]);
+    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is_deeply($res->{echo_req}, $req_storage, 'Echo request is the same');
 
     $req_storage->{style} = 'sample';
     $t->send_ok({json => $req_storage});
     $t   = $t->message_ok;
-    $res = $json->decode($t->message->[1]);
+    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code}, 'InputValidationFailed', "Correct error code for invalid style";
 };
 
@@ -64,7 +65,7 @@ subtest 'call_ticks_history' => sub {
 
     $t->send_ok({json => $req_storage});
     $t   = $t->message_ok;
-    $res = $json->decode($t->message->[1]);
+    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 
     # If it is not open, this call will return error message.
     if ($is_open) {
@@ -73,7 +74,7 @@ subtest 'call_ticks_history' => sub {
         $req_storage->{count} = 10;
         $t->send_ok({json => $req_storage});
         $t   = $t->message_ok;
-        $res = $json->decode($t->message->[1]);
+        $res = $json->decode(Encode::decode_utf8($t->message->[1]));
         is $res->{error}->{code}, 'AlreadySubscribed', 'Already subscribed';
     } else {
 

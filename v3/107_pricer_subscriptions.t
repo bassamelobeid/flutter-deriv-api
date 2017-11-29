@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Encode;
 use JSON::MaybeXS;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -81,7 +82,7 @@ subtest "Create Subscribes" => sub {
         $t->tx->on(
             message => sub {
                 my ($tx, $msg) = @_;
-                test_schema('proposal', JSON::MaybeXS->new->utf8(1)->decode($msg) );
+                test_schema('proposal', JSON::MaybeXS->new->decode(Encode::decode_utf8($msg)) );
 
                 $user_first->{$tx->req->cookie('user')->value} = 1;
             });

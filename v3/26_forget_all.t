@@ -3,6 +3,7 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::MockTime qw/:all/;
+use Encode;
 use JSON::MaybeXS;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -40,7 +41,7 @@ initialize_realtime_ticks_db();
             bid    => $i + 1,
             ohlc   => $ohlc_sample,
         };
-        BOM::Platform::RedisReplicated::redis_write->publish("FEED::$symbol", JSON::MaybeXS->new->utf8(1)->encode($payload));
+        BOM::Platform::RedisReplicated::redis_write->publish("FEED::$symbol", Encode::encode_utf8(JSON::MaybeXS->new->encode($payload)));
     }
 
     my $t = build_wsapi_test();

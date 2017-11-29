@@ -113,6 +113,7 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/build_wsapi_test/;
 
 use Binary::WebSocketAPI::Hooks;
+use Encode;
 
 use JSON::MaybeXS;
 use Mojo::IOLoop::Delay;
@@ -191,7 +192,7 @@ subtest "get error code (verify_email)" => sub {
                     type         => 'account_opening'
                 }})->message_ok;
     }
-    my $res = JSON::MaybeXS->new->utf8(1)->decode($t->message->[1]);
+    my $res = JSON::MaybeXS->new->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code}, 'RateLimit';
 };
 
