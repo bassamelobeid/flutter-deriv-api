@@ -59,7 +59,10 @@ if (my $search = $params{search}) {
 
 } elsif (my $loginid = $params{loginid}) {
 
-    my $client = Client::Account->new({loginid => $loginid}) || die "client $loginid not found\n";
+    my $client = Client::Account->new({
+            loginid      => $loginid,
+            db_operation => 'replica'
+        }) || die "client $loginid not found\n";
     $stash->{client} = $client;
 
     if (
