@@ -24,33 +24,27 @@ use constant {
 
 sub new { return bless {@_[1 .. $#_]}, $_[0] }
 
+my $json     = JSON::MaybeXS->new();
+my $commands = {
+    price => {
+        required_params => [qw(contract_type currency symbol)],
+        get_underlying  => \&_get_underlying_price,
+        process         => \&_process_price,
+    },
+    bid => {
+        required_params => [qw(contract_id short_code currency landing_company)],
+        get_underlying  => \&_get_underlying_bid,
+        process         => \&_process_bid,
+    },
+};
+
 sub process_job {
     my ($self, $redis, $next, $params) = @_;
 
-    my $log_price_daemon_cmd = my $price_daemon_cmd = $params->{price_daemon_cmd} || '';
+    my $cmd          = $params->{price_daemon_cmd};
     my $current_time = time;
-    my $response;
 
-    my $underlying = $self->_get_underlying($params) or return undef;
-    my $json = JSON::MaybeXS->new();
-
-    if (!ref($underlying)) {
-        warn "Have legacy underlying - $underlying with params " . $json->encode($params) . "\n";
-        stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => $self->tags});
-        return undef;
-    }
-
-    # We can skip ICO entries entirely. Websockets layer has no idea what an ICO is, so
-    # we can't filter them out of the pricing keys at that level - if the extra queue
-    # entries start to cause a problem we can drop them in pricer_queue.pl instead.
-    return undef if $underlying->symbol eq 'BINARYICO';
-
-    unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
-        warn $underlying->system_symbol . " has invalid spot tick" if $underlying->calendar->is_open($underlying->exchange);
-        stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => $self->tags});
-        return undef;
-    }
-
+    my $underlying           = $self->_get_underlying_or_log($next, $params) or return undef;
     my $current_spot_ts      = $underlying->spot_tick->epoch;
     my $last_priced_contract = try { $json->decode(Encode::decode_utf8($redis->get($next) || return {time => 0})) } catch { {time => 0} };
     my $last_price_ts        = $last_priced_contract->{time};
@@ -75,21 +69,9 @@ sub process_job {
     my $r = BOM::Platform::Context::Request->new({language => $params->{language} // 'EN'});
     BOM::Platform::Context::request($r);
 
-    if ($price_daemon_cmd eq 'price') {
-        $params->{streaming_params}->{add_theo_probability} = 1;
-        $response = BOM::Pricing::v3::Contract::send_ask({args => $params});
-        # we want to log proposal array under different key
-        $log_price_daemon_cmd = 'price_batch' if $params->{proposal_array};
-    } elsif ($price_daemon_cmd eq 'bid') {
-        $params->{validation_params}->{skip_barrier_validation} = 1;
-        $response = BOM::Pricing::v3::Contract::send_bid($params);
-    } else {
-        warn "Unrecognized Pricer command! Payload is: " . ($next // 'undefined');
-        stats_inc("pricer_daemon.unknown.invalid", {tags => $self->tags});
-        return undef;
-    }
+    my $response = $commands->{$cmd}->{process}->($self, $params);
 
-    $response->{price_daemon_cmd} = $price_daemon_cmd;
+    $response->{price_daemon_cmd} = $cmd;
     # contract parameters are stored after first call, no need to send them with every stream message
     delete $response->{contract_parameters} if not $self->_is_in_priority_queue;
 
@@ -103,7 +85,7 @@ sub process_job {
         ),
         'EX' => DURATION_DONT_PRICE_SAME_SPOT
     );
-
+    my $log_price_daemon_cmd = $params->{log_price_daemon_cmd} // $cmd;
     stats_inc("pricer_daemon.$log_price_daemon_cmd.call", {tags => $self->tags});
     stats_timing("pricer_daemon.$log_price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
     return $response;
@@ -117,7 +99,6 @@ sub run {
     my $tv                    = [Time::HiRes::gettimeofday];
     my $stat_count            = {};
     my $current_pricing_epoch = time;
-    my $json                  = JSON::MaybeXS->new();
     while (my $key = $redis->brpop(@{$args{queues}}, 0)) {
         # Remember that we had some jobs
         my $tv_now = [Time::HiRes::gettimeofday];
@@ -144,7 +125,7 @@ sub run {
 
         # If incomplete or invalid keys somehow got into pricer,
         # delete them here.
-        unless ($self->_validate_params($params)) {
+        unless ($self->_validate_params($next, $params)) {
             warn "Invalid parameters: $next";
             $redis->del($key->[1], $next);
             next;
@@ -200,45 +181,86 @@ sub run {
     return undef;
 }
 
-sub _get_underlying {
-    my ($self, $params) = @_;
-
+sub _get_underlying_or_log {
+    my ($self, $next, $params) = @_;
     my $cmd = $params->{price_daemon_cmd};
 
-    return undef unless $cmd;
+    my $underlying = $commands->{$cmd}->{get_underlying}->($self, $params);
 
-    if ($cmd eq 'price') {
-        unless (exists $params->{symbol}) {
-            warn "symbol is not provided price daemon for $cmd";
-            stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
-            return undef;
-        }
-        return create_underlying($params->{symbol});
-    } elsif ($cmd eq 'bid') {
-        unless (exists $params->{short_code} and $params->{currency}) {
-            warn "short_code or currency is not provided price daemon for $cmd";
-            stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
-            return undef;
-        }
-        my $from_shortcode = shortcode_to_parameters($params->{short_code}, $params->{currency});
-        return create_underlying($from_shortcode->{underlying});
+    if (not $underlying or not ref($underlying)) {
+        warn "Have legacy underlying - $underlying with params " . $json->encode($params) . "\n" if not ref($underlying);
+        stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
+        return undef;
     }
 
-    return;
+    # We can skip ICO entries entirely. Websockets layer has no idea what an ICO is, so
+    # we can't filter them out of the pricing keys at that level - if the extra queue
+    # entries start to cause a problem we can drop them in pricer_queue.pl instead.
+    if ($underlying->symbol eq 'BINARYICO') {
+        stats_inc("pricer_daemon.binaryico", {tags => $self->tags});
+        return undef;
+    }
+
+    unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
+        warn $underlying->system_symbol . " has invalid spot tick" if $underlying->calendar->is_open($underlying->exchange);
+        stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
+        return undef;
+    }
+    return $underlying;
 }
 
-my %required_params = (
-    price => [qw(contract_type currency symbol)],
-    bid   => [qw(contract_id short_code currency landing_company)],
-);
+sub _get_underlying_price {
+    my ($self, $params) = @_;
+    unless (exists $params->{symbol}) {
+        warn "symbol is not provided price daemon for price";
+        return undef;
+    }
+    return create_underlying($params->{symbol});
+}
+
+sub _get_underlying_bid {
+    my ($self, $params) = @_;
+    unless (exists $params->{short_code} and $params->{currency}) {
+        warn "short_code or currency is not provided price daemon for bid";
+        return undef;
+    }
+    my $from_shortcode = shortcode_to_parameters($params->{short_code}, $params->{currency});
+    return create_underlying($from_shortcode->{underlying});
+}
+
+sub _process_price {
+    my ($self, $params) = @_;
+    $params->{streaming_params}->{add_theo_probability} = 1;
+    # we want to log proposal array under different key
+    $params->{log_price_daemon_cmd} = 'price_batch' if $params->{proposal_array};
+    return BOM::Pricing::v3::Contract::send_ask({args => $params});
+}
+
+sub _process_bid {
+    my ($self, $params) = @_;
+    $params->{validation_params}->{skip_barrier_validation} = 1;
+    return BOM::Pricing::v3::Contract::send_bid($params);
+}
 
 sub _validate_params {
-    my ($self, $params) = @_;
+    my ($self, $next, $params) = @_;
 
     my $cmd = $params->{price_daemon_cmd};
-    return 0 unless $cmd;
-    return 0 unless $cmd eq 'price' or $cmd eq 'bid';
-    return 0 if first { not defined $params->{$_} } @{$required_params{$cmd}};
+    unless ($cmd) {
+        warn "No Pricer command! Payload is: " . ($next // 'undefined');
+        stats_inc("pricer_daemon.no_cmd", {tags => $self->tags});
+        return 0;
+    }
+    unless (defined($commands->{$cmd})) {
+        warn "Unrecognized Pricer command $cmd! Payload is: " . ($next // 'undefined');
+        stats_inc("pricer_daemon.unknown.invalid", {tags => $self->tags});
+        return 0;
+    }
+    if (first { not defined $params->{$_} } @{$commands->{$cmd}{required_params}}) {
+        warn "Not all required params provided for $cmd! Payload is: " . ($next // 'undefined');
+        stats_inc("pricer_daemon.required_params_missed", {tags => $self->tags});
+        return 0;
+    }
     return 1;
 }
 
