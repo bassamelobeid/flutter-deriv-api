@@ -50,11 +50,8 @@ sub _forward_starting_options {
     my $now = Date::Utility->new;
     my $sod = $now->truncate_to_day->epoch;
 
-    my @blackout_periods;
-    if (my @inefficient_periods = @{$underlying->forward_inefficient_periods}) {
-        push @blackout_periods, [Date::Utility->new($sod + $_->{start})->time_hhmmss, Date::Utility->new($sod + $_->{end})->time_hhmmss]
-            for @inefficient_periods;
-    }
+    my $blackout_periods = [map { [Date::Utility->new($sod + $_->{start})->time_hhmmss, Date::Utility->new($sod + $_->{end})->time_hhmmss] }
+            @{$underlying->forward_inefficient_periods}];
 
     my @trade_dates;
     for (my $date = $now; @trade_dates < 3; $date = $date->plus_time_interval('1d')) {
@@ -68,7 +65,7 @@ sub _forward_starting_options {
             date  => Date::Utility->new($_->{open})->truncate_to_day->epoch,
             open  => $_->{open},
             close => $_->{close},
-            @blackout_periods ? (blackouts => \@blackout_periods) : (),
+            @$blackout_periods ? (blackouts => $blackout_periods) : (),
         }
     } @trading_periods;
 
