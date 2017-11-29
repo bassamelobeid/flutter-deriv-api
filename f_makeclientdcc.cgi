@@ -39,7 +39,10 @@ unless ($input->{clientloginid}) {
     code_exit_BO();
 }
 
-my $client = Client::Account::get_instance({'loginid' => uc($input->{'clientloginid'})});
+my $client = Client::Account::get_instance({
+    'loginid'    => uc($input->{'clientloginid'}),
+    db_operation => 'replica'
+});
 if (not $client) {
     print "ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist! Perhaps you made a typo?";
     code_exit_BO();

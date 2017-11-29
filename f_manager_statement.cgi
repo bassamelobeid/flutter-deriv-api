@@ -41,7 +41,10 @@ if ($loginID !~ /^$broker/) {
     code_exit_BO();
 }
 
-my $client = Client::Account::get_instance({'loginid' => $loginID});
+my $client = Client::Account::get_instance({
+    'loginid'    => $loginID,
+    db_operation => 'replica'
+});
 if (not $client) {
     print "<B><font color=red>ERROR : No such client $encoded_loginID.<P>";
     code_exit_BO();

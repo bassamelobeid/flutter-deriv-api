@@ -42,7 +42,10 @@ if ($depositswithdrawalsonly eq 'yes') {
     Bar($loginID);
 }
 
-my $client = Client::Account::get_instance({'loginid' => $loginID});
+my $client = Client::Account::get_instance({
+    'loginid'    => $loginID,
+    db_operation => 'replica'
+});
 if (not $client) {
     print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
