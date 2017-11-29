@@ -460,6 +460,7 @@ sub document_upload_ok {
 }
 
 sub override_subs {
+    my $last_chunk_received = \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::last_chunk_received;
     *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::last_chunk_received = sub {
         my ($c, $upload_info) = @_;
 
@@ -471,8 +472,7 @@ sub override_subs {
 
         $upload_info->{last_chunk_arrived}->done;
 
-        my $put_future = $upload_info->{put_future};
-        delete $upload_info->{put_future};
+        $last_chunk_received->($c, $upload_info);
     };
 
     *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::create_s3_instance = sub {
@@ -529,10 +529,7 @@ sub receive_loop {
 
             is $test_digest->hexdigest, sha1_hex($data), 'Data received correctly';
 
-            return $upload_info->{last_chunk_arrived}->then(
-                sub {
-                    return Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::send_upload_successful($c, $upload_info, 'success');
-                });
+            return $upload_info->{last_chunk_arrived}->on_ready($upload_info->{put_future});
         });
 }
 
