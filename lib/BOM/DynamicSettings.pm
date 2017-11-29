@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Data::Compare;
+use Encode;
 use HTML::Entities;
 use JSON::MaybeXS;
 use LandingCompany::Offerings qw(reinitialise_offerings);

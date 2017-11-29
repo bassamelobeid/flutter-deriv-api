@@ -16,6 +16,7 @@ use Moose;
 extends 'BOM::RiskReporting::Base';
 use BOM::Platform::User;
 use Date::Utility;
+use Encode;
 use JSON::MaybeXS;
 use Excel::Writer::XLSX;
 use File::Temp;

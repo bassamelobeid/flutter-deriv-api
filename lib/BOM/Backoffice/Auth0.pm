@@ -1,6 +1,7 @@
 package BOM::Backoffice::Auth0;
 use warnings;
 use strict;
+use Encode;
 use Mojo::UserAgent;
 use JSON::MaybeXS;
 use BOM::Platform::Runtime;

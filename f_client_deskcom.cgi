@@ -4,6 +4,7 @@ package main;
 use strict;
 use warnings;
 use open qw[ :encoding(UTF-8) ];
+use Encode;
 use JSON::MaybeXS;
 use Date::Utility;
 use Try::Tiny;
