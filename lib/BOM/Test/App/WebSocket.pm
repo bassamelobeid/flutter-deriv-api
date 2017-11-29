@@ -5,6 +5,7 @@ use warnings;
 
 use Role::Tiny;
 
+use Encode;
 use JSON::MaybeXS;
 use BOM::Test::Helper qw/build_wsapi_test/;
 
@@ -23,7 +24,7 @@ sub test_schema {
     my @subscribed_streams_ids = map { $_->{id} } values %{$self->{streams}};
     while ($i++ < 5 && !$result) {
         $t->message_ok;
-        my $message = JSON::MaybeXS->new->utf8(1)->decode($t->message->[1]);
+        my $message = JSON::MaybeXS->new->decode(Encode::decode_utf8($t->message->[1]));
         # skip subscribed stream's messages
         next
             if ref $message->{$message->{msg_type}} eq 'HASH'
