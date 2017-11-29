@@ -169,7 +169,8 @@ sub run {
 
         $tv_now = [Time::HiRes::gettimeofday];
 
-        stats_count('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
+        stats_gauge('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
+
         stats_timing(
             'pricer_daemon.process.time',
             1000 * Time::HiRes::tv_interval($tv, $tv_now),
