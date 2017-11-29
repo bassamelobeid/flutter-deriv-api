@@ -26,7 +26,7 @@ use BOM::Platform::Runtime;
 sub validate_symbol {
     my $symbol = shift;
     my @offerings =
-        LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config)->values_for_key('underlying_symbol');
+        LandingCompany::Offerings->get('common', BOM::Platform::Runtime->instance->get_offerings_config)->values_for_key('underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
 
         # There's going to be a few symbols that are disabled or otherwise not provided
