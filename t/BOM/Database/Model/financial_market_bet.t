@@ -283,8 +283,8 @@ lives_ok {
     });
 
     $financial_market_bet_helper->bet_data->{quantity} = 1;
-    push @fmbs, ($financial_market_bet_helper->buy_bet)[0]; # buy 1st bet
-    push @fmbs, ($financial_market_bet_helper->buy_bet)[0]; # and the 2nd one
+    push @fmbs, ($financial_market_bet_helper->buy_bet)[0];    # buy 1st bet
+    push @fmbs, ($financial_market_bet_helper->buy_bet)[0];    # and the 2nd one
 
     cmp_ok $fmbs[0]->{id}, '>', 0, 'got 1st fmb id';
     cmp_ok $fmbs[1]->{id}, '>', 0, 'got 2nd fmb id';
@@ -293,13 +293,13 @@ lives_ok {
     $financial_market_bet->sell_price(20);
     $financial_market_bet_helper->clear_bet_data;
     $financial_market_bet_helper->bet_data->{quantity} = 1;
-    push @fmbs, ($financial_market_bet_helper->sell_bet)[0]; # sell 1st bet
+    push @fmbs, ($financial_market_bet_helper->sell_bet)[0];    # sell 1st bet
 
     $financial_market_bet->id($fmbs[1]->{id});
     $financial_market_bet->sell_price(20);
     $financial_market_bet_helper->clear_bet_data;
     $financial_market_bet_helper->bet_data->{quantity} = 1;
-    push @fmbs, ($financial_market_bet_helper->sell_bet)[0]; # sell 1st bet
+    push @fmbs, ($financial_market_bet_helper->sell_bet)[0];    # sell 1st bet
 
     is $fmbs[0]->{id}, $fmbs[2]->{id}, 'sold 1st bet';
     is $fmbs[1]->{id}, $fmbs[3]->{id}, 'sold 2nd bet';
