@@ -368,9 +368,7 @@ sub calculate_limits {
     };
 
     if (not $contract->is_binary) {
-        my $expiry_type = $contract->is_intraday ? 'intraday' : 'daily';
         $limits{lookback_open_position_limit} = $static_config->{lookback_limits}{open_position_limits}{$currency};
-        $limits{lookback_var_for_underlying}  = $static_config->{lookback_limits}{var}{$expiry_type}{$contract->underlying->symbol};
     }
 
     if (not $contract->tick_expiry) {
@@ -421,15 +419,7 @@ sub calculate_limits {
 
     my $rp = $contract->risk_profile;
     my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
-    push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
-
-    if (not $contract->is_binary) {
-        my @specific_turnover_limits = $rp->get_turnover_limit_parameters(\@cl_rp);
-        my @limits_arr               = map { $_->{limit} } @{$specific_turnover_limits[0]};
-        my $min_limits               = min(@limits_arr);
-        $limits{lookback_specific_turnover} = $min_limits if defined $min_limits;
-        delete $limits{specific_turnover_limits};
-    }
+    push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)} if $contract->is_binary;
 
     return \%limits;
 }
