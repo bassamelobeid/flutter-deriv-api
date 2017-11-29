@@ -26,7 +26,10 @@ sub active_symbols {
     my $language = $params->{language} || 'EN';
     my $token_details = $params->{token_details};
     if ($token_details and exists $token_details->{loginid}) {
-        my $client = Client::Account->new({loginid => $token_details->{loginid}});
+        my $client = Client::Account->new({
+            loginid      => $token_details->{loginid},
+            db_operation => 'replica'
+        });
         $landing_company_name = $client->landing_company->short if $client;
     }
 

@@ -38,7 +38,6 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
-use BOM::Platform::Pricing;
 use BOM::Platform::Runtime;
 
 my $json = JSON::MaybeXS->new;
@@ -49,7 +48,10 @@ sub payout_currencies {
     my $token_details = $params->{token_details};
     my $client;
     if ($token_details and exists $token_details->{loginid}) {
-        $client = Client::Account->new({loginid => $token_details->{loginid}});
+        $client = Client::Account->new({
+            loginid      => $token_details->{loginid},
+            db_operation => 'replica'
+        });
     }
 
     # if client has default_account he has already chosen his currency..
@@ -1233,7 +1235,10 @@ sub api_token {
     my $sub_account_loginid = $params->{args}->{sub_account};
     my ($rtn, $sub_account_client);
     if ($sub_account_loginid) {
-        $sub_account_client = Client::Account->new({loginid => $sub_account_loginid});
+        $sub_account_client = Client::Account->new({
+            loginid      => $sub_account_loginid,
+            db_operation => 'replica'
+        });
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidSubAccount',
                 message_to_client => localize('Please provide a valid sub account loginid.')}

@@ -8,7 +8,6 @@ use Encode;
 use JSON::MaybeXS;
 use Scalar::Util qw(blessed);
 
-use Client::Account;
 use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::v3::Contract;

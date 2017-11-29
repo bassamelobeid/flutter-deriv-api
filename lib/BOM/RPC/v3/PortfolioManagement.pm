@@ -8,7 +8,6 @@ use Try::Tiny;
 use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::v3::Utility;
-use BOM::Platform::Pricing;
 use BOM::RPC::v3::Accounts;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
