@@ -22,7 +22,6 @@ use LandingCompany::Registry;
 sub active_symbols {
     my $params = shift;
 
-    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
     my $product_type = $params->{args}->{product_type} // 'basic';
     my $language = $params->{language} || 'EN';
     my $token_details = $params->{token_details};
