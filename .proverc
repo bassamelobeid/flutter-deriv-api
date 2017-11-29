@@ -2,7 +2,6 @@
 --exec '/etc/rmg/bin/perl -It/lib -MTest::Warnings'
 -MBOM::Test
 -MBOM::Test::Suite
--MBOM::Test::RPC::PricingRpc
 -MBOM::Test::RPC::BomRpc
 -MBOM::Test::Script::NotifyPub
 -MBOM::Test::Script::PricerDaemon

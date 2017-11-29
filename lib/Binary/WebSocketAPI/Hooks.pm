@@ -231,7 +231,7 @@ sub _rpc_suffix {
 }
 
 sub get_rpc_url {
-    my ($c, $req_storage) = @_;
+    my ($c) = @_;
 
     my $suffix = _rpc_suffix($c);
     return $ENV{RPC_URL} || $c->app->config->{"rpc_url" . $suffix};
@@ -242,13 +242,6 @@ sub assign_rpc_url {
 
     $req_storage->{url} = get_rpc_url($c);
     return;
-}
-
-sub get_pricing_rpc_url {
-    my $c = shift;
-
-    my $suffix = _rpc_suffix($c);
-    return $ENV{PRICING_RPC_URL} || $c->app->config->{"pricing_rpc_url" . $suffix};
 }
 
 sub get_doc_auth_s3_conf {
