@@ -15,6 +15,7 @@ sub asset_index {
             call_params => {
                 language        => $c->stash('language'),
                 landing_company => $c->landing_company_name,
+                country_code    => $c->stash('country_code'),
             },
             response => sub {
                 # @_ is ($rpc_response, $api_response, $req_storage)
@@ -57,6 +58,7 @@ sub contracts_for {
             call_params => {
                 language        => $c->stash('language'),
                 landing_company => $c->landing_company_name,
+                country_code    => $c->stash('country_code'),
             },
             response => sub {
                 # @_ is ($rpc_response, $api_response, $req_storage)
