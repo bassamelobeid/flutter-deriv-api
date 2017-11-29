@@ -13,7 +13,6 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Client::Account;
 use BOM::Platform::Context qw (localize request);
-use LandingCompany::Offerings;
 use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
 use Quant::Framework;
@@ -22,17 +21,22 @@ use LandingCompany::Registry;
 sub active_symbols {
     my $params = shift;
 
-    my $product_type = $params->{args}->{product_type} // 'basic';
+    my $landing_company_name = $params->{args}->{landing_company} // 'costarica';
+    my $product_type         = $params->{args}->{product_type}    // 'basic';
     my $language = $params->{language} || 'EN';
     my $token_details = $params->{token_details};
 
     my $offerings_obj;
+    my $country_code = '';
     if ($token_details and exists $token_details->{loginid}) {
         my $client = Client::Account->new({loginid => $token_details->{loginid}});
+        $country_code         = $client->residence;
+        $landing_company_name = $client->landing_company->short;
         $offerings_obj = $client->landing_company->offerings_for_country($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
     }
 
-    $offerings_obj //= LandingCompany::Offerings->get('common', BOM::Platform::Runtime->instance->get_offerings_config);
+    $offerings_obj = LandingCompany::Registry::get($landing_company_name)
+        ->offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
     my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
     my ($namespace, $key) = (
         'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
