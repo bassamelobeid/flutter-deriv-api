@@ -6,6 +6,7 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(get_predefined_offerings get_trading_periods generate_trading_periods update_predefined_highlow next_generation_epoch);
 
+use Encode;
 use JSON::MaybeXS;
 use Time::HiRes;
 use Date::Utility;

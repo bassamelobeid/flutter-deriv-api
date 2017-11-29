@@ -10,6 +10,7 @@ use Test::Warnings;
 use Cache::RedisDB;
 use List::Util qw(first);
 use Date::Utility;
+use Encode;
 use JSON::MaybeXS;
 use LandingCompany::Offerings qw(reinitialise_offerings);
 
