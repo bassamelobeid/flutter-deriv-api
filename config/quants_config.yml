@@ -139,16 +139,16 @@ lookback_limits:
       R_25: 0.09006447961871289
       R_10: 0.03444191548393187
   open_position_limits:
-    USD: 500
-    EUR: 500
-    AUD: 500
-    GBP: 500
-    JPY: 50000
-    BTC: 0.000015
-    BCH: 0.000075
-    ETH: 0.00015
-    LTC: 0.00075
-    ETC: 0.0015
+    USD: 5
+    EUR: 5
+    AUD: 5
+    GBP: 5
+    JPY: 5
+    BTC: 5
+    BCH: 5
+    ETH: 5
+    LTC: 5
+    ETC: 5
 
 risk_profile:
   no_business:
