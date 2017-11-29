@@ -6,6 +6,7 @@ use lib "$Bin/../lib";
 use YAML::XS;
 use Mojo::Redis2;
 use JSON::MaybeXS;
+use Encode;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 
 STDOUT->autoflush(1);

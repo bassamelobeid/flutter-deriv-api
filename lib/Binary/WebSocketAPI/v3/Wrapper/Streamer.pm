@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use Encode;
 use Mojo::Redis::Processor;
 use Time::HiRes qw(gettimeofday);
 use List::MoreUtils qw(last_index);

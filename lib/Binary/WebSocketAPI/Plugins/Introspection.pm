@@ -8,6 +8,7 @@ use parent qw(Mojolicious::Plugin);
 no indirect;
 
 use curry::weak;
+use Encode;
 use Mojo::IOLoop;
 use Future;
 use Future::Mojo;

@@ -22,6 +22,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master |;
 
+use Encode;
 use DataDog::DogStatsd::Helper;
 use Digest::MD5 qw(md5_hex);
 use File::Slurp;
