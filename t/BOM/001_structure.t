@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Test::Warnings;
 
-if (my $r = `git grep BOM:: | grep -v -e BOM::Test -e BOM::Platform -e BOM::Market -e BOM::Product -e BOM::Pricing`) {
+if (my $r = `git grep BOM:: | grep -v -e BOM::Test -e BOM::Platform -e BOM::Market -e BOM::Product -e BOM::Pricing -e BOM::RPC`) {
     print $r;
     ok 0, "Wrong structure dependency $r";
 } else {

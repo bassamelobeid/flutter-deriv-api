@@ -40,7 +40,7 @@ my @params = (
         },
     });
 
-$t = Test::Mojo->new('BOM::Pricing::RPC');
+$t = Test::Mojo->new('BOM::RPC');
 $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 set_absolute_time(Date::Utility->new('2017-11-20 00:00:00')->epoch);
 
@@ -60,23 +60,27 @@ subtest "Request $method" => sub {
 
     # mock distributor quote
     my $redis = BOM::Platform::RedisReplicated::redis_write();
-    $redis->set('Distributor::QUOTE::frxUSDJPY', encode_json({
-        quote => 500,
-    }));
+    $redis->set(
+        'Distributor::QUOTE::frxUSDJPY',
+        encode_json({
+                quote => 500,
+            }));
 
     my $mock_feeddb = Test::MockModule->new('Postgres::FeedDB::Spot');
-    $mock_feeddb->mock('tick_at', sub {
-        print "tick...\n";
-        Postgres::FeedDB::Spot::Tick->new({
-            symbol => 'frxUSDJPY',
-            epoch  => 1340871449,
-            bid    => 2.01,
-            ask    => 2.03,
-            quote  => 2.02,
-        })
-    });
+    $mock_feeddb->mock(
+        'tick_at',
+        sub {
+            print "tick...\n";
+            Postgres::FeedDB::Spot::Tick->new({
+                symbol => 'frxUSDJPY',
+                epoch  => 1340871449,
+                bid    => 2.01,
+                ask    => 2.03,
+                quote  => 2.02,
+            });
+        });
 
-    $result                         = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
+    $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
     is_deeply [sort keys %{$result}],
         [sort qw/ available close open hit_count spot feed_license /],
         'It should return contracts_for object for japan region';
