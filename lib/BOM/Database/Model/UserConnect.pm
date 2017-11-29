@@ -34,7 +34,7 @@ sub insert_connect {
             UPDATE users.binary_user_connects
             SET provider_data = ?, date=NOW()
             WHERE binary_user_id = ? AND provider = ?
-        ", undef, Encode::encode_utf8($json->encode($provider_data), $user_id, $provider));
+        ", undef, Encode::encode_utf8($json->encode($provider_data)), $user_id, $provider);
             } else {
                 $_->do("
             INSERT INTO users.binary_user_connects
