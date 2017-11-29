@@ -1,5 +1,5 @@
 {
-    "app_update": "999",
+    "app_update": 999,
     "name": "Test Application",
     "scopes": ["read", "trade"],
     "homepage": "https://test.example.com/",
@@ -7,5 +7,6 @@
     "appstore": "https://itunes.apple.com/test_app",
     "googleplay": "https://play.google.com/store/apps/details?id=test.app",
     "redirect_uri": "https://test.example.com/redirect",
-    "verification_uri": "https://test.example.com/verify"
+    "verification_uri": "https://test.example.com/verify",
+    "app_markup_percentage": 2.25
 }
