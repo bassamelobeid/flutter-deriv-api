@@ -74,6 +74,11 @@
       "type": "integer",
       "description":"[For japan only] An epoch value of a predefined trading period start time"
     },
+    "product_type": {
+      "type": "string",
+      "description": "The product type, either basic or multibarrier",
+      "default": "basic"
+    },
     "passthrough": {
       "type": "object",
       "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
