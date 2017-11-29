@@ -9,7 +9,7 @@
     "date_expiry": 1480712400,
     "trading_period_start": 1480291200,
     "contract_type": ["CALL", "PUT"],
-    "barriers":[{"barrier": "+/- 0.7582"},
-                {"barrier": "+/- 0.7551"}],
+    "barriers":[{"barrier": "+0.1"},
+                {"barrier": "-0.1"}],
     "passthrough":{}
 }

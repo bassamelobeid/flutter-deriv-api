@@ -8,7 +8,7 @@
     "currency": "USD",
     "duration": "60",
     "duration_unit": "s",
-    "barrier": "+/- 0.7582",
-    "barrier2": "+/- 0.7551",
+    "barrier": "+0.1",
+    "barrier2": "-0.1",
     "symbol": "R_100"
 }
