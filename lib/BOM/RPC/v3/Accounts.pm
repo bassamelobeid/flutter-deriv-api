@@ -4,6 +4,7 @@ use 5.014;
 use strict;
 use warnings;
 
+use Encode;
 use JSON::MaybeXS;
 use Try::Tiny;
 use WWW::OneAll;
@@ -41,7 +42,6 @@ use BOM::Platform::Pricing;
 use BOM::Platform::Runtime;
 
 my $json      = JSON::MaybeXS->new;
-my $utf8_json = JSON::MaybeXS->new->utf8(1);
 
 sub payout_currencies {
     my $params = shift;
@@ -1413,7 +1413,7 @@ sub set_financial_assessment {
             next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
             $cli->financial_assessment({
-                data => $utf8_json->encode($financial_evaluation->{user_data}),
+                data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),
             });
             $cli->save;
         }
