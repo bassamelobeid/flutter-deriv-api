@@ -180,7 +180,7 @@ sub _build_economic_events_for_volatility_calculation {
     # If news occurs 5 minutes before/after the contract expiration time, we shift the news triangle to 5 minutes before the contract expiry.
     my $end = $current_epoch + $seconds_to_expiry + 300;
 
-    return [grep { $_->{release_epoch} >= $start and $_->{release_epoch} <= $end } @$all_events];
+    return [grep { $_->{release_date} >= $start and $_->{release_date} <= $end } @$all_events];
 }
 
 sub _build_pricing_vol_for_two_barriers {
@@ -284,15 +284,15 @@ sub _get_tick_windows {
 
     # just take events from two hour back and sort it in descending order
     my $categorized_events = [
-        sort { $b->{release_epoch} <=> $a->{release_epoch} }
-        grep { $_->{release_epoch} > $to - 2 * 3600 && $_->{release_epoch} < $to } @{$self->_applicable_economic_events}];
+        sort { $b->{release_date} <=> $a->{release_date} }
+        grep { $_->{release_date} > $to - 2 * 3600 && $_->{release_date} < $to } @{$self->_applicable_economic_events}];
 
     return [[$from, $to]] unless @$categorized_events;
 
     # combine overlapping events
     my @combined;
     foreach my $event (@$categorized_events) {
-        my $start_period = $event->{release_epoch};
+        my $start_period = $event->{release_date};
         my $end_period   = $start_period + min(900, $event->{duration});
         my $curr         = [$start_period, $end_period];
 
