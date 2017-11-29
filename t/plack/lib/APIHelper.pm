@@ -6,6 +6,7 @@ use warnings;
 use Exporter 'import';
 our @EXPORT_OK = qw( request auth_request decode_json deposit withdraw balance new_client);
 
+use Encode;
 use FindBin qw/$Bin/;
 use Test::More;
 use Plack::Test;

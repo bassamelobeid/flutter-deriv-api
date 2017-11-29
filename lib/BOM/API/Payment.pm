@@ -8,6 +8,7 @@ use Router::Resource;
 use parent qw(Plack::Component);
 use Plack::Request;
 use Plack::Response;
+use Encode;
 use JSON::MaybeXS;
 use Scalar::Util qw/blessed/;
 use Try::Tiny;
