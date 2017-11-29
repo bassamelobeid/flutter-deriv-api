@@ -14,7 +14,7 @@
     "secret_question": "Mother's maiden name",
     "secret_answer": "Jones",
     "tax_residence": "ar,sg",
-    "tax_identification_number": "012142545"
+    "tax_identification_number": "012142545",
     "account_opening_reason": "Speculative",
     "account_turnover": "Less than $25,000"
 }
