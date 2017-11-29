@@ -62,9 +62,9 @@ sub _forward_starting_options {
     my @trading_periods = map { @{$calendar->trading_period($exchange, $_)} } @trade_dates;
 
     my @options = map { {
-            date  => Date::Utility->new($_->{open})->truncate_to_day->epoch,
-            open  => $_->{open},
-            close => $_->{close},
+            date  => Date::Utility->new($_->{open})->truncate_to_day->epoch + 0,
+            open  => $_->{open} + 0,
+            close => $_->{close} + 0,
             @$blackout_periods ? (blackouts => $blackout_periods) : (),
         }
     } @trading_periods;
