@@ -653,7 +653,7 @@ subtest 'sell_expired_contracts', sub {
             +{
             number_of_sold_bets => 2,
             skip_contract       => 0,
-            total_credited      => 6642.98,
+            total_credited      => 1772.8,
             failures            => [],
             },
             'sold the two requested contracts';
