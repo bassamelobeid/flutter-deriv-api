@@ -110,15 +110,15 @@ subtest 'Invalid s3 config' => sub {
         file_size   => $length,
     };
 
+    # Valid bucket name to cause error
+    $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'ValidBucket';
+
     $t = $t->send_ok({json => $req})->message_ok;
     my $res       = decode_json($t->message->[1]);
     my $upload_id = $res->{document_upload}->{upload_id};
     my $call_type = $res->{document_upload}->{call_type};
 
     my @frames = gen_frames($data, $call_type, $upload_id);
-
-    # Valid bucket name to cause error
-    $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'ValidBucket';
 
     $t   = $t->send_ok({binary => $frames[0]});
     $t   = $t->message_ok;
@@ -484,18 +484,15 @@ sub override_subs {
 
         $upload_info->{s3} = $s3;
 
-        $upload_info->{put_future} = $s3->put_object(
-            key          => '',
-            value        => sub { },
-            value_length => 0
-        );
-
-        $upload_info->{put_future}->on_fail(
-            sub {
-                Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::send_upload_failure($c, $upload_info, 'unknown')
-                    if not $ENV{DOCUMENT_AUTH_S3_BUCKET} eq 'TestingS3Bucket';
-                $upload_info->{last_chunk_arrived}->cancel;
-            });
+        if ($ENV{DOCUMENT_AUTH_S3_BUCKET} eq 'TestingS3Bucket') {
+            $upload_info->{put_future} = $c->loop->new_future;
+        } else {
+            $upload_info->{put_future} = $s3->put_object(
+                key          => '',
+                value        => sub { },
+                value_length => 0
+            )->on_fail(sub { Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::send_upload_failure($c, $upload_info, 'unknown') });
+        }
     };
 }
 
