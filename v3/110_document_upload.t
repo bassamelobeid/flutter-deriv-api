@@ -482,19 +482,15 @@ sub override_subs {
     *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::last_chunk_received = sub {
         my ($c, $upload_info) = @_;
 
-        my $stash     = $c->stash->{document_upload};
-        my $upload_id = $upload_info->{upload_id};
-        $stash->{$upload_id}->{last_chunk_arrived} //= $c->loop->new_future;
-
-        return if $upload_info->{chunk_size} != 0;
-
-        $upload_info->{last_chunk_arrived}->done;
-
         $last_chunk_received->($c, $upload_info);
+
+        $upload_info->{last_chunk_arrived}->done if $upload_info->{chunk_size} == 0;
     };
 
     *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::create_s3_instance = sub {
         my ($c, $upload_info) = @_;
+
+        $upload_info->{last_chunk_arrived} = $c->loop->new_future;
 
         my $s3 = Net::Async::Webservice::S3->new(
             %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)},
@@ -516,6 +512,7 @@ sub override_subs {
             sub {
                 Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::send_upload_failure($c, $upload_info, 'unknown')
                     if not $ENV{DOCUMENT_AUTH_S3_BUCKET} eq 'TestingS3Bucket';
+                $upload_info->{last_chunk_arrived}->cancel;
             });
     };
 }
