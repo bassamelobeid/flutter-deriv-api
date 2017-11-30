@@ -67,6 +67,39 @@ my $generic_req = {
     expiration_date => '2020-01-01',
 };
 
+subtest 'Upload fail before the last chunk' => sub {
+    my $data   = 'Some text';
+    my $length = length $data;
+
+    my $req = {
+        %$generic_req,
+        req_id      => ++$req_id,
+        passthrough => $PASSTHROUGH,
+        file_size   => $length,
+    };
+
+    my $c = get_c();
+
+    $t = $t->send_ok({json => $req})->message_ok;
+    my $res       = decode_json($t->message->[1]);
+    my $upload_id = $res->{document_upload}->{upload_id};
+    my $call_type = $res->{document_upload}->{call_type};
+
+    my @frames = gen_frames($data, $call_type, $upload_id);
+
+    receive_ok($upload_id, $data);
+    $t = $t->send_ok({binary => $frames[0]});
+
+    $c->stash->{document_upload}->{$upload_id}->{put_future}->fail('Ungracefully');
+
+    $t   = $t->message_ok;
+    $res = decode_json($t->message->[1]);
+
+    my $error = $res->{error};
+
+    is $error->{code}, 'UploadDenied', 'Upload should fail if put_object fails';
+};
+
 subtest 'Encoded json passed as binary frame' => sub {
     $t = $t->send_ok({binary => encode_json({ping => 1})})->message_ok;
     my $res = decode_json($t->message->[1]);
