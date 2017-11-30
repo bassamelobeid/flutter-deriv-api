@@ -6,6 +6,11 @@ use Test::Warn;
 
 no warnings qw/redefine/;
 
+BEGIN {
+    # Test should fail if Future DEBUG mode shows any warning
+    $ENV{PERL_FUTURE_DEBUG} = 1;
+}
+
 use JSON::MaybeXS qw/decode_json encode_json/;
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Digest::SHA qw/sha1_hex/;
@@ -22,9 +27,6 @@ use constant MAX_FILE_SIZE  => 2**20 * 3;    # 3MB
 use constant MAX_CHUNK_SIZE => 2**17;
 
 override_subs();
-
-# Test should fail if Future DEBUG mode shows any warning
-$ENV{PERL_FUTURE_DEBUG} = 1;
 
 $ENV{DOCUMENT_AUTH_S3_ACCESS} = 'TestingS3Access';
 $ENV{DOCUMENT_AUTH_S3_SECRET} = 'TestingS3Secret';
