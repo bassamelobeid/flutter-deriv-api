@@ -157,7 +157,13 @@ sub verify_email {
         # we should only check for loginid email but as its v3 so need to have backward compatibility
         # in next version need to remove else
         if ($loginid) {
-            $skip_email = 1 unless (Client::Account->new({loginid => $loginid})->email eq $email);
+            $skip_email = 1 unless (
+                Client::Account->new({
+                        loginid      => $loginid,
+                        db_operation => 'replica'
+                    }
+                )->email eq $email
+            );
         } else {
             $skip_email = 1 unless BOM::Platform::User->new({email => $email});
         }
