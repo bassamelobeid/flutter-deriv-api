@@ -38,7 +38,7 @@ sub add_upload_info {
         upload_id       => $upload_id,
     };
 
-    create_s3_instance($c, $upload_info);
+    wait_for_upload($c, $upload_info);
 
     my $stash = {
         %{$current_stash},
@@ -252,6 +252,20 @@ sub clean_up_on_finish {
     return;
 }
 
+sub wait_for_upload {
+    my ($c, $upload_info) = @_;
+
+    my $s3 = create_s3_instance($c, $upload_info);
+
+    my $pending_futures = $upload_info->{pending_futures};
+
+    return $upload_info->{put_future} = $s3->put_object(
+        key          => $upload_info->{file_name},
+        value        => sub { add_upload_future($c, $pending_futures) },
+        value_length => $upload_info->{file_size},
+    )->on_fail(sub { send_upload_failure($c, $upload_info, 'unknown') });
+}
+
 sub create_s3_instance {
     my ($c, $upload_info) = @_;
 
@@ -265,15 +279,7 @@ sub create_s3_instance {
 
     $upload_info->{s3} = $s3;
 
-    my $pending_futures = $upload_info->{pending_futures};
-
-    $upload_info->{put_future} = $s3->put_object(
-        key          => $upload_info->{file_name},
-        value        => sub { add_upload_future($c, $pending_futures) },
-        value_length => $upload_info->{file_size},
-    )->on_fail(sub { send_upload_failure($c, $upload_info, 'unknown') });
-
-    return;
+    return $s3;
 }
 
 sub last_chunk_received {
