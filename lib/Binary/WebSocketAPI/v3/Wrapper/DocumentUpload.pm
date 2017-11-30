@@ -230,21 +230,23 @@ sub generate_upload_id {
 }
 
 sub clean_up_on_finish {
-    my ($c, $upload_info) = @_;
+    my ($c, $upload_info_copy) = @_;
 
-    return if !$upload_info;
+    return unless $upload_info_copy and exists $upload_info_copy->{upload_id};
 
-    my $stash = $c->stash->{document_upload};
+    my $upload_id   = $upload_info_copy->{upload_id};
+    my $stash       = $c->stash->{document_upload};
+    my $upload_info = $stash->{$upload_id};
 
-    delete $stash->{$upload_info->{upload_id}} if exists $upload_info->{upload_id};
+    return unless $upload_info;
 
     $_->cancel for @{$upload_info->{pending_futures}}, $upload_info->{put_future};
+    $c->loop->remove($upload_info->{s3});
 
     delete $upload_info->{pending_futures};
     delete $upload_info->{put_future};
-
-    $c->loop->remove($upload_info->{s3});
     delete $upload_info->{s3};
+    delete $stash->{$upload_id};
 
     return;
 }
