@@ -105,9 +105,9 @@ subtest 'Invalid s3 config' => sub {
 
     my $req = {
         %$generic_req,
-        req_id          => ++$req_id,
-        passthrough     => $PASSTHROUGH,
-        file_size       => $length,
+        req_id      => ++$req_id,
+        passthrough => $PASSTHROUGH,
+        file_size   => $length,
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -138,9 +138,9 @@ subtest 'Invalid s3 config' => sub {
 subtest 'binary metadata should be correctly sent' => sub {
     my $req = {
         %$generic_req,
-        req_id          => ++$req_id,
-        passthrough     => $PASSTHROUGH,
-        file_size       => 1,
+        req_id      => ++$req_id,
+        passthrough => $PASSTHROUGH,
+        file_size   => 1,
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -197,9 +197,9 @@ subtest 'sending two files concurrently' => sub {
 
     my $req1 = {
         %$generic_req,
-        req_id          => ++$req_id,
-        passthrough     => $PASSTHROUGH,
-        file_size       => $length,
+        req_id      => ++$req_id,
+        passthrough => $PASSTHROUGH,
+        file_size   => $length,
     };
 
     my $req2 = {%{$req1}, req_id => ++$req_id};
@@ -248,7 +248,7 @@ subtest 'Send two files one by one' => sub {
 
     document_upload_ok({
             %$generic_req,
-            file_size       => $length,
+            file_size => $length,
         },
         $data
     );
@@ -271,9 +271,9 @@ subtest 'Maximum file size' => sub {
 
     my $req = {
         %$generic_req,
-        req_id          => ++$req_id,
-        passthrough     => $PASSTHROUGH,
-        file_size       => $max_size,
+        req_id      => ++$req_id,
+        passthrough => $PASSTHROUGH,
+        file_size   => $max_size,
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -332,9 +332,9 @@ subtest 'sending extra data after EOF chunk' => sub {
 
     my $req = {
         %$generic_req,
-        req_id          => ++$req_id,
-        passthrough     => $PASSTHROUGH,
-        file_size       => $size,
+        req_id      => ++$req_id,
+        passthrough => $PASSTHROUGH,
+        file_size   => $size,
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -499,12 +499,12 @@ sub override_subs {
     };
 }
 
-sub get_c { my ($c) = values $t->app->active_connections; $c };
+sub get_c { my ($c) = values $t->app->active_connections; $c }
 
 sub receive_ok {
     my ($upload_id, $data) = @_;
 
-    my $c = get_c();
+    my $c           = get_c();
     my $upload_info = $c->stash->{document_upload}->{$upload_id};
 
     retain_future(receive_loop($c, $upload_info, $data));
