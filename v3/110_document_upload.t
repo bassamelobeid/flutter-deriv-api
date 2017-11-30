@@ -104,7 +104,7 @@ subtest 'Invalid s3 config' => sub {
     my $length = length $data;
 
     my $req = {
-        %{%$generic_req},
+        %$generic_req,
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
         file_size       => $length,
@@ -137,7 +137,7 @@ subtest 'Invalid s3 config' => sub {
 
 subtest 'binary metadata should be correctly sent' => sub {
     my $req = {
-        %{%$generic_req},
+        %$generic_req,
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
         file_size       => 1,
@@ -196,7 +196,7 @@ subtest 'sending two files concurrently' => sub {
     my $length = length $data;
 
     my $req1 = {
-        %{%$generic_req},
+        %$generic_req,
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
         file_size       => $length,
@@ -247,7 +247,7 @@ subtest 'Send two files one by one' => sub {
     my $length = length $data;
 
     document_upload_ok({
-            %{%$generic_req},
+            %$generic_req,
             file_size       => $length,
         },
         $data
@@ -270,7 +270,7 @@ subtest 'Maximum file size' => sub {
     my $max_size = MAX_FILE_SIZE + 1;
 
     my $req = {
-        %{%$generic_req},
+        %$generic_req,
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
         file_size       => $max_size,
@@ -311,7 +311,7 @@ subtest 'Maximum file size' => sub {
 
 subtest 'Invalid document_format' => sub {
     my $req = {
-        %{%$generic_req},
+        %$generic_req,
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
         file_size       => 1,
@@ -331,7 +331,7 @@ subtest 'sending extra data after EOF chunk' => sub {
     my $size = length $data;
 
     my $req = {
-        %{%$generic_req},
+        %$generic_req,
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
         file_size       => $size,
