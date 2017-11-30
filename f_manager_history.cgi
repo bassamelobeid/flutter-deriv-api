@@ -11,8 +11,8 @@ use Client::Account;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
+use BOM::Database::ClientDB;
 use BOM::ContractInfo;
-use BOM::Database::DataMapper::Payment qw/get_total_withdrawal/;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 use Format::Util::Numbers qw/formatnumber/;
@@ -78,16 +78,21 @@ my $summary = client_statement_summary({
     before   => Date::Utility->new()->datetime,
 });
 
-my $payment_mapper = BOM::Database::DataMapper::Payment->new({
-    client_loginid => $client->loginid,
-    currency_code  => $currency,
-});
+my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+my $dbic = $clientdb->db->dbic;
+
+my $withdrawals_to_date = $dbic->run(
+    fixup => sub {
+        my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_withdrawals(?)");
+        $sth->execute($client->loginid);
+        return $sth->fetchrow_hashref;
+    });
 
 BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
     {
         transactions            => $statement->{transactions},
-        withdrawals_to_date     => formatnumber('amount', $currency, $payment_mapper->get_total_withdrawal()),
+        withdrawals_to_date     => formatnumber('amount', $currency, $withdrawals_to_date->{amount}),
         balance                 => $statement->{balance},
         currency                => $currency,
         loginid                 => $client->loginid,
