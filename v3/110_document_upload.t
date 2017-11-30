@@ -499,10 +499,12 @@ sub override_subs {
     };
 }
 
+sub get_c { my ($c) = values $t->app->active_connections; $c };
+
 sub receive_ok {
     my ($upload_id, $data) = @_;
 
-    my ($c) = values $t->app->active_connections;
+    my $c = get_c();
     my $upload_info = $c->stash->{document_upload}->{$upload_id};
 
     retain_future(receive_loop($c, $upload_info, $data));
