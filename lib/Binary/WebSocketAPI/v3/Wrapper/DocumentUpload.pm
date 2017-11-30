@@ -11,8 +11,9 @@ use JSON::MaybeXS qw/decode_json/;
 
 use Binary::WebSocketAPI::Hooks;
 
-use constant MAX_CHUNK_SIZE => 2**17;    #100KB
-use constant UPLOAD_TIMEOUT => 120;      #2 minutes
+use constant MAX_CHUNK_SIZE       => 2**17;    #100KB
+use constant UPLOAD_TIMEOUT       => 120;
+use constant UPLOAD_STALL_TIMEOUT => 60;
 
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
@@ -256,7 +257,7 @@ sub create_s3_instance {
     my $s3 = Net::Async::Webservice::S3->new(
         %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)},
         max_retries   => 1,
-        stall_timeout => 60,
+        stall_timeout => UPLOAD_STALL_TIMEOUT,
     );
 
     $c->loop->add($s3);
@@ -269,7 +270,7 @@ sub create_s3_instance {
         key          => $upload_info->{file_name},
         value        => sub { add_upload_future($c, $pending_futures) },
         value_length => $upload_info->{file_size},
-    );
+    )->on_fail(sub { send_upload_failure($c, $upload_info, 'unknown') });
 
     return;
 }
