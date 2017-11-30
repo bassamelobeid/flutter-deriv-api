@@ -6,7 +6,6 @@ use warnings;
 use Try::Tiny;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Backoffice::Request;
-use BOM::Platform::Pricing;
 
 # Get:
 #    description - typical description printed on statement/profit_table.

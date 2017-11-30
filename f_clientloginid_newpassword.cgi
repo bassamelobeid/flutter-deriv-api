@@ -29,7 +29,10 @@ if (not $loginID) {
     code_exit_BO();
 }
 
-my $client      = Client::Account::get_instance({'loginid' => uc $loginID}) || die "[f_clientloginid_newpassword cgi] bad client $loginID";
+my $client = Client::Account::get_instance({
+        'loginid'    => uc $loginID,
+        db_operation => 'replica'
+    }) || die "[f_clientloginid_newpassword cgi] bad client $loginID";
 my $email       = $client->email;
 my $client_name = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
 
