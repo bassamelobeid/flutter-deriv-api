@@ -7,6 +7,7 @@ use Try::Tiny;
 use Digest::SHA;
 use Net::Async::Webservice::S3;
 use Future;
+use Variable::Disposition qw/retain_future/;
 use JSON::MaybeXS qw/decode_json/;
 
 use Binary::WebSocketAPI::Hooks;
@@ -280,14 +281,15 @@ sub last_chunk_received {
 
     return if $upload_info->{chunk_size} != 0;
 
-    return Future->wait_any($upload_info->{put_future}, $c->loop->timeout_future(after => UPLOAD_TIMEOUT))->on_done(
-        sub {
-            send_upload_successful($c, $upload_info, 'success');
-        }
-        )->on_fail(
-        sub {
-            send_upload_failure($c, $upload_info, 'unknown');
-        });
+    return retain_future(
+        Future->wait_any($upload_info->{put_future}, $c->loop->timeout_future(after => UPLOAD_TIMEOUT))->on_done(
+            sub {
+                send_upload_successful($c, $upload_info, 'success');
+            }
+            )->on_fail(
+            sub {
+                send_upload_failure($c, $upload_info, 'unknown');
+            }));
 }
 
 sub add_upload_future {
