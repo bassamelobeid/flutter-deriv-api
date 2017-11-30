@@ -502,30 +502,30 @@ sub override_subs {
         $upload_info->{last_chunk_arrived}->done if $upload_info->{chunk_size} == 0;
     };
 
+    my $create_s3_instance = \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::create_s3_instance;
     *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::create_s3_instance = sub {
         my ($c, $upload_info) = @_;
 
         $upload_info->{last_chunk_arrived} = $c->loop->new_future;
 
-        my $s3 = Net::Async::Webservice::S3->new(
-            %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)},
-            max_retries => 1,
-            timeout     => 60,
-        );
+        return $create_s3_instance->($c, $upload_info) unless $ENV{DOCUMENT_AUTH_S3_BUCKET} eq 'TestingS3Bucket';
+
+        my $s3 = MockS3->new;
 
         $c->loop->add($s3);
 
-        $upload_info->{s3} = $s3;
+        return $upload_info->{s3} = $s3;
+    };
 
-        if ($ENV{DOCUMENT_AUTH_S3_BUCKET} eq 'TestingS3Bucket') {
-            $upload_info->{put_future} = $c->loop->new_future;
-        } else {
-            $upload_info->{put_future} = $s3->put_object(
-                key          => '',
-                value        => sub { },
-                value_length => 0
-            )->on_fail(sub { Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::send_upload_failure($c, $upload_info, 'unknown') });
-        }
+    my $clean_up_on_finish = \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::clean_up_on_finish;
+    *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::clean_up_on_finish = sub {
+        my ($c, $upload_info) = @_;
+
+        $clean_up_on_finish->($c, $upload_info);
+
+        return unless exists $upload_info->{last_chunk_arrived};
+
+        $upload_info->{last_chunk_arrived}->cancel;
     };
 }
 
@@ -563,3 +563,9 @@ sub receive_loop {
 }
 
 done_testing();
+
+package MockS3;
+
+use base qw( IO::Async::Notifier );
+
+sub put_object { shift->loop->new_future }
