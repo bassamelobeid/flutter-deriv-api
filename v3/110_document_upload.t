@@ -74,7 +74,6 @@ subtest 'Upload fail before the last chunk' => sub {
     my $req = {
         %$generic_req,
         req_id      => ++$req_id,
-        passthrough => $PASSTHROUGH,
         file_size   => $length,
     };
 
@@ -139,7 +138,6 @@ subtest 'Invalid s3 config' => sub {
     my $req = {
         %$generic_req,
         req_id      => ++$req_id,
-        passthrough => $PASSTHROUGH,
         file_size   => $length,
     };
 
@@ -172,7 +170,6 @@ subtest 'binary metadata should be correctly sent' => sub {
     my $req = {
         %$generic_req,
         req_id      => ++$req_id,
-        passthrough => $PASSTHROUGH,
         file_size   => 1,
     };
 
@@ -231,7 +228,6 @@ subtest 'sending two files concurrently' => sub {
     my $req1 = {
         %$generic_req,
         req_id      => ++$req_id,
-        passthrough => $PASSTHROUGH,
         file_size   => $length,
     };
 
@@ -305,7 +301,6 @@ subtest 'Maximum file size' => sub {
     my $req = {
         %$generic_req,
         req_id      => ++$req_id,
-        passthrough => $PASSTHROUGH,
         file_size   => $max_size,
     };
 
@@ -346,7 +341,6 @@ subtest 'Invalid document_format' => sub {
     my $req = {
         %$generic_req,
         req_id          => ++$req_id,
-        passthrough     => $PASSTHROUGH,
         file_size       => 1,
         document_format => 'INVALID',
     };
@@ -366,7 +360,6 @@ subtest 'sending extra data after EOF chunk' => sub {
     my $req = {
         %$generic_req,
         req_id      => ++$req_id,
-        passthrough => $PASSTHROUGH,
         file_size   => $size,
     };
 
@@ -445,7 +438,6 @@ sub upload {
 
     my $req = {
         req_id      => ++$req_id,
-        passthrough => $PASSTHROUGH,
         %{$metadata}};
 
     $t = $t->send_ok({json => $req})->message_ok;
