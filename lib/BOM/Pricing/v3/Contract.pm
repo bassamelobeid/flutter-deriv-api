@@ -28,7 +28,6 @@ use BOM::Product::Contract::Finder::Japan;
 use BOM::Product::Contract::Finder;
 use BOM::Product::Contract::Offerings;
 use BOM::Pricing::v3::Utility;
-use BOM::Pricing::ContractsForGenerator;
 
 use feature "state";
 
@@ -572,42 +571,40 @@ sub contracts_for {
     my $product_type         = $args->{product_type} // 'basic';
     my $landing_company_name = $args->{landing_company} // 'costarica';
 
-    my $contracts_for =
-        BOM::Platform::RedisReplicated::redis_pricer()->get(join(':', 'contracts_for', $landing_company_name, $product_type, $symbol));
-    if ($contracts_for) {
-        try {
-            $contracts_for = JSON::XS->new->decode($contracts_for);
-            $contracts_for = undef if $contracts_for->{_generated} < time - 30;
-        }
-        catch {
-            warn "contracts_for form redis json_decode error: $_";
-        };
-    }
+    my $contracts_for;
+    my $query_args = {
+        symbol          => $symbol,
+        landing_company => $landing_company_name,
+    };
 
-    if ($contracts_for) {
-        stats_inc('bom_pricing.precalculated_data.used', {tags => ['data:' . 'contracts_for',]});
+    if ($product_type eq 'multi_barrier') {
+        $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol($query_args);
     } else {
-        stats_inc('bom_pricing.precalculated_data.missed', {tags => ['data:' . 'contracts_for',]});
-        $contracts_for = BOM::Pricing::ContractsForGenerator::contracts_for({
-            product_type    => $product_type,
-            landing_company => $landing_company_name,
-            symbol          => $symbol,
-        });
+        $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($query_args);
+        # this is temporary solution till the time front apps are fixed
+        # filter CALLE|PUTE only for non japan
+        $contracts_for->{available} = [grep { $_->{contract_type} !~ /^(?:CALLE|PUTE)$/ } @{$contracts_for->{available}}]
+            if ($contracts_for and $contracts_for->{hit_count} > 0);
     }
-    $contracts_for = $contracts_for->{value};
 
+    my $i = 0;
     foreach my $contract (@{$contracts_for->{available}}) {
         if (exists $contract->{payout_limit}) {
-            $contract->{payout_limit} = $contract->{payout_limit}->{$currency};
+            $contracts_for->{available}->[$i]->{payout_limit} = $contract->{payout_limit}->{$currency};
         }
+        $i++;
     }
 
     if (not $contracts_for or $contracts_for->{hit_count} == 0) {
         return BOM::Pricing::v3::Utility::create_error({
                 code              => 'InvalidSymbol',
                 message_to_client => BOM::Platform::Context::localize('The symbol is invalid.')});
+    } else {
+        $contracts_for->{'spot'} = create_underlying($symbol)->spot();
+        return $contracts_for;
     }
-    return $contracts_for;
+
+    return;
 }
 
 sub _log_exception {
