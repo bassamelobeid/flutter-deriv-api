@@ -73,8 +73,8 @@ subtest 'Upload fail before the last chunk' => sub {
 
     my $req = {
         %$generic_req,
-        req_id      => ++$req_id,
-        file_size   => $length,
+        req_id    => ++$req_id,
+        file_size => $length,
     };
 
     my $c = get_c();
@@ -137,8 +137,8 @@ subtest 'Invalid s3 config' => sub {
 
     my $req = {
         %$generic_req,
-        req_id      => ++$req_id,
-        file_size   => $length,
+        req_id    => ++$req_id,
+        file_size => $length,
     };
 
     # Valid bucket name to cause error
@@ -169,8 +169,8 @@ subtest 'Invalid s3 config' => sub {
 subtest 'binary metadata should be correctly sent' => sub {
     my $req = {
         %$generic_req,
-        req_id      => ++$req_id,
-        file_size   => 1,
+        req_id    => ++$req_id,
+        file_size => 1,
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -227,8 +227,8 @@ subtest 'sending two files concurrently' => sub {
 
     my $req1 = {
         %$generic_req,
-        req_id      => ++$req_id,
-        file_size   => $length,
+        req_id    => ++$req_id,
+        file_size => $length,
     };
 
     my $req2 = {%{$req1}, req_id => ++$req_id};
@@ -300,8 +300,8 @@ subtest 'Maximum file size' => sub {
 
     my $req = {
         %$generic_req,
-        req_id      => ++$req_id,
-        file_size   => $max_size,
+        req_id    => ++$req_id,
+        file_size => $max_size,
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -357,8 +357,8 @@ subtest 'sending extra data after EOF chunk' => sub {
 
     my $req = {
         %$generic_req,
-        req_id      => ++$req_id,
-        file_size   => $size,
+        req_id    => ++$req_id,
+        file_size => $size,
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -435,7 +435,7 @@ sub upload {
     my ($metadata, $data, $check_receive) = @_;
 
     my $req = {
-        req_id      => ++$req_id,
+        req_id => ++$req_id,
         %{$metadata}};
 
     $t = $t->send_ok({json => $req})->message_ok;
