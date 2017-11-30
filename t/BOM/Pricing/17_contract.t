@@ -232,7 +232,7 @@ subtest $method => sub {
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol'       => 'R_50',
-            'longcode'     => "Receive the difference of Volatility 50 Index's maximum value during the life of the option and entry spot plus 0.0020 at 50 seconds after contract start time.",
+            'longcode'     => "Receive the difference of Volatility 50 Index's final value and its minimum value during the life of the option at 50 seconds after contract start time.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
             'barrier'      => 'S20P',
@@ -264,9 +264,9 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '20.55',
-        'ask_price'           => '20.55',
-        'longcode'            => 'Receive the difference of Volatility 50 Index\'s maximum value during the life of the option and entry spot at 15 minutes after contract start time.',
+        'display_value'       => '8864.05',
+        'ask_price'           => '8864.05',
+        'longcode'            => 'Receive the difference of Volatility 50 Index\'s final value and its minimum value during the life of the option at 15 minutes after contract start time.',
         'spot'                => '963.3054',
         'payout'              => '0',
         'contract_parameters' => {
@@ -306,7 +306,7 @@ subtest 'send_ask' => sub {
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        'Receive the difference of Volatility 50 Index\'s maximum value during the life of the option and entry spot at 15 minutes after contract start time.',
+        'Receive the difference of Volatility 50 Index\'s final value and its minimum value during the life of the option at 15 minutes after contract start time.',
         'long code  is correct'
     );
 };
