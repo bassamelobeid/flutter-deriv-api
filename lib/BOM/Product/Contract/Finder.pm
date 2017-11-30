@@ -14,7 +14,6 @@ use BOM::Platform::Chronicle;
 use Finance::Contract::Category;
 use LandingCompany::Offerings qw(get_offerings_flyby);
 
-use BOM::Product::IterationCacher qw(get_or_calculate);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -44,73 +43,58 @@ my %supported_contract_types = (
     NOTOUCH     => 1,
 );
 
-sub _forward_starting_options {
-    my ($underlying, $calendar, $exchange) = @_;
-
-    my $now = Date::Utility->new;
-    my $sod = $now->truncate_to_day->epoch;
-
-    my $blackout_periods = [map { [Date::Utility->new($sod + $_->{start})->time_hhmmss, Date::Utility->new($sod + $_->{end})->time_hhmmss] }
-            @{$underlying->forward_inefficient_periods}];
-
-    my @trade_dates;
-    for (my $date = $now; @trade_dates < 3; $date = $date->plus_time_interval('1d')) {
-        $date = $calendar->trade_date_after($exchange, $date) unless $calendar->trades_on($exchange, $date);
-        push @trade_dates, $date;
-    }
-
-    my @trading_periods = map { @{$calendar->trading_period($exchange, $_)} } @trade_dates;
-
-    my @options = map { {
-            date  => Date::Utility->new($_->{open})->truncate_to_day->epoch + 0,
-            open  => $_->{open} + 0,
-            close => $_->{close} + 0,
-            @$blackout_periods ? (blackouts => $blackout_periods) : (),
-        }
-    } @trading_periods;
-
-    return \@options;
-}
-
 sub available_contracts_for_symbol {
     my $args            = shift;
     my $symbol          = $args->{symbol} || die 'no symbol';
     my $landing_company = $args->{landing_company};
 
-    BOM::Product::IterationCacher::set_key_prefix(delete $args->{iteration_started} // time);
-
     my $now        = Date::Utility->new;
-    my $underlying = get_or_calculate([$symbol], sub { create_underlying($symbol) });
+    my $underlying = create_underlying($symbol);
     my $exchange   = $underlying->exchange;
+    my $calendar   = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+    my ($open, $close);
+    if ($calendar->trades_on($underlying->exchange, $now)) {
+        $open = $calendar->opening_on($exchange, $now)->epoch;
+        $close = $calendar->closing_on($exchange, $now)->epoch;
+    }
 
-    my ($calendar, $open, $close) = @{
-        get_or_calculate(
-            [$exchange],
-            sub {
-                my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
-                my ($open, $close);
-                if ($calendar->trades_on($exchange, $now)) {
-                    $open = $calendar->opening_on($exchange, $now)->epoch;
-                    $close = $calendar->closing_on($exchange, $now)->epoch;
-                }
-                [$calendar, $open, $close];
-            })};
-
-    my $flyby = get_or_calculate(['flyby', $landing_company // ''],
-        sub { get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company) });
+    my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company);
     my @offerings = grep { $supported_contract_types{$_->{contract_type}} } $flyby->query({underlying_symbol => $symbol});
+
+    my @blackout_periods;
+    my $sod = $now->truncate_to_day->epoch;
+
+    if (my @inefficient_periods = @{$underlying->forward_inefficient_periods}) {
+        push @blackout_periods, [Date::Utility->new($sod + $_->{start})->time_hhmmss, Date::Utility->new($sod + $_->{end})->time_hhmmss]
+            for @inefficient_periods;
+    }
 
     for my $o (@offerings) {
         my $cc = $o->{contract_category};
         my $bc = $o->{barrier_category};
 
-        my $cat = get_or_calculate(['category', $cc], sub { Finance::Contract::Category->new($cc) });
+        my $cat = Finance::Contract::Category->new($cc);
         $o->{contract_category_display} = $cat->display_name;
         $o->{contract_display}          = $o->{contract_display};
 
         if ($o->{start_type} eq 'forward') {
-            $o->{forward_starting_options} =
-                get_or_calculate(['forward_starting_options', $symbol], sub { _forward_starting_options($underlying, $calendar, $exchange) });
+            my @trade_dates;
+            for (my $date = $now; @trade_dates < 3; $date = $date->plus_time_interval('1d')) {
+                $date = $calendar->trade_date_after($exchange, $date) unless $calendar->trades_on($exchange, $date);
+                push @trade_dates, $date;
+            }
+
+            $o->{forward_starting_options} = [
+                map { {
+                        date  => Date::Utility->new($_->{open})->truncate_to_day->epoch,
+                        open  => $_->{open},
+                        close => $_->{close},
+                        @blackout_periods ? (blackouts => \@blackout_periods) : ()}
+                    }
+                    map {
+                    @{$calendar->trading_period($exchange, $_)}
+                    } @trade_dates
+            ];
         }
 
         # This key is being used to decide whether to show additional
@@ -179,8 +163,7 @@ sub available_contracts_for_symbol {
         hit_count    => scalar(@offerings),
         open         => $open,
         close        => $close,
-        feed_license => $underlying->feed_license,
-        @offerings ? (spot => get_or_calculate([$symbol, 'spot'], sub { $underlying->spot })) : (),
+        feed_license => $underlying->feed_license
     };
 }
 
@@ -188,15 +171,6 @@ sub _default_barrier {
     my $args = shift;
 
     my ($underlying, $duration, $barrier_type) = @{$args}{'underlying', 'duration', 'barrier_type'};
-
-    return get_or_calculate([$underlying->system_symbol, $duration, $barrier_type],
-        sub { _default_barrier_calc($underlying, $duration, $barrier_type) });
-
-}
-
-sub _default_barrier_calc {
-
-    my ($underlying, $duration, $barrier_type) = @_;
     my $option_type = 'VANILLA_CALL';
     $option_type = 'VANILLA_PUT' if $barrier_type eq 'low';
 
