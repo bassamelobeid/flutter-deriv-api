@@ -58,6 +58,15 @@ my $req_id      = 1;
 my $CHUNK_SIZE  = 6;
 my $PASSTHROUGH = {key => 'value'};
 
+my $generic_req = {
+    passthrough     => $PASSTHROUGH,
+    document_upload => 1,
+    document_id     => '12456',
+    document_format => 'JPEG',
+    document_type   => 'passport',
+    expiration_date => '2020-01-01',
+};
+
 subtest 'Encoded json passed as binary frame' => sub {
     $t = $t->send_ok({binary => encode_json({ping => 1})})->message_ok;
     my $res = decode_json($t->message->[1]);
@@ -95,14 +104,10 @@ subtest 'Invalid s3 config' => sub {
     my $length = length $data;
 
     my $req = {
+        %{%$generic_req},
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'JPEG',
-        document_type   => 'passport',
         file_size       => $length,
-        expiration_date => '2020-01-01',
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -132,14 +137,10 @@ subtest 'Invalid s3 config' => sub {
 
 subtest 'binary metadata should be correctly sent' => sub {
     my $req = {
+        %{%$generic_req},
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'JPEG',
-        document_type   => 'passport',
         file_size       => 1,
-        expiration_date => '2020-01-01',
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -195,14 +196,10 @@ subtest 'sending two files concurrently' => sub {
     my $length = length $data;
 
     my $req1 = {
+        %{%$generic_req},
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'JPEG',
-        document_type   => 'passport',
         file_size       => $length,
-        expiration_date => '2020-01-01',
     };
 
     my $req2 = {%{$req1}, req_id => ++$req_id};
@@ -250,12 +247,8 @@ subtest 'Send two files one by one' => sub {
     my $length = length $data;
 
     document_upload_ok({
-            document_upload => 1,
-            document_id     => '12456',
-            document_format => 'JPEG',
-            document_type   => 'passport',
+            %{%$generic_req},
             file_size       => $length,
-            expiration_date => '2020-01-01',
         },
         $data
     );
@@ -277,14 +270,10 @@ subtest 'Maximum file size' => sub {
     my $max_size = MAX_FILE_SIZE + 1;
 
     my $req = {
+        %{%$generic_req},
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'PNG',
-        document_type   => 'passport',
         file_size       => $max_size,
-        expiration_date => '2020-01-01',
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -322,14 +311,11 @@ subtest 'Maximum file size' => sub {
 
 subtest 'Invalid document_format' => sub {
     my $req = {
+        %{%$generic_req},
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'INVALID',
-        document_type   => 'passport',
         file_size       => 1,
-        expiration_date => '2020-01-01',
+        document_format => 'INVALID',
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -345,14 +331,10 @@ subtest 'sending extra data after EOF chunk' => sub {
     my $size = length $data;
 
     my $req = {
+        %{%$generic_req},
         req_id          => ++$req_id,
         passthrough     => $PASSTHROUGH,
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'JPEG',
-        document_type   => 'passport',
         file_size       => $size,
-        expiration_date => '2020-01-01',
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
