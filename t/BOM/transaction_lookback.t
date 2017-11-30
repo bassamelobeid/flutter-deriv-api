@@ -487,7 +487,7 @@ subtest 'sell a bet', sub {
 
         my $contract = produce_contract({
                 underlying => $underlying_R50,
-                bet_type   => 'LBFIXEDCALL',
+                bet_type   => 'LBFLOATCALL',
                 currency   => 'USD',
                 unit       => 1000,
                 duration   => '30m',
@@ -610,7 +610,7 @@ subtest 'sell_expired_contracts', sub {
 
         my $contract_expired = produce_contract({
             underlying   => $underlying_R50,
-            bet_type     => 'LBFIXEDCALL',
+            bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
             unit         => 10,
             date_start   => ($now->epoch - 50) - (30*60),
