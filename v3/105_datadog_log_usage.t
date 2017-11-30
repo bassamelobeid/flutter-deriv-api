@@ -8,6 +8,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use Test::MockModule;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
+use BOM::Platform::User;
 
 use await;
 
@@ -63,7 +64,23 @@ is $timing->[1]->[0], 'bom_websocket_api.v_3.rpc.call.timing.connection';
 ok $timing->[1]->[1], 'Should log timing';
 is $timing->[1]->[2]->{tags}->[0], 'rpc:send_ask', 'Should set tag with rpc method name';
 
-my $token = BOM::Database::Model::AccessToken->new->create_token("CR0021", 'Test', ['trade']);
+my $email  = 'test-binary' . rand(999) . '@binary.com';
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$client->email($email);
+$client->save;
+$client->set_default_account('USD');
+
+my $loginid = $client->loginid;
+my $user    = BOM::Platform::User->create(
+    email    => $email,
+    password => '1234',
+);
+$user->add_loginid({loginid => $loginid});
+$user->save;
+
+my $token = BOM::Database::Model::AccessToken->new->create_token($loginid, 'Test', ['trade']);
 $t->await::authorize({authorize => $token});
 @$timing = ();
 $res     = $t->await::buy({
