@@ -286,7 +286,7 @@ subtest 'Send two files one by one' => sub {
     $length = length $data;
 
     document_upload_ok({
-            document_upload => 1,
+            %$generic_req,
             document_format => 'PNG',
             document_type   => 'bankstatement',
             file_size       => $length,
@@ -312,12 +312,10 @@ subtest 'Maximum file size' => sub {
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
 
     my $metadata = {
-        document_upload => 1,
-        document_id     => '124568',
+        %$generic_req,
         document_format => 'PNG',
         document_type   => 'driverslicense',
         file_size       => $max_size - 1,
-        expiration_date => '2020-01-01',
     };
 
     my $file = pack "A$max_size", ' ';
