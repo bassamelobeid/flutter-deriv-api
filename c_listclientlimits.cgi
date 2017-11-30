@@ -28,7 +28,10 @@ if ($login !~ /^$broker\d+$/) {
 }
 
 # Withdrawal limits
-my $client = Client::Account::get_instance({'loginid' => $login}) || die "[$0] could not get client for $login";
+my $client = Client::Account::get_instance({
+        'loginid'    => $login,
+        db_operation => 'replica'
+    }) || die "[$0] could not get client for $login";
 my $curr = $client->currency;
 
 my $account_mapper = BOM::Database::DataMapper::Account->new({
