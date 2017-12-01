@@ -334,7 +334,7 @@ sub stats_stop {
 }
 
 sub calculate_max_open_bets {
-    my $self = shift;
+    my $self   = shift;
     my $client = shift;
 
     # for tick trades only self-exclusion matters
