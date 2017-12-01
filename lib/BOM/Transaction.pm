@@ -221,7 +221,7 @@ has general_open_position_payout_limit => (
 );
 
 sub _build_general_open_position_payout_limit {
-    return from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}')
+    return from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
 }
 
 sub BUILDARGS {
@@ -370,9 +370,9 @@ sub calculate_limits {
 
     if (not $contract->tick_expiry) {
         # our own open position limit is only valid for non-tick-expiry contracts
-        if (defined ($lim = $client->get_limit_for_open_positions)) {
+        if (defined($lim = $client->get_limit_for_open_positions)) {
             $limits{max_open_bets} = $lim
-                if not defined $limits{max_open_bets} or $lim < $limits{max_open_bets};
+                if (not defined $limits{max_open_bets} or $lim < $limits{max_open_bets});
         }
         $limits{max_payout_open_bets} = $client->get_limit_for_payout;
         $limits{max_payout_per_symbol_and_bet_type} =
