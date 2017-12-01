@@ -63,7 +63,7 @@ subtest 'skips economic event with impact 1 in volatility calculation' => sub {
     is scalar(@{$c->economic_events_for_volatility_calculation}), 1, 'one economic event left for volatility calculation';
     my $e = $c->economic_events_for_volatility_calculation->[0];
     is $e->{vol_change}, 0.5, 'vol_change 0.5';
-    is $e->{release_epoch}, $event_date->epoch, 'correct event time';
+    is $e->{release_date}, $event_date->epoch, 'correct event time';
 };
 
 done_testing();
