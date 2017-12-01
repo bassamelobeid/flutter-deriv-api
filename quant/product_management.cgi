@@ -46,7 +46,7 @@ if ($r->param('update_limit')) {
     my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
 
     my $landing_company           = $r->param('landing_company');
-    my $category                  = $r->param('contract_category');
+    my $contract_category         = $r->param('contract_category');
     my $non_binary_contract_limit = $r->param('non_binary_contract_limit');
 
     my %known_values =
