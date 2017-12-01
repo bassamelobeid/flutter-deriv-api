@@ -575,7 +575,6 @@ sub _create_poc_stream {
     if ($poc_args && $payload->{financial_market_bet_id}) {
 
         $c->call_rpc({
-                url         => Binary::WebSocketAPI::Hooks::get_rpc_url($c),
                 args        => $poc_args,
                 msg_type    => '',
                 method      => 'longcode',
@@ -670,7 +669,6 @@ sub _update_transaction {
     $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{sell_time} || $payload->{purchase_time})->epoch;
 
     $c->call_rpc({
-            url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
             args        => $args,
             msg_type    => 'transaction',
             method      => 'get_contract_details',
