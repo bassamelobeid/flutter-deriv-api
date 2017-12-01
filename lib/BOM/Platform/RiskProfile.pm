@@ -147,12 +147,12 @@ sub get_turnover_limit_parameters {
             my $params;
 
             if ($_->{contract_category} and $_->{contract_category} eq 'lookback') {
-                $param = {
+                $params = {
                     name                      => $_->{name},
                     non_binary_contract_limit => $_->{non_binary_contract_limit},
                 };
             } else {
-                $param = {
+                $params = {
                     name  => $_->{name},
                     limit => BOM::Platform::Config::quants->{risk_profile}->{$_->{risk_profile}}{turnover}{$self->currency},
                 };
