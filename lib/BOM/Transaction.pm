@@ -363,8 +363,17 @@ sub calculate_limits {
         stats_inc('transaction.open_position_limit.failure');
     };
 
+    my $lim;
+    # limit set by client should always be imposed
+    defined($lim = $client->get_limit_for_self_exclusion_open_positions)
+        and $limits{max_open_bets} = $lim;
+
     if (not $contract->tick_expiry) {
-        $limits{max_open_bets}        = $client->get_limit_for_open_positions;
+        # our own open position limit is only valid for non-tick-expiry contracts
+        if (defined ($lim = $client->get_limit_for_open_positions)) {
+            $limits{max_open_bets} = $lim
+                if not defined $limits{max_open_bets} or $lim < $limits{max_open_bets};
+        }
         $limits{max_payout_open_bets} = $client->get_limit_for_payout;
         $limits{max_payout_per_symbol_and_bet_type} =
             $static_config->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
@@ -395,7 +404,6 @@ sub calculate_limits {
         }
     }
 
-    my $lim;
     defined($lim = $client->get_limit_for_daily_losses)
         and $limits{max_losses} = $lim;
     defined($lim = $client->get_limit_for_7day_turnover)
