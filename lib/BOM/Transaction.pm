@@ -214,6 +214,16 @@ has transaction_parameters => (
     default => sub { {}; },
 );
 
+has general_open_position_payout_limit => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
+);
+
+sub _build_general_open_position_payout_limit {
+    return from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}')
+}
+
 sub BUILDARGS {
     my (undef, $args) = @_;
 
@@ -339,9 +349,7 @@ sub calculate_limits {
     $limits{max_balance} = $client->get_limit_for_account_balance;
 
     try {
-        my $general_open_position_payout_limit =
-            from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
-        if (my $limit = $general_open_position_payout_limit->{$client->landing_company->short}) {
+        if (my $limit = $self->general_open_position_payout_limit->{$client->landing_company->short}) {
             my ($limit_currency, $limit_amount, @extra) = %$limit;
             die "found multiple entries for landing company, extra: @extra" if @extra;
             $limits{general_open_position_payout} = {
