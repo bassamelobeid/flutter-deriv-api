@@ -864,7 +864,7 @@ subtest 'max_open_bets validation in presence of expired bets', sub {
                     payout        => $contract->payout,
                     amount_type   => 'stake',
                     purchase_date => $contract->date_start,
-                })->buy, undef, '1st bet bought';
+                })->buy(skip_validation => 1), undef, '1st bet bought';
 
             my $contract_expired = produce_contract({
                 underlying   => $underlying,
