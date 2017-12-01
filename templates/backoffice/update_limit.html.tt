@@ -52,6 +52,11 @@
             <td> e.g. maltainvest | japan | costarica</td>
         </tr>
         <tr>
+            <td>Non binary contract limit: </td>
+            <td><input type="text" name="non_binary_contract_limit" value=''></input></td>
+            <td> e.g. 5</td>
+        </tr>
+        <tr>
             <td>Client loginid: </td>
             <td><input type="text" name="client_loginid" value=''></input></td>
             <td> e.g. CR10001 (include this if you wish to limit a specific client)</td>
