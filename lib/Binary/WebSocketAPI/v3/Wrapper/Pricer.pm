@@ -484,7 +484,8 @@ sub _proposal_open_contract_cb {
         if (    exists $args->{subscribe}
             and $args->{subscribe} eq '1'
             and not $contract->{is_expired}
-            and not $contract->{is_sold})
+            and not $contract->{is_sold}
+            and not delete $contract->{dont_stream})
         {
             # short_code contract_id currency is_sold sell_time are passed to pricer daemon and
             # are used to to identify redis channel and as arguments to get_bid rpc call
