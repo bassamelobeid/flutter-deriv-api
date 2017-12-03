@@ -183,9 +183,13 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                 unless ($client_loginid =~ /^[A-Z]{2,6}\d{3,}$/) {
                     return [401, [], ['Authorization required']];
                 }
-                my $client = Client::Account->new({loginid => $client_loginid}) || do {
+                my $client = Client::Account->new({
+                        loginid      => $client_loginid,
+                        db_operation => 'replica'
+                    })
+                    || do {
                     return [401, [], ['Authorization required']];
-                };
+                    };
                 $env->{BOM_USER} = $client;
             }
 
