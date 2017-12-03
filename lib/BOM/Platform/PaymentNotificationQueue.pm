@@ -60,7 +60,10 @@ sub add {
     return if $args{loginid} =~ /^VR/ and ($args{type} eq 'deposit' or $args{type} eq 'withdrawal');
 
     try {
-        my $client = Client::Account->new({loginid => $args{loginid}}) or die 'client not found';
+        my $client = Client::Account->new({
+                loginid      => $args{loginid},
+                db_operation => 'replica'
+            }) or die 'client not found';
         my $user = BOM::Platform::User->new({email => $client->email}) or die 'user not found';
         $args{$_} = $user->$_ for qw(utm_source utm_medium utm_campaign);
     }
