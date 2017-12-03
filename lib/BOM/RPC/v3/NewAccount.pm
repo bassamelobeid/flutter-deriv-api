@@ -210,7 +210,9 @@ sub _get_professional_details_clients {
 
     # Filter out MF/CR clients
     my @clients =
-        grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
+        grep { $_ and $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map {
+        try { Client::Account->new({loginid => $_}) }
+        } keys %{$user->loginid_details};
 
     # Get the professional flags
     my $professional_status = any { $_->get_status('professional') } @clients;
