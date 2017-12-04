@@ -369,6 +369,14 @@ sub calculate_limits {
 
     if (not $contract->is_binary) {
         $limits{lookback_open_position_limit} = $static_config->{lookback_limits}{open_position_limits}{$currency};
+
+        my $rp                       = $contract->risk_profile;
+        my @cl_rp                    = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
+        my @non_binary_custom_limits = $rp->get_turnover_limit_parameters(\@cl_rp);
+
+        my @limits_arr = map { $_->{non_binary_contract_limit} } grep { exists $_->{non_binary_contract_limit}; } @{$non_binary_custom_limits[0]};
+        my $custom_limit = min(@limits_arr);
+        $limits{lookback_open_position_limit} = $custom_limit if defined $min_limit;
     }
 
     if (not $contract->tick_expiry) {
