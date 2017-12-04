@@ -70,21 +70,6 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
-subtest 'validate_symbol' => sub {
-    is(BOM::Pricing::v3::Contract::_validate_symbol('R_50'), undef, "return undef if symbol is valid");
-    cmp_deeply(
-        BOM::Pricing::v3::Contract::_validate_symbol('invalid_symbol'),
-        {
-            'error' => {
-                'message' => 'Symbol [_1] invalid',
-                'code'    => 'InvalidSymbol',
-                params    => [qw/ invalid_symbol /],
-            }
-        },
-        'return error if symbol is invalid'
-    );
-};
-
 set_fixed_time(Date::Utility->new()->epoch);
 
 subtest 'prepare_ask' => sub {
