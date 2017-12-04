@@ -3,7 +3,7 @@
   "price": 19.56,
   "parameters": {
     "amount": 10,
-    "contract_type": "LBFLOATCALL",
+    "contract_type": "LBFIXEDCALL",
     "currency": "USD",
     "symbol": "R_50",
     "duration": 15,
