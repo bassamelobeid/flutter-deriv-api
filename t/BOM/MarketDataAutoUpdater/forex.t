@@ -13,7 +13,6 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 use Postgres::FeedDB::Spot;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = 0;
@@ -37,7 +36,6 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 # Prep:
 my $fake_date = Date::Utility->new('2012-08-13 15:55:55');

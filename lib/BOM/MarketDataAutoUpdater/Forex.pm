@@ -17,8 +17,8 @@ use Bloomberg::FileDownloader;
 use Bloomberg::VolSurfaces;
 use Date::Utility;
 use File::Find::Rule;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
 use List::Util qw( first );
+use LandingCompany::Offerings;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 use Quant::Framework;
@@ -181,8 +181,8 @@ sub run {
     my $one_hour_after_rollover = $rollover_date->plus_time_interval('1h');
     my $surfaces_from_file      = $self->surfaces_from_file;
 
-    my @non_atm_symbol = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config,
-        'underlying_symbol', {barrier_category => [qw(euro_non_atm american)]});
+    my @non_atm_symbol = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config)
+        ->query({barrier_category => ['euro_non_atm', 'american']}, ['underlying_symbol']);
 
     foreach my $symbol (@{$self->symbols_to_update}) {
         my $quanto_only = 'NO';

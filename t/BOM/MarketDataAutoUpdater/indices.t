@@ -17,10 +17,8 @@ use BOM::MarketDataAutoUpdater::Indices;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 use Test::MockModule;
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 # some checks hide failures output if market is no open
 # but tests still want it to fail, so let's make markets always open

@@ -13,14 +13,12 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Chronicle;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 use Quant::Framework;
 
 my $abspath   = rel2abs((splitpath(__FILE__))[1]);
 my $data_path = $abspath . '/../../data/bbdl/ohlc';
 my $module    = Test::MockModule->new('Quant::Framework::Underlying');
 $module->mock('has_holiday_on', sub { 0 });
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 subtest everything => sub {
 
