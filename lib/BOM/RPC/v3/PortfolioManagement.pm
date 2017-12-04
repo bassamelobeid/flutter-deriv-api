@@ -146,6 +146,7 @@ sub proposal_open_contract {
             landing_company       => $lc_name,
             account_id            => $fmb->{account_id},
             purchase_time         => Date::Utility->new($fmb->{purchase_time})->epoch,
+            country_code          => $client->residence,
         };
         my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
         $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});

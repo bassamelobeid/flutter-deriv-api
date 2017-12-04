@@ -13,10 +13,11 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Client::Account;
 use BOM::Platform::Context qw (localize request);
-use LandingCompany::Offerings qw(get_offerings_with_filter get_permitted_expiries);
+use LandingCompany::Offerings;
 use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
 use Quant::Framework;
+use LandingCompany::Registry;
 
 sub active_symbols {
     my $params = shift;
@@ -25,36 +26,33 @@ sub active_symbols {
     my $product_type = $params->{args}->{product_type} // 'basic';
     my $language = $params->{language} || 'EN';
     my $token_details = $params->{token_details};
+
+    my $offerings_obj;
     if ($token_details and exists $token_details->{loginid}) {
         my $client = Client::Account->new({
             loginid      => $token_details->{loginid},
             db_operation => 'replica'
         });
-        $landing_company_name = $client->landing_company->short if $client;
+        $offerings_obj = $client->landing_company->offerings_for_country($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
     }
 
+    $offerings_obj //= LandingCompany::Offerings->get($landing_company_name, BOM::Platform::Runtime->instance->get_offerings_config);
     my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
     my ($namespace, $key) = (
-        'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $landing_company_name, $product_type, $appconfig_revision))
+        'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
     );
 
     my $active_symbols;
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
         $active_symbols = $cached_symbols;
     } else {
-        my $offerings_config = BOM::Platform::Runtime->instance->get_offerings_config;
-        my $offerings_args = {landing_company => $landing_company_name};
         # For multi_barrier product_type, we can only offer major forex pairs as of now.
-        $offerings_args->{submarket} = 'major_pairs' if $product_type eq 'multi_barrier';
-        my @all_active = get_offerings_with_filter($offerings_config, 'underlying_symbol', $offerings_args);
+        my @all_active =
+              $product_type eq 'multi_barrier'
+            ? $offerings_obj->query({submarket => 'major_pairs'}, ['underlying_symbol'])
+            : $offerings_obj->values_for_key('underlying_symbol');
         # symbols would be active if we allow forward starting contracts on them.
-        my %forward_starting = map { $_ => 1 } get_offerings_with_filter(
-            $offerings_config,
-            'underlying_symbol',
-            {
-                landing_company => $landing_company_name,
-                start_type      => 'forward'
-            });
+        my %forward_starting = map { $_ => 1 } $offerings_obj->query({start_type => 'forward'}, ['underlying_symbol']);
         foreach my $symbol (@all_active) {
             my $desc = _description($symbol, $params->{args}->{active_symbols});
             $desc->{allow_forward_starting} = 1 if $forward_starting{$symbol};
