@@ -489,9 +489,9 @@ sub override_subs {
     *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::last_chunk_received = sub {
         my ($c, $upload_info) = @_;
 
-        $last_chunk_received->($c, $upload_info);
-
         $upload_info->{last_chunk_arrived}->done if $upload_info->{chunk_size} == 0;
+
+        return $last_chunk_received->($c, $upload_info);
     };
 
     my $create_s3_instance = \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::create_s3_instance;
@@ -539,7 +539,7 @@ sub receive_loop {
     $upload_info->{test_received_size} //= 0;
     my $pending_futures = $upload_info->{pending_futures};
 
-    return Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::add_upload_future($c, $pending_futures)->then(
+    return Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::wait_for_chunk($c, $pending_futures)->then(
         sub {
             my $msg  = shift;
             my $size = length $data;
