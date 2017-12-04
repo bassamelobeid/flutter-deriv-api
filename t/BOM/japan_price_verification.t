@@ -8,7 +8,6 @@ use Test::Deep;
 use Test::Exception;
 use Test::FailWarnings;
 use Date::Utility;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 use Test::MockModule;
 use Math::Util::CalculatedValue::Validatable;
 
@@ -29,7 +28,6 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Format::Util::Numbers qw(roundcommon);
 use YAML::XS qw(LoadFile);
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 my $volsurfaces = {

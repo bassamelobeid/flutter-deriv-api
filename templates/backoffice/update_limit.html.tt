@@ -9,7 +9,7 @@
         <tr>
             <td>Risk Profile: </td>
             <td><input type="text" name="risk_profile"></input></td>
-            <td> e.g. extreme_risk | no_business | high_risk | medium_risk | low_risk (required)</td>
+            <td> e.g. extreme_risk | no_business | high_risk | medium_risk | low_risk (required only for binary option)</td>
         </tr>
         <tr>
             <td>Market: </td>
@@ -29,7 +29,7 @@
         <tr>
             <td>Contract category: </td>
             <td><input type="text" name="contract_category" value=''></input></td>
-            <td> e.g. callput | touchnotouch | endsinout | staysinout | digits | asian</td>
+            <td> e.g. callput | touchnotouch | endsinout | staysinout | digits | asian | lookback</td>
         </tr>
         <tr>
             <td>Barrier category: </td>
@@ -54,7 +54,7 @@
         <tr>
             <td>Non binary contract limit: </td>
             <td><input type="text" name="non_binary_contract_limit" value=''></input></td>
-            <td> e.g. 5</td>
+            <td> No of open contracts for non binary options. e.g. 5</td>
         </tr>
         <tr>
             <td>Client loginid: </td>
