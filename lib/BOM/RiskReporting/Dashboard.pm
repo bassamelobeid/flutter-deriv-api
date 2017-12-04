@@ -66,7 +66,7 @@ has custom_client_profiles => (
 );
 
 sub _build_custom_client_profiles {
-    return from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
+    return $json->decode(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
 }
 
 has _affiliate_info => (
