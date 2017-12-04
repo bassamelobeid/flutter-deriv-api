@@ -6,7 +6,6 @@ use warnings;
 use Data::Compare;
 use HTML::Entities;
 use JSON qw( from_json to_json );
-use LandingCompany::Offerings qw(reinitialise_offerings);
 use Text::CSV;
 use Try::Tiny;
 
@@ -28,7 +27,6 @@ sub textify_obj {
 
 sub dynamic_save {
     return 0 unless BOM::Platform::Runtime->instance->app_config->save_dynamic;
-    reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
     return 1;
 }
 
