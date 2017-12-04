@@ -3,11 +3,9 @@ use warnings;
 use Test::Most;
 use Test::FailWarnings;
 use BOM::Market::DataDecimate;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::Platform::Runtime;
 
 BOM::Platform::Runtime->instance->app_config;
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $time = time;
 
