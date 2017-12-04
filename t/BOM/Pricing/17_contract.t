@@ -215,7 +215,7 @@ subtest $method => sub {
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol'       => 'R_50',
-            'longcode'     => "Receive the difference of Volatility 50 Index's final value and its minimum value during the life of the option at 50 seconds after contract start time.",
+            'longcode'     => "Receive 0.1 per point difference between Volatility 50 Index's higest value and exit spot at 50 seconds after contract start time.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
             'barrier'      => 'S20P',
@@ -249,7 +249,7 @@ subtest 'get_ask' => sub {
     my $expected = {
         'display_value'       => '20.51',
         'ask_price'           => '20.51',
-        'longcode'            => 'Receive the difference of Volatility 50 Index\'s final value and its minimum value during the life of the option at 15 minutes after contract start time.',
+        'longcode'            => "Receive 0.1 per point difference between Volatility 50 Index's higest value and exit spot at 15 minutes after contract start time.",
         'spot'                => '963.3054',
         'payout'              => '0',
         'contract_parameters' => {
@@ -289,7 +289,7 @@ subtest 'send_ask' => sub {
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        'Receive the difference of Volatility 50 Index\'s final value and its minimum value during the life of the option at 15 minutes after contract start time.',
+        'Receive 0.1 per point difference between Volatility 50 Index\'s higest value and exit spot at 15 minutes after contract start time.',
         'long code  is correct'
     );
 };
