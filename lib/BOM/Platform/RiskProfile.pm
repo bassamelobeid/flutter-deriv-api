@@ -16,7 +16,7 @@ use Format::Util::Numbers qw/formatnumber/;
 
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Config;
@@ -177,19 +177,18 @@ sub get_turnover_limit_parameters {
                 $params->{non_atm} = 1;
             }
 
-            my $config = BOM::Platform::Runtime->instance->get_offerings_config;
+            my $offerings_obj = _offerings_obj();
 
             if ($_->{market}) {
-                $params->{symbols} = [get_offerings_with_filter($config, 'underlying_symbol', {market => $_->{market}})];
+                $params->{symbols} = [$offerings_obj->query({market => $_->{market}}, ['underlying_symbol'])];
             } elsif ($_->{submarket}) {
-                $params->{symbols} = [get_offerings_with_filter($config, 'underlying_symbol', {submarket => $_->{submarket}})];
+                $params->{symbols} = [$offerings_obj->query({submarket => $_->{submarket}}, ['underlying_symbol'])];
             } elsif ($_->{underlying_symbol}) {
                 $params->{symbols} = [$_->{underlying_symbol}];
             }
 
             if ($_->{contract_category}) {
-                $params->{bet_type} =
-                    [get_offerings_with_filter($config, 'contract_type', {contract_category => $_->{contract_category}})];
+                $params->{bet_type} = [$offerings_obj->query({contract_category => $_->{contract_category}}, ['contract_type'])];
             }
 
             $params;
@@ -243,16 +242,16 @@ sub get_current_profile_definitions {
         ($currency, $landing_company) = ('USD', 'costarica');
     }
 
-    my $config = BOM::Platform::Runtime->instance->get_offerings_config;
+    my $offerings_obj = _offerings_obj($landing_company);
     my @markets =
-        map { Finance::Asset::Market::Registry->get($_) } get_offerings_with_filter($config, 'market', {landing_company => $landing_company});
+        map { Finance::Asset::Market::Registry->get($_) } $offerings_obj->values_for_key('market');
     my $limit_ref = BOM::Platform::Config::quants->{risk_profile};
 
     my %limits;
     foreach my $market (@markets) {
         my @submarket_list =
             grep { $_->risk_profile }
-            map { Finance::Asset::SubMarket::Registry->get($_) } get_offerings_with_filter($config, 'submarket', {market => $market->name});
+            map { Finance::Asset::SubMarket::Registry->get($_) } $offerings_obj->query({market => $market->name}, ['submarket']);
         if (@submarket_list) {
             my @list = map { {
                     name           => $_->display_name,
@@ -293,6 +292,12 @@ sub _match_conditions {
     }
 
     return $real_tests_performed;                                                                   # all conditions match
+}
+
+sub _offerings_obj {
+    my $landing_company = shift // 'costarica';
+
+    return LandingCompany::Offerings->get($landing_company, BOM::Platform::Runtime->instance->get_offerings_config);
 }
 
 no Moose;
