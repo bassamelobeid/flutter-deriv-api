@@ -23,9 +23,10 @@ BOM::Platform::QuantsConfig - A class to handle dynamic quants config
 =cut
 
 use Date::Utility;
-use LandingCompany::Offerings qw(get_offerings_flyby);
+use LandingCompany::Offerings;
 use List::Util qw(first);
 use Scalar::Util qw(looks_like_number);
+use Finance::Contract::Category;
 
 use BOM::Platform::Runtime;
 
@@ -169,8 +170,15 @@ sub delete_config {
 sub _validate {
     my ($key, $value) = @_;
 
-    my $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config);
-    my %valid_inputs = map { $_ => 1 } $fb->values_for_key($key);
+    my @valid;
+    if ($key eq 'contract_type') {
+        @valid = keys %{Finance::Contract::Category::get_all_contract_types()};
+    } else {
+        my $offerings_obj = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
+        @valid = $offerings_obj->values_for_key($key);
+    }
+
+    my %valid_inputs = map { $_ => 1 } @valid;
 
     return 0 unless $valid_inputs{$value};
     return 1;
