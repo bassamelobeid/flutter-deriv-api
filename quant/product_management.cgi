@@ -9,7 +9,6 @@ use Date::Utility;
 use Digest::MD5 qw(md5_hex);
 use HTML::Entities;
 use JSON::MaybeXS;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
 use LandingCompany::Registry;
 use List::Util qw(first);
 use f_brokerincludeall;
@@ -22,6 +21,7 @@ use BOM::Platform::Config;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Runtime;
+use LandingCompany::Offerings;
 
 BOM::Backoffice::Sysinit::init();
 my $json = JSON::MaybeXS->new;
@@ -44,9 +44,9 @@ my %allowed_multiple = (
 my $need_to_save = 0;
 
 if ($r->param('update_limit')) {
-    my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
-
-    my %known_values = map { $_ => [get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, $_)] } @known_keys;
+    my @known_keys    = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
+    my $offerings_obj = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
+    my %known_values  = map { $_ => [$offerings_obj->values_for_key($_)] } @known_keys;
     # landing company is not part of offerings object.
     $known_values{landing_company} = [map { $_->short } LandingCompany::Registry::all()];
     my %ref;

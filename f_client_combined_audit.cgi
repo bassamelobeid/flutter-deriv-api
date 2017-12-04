@@ -29,7 +29,10 @@ my $enddate         = request()->param('enddate');
 my $encoded_loginid = encode_entities($loginid);
 
 # get client complete transaction statements
-my $client = Client::Account::get_instance({'loginid' => $loginid});
+my $client = Client::Account::get_instance({
+    'loginid'    => $loginid,
+    db_operation => 'replica'
+});
 if (not $client) {
     code_exit_BO("Error : wrong loginID ($encoded_loginid) could not get client instance");
 }

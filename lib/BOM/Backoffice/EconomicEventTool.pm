@@ -10,6 +10,7 @@ use List::Util qw(first);
 use Quant::Framework::EconomicEventCalendar;
 use Try::Tiny;
 use Volatility::Seasonality;
+use LandingCompany::Offerings;
 
 use BOM::Backoffice::Request;
 use BOM::MarketData qw(create_underlying_db);
@@ -41,7 +42,7 @@ sub get_economic_events_for_date {
     return {
         categorized_events => $json->encode(\@events),
         deleted_events     => $json->encode(\@deleted_events),
-        underlying_symbols => to_json([sort @l]),
+        underlying_symbols => $json->encode([sort @l]),
     };
 }
 
@@ -191,8 +192,9 @@ my @symbols;
 sub _get_affected_underlying_symbols {
     return @symbols if @symbols;
 
-    my $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config);
-    @symbols = $fb->query({submarket => 'major_pairs'}, ['underlying_symbol']);
+    # default to costarica since it does not matter
+    my $offerings_obj = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
+    @symbols = $offerings_obj->query({submarket => 'major_pairs'}, ['underlying_symbol']);
     return @symbols;
 }
 

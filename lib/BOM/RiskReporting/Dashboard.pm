@@ -59,6 +59,16 @@ sub _build_start {
     return shift->end->minus_time_interval('1d');
 }
 
+has custom_client_profiles => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
+);
+
+sub _build_custom_client_profiles {
+    return from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
+}
+
 has _affiliate_info => (
     is      => 'ro',
     isa     => 'HashRef',
@@ -76,7 +86,7 @@ sub _do_name_plus {
         };
     }
 
-    my $app_config = $json->decode(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
+    my $app_config = $self->custom_client_profiles;
     my $reason = $app_config->{$href->{loginid}}->{reason} // '';
     $href->{being_watched_for} = $reason;
     return $href;
@@ -341,7 +351,7 @@ sub _payment_and_profit_report {
             if ($losers[$i] and $losers[$i]->{usd_profit} < 0);
     }
     my %all_watched =
-        map { $_ => 1 } (keys %{$json->decode(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles)});
+        map { $_ => 1 } (keys %{$self->custom_client_profiles});
 
     foreach my $mover (@movers) {
         $self->_do_name_plus($mover);

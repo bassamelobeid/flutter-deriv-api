@@ -31,7 +31,10 @@ if (request()->param('created')) {
     $created = lc(request()->param('created'));
 }
 
-my $client = Client::Account::get_instance({'loginid' => $loginid});
+my $client = Client::Account::get_instance({
+    'loginid'    => $loginid,
+    db_operation => 'replica'
+});
 if (not $client) {
     print "Error : wrong loginID (" . encode_entities($loginid) . ") could not get client instance";
     code_exit_BO();

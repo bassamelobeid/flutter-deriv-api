@@ -124,6 +124,8 @@ sub DailyTurnOverReport {
 
         if ($aggbets and ($USDbuys > 1 or $USDsells > 1)) {
             $lastaggbets = $aggbets;
+        } else {
+            $lastaggbets = 0;
         }
 
         my $plbets = 0;
