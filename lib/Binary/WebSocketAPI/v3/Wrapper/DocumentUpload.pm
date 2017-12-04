@@ -12,9 +12,11 @@ use JSON::MaybeXS qw/decode_json/;
 
 use Binary::WebSocketAPI::Hooks;
 
-use constant MAX_CHUNK_SIZE       => 2**17;    #100KB
-use constant UPLOAD_TIMEOUT       => 120;
-use constant UPLOAD_STALL_TIMEOUT => 60;
+use constant {
+    MAX_CHUNK_SIZE       => 2**17, # Chunks bigger than 100KB are not allowed
+    UPLOAD_TIMEOUT       => 120,   # Effective after the last chunk is arrived
+    UPLOAD_STALL_TIMEOUT => 60,    # The greatest acceptable delay between each chunk
+};
 
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
@@ -38,7 +40,7 @@ sub add_upload_info {
         upload_id       => $upload_id,
     };
 
-    wait_for_upload($c, $upload_info);
+    wait_for_chunks_and_upload_to_s3($c, $upload_info);
 
     my $stash = {
         %{$current_stash},
@@ -252,7 +254,7 @@ sub clean_up_on_finish {
     return;
 }
 
-sub wait_for_upload {
+sub wait_for_chunks_and_upload_to_s3 {
     my ($c, $upload_info) = @_;
 
     my $s3 = create_s3_instance($c, $upload_info);
