@@ -9,13 +9,14 @@ use Net::Async::Webservice::S3;
 use Future;
 use Variable::Disposition qw/retain_future/;
 use JSON::MaybeXS qw/decode_json/;
+use List::Util qw/first/;
 
 use Binary::WebSocketAPI::Hooks;
 
 use constant {
-    MAX_CHUNK_SIZE       => 2**17, # Chunks bigger than 100KB are not allowed
-    UPLOAD_TIMEOUT       => 120,   # Effective after the last chunk is arrived
-    UPLOAD_STALL_TIMEOUT => 60,    # The greatest acceptable delay between each chunk
+    MAX_CHUNK_SIZE       => 2**17,    # Chunks bigger than 100KB are not allowed
+    UPLOAD_TIMEOUT       => 120,      # Effective after the last chunk is arrived
+    UPLOAD_STALL_TIMEOUT => 60,       # The greatest acceptable delay between each chunk
 };
 
 sub add_upload_info {
@@ -191,7 +192,7 @@ sub upload_chunk {
     $stash->{$upload_id}->{sha1}->add($data);
     $stash->{$upload_id}->{received_bytes} = $new_received_bytes;
 
-    return add_upload_future($c, $upload_info->{pending_futures}, $data);
+    return resolve_with_received_chunk($c, $upload_info->{pending_futures}, $data);
 }
 
 sub create_error {
@@ -263,7 +264,7 @@ sub wait_for_chunks_and_upload_to_s3 {
 
     return $upload_info->{put_future} = $s3->put_object(
         key          => $upload_info->{file_name},
-        value        => sub { add_upload_future($c, $pending_futures) },
+        value        => sub { wait_for_chunk($c, $pending_futures) },
         value_length => $upload_info->{file_size},
     )->on_fail(sub { send_upload_failure($c, $upload_info, 'unknown') });
 }
@@ -300,22 +301,32 @@ sub last_chunk_received {
             }));
 }
 
-sub add_upload_future {
+sub wait_for_chunk {
+    my ($c, $pending_futures) = @_;
+
+    my $upload_future = get_oldest_pending_future($c, $pending_futures, 1);
+
+    return $upload_future->on_ready(sub { shift @$pending_futures });
+}
+
+sub resolve_with_received_chunk {
     my ($c, $pending_futures, $received_chunk) = @_;
 
-    my ($current_pending_future) = grep { not($received_chunk and $_->is_ready) } @{$pending_futures};
+    my $upload_future = get_oldest_pending_future($c, $pending_futures);
 
-    my $upload_future = $current_pending_future || $c->loop->new_future;
+    return $upload_future->done($received_chunk);
+}
 
-    push @{$pending_futures}, $upload_future if not $current_pending_future;
+sub get_oldest_pending_future {
+    my ($c, $pending_futures, $include_ready_futures) = @_;
 
-    if ($received_chunk) {
-        $upload_future->done($received_chunk);
-    } else {
-        $upload_future->on_ready(sub { shift @{$pending_futures} });
-    }
+    my $first_pending_future = first { not $_->is_ready unless $include_ready_futures } @$pending_futures;
 
-    return $upload_future;
+    my $pending_future = $first_pending_future || $c->loop->new_future;
+
+    push @$pending_futures, $pending_future unless $first_pending_future;
+
+    return $pending_future;
 }
 
 1;
