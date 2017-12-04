@@ -305,6 +305,7 @@ sub error_check {
     if (ref($result) eq 'HASH' && $result->{error}) {
         $c->stash->{introspection}{last_rpc_error} = $result->{error};
         $req_storage->{close_connection} = 1 if $result->{error}->{code} eq 'InvalidAppID';
+        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.error', {tags => ["rpc:$req_storage->{method}"]});
     }
     return;
 }
