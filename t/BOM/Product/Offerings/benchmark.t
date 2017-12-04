@@ -2,7 +2,7 @@
 
 use Test::More tests => 2;
 use Test::Warnings;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings;
 use LandingCompany::Registry;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
@@ -15,35 +15,33 @@ subtest 'benchmark offerings' => sub {
         my $before = Time::HiRes::time;
         my $config = BOM::Platform::Runtime->instance->get_offerings_config;
 
-        get_offerings_with_filter($config, 'market', {landing_company => $lc});
+        my $offerings_obj = LandingCompany::Offerings->get($lc, $config);
+        $offerings_obj->values_for_key('market');
         my $diff = Time::HiRes::time - $before;
         cmp_ok($diff, "<", 1, "construction of $lc offerings objectis less that 1 seconds");
         foreach my $market (map { $_->name } Finance::Asset::Market::Registry->all) {
-            my @common_calls = [
-                'submarket',
-                {
+            my @common_calls = [{
                     market          => $market,
                     landing_company => $lc
-                }];
+                },
+                ['submarket']];
             foreach my $submarket (map { $_->name } Finance::Asset::SubMarket::Registry->all) {
                 push @common_calls,
-                    [
-                    'underlying_symbol',
-                    {
+                    [{
                         submarket       => $submarket,
                         market          => $market,
                         landing_company => $lc
-                    }];
+                    },
+                    ['underlying_symbol']];
                 push @common_calls,
-                    [
-                    'contract_type',
-                    {
+                    [{
                         submarket       => $submarket,
                         market          => $market,
                         landing_company => $lc
-                    }];
+                    },
+                    ['contract_type']];
                 my $before = Time::HiRes::time;
-                get_offerings_with_filter($config, @{$_}) for @common_call;
+                $offerings_obj->query(@{$_}) for @common_call;
                 my $diff = Time::HiRes::time - $before;
                 my $avg  = $diff / @common_calls;
                 cmp_ok($avg, "<", 0.002, 'average is less than 2ms');

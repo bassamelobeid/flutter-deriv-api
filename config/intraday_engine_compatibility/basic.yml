@@ -1,0 +1,82 @@
+---
+# Intraday Pricing Engine compatibility check.
+#
+# E.g. For AEX we will only price with Intraday pricing engine if it meets the following specifications:
+# - contract_category: callput
+# - expiry_type: intraday
+# - start_type: spot
+# - barrier_category: euro_atm
+# - contract duration between 15 minutes to 1 hour (inclusive).
+
+AEX: &equities
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 1h
+          min: 15m
+AS51: *equities
+DJI: *equities
+FCHI: *equities
+GDAXI: *equities
+HSI: *equities
+SSMI: *equities
+BFX: *equities
+STI: *equities
+ISEQ: *equities
+WLDAUD: &smart_fx
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 10h
+          min: 3m
+WLDEUR: *smart_fx
+WLDGBP: *smart_fx
+WLDUSD: *smart_fx
+frxAUDCAD: &inactive_fx
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 3m
+frxAUDCHF: *inactive_fx
+frxAUDNZD: *inactive_fx
+frxAUDPLN: *inactive_fx
+frxEURNZD: *inactive_fx
+frxGBPCHF: *inactive_fx
+frxGBPNZD: *inactive_fx
+frxGBPCAD: *inactive_fx
+frxNZDUSD: *inactive_fx
+frxAUDJPY: &active_fx
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 3m
+        euro_non_atm:
+          max: 5h
+          min: 15m
+frxAUDUSD: *active_fx
+frxEURAUD: *active_fx
+frxEURCAD: *active_fx
+frxEURCHF: *active_fx
+frxEURGBP: *active_fx
+frxEURJPY: *active_fx
+frxEURUSD: *active_fx
+frxGBPAUD: *active_fx
+frxGBPJPY: *active_fx
+frxGBPUSD: *active_fx
+frxUSDCAD: *active_fx
+frxUSDCHF: *active_fx
+frxUSDJPY: *active_fx
+frxXAGUSD: &euro_path_dependent_commodities
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 5m
+frxXAUUSD: *euro_path_dependent_commodities

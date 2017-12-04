@@ -4,11 +4,12 @@ use warnings;
 use Data::Decimate qw(decimate);
 use Date::Utility;
 use File::Spec;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
 use Test::Most tests => 5;
 use Test::Warnings;
 use Volatility::EconomicEvents;
 use YAML::XS qw(LoadFile);
+use LandingCompany::Offerings;
+use Date::Utility;
 
 use BOM::Market::DataDecimate;
 use BOM::MarketData qw(create_underlying_db create_underlying);
@@ -115,14 +116,12 @@ my %skip_type = (
     LBHIGHLOW   => 1,
 );
 
-my @ct = grep { not $skip_type{$_} } grep { !$equal{$_} } get_offerings_with_filter(
-    $offerings_cfg,
-    'contract_type',
-    {
+my @ct = grep { not $skip_type{$_} } grep { !$equal{$_} } LandingCompany::Offerings->get('costarica', $offerings_cfg)->query({
         underlying_symbol => $underlying->symbol,
         expiry_type       => 'intraday',
         start_type        => 'spot'
-    });
+    },
+    ['contract_type']);
 my $vol = 0.15062438755219;
 subtest 'prices without economic events' => sub {
 

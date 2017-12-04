@@ -10,14 +10,11 @@ use Test::MockModule;
 use Date::Utility;
 use Math::Util::CalculatedValue::Validatable;
 
-use LandingCompany::Offerings qw(reinitialise_offerings);
-
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 my $inefficient_time = Date::Utility->new('2016-10-06 20:00:00');

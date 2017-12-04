@@ -11,8 +11,6 @@ use YAML::XS qw(LoadFile);
 use Storable qw(dclone);
 use Format::Util::Numbers qw/roundcommon/;
 
-use LandingCompany::Offerings qw(reinitialise_offerings);
-
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -22,8 +20,6 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
 Cache::RedisDB->flushall;
-
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 subtest 'tuesday to friday close' => sub {
     my $expiry = Date::Utility->new('2016-01-22 21:00:00');

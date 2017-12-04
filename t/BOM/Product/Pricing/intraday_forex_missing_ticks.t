@@ -5,7 +5,6 @@ use Test::Most tests => 2;
 use Test::Warnings;
 use File::Spec;
 use YAML::XS qw(LoadFile);
-use LandingCompany::Offerings qw(get_offerings_with_filter);
 use Date::Utility;
 use BOM::Product::ContractFactory qw( produce_contract );
 

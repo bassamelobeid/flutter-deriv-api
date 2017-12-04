@@ -101,7 +101,7 @@ sub produce_contract {
         if $contract_class->isa('BOM::Product::Contract::Coinauction')
         and $landing_company ne 'costarica';
 
-    return $contract_class->new($params_ref) unless $role_exists;
+    return _validate_input_parameters($contract_class->new($params_ref)) unless $role_exists;
 
     # we're applying role. For speed reasons, we're not using $role->meta->apply($contract_obj),
     # but create an anonymous class with needed role. This is done only once and cached
@@ -113,7 +113,7 @@ sub produce_contract {
         cache        => 1,
     );
 
-    return $contract_class->new_object($params_ref);
+    return _validate_input_parameters($contract_class->new_object($params_ref));
 }
 
 sub produce_batch_contract {
@@ -121,6 +121,17 @@ sub produce_batch_contract {
 
     $build_args->{_produce_contract_ref} = \&produce_contract;
     return BOM::Product::Contract::Batch->new(parameters => $build_args);
+}
+
+sub _validate_input_parameters {
+    my $contract = shift;
+
+    unless ($contract->is_binaryico || $contract->for_sale || $contract->is_legacy) {
+        BOM::Product::Exception->throw(error_code => 'SameExpiryStartTime') if $contract->date_start->epoch == $contract->date_expiry->epoch;
+        BOM::Product::Exception->throw(error_code => 'PastExpiryTime')      if $contract->date_expiry->is_before($contract->date_start);
+    }
+
+    return $contract;
 }
 
 sub _args_to_ref {

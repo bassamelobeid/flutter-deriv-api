@@ -94,6 +94,7 @@ my $config = {
         TradingSuspendedSpecificHours => 'Trading on forex contracts with duration less than 5 hours is not available from [_1] to [_2]',
         WaitForContractSettlement     => 'Please wait for contract settlement. The final settlement price may differ from the indicative price.',
         ZeroAbsoluteBarrier           => 'Absolute barrier cannot be zero.',
+        CountrySpecificError          => '[_1] is not allowed for residence of [_2].',
     },
     generic => {
         # use it audit details

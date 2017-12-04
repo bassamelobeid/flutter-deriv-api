@@ -14,16 +14,13 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use BOM::Product::ContractFactory qw(produce_contract);
-use LandingCompany::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings;
 use Date::Utility;
 use Finance::Asset;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Market::DataDecimate;
 use Cache::RedisDB;
-
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 note('mocking ticks to prevent warnings.');
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
@@ -45,12 +42,12 @@ $mocked2->mock(
         [map { {quote => 100, symbol => 'frxUSDJPY', decimate_epoch => $_} } (0 .. 10)];
     });
 
+my $offerings_obj  = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
 my $now            = Date::Utility->new;
-my $offerings_cfg  = BOM::Platform::Runtime->instance->get_offerings_config;
-my @contract_types = get_offerings_with_filter($offerings_cfg, 'contract_type');
-my @submarkets     = get_offerings_with_filter($offerings_cfg, 'submarket');
+my @contract_types = $offerings_obj->values_for_key('contract_type');
+my @submarkets     = $offerings_obj->values_for_key('submarket');
 my @underlyings =
-    map { create_underlying($_) } map { (get_offerings_with_filter($offerings_cfg, 'underlying_symbol', {submarket => $_}))[0] } @submarkets;
+    map { create_underlying($_) } map { ($offerings_obj->query({submarket => $_}, ['underlying_symbol']))[0] } @submarkets;
 
 # just do for everything
 my $all                     = Finance::Asset->all_parameters;
@@ -206,23 +203,19 @@ subtest 'memory cycle test' => sub {
             next if $type =~ /^(LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW)/;
 
             foreach my $start_type (
-                get_offerings_with_filter(
-                    $offerings_cfg,
-                    'start_type',
-                    {
+                $offerings_obj->query({
                         contract_type     => $type,
                         underlying_symbol => $u_symbol
-                    }))
+                    },
+                    ['start_type']))
             {
                 foreach my $expiry_type (
-                    get_offerings_with_filter(
-                        $offerings_cfg,
-                        'expiry_type',
-                        {
+                    $offerings_obj->query({
                             contract_type     => $type,
                             underlying_symbol => $u_symbol,
                             start_type        => $start_type
-                        }))
+                        },
+                        ['expiry_type']))
                 {
                     my $barrier_ref = _get_barrier($type);
                     my $barriers;

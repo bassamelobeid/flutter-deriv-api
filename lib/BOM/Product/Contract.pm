@@ -50,7 +50,6 @@ use Quant::Framework;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 use Postgres::FeedDB::Spot::Tick;
-use LandingCompany::Offerings qw(get_contract_specifics);
 
 use BOM::Platform::Chronicle;
 use BOM::MarketData::Types;
@@ -486,21 +485,6 @@ sub allowed_slippage {
 #A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
 sub _max_tick_expiry_duration {
     return Time::Duration::Concise->new(interval => '5m');
-}
-
-sub _offering_specifics {
-    my $self = shift;
-
-    return get_contract_specifics(
-        BOM::Platform::Runtime->instance->get_offerings_config,
-        {
-            underlying_symbol => $self->underlying->symbol,
-            barrier_category  => $self->barrier_category,
-            expiry_type       => $self->expiry_type,
-            start_type        => ($self->is_forward_starting ? 'forward' : 'spot'),
-            contract_category => $self->category->code,
-            ($self->can('landing_company') ? (landing_company => $self->landing_company) : ()),    # this is done for japan
-        });
 }
 
 sub _check_is_intraday {
@@ -1071,6 +1055,40 @@ sub _get_tick_details {
     }
 
     return \@details;
+}
+
+=head2 metadata
+
+Contract metadata.
+
+=cut
+
+sub metadata {
+    my ($self, $action) = @_;
+
+    $action //= 'buy';
+
+    my $contract_duration = do {
+        if ($self->tick_expiry) {
+            $self->tick_count;
+        } elsif (not $self->expiry_daily) {
+            $self->remaining_time->seconds;
+        } else {
+            my $calendar = $self->trading_calendar;
+            my $exchange = $self->underlying->exchange;
+            $calendar->trading_date_for($exchange, $self->date_expiry)->days_between($calendar->trading_date_for($exchange, $self->date_start));
+        }
+    };
+
+    return {
+        contract_category => $self->category->code,
+        underlying_symbol => $self->underlying->symbol,
+        barrier_category  => $action eq 'buy' ? $self->barrier_category : $self->opposite_contract_for_sale->barrier_category,
+        expiry_type       => $self->expiry_type,
+        start_type        => ($self->is_forward_starting ? 'forward' : 'spot'),
+        contract_duration => $contract_duration,
+        for_sale          => ($action ne 'buy'),
+    };
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.

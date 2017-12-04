@@ -3,16 +3,15 @@
 use strict;
 use warnings;
 
-use Test::More tests => 289;
+use Test::More tests => 217;
 use Test::Warnings;
 use Test::Exception;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
 use Test::MockModule;
 use Format::Util::Numbers qw/roundcommon/;
-
+use LandingCompany::Offerings;
 use Test::BOM::UnitTestPrice;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::Runtime;
@@ -66,9 +65,8 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         quote      => $spot,
         epoch      => $now->epoch,
     });
-    foreach my $contract_category (grep { not $skip_category{$_} }
-        get_offerings_with_filter($offerings_cfg, 'contract_category', {underlying_symbol => $ul->symbol}))
-    {
+    my $offerings_obj = LandingCompany::Offerings->get('costarica', $offerings_cfg);
+    foreach my $contract_category (grep { not $skip_category{$_} } $offerings_obj->query({underlying_symbol => $ul->symbol}, ['contract_category'])) {
         my $category_obj = Finance::Contract::Category->new($contract_category);
         my @duration = map { $_ * 86400 } (7, 14);
         foreach my $duration (@duration) {
@@ -87,11 +85,9 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                     EXPIRYMISSE  => 1,
                     EXPIRYRANGEE => 1,
                 );
-                foreach my $contract_type (grep { !$equal{$_} }
-                    get_offerings_with_filter($offerings_cfg, 'contract_type', {contract_category => $contract_category}))
-                {
+                foreach my $contract_type (grep { !$equal{$_} } $offerings_obj->query({contract_category => $contract_category}, ['contract_type'])) {
                     $duration /= 15;
-
+                    next if $duration < 1;
                     my $args = {
                         bet_type     => $contract_type,
                         underlying   => $ul,

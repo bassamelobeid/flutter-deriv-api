@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use LandingCompany::Offerings qw(get_offerings_flyby);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Quant::Framework;
@@ -27,6 +26,7 @@ sub available_contracts_for_symbol {
     my $exchange        = $underlying->exchange;
     my $now             = $args->{date} || Date::Utility->new;
     my $landing_company = $args->{landing_company};
+    my $country_code    = $args->{country_code} // '';
 
     my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
     my ($open, $close, $offerings);
@@ -37,6 +37,7 @@ sub available_contracts_for_symbol {
             symbol          => $underlying->symbol,
             date            => $underlying->for_date,
             landing_company => $landing_company,
+            country_code    => $country_code,
         });
     } else {
         $offerings = [];

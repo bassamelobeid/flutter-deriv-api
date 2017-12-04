@@ -2,14 +2,18 @@ package BOM::Product::Script::UpdateHighLowWindows;
 use strict;
 use warnings;
 
+use LandingCompany::Offerings::MultiBarrier;
+use BOM::Platform::Runtime;
 use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow);
 use Cache::RedisDB;
 use JSON qw(from_json);
 
 #Update high and low of symbols for predefined periods.
 sub run {
-    my @symbols = BOM::Product::Contract::PredefinedParameters::supported_symbols;
-    my $redis   = Cache::RedisDB->redis;
+    my $offerings_obj = LandingCompany::Offerings::MultiBarrier->get('japan', BOM::Platform::Runtime->instance->get_offerings_config);
+    my @symbols = $offerings_obj->values_for_key('underlying_symbol');
+
+    my $redis = Cache::RedisDB->redis;
 
     $redis->subscription_loop(
         subscribe        => [map { 'FEED_LATEST_TICK::' . $_ } @symbols],

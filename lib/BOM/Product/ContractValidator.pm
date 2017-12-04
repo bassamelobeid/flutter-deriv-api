@@ -88,13 +88,12 @@ sub _confirm_validity {
     # Looking them up can be too slow for pricing speed constraints.
     # This is the default list of validations.
     my @validation_methods = qw(_validate_input_parameters _validate_offerings);
-    push @validation_methods, '_validate_lifetime';
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) unless $self->underlying->always_available;
-    push @validation_methods, '_validate_barrier' unless $args->{skip_barrier_validation};
-    push @validation_methods, '_validate_barrier_type' unless $self->for_sale;
+    push @validation_methods, '_validate_barrier'                                         unless $args->{skip_barrier_validation};
+    push @validation_methods, '_validate_barrier_type'                                    unless $self->for_sale;
     push @validation_methods, '_validate_feed';
-    push @validation_methods, '_validate_price' unless $self->skips_price_validation;
-    push @validation_methods, '_validate_volsurface' unless $self->volsurface->type eq 'flat';
+    push @validation_methods, '_validate_price'                                           unless $self->skips_price_validation;
+    push @validation_methods, '_validate_volsurface'                                      unless $self->volsurface->type eq 'flat';
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method($args)) {
@@ -559,71 +558,6 @@ sub _validate_start_and_expiry_date {
                 };
             }
         }
-    }
-
-    return;
-}
-
-sub _validate_lifetime {
-    my $self = shift;
-
-    if ($self->tick_expiry and $self->for_sale) {
-        # we don't offer sellback on tick expiry contracts.
-        return {
-            message           => 'resale of tick expiry contract',
-            message_to_client => [$ERROR_MAPPING->{ResaleNotOffered}],
-        };
-    }
-
-    my $permitted = $self->_offering_specifics->{permitted};
-    my ($min_duration, $max_duration) = @{$permitted}{'min', 'max'};
-
-    my $message_to_client =
-        $self->for_sale
-        ? [$ERROR_MAPPING->{ResaleNotOffered}]
-        : [$ERROR_MAPPING->{TradingDurationNotAllowed}];
-
-    # This might be empty because we don't have short-term expiries on some contracts, even though
-    # it's a valid bet type for multi-day contracts.
-    if (not($min_duration and $max_duration)) {
-        return {
-            message           => 'trying unauthorised combination',
-            message_to_client => $message_to_client,
-        };
-    }
-
-    my ($duration, $message);
-    if ($self->tick_expiry) {
-        $duration = $self->tick_count;
-        $message  = 'Invalid tick count for tick expiry';
-        # slightly different message for tick expiry.
-        if ($min_duration != 0) {
-            $message_to_client = [$ERROR_MAPPING->{TicksNumberLimits}, $min_duration, $max_duration];
-        }
-    } elsif (not $self->expiry_daily) {
-        $duration = $self->get_time_to_expiry({from => $self->date_start})->seconds;
-        ($min_duration, $max_duration) = ($min_duration->seconds, $max_duration->seconds);
-        $message = 'Intraday duration not acceptable';
-    } else {
-        my $calendar = $self->trading_calendar;
-        my $exchange = $self->underlying->exchange;
-        $duration =
-            $calendar->trading_date_for($exchange, $self->date_expiry)->days_between($calendar->trading_date_for($exchange, $self->date_start));
-        ($min_duration, $max_duration) = ($min_duration->days, $max_duration->days);
-        $message = 'Daily duration is outside acceptable range';
-    }
-
-    if ($duration < $min_duration or $duration > $max_duration) {
-        return {
-            message => $message . " "
-                . "[duration seconds: "
-                . $duration . "] "
-                . "[symbol: "
-                . $self->underlying->symbol . "] "
-                . "[code: "
-                . $self->code . "]",
-            message_to_client => $message_to_client,
-        };
     }
 
     return;

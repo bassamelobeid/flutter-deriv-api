@@ -1,8 +1,8 @@
-package BOM::Product::Contract::Offerings;
+package BOM::Product::Offerings::DisplayHelper;
 
 =head1 NAME
 
-BOM::Product::Contract::Offerings
+BOM::Product::Offerings::DisplayHelper
 
 =head1 DESCRIPTION
 
@@ -10,7 +10,7 @@ Help for getting insight into what is offered.
 
 To be deprecated in favor of LandingCompany::Offerings
 
-my $offerings = BOM::Product::Contract::Offerings->new;
+my $offerings = BOM::Product::Offerings::DisplayHelper->new(offerings => LandingCompany::Offerings->get('costarica'));
 
 =cut
 
@@ -23,7 +23,6 @@ use Finance::Asset::SubMarket;
 use Finance::Contract::Category;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -59,11 +58,10 @@ has levels => (
     },
 );
 
-has landing_company => (
-    is      => 'ro',
-    default => 'costarica',
+has offerings => (
+    is       => 'ro',
+    required => 1,
 );
-
 has date => (
     is      => 'ro',
     isa     => 'Date::Utility',
@@ -221,12 +219,12 @@ my %known_decorations = (
 sub _build_tree {
     my $self = shift;
 
-    my $tree = [];
+    my $tree          = [];
+    my $offerings_obj = $self->offerings;
 
     foreach my $market (
         sort { $a->display_order <=> $b->display_order }
-        map  { Finance::Asset::Market::Registry->instance->get($_) }
-        get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'market', {landing_company => $self->landing_company}))
+        map  { Finance::Asset::Market::Registry->instance->get($_) } $offerings_obj->values_for_key('market'))
     {
         my $children    = [];
         my $market_info = {
@@ -236,13 +234,7 @@ sub _build_tree {
         };
         foreach my $submarket (
             sort { $a->display_order <=> $b->display_order }
-            map  { Finance::Asset::SubMarket::Registry->instance->get($_) } get_offerings_with_filter(
-                BOM::Platform::Runtime->instance->get_offerings_config,
-                'submarket',
-                {
-                    market          => $market->name,
-                    landing_company => $self->landing_company
-                }))
+            map { Finance::Asset::SubMarket::Registry->instance->get($_) } $offerings_obj->query({market => $market->name}, ['submarket']))
         {
             my $children       = [];
             my $submarket_info = {
@@ -254,13 +246,11 @@ sub _build_tree {
             };
             foreach my $ul (
                 sort { $a->display_name cmp $b->display_name }
-                map  { create_underlying($_) } get_offerings_with_filter(
-                    BOM::Platform::Runtime->instance->get_offerings_config,
-                    'underlying_symbol',
-                    {
-                        submarket       => $submarket->name,
-                        landing_company => $self->landing_company
-                    }))
+                map  { create_underlying($_) } $offerings_obj->query({
+                        market    => $market->name,
+                        submarket => $submarket->name
+                    },
+                    ['underlying_symbol']))
             {
                 my $children        = [];
                 my $underlying_info = {
@@ -272,13 +262,7 @@ sub _build_tree {
                 };
                 foreach my $bc (
                     sort { $a->display_order <=> $b->display_order }
-                    map  { Finance::Contract::Category->new($_) } get_offerings_with_filter(
-                        BOM::Platform::Runtime->instance->get_offerings_config,
-                        'contract_category',
-                        {
-                            underlying_symbol => $ul->symbol,
-                            landing_company   => $self->landing_company
-                        }))
+                    map { Finance::Contract::Category->new($_) } $offerings_obj->query({underlying_symbol => $ul->symbol}, ['contract_category']))
                 {
                     my $children      = [];
                     my $category_info = {

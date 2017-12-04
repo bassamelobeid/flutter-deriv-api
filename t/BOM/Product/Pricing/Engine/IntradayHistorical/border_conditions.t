@@ -9,7 +9,6 @@ use JSON qw(decode_json);
 use Date::Utility;
 
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Product::ContractFactory qw( produce_contract );
@@ -19,7 +18,6 @@ use BOM::Platform::Runtime;
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $test_date = Date::Utility->new('8-Nov-12');
 # If this moves, the test might be otherwise wonky.

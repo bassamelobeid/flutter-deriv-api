@@ -48,6 +48,7 @@ sub _build_ask_probability  { return 1; }
 sub _build_bid_probability  { return 1; }
 sub _build_theo_probability { return 1; }
 sub _build_bs_probability   { return 1; }
+sub barrier_category        { return 1; }
 
 sub is_valid_to_buy {
     my $self = shift;
