@@ -176,6 +176,10 @@ read_csv_row_and_callback(
             if (not $client_db->freeze) {
                 die "Account stuck in previous transaction $login_id";
             }
+            my $guard_scope = guard {
+                $client_db->unfreeze;
+            };
+
             my $signed_amount = $amount;
             $signed_amount *= -1 if $action eq 'debit';
             my $err;
@@ -194,10 +198,6 @@ read_csv_row_and_callback(
             catch {
                 $err = $_;
             };
-            my $guard_scope = guard {
-                $client_db->unfreeze;
-            };
-
             if ($err) {
                 $client_account_table .= construct_row_line(%row, error => "Transaction Error: $err");
                 return;
