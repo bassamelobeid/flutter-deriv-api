@@ -14,13 +14,12 @@ use Test::Differences;
 
 use List::MoreUtils qw( all none );
 
-use LandingCompany::Offerings qw(reinitialise_offerings);
-use BOM::Product::Contract::Offerings;
+use BOM::Product::Offerings::DisplayHelper;
+use LandingCompany::Offerings;
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
-
+my $o = LandingCompany::Offerings->get('costarica', {current_revision => 0});
 my $expected_levels = 4;
-my $offerings       = new_ok('BOM::Product::Contract::Offerings');
+my $offerings       = new_ok('BOM::Product::Offerings::DisplayHelper' => [{offerings => $o}]);
 
 my $original_levels = $offerings->levels;
 subtest levels => sub {
@@ -69,7 +68,7 @@ subtest 'decorate_tree' => sub {
         '.. decorations called ' . $decoration_name . ' do not exist on any of the "' . $second_level . '" level items');
 
     eq_or_diff($offerings->tree, $original_tree, "Asking for the tree again produces the decorated_tree");
-    my $new_offerings = new_ok('BOM::Product::Contract::Offerings');
+    my $new_offerings = new_ok('BOM::Product::Offerings::DisplayHelper', [{offerings => $o}]);
     isnt($new_offerings->tree, $original_tree, "..but asking the new copy does not have the decorations.");
 };
 

@@ -683,25 +683,20 @@ sub _build_pricing_engine_name {
             expiry_type       => 'tick',
         );
         $engine_name = 'Pricing::Engine::TickExpiry' if _match_symbol(\@symbols, $self->underlying->symbol);
-    } elsif (
-        $self->is_intraday and not $self->is_forward_starting and grep {
-            $self->market->name eq $_
-        } qw(forex indices commodities)
-        )
-    {
-        my $func = (first { $self->market->name eq $_ } qw(forex commodities)) ? 'symbols_for_intraday_fx' : 'symbols_for_intraday_index';
-        my @symbols = create_underlying_db->$func;
-        if (_match_symbol(\@symbols, $self->underlying->symbol) and my $loc = $self->_offering_specifics->{historical}) {
-            my $duration = $self->remaining_time;
-            my $name = $self->market->name eq 'indices' ? 'Index' : 'Forex';
-            $engine_name = 'BOM::Product::Pricing::Engine::Intraday::' . $name
-                if ((defined $loc->{min} and defined $loc->{max})
-                and $duration->seconds <= $loc->{max}->seconds
-                and $duration->seconds >= $loc->{min}->seconds);
-        }
+    } elsif (my $intraday_engine_name = $self->_check_intraday_engine_compatibility) {
+        $engine_name = $intraday_engine_name;
     }
 
     return $engine_name;
+}
+
+sub _check_intraday_engine_compatibility {
+    my $self = shift;
+
+    my $engine_name =
+        $self->market->name eq 'indices' ? 'BOM::Product::Pricing::Engine::Intraday::Index' : 'BOM::Product::Pricing::Engine::Intraday::Forex';
+
+    return $engine_name->get_compatible('basic', $self->metadata);
 }
 
 sub _build_pricing_engine {

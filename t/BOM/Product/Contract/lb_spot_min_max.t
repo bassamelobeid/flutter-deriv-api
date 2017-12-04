@@ -12,7 +12,6 @@ use Cache::RedisDB;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
 initialize_realtime_ticks_db();
 
@@ -93,7 +92,6 @@ sub create_ticks {
             underlying => $tick->[2],
         });
     }
-    reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
     Time::HiRes::sleep(0.1);
 
     return;

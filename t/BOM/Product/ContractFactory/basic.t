@@ -9,7 +9,6 @@ use File::Spec;
 use Try::Tiny;
 
 use Postgres::FeedDB::Spot::Tick;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::MarketData qw(create_underlying_db);
@@ -57,7 +56,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         implied_from => 'USD'
     });
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 subtest 'produce_contract' => sub {
     my $contract_params = {
         bet_type   => 'PUT',

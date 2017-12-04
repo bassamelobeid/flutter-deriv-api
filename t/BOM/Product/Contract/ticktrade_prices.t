@@ -7,14 +7,11 @@ use Test::More tests => 13;
 use Test::Warnings;
 use Format::Util::Numbers qw/roundcommon/;
 
-use LandingCompany::Offerings qw(reinitialise_offerings);
-
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 my $now = Date::Utility->new('2014-11-11');

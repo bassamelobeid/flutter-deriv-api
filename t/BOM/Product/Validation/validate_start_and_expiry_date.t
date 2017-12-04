@@ -277,9 +277,6 @@ subtest 'date start blackouts' => sub {
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
     $bet_params->{duration} = '5d';
-    $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not offered for this duration.']);
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
@@ -450,7 +447,7 @@ subtest 'date expiry blackout - year end holidays for equity' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_atm_bet,      'not ATM contract';
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not offered for this duration.']);
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Contract may not expire between [_1] and [_2].', '2016-12-30', '2017-01-05']);
     $bet_params->{barrier} = 'S0P';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for ATM';

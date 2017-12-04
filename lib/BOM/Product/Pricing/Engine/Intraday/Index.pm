@@ -67,6 +67,12 @@ sub _build_probability {
     return $prob_cv;
 }
 
+sub get_compatible {
+    my ($class, $to_load, $metadata) = @_;
+
+    return BOM::Product::Pricing::Engine->is_compatible($to_load, $metadata) ? $class : undef;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;

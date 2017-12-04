@@ -49,7 +49,11 @@ subtest 'Ico variations' => sub {
     ok $c->is_valid_to_buy, 'is valid to buy';
 
     $bet_params->{bet_type} = 'CALL';
-    $c = produce_contract({%$bet_params, date_expiry => Date::Utility->new});
+    $c = produce_contract({
+        %$bet_params,
+        date_expiry => Date::Utility->new->epoch + 30,
+        date_start  => Date::Utility->new
+    });
     isnt $c, 'BOM::Product::Contract::Binaryico', 'is not a Binaryico';
     isnt $c->code, 'BINARYICO', 'is not a binaryico';
 

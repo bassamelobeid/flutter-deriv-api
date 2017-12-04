@@ -11,7 +11,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw(produce_contract);
-use LandingCompany::Offerings qw(reinitialise_offerings);
 use Test::MockModule;
 
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
@@ -20,7 +19,6 @@ $mocked->mock(
     sub {
         [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
     });
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db;
 
 my $now = Date::Utility->new('2016-09-27 10:00:00');

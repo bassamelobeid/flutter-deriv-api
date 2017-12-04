@@ -19,6 +19,12 @@ extends 'BOM::Product::Pricing::Engine';
 use Moose;
 use Math::Business::BlackScholes::Binaries;
 use Math::Util::CalculatedValue::Validatable;
+use YAML::XS qw(LoadFile);
+
+my %engine_compatibility = (
+    basic         => LoadFile('/home/git/regentmarkets/bom/config/intraday_engine_compatibility/basic.yml'),
+    multi_barrier => LoadFile('/home/git/regentmarkets/bom/config/intraday_engine_compatibility/multi_barrier.yml'),
+);
 
 =head1 ATTRIBUTES
 
@@ -150,6 +156,28 @@ sub _build_probability {
     my $self = shift;
 
     return $self->bs_probability;
+}
+
+sub is_compatible {
+    my (undef, $to_load, $metadata) = @_;
+
+    my $permitted = $engine_compatibility{$to_load} // die 'Unknown compatibility file[' . $to_load . ']';
+
+    for my $key (qw(underlying_symbol contract_category expiry_type start_type barrier_category)) {
+        if (exists $permitted->{$metadata->{$key}}) {
+            $permitted = $permitted->{$metadata->{$key}};
+            next;
+        }
+        # return is no match
+        return;
+    }
+
+    my ($min, $max) = map { Time::Duration::Concise->new(interval => $permitted->{$_}) } qw(min max);
+
+    return if ($metadata->{contract_duration} < $min->seconds || $metadata->{contract_duration} > $max->seconds);
+
+    # if everything is good, then can price.
+    return 1;
 }
 
 no Moose;

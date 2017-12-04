@@ -12,15 +12,12 @@ use List::Util qw(first);
 use Date::Utility;
 use Encode;
 use JSON::MaybeXS;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::Contract::PredefinedParameters qw(get_predefined_offerings update_predefined_highlow);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $supported_symbol = 'frxUSDJPY';
 my $monday           = Date::Utility->new('2016-11-14');    # monday

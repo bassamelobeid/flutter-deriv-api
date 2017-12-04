@@ -16,23 +16,12 @@ use Format::Util::Numbers qw/roundcommon/;
 
 use Quant::Framework;
 use Finance::Contract::Category;
-use LandingCompany::Offerings qw(get_offerings_flyby);
+use LandingCompany::Registry;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
-
-my %supported_contract_types = (
-    CALLE        => 1,
-    PUT          => 1,
-    EXPIRYMISS   => 1,
-    EXPIRYRANGEE => 1,
-    RANGE        => 1,
-    UPORDOWN     => 1,
-    ONETOUCH     => 1,
-    NOTOUCH      => 1,
-);
 
 my $cache_namespace = 'predefined_parameters';
 my $json            = JSON::MaybeXS->new;
@@ -59,8 +48,8 @@ Each offering has the following additional keys:
 sub get_predefined_offerings {
     my $args = shift;
 
-    my ($symbol, $date, $landing_company) = @{$args}{'symbol', 'date', 'landing_company'};
-    my @offerings = _get_offerings($symbol, $landing_company);
+    my ($symbol, $date, $landing_company, $country_code) = @{$args}{'symbol', 'date', 'landing_company', 'country_code'};
+    my @offerings = _get_offerings($symbol, $landing_company, $country_code);
     my $underlying = create_underlying($symbol, $date);
     $date //= Date::Utility->new;
 
@@ -219,14 +208,13 @@ sub next_generation_epoch {
 }
 
 sub _flyby {
-    my $landing_company = shift;
+    my ($landing_company_short, $country_code) = @_;
 
-    $landing_company //= 'costarica';
-    return get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company, 'multi_barrier');
-}
+    $landing_company_short //= 'costarica';
+    $country_code          //= '';
+    my $landing_company = LandingCompany::Registry::get($landing_company_short);
 
-sub supported_symbols {
-    return _flyby()->query({submarket => 'major_pairs'}, ['underlying_symbol']);
+    return $landing_company->multi_barrier_offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
 }
 
 # we perform three things here:
@@ -593,9 +581,9 @@ sub _get_trade_date_of_daily_window {
 }
 
 sub _get_offerings {
-    my ($symbol, $landing_company) = @_;
+    my ($symbol, $landing_company, $country_code) = @_;
 
-    my $flyby = _flyby($landing_company);
+    my $flyby = _flyby($landing_company, $country_code);
 
     my %similar_args = (
         underlying_symbol => $symbol,
@@ -625,7 +613,6 @@ sub _get_offerings {
             %similar_args,
         });
 
-    return map { $_->{barriers} = Finance::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ }
-        grep { $supported_contract_types{$_->{contract_type}} } @offerings;
+    return map { $_->{barriers} = Finance::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ } @offerings;
 }
 1;

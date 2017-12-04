@@ -5,8 +5,7 @@ use Test::Warnings;
 use Test::Fatal;
 
 use Date::Utility;
-use LandingCompany::Offerings qw(reinitialise_offerings);
-
+use Scalar::Util qw(blessed);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -15,12 +14,11 @@ use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use Try::Tiny;
 
 use Test::MockModule;
 use Postgres::FeedDB::Spot::Tick;
 use Quant::Framework::VolSurface::Delta;
-
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $now = Date::Utility->new('2016-03-18 01:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -54,14 +52,24 @@ my $bet_params = {
 
 subtest 'invalid start and expiry time' => sub {
     $bet_params->{date_start} = $bet_params->{date_expiry} = $now;
-    my $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/Start and Expiry times are the same/, 'expiry = start');
+    my $exception = try {
+        produce_contract($bet_params);
+    }
+    catch {
+        blessed($_);
+        $_;
+    };
+    is $exception->error_code, 'SameExpiryStartTime', 'throws exception if start time == expiry time';
     $bet_params->{date_start}  = $now;
     $bet_params->{date_expiry} = $now->epoch - 1;
-    $c                         = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/Start must be before expiry/, 'expiry < start');
+    $exception                 = try {
+        produce_contract($bet_params);
+    }
+    catch {
+        blessed($_);
+        $_;
+    };
+    is $exception->error_code, 'PastExpiryTime', 'throws exception if start time > expiry time';
     $bet_params->{date_start}   = $now;
     $bet_params->{date_pricing} = $now->epoch + 1;
     $bet_params->{date_expiry}  = $now->epoch + 20 * 60;
