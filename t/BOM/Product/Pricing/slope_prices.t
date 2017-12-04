@@ -14,7 +14,7 @@ use Test::MockModule;
 use Format::Util::Numbers qw/roundcommon/;
 
 use Test::BOM::UnitTestPrice;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
+use LandingCompany::Offerings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::Runtime;
@@ -37,6 +37,7 @@ my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pri
 my @underlying_symbols = ('frxBROUSD', 'AEX', 'frxXAUUSD', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
 my $payout_currency    = 'USD';
 my $spot               = 100;
+my $offerings_obj      = LandingCompany::Offerings->get('costarica', $offerings_cfg);
 
 foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     Test::BOM::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
@@ -45,9 +46,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         quote      => $spot,
         epoch      => $now->epoch,
     });
-    foreach my $contract_category (grep { not $skip_category{$_} }
-        get_offerings_with_filter($offerings_cfg, 'contract_category', {underlying_symbol => $ul->symbol}))
-    {
+    foreach my $contract_category (grep { not $skip_category{$_} } $offerings_obj->query({underlying_symbol => $ul->symbol}, ['contract_category'])) {
         my $category_obj = Finance::Contract::Category->new($contract_category);
         next if $category_obj->is_path_dependent;
         my @duration = map { $_ * 86400 } (7, 14);
@@ -80,9 +79,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                     EXPIRYMISSE  => 1,
                     EXPIRYRANGEE => 1,
                 );
-                foreach my $contract_type (grep { !$equal{$_} }
-                    get_offerings_with_filter($offerings_cfg, 'contract_type', {contract_category => $contract_category}))
-                {
+                foreach my $contract_type (grep { !$equal{$_} } $offerings_obj->query({contract_category => $contract_category}, ['contract_type'])) {
                     my $args = {
                         bet_type     => $contract_type,
                         underlying   => $ul,

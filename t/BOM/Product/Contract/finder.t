@@ -39,7 +39,7 @@ subtest "available contracts for symbol" => sub {
     );
     my %expected = (
         R_100 => {
-            callput      => 28,
+            callput      => 14,
             touchnotouch => 4,    # intraday and daily separated
             staysinout   => 4,
             endsinout    => 4,
@@ -47,26 +47,26 @@ subtest "available contracts for symbol" => sub {
             asian        => 2,
         },
         RDBEAR => {
-            callput      => 20,
+            callput      => 10,
             touchnotouch => 2,    # intraday and daily separated
             staysinout   => 2,
             endsinout    => 2,
             digits       => 6,
         },
         frxUSDJPY => {
-            callput      => 24,
+            callput      => 12,
             touchnotouch => 2,    # only daily
             staysinout   => 2,
             endsinout    => 2,
         },
         frxAUDCAD => {
-            callput => 12,
+            callput => 6,
         },
         WLDUSD => {
-            callput => 8,
+            callput => 4,
         },
         AEX => {
-            callput      => 16,
+            callput      => 8,
             touchnotouch => 2,    # only daily
             staysinout   => 2,
             endsinout    => 2,
@@ -75,13 +75,13 @@ subtest "available contracts for symbol" => sub {
             callput => 8,
         },
         frxXAUUSD => {
-            callput      => 16,
+            callput      => 8,
             touchnotouch => 2,    # only daily
             staysinout   => 2,
             endsinout    => 2,
         },
         frxXPDUSD => {
-            callput => 4,
+            callput => 2,
         },
     );
 

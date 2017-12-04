@@ -4,8 +4,6 @@ use Moose::Role;
 use List::Util qw(first);
 use Data::Dumper;
 
-use LandingCompany::Offerings qw(get_contract_specifics);
-
 use BOM::Platform::RiskProfile;
 use BOM::Product::Static;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
@@ -216,5 +214,14 @@ sub japan_pricing_info {
 
     return "[JPLOG]," . $pricing_info . "\n";
 }
+
+override '_check_intraday_engine_compatibility' => sub {
+    my $self = shift;
+
+    my $engine_name =
+        $self->market->name eq 'indices' ? 'BOM::Product::Pricing::Engine::Intraday::Index' : 'BOM::Product::Pricing::Engine::Intraday::Forex';
+
+    return $engine_name->get_compatible('multi_barrier', $self->metadata);
+};
 
 1;

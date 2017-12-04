@@ -12,12 +12,13 @@ use VolSurface::Utils qw(get_strike_for_spot_delta);
 use Quant::Framework;
 use BOM::Platform::Chronicle;
 use Finance::Contract::Category;
-use LandingCompany::Offerings qw(get_offerings_flyby);
+use LandingCompany::Registry;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Strike;
+use BOM::Platform::Runtime;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
@@ -44,9 +45,10 @@ my %supported_contract_types = (
 );
 
 sub available_contracts_for_symbol {
-    my $args            = shift;
-    my $symbol          = $args->{symbol} || die 'no symbol';
-    my $landing_company = $args->{landing_company};
+    my $args                  = shift;
+    my $symbol                = $args->{symbol} || die 'no symbol';
+    my $landing_company_short = $args->{landing_company} // 'costarica';
+    my $country_code          = $args->{country_code} // '';
 
     my $now        = Date::Utility->new;
     my $underlying = create_underlying($symbol);
@@ -58,8 +60,9 @@ sub available_contracts_for_symbol {
         $close = $calendar->closing_on($exchange, $now)->epoch;
     }
 
-    my $flyby = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config, $landing_company);
-    my @offerings = grep { $supported_contract_types{$_->{contract_type}} } $flyby->query({underlying_symbol => $symbol});
+    my $landing_company = LandingCompany::Registry::get($landing_company_short);
+    my $offerings_obj   = $landing_company->offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
+    my @offerings       = $offerings_obj->query({underlying_symbol => $symbol});
 
     my @blackout_periods;
     my $sod = $now->truncate_to_day->epoch;

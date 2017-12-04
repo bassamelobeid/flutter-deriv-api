@@ -1,6 +1,6 @@
 #!/etc/rmg/bin/perl
 
-use Test::More tests => 4;
+use Test::More;
 use Test::Warnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -58,17 +58,6 @@ subtest 'system wide suspend trading' => sub {
     ok $c->is_valid_to_buy, 'ok to buy';
 };
 
-subtest 'invalid underlying - contract type combination' => sub {
-    $bet_params->{is_forward_starting} = 1;
-    $bet_params->{barrier}             = 'S100P';                                                  # non atm
-    $bet_params->{date_start}          = $bet_params->{date_pricing}->plus_time_interval('20m');
-    my $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/trying unauthorised combination/, 'Contract type suspended message');
-    delete $bet_params->{is_forward_starting};
-    $bet_params->{date_start} = $bet_params->{date_pricing};
-};
-
 subtest 'custom suspend trading' => sub {
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;
     BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
@@ -84,3 +73,4 @@ subtest 'custom suspend trading' => sub {
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for random';
 };
+done_testing();

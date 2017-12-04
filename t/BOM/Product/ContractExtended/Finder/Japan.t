@@ -14,9 +14,7 @@ use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'partial_trading',
     {

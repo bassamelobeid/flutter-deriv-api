@@ -5,7 +5,6 @@ use Test::Most;
 use Test::Warnings qw/warning/;
 
 use Date::Utility;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -18,7 +17,6 @@ $mocked_decimate->mock(
     sub {
         [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
     });
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 use BOM::Product::ContractFactory qw( produce_contract );

@@ -1,7 +1,10 @@
 package BOM::Product::Script::GenerateTradingPeriods;
 use strict;
 use warnings;
+
+use LandingCompany::Offerings::MultiBarrier;
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods next_generation_epoch);
+use BOM::Platform::Runtime;
 use Time::HiRes qw(clock_nanosleep TIMER_ABSTIME CLOCK_REALTIME);
 use Date::Utility;
 use List::Util qw(max);
@@ -9,7 +12,9 @@ use List::Util qw(max);
 #This daemon generates predefined trading periods for selected underlying symbols at every hour
 
 sub run {
-    my @selected_symbols = BOM::Product::Contract::PredefinedParameters::supported_symbols;
+
+    my $offerings_obj = LandingCompany::Offerings::MultiBarrier->get('japan', BOM::Platform::Runtime->instance->get_offerings_config);
+    my @selected_symbols = $offerings_obj->values_for_key('underlying_symbol');
 
     while (1) {
         my $now  = Date::Utility->new;

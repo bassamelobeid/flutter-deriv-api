@@ -11,14 +11,12 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 use Date::Utility;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 use BOM::Product::ContractFactory qw(produce_contract);
 use Cache::RedisDB;
 BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
 
 Cache::RedisDB->flushall;
 initialize_realtime_ticks_db();
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked_decimate->mock(

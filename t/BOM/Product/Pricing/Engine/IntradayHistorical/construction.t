@@ -10,9 +10,6 @@ use BOM::MarketData qw(create_underlying_db);
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use LandingCompany::Offerings qw(reinitialise_offerings);
-
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
