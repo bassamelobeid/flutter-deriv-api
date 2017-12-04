@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use FindBin;
 # load this file to force MOJO::JSON to use JSON::MaybeXS
-use MOJO::JSON::MaybeXS;
+use Mojo::JSON::MaybeXS;
 use lib "$FindBin::Bin/../lib";
 
 # There does not appear to be any specific handling for
