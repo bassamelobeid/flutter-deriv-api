@@ -17,10 +17,8 @@ use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Transaction;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
 my $now = Date::Utility->new;
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 my $client  = Client::Account->new({loginid => 'CR2002'});
