@@ -14,6 +14,7 @@ use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Context qw(localize request);
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use Locale::Country::Extra;
 use Geo::Region;
 use Geo::Region::Constant qw( :all );
 use BOM::Database::ClientDB;
@@ -23,6 +24,7 @@ has clients => (
     is       => 'ro',
     required => 1
 );
+
 has transaction => (is => 'ro');
 
 my $json = JSON::MaybeXS->new;
@@ -37,7 +39,7 @@ sub validate_trx_sell {
 
     my @client_validation_method = qw/ check_trade_status _validate_available_currency _validate_currency /;
     # For ico, there is no need to be restricted by with the withdrawal limit imposed on IOM region
-    push @client_validation_method, '_validate_iom_withdrawal_limit' unless $self->transaction->contract->is_binaryico;
+    push @client_validation_method, qw(_validate_iom_withdrawal_limit _validate_offerings_sell) unless $self->transaction->contract->is_binaryico;
 
     my @contract_validation_method = qw/_is_valid_to_sell/;
     # For ICO, there is no need to have slippage, date pricing validation
@@ -84,7 +86,7 @@ sub validate_trx_buy {
 
     my @client_validation_method = qw/ check_trade_status _validate_client_status _validate_available_currency _validate_currency /;
     push @client_validation_method,
-        qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_self_exclusion)
+        qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_self_exclusion _validate_offerings_buy)
         unless $self->transaction->contract->is_binaryico;
     push @client_validation_method, '_validate_ico_jurisdictional_restrictions' if $self->transaction->contract->is_binaryico;
     push @client_validation_method, '_is_valid_to_buy';    # do this is as last of the validation
@@ -135,6 +137,33 @@ sub validate_trx_buy {
 
     ### we should check pricing time just before DB query
     return $self->_validate_date_pricing();
+}
+
+sub _validate_offerings_buy {
+    my ($self, $client) = @_;
+
+    return $self->_validate_offerings($client, 'buy');
+}
+
+sub _validate_offerings_sell {
+    my ($self, $client) = @_;
+
+    return $self->_validate_offerings($client, 'sell');
+}
+
+sub _validate_offerings {
+    my ($self, $client, $action) = @_;
+
+    my $offerings_obj = $client->landing_company->offerings_for_country($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
+
+    my $err = $offerings_obj->validate_offerings($self->transaction->contract->metadata($action));
+
+    return Error::Base->cuss(
+        -type              => 'InvalidOfferings',
+        -mesg              => $err->{message},
+        -message_to_client => localize(@{$err->{message_to_client}})) if $err;
+
+    return;
 }
 
 sub _validate_available_currency {
@@ -381,7 +410,8 @@ sub _invalid_contract {
                             ($self->transaction->trading_period_start)
                             ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
                             : (),
-                            ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
+                            ($contract->two_barriers)
+                            ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
                             : (barriers => $contract->barrier->as_absolute),
                             expiry => $contract->date_expiry->db_timestamp,
                             payout => $contract->payout
@@ -425,7 +455,7 @@ sub _is_valid_to_sell {
     my $self     = shift;
     my $contract = $self->transaction->contract;
 
-    if (not $contract->is_valid_to_sell) {
+    unless ($contract->is_valid_to_sell) {
         return $self->_write_to_rejected({
             type   => 'invalid_contract',
             action => 'sell',

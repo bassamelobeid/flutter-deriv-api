@@ -12,7 +12,6 @@ use Client::Account;
 use Date::Utility;
 use ExpiryQueue ();
 use Guard;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData qw(create_underlying_db);
@@ -30,7 +29,6 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client qw( create_client top_up );
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
 $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
@@ -286,6 +284,8 @@ subtest 'batch-buy success + multisell', sub {
                 my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
                 $mock_validation->mock(_validate_sell_pricing_adjustment =>
                         sub { note "mocked Transaction::Validation->_validate_sell_pricing_adjustment returning nothing"; () });
+                $mock_validation->mock(_validate_offerings =>
+                        sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
                 $trx->sell_by_shortcode;
             };
 

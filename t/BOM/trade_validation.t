@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 10;
+use Test::Most tests => 11;
 use File::Spec;
 use YAML::XS qw(LoadFile);
 use Test::Warnings;
@@ -27,9 +27,7 @@ use BOM::MarketData::Types;
 
 use Test::MockTime qw(set_absolute_time);
 use Test::MockModule;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
@@ -1178,4 +1176,73 @@ subtest 'validate stake limit' => sub {
         like($err->{-message_to_client}, qr/This contract's price is/, 'correct error message');
     }
     'error out on 4.9 stake for MF borker';
+};
+
+subtest 'country offerings validation' => sub {
+    foreach my $test_data (['ca', '29d', 'canada', '1d'], ['cn', '29m59s', 'china', '1s']) {
+        subtest "$test_data->[2] offerings validation" => sub {
+            my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                    broker_code => 'CR',
+                    residence   => $test_data->[0]});
+            my $unpermitted_duration   = $now->plus_time_interval($test_data->[1]);
+            my $permitted_duration = $unpermitted_duration->plus_time_interval($test_data->[3]);
+            my $contract_args        = {
+                underlying   => create_underlying('R_100'),
+                bet_type     => 'CALL',
+                currency     => 'USD',
+                payout       => 100,
+                date_start   => $now,
+                date_expiry  => $unpermitted_duration,
+                date_pricing => $now,
+                current_tick => $tick,
+                barrier      => 'S0P',
+            };
+            my $contract    = produce_contract($contract_args);
+            my $transaction = BOM::Transaction->new({
+                client        => $client,
+                contract      => $contract,
+                action        => 'BUY',
+                price         => 5,
+                payout        => 100,
+                amount_type   => 'stake',
+                purchase_date => $contract->date_start,
+            });
+            ok !BOM::Transaction::Validation->new({
+                    transaction => $transaction,
+                    clients     => [$client]})->_validate_offerings_buy($client), 'can buy if instrument is non-financial';
+
+            $contract_args->{underlying} = 'frxUSDJPY';
+            $contract = produce_contract($contract_args);
+
+            $transaction = BOM::Transaction->new({
+                client        => $client,
+                contract      => $contract,
+                action        => 'BUY',
+                price         => 5,
+                payout        => 100,
+                amount_type   => 'stake',
+                purchase_date => $contract->date_start,
+            });
+            my $err = BOM::Transaction::Validation->new({
+                    transaction => $transaction,
+                    clients     => [$client]})->_validate_offerings_buy($client);
+            is $err->{'-message_to_client'}, 'Trading is not offered for this duration.', 'cannot buy financial instrument less than ' . $test_data->[1];
+
+            $contract_args->{date_expiry} = $permitted_duration;
+            $contract = produce_contract($contract_args);
+
+            $transaction = BOM::Transaction->new({
+                client        => $client,
+                contract      => $contract,
+                action        => 'BUY',
+                price         => 5,
+                payout        => 100,
+                amount_type   => 'stake',
+                purchase_date => $contract->date_start,
+            });
+            ok !BOM::Transaction::Validation->new({
+                    transaction => $transaction,
+                    clients     => [$client]})->_validate_offerings_buy($client), 'can buy financial instrment with duration ' . $test_data->[1];
+        };
+    }
 };

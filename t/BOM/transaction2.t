@@ -29,7 +29,6 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
 use Crypt::NamedKeys;
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
 my $json = JSON::MaybeXS->new;
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
@@ -45,7 +44,6 @@ my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
 $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_})
@@ -242,6 +240,8 @@ subtest 'general_open_position_payout', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
             $mock_validation->mock('_validate_stake_limit',
                 sub { note "mocked Transaction::Validation->_validate_stake_limit returning nothing"; () });
 
@@ -282,6 +282,8 @@ subtest 'general_open_position_payout', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -350,6 +352,8 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -404,6 +408,8 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -471,6 +477,8 @@ subtest 'asian_daily_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -525,6 +533,8 @@ subtest 'asian_daily_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -598,6 +608,8 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
             $mock_validation->mock(
                 _validate_date_pricing => sub { note "mocked Transaction::Validation->_validate_date_pricing returning nothing"; () });
 
@@ -659,6 +671,8 @@ subtest 'intraday_spot_index_turnover_limit', sub {
         # _validate_trade_pricing_adjustment() is tested in trade_validation.t
         $mock_validation->mock(_validate_trade_pricing_adjustment =>
                 sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
         $mock_validation->mock(_validate_date_pricing => sub { note "mocked Transaction::Validation->_validate_date_pricing returning nothing"; () });
 
         my $mock_transaction = Test::MockModule->new('BOM::Transaction');
@@ -698,6 +712,8 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
             $mock_validation->mock(
                 _validate_date_pricing => sub { note "mocked Transaction::Validation->_validate_date_pricing returning nothing"; () });
 
@@ -761,6 +777,8 @@ subtest 'smartfx_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -807,6 +825,8 @@ subtest 'smartfx_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
             $mock_validation->mock(_validate_stake_limit => sub { note "mocked Transaction::Validation->_validate_stake_limit returning nothing"; () }
             );
 
@@ -877,6 +897,8 @@ subtest 'custom client limit' => sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -967,6 +989,8 @@ subtest 'non atm turnover checks' => sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -1043,6 +1067,8 @@ subtest 'non atm turnover checks' => sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_validation->mock(_validate_offerings =>
+                    sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
             $mock_validation->mock(_validate_stake_limit => sub { note "mocked Transaction::Validation->_validate_stake_limit returning nothing"; () }
             );
 

@@ -22,9 +22,7 @@ use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
