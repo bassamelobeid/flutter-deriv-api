@@ -4,6 +4,8 @@
 #---------------------------------------------------------
 use strict;
 use warnings;
+# load this file to force MOJO::JSON to use JSON::MaybeXS
+use MOJO::JSON::MaybeXS;
 use DataDog::DogStatsd::Helper;
 use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
 
