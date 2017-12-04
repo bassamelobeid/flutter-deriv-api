@@ -4,6 +4,10 @@ use warnings;
 
 use Getopt::Long;
 use Data::Dumper;
+
+# load this file to force MOJO::JSON to use JSON::MaybeXS
+use Mojo::JSON::MaybeXS;
+
 use JSON::MaybeXS;
 use Time::HiRes ();
 
