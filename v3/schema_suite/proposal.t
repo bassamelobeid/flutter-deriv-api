@@ -21,13 +21,13 @@ set_language 'EN';
 
 # contract prices are very sensitive to time. Please avoid having anything before these test.
 # invalid duration
-test_sendrecv_params 'proposal/test_send.json', 'proposal/test_buy_validation_error.json', '100', 'ASIANU', 'R_100', '5', 'm';
+test_sendrecv_params 'proposal/test_send.json', 'proposal/test_offerings_validation_error.json', '100', 'ASIANU', 'R_100', '5', 'm';
 # invalid contract type
-test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive_contract_error.json', '100', 'INVALID', 'R_100', '5', 'm';
+test_sendrecv_params 'proposal/test_send.json', 'proposal/test_offerings_validation_error.json', '100', 'INVALID', 'R_100', '5', 'm';
 # invalid contract duration
-test_sendrecv_params 'proposal/test_send.json', 'proposal/test_buy_validation_error.json', '100', 'ASIANU', 'R_100', '0', 't';
+test_sendrecv_params 'proposal/test_send.json', 'proposal/test_buy_exception.json', '100', 'ASIANU', 'R_100', '0', 't';
 # invalid underlying symbol
-test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive_symbol_error.json', '100', 'ASIANU', 'INVALID', '5', 't';
+test_sendrecv_params 'proposal/test_send.json', 'proposal/test_offerings_validation_error.json', '100', 'ASIANU', 'INVALID', '5', 't';
 
 # R_100
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
