@@ -4,6 +4,8 @@ use warnings;
 
 use sigtrap;
 
+# load this file to force MOJO::JSON to use JSON::MaybeXS
+use MOJO::JSON::MaybeXS;
 use DataDog::DogStatsd::Helper;
 use Date::Utility;
 use Getopt::Long;
