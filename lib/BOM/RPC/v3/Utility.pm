@@ -21,7 +21,6 @@ use Format::Util::Numbers qw/formatnumber/;
 
 use Brands;
 use LandingCompany::Registry;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::Platform::Context qw(localize request);
 use BOM::Product::ContractFactory qw(produce_contract);
