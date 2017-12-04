@@ -37,19 +37,14 @@ sub _build_app_config {
 sub get_offerings_config {
     my $runtime = shift;
 
-    my $config_args = {
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    return {
+        suspend_trading        => $runtime->app_config->system->suspend->trading,
+        suspend_trades         => $runtime->app_config->quants->underlyings->suspend_trades,
+        suspend_buy            => $runtime->app_config->quants->underlyings->suspend_buy,
+        suspend_contract_types => $runtime->app_config->quants->features->suspend_contract_types,
+        disabled_markets       => $runtime->app_config->quants->markets->disabled,
+        current_revision       => $runtime->app_config->current_revision // 0,                      # could be undef for some reason
     };
-
-    $config_args->{suspend_trading}        = $runtime->app_config->system->suspend->trading;
-    $config_args->{suspend_trades}         = $runtime->app_config->quants->underlyings->suspend_trades;
-    $config_args->{suspend_buy}            = $runtime->app_config->quants->underlyings->suspend_buy;
-    $config_args->{suspend_contract_types} = $runtime->app_config->quants->features->suspend_contract_types;
-
-    $config_args->{disabled_markets} = $runtime->app_config->quants->markets->disabled;
-
-    return $config_args;
 }
 
 __PACKAGE__->meta->make_immutable;

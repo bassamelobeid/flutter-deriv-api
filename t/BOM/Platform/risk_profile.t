@@ -195,10 +195,10 @@ subtest 'get_current_profile_definitions' => sub {
             }
         ],
         'forex' => [{
-                'turnover_limit' => "50000.00",
-                'payout_limit'   => "5000.00",
-                'name'           => 'Smart FX',
-                'profile_name'   => 'high_risk',
+                'turnover_limit' => "100000.00",
+                'payout_limit'   => "20000.00",
+                'name'           => 'Major Pairs',
+                'profile_name'   => 'medium_risk',
             },
             {
                 'turnover_limit' => "50000.00",
@@ -207,10 +207,10 @@ subtest 'get_current_profile_definitions' => sub {
                 'profile_name'   => 'high_risk',
             },
             {
-                'turnover_limit' => "100000.00",
-                'payout_limit'   => "20000.00",
-                'name'           => 'Major Pairs',
-                'profile_name'   => 'medium_risk',
+                'turnover_limit' => "50000.00",
+                'payout_limit'   => "5000.00",
+                'name'           => 'Smart FX',
+                'profile_name'   => 'high_risk',
             },
         ],
         'stocks' => [{
