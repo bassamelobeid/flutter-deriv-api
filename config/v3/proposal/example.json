@@ -1,6 +1,5 @@
 {
     "proposal": 1,
-    "subscribe": 0,
     "amount": "100",
     "basis": "payout",
     "contract_type": "CALL",
