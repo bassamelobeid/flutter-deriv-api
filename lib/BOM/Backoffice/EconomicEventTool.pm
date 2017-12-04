@@ -5,11 +5,11 @@ use warnings;
 
 use Date::Utility;
 use JSON qw(to_json);
-use LandingCompany::Offerings qw(get_offerings_flyby);
 use List::Util qw(first);
 use Quant::Framework::EconomicEventCalendar;
 use Try::Tiny;
 use Volatility::Seasonality;
+use LandingCompany::Offerings;
 
 use BOM::Backoffice::Request;
 use BOM::MarketData qw(create_underlying_db);
@@ -189,8 +189,9 @@ my @symbols;
 sub _get_affected_underlying_symbols {
     return @symbols if @symbols;
 
-    my $fb = get_offerings_flyby(BOM::Platform::Runtime->instance->get_offerings_config);
-    @symbols = $fb->query({submarket => 'major_pairs'}, ['underlying_symbol']);
+    # default to costarica since it does not matter
+    my $offerings_obj = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
+    @symbols = $offerings_obj->query({submarket => 'major_pairs'}, ['underlying_symbol']);
     return @symbols;
 }
 
