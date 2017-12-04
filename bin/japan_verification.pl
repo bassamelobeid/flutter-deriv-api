@@ -15,7 +15,6 @@ use warnings;
 use feature qw(say);
 
 use BOM::Platform::Runtime;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::Product::Contract::Finder::Japan;
 use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);

@@ -14,7 +14,6 @@ use Time::HiRes;
 use Time::Duration::Concise::Localize;
 
 use Format::Util::Numbers qw/formatnumber/;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -26,7 +25,8 @@ use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
 use Finance::Contract::Longcode qw( shortcode_to_parameters);
 use BOM::Product::Contract::Finder::Japan;
 use BOM::Product::Contract::Finder;
-use BOM::Product::Contract::Offerings;
+use LandingCompany::Registry;
+use Locale::Country::Extra;
 use BOM::Pricing::v3::Utility;
 
 use feature "state";
@@ -40,26 +40,6 @@ sub _create_error {
             message_to_client => $args->{message_to_client},
             $args->{message} ? (message => $args->{message}) : (),
         }};
-}
-
-sub _validate_symbol {
-    my $symbol = shift;
-    my @offerings = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol');
-    if (!$symbol || none { $symbol eq $_ } @offerings) {
-
-# There's going to be a few symbols that are disabled or otherwise not provided for valid reasons, but if we have nothing,
-# or it's a symbol that's very unlikely to be disabled, it'd be nice to know.
-        warn "Symbol $symbol not found, our offerings are: " . join(',', @offerings)
-            if $symbol
-            and ($symbol =~ /^R_(100|75|50|25|10)$/ or not @offerings);
-        return {
-            error => {
-                code    => 'InvalidSymbol',
-                message => "Symbol [_1] invalid",
-                params  => [$symbol],
-            }};
-    }
-    return;
 }
 
 sub prepare_ask {
@@ -151,18 +131,12 @@ sub _get_ask {
         return $batch_response;
     }
 
-    try {
-        $contract_parameters = {%$args_copy, %{contract_metadata($contract)}};
-    }
-    catch {
-        my $message_to_client = _get_error_message($_, $args_copy);
-        $response = BOM::Pricing::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => localize(@$message_to_client)});
-    };
+    $response = _validate_offerings($contract, $args_copy);
+
     return $response if $response;
 
     try {
+        $contract_parameters = {%$args_copy, %{contract_metadata($contract)}};
         if (!($contract->is_valid_to_buy({landing_company => $args_copy->{landing_company}}))) {
             my ($message_to_client, $code);
 
@@ -231,8 +205,14 @@ sub handle_batch_contract {
     # We should now have a usable ::Contract instance. This may be a single
     # or multiple (batch) contract.
 
-    my $proposals            = {};
-    my $ask_prices           = $batch_contract->ask_prices;
+    my $proposals = {};
+
+    # This is done with an assumption that batch contracts has identical duration and contract category
+    if (my $error = _validate_offerings($batch_contract->_contracts->[0], $p2)) {
+        return $error;
+    }
+
+    my $ask_prices = $batch_contract->ask_prices;
     my $trading_window_start = $p2->{trading_period_start} // '';
 
     # Log full pricing data for Japan contracts. This is a regulatory requirement
@@ -283,8 +263,11 @@ sub handle_batch_contract {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold, $is_expired, $sell_time, $sell_price, $app_markup_percentage, $landing_company) =
-        @{$params}{qw/short_code contract_id currency is_sold is_expired sell_time sell_price app_markup_percentage landing_company/};
+    my (
+        $short_code, $contract_id, $currency,              $is_sold,         $is_expired,
+        $sell_time,  $sell_price,  $app_markup_percentage, $landing_company, $country_code
+        )
+        = @{$params}{qw/short_code contract_id currency is_sold is_expired sell_time sell_price app_markup_percentage landing_company country_code/};
 
     my ($response, $contract, $bet_params);
     my $tv = [Time::HiRes::gettimeofday];
@@ -326,7 +309,25 @@ sub get_bid {
 
     try {
         $params->{validation_params}->{landing_company} = $landing_company;
-        my $is_valid_to_sell = $contract->is_valid_to_sell($params->{validation_params});
+
+        my $is_valid_to_sell = 1;
+        my $validation_error;
+        if (
+            my $cve = _validate_offerings(
+                $contract,
+                {
+                    landing_company_short => $landing_company,
+                    country_code          => $country_code,
+                    action                => 'sell'
+                }))
+        {
+            $is_valid_to_sell = 0;
+            $validation_error = localize($cve->{error}{message_to_client});
+        } elsif (!$contract->is_valid_to_sell($params->{validation_params})) {
+            $is_valid_to_sell = 0;
+            $validation_error = localize($contract->primary_validation_error->message_to_client);
+        }
+
         $response = {
             is_valid_to_sell    => $is_valid_to_sell,
             current_spot_time   => $contract->current_tick->epoch,
@@ -357,7 +358,7 @@ sub get_bid {
             $response->{status} = 'open';
         }
 
-        $response->{validation_error} = localize($contract->primary_validation_error->message_to_client) unless $is_valid_to_sell;
+        $response->{validation_error} = localize($validation_error) unless $is_valid_to_sell;
 
         if (not $contract->may_settle_automatically
             and $contract->missing_market_data)
@@ -479,24 +480,15 @@ sub send_ask {
     $params->{args}->{landing_company} = $params->{landing_company}
         if $params->{landing_company};
 
-    my $symbol   = $params->{args}->{symbol};
-    my $response = _validate_symbol($symbol);
-    if ($response and exists $response->{error}) {
-        $response = BOM::Pricing::v3::Utility::create_error({
-                code              => $response->{error}->{code},
-                message_to_client => localize($response->{error}->{message}, $symbol)});
+    # copy country_code when it is available.
+    $params->{args}->{country_code} = $params->{country_code} if $params->{country_code};
 
-        $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
-
-        return $response;
-    }
-
-    try {
-        $response = _get_ask(prepare_ask($params->{args}), $params->{app_markup_percentage});
+    my $response = try {
+        _get_ask(prepare_ask($params->{args}), $params->{app_markup_percentage});
     }
     catch {
         _log_exception(send_ask => $_);
-        $response = BOM::Pricing::v3::Utility::create_error({
+        BOM::Pricing::v3::Utility::create_error({
                 code              => 'pricing error',
                 message_to_client => localize('Unable to price the contract.')});
     };
@@ -568,11 +560,13 @@ sub contracts_for {
     my $currency             = $args->{currency} || 'USD';
     my $product_type         = $args->{product_type} // 'basic';
     my $landing_company_name = $args->{landing_company} // 'costarica';
+    my $country_code         = $params->{country_code} // '';
 
     my $contracts_for;
     my $query_args = {
         symbol          => $symbol,
         landing_company => $landing_company_name,
+        ($country_code ? (country_code => $country_code) : ()),
     };
 
     if ($product_type eq 'multi_barrier') {
@@ -637,6 +631,37 @@ sub _data_disruption_error {
             message_to_client => localize(
                 'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
             )});
+}
+
+sub _validate_offerings {
+    my ($contract, $args_copy) = @_;
+
+    my $response;
+
+    try {
+        my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company_short} // 'costarica');
+
+        my $offerings_obj =
+            $landing_company->offerings_for_country($args_copy->{country_code} // '', BOM::Platform::Runtime->instance->get_offerings_config);
+
+        die 'Could not find offerings for ' . $args_copy->{country_code} unless $offerings_obj;
+
+        if (my $error = $offerings_obj->validate_offerings($contract->metadata($args_copy->{action}))) {
+            $response = BOM::Pricing::v3::Utility::create_error({
+                code              => 'OfferingsValidationError',
+                message_to_client => localize(@{$error->{message_to_client}}),
+            });
+        }
+    }
+    catch {
+        my $message_to_client = _get_error_message($_, $args_copy);
+        $response = BOM::Pricing::v3::Utility::create_error({
+                code              => 'OfferingsValidationFailure',
+                message_to_client => localize(@$message_to_client)});
+    };
+
+    return $response;
+
 }
 
 1;
