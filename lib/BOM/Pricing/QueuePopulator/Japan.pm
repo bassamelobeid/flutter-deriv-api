@@ -17,7 +17,6 @@ requesting them.
 =cut
 
 use BOM::Platform::Runtime;
-use LandingCompany::Offerings qw(get_offerings_with_filter);
 
 use BOM::Product::Contract::Finder::Japan;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -25,6 +24,7 @@ use BOM::MarketData qw(create_underlying);
 use JSON::XS qw(encode_json);
 use List::UtilsBy qw(rev_nsort_by bundle_by);
 use Pricing::Engine::EuropeanDigitalSlope;
+use LandingCompany::Offerings::MultiBarrier;
 use Date::Utility;
 use POSIX qw(floor);
 use Time::HiRes qw(clock_nanosleep CLOCK_REALTIME TIMER_ABSTIME);
@@ -107,7 +107,8 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
     # Get a full list of symbols since some may have been updated/disabled
     # since the last time
     my @symbols =
-        get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol', {landing_company => 'japan'});
+        LandingCompany::Offerings::MultiBarrier->get('japan', BOM::Platform::Runtime->instance->get_offerings_config)
+        ->values_for_key('underlying_symbol');
     my $now = Time::HiRes::time;
     $log->debugf("Retrieved symbols - %.2fms", 1000 * ($now - $start));
 

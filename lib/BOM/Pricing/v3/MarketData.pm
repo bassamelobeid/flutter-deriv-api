@@ -5,14 +5,16 @@ use warnings;
 no indirect;
 
 use Date::Utility;
-use LandingCompany::Offerings qw(get_permitted_expiries);
 use Time::Duration::Concise::Localize;
 use Try::Tiny;
+use List::MoreUtils qw(uniq);
+use Locale::Country::Extra;
 
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
-use BOM::Product::Contract::Offerings;
+use BOM::Product::Offerings::DisplayHelper;
+use LandingCompany::Offerings;
 
 sub _get_cache {
     my ($name) = @_;
@@ -41,7 +43,7 @@ sub _set_cache {
 }
 
 sub _get_digest {
-    my $digest = LandingCompany::Offerings::_get_config_key(BOM::Platform::Runtime->instance->get_offerings_config);
+    my $digest = _get_config_key(BOM::Platform::Runtime->instance->get_offerings_config);
     return $digest;
 }
 
@@ -62,12 +64,17 @@ sub asset_index {
     my $params               = shift;
     my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
     my $language             = $params->{language} // 'en';
+    my $country_code         = $params->{country_code} // '';
 
-    my $cache_key = $landing_company_name . '_asset_index_' . $language;
+    my $country_name = $country_code ? Locale::Country::Extra->new->country_from_code($country_code) : '';
 
-    my $cached = _get_cache($cache_key);
-    return $cached if $cached;
-    $cached = generate_asset_index($landing_company_name, $language);
+    for my $cache_key (map { $_ . '_asset_index_' . $language } ($country_name, $landing_company_name)) {
+        if (my $cache = _get_cache($cache_key)) {
+            return $cache;
+        }
+    }
+
+    my ($cached, $cache_key) = generate_asset_index($country_code, $landing_company_name, $language);
     _set_cache($cache_key, $cached);
     return $cached;
 
@@ -76,7 +83,11 @@ sub asset_index {
 sub generate_trading_times {
     my $date = shift;
 
-    my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
+    my $offerings = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
+    my $tree = BOM::Product::Offerings::DisplayHelper->new(
+        date      => $date,
+        offerings => $offerings
+        )->decorate_tree(
         markets     => {name => 'name'},
         submarkets  => {name => 'name'},
         underlyings => {
@@ -114,9 +125,12 @@ sub generate_trading_times {
 }
 
 sub generate_asset_index {
-    my ($landing_company_name, $language) = @_;
+    my ($country_code, $landing_company_name, $language) = @_;
 
-    my $asset_index = BOM::Product::Contract::Offerings->new(landing_company => $landing_company_name)->decorate_tree(
+    my $config = BOM::Platform::Runtime->instance->get_offerings_config;
+    my $offerings = LandingCompany::Offerings->get($country_code, $config) // LandingCompany::Offerings->get($landing_company_name, $config);
+
+    my $asset_index = BOM::Product::Offerings::DisplayHelper->new(offerings => $offerings)->decorate_tree(
         markets => {
             code => sub { $_->name },
             name => sub { localize($_->display_name) }
@@ -147,8 +161,8 @@ sub generate_asset_index {
             expiries => sub {
                 my $underlying = shift;
                 my %offered    = %{
-                    get_permitted_expiries(
-                        BOM::Platform::Runtime->instance->get_offerings_config,
+                    _get_permitted_expiries(
+                        $offerings,
                         {
                             underlying_symbol => $underlying->symbol,
                             contract_category => $_->code,
@@ -198,7 +212,58 @@ sub generate_asset_index {
             }
         }
     }
-    return \@data;
+
+    my $cache_key = $offerings->name . '_asset_index_' . $language;
+
+    return (\@data, $cache_key);
 }
 
+sub _get_permitted_expiries {
+    my ($offerings_obj, $args) = @_;
+
+    my $min_field = 'min_contract_duration';
+    my $max_field = 'max_contract_duration';
+
+    my $result = {};
+
+    return $result unless scalar keys %$args;
+
+    my @possibles = $offerings_obj->query($args, ['expiry_type', $min_field, $max_field]);
+    foreach my $actual_et (uniq map { $_->[0] } @possibles) {
+        my @remaining = grep { $_->[0] eq $actual_et && $_->[1] && $_->[2] } @possibles;
+        my @mins =
+            ($actual_et eq 'tick')
+            ? sort { $a <=> $b } map { $_->[1] } @remaining
+            : sort { $a->seconds <=> $b->seconds } map { Time::Duration::Concise::Localize->new(interval => $_->[1]) } @remaining;
+        my @maxs =
+            ($actual_et eq 'tick')
+            ? sort { $b <=> $a } map { $_->[2] } @remaining
+            : sort { $b->seconds <=> $a->seconds } map { Time::Duration::Concise::Localize->new(interval => $_->[2]) } @remaining;
+        $result->{$actual_et} = {
+            min => $mins[0],
+            max => $maxs[0],
+        } if (defined $mins[0] and defined $maxs[0]);
+    }
+
+    # If they explicitly ask for a single expiry_type give just that one.
+    if ($args->{expiry_type} and my $trimmed = $result->{$args->{expiry_type}}) {
+        $result = $trimmed;
+    }
+
+    return $result;
+}
+
+sub _get_config_key {
+    my $config_args = shift;
+
+    my $string = "[";
+    foreach my $key (sort keys %$config_args) {
+        my $val = $config_args->{$key};
+        $val = [$val] unless ref $val;
+        $string .= $key . '-' . (join ':', sort @$val) . ';';
+    }
+    $string .= "]";
+
+    return $string;
+}
 1;
