@@ -23,11 +23,9 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Platform::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
-use LandingCompany::Offerings qw(reinitialise_offerings);
 use Quant::Framework;
 use BOM::Platform::Chronicle;
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 initialize_realtime_ticks_db();
 my $now   = Date::Utility->new('2005-09-21 06:46:00');
 my $email = 'test@binary.com';
@@ -48,7 +46,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(USD AUD CAD-AUD);
+    }) for qw(USD AUD CAD-AUD JPY JPY-USD);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
@@ -61,25 +59,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
+    }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD frxUSDJPY);
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {}));
-
-subtest 'validate_symbol' => sub {
-    is(BOM::Pricing::v3::Contract::_validate_symbol('R_50'), undef, "return undef if symbol is valid");
-    cmp_deeply(
-        BOM::Pricing::v3::Contract::_validate_symbol('invalid_symbol'),
-        {
-            'error' => {
-                'message' => 'Symbol [_1] invalid',
-                'code'    => 'InvalidSymbol',
-                params    => [qw/ invalid_symbol /],
-            }
-        },
-        'return error if symbol is invalid'
-    );
-};
 
 # We dont write unit test. We fuck unit tests.
 set_fixed_time(Date::Utility->new()->epoch);
@@ -188,23 +171,10 @@ subtest 'get_ask' => sub {
     cmp_deeply($result, $expected, 'the left values are all right');
 
     $params->{symbol} = "invalid symbol";
-    cmp_deeply([
-            warnings {
-                cmp_deeply(
-                    BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params)),
-                    {
-                        error => {
-                            message_to_client => 'Cannot create contract',
-                            code              => "ContractCreationFailure",
-                        }
-                    },
-                    'ContractCreationFailure with invalid symbol'
-                );
-            }
-        ],
-        bag(re('Could not load volsurface for invalid symbol'), re('base commission for invalid symbol not set')),
-        'had warning about volsurface for invalid symbol'
-    );
+    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    ok $result->{error}, 'error for invalid symbol';
+    is $result->{error}{code}, 'OfferingsValidationError', 'error code is OfferingsValidationError';
+    is $result->{error}{message_to_client}, 'Trading is not offered for this asset.', 'correct message to client';
 
     cmp_deeply(
         BOM::Pricing::v3::Contract::_get_ask({}),
@@ -222,19 +192,17 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
     my $params = {
         'proposal'         => 1,
         'fixed_expiry'     => 1,
-        'date_expiry'      => '1476670200',
+        'date_expiry'      => 1476670200,
         'contract_type'    => 'PUT',
         'basis'            => 'payout',
         'currency'         => 'USD',
         'symbol'           => 'R_50',
         'amount'           => '100',
-        'duration_unit'    => 'm',
-        'date_start'       => '1476676000',
+        'date_start'       => 1476676000,
         "streaming_params" => {add_theo_probability => 1},
     };
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-
-    is($result->{error}{code}, 'ContractBuyValidationError', 'errors response is correct when date_expiry < date_start with payout_type is payout');
+    is($result->{error}{code}, 'ContractCreationFailure', 'error code is ContractCreationFailure if start time is in the past');
     is(
         $result->{error}{message_to_client},
         'Expiry time cannot be in the past.',
@@ -249,42 +217,37 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'basis'            => 'stake',
         'currency'         => 'USD',
         'symbol'           => 'R_50',
-        'amount'           => '10',
-        'duration_unit'    => 'm',
-        'date_start'       => '1476676000',
-        "streaming_params" => {add_theo_probability => 1},
-    };
-    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-
-    is($result->{error}{code}, 'ContractBuyValidationError', 'errors response is correct when date_expiry < date_start with payout_type is stake');
-    is(
-        $result->{error}{message_to_client},
-        'Expiry time cannot be in the past.',
-        'errors response is correct when date_expiry < date_start with payout_type is stake'
-    );
-
-    $params = {
-        'proposal'         => 1,
-        'fixed_expiry'     => 1,
-        'date_expiry'      => '1476670200',
-        'contract_type'    => 'PUT',
-        'basis'            => 'stake',
-        'currency'         => 'USD',
-        'symbol'           => 'R_50',
         'amount'           => '11',
-        'duration_unit'    => 'm',
         'date_start'       => '1476670200',
         "streaming_params" => {add_theo_probability => 1},
     };
     $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
 
-    is($result->{error}{code}, 'ContractBuyValidationError', 'errors response is correct when date_expiry = date_start with payout_type is stake');
+    is($result->{error}{code}, 'ContractCreationFailure', 'error code is ContractCreationFailure if start time == expiry time');
     is(
         $result->{error}{message_to_client},
         'Expiry time cannot be equal to start time.',
         'errors response is correct when date_expiry = date_start with payout_type is stake'
     );
+};
 
+subtest 'send_ask - invalid symbol' => sub {
+    my $params = {
+        client_ip => '127.0.0.1',
+        args      => {
+            "proposal"         => 1,
+            "amount"           => "100",
+            "basis"            => "payout",
+            "contract_type"    => "CALL",
+            "currency"         => "USD",
+            "duration"         => "60",
+            "duration_unit"    => "s",
+            "symbol"           => "Invalid",
+            "streaming_params" => {add_theo_probability => 1},
+        }};
+
+    my $result = $c->call_ok('send_ask', $params)->has_error->error_code_is('OfferingsValidationError')
+        ->error_message_is('Trading is not offered for this asset.');
 };
 
 subtest 'send_ask' => sub {
@@ -353,8 +316,7 @@ subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
 
             "streaming_params" => {add_theo_probability => 1},
         }};
-    $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractBuyValidationError')->error_message_is('Expiry time cannot be in the past.');
-
+    $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')->error_message_is('Expiry time cannot be in the past.');
 };
 
 subtest 'get_bid' => sub {
@@ -373,10 +335,12 @@ subtest 'get_bid' => sub {
         purchase_date => $now->epoch - 901
     );
     my $params = {
-        short_code  => $contract->shortcode,
-        contract_id => $contract->id,
-        currency    => 'USD',
-        is_sold     => 0,
+        short_code      => $contract->shortcode,
+        contract_id     => $contract->id,
+        currency        => 'USD',
+        is_sold         => 0,
+        country_code    => 'cr',
+        landing_company => 'costarica',
     };
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
         ->error_message_is(
@@ -386,11 +350,13 @@ subtest 'get_bid' => sub {
     $contract = _create_contract();
 
     $params = {
-        short_code  => $contract->shortcode,
-        contract_id => $contract->id,
-        currency    => 'USD',
-        is_sold     => 0,
-        sell_price  => $contract->payout,
+        short_code      => $contract->shortcode,
+        contract_id     => $contract->id,
+        currency        => 'USD',
+        is_sold         => 0,
+        sell_price      => $contract->payout,
+        country_code    => 'cr',
+        landing_company => 'costarica',
     };
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
@@ -429,11 +395,13 @@ subtest 'get_bid' => sub {
     $contract = _create_contract();
 
     $params = {
-        short_code  => $contract->shortcode,
-        contract_id => $contract->id,
-        currency    => 'USD',
-        is_sold     => 0,
-        sell_price  => $contract->payout,
+        short_code      => $contract->shortcode,
+        contract_id     => $contract->id,
+        currency        => 'USD',
+        is_sold         => 0,
+        sell_price      => $contract->payout,
+        country_code    => 'cr',
+        landing_company => 'costarica',
     };
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
@@ -457,11 +425,13 @@ subtest 'get_bid_skip_barrier_validation' => sub {
         date_start   => $now->epoch - 101,
     );
     $params = {
-        short_code  => $contract->shortcode,
-        contract_id => $contract->id,
-        currency    => 'USD',
-        is_sold     => 0,
-        sell_price => $contract->value,
+        short_code      => $contract->shortcode,
+        contract_id     => $contract->id,
+        currency        => 'USD',
+        is_sold         => 0,
+        sell_price      => $contract->value,
+        country_code    => 'cr',
+        landing_company => 'costarica',
     };
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
@@ -473,8 +443,8 @@ subtest 'get_bid_skip_barrier_validation' => sub {
         or diag "validatione error: " . ($result->{validation_error} // '<undef>');
     is($result->{status}, 'open', 'status is open');
 
-    $params->{sell_time}  = $now->epoch;
-    $params->{is_sold}    = 1;
+    $params->{sell_time} = $now->epoch;
+    $params->{is_sold}   = 1;
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is($result->{status}, 'sold', 'contract sold');
     $params->{is_expired} = 1;
@@ -528,9 +498,11 @@ subtest $method => sub {
         date_pricing  => $now->epoch,
     );
     $params = {
-        short_code  => $contract->shortcode,
-        contract_id => $contract->id,
-        currency    => 'USD',
+        short_code      => $contract->shortcode,
+        contract_id     => $contract->id,
+        currency        => 'USD',
+        country_code    => 'cr',
+        landing_company => 'costarica',
     };
     my $res = $c->call_ok('get_bid', $params)->result;
     my $expected_result = {
@@ -575,10 +547,12 @@ subtest $method => sub {
         date_pricing  => $now->epoch,
     );
     $params = {
-        short_code  => $contract->shortcode,
-        contract_id => $contract->id,
-        currency    => 'USD',
-        is_sold     => 0,
+        short_code      => $contract->shortcode,
+        contract_id     => $contract->id,
+        currency        => 'USD',
+        is_sold         => 0,
+        country_code    => 'cr',
+        landing_company => 'costarica',
     };
     $res = $c->call_ok('get_bid', $params)->result;
     $expected_result = {
@@ -607,10 +581,12 @@ subtest $method => sub {
     }
 
     $params = {
-        short_code  => $contract->shortcode,
-        contract_id => $contract->id,
-        currency    => 'USD',
-        is_sold     => 1,
+        short_code      => $contract->shortcode,
+        contract_id     => $contract->id,
+        currency        => 'USD',
+        is_sold         => 1,
+        country_code    => 'cr',
+        landing_company => 'costarica',
     };
     $res = $c->call_ok('get_bid', $params)->result;
     $expected_result = {
@@ -682,7 +658,9 @@ subtest 'app_markup_percentage' => sub {
         currency              => 'USD',
         is_sold               => 0,
         sell_time             => undef,
-        app_markup_percentage => 1
+        app_markup_percentage => 1,
+        country_code          => 'cr',
+        landing_company       => 'costarica',
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
@@ -698,7 +676,9 @@ subtest 'app_markup_percentage' => sub {
         currency              => 'USD',
         is_sold               => 0,
         sell_time             => undef,
-        app_markup_percentage => 1
+        app_markup_percentage => 1,
+        country_code          => 'cr',
+        landing_company       => 'costarica',
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
@@ -714,7 +694,9 @@ subtest 'app_markup_percentage' => sub {
         currency              => 'USD',
         is_sold               => 0,
         sell_time             => undef,
-        app_markup_percentage => 1
+        app_markup_percentage => 1,
+        country_code          => 'cr',
+        landing_company       => 'costarica',
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
@@ -730,13 +712,62 @@ subtest 'app_markup_percentage' => sub {
         currency              => 'USD',
         is_sold               => 0,
         sell_time             => undef,
-        app_markup_percentage => 1
+        app_markup_percentage => 1,
+        country_code          => 'cr',
+        landing_company       => 'costarica',
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = _create_contract();
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
+};
+
+subtest 'send_ask - country validation' => sub {
+    my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
+    $mocked_decimate->mock(
+        'get',
+        sub {
+            [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
+        });
+    my $mocked_contract = Test::MockModule->new('BOM::Product::Contract');
+    $mocked_contract->mock('is_valid_to_buy', 1);
+
+    my $args = {
+        "proposal"         => 1,
+        "amount"           => "100",
+        "basis"            => "payout",
+        "contract_type"    => "CALL",
+        "currency"         => "USD",
+        "duration"         => "29",
+        "duration_unit"    => "m",
+        "symbol"           => "frxUSDJPY",
+        "streaming_params" => {add_theo_probability => 1},
+        country_code       => 'cn',                          # china
+    };
+    my $params = {
+        client_ip => '127.0.0.1',
+        args      => $args,
+    };
+
+    $c->call_ok('send_ask', $params)->has_error->error_code_is('OfferingsValidationError')
+        ->error_message_is('Trading is not offered for this duration.');
+    $args->{duration} = 30;
+    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
+    $args->{symbol}        = 'R_100';
+    $args->{duration}      = 15;
+    $args->{duration_unit} = 's';
+    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
+
+    $args->{country_code} = 'ca';    # canada
+    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
+    $args->{symbol}        = 'frxUSDJPY';
+    $args->{duration}      = 29;
+    $args->{duration_unit} = 'd';
+    $c->call_ok('send_ask', $params)->has_error->error_code_is('OfferingsValidationError')
+        ->error_message_is('Trading is not offered for this duration.');
+    $args->{duration} = 30;
+    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
 };
 
 done_testing();
