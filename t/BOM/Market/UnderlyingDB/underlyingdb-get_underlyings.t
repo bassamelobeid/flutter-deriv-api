@@ -5,13 +5,11 @@ use warnings;
 use Test::Most 0.22;
 use Test::MockTime qw(set_relative_time);
 use YAML::XS qw(DumpFile LoadFile);
-use LandingCompany::Offerings qw(reinitialise_offerings);
 
 use Finance::Contract::Category;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Runtime;
 
-reinitialise_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 
 my $udb;
 lives_ok {
@@ -36,7 +34,7 @@ eq_or_diff [sort $udb->symbols_for_intraday_fx], [
     ],
     'Correct list of intraday historical symbols.';
 
-my @ul_indices_on_flash = qw(AEX AS51 BFX FCHI GDAXI HSI SSMI STI ISEQ);
+my @ul_indices_on_flash = qw(AEX AS51 BFX FCHI GDAXI HSI SSMI STI ISEQ DJI);
 cmp_bag [
     sort $udb->get_symbols_for(
         market            => 'indices',
@@ -59,7 +57,7 @@ cmp_bag [
 
 my @ul_forex_on_endsinout = qw(
     frxAUDJPY frxAUDUSD frxEURAUD frxEURCAD frxEURCHF frxEURGBP frxEURJPY  frxEURUSD
-    frxGBPAUD frxGBPCAD frxGBPJPY frxGBPUSD frxNZDUSD frxUSDCAD frxUSDCHF frxUSDJPY);
+    frxGBPAUD frxGBPJPY frxGBPUSD frxUSDCAD frxUSDCHF frxUSDJPY);
 
 eq_or_diff [
     sort $udb->get_symbols_for(
