@@ -3,7 +3,7 @@ package BOM::Pricing::PriceDaemon;
 use strict;
 use warnings;
 
-use DataDog::DogStatsd::Helper qw/stats_histogram stats_inc stats_gauge stats_count stats_timing/;
+use DataDog::DogStatsd::Helper qw/stats_histogram stats_inc stats_count stats_timing/;
 use Encode;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use JSON::MaybeXS;
@@ -171,7 +171,7 @@ sub run {
         if ($current_pricing_epoch != time) {
 
             for my $key (keys %$stat_count) {
-                stats_gauge("pricer_daemon.$key.count_per_second", $stat_count->{$key}, {tags => $self->tags});
+                stats_histogram("pricer_daemon.$key.count_per_second", $stat_count->{$key}, {tags => $self->tags});
             }
             $stat_count            = {};
             $current_pricing_epoch = time;
