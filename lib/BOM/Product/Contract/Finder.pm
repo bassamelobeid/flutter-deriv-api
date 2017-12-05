@@ -42,9 +42,6 @@ my %supported_contract_types = (
     UPORDOWN    => 1,
     ONETOUCH    => 1,
     NOTOUCH     => 1,
-    LBFLOATCALL => 1,
-    LBFLOATPUT  => 1,
-    LBHIGHLOW   => 1,
 );
 
 sub available_contracts_for_symbol {
