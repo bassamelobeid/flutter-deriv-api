@@ -559,19 +559,20 @@ sub contracts_for {
     my $symbol               = $args->{contracts_for};
     my $currency             = $args->{currency} || 'USD';
     my $product_type         = $args->{product_type} // 'basic';
-    my $landing_company_name = $args->{landing_company} // 'costarica';
+    my $landing_company_name = $args->{landing_company};
     my $country_code         = $params->{country_code} // '';
 
     my $contracts_for;
     my $query_args = {
-        symbol          => $symbol,
-        landing_company => $landing_company_name,
+        symbol => $symbol,
         ($country_code ? (country_code => $country_code) : ()),
     };
 
     if ($product_type eq 'multi_barrier') {
+        $query_args->{landing_company} = $landing_company_name // 'japan';
         $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol($query_args);
     } else {
+        $query_args->{landing_company} = $landing_company_name // 'costarica';
         $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($query_args);
         # this is temporary solution till the time front apps are fixed
         # filter CALLE|PUTE only for non japan
