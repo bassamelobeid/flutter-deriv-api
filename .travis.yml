@@ -22,7 +22,7 @@ env:
     matrix:
         - TEST_SUITE=accounts
         - TEST_SUITE=security
-        - TEST_SUITE=streams
+        - TEST_SUITE=pricing
         - TEST_SUITE=misc
         - TEST_SUITE=structure_and_schemas
     global:

@@ -11,8 +11,8 @@ accounts:
 security:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/security
 
-streams:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/streams
+pricing:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/pricing
 
 misc:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/misc
@@ -20,7 +20,7 @@ misc:
 structure_and_schemas:
 	@$(PROVE) t /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite
 
-test: structure_and_schemas accounts security streams misc
+test: structure_and_schemas accounts security pricing misc
 
 tidy:
 	find . -name '*.p?.bak' -delete
