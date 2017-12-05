@@ -8,19 +8,20 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 accounts:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/accounts
 
+security:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/security
+
 streams:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/streams
 
 misc:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/misc
 
-json_schemas:
+structure_and_schemas:
+	@$(PROVE) t
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite
 
-structure:
-	@$(PROVE) t/*.t
-
-test: structure v3_1 v3_2 v3_3 json_schemas
+test: structure accounts streams security misc structure_and_schemas
 
 tidy:
 	find . -name '*.p?.bak' -delete
