@@ -146,6 +146,20 @@ sub statement {
     BOM::RPC::v3::PortfolioManagement::_sell_expired_contracts($client, $params->{source});
 
     my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
+    return {
+        transactions => [],
+        count        => 0
+    } unless (scalar @{$results});
+
+    my @short_codes = map { $_->{short_code} } grep { defined $_->{short_code} } @{$results};
+
+    my $longcodes;
+    $longcodes = BOM::RPC::v3::Utility::longcode({
+            short_codes => \@short_codes,
+            currency    => $account->currency_code,
+            language    => $params->{language},
+            source      => $params->{source},
+        }) if $params->{args}->{description} and @short_codes;
 
     my @txns;
     for my $txn (@$results) {
@@ -175,18 +189,11 @@ sub statement {
 
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
-            if ($struct->{shortcode} && $account->currency_code) {
-
-                my $res = BOM::RPC::v3::Utility::longcode({
-                    short_codes => [$struct->{shortcode}],
-                    currency    => $account->currency_code,
-                    language    => $params->{language},
-                    source      => $params->{source},
-                });
-
-                $struct->{longcode} = $res->{longcodes}->{$struct->{shortcode}} // localize('Could not retrieve contract details');
+            if ($struct->{shortcode}) {
+                $struct->{longcode} = $longcodes->{longcodes}->{$struct->{shortcode}} // localize('Could not retrieve contract details');
+            } else {
+                $struct->{longcode} //= $txn->{payment_remark} // '';
             }
-            $struct->{longcode} //= $txn->{payment_remark} // '';
         }
         push @txns, $struct;
     }
@@ -235,7 +242,7 @@ sub profit_table {
     return {
         transactions => [],
         count        => 0
-    } unless (scalar @{$data} > 0);
+    } unless (scalar @{$data});
     # args is passed to echo req hence we need to delete them
     delete $args->{after};
     delete $args->{before};
