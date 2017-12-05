@@ -18,8 +18,7 @@ misc:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/misc
 
 structure_and_schemas:
-	@$(PROVE) t
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite
+	@$(PROVE) t /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite
 
 test: structure_and_schemas accounts security streams misc
 
