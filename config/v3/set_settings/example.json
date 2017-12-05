@@ -12,5 +12,5 @@
     "tax_identification_number": "987654321",
     "account_opening_reason": "Speculative",
     "allow_copiers": 1,
-    "request_professional_status": 0
+    "request_professional_status": 1
 }
