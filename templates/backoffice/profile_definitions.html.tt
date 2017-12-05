@@ -13,3 +13,7 @@
         <p>- [% sub.name %]: [% sub.profile_name %]</p>
     [% END %]
 [% END %]
+
+<p><b> Lookback option:</b></p>
+
+<p> No of open position limit : 5 contracts </>
