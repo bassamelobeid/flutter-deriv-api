@@ -21,6 +21,7 @@ use BOM::Test;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestMarketData;
 use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Data::Utility::AuthTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Platform::Password;
 use BOM::Platform::User;
@@ -214,5 +215,6 @@ sub init_once {
     BOM::Test::Data::Utility::FeedTestDatabase->import(qw(:init));
     BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
     BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
+    BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
 }
 1;
