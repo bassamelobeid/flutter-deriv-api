@@ -12,7 +12,7 @@ use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 use Quant::Framework;
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 
 use BOM::Platform::Chronicle;
 use BOM::Platform::Config;
@@ -26,7 +26,8 @@ use BOM::Platform::Runtime;
 sub validate_symbol {
     my $symbol = shift;
     my @offerings =
-        LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config)->values_for_key('underlying_symbol');
+        LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config)
+        ->values_for_key('underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
 
         # There's going to be a few symbols that are disabled or otherwise not provided
