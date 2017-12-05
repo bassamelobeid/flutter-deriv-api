@@ -96,9 +96,9 @@
                 <div class="grd-grid-4">[% transaction.payment_remark | replace('\s+:\s+', ': ') | html  %]</div>
                 [% IF transaction.action_type == 'deposit' %]
                         <div class="grd-grid-1 right-aligned"></div>
-                        <div class="grd-grid-1 right-aligned">[% formatnumber('amount', currency, transaction.amount) %]</div>
+                        <div class="grd-grid-1 right-aligned">[% currency %] [% formatnumber('amount', currency, transaction.amount) %]</div>
                 [% ELSE %]
-                        <div class="grd-grid-1 right-aligned">[% formatnumber('amount', currency, transaction.amount) %]</div>
+                        <div class="grd-grid-1 right-aligned">[% currency %] [% formatnumber('amount', currency, transaction.amount) %]</div>
                         <div class="grd-grid-1 right-aligned"></div>
                 [% END %]
         [% END %]
