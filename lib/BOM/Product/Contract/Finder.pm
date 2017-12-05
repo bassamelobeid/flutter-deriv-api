@@ -61,7 +61,7 @@ sub available_contracts_for_symbol {
     }
 
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
-    my $offerings_obj   = $landing_company->offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj   = $landing_company->basic_offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
     my @offerings       = $offerings_obj->query({underlying_symbol => $symbol});
 
     my @blackout_periods;
