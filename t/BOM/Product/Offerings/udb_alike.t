@@ -33,6 +33,10 @@ subtest 'Sets match' => sub {
 
             push @result, 'coinauction';
         }
+        if ($po eq 'barrier_category') {
+
+            push @result, 'euro';
+        }
         eq_or_diff([sort @result], [sort $udb->$udb_method], $po . ' list match with UnderlyingDB->' . $udb_method);
 
     }
