@@ -38,7 +38,8 @@ use RedisDB;
 use YAML::XS qw/LoadFile DumpFile/;
 
 use Exporter qw/import/;
-our @EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect launch_redis/;
+our @EXPORT_OK =
+    qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect launch_redis init_once/;
 
 my $version = 'v3';
 die 'unknown version' unless $version;
