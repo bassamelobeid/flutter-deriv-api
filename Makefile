@@ -5,13 +5,13 @@ P=/etc/rmg/bin/prove --timer -v -rl
 
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
-v3_1:
+accounts:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/accounts
 
-v3_2:
+streams:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/streams
 
-v3_3:
+misc:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/misc
 
 json_schemas:
