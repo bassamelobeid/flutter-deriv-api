@@ -1,6 +1,6 @@
 {
   "buy": 1,
-  "price": 2.77,
+  "price": 16.04,
   "parameters": {
     "amount": 10,
     "contract_type": "LBFLOATCALL",
