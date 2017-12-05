@@ -18,9 +18,9 @@ use Data::Dumper;
 use Date::Utility;
 
 use BOM::Test;
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase;
+use BOM::Test::Data::Utility::UnitTestMarketData;
+use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Platform::Password;
 use BOM::Platform::User;
@@ -44,6 +44,7 @@ my $version = 'v3';
 die 'unknown version' unless $version;
 
 sub build_mojo_test {
+    init_once();
     my $app_class = shift;
 
     die 'Wrong app' if !$app_class || ref $app_class;
@@ -85,6 +86,7 @@ sub launch_redis {
 }
 
 sub build_wsapi_test {
+    init_once();
     my $args    = shift || {};
     my $headers = shift || {};
     my $callback = shift;
@@ -153,6 +155,7 @@ sub test_schema {
 }
 
 sub build_test_R_50_data {
+    init_once();
     initialize_realtime_ticks_db();
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
@@ -204,4 +207,12 @@ sub call_mocked_client {
     return ($res, $call_params);
 }
 
+my $initialized;
+sub init_once {
+    return if $initialized;
+    $initialized //= 1;
+    BOM::Test::Data::Utility::FeedTestDatabase->import(qw(:init));
+    BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
+    BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
+}
 1;
