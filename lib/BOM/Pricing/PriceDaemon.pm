@@ -3,7 +3,7 @@ package BOM::Pricing::PriceDaemon;
 use strict;
 use warnings;
 
-use DataDog::DogStatsd::Helper qw/stats_inc stats_gauge stats_count stats_timing/;
+use DataDog::DogStatsd::Helper qw/stats_histogram stats_inc stats_gauge stats_count stats_timing/;
 use Encode;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use JSON::MaybeXS;
@@ -150,7 +150,7 @@ sub run {
 
         $tv_now = [Time::HiRes::gettimeofday];
 
-        stats_gauge('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
+        stats_histogram('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
 
         stats_timing(
             'pricer_daemon.process.time',
