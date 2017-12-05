@@ -642,7 +642,7 @@ sub _validate_offerings {
         my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company_short} // 'costarica');
 
         my $offerings_obj =
-            $landing_company->offerings_for_country($args_copy->{country_code} // '', BOM::Platform::Runtime->instance->get_offerings_config);
+            $landing_company->basic_offerings_for_country($args_copy->{country_code} // '', BOM::Platform::Runtime->instance->get_offerings_config);
 
         die 'Could not find offerings for ' . $args_copy->{country_code} unless $offerings_obj;
 
