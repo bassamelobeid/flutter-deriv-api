@@ -276,7 +276,7 @@ sub get_current_profile_definitions {
 }
 
 my %_no_condition;
-@_no_condition{qw(name risk_profile updated_by updated_on)} = ();
+@_no_condition{qw(name risk_profile updated_by updated_on non_binary_contract_limit)} = ();
 
 sub _match_conditions {
     my ($self, $custom, $additional_info) = @_;
