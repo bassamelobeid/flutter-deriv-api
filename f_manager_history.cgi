@@ -88,14 +88,14 @@ my $withdrawals_to_date = $dbic->run(
     fixup => sub {
         my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_withdrawals(?)");
         $sth->execute($client->loginid);
-        return $sth->fetchrow_hashref;
+        return $sth->fetchall_hashref('client_loginid');
     });
 
 BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
     {
         transactions            => $statement->{transactions},
-        withdrawals_to_date     => formatnumber('amount', $currency, $withdrawals_to_date->{amount}),
+        withdrawals_to_date     => formatnumber('amount', $currency, $withdrawals_to_date->{$client->loginid}->{amount}),
         balance                 => $statement->{balance},
         currency                => $currency,
         loginid                 => $client->loginid,
