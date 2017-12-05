@@ -217,17 +217,41 @@ sub before_forward {
         });
 }
 
+sub _rpc_suffix {
+    my ($c) = @_;
+
+    my $app_id    = $c->app_id // '';
+    my $processor = $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
+    my $suffix    = $processor ? '_' . $processor : '';
+    unless (exists $c->app->config->{"rpc_url" . $suffix}) {
+        warn "Suffix $suffix not found in config for app ID $app_id\n";
+        $suffix = '';
+    }
+    return $suffix;
+}
+
 sub get_rpc_url {
+    my ($c) = @_;
+
+    my $suffix = _rpc_suffix($c);
+    return $ENV{RPC_URL} || $c->app->config->{"rpc_url" . $suffix};
+}
+
+sub assign_rpc_url {
     my ($c, $req_storage) = @_;
 
-    $req_storage->{url} = $ENV{RPC_URL} || $c->app->config->{rpc_url};
+    $req_storage->{url} = get_rpc_url($c);
     return;
 }
 
-sub get_pricing_rpc_url {
+sub get_doc_auth_s3_conf {
     my $c = shift;
 
-    return $ENV{PRICING_RPC_URL} || $c->app->config->{pricing_rpc_url};
+    return {
+        access_key => $ENV{DOCUMENT_AUTH_S3_ACCESS} || $c->app->config->{document_auth_s3_access},
+        secret_key => $ENV{DOCUMENT_AUTH_S3_SECRET} || $c->app->config->{document_auth_s3_secret},
+        bucket     => $ENV{DOCUMENT_AUTH_S3_BUCKET} || $c->app->config->{document_auth_s3_bucket},
+    };
 }
 
 sub output_validation {
@@ -279,6 +303,7 @@ sub error_check {
     if (ref($result) eq 'HASH' && $result->{error}) {
         $c->stash->{introspection}{last_rpc_error} = $result->{error};
         $req_storage->{close_connection} = 1 if $result->{error}->{code} eq 'InvalidAppID';
+        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.error', {tags => ["rpc:$req_storage->{method}"]});
     }
     return;
 }
@@ -304,18 +329,32 @@ sub add_brand {
     return;
 }
 
-sub check_app_id {
-    my ($c, $req_storage) = @_;
+# XXX: this is temporary check for debug purposes. At the end this check will be inside before_dispatch
+sub check_useragent {
+    my ($c) = @_;
 
-    # check for app_id, throw error if it's not there
-    unless (defined $c->stash('source')) {
+    if ((not $c->stash('user_agent')) and $c->stash('logged_requests') < 3 and ($c->stash('source') // 0) == 1) {
+        $c->stash('logged_requests', $c->stash('logged_requests') + 1);
         try {
-            Path::Tiny::path('/var/log/httpd/missing_app_id.log')
-                ->append('No app id, ip is ' . $c->stash('client_ip') . ' country is ' . $c->stash('country_code'));
+            Path::Tiny::path('/var/log/httpd/missing_ua_appid1.log')->append((
+                    join ',',
+                    (map { $c->stash($_) // '' } qw/ source client_ip landing_company_name brand log_requests /),
+                    (map { $c->tx->req->headers->header($_) // '-' } qw/ Origin Referer /),
+                    JSON::to_json($c->stash('introspection')->{last_call_received} // {})
+                ),
+                "\n"
+            );
         };
-        return $c->new_error($req_storage->{name}, 'AccessForbidden',
-            $c->l('App id is mandatory to access our api. Please register your application.'));
     }
+    return;
+}
+
+sub _on_sanity_failed {
+    my ($c) = @_;
+    my $client_ip = $c->stash->{client_ip};
+    my $tags = ["client_ip:$client_ip", "app_name:" . ($c->stash('app_name') || ''), "app_id:" . ($c->stash('source') || ''),];
+    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.sanity_check_failed.count', {tags => $tags});
+
     return;
 }
 
@@ -326,6 +365,8 @@ sub on_client_connect {
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
 
     $c->app->stat->{cumulative_client_connections}++;
+    $c->on(sanity_failed => \&_on_sanity_failed);
+
     return;
 }
 
@@ -335,6 +376,9 @@ sub on_client_disconnect {
     forget_all($c);
 
     delete $c->app->active_connections->{$c};
+    if (my $tx = $c->tx) {
+        $tx->unsubscribe('sanity_failed');
+    }
 
     return;
 }

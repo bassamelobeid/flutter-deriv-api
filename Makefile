@@ -1,4 +1,4 @@
-M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
+M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 MOJO_LOG_LEVEL?=info
 export MOJO_LOG_LEVEL
 P=/etc/rmg/bin/prove --timer -v -rl
@@ -14,31 +14,17 @@ v3_2:
 v3_3:
 	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(8\|9\)')
 
-json_schema_1:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: proposal.conf
-
-json_schema_2:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: assets.conf
-
-json_schema_3:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: accounts.conf
-
-json_schema_4:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: copytrading.conf
-
-json_schema_5:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/suite.t :: multiple_account.conf
-
-loadtest:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/loadtest.t
+json_schemas:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/proposal.t
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/assets.t
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/accounts.t
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/copytrading.t
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/multiple_account.t
 
 structure:
 	@$(PROVE) t/*.t
 
-leaktest:
-	@$(PROVE) t/leak/v3
-
-test: structure v3_1 v3_2 v3_3 json_schema_1 json_schema_2 json_schema_3 json_schema_4 json_schema_5 leaktest
+test: structure v3_1 v3_2 v3_3 json_schemas
 
 tidy:
 	find . -name '*.p?.bak' -delete
