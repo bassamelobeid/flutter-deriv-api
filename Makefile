@@ -21,7 +21,7 @@ structure_and_schemas:
 	@$(PROVE) t
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite
 
-test: structure accounts streams security misc structure_and_schemas
+test: structure_and_schemas accounts security streams misc
 
 tidy:
 	find . -name '*.p?.bak' -delete
