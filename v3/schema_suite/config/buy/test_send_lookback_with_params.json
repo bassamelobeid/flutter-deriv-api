@@ -1,13 +1,12 @@
 {
   "buy": 1,
-  "price": 19.56,
+  "price": 2.77,
   "parameters": {
     "amount": 10,
-    "contract_type": "LBFIXEDCALL",
+    "contract_type": "LBFLOATCALL",
     "currency": "USD",
-    "symbol": "R_50",
-    "duration": 15,
-    "duration_unit": "m",
-    "barrier" : "+0.1"
+    "symbol": "R_100",
+    "duration": 5,
+    "duration_unit": "m"
   }
 }
