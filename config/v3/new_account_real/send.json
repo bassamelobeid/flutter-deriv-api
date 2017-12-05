@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title":"Create real account Send",
-  "description": "This call opens a new real-money account. Note: you must be authenticated to a virtual-money account to call this function.",
+  "description": "This call opens a new real-money account. This call can be made from a virtual-money or a real-money account. If it’s the latter, client information fields in this call will be ignored and data from your existing real-money account will be used.",
   "properties": {
     "new_account_real": {
       "type": "integer",
@@ -46,12 +46,12 @@
     },
     "address_line_1": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\p{Nd}\\s'.,@\/-]{1,70}$",
+      "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#\/-]{1,70}$",
       "required": "1"
     },
     "address_line_2": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\p{Nd}\\s'.,@\/-]{0,70}$",
+      "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#\/-]{0,70}$",
       "description": "Optional field, within 70 characters."
     },
     "address_city": {
@@ -119,6 +119,16 @@
       "pattern": "^[A-Z]{3}$",
       "required": "0",
       "description": "Optional field to set currency of the account. List of supported currencies can be acquired with 'payout_currencies' call"
+    },
+    "account_type": {
+      "pattern": "^ico|default$",
+      "required": "0",
+      "description": "Optional field to restrict the account type. Currently used only for ICO token accounts."
+    },
+    "client_type": {
+      "pattern": "^retail|professional$",
+      "required": "0",
+      "description": "Optional field, indicates whether this is for a client requesting an account with professional status. Defaults to retail."
     },
     "passthrough": {
       "type": "object",
