@@ -8,7 +8,7 @@ use Test::Warnings;
 use Test::Exception;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -32,7 +32,7 @@ my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pri
 my @underlying_symbols = ('AEX');
 my $payout_currency    = 'USD';
 my $spot               = 100;
-my $offerings_obj      = LandingCompany::Offerings->get('costarica', $offerings_cfg);
+my $offerings_obj      = LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg);
 foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     Test::BOM::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
