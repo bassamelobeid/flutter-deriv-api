@@ -23,7 +23,7 @@ BOM::Platform::QuantsConfig - A class to handle dynamic quants config
 =cut
 
 use Date::Utility;
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 use List::Util qw(first);
 use Scalar::Util qw(looks_like_number);
 use Finance::Contract::Category;
@@ -174,7 +174,7 @@ sub _validate {
     if ($key eq 'contract_type') {
         @valid = keys %{Finance::Contract::Category::get_all_contract_types()};
     } else {
-        my $offerings_obj = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
+        my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
         @valid = $offerings_obj->values_for_key($key);
     }
 
