@@ -42,6 +42,9 @@ my %supported_contract_types = (
     UPORDOWN    => 1,
     ONETOUCH    => 1,
     NOTOUCH     => 1,
+    LBFLOATCALL => 1,
+    LBFLOATPUT  => 1,
+    LBHIGHLOW   => 1,
 );
 
 sub available_contracts_for_symbol {
@@ -104,6 +107,7 @@ sub available_contracts_for_symbol {
         # barrier field on the frontend.
         $o->{barriers} =
               $cat->two_barriers    ? 2
+            : $cc eq 'lookback'     ? 0
             : $cc eq 'asian'        ? 0
             : $cc eq 'digits'       ? 1
             : $cc eq 'touchnotouch' ? 1
