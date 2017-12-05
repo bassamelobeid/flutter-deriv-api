@@ -25,6 +25,7 @@ subtest 'non trading day' => sub {
     my $saturday = Date::Utility->new('2016-11-19');        # saturday
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($supported_symbol, $saturday);
     my $offerings = get_predefined_offerings({
+        landing_company => 'japan',
         symbol => $supported_symbol,
         date   => $saturday
     });
@@ -32,6 +33,7 @@ subtest 'non trading day' => sub {
     setup_ticks($supported_symbol, [[$monday->minus_time_interval('400d')], [$monday]]);
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($supported_symbol, $monday);
     $offerings = get_predefined_offerings({
+        landing_company => 'japan',
         symbol => $supported_symbol,
         date   => $monday
     });
@@ -118,6 +120,7 @@ subtest 'intraday trading period' => sub {
         note('generating for ' . $symbol . '. Time set to ' . $date->day_as_string . ' at ' . $date->time);
         BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $date);
         my $offerings = get_predefined_offerings({
+            landing_company => 'japan',
             symbol => $symbol,
             date   => $date
         });
@@ -224,6 +227,7 @@ subtest 'predefined barriers' => sub {
     foreach my $test (@inputs) {
         setup_ticks($symbol, $test->{ticks});
         my $offerings = get_predefined_offerings({
+            landing_company => 'japan',
             symbol => $symbol,
             date   => $generation_date
         });
@@ -254,13 +258,13 @@ subtest 'update_predefined_highlow' => sub {
         };
         my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $now);
         ok update_predefined_highlow($new_tick), 'updated highlow';
-        my $offering = get_predefined_offerings({symbol => $symbol});
+        my $offering = get_predefined_offerings({symbol => $symbol, landing_company => 'japan'});
         my $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
         ok !scalar(@{$touch->{expired_barriers}}), 'no expired barrier detected';
         $new_tick->{epoch} += 1;
         $new_tick->{quote} = 125;
         ok update_predefined_highlow($new_tick), 'next update';
-        $offering = get_predefined_offerings({symbol => $symbol});
+        $offering = get_predefined_offerings({symbol => $symbol, landing_company => 'japan'});
         $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
         ok scalar(@{$touch->{expired_barriers}}), 'expired barrier detected';
     }
