@@ -207,10 +207,9 @@ sub call_mocked_client {
     return ($res, $call_params);
 }
 
-my $initialized;
 sub init_once {
-    return if $initialized;
-    $initialized //= 1;
+    return if $ENV{TEST_DB_INITIALIZED};
+    $ENV{TEST_DB_INITIALIZED} //= 1;
     BOM::Test::Data::Utility::FeedTestDatabase->import(qw(:init));
     BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
     BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
