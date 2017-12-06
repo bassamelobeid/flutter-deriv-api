@@ -1,12 +1,14 @@
 use strict;
 use warnings;
 
+use FileHandle;
 use Path::Tiny;
 use Date::Utility;
 
 use Brands;
 
 use BOM::MyAffiliates::TurnoverReporter;
+use BOM::Platform::Runtime;
 use BOM::Platform::Email qw/send_email/;
 
 my $reporter        = BOM::MyAffiliates::TurnoverReporter->new();
