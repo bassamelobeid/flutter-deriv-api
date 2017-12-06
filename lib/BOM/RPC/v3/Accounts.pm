@@ -39,6 +39,22 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
+
+=head2 payout_currencies
+
+Returns an arrayref containing the following:
+* A payout currency that is valid for a specific client
+* Multiple valid payout currencies for the landing company if a client is not provided.
+
+Takes a single C<$params> hashref containing the following keys:
+ * landing_company_name
+ * token_details, which may contain the following keys:
+     * loginid
+
+Returns an arrayref of valid payout currencies
+
+=cut
+
 sub payout_currencies {
     my $params = shift;
 
