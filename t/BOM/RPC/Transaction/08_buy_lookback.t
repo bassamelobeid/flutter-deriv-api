@@ -92,7 +92,7 @@ subtest 'buy' => sub {
     like($result->{shortcode}, qr/LBFLOATCALL_R_50_100_\d{10}_\d{10}_S20P_0/, 'shortcode is correct');
     is(
         $result->{longcode},
-        'Receive 0.1 per point difference between Volatility 50 Index\'s higest value and exit spot at 2 minutes after contract start time.',
+        'Receive 0.1 per point difference between Volatility 50 Index\'s exit spot and lowest value at 2 minutes after contract start time.',
         'longcode is correct'
     );
 
