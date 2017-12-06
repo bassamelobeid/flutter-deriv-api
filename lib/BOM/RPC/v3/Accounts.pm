@@ -39,7 +39,6 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
-
 =head2 payout_currencies
 
 Returns an arrayref containing the following:
