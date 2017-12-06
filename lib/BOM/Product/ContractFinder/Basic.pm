@@ -8,6 +8,7 @@ use Date::Utility;
 use Finance::Contract::Category;
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
+use Number::Closest::XS qw(find_closest_numbers_around);
 
 use BOM::Product::Contract::Strike;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -120,14 +121,15 @@ sub _default_barrier {
     my $now = Date::Utility->new;
     # volatility should just be an estimate here, let's take it straight off the surface and
     # avoid all the craziness.
-    my $first_term = $volsurface->original_term_for_smile->[0];
-    my $volatility = $volsurface->get_surface_volatility($first_term, $volsurface->atm_spread_point);
+    my $tid          = $duration / 86400;
+    my $closest_term = find_closest_numbers_around($tid, $volsurface->original_term_for_smile, 2);
+    my $volatility   = $volsurface->get_surface_volatility($closest_term->[0], $volsurface->atm_spread_point);
 
     my $approximate_barrier = get_strike_for_spot_delta({
         delta            => 0.2,
         option_type      => $option_type,
         atm_vol          => $volatility,
-        t                => $duration / (86400 * 365),
+        t                => $tid / 365,
         r_rate           => 0,
         q_rate           => 0,
         spot             => $current_tick->quote,
