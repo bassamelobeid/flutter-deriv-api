@@ -85,6 +85,43 @@ sub validate_underlying {
     return $ul;
 }
 
+# Validate the barrier of the contract, based on the decimal places.
+# This is compared with the decimal places of the underlying pipsize.
+sub validate_barrier {
+    my $contract_parameters = shift;
+
+    return undef if (defined $contract_parameters->{barrier} && $contract_parameters->{barrier} eq 'S0P');
+
+    # Get the number of digits of the underlying pipsize.
+    my $pipsize = create_underlying($contract_parameters->{underlying})->pip_size;
+    $pipsize =~ /\.([0-9]+)/;
+    my $pipsize_decimal_places = length $1;
+
+    my @barrier_keys = grep { /barrier/ } keys %{$contract_parameters};
+
+    # Loop through each barrier key, if any
+    foreach my $key (@barrier_keys) {
+
+        # Extract the number of decimal places of the given barrier
+        # NOTE: If it is not fractional, it is ignored
+        if ($contract_parameters->{$key} =~ /\.([0-9]+)/) {
+            my $barrier_decimal_places = length $1;
+
+            # Compare with the number of decimal places from the pipsize
+            # If barrier has 5 decimal places and pipsize has 4, this would be rejected due to excessive precision.
+            if ($barrier_decimal_places > $pipsize_decimal_places) {
+
+                return BOM::RPC::v3::Utility::create_error({
+                    code              => 'BarrierValidationError',
+                    message_to_client => localize("Barrier can only be up to [_1] decimal places.", $pipsize_decimal_places),
+                });
+            }
+        }
+    }
+
+    return undef;
+}
+
 sub prepare_ask {
     my $p1 = shift;
     my %p2 = %$p1;
@@ -95,8 +132,8 @@ sub prepare_ask {
     }
 
     if (defined $p2{barrier} && defined $p2{barrier2}) {
-        $p2{low_barrier}  = delete $p2{barrier2};
         $p2{high_barrier} = delete $p2{barrier};
+        $p2{low_barrier}  = delete $p2{barrier2};
     } elsif ($p1->{contract_type} !~ /^(ASIAN|DIGITEVEN|DIGITODD)/) {
         $p2{barrier} //= 'S0P';
         delete $p2{barrier2};
