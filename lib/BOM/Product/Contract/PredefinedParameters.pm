@@ -4,7 +4,8 @@ use strict;
 use warnings;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(get_predefined_offerings get_trading_periods generate_trading_periods update_predefined_highlow next_generation_epoch);
+our @EXPORT_OK =
+    qw(get_predefined_barriers_by_contract_category get_expired_barriers get_available_barriers get_trading_periods generate_barriers_for_window generate_trading_periods update_predefined_highlow next_generation_epoch);
 
 use JSON::MaybeXS qw/encode_json decode_json/;
 use JSON qw(to_json from_json);
@@ -31,33 +32,6 @@ sub _trading_calendar {
     return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
 }
 
-=head2 get_predefined_offerings
-
-Returns an array reference of predefined product offerings for an underlying symbol.
-Each offering has the following additional keys:
- - available_barriers
- - expired_barriers
- - trading_period
-->get_predefined_offerings({symbol => 'frxUSDJPY'}); # get latest predefined offerings
-->get_predefined_offerings({symbol => 'frxUSDJPY', date => $date}); # historical predefined offerings
-->get_predefined_offerings({symbol => 'frxUSDJPY', date => $date, landing_company => 'costarica'}); # specific landing_company
-
-=cut
-
-sub get_predefined_offerings {
-    my $args = shift;
-
-    my ($symbol, $date, $landing_company, $country_code) = @{$args}{'symbol', 'date', 'landing_company', 'country_code'};
-    my @offerings = _get_offerings($symbol, $landing_company, $country_code);
-    my $underlying = create_underlying($symbol, $date);
-    $date //= Date::Utility->new;
-
-    my $new = _apply_predefined_parameters($date, $underlying, \@offerings);
-
-    return $new if $new and @$new;
-    return [];
-}
-
 =head2 get_trading_periods
 
 Returns an array reference of trading period for an underlying symbol from redis cache.
@@ -79,8 +53,8 @@ sub get_trading_periods {
 
     my $for_date = $underlying->for_date;
     my $method   = $for_date ? 'get_for' : 'get';
-    my $key      = trading_period_key($underlying->symbol, $date);
-    my $cache    = BOM::Platform::Chronicle::get_chronicle_reader($for_date)->$method($cache_namespace, $key, $for_date);
+    my @key      = trading_period_key($underlying->symbol, $date);
+    my $cache    = BOM::Platform::Chronicle::get_chronicle_reader($for_date)->$method(@key, $for_date);
 
     return $cache // [];
 }
@@ -206,87 +180,24 @@ sub next_generation_epoch {
     return $from_date->truncate_to_day->plus_time_interval($hour + 1 . 'h')->epoch;
 }
 
-sub _flyby {
-    my ($landing_company_short, $country_code) = @_;
+=head2 get_expired_barriers
 
-    $landing_company_short //= 'costarica';
-    $country_code          //= '';
-    my $landing_company = LandingCompany::Registry::get($landing_company_short);
+Get the expired barriers for a specific underlying and trading windows.
 
-    return $landing_company->multi_barrier_offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
-}
+Returns an array reference.
 
-# we perform three things here:
-# - split offerings into applicable trading periods.
-# - calculate barriers.
-# - set expired barriers.
-sub _apply_predefined_parameters {
-    my ($date, $underlying, $offerings) = @_;
+=cut
 
-    my $trading_periods = get_trading_periods($underlying->symbol, $underlying->for_date);
-    my $trading_calendar = _trading_calendar($underlying->for_date);
-
-    return () unless @$trading_periods;
-
-    my $close_epoch = $trading_calendar->closing_on($underlying->exchange, $date)->epoch;
-    # full trading seconds
-    my $trading_seconds = $close_epoch - $date->truncate_to_day->epoch;
-
-    my @new_offerings;
-    foreach my $offering (@$offerings) {
-        # we offer 0 day (end of day) and intraday durations to callput only
-        my $minimum_contract_duration;
-        if ($offering->{contract_category} ne 'callput') {
-            $minimum_contract_duration = 86400;
-        } else {
-            $minimum_contract_duration =
-                $offering->{expiry_type} eq 'intraday'
-                ? Time::Duration::Concise->new({interval => $offering->{min_contract_duration}})->seconds
-                : $trading_seconds;
-        }
-
-        my $maximum_contract_duration =
-            ($offering->{contract_category} eq 'callput' and $offering->{expiry_type} eq 'intraday')
-            ? 21600
-            : Time::Duration::Concise->new({interval => $offering->{max_contract_duration}})->seconds;
-
-        foreach my $trading_period (grep { defined } @$trading_periods) {
-            my $date_expiry      = $trading_period->{date_expiry}->{epoch};
-            my $date_start       = $trading_period->{date_start}->{epoch};
-            my $trading_duration = $date_expiry - $date_start;
-            if ($trading_duration < $minimum_contract_duration or $trading_duration > $maximum_contract_duration) {
-                next;
-            } elsif ($date->day_of_week == 5
-                and $trading_duration < 86400
-                and ($date_expiry > $close_epoch or $date_start > $close_epoch))
-            {
-                next;
-            } else {
-                my $available_barriers = _calculate_available_barriers($underlying, $offering, $trading_period);
-                my $expired_barriers =
-                    ($offering->{barrier_category} eq 'american') ? _get_expired_barriers($underlying, $available_barriers, $trading_period) : [];
-
-                push @new_offerings,
-                    +{
-                    %{$offering},
-                    trading_period     => $trading_period,
-                    available_barriers => $available_barriers,
-                    expired_barriers   => $expired_barriers,
-                    };
-            }
-        }
-    }
-
-    return \@new_offerings;
-}
-
-sub _get_expired_barriers {
+sub get_expired_barriers {
     my ($underlying, $available_barriers, $trading_period) = @_;
 
     my ($high, $low) = _get_predefined_highlow($underlying, $trading_period);
 
     unless ($high and $low) {
-        warn "highlow is undefined for " . $underlying->symbol . " [$trading_period->{date_start}->{date} - $trading_period->{date_expiry}->{date}]";
+        warn "highlow is undefined for "
+            . $underlying->symbol . " ["
+            . Date::Utility->new($trading_period->{date_start}->{epoch})->datetime . ' - '
+            . Date::Utility->new($trading_period->{date_expiry}->{epoch})->datetime . "]";
         return [];
     }
 
@@ -300,18 +211,25 @@ sub _get_expired_barriers {
     return \@expired_barriers;
 }
 
-#To set the predefined barriers on each trading period.
-#We do a binary search to find out the boundaries barriers associated with theo_prob [0.05,0.95] of a digital call,
-#then split into 20 barriers that within this boundaries. The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
-sub _calculate_available_barriers {
+=head2 get_avalable_barriers
+
+Get the available barriers for a specific underlying, trading period & offerings combination.
+
+Returns an array reference
+
+=cut
+
+sub get_available_barriers {
     my ($underlying, $offering, $trading_period) = @_;
 
-    my $barriers = _calculate_barriers({
-        underlying      => $underlying,
-        trading_periods => $trading_period,
-    });
+    my $date = $underlying->for_date // Date::Utility->new;
+    my $method             = $underlying->for_date ? 'get_for' : 'get';
+    my $available_barriers = [];
+    my @key                = predefined_barriers_key($underlying->symbol, $trading_period);
+    my $barriers           = BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date)->$method(@key, $date);
 
-    my $available_barriers;
+    return $available_barriers unless $barriers;
+
     if ($offering->{barriers} == 1) {
         delete $barriers->{50} if $offering->{barrier_category} eq 'american';
         $available_barriers = [map { $underlying->pipsized_value($_) } sort { $a <=> $b } values %$barriers];
@@ -330,6 +248,66 @@ sub _calculate_available_barriers {
     }
 
     return $available_barriers;
+}
+
+=head2 generate_barriers_for_window
+
+Generates a set of predefined contract barriers for a specific underlying and trading window.
+
+Returns a hash reference.
+
+=cut
+
+#We do a binary search to find out the boundaries barriers associated with theo_prob [0.05,0.95] of a digital call,
+#then split into 20 barriers that within this boundaries. The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
+sub generate_barriers_for_window {
+    my ($symbol, $trading_period) = @_;
+
+    my $underlying = create_underlying($symbol);
+    my $key        = join '_', ('barriers', $underlying->symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
+    my $cache      = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
+
+    # return if barriers are generated already
+    return if $cache;
+
+    my $tiy = ($trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch}) / (365 * 86400);
+
+    my $spot_at_start = _get_spot($underlying, $trading_period);
+    my @initial_barriers = map { _get_strike_from_call_bs_price($_, $tiy, $spot_at_start, 0.1) } (0.05, 0.95);
+
+    # Split the boundaries barriers into 9 barriers by divided the distance of boundaries by 95 (45 each side) - to be used as increment.
+    # The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
+    # Included entry spot as well
+    my $distance_between_boundaries = abs($initial_barriers[0] - $initial_barriers[1]);
+    my @steps                       = (12, 25, 35, 45);
+    my $minimum_step                = roundcommon($underlying->pip_size, $distance_between_boundaries / ($steps[-1] * 2));
+    my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
+    $barriers{50} = $spot_at_start;
+
+    return \%barriers;
+}
+
+sub predefined_barriers_key {
+    my ($symbol, $trading_period) = @_;
+
+    my $key = join '_', ('barriers', $symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
+    return ($cache_namespace, $key);
+}
+
+sub barrier_by_category_key {
+    my $symbol = shift;
+
+    my $key = $symbol . '_barriers_by_category';
+    return ($cache_namespace, $key);
+}
+
+sub get_predefined_barriers_by_contract_category {
+    my ($symbol, $date) = @_;
+
+    my $method = $date ? 'get_for' : 'get';
+    my @key = barrier_by_category_key($symbol);
+
+    return BOM::Platform::Chronicle::get_chronicle_reader($date)->$method(@key, $date);
 }
 
 sub _get_spot {
@@ -379,35 +357,6 @@ sub _get_spot {
     }
     print __PACKAGE__ . " $0 [barriers-debug] :: $spot from $source ( $quote ) at $now \n";
     return $spot;
-}
-
-sub _calculate_barriers {
-    my $args = shift;
-
-    my ($underlying, $trading_period) = @{$args}{qw(underlying trading_periods)};
-    my $key = join '_', ('barriers', $underlying->symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
-    my $cache = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
-
-    return from_json($cache) if $cache;
-
-    my $tiy = ($trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch}) / (365 * 86400);
-
-    my $spot_at_start = _get_spot($underlying, $trading_period);
-    my @initial_barriers = map { _get_strike_from_call_bs_price($_, $tiy, $spot_at_start, 0.1) } (0.05, 0.95);
-
-    # Split the boundaries barriers into 9 barriers by divided the distance of boundaries by 95 (45 each side) - to be used as increment.
-    # The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
-    # Included entry spot as well
-    my $distance_between_boundaries = abs($initial_barriers[0] - $initial_barriers[1]);
-    my @steps                       = (12, 25, 35, 45);
-    my $minimum_step                = roundcommon($underlying->pip_size, $distance_between_boundaries / ($steps[-1] * 2));
-    my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
-    $barriers{50} = $spot_at_start;
-
-    my $ttl = max(1, $trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch});
-    BOM::Platform::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json(\%barriers), 'EX', $ttl);
-
-    return \%barriers;
 }
 
 =head2 _get_strike_from_call_bs_price
@@ -579,39 +528,4 @@ sub _get_trade_date_of_daily_window {
     };
 }
 
-sub _get_offerings {
-    my ($symbol, $landing_company, $country_code) = @_;
-
-    my $flyby = _flyby($landing_company, $country_code);
-
-    my %similar_args = (
-        underlying_symbol => $symbol,
-        start_type        => 'spot',
-    );
-
-    my @offerings = $flyby->query({
-        expiry_type       => 'daily',
-        barrier_category  => 'euro_non_atm',
-        contract_category => 'endsinout',
-        %similar_args,
-    });
-
-    push @offerings,
-        $flyby->query({
-            expiry_type       => ['daily', 'intraday'],
-            barrier_category  => 'euro_non_atm',
-            contract_category => 'callput',
-            %similar_args,
-        });
-
-    push @offerings,
-        $flyby->query({
-            expiry_type       => 'daily',
-            barrier_category  => 'american',
-            contract_category => ['touchnotouch', 'staysinout'],
-            %similar_args,
-        });
-
-    return map { $_->{barriers} = Finance::Contract::Category->new($_->{contract_category})->two_barriers ? 2 : 1; $_ } @offerings;
-}
 1;
