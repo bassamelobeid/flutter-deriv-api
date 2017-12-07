@@ -291,7 +291,7 @@ sub _offerings_obj {
 
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
 
-    return $landing_company->offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
+    return $landing_company->basic_offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
 }
 
 no Moose;
