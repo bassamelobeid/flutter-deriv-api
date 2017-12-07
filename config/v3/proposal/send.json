@@ -77,6 +77,7 @@
     "product_type": {
       "type": "string",
       "description": "The product type, either basic or multibarrier",
+      "pattern":"^(multibarrier|basic)$",
       "default": "basic"
     },
     "passthrough": {

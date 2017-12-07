@@ -19,7 +19,7 @@
         "product_type":{
             "type":"string",
             "description":"Set to 'multi_barrier' to get a list of contracts with predefined trading windows and barriers for a given symbol. Default to 'basic'",
-            "pattern":"^(multi_barrier|basic)$",
+            "pattern":"^(multibarrier|basic)$",
             "default": "basic"
         },
         "landing_company":{

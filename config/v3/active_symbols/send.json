@@ -22,7 +22,8 @@
     "product_type":{
         "type":"string",
         "description":"Set to 'multi_barrier' to get a list of symbols with predefined trading windows and barriers. Default to 'basic'",
-        "pattern":"^(multi_barrier|basic)$"
+        "pattern":"^(multibarrier|basic)$"
+        "default": "basic",
     },
     "req_id": {
       "type": "integer",
