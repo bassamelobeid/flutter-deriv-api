@@ -121,7 +121,7 @@ sub _get_basic_offerings {
     my ($symbol, $landing_company_short, $country_code) = @_;
 
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
-    my $offerings_obj = $landing_company->offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj = $landing_company->basic_offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
 
     return [$offerings_obj->query({underlying_symbol => $symbol})];
 }
