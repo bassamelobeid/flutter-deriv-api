@@ -556,8 +556,8 @@ sub contracts_for {
     my $args                 = $params->{args};
     my $symbol               = $args->{contracts_for};
     my $currency             = $args->{currency} || 'USD';
-    my $product_type         = $args->{product_type} // 'basic';
-    my $landing_company_name = $args->{landing_company} // 'costarica';
+    my $product_type         = $args->{product_type} or die 'product_type is required';
+    my $landing_company_name = $args->{landing_company} or die 'landing_company is required';
     my $country_code         = $params->{country_code} // '';
 
     my $finder        = BOM::Product::ContractFinder->new;
