@@ -48,23 +48,22 @@ sub _build_predefined_contracts {
     my $self = shift;
 
     my $predefined_barriers = get_predefined_barriers_by_contract_category($self->underlying->symbol, $self->underlying->for_date);
-    my $expiries_for_category = $predefined_barriers->{$self->category->code};
+    my $windows_for_category = $predefined_barriers->{$self->category->code};
 
-    return {} unless $expiries_for_category;
+    return {} unless $windows_for_category;
 
     my $is_path_dependent = $self->category->is_path_dependent;
     my %info;
-    foreach my $expiry_epoch (keys %$expiries_for_category) {
-        my $data = $expiries_for_category->{$expiry_epoch};
-        my $tp   = {
-            date_start  => {epoch => $data->{date_start_epoch}},
+    foreach my $key (keys %$windows_for_category) {
+        my $data = $windows_for_category->{$key};
+        my ($start_epoch, $expiry_epoch) = split '-', $key;
+        my $tp = {
+            date_start  => {epoch => $start_epoch},
             date_expiry => {epoch => $expiry_epoch},
         };
         my $expired_barriers = $is_path_dependent ? get_expired_barriers($self->underlying, $data->{available_barriers}, $tp) : [];
-        $info{$expiry_epoch} = {
-            available_barriers => $data->{available_barriers},
-            expired_barriers   => $expired_barriers,
-        };
+        push @{$info{$expiry_epoch}->{available_barriers}}, @{$data->{available_barriers}};
+        push @{$info{$expiry_epoch}->{expired_barriers}},   @{$data->{expired_barriers}};
     }
 
     return \%info;

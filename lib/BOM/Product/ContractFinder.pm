@@ -31,10 +31,8 @@ sub multi_barrier_contracts_by_category_for {
         my $contract_category = $o->{contract_category};
         my $expiry_epoch      = $o->{trading_period}->{date_expiry}->{epoch};
         next if $by_contract_category{$contract_category}{$expiry_epoch};
-        $by_contract_category{$contract_category}{$expiry_epoch} = {
-            available_barriers => $o->{available_barriers},
-            date_start_epoch   => $o->{trading_period}->{date_start}->{epoch},
-        };
+        my $key = $o->{trading_period}{date_start}{epoch} . '-' . $o->{trading_period}{date_expiry}{epoch};
+        $by_contract_category{$contract_category}{$key}{available_barriers} = $o->{available_barriers};
     }
 
     return \%by_contract_category;
