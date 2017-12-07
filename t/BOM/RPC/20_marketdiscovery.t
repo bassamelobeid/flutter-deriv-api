@@ -15,7 +15,11 @@ my $method = 'active_symbols';
 subtest $method => sub {
     my $params = {
         language => 'EN',
-        args     => {active_symbols => 'brief'}};
+        args     => {
+            active_symbols => 'brief',
+            landing_company => 'costarica',
+            product_type => 'basic',
+        }};
 
     my $result = $c->call_ok($method, $params)->has_no_system_error->result;
     my $expected_keys =
