@@ -247,8 +247,8 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '20.51',
-        'ask_price'           => '20.51',
+        'display_value'       => '20.82',
+        'ask_price'           => '20.82',
         'longcode'            => "Receive 0.1 per point difference between Volatility 50 Index's exit spot and lowest value at 15 minutes after contract start time.",
         'spot'                => '963.3054',
         'payout'              => '0',
