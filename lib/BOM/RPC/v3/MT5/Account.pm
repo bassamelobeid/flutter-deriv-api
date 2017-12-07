@@ -25,18 +25,26 @@ use BOM::Transaction;
 
 =head2 mt5_login_list
 
-Description:
-- Takes a client object and returns all possible MT5 login IDs 
-associated with that client. If MT5 is suspended, return error instead.
+Takes a client object and returns all possible MT5 login IDs 
+associated with that client. Otherwise, returns an error message indicating
+that MT5 is suspended.
 
-Takes the following (named) parameters:
-- A  C<$params> hashref that contains a Client::Account object.
+Takes the following (named) parameter(s):
 
-Returns the following output:
-- An arrayref that contains hashrefs of the client's MT5 login IDs.
+=over 4
 
-Exceptions raised:
-- A hashref that contains error code 'MT5APISuspendedError'.
+=item * 
+
+C<$params> hashref that contains a Client::Account object under the key 'client'.
+
+=back
+
+Returns either:
+- A hashref that contains error code 'MT5APISuspendedError', or
+- An arrayref that contains hashrefs. Each hashref contains the MT5 login ID of the client
+(under the key 'login') and the possible group each login ID belongs to (under the key 'group') 
+
+Does not raise any exceptions.
 
 =cut
 
