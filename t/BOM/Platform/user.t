@@ -430,3 +430,12 @@ CONF
         }
     }
 };
+
+subtest 'clients_for_lc_short' => sub {
+    $user = BOM::Platform::User->new(
+        email => $email,
+    );
+    my @clients = $user->clients_for_lc_short('costarica');
+    is(scalar @clients,                     1,           "one cr account");
+    is($clients[0]->landing_company->short, 'costarica', 'lc correct');
+};
