@@ -4,15 +4,16 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use Format::Util::Numbers qw/formatnumber/;
 
 use Client::Account;
-use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::Platform::AuditLog;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::User;
 use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
+use BOM::Platform::User;
 
 sub authorize {
     my $params = shift;
@@ -69,43 +70,39 @@ sub authorize {
         $token_type = 'oauth_token';
     }
 
-    my (@sub_accounts, @accounts) = ((), ());
-    my ($is_omnibus, $currency) = ($client->allow_omnibus);
+    my @sub_accounts;
+    my $is_omnibus = $client->allow_omnibus;
 
-    my $siblings = $user->loginid_details;
+    my $_get_account_details = sub {
+        my ($clnt, $curr) = @_;
 
-    # need to sort so that virtual is last one
-    foreach my $key (sort keys %$siblings) {
-        my $account = Client::Account->new({
-            loginid      => $key,
-            db_operation => 'replica'
-        });
+        my $exclude_until = $clnt->get_self_exclusion_until_dt;
 
-        next if not $account or $account->get_status('duplicate_account');
+        return {
+            loginid              => $clnt->loginid,
+            currency             => $curr,
+            landing_company_name => $clnt->landing_company->short,
+            is_disabled          => $clnt->get_status('disabled') ? 1 : 0,
+            is_ico_only          => $clnt->get_status('ico_only') ? 1 : 0,
+            is_virtual           => $clnt->is_virtual ? 1 : 0,
+            $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
+    };
 
-        $currency = $account->default_account ? $account->default_account->currency_code : '';
-        if ($is_omnibus and $loginid eq ($account->sub_account_of // '')) {
+    my $client_list = $user->get_clients_in_sorted_order([keys %{$user->loginid_details}]);
+
+    my @account_list;
+    my $currency;
+    foreach my $clnt (@$client_list) {
+        $currency = $clnt->default_account ? $clnt->default_account->currency_code : '';
+        push @account_list, $_get_account_details->($clnt, $currency);
+
+        if ($is_omnibus and $loginid eq ($clnt->sub_account_of // '')) {
             push @sub_accounts,
                 {
-                loginid  => $account->loginid,
+                loginid  => $clnt->loginid,
                 currency => $currency,
                 };
         }
-
-        my ($self_exclusion, $self_exclusion_epoch, $until);
-        if ($self_exclusion = $account->get_self_exclusion and $until = ($self_exclusion->timeout_until // $self_exclusion->exclude_until)) {
-            $self_exclusion_epoch = Date::Utility->new($until)->epoch if Date::Utility->new($until)->is_after(Date::Utility->new);
-        }
-
-        push @accounts,
-            {
-            loginid              => $account->loginid,
-            currency             => $currency,
-            landing_company_name => $account->landing_company->short,
-            is_disabled          => $account->get_status('disabled') ? 1 : 0,
-            is_ico_only          => $account->get_status('ico_only') ? 1 : 0,
-            is_virtual           => $account->is_virtual ? 1 : 0,
-            $self_exclusion_epoch ? (excluded_until => $self_exclusion_epoch) : ()};
     }
 
     my $account = $client->default_account;
@@ -121,7 +118,7 @@ sub authorize {
         scopes                   => $scopes,
         is_virtual               => $client->is_virtual ? 1 : 0,
         allow_omnibus            => $client->allow_omnibus ? 1 : 0,
-        account_list             => \@accounts,
+        account_list             => \@account_list,
         sub_accounts             => \@sub_accounts,
         stash                    => {
             loginid              => $client->loginid,
