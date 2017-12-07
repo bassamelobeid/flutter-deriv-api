@@ -3,7 +3,7 @@ package BOM::Pricing::PriceDaemon;
 use strict;
 use warnings;
 
-use DataDog::DogStatsd::Helper qw/stats_inc stats_gauge stats_count stats_timing/;
+use DataDog::DogStatsd::Helper qw/stats_histogram stats_inc stats_count stats_timing/;
 use Encode;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use JSON::MaybeXS;
@@ -43,6 +43,19 @@ sub process_job {
 
     my $cmd          = $params->{price_daemon_cmd};
     my $current_time = time;
+
+    # for ICO, we don't want to try to subscribe to streams on portfolio and ICO bids page
+    # Websockets layer has no idea what an ICO is, so
+    # we can't filter them out of the pricing keys at that level - if the extra queue
+    # entries start to cause a problem we can drop them in pricer_queue.pl instead
+
+    if ($cmd eq 'bid' and $params->{short_code} =~ /BINARYICO/) {
+        stats_inc("pricer_daemon.binaryico", {tags => $self->tags});
+        return {
+            shortcode   => $params->{short_code},
+            dont_stream => 1,
+        };
+    }
 
     my $underlying           = $self->_get_underlying_or_log($next, $params) or return undef;
     my $current_spot_ts      = $underlying->spot_tick->epoch;
@@ -150,7 +163,7 @@ sub run {
 
         $tv_now = [Time::HiRes::gettimeofday];
 
-        stats_gauge('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
+        stats_histogram('pricer_daemon.queue.subscribers', $subscribers_count, {tags => $self->tags});
 
         stats_timing(
             'pricer_daemon.process.time',
@@ -171,7 +184,7 @@ sub run {
         if ($current_pricing_epoch != time) {
 
             for my $key (keys %$stat_count) {
-                stats_gauge("pricer_daemon.$key.count_per_second", $stat_count->{$key}, {tags => $self->tags});
+                stats_histogram("pricer_daemon.$key.count_per_second", $stat_count->{$key}, {tags => $self->tags});
             }
             $stat_count            = {};
             $current_pricing_epoch = time;
@@ -193,16 +206,8 @@ sub _get_underlying_or_log {
         return undef;
     }
 
-    # We can skip ICO entries entirely. Websockets layer has no idea what an ICO is, so
-    # we can't filter them out of the pricing keys at that level - if the extra queue
-    # entries start to cause a problem we can drop them in pricer_queue.pl instead.
-    if ($underlying->symbol eq 'BINARYICO') {
-        stats_inc("pricer_daemon.binaryico", {tags => $self->tags});
-        return undef;
-    }
-
     unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
-        warn $underlying->system_symbol . " has invalid spot tick" if $underlying->calendar->is_open($underlying->exchange);
+        warn $underlying->system_symbol . " has invalid spot tick (request: $next)" if $underlying->calendar->is_open($underlying->exchange);
         stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
         return undef;
     }
