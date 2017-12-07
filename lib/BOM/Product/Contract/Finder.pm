@@ -8,6 +8,7 @@ use POSIX qw(floor);
 use Time::Duration::Concise;
 use List::Util qw(first);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
+use Number::Closest::XS qw(find_closest_numbers_around);
 
 use Quant::Framework;
 use BOM::Platform::Chronicle;
@@ -183,14 +184,11 @@ sub _default_barrier {
     # latest available spot should be sufficient.
     my $barrier_spot = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
     return unless $barrier_spot;
-    my $tid        = $duration / 86400;
-    my $tiy        = $tid / 365;
-    my $now        = Date::Utility->new;
-    my $volatility = $volsurface->get_volatility({
-        $volsurface->type => $volsurface->atm_spread_point,
-        from              => $now,
-        to                => $now->plus_time_interval($duration),
-    });
+    my $tid                 = $duration / 86400;
+    my $tiy                 = $tid / 365;
+    my $terms               = $volsurface->original_term_for_smile;
+    my $closest_term        = find_closest_numbers_around($tid, $terms, 2);
+    my $volatility          = $volsurface->get_surface_volatility($closest_term->[0], $volsurface->atm_spread_point);
     my $approximate_barrier = get_strike_for_spot_delta({
         delta            => 0.2,
         option_type      => $option_type,
