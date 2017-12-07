@@ -431,9 +431,9 @@ CONF
     }
 };
 
-subtest 'clients_for_lc_short' => sub {
+subtest 'clients_for_landing_company' => sub {
     $user = BOM::Platform::User->new({email => $email},);
-    my @clients = $user->clients_for_lc_short('costarica');
+    my @clients = $user->clients_for_landing_company('costarica');
     is(scalar @clients, 2, "one cr account");
     is_deeply([map { $_->landing_company->short } @clients], [('costarica') x 2], 'lc correct');
     is_deeply([map { $_->loginid } @clients], [qw/CR10000 CR10001/], "clients are correct");
