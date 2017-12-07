@@ -5,6 +5,7 @@ use Time::Duration::Concise;
 use List::Util qw(min max first);
 use Format::Util::Numbers qw/financialrounding/;
 use YAML::XS qw(LoadFile);
+use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use BOM::Product::Static;
 
@@ -25,6 +26,22 @@ has multiplier => (
     isa        => 'Num',
     lazy_build => 1,
 );
+
+has lookback_base_commission => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+sub _build_lookback_base_commission {
+    my $self = shift;
+    my $args = {underlying_symbol => $self->underlying->symbol};
+    if ($self->can('landing_company')) {
+        $args->{landing_company} = $self->landing_company;
+    }
+    my $underlying_base = get_underlying_base_commission($args);
+    return $underlying_base;
+}
 
 sub _build_multiplier {
     my $self   = shift;
@@ -72,7 +89,7 @@ sub get_ohlc_for_period {
     }
 
     return $self->underlying->get_high_low_for_period({
-        start => $start_epoch,
+        start => $start_epoch + 1,
         end   => $end_epoch
     });
 }
@@ -80,19 +97,24 @@ sub get_ohlc_for_period {
 override _build_theo_price => sub {
     my $self = shift;
 
+    if ($self->is_expired) {
+        my $final_price = $self->value;
+        return $final_price > 0 ? $final_price * $self->unit * $self->multiplier : 0;
+    }
+
     return $self->pricing_engine->theo_price * $self->unit * $self->multiplier;
 };
 
 override _build_ask_price => sub {
     my $self = shift;
 
-    return financialrounding('amount', $self->currency, $self->theo_price);
+    return financialrounding('amount', $self->currency, $self->theo_price * (1 + $self->lookback_base_commission));
 };
 
 override _build_bid_price => sub {
     my $self = shift;
 
-    return financialrounding('amount', $self->currency, $self->theo_price);
+    return financialrounding('amount', $self->currency, $self->theo_price * (1 - $self->lookback_base_commission));
 };
 
 override _validate_price => sub {
