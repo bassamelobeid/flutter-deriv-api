@@ -483,12 +483,6 @@ sub send_ask {
 
     $params->{args}->{unit} //= $params->{args}->{amount};
 
-    if (not isint($params->{args}->{unit})) {
-        BOM::Pricing::v3::Utility::create_error({
-                code              => 'pricing error',
-                message_to_client => localize('Quantity must be an integer.')});
-    }
-
     # copy country_code when it is available.
     $params->{args}->{country_code} = $params->{country_code} if $params->{country_code};
 
