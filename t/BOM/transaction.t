@@ -740,7 +740,7 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
 };
 
 subtest 'max_open_bets validation', sub {
-    plan tests => 10;
+    plan tests => 11;
     lives_ok {
         my $cl = create_client;
 
@@ -773,7 +773,11 @@ subtest 'max_open_bets validation', sub {
 
         my $error = do {
             my $mock_client = Test::MockModule->new('Client::Account');
-            $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 2"; 2 });
+            $mock_client->mock(get_limit_for_self_exclusion_open_positions => sub { note "mocked Client->get_limit_for_self_exclusion_open_positions returning 2"; 2 });
+            $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 20"; 20 });
+
+            my $lim = $txn->calculate_limits;
+            is $lim->{max_open_bets}, 2, 'calculate limit';
 
             is +BOM::Transaction->new({
                     client        => $cl,
@@ -812,7 +816,7 @@ subtest 'max_open_bets validation', sub {
     'survived';
 };
 
-subtest 'max_open_bets validation: selling bets on the way', sub {
+subtest 'max_open_bets validation in presence of expired bets', sub {
     lives_ok {
         my $cl = create_client;
 
@@ -828,7 +832,7 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
             bet_type     => 'CALL',
             currency     => 'USD',
             stake        => 1.00,
-            duration     => '15m',
+            duration     => '15t',
             current_tick => $tick,
             barrier      => 'S0P',
         });
@@ -845,7 +849,11 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
         my $txn_id_buy_expired_contract;
         my $error = do {
             my $mock_client = Test::MockModule->new('Client::Account');
-            $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 2"; 2 });
+            $mock_client->mock(get_limit_for_self_exclusion_open_positions => sub { note "mocked Client->get_limit_for_self_exclusion_open_positions returning 2"; 2 });
+            $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 1"; 1 });
+
+            my $lim = $txn->calculate_limits;
+            is $lim->{max_open_bets}, 2, 'for tick trades our own open position limit is ignored';
 
             is +BOM::Transaction->new({
                     client        => $cl,
@@ -854,7 +862,7 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
                     payout        => $contract->payout,
                     amount_type   => 'stake',
                     purchase_date => $contract->date_start,
-                })->buy, undef, '1st bet bought';
+                })->buy(skip_validation => 1), undef, '1st bet bought';
 
             my $contract_expired = produce_contract({
                 underlying   => $underlying,
