@@ -157,7 +157,13 @@ sub verify_email {
         # we should only check for loginid email but as its v3 so need to have backward compatibility
         # in next version need to remove else
         if ($loginid) {
-            $skip_email = 1 unless (Client::Account->new({loginid => $loginid})->email eq $email);
+            $skip_email = 1 unless (
+                Client::Account->new({
+                        loginid      => $loginid,
+                        db_operation => 'replica'
+                    }
+                )->email eq $email
+            );
         } else {
             $skip_email = 1 unless BOM::Platform::User->new({email => $email});
         }
@@ -205,7 +211,9 @@ sub _get_professional_details_clients {
 
     # Filter out MF/CR clients
     my @clients =
-        grep { $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map { Client::Account->new({loginid => $_->loginid}) } @{$user->loginid};
+        grep { $_ and $_->landing_company->short =~ /^(?:costarica|maltainvest)$/ } map {
+        try { Client::Account->new({loginid => $_}) }
+        } keys %{$user->loginid_details};
 
     # Get the professional flags
     my $professional_status = any { $_->get_status('professional') } @clients;

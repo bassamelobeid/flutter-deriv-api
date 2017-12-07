@@ -39,6 +39,9 @@ use BOM::RPC::v3::CopyTrading;
 use BOM::Transaction::Validation;
 use BOM::RPC::v3::DocumentUpload;
 
+use BOM::Pricing::v3::Contract;
+use BOM::Pricing::v3::MarketData;
+
 sub apply_usergroup {
     my ($cf, $log) = @_;
 
@@ -294,7 +297,14 @@ sub startup {
         ['copy_stop',              \&BOM::RPC::v3::CopyTrading::copy_stop, [qw(auth)]],
 
         ['document_upload', \&BOM::RPC::v3::DocumentUpload::upload, [qw(auth)]],
-        ['longcode', \&BOM::RPC::v3::Utility::longcode],
+        ['longcode',        \&BOM::RPC::v3::Utility::longcode],
+        ['send_ask',        \&BOM::Pricing::v3::Contract::send_ask],
+        ['get_bid',         \&BOM::Pricing::v3::Contract::get_bid],
+        ['get_contract_details', \&BOM::Pricing::v3::Contract::get_contract_details],
+        ['contracts_for',        \&BOM::Pricing::v3::Contract::contracts_for],
+        ['trading_times',        \&BOM::Pricing::v3::MarketData::trading_times],
+        ['asset_index',          \&BOM::Pricing::v3::MarketData::asset_index],
+
     );
     my $services = {};
     foreach my $srv (@services) {

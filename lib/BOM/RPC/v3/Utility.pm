@@ -518,7 +518,10 @@ sub should_update_account_details {
     if (!$allow_omnibus) {
         my $sub_account_of = $current_client->sub_account_of;
         if ($sub_account_of) {
-            my $client = Client::Account->new({loginid => $sub_account_of});
+            my $client = Client::Account->new({
+                loginid      => $sub_account_of,
+                db_operation => 'replica'
+            });
             $allow_omnibus = $client->allow_omnibus;
         }
     }

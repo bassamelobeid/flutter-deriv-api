@@ -85,10 +85,19 @@ subtest 'buy' => sub {
         "duration_unit" => "s",
         "symbol"        => "R_50",
     };
+
     my $result = $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('PriceMoved', 'price moved error')->result;
     like($result->{error}{message_to_client}, qr/The underlying market has moved too much since you priced the contract./, 'price moved error');
 
     $params->{args}{price} = $txn_con->contract->ask_price;
+
+    $params->{contract_parameters}{barrier} = "-0.0501506060605079016";
+
+    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('BarrierValidationError', 'BarrierValidationError')
+        ->error_message_is('Barrier can only be up to 4 decimal places.', 'Barrier can only be up to 4 decimal places.');
+
+    delete $params->{contract_parameters}{barrier};
+
     my $old_balance = $client->default_account->load->balance;
     $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(

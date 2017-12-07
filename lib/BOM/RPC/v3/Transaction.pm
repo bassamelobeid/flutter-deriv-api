@@ -7,7 +7,6 @@ use Try::Tiny;
 use JSON::XS qw/encode_json/;
 use Scalar::Util qw(blessed);
 
-use Client::Account;
 use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::v3::Contract;
@@ -65,6 +64,7 @@ sub buy {
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
 
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
+
     $contract_parameters->{landing_company} = $client->landing_company->short;
     $contract_parameters->{binaryico_deposit_percentage} =
         BOM::Platform::Runtime->instance->app_config->system->suspend->ico_initial_deposit_percentage
@@ -72,6 +72,9 @@ sub buy {
 
     my $amount_type = $contract_parameters->{amount_type};
     my $response;
+
+    $response = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
+    return $response if $response;
 
     my $price = $args->{price};
     if (defined $price and defined $contract_parameters->{amount} and defined $amount_type and $amount_type eq 'stake') {
@@ -178,6 +181,9 @@ sub buy_contract_for_multiple_accounts {
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
     my $amount_type = $contract_parameters->{amount_type};
+
+    $response = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
+    return $response if $response;
 
     my $price = $args->{price};
     if (defined $amount_type and $amount_type eq 'stake') {
