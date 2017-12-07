@@ -170,6 +170,13 @@ sub clients {
     return @clients;
 }
 
+=head2 clients_for_lc_short
+
+get clients given special landing company short name.
+    $user->clients_for_lc_short('costarica');
+
+=cut
+
 sub clients_for_lc_short {
     my $self      = shift;
     my $lc_short  = shift // die 'need landing_company';
