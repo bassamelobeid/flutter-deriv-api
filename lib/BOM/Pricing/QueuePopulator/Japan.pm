@@ -18,7 +18,7 @@ requesting them.
 
 use BOM::Platform::Runtime;
 
-use BOM::Product::Contract::Finder::Japan;
+use BOM::Product::ContractFinder;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData qw(create_underlying);
 use JSON::XS qw(encode_json);
@@ -104,19 +104,25 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
 
     my $start = Time::HiRes::time;
     $self->check_appconfig;
+    my $landing_company = 'japan';
     # Get a full list of symbols since some may have been updated/disabled
     # since the last time
     my @symbols =
-        LandingCompany::Regsitry::get('japan')->multi_barrier_offerings(BOM::Platform::Runtime->instance->get_offerings_config)
+        LandingCompany::Registry::get($landing_company)->multi_barrier_offerings(BOM::Platform::Runtime->instance->get_offerings_config)
         ->values_for_key('underlying_symbol');
     my $now = Time::HiRes::time;
     $log->debugf("Retrieved symbols - %.2fms", 1000 * ($now - $start));
 
+    my $finder = BOM::Product::ContractFinder->new;
     my @jobs;
     my $skipped = 0;
     for my $symbol (@symbols) {
-        my $symbol_start = Time::HiRes::time;
-        my $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({symbol => $symbol});
+        my $symbol_start  = Time::HiRes::time;
+        my $contracts_for = $finder->multi_barrier_contracts_for({
+            symbol          => $symbol,
+            landing_company => $landing_company,
+            country_code    => 'jp'
+        });
         $now = Time::HiRes::time;
         $log->debugf("Retrieved contracts for %s - %.2fms", $symbol, 1000 * ($now - $symbol_start));
 
