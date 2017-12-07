@@ -42,13 +42,41 @@ use BOM::Platform::Runtime;
 =head2 payout_currencies
 
 Returns an arrayref containing the following:
-* A payout currency that is valid for a specific client
-* Multiple valid payout currencies for the landing company if a client is not provided.
+
+=over 4
+
+=item * 
+
+A payout currency that is valid for a specific client
+
+=item * 
+
+Multiple valid payout currencies for the landing company if a client is not provided.
+
+=back
 
 Takes a single C<$params> hashref containing the following keys:
- * landing_company_name
- * token_details, which may contain the following keys:
-     * loginid
+
+=over 4
+
+=item * 
+
+landing_company_name
+
+=item * 
+
+token_details, which may contain the following keys:
+
+
+=over 8
+
+=item * 
+
+loginid
+     
+=back
+
+=back
 
 Returns an arrayref of valid payout currencies
 
