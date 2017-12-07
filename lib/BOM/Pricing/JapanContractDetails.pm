@@ -116,8 +116,8 @@ sub verify_with_shortcode {
     my $priced_at_start = make_similar_contract(
         $original_contract,
         {
-            priced_at       => 'start',
-            landing_company => $landing_company
+            priced_at    => 'start',
+            product_type => 'multibarrier',
         });
     my $purchase_time = $original_contract->date_start;
 
@@ -125,8 +125,8 @@ sub verify_with_shortcode {
 
     my $pricing_args = $original_contract->build_parameters;
     my $prev_tick = $original_contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
-    $pricing_args->{date_pricing}    = $start;
-    $pricing_args->{landing_company} = $landing_company;
+    $pricing_args->{date_pricing} = $start;
+    $pricing_args->{product_type} = 'multibarrier';
 
     if ($extra) {
         my @extra_args = split '_', $extra;
