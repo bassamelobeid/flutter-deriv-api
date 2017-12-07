@@ -23,6 +23,23 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Email;
 use BOM::Transaction;
 
+=head2 mt5_login_list
+
+Description:
+- Takes a client object and returns all possible MT5 login IDs 
+associated with that client. If MT5 is suspended, return error instead.
+
+Takes the following (named) parameters:
+- A  C<$params> hashref that contains a Client::Account object.
+
+Returns the following output:
+- An arrayref that contains hashrefs of the client's MT5 login IDs.
+
+Exceptions raised:
+- A hashref that contains error code 'MT5APISuspendedError'.
+
+=cut
+
 sub mt5_login_list {
     my $params = shift;
     my $client = $params->{client};
