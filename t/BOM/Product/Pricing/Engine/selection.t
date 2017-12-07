@@ -20,8 +20,12 @@ initialize_realtime_ticks_db;
 
 my $mocked_delta = Test::MockModule->new('Quant::Framework::VolSurface::Delta');
 $mocked_delta->mock('get_volatility', sub { 0.1 });
+$mocked_delta->mock('get_surface_volatility', sub { 0.1 });
+$mocked_delta->mock('original_term_for_smile', sub { [1] });
 my $mocked_money = Test::MockModule->new('Quant::Framework::VolSurface::Moneyness');
 $mocked_money->mock('get_volatility', sub { 0.1 });
+$mocked_money->mock('get_surface_volatility', sub { 0.1 });
+$mocked_money->mock('original_term_for_smile', sub { [1] });
 my $mocked_emp = Test::MockModule->new('VolSurface::Empirical');
 $mocked_emp->mock('get_volatility', sub { 0.1 });
 
