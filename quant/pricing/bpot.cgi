@@ -40,7 +40,7 @@ my $landing_company;
 if ($broker) {
     $landing_company = LandingCompany::Registry::get_by_broker($broker)->short;
 } elsif ($loginid) {
-    $LandingCompany::Registry::get_by_loginid($loginid)->short;
+    $landing_company = LandingCompany::Registry::get_by_loginid($loginid)->short;
 }
 
 my $bet = do {
