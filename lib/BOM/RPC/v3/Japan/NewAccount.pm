@@ -25,7 +25,7 @@ sub get_jp_account_status {
 
     my $user = BOM::Platform::User->new({email => $client->email});
     my @siblings = $user->clients(disabled_ok => 1);
-    my $jp_client = $siblings[0];
+    my $jp_client = $user->get_default_client();
 
     my $jp_account_status;
 
@@ -114,7 +114,7 @@ sub jp_knowledge_test {
 
     my $user = BOM::Platform::User->new({email => $client->email});
     my @siblings = $user->clients(disabled_ok => 1);
-    my $jp_client = $siblings[0];
+    my $jp_client = $user->get_default_client();
 
     # only allowed for VRTJ client, upgrading to JP
     unless (@siblings > 1
