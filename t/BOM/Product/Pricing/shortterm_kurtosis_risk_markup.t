@@ -49,7 +49,7 @@ my $bet_params = {
     current_tick    => $fake_tick,
     currency        => 'USD',
     payout          => 10,
-    product_type    => 'multibarrier',
+    product_type    => 'multi_barrier',
     date_start      => $now,
     date_pricing    => $now,
 };

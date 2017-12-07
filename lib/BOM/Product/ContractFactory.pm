@@ -79,7 +79,8 @@ sub produce_contract {
         $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process()->[0];
     }
 
-    my $product_type    = $params_ref->{product_type} // 'basic';
+    my $product_type = $params_ref->{product_type} // 'basic';
+    $product_type =~ s/_//;
     my $landing_company = $params_ref->{landing_company};
     my $role            = 'BOM::Product::Role::' . ucfirst lc $product_type;
     my $role_exists     = $role->can('meta');
