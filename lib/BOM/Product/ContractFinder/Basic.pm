@@ -118,7 +118,6 @@ sub _default_barrier {
     my $current_tick = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
     return unless $current_tick;
 
-    my $now = Date::Utility->new;
     # volatility should just be an estimate here, let's take it straight off the surface and
     # avoid all the craziness.
     my $tid          = $duration / 86400;

@@ -31,7 +31,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $_,
     }) for ($now->minus_time_interval('400d')->epoch, $now->epoch, $now->plus_time_interval('1s')->epoch);
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', $now);
+BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', $now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -64,6 +64,7 @@ subtest 'predefined_contracts' => sub {
     $bet_params->{bet_type}     = 'CALLE';
     $bet_params->{barrier}      = '100.010';
     $c                          = produce_contract($bet_params);
+    $DB::single=1;
     ok %{$c->predefined_contracts}, 'has predefined_contracts for japan';
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply($c->primary_validation_error->message_to_client, ['Invalid expiry time.']);
