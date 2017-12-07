@@ -436,4 +436,5 @@ subtest 'clients_for_lc_short' => sub {
     my @clients = $user->clients_for_lc_short('costarica');
     is(scalar @clients,                     1,           "one cr account");
     is($clients[0]->landing_company->short, 'costarica', 'lc correct');
+    is($clients[1]->landing_company->short, 'costarica', 'lc correct');
 };
