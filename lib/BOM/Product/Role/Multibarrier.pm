@@ -62,8 +62,8 @@ sub _build_predefined_contracts {
             date_expiry => {epoch => $expiry_epoch},
         };
         my $expired_barriers = $is_path_dependent ? get_expired_barriers($self->underlying, $data->{available_barriers}, $tp) : [];
-        push @{$info{$expiry_epoch}->{available_barriers}}, @{$data->{available_barriers}};
-        push @{$info{$expiry_epoch}->{expired_barriers}},   @{$data->{expired_barriers}};
+        push @{$info{$expiry_epoch}{available_barriers}}, @{$data->{available_barriers}};
+        push @{$info{$expiry_epoch}{expired_barriers}},   @$expired_barriers;
     }
 
     return \%info;
