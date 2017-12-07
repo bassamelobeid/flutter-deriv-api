@@ -383,8 +383,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
     # Only allow CR and MF
     foreach my $existing_client (map {$user->clients_for_lc_short($_)} qw/costarica maltainvest/) {
-        next unless $existing_client->landing_company->short =~ /^(?:costarica|maltainvest)$/;
-
         my $existing_client_loginid = encode_entities($existing_client->loginid);
 
         if ($input{professional_client}) {
