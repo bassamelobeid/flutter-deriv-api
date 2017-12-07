@@ -36,6 +36,7 @@ use Quant::Framework::Utils::Test;
 use Quant::Framework::Asset;
 
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods generate_barriers_for_window);
+use BOM::Product::ContractFinder;
 
 BEGIN {
     die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
@@ -195,6 +196,26 @@ sub create_doc {
     }
 
     return $obj;
+}
+
+sub create_predefined_parameters_for {
+    my ($symbol, $date) = @_;
+
+    my $tp = create_trading_periods($symbol, $date);
+    create_predefined_barriers($symbol, $_, $date) for (@$tp);
+    create_predefined_barriers_by_contract_category($symbol, $date);
+
+    return;
+}
+
+sub create_predefined_barriers_by_contract_category {
+    my ($symbol, $date) = @_;
+
+    my $data = BOM::Product::ContractFinder->new(for_date => $date)->multi_barrier_contracts_by_category_for({symbol => $symbol});
+    my @redis_key = BOM::Product::Contract::PredefinedParameters::barrier_by_category_key($symbol);
+    BOM::Platform::Chronicle::get_chronicle_writer()->set(@redis_key, $data, $date, 1, 300);    # cached for 5 minutes
+
+    return $data;
 }
 
 sub create_trading_periods {
