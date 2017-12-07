@@ -143,31 +143,30 @@ sub clients {
     my ($self, %args) = @_;
 
     # filter out non binary's loginid, eg: MT5 login
-    my @bom_loginids = grep { $_->loginid !~ /^MT\d+$/ } $self->loginid;
+    my @bom_loginids = map { $_->loginid } grep { $_->loginid !~ /^MT\d+$/ } $self->loginid;
 
-    my @bom_clients = sort { (($a->is_virtual ? 'V' : 'R') . $a->loginid) cmp(($b->is_virtual ? 'V' : 'R') . $b->loginid) }
-        map { Client::Account->new({loginid => $_->loginid, db_operation => 'replica'}) } @bom_loginids;
+    my @clients = @{$self->get_clients_in_sorted_order(\@bom_loginids, $args{disabled_ok})};
 
-    my $all_status = Client::Account::client_status_types();
-    my @do_not_display_status = grep { $all_status->{$_} == 0 } keys %$all_status;
-
-    my @parts   = ();
-    my @clients = ();
-    foreach my $cl (@bom_clients) {
-        # don't include clients that we don't want to show
-        next if grep { $cl->get_status($_) } @do_not_display_status;
-
-        my $is_disabled = $cl->get_status('disabled');
-        push @parts, join(':', $cl->loginid, $cl->is_virtual ? 'V' : 'R', $is_disabled ? 'D' : 'E', $cl->get_status('ico_only') ? 'I' : 'N');
-
-        next if (not $args{disabled_ok} and $is_disabled);
-
-        push @clients, $cl;
-    }
+    my @parts;
+    push @parts, _get_client_cookie_string($_) foreach (@clients);
 
     $self->{_cookie_val} = join('+', @parts);
 
+    @clients = grep { not $_->get_status('disabled') } @clients unless $args{disabled_ok};
+
     return @clients;
+}
+
+sub _get_client_cookie_string {
+    my $client = shift;
+
+    my $str = join(':',
+        $client->loginid,
+        $client->is_virtual             ? 'V' : 'R',
+        $client->get_status('disabled') ? 'D' : 'E',
+        $client->get_status('ico_only') ? 'I' : 'N');
+
+    return $str;
 }
 
 sub loginid_details {
@@ -208,6 +207,85 @@ sub get_last_successful_login_history {
     }
 
     return;
+}
+
+=head2
+
+Return list of client in following order
+
+- real enabled accounts
+- ico only accounts
+- virtual accounts
+- self excluded accounts
+- disabled accounts
+
+=cut
+
+sub get_clients_in_sorted_order {
+    my ($self, $loginid_list, $include_disabled) = @_;
+
+    my (@enabled_accounts, @ico_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts);
+    foreach my $loginid (sort @$loginid_list) {
+        my $cl = try {
+            Client::Account->new({
+                loginid      => $loginid,
+                db_operation => 'replica'
+            });
+        }
+        catch {
+            # try master if replica is down
+            Client::Account->new({loginid => $loginid});
+        };
+
+        next unless $cl;
+
+        my $all_status = Client::Account::client_status_types();
+        my @do_not_display_status = grep { $all_status->{$_} == 0 } keys %$all_status;
+
+        # don't include clients that we don't want to show
+        next if grep { $cl->get_status($_) } @do_not_display_status;
+
+        if ($cl->get_status('disabled')) {
+            $self->{_real_client} = $cl if ($include_disabled and not $self->{_real_client});
+            push @disabled_accounts, $cl;
+            next;
+        }
+
+        if ($cl->get_self_exclusion_until_dt) {
+            push @self_excluded_accounts, $cl;
+            next;
+        }
+
+        if ($cl->get_status('ico_only')) {
+            $self->{_real_client} = $cl unless $self->{_real_client};
+            push @ico_accounts, $cl;
+            next;
+        }
+
+        if ($cl->is_virtual) {
+            $self->{_virtual_client} = $cl unless $self->{_virtual_client};
+            push @virtual_accounts, $cl;
+            next;
+        }
+
+        $self->{_first_enabled_real_client} = $cl unless $self->{_first_enabled_real_client};
+        push @enabled_accounts, $cl;
+    }
+
+    return [(@enabled_accounts, @ico_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts)];
+}
+
+=head2 get_default_client
+
+Returns default client for particular user
+Act as replacement for using "$siblings[0]" or "$clients[0]"
+
+=cut
+
+sub get_default_client {
+    my $self = shift;
+
+    return $self->{_first_enabled_real_client} // $self->{_real_client} // $self->{_virtual_client};
 }
 
 1;
