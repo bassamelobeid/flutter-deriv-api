@@ -83,10 +83,11 @@ sub payout_currencies {
         });
     }
 
-    # if client has default_account he has already chosen his currency..
+    # If the client has a default_account, he has already chosen his currency.
+    # The client's currency is returned in this case.
     return [$client->currency] if $client && $client->default_account;
 
-    # or if client has not yet selected currency - we will use list from his LC
+    # If the client has not yet selected currency - we will use list from his landing company
     # or we may have a landing company even if we're not logged in - typically this
     # is obtained from the GeoIP country code lookup. If we have one, use it.
     my $lc = $client ? $client->landing_company : LandingCompany::Registry::get($params->{landing_company_name} || 'costarica');
