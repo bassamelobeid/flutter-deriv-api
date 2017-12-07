@@ -13,7 +13,8 @@ use Date::Utility;
 use JSON::XS;
 
 use BOM::MarketData qw(create_underlying);
-use BOM::Product::Contract::PredefinedParameters qw(get_predefined_offerings update_predefined_highlow);
+use BOM::Product::ContractFinder;
+use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -24,19 +25,16 @@ my $monday           = Date::Utility->new('2016-11-14');    # monday
 subtest 'non trading day' => sub {
     my $saturday = Date::Utility->new('2016-11-19');        # saturday
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($supported_symbol, $saturday);
-    my $offerings = get_predefined_offerings({
-        landing_company => 'japan',
-        symbol => $supported_symbol,
-        date   => $saturday
-    });
+    my $offerings = BOM::Product::ContractFinder->new(for_date => $saturday)->multi_barrier_contracts_for({
+            symbol => $supported_symbol,
+        })->{available};
     ok !@$offerings, 'no offerings were generated on non trading day';
     setup_ticks($supported_symbol, [[$monday->minus_time_interval('400d')], [$monday]]);
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($supported_symbol, $monday);
-    $offerings = get_predefined_offerings({
-        landing_company => 'japan',
-        symbol => $supported_symbol,
-        date   => $monday
-    });
+    $offerings = BOM::Product::ContractFinder->new(for_date => $monday)->multi_barrier_contracts_for({
+            symbol => $supported_symbol,
+            date   => $monday
+        })->{available};
     ok @$offerings, 'generates predefined offerings on a trading day';
 };
 
@@ -119,11 +117,9 @@ subtest 'intraday trading period' => sub {
         setup_ticks($symbol, [[$date->minus_time_interval('400d')], [$date]]);
         note('generating for ' . $symbol . '. Time set to ' . $date->day_as_string . ' at ' . $date->time);
         BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $date);
-        my $offerings = get_predefined_offerings({
-            landing_company => 'japan',
-            symbol => $symbol,
-            date   => $date
-        });
+        my $offerings = BOM::Product::ContractFinder->new(for_date => $date)->multi_barrier_contracts_for({
+                symbol => $symbol,
+            })->{available};
         my @intraday = grep { $_->{expiry_type} eq 'intraday' } @$offerings;
         is scalar(@intraday), $count, 'expected ' . $count . ' offerings on intraday at 00:00GMT';
 
@@ -222,15 +218,14 @@ subtest 'predefined barriers' => sub {
         });
 
     my $generation_date = $date->plus_time_interval('1h');
-    BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $generation_date);
+    my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $generation_date);
 
     foreach my $test (@inputs) {
         setup_ticks($symbol, $test->{ticks});
-        my $offerings = get_predefined_offerings({
-            landing_company => 'japan',
-            symbol => $symbol,
-            date   => $generation_date
-        });
+        BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_barriers($symbol, $_, $generation_date) for @$tp;
+        my $offerings = BOM::Product::ContractFinder->new(for_date => $generation_date)->multi_barrier_contracts_for({
+                symbol => $symbol,
+            })->{available};
         my $m        = $test->{match};
         my $offering = first {
             $_->{expiry_type} eq $m->{expiry_type}
@@ -257,14 +252,15 @@ subtest 'update_predefined_highlow' => sub {
             quote  => 69.2
         };
         my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $now);
+        BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_barriers($symbol, $_, $now) for @$tp;
         ok update_predefined_highlow($new_tick), 'updated highlow';
-        my $offering = get_predefined_offerings({symbol => $symbol, landing_company => 'japan'});
+        my $offering = BOM::Product::ContractFinder->new->multi_barrier_contracts_for({symbol => $symbol})->{available};
         my $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
         ok !scalar(@{$touch->{expired_barriers}}), 'no expired barrier detected';
         $new_tick->{epoch} += 1;
         $new_tick->{quote} = 125;
         ok update_predefined_highlow($new_tick), 'next update';
-        $offering = get_predefined_offerings({symbol => $symbol, landing_company => 'japan'});
+        $offering = BOM::Product::ContractFinder->new->multi_barrier_contracts_for({symbol => $symbol})->{available};
         $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
         ok scalar(@{$touch->{expired_barriers}}), 'expired barrier detected';
     }

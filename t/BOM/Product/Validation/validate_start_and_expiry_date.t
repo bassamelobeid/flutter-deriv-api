@@ -348,7 +348,7 @@ subtest 'date start blackouts' => sub {
     ok $c->is_valid_to_buy, 'valid to buy for random';
     $bet_params->{underlying}      = 'frxAUDUSD';
     $bet_params->{barrier}         = 76.8999;
-    $bet_params->{landing_company} = 'japan';
+    $bet_params->{product_type} = 'multibarrier';
     Cache::RedisDB->flushall;
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

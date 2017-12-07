@@ -11,7 +11,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 use LandingCompany::Registry;
-use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
+use BOM::Product::ContractFinder;
 use BOM::Product::ContractFactory qw(produce_contract);
 use YAML::XS;
 
@@ -42,7 +42,7 @@ my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 subtest 'test everything' => sub {
     my $expected = YAML::XS::LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/Engine/selection_config.yml');
     foreach my $symbol (LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg)->values_for_key('underlying_symbol')) {
-        foreach my $ref (@{available_contracts_for_symbol({symbol => $symbol})->{available}}) {
+        foreach my $ref (@{BOM::Product::ContractFinder->new->basic_contracts_for({symbol => $symbol})->{available}}) {
             my %barriers;
             if ($ref->{contract_category} eq 'digits') {
                 %barriers = (barrier => 1);

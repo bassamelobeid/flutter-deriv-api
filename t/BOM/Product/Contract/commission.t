@@ -135,25 +135,25 @@ subtest 'payout' => sub {
     }
 
     $c = produce_contract({
-        bet_type        => 'CALL',
-        underlying      => 'frxUSDJPY',
-        barrier         => 'S50000P',
-        duration        => '1h',
-        currency        => 'JPY',
-        payout          => 1000,
-        landing_company => 'japan'
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        barrier      => 'S50000P',
+        duration     => '1h',
+        currency     => 'JPY',
+        payout       => 1000,
+        product_type => 'multibarrier'
     });
 
     cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex intraday non atm contract for japan is floored to 5%';
 
     $c = produce_contract({
-        bet_type        => 'CALL',
-        underlying      => 'frxUSDJPY',
-        barrier         => 'S5000000P',
-        duration        => '2d',
-        currency        => 'JPY',
-        payout          => 1000,
-        landing_company => 'japan'
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        barrier      => 'S5000000P',
+        duration     => '2d',
+        currency     => 'JPY',
+        payout       => 1000,
+        product_type => 'multibarrier'
     });
     cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex daily non atm contract for japan is floored to 5%';
 

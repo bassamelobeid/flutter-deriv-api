@@ -7,10 +7,12 @@ use Test::More tests => 5;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
+use Test::MockModule;
+
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
+use BOM::Product::ContractFinder;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
@@ -64,7 +66,8 @@ subtest "predefined contracts for symbol" => sub {
         }) for qw(frxUSDJPY frxAUDCAD frxUSDCAD frxAUDUSD);
 
     my %expected = (
-        frxUSDJPY => {
+        # japan, japan
+        'frxUSDJPY-japan-jp' => {
             contract_count => {
                 callput      => 14,
                 touchnotouch => 8,
@@ -73,25 +76,57 @@ subtest "predefined contracts for symbol" => sub {
             },
             hit_count => 38,
         },
-        frxAUDCAD => {hit_count => 0},
+        # costarica, canada
+        'frxUSDJPY-costarica-ca' => {
+            contract_count => {
+                callput      => 4,
+                touchnotouch => 4,
+                staysinout   => 4,
+                endsinout    => 4,
+            },
+            hit_count => 16,
+        },
+        # costarica, china
+        'frxUSDJPY-costarica-cn' => {
+            contract_count => {
+                callput      => 14,
+                touchnotouch => 8,
+                staysinout   => 8,
+                endsinout    => 8,
+            },
+            hit_count => 38,
+        },
+        # costarica, no country
+        'frxUSDJPY-costarica' => {
+            contract_count => {
+                callput      => 14,
+                touchnotouch => 8,
+                staysinout   => 8,
+                endsinout    => 8,
+            },
+            hit_count => 38,
+        },
+        # malta, austria
+        'frxUSDJPY-malta-at'     => {hit_count => 0},
+        'frxAUDCAD-costarica-id' => {hit_count => 0},
     );
-    foreach my $u (keys %expected) {
-        my $f = available_contracts_for_symbol({
-            landing_company => 'japan',
-            symbol => $u,
-            date   => $now,
+    foreach my $key (keys %expected) {
+        my ($u, $landing_company, $country_code) = split '-', $key;
+        my $f = BOM::Product::ContractFinder->new(for_date => $now)->multi_barrier_contracts_for({
+            symbol          => $u,
+            landing_company => $landing_company,
+            country_code    => $country_code,
         });
         my %got;
         $got{$_->{contract_category}}++ for (@{$f->{available}});
-        is($f->{hit_count}, $expected{$u}{hit_count}, "Expected total contract for $u");
-        cmp_ok $got{$_}, '==', $expected{$u}{contract_count}{$_}, "Expected total contract  for $u on this $_ type"
-            for (keys %{$expected{$u}{contract_count}});
+        is($f->{hit_count}, $expected{$key}{hit_count}, "Expected total contract for $key");
+        cmp_ok $got{$_}, '==', $expected{$key}{contract_count}{$_}, "Expected total contract  for $key on this $_ type"
+            for (keys %{$expected{$key}{contract_count}});
     }
 };
 
 subtest "predefined trading_period" => sub {
     my %expected_count = (
-        offering                                => 10,
         offering_with_predefined_trading_period => 38,
         trading_period                          => {
             call_intraday => 2,
@@ -114,12 +149,10 @@ subtest "predefined trading_period" => sub {
         },
     );
 
-    my @offerings = BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY','japan');
-    is(scalar(@offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
     my $now = Date::Utility->new('2015-09-04 17:00:00');
     my $underlying = create_underlying('frxUSDJPY', $now);
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($underlying->symbol, $now);
-    my @new = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $underlying, \@offerings)};
+    my @new = @{BOM::Product::ContractFinder->new(for_date => $now)->multi_barrier_contracts_for({symbol => $underlying->symbol})->{available}};
 
     my %got;
     foreach my $d (@new) {
@@ -147,6 +180,9 @@ subtest "predefined trading_period" => sub {
         cmp_deeply(\@got_date_expiry, $expected_trading_period{$bet_type}{date_expiry}, "Expected date_expiry for $bet_type");
     }
 };
+
+my $mock = Test::MockModule->new('Quant::Framework::Underlying');
+$mock->mock('get_high_low_for_period', sub { return {high => 100.01, low => 99.01} });
 
 subtest "check_intraday trading_period_JPY" => sub {
     my %expected_intraday_trading_period = (
@@ -190,13 +226,11 @@ subtest "check_intraday trading_period_JPY" => sub {
         '2015-11-23 22:00:00' => {combination => 0},
     );
 
-    my @i_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
-        BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY', 'japan');
     foreach my $date (sort keys %expected_intraday_trading_period) {
         my $now = Date::Utility->new($date);
-        my $ex = create_underlying('frxUSDJPY', $now);
-        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($ex->symbol, $now);
-        my @intraday_offerings = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $ex, \@i_offerings) // []};
+        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', $now);
+        my @intraday_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
+            @{BOM::Product::ContractFinder->new(for_date => $now)->multi_barrier_contracts_for({symbol => 'frxUSDJPY'})->{available}};
         my @got_date_start  = map { $intraday_offerings[$_]{trading_period}{date_start}{epoch} } keys @intraday_offerings;
         my @got_date_expiry = map { $intraday_offerings[$_]{trading_period}{date_expiry}{epoch} } keys @intraday_offerings;
 
@@ -241,14 +275,11 @@ subtest "check_intraday trading_period_non_JPY" => sub {
         '2015-11-27 19:00:00' => {combination => 0},
     );
 
-    my @e_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
-        BOM::Product::Contract::PredefinedParameters::_get_offerings('frxEURUSD', 'japan');
     foreach my $date (keys %expected_eur_intraday_trading_period) {
         my $now = Date::Utility->new($date);
-        my $ex = create_underlying('frxEURUSD', $now);
-
-        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($ex->symbol, $now);
-        my @eurusd_offerings = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $ex, \@e_offerings) // []};
+        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxEURUSD', $now);
+        my @eurusd_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
+            @{BOM::Product::ContractFinder->new(for_date => $now)->multi_barrier_contracts_for({symbol => 'frxEURUSD'})->{available}};
         my @got_date_start  = map { $eurusd_offerings[$_]{trading_period}{date_start}{epoch} } keys @eurusd_offerings;
         my @got_date_expiry = map { $eurusd_offerings[$_]{trading_period}{date_expiry}{epoch} } keys @eurusd_offerings;
 
