@@ -381,11 +381,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     my $user = BOM::Platform::User->new({email => $client->email});
     my $result = "";
 
-    foreach my $lid (keys %{$user->loginid_details}) {
-        # Load client object
-        my $existing_client = Client::Account->new({loginid => $lid});
-
-        # Only allow CR and MF
+    # Only allow CR and MF
+    foreach my $existing_client (map {$user->clients_for_lc_short($_)} qw/costarica maltainvest/) {
         next unless $existing_client->landing_company->short =~ /^(?:costarica|maltainvest)$/;
 
         my $existing_client_loginid = encode_entities($existing_client->loginid);
