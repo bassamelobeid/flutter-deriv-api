@@ -117,7 +117,7 @@ sub verify_with_shortcode {
         $original_contract,
         {
             priced_at    => 'start',
-            product_type => 'multibarrier',
+            product_type => 'multi_barrier',
         });
     my $purchase_time = $original_contract->date_start;
 
@@ -126,7 +126,7 @@ sub verify_with_shortcode {
     my $pricing_args = $original_contract->build_parameters;
     my $prev_tick = $original_contract->underlying->tick_at($start->epoch - 1, {allow_inconsistent => 1})->quote;
     $pricing_args->{date_pricing} = $start;
-    $pricing_args->{product_type} = 'multibarrier';
+    $pricing_args->{product_type} = 'multi_barrier';
 
     if ($extra) {
         my @extra_args = split '_', $extra;
