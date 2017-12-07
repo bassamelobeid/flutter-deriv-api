@@ -214,6 +214,16 @@ has transaction_parameters => (
     default => sub { {}; },
 );
 
+has general_open_position_payout_limit => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
+);
+
+sub _build_general_open_position_payout_limit {
+    return from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
+}
+
 sub BUILDARGS {
     my (undef, $args) = @_;
 
@@ -324,6 +334,25 @@ sub stats_stop {
     return;
 }
 
+sub calculate_max_open_bets {
+    my $self   = shift;
+    my $client = shift;
+
+    # for tick trades only self-exclusion matters
+    return $client->get_limit_for_self_exclusion_open_positions
+        if $self->contract->tick_expiry;
+
+    my $se_lim     = $client->get_limit_for_self_exclusion_open_positions;
+    my $binary_lim = $client->get_limit_for_open_positions;
+
+    # if both are given the least is chosen
+    return $se_lim < $binary_lim ? $se_lim : $binary_lim
+        if (defined $se_lim and defined $binary_lim);
+
+    # otherwise use the one that's defined if any
+    return $binary_lim // $se_lim;
+}
+
 sub calculate_limits {
     my $self = shift;
     my $client = shift || $self->client;
@@ -340,9 +369,7 @@ sub calculate_limits {
     $limits{max_balance} = $client->get_limit_for_account_balance;
 
     try {
-        my $general_open_position_payout_limit =
-            $json->decode(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
-        if (my $limit = $general_open_position_payout_limit->{$client->landing_company->short}) {
+        if (my $limit = $self->general_open_position_payout_limit->{$client->landing_company->short}) {
             my ($limit_currency, $limit_amount, @extra) = %$limit;
             die "found multiple entries for landing company, extra: @extra" if @extra;
             $limits{general_open_position_payout} = {
@@ -356,8 +383,10 @@ sub calculate_limits {
         stats_inc('transaction.open_position_limit.failure');
     };
 
+    my $lim = $self->calculate_max_open_bets($client);
+    $limits{max_open_bets} = $lim if defined $lim;
+
     if (not $contract->tick_expiry) {
-        $limits{max_open_bets}        = $client->get_limit_for_open_positions;
         $limits{max_payout_open_bets} = $client->get_limit_for_payout;
         $limits{max_payout_per_symbol_and_bet_type} =
             $static_config->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
@@ -388,7 +417,6 @@ sub calculate_limits {
         }
     }
 
-    my $lim;
     defined($lim = $client->get_limit_for_daily_losses)
         and $limits{max_losses} = $lim;
     defined($lim = $client->get_limit_for_7day_turnover)
@@ -996,7 +1024,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $self   = shift;
         my $client = shift;
 
-        my $limit = $client->get_limit_for_open_positions;
+        my $limit = $self->calculate_max_open_bets($client);
         return Error::Base->cuss(
             -type              => 'OpenPositionLimit',
             -mesg              => "Client has reached the limit of $limit open positions.",
