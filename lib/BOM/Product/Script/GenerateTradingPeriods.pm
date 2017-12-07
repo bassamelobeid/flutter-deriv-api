@@ -36,7 +36,7 @@ sub run {
                 my $barriers = generate_barriers_for_window($symbol, $trading_period);
                 # for barriers that's already generated, skip them here.
                 next unless $barriers;
-                my @redis_barrier_key = BOM::Product::Contract::PredefinedParameters::predefined_barrier_key($symbol, $trading_period);
+                my @redis_barrier_key = BOM::Product::Contract::PredefinedParameters::predefined_barriers_key($symbol, $trading_period);
                 my $ttl = max(1, $trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch});
                 $chronicle_writer->set(@redis_barrier_key, $barriers, $now, 1, $ttl);
             }
