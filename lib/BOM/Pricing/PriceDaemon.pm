@@ -44,6 +44,19 @@ sub process_job {
     my $cmd          = $params->{price_daemon_cmd};
     my $current_time = time;
 
+    # for ICO, we don't want to try to subscribe to streams on portfolio and ICO bids page
+    # Websockets layer has no idea what an ICO is, so
+    # we can't filter them out of the pricing keys at that level - if the extra queue
+    # entries start to cause a problem we can drop them in pricer_queue.pl instead
+
+    if ($cmd eq 'bid' and $params->{short_code} =~ /BINARYICO/) {
+        stats_inc("pricer_daemon.binaryico", {tags => $self->tags});
+        return {
+            shortcode   => $params->{short_code},
+            dont_stream => 1,
+        };
+    }
+
     my $underlying           = $self->_get_underlying_or_log($next, $params) or return undef;
     my $current_spot_ts      = $underlying->spot_tick->epoch;
     my $last_priced_contract = try { $json->decode(Encode::decode_utf8($redis->get($next) || return {time => 0})) } catch { {time => 0} };
@@ -193,16 +206,8 @@ sub _get_underlying_or_log {
         return undef;
     }
 
-    # We can skip ICO entries entirely. Websockets layer has no idea what an ICO is, so
-    # we can't filter them out of the pricing keys at that level - if the extra queue
-    # entries start to cause a problem we can drop them in pricer_queue.pl instead.
-    if ($underlying->symbol eq 'BINARYICO') {
-        stats_inc("pricer_daemon.binaryico", {tags => $self->tags});
-        return undef;
-    }
-
     unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
-        warn $underlying->system_symbol . " has invalid spot tick" if $underlying->calendar->is_open($underlying->exchange);
+        warn $underlying->system_symbol . " has invalid spot tick (request: $next)" if $underlying->calendar->is_open($underlying->exchange);
         stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
         return undef;
     }
