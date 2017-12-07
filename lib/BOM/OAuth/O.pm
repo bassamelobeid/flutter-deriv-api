@@ -350,7 +350,7 @@ sub _set_reality_check_cookie {
     # set this cookie only once
     return if $r->cookie('reality_check');
 
-    return unless any { LandingCompany::Registry::get_by_broker($_->broker_code)->has_reality_check } $user->clients;
+    return unless any { LandingCompany::Registry->get_by_broker($_->broker_code)->has_reality_check } $user->clients;
 
     my $default_reality_check_interval_in_minutes = 60;
     $c->cookie(
