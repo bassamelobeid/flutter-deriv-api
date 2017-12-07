@@ -11,6 +11,8 @@ use Brands;
 use HTML::Entities;
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw(looks_like_number);
+use Scope::Guard qw/guard/;
+
 use LandingCompany::Registry;
 
 use f_brokerincludeall;
@@ -174,10 +176,14 @@ read_csv_row_and_callback(
             if (not $client_db->freeze) {
                 die "Account stuck in previous transaction $login_id";
             }
+            my $guard_scope = guard {
+                $client_db->unfreeze;
+            };
+
             my $signed_amount = $amount;
             $signed_amount *= -1 if $action eq 'debit';
             my $err;
-            my $trx = eval {
+            my $trx = try {
                 $client->smart_payment(
                     currency          => $currency,
                     amount            => $signed_amount,
@@ -188,9 +194,10 @@ read_csv_row_and_callback(
                     trace_id          => $trace_id,
                     ($skip_validation ? (skip_validation => 1) : ()),
                 );
-            } or $err = $@;
-            $client_db->unfreeze;
-
+            }
+            catch {
+                $err = $_;
+            };
             if ($err) {
                 $client_account_table .= construct_row_line(%row, error => "Transaction Error: $err");
                 return;
@@ -206,7 +213,6 @@ read_csv_row_and_callback(
                 };
             }
             $row{remark} = sprintf "OK transaction reference id: %d", $trx->id;
-
         } else {
             $row{remark} = "OK to $action [Preview only]";
         }
