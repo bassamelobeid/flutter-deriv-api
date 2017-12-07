@@ -19,13 +19,19 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client->email($email);
 $test_client->save;
 
+my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$test_client_disabled->email($email);
+$test_client_disabled->set_status('disabled', 'system', 'reason');
+$test_client_disabled->save;
+
 my $self_excluded_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 $self_excluded_client->email($email);
 my $exclude_until = Date::Utility->new->epoch + 2 * 86400;
 $self_excluded_client->set_exclusion->timeout_until($exclude_until);
-$self_excluded_client->set_status('disabled', 'SYSTEM', 'testing');
 $self_excluded_client->save;
 
 my $user = BOM::Platform::User->create(
@@ -34,6 +40,7 @@ my $user = BOM::Platform::User->create(
 );
 $user->add_loginid({loginid => $test_client->loginid});
 $user->add_loginid({loginid => $self_excluded_client->loginid});
+$user->add_loginid({loginid => $test_client_disabled->loginid});
 $user->save;
 $test_client->load;
 
@@ -98,14 +105,54 @@ subtest $method => sub {
                 'currency'             => '',
                 'excluded_until'       => $exclude_until,
                 'is_ico_only'          => '0',
-                'is_disabled'          => '1',
+                'is_disabled'          => '0',
                 'is_virtual'           => '0',
                 'landing_company_name' => 'costarica',
                 'loginid'              => $self_excluded_client->loginid,
+            },
+            {
+                'currency'             => '',
+                'is_ico_only'          => '0',
+                'is_disabled'          => '1',
+                'is_virtual'           => '0',
+                'landing_company_name' => 'costarica',
+                'loginid'              => $test_client_disabled->loginid,
             }
         ],
     };
-    $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
+
+    my $result = $c->call_ok($method, $params)->has_no_error->result;
+
+    is $result->{account_list}[0]->{loginid}, $test_client->loginid;
+    is $result->{account_list}[1]->{loginid}, $self_excluded_client->loginid;
+    is $result->{account_list}[2]->{loginid}, $test_client_disabled->loginid;
+
+    $expected_result->{account_list} = [{
+            'currency'             => '',
+            'is_ico_only'          => '0',
+            'is_disabled'          => '0',
+            'is_virtual'           => '0',
+            'landing_company_name' => 'costarica',
+            'loginid'              => $test_client->loginid
+        },
+        {
+            'currency'             => '',
+            'excluded_until'       => $exclude_until,
+            'is_ico_only'          => '0',
+            'is_disabled'          => '0',
+            'is_virtual'           => '0',
+            'landing_company_name' => 'costarica',
+            'loginid'              => $self_excluded_client->loginid,
+        },
+        {
+            'currency'             => '',
+            'is_ico_only'          => '0',
+            'is_disabled'          => '1',
+            'is_virtual'           => '0',
+            'landing_company_name' => 'costarica',
+            'loginid'              => $test_client_disabled->loginid,
+        }];
+    cmp_deeply($c->call_ok($method, $params)->has_no_error->result, $expected_result, 'result is correct');
 
     $test_client->set_default_account('USD');
     $test_client->save;
