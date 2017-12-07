@@ -640,7 +640,7 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
 =head2 
 This subroutine checks for suspended cryptocurrencies 
 Accepts: Landing company name
-Returns: Arrayref of valid CR currencies.
+Returns: Sorted arrayref of valid CR currencies.
 =cut
 
 sub filter_out_suspended_cryptocurrencies {

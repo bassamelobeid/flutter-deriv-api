@@ -45,13 +45,9 @@ Returns an arrayref containing the following:
 
 =over 4
 
-=item * 
+=item * A payout currency that is valid for a specific client
 
-A payout currency that is valid for a specific client
-
-=item * 
-
-Multiple valid payout currencies for the landing company if a client is not provided.
+=item * Multiple valid payout currencies for the landing company if a client is not provided.
 
 =back
 
@@ -59,26 +55,19 @@ Takes a single C<$params> hashref containing the following keys:
 
 =over 4
 
-=item * 
+=item * landing_company_name
 
-landing_company_name
+=item * token_details, which may contain the following keys:
 
-=item * 
+=over 4
 
-token_details, which may contain the following keys:
-
-
-=over 8
-
-=item * 
-
-loginid
+=item * loginid
      
 =back
 
 =back
 
-Returns an arrayref of valid payout currencies
+Returns a sorted arrayref of valid payout currencies
 
 =cut
 
@@ -101,6 +90,7 @@ sub payout_currencies {
     # or we may have a landing company even if we're not logged in - typically this
     # is obtained from the GeoIP country code lookup. If we have one, use it.
     my $lc = $client ? $client->landing_company : LandingCompany::Registry::get($params->{landing_company_name} || 'costarica');
+
     # ... but we fall back to Costa Rica as a useful default, since it has most
     # currencies enabled.
 
