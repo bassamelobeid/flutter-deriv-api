@@ -10,7 +10,7 @@ use List::UtilsBy;
 use Mojo::Redis2;
 use Mojo::URL;
 use Scalar::Util qw/ refaddr /;
-use YAML::XS qw/ LoadFile /;
+use YAML::XS qw/LoadFile/;
 
 use constant PRICING_TIMEOUT => 10;
 
