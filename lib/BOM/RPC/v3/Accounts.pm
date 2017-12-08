@@ -1,3 +1,4 @@
+
 =head1 BOM::RPC::v3::Accounts
 
 This package contains methods for Account entities in our system.
@@ -48,6 +49,11 @@ use BOM::Platform::Runtime;
 =head2 payout_currencies
 
 Returns an arrayref containing the following:
+
+    [$currency, @lc_currencies] = payout_currencies({
+        landing_company_name => $lc_name,
+        token_details        => {loginid => $loginid},
+    })
 
 =over 4
 
