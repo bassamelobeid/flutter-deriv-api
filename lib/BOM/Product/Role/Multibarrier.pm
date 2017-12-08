@@ -27,6 +27,11 @@ override apply_market_inefficient_limit => sub {
     return 0;
 };
 
+has trading_window_start => (
+    is       => 'ro',
+    required => 1,
+);
+
 has landing_company => (
     is      => 'ro',
     default => 'japan',
