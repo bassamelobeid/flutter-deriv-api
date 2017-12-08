@@ -45,6 +45,7 @@ use BOM::Transaction::Validation;
 
 =cut
 
+my $json = JSON::MaybeXS->new;
 has client => (
     is  => 'ro',
     isa => 'Client::Account',
@@ -220,7 +221,6 @@ has general_open_position_payout_limit => (
     lazy_build => 1,
 );
 
-my $json = JSON::MaybeXS->new;
 sub _build_general_open_position_payout_limit {
     return $json->decode(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
 }
