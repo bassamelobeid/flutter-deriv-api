@@ -20,10 +20,10 @@ misc:
 structure:
 	@$(PROVE) t
 
-schemas:
+schema:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite
 
-test: structure schemas accounts security pricing misc
+test: structure schema accounts security pricing misc
 
 tidy:
 	find . -name '*.p?.bak' -delete
