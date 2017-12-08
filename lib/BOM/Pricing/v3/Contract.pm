@@ -629,7 +629,7 @@ sub _validate_offerings {
 
     try {
         my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company_short} // 'costarica');
-        my $method = $contract->is_parameters_predefined ? 'mulit_barrier_contracts_for_country' : 'basic_contracts_for_country';
+        my $method = $contract->is_parameters_predefined ? 'mulit_barrier_offerings_for_country' : 'basic_offerings_for_country';
         my $offerings_obj = $landing_company->$method($args_copy->{country_code} // '', BOM::Platform::Runtime->instance->get_offerings_config);
 
         die 'Could not find offerings for ' . $args_copy->{country_code} unless $offerings_obj;
