@@ -1,3 +1,9 @@
+=head1 BOM::RPC::v3::Utility
+
+Utility package for BOM::RPC::v3
+
+=cut
+
 package BOM::RPC::v3::Utility;
 
 use strict;
@@ -637,10 +643,14 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
     return {longcodes => \%longcodes};
 }
 
-=head2 
+=head2 filter_out_suspended_cryptocurrencies
+
 This subroutine checks for suspended cryptocurrencies 
+
 Accepts: Landing company name
+
 Returns: Sorted arrayref of valid CR currencies.
+
 =cut
 
 sub filter_out_suspended_cryptocurrencies {

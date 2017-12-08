@@ -1,3 +1,9 @@
+=head1 BOM::RPC::v3::Accounts
+
+This package contains methods for Account entities in our system.
+
+=cut
+
 package BOM::RPC::v3::Accounts;
 
 use 5.014;
@@ -62,7 +68,7 @@ Takes a single C<$params> hashref containing the following keys:
 =over 4
 
 =item * loginid
-     
+
 =back
 
 =back
