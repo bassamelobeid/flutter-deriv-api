@@ -17,6 +17,7 @@ use BOM::Platform::AuditLog;
 use BOM::DualControl;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Cookie;
+use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -41,10 +42,9 @@ if ($input->{'dcctype'} ne 'file_content') {
         code_exit_BO();
     }
 
-    if ($input->{'amount'} =~ /^\d\d?\,\d\d\d\.?\d?\d?$/) {
-        $input->{'amount'} =~ s/\,//;
-    }
-    if ($input->{'amount'} !~ /^\d*\.?\d*$/) {
+    my $curr_regex = LandingCompany::Registry::get_currency_type($input->{'currency'}) eq 'fiat' ? '^\d*\.?\d{1,2}$' : '^\d*\.?\d{1,8}$';
+    
+    if ($input->{'amount'} !~ /$curr_regex/) {
         print "ERROR in amount: " . $input->{'amount'};
         code_exit_BO();
     }
