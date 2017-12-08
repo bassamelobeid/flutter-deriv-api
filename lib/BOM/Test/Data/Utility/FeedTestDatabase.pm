@@ -10,6 +10,9 @@ use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::Tick;
 use Postgres::FeedDB::Spot::OHLC;
 use Try::Tiny;
+use YAML::XS qw(LoadFile);
+use Sereal::Encoder;
+use BOM::Platform::RedisReplicated;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( setup_ticks );
@@ -86,6 +89,28 @@ sub create_realtime_tick {
     die 'args must be a hash reference' if ref $args ne 'HASH';
 
     return Cache::RedisDB->set_nw('QUOTE', $args->{underlying}, $args);
+}
+
+sub create_historical_ticks {
+    my $args = shift;
+
+    my $tick_data = LoadFile('/home/git/regentmarkets/bom-test/data/suite_ticks.yml')->{DECIMATE_frxUSDJPY_15s_DEC};
+    my $encoder   = Sereal::Encoder->new({
+        canonical => 1,
+    });
+
+    my $default_underlying = $args->{underlying} // 'frxUSDJPY';
+    my $default_start      = $args->{epoch}      // time;
+    my $key                = "DECIMATE_" . $default_underlying . "_15s_DEC";
+
+    my $redis = BOM::Platform::RedisReplicated::redis_write();
+    for my $tick (@$tick_data) {
+        $tick->{epoch} = $tick->{decimate_epoch} = $default_start;
+        $redis->zadd($key, $tick->{epoch}, $encoder->encode($tick));
+        $default_start -= 15;
+    }
+
+    return;
 }
 
 sub create_tick {
