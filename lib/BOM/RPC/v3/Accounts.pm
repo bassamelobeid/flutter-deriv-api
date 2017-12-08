@@ -48,12 +48,12 @@ use BOM::Platform::Runtime;
 
 =head2 payout_currencies
 
-Returns an arrayref containing the following:
-
     [$currency, @lc_currencies] = payout_currencies({
         landing_company_name => $lc_name,
         token_details        => {loginid => $loginid},
     })
+
+Returns an arrayref containing the following:
 
 =over 4
 
