@@ -1068,24 +1068,27 @@ sub metadata {
 
     $action //= 'buy';
 
+    my $contract = $action eq 'buy' ? $self : $self->opposite_contract_for_sale;
+
     my $contract_duration = do {
-        if ($self->tick_expiry) {
-            $self->tick_count;
-        } elsif (not $self->expiry_daily) {
-            $self->remaining_time->seconds;
+        if ($contract->tick_expiry) {
+            $contract->tick_count;
+        } elsif (not $contract->expiry_daily) {
+            $contract->remaining_time->seconds;
         } else {
-            my $calendar = $self->trading_calendar;
-            my $exchange = $self->underlying->exchange;
-            $calendar->trading_date_for($exchange, $self->date_expiry)->days_between($calendar->trading_date_for($exchange, $self->date_start));
+            my $calendar = $contract->trading_calendar;
+            my $exchange = $contract->underlying->exchange;
+            $calendar->trading_date_for($exchange, $contract->date_expiry)
+                ->days_between($calendar->trading_date_for($exchange, $contract->date_start));
         }
     };
 
     return {
-        contract_category => $self->category->code,
-        underlying_symbol => $self->underlying->symbol,
-        barrier_category  => $action eq 'buy' ? $self->barrier_category : $self->opposite_contract_for_sale->barrier_category,
-        expiry_type       => $self->expiry_type,
-        start_type        => ($self->is_forward_starting ? 'forward' : 'spot'),
+        contract_category => $contract->category->code,
+        underlying_symbol => $contract->underlying->symbol,
+        barrier_category  => $contract->barrier_category,
+        expiry_type       => $contract->expiry_type,
+        start_type        => ($contract->is_forward_starting ? 'forward' : 'spot'),
         contract_duration => $contract_duration,
         for_sale          => ($action ne 'buy'),
     };
