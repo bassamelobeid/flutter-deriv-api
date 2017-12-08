@@ -147,7 +147,7 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
 
 # R_100 Lookbacks
 test_sendrecv_params 'proposal/test_send_lookback.json', 'proposal/test_receive_lookback.json', 
-    'LBFLOATCALL', 'R_100', '15', 'm', '+0.1',  'Receive 0.01 per point difference between Volatility 100 Index\'s exit spot and lowest value at 15 minutes after contract start time.', '27.77', '27.77', '65258.19';
+    'LBFLOATCALL', 'R_100', '15', 'm', '+0.1',  'Receive 0.01 per point difference between Volatility 100 Index\'s exit spot and lowest value at 15 minutes after contract start time.', '28.19', '28.19', '65258.19';
 
 
 # test for negative amount
