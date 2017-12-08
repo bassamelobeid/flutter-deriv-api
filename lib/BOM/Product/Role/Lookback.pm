@@ -46,7 +46,7 @@ sub _build_lookback_base_commission {
 sub _build_multiplier {
     my $self   = shift;
     my $symbol = $self->underlying->symbol;
-    return $multiplier_config->{$symbol};
+    return $multiplier_config->{$symbol} // 0;
 }
 
 # Notes:
