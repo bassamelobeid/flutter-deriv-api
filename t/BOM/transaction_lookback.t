@@ -119,11 +119,17 @@ initialize_realtime_ticks_db();
 my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch - 99,
     underlying => 'R_50',
+    quote      => 76.5996,
+    bid        => 76.6010,
+    ask        => 76.2030,
 });
 
 my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch - 52,
     underlying => 'R_50',
+    quote      => 76.6996,
+    bid        => 76.7010,
+    ask        => 76.3030,
 });
 
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -410,8 +416,8 @@ subtest 'buy a bet', sub {
             cmp_ok $trx->{id}, '>', 0, 'id';
             is $trx->{account_id}, $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'buy', 'action_type';
-            is $trx->{amount} + 0, -23.15, 'amount';
-            is $trx->{balance_after} + 0, 5000 - 23.15, 'balance_after';
+            is $trx->{amount} + 0, -23.5, 'amount';
+            is $trx->{balance_after} + 0, 5000 - 23.5, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
             is $trx->{quantity},      1000,                      'quantity';
@@ -430,14 +436,14 @@ subtest 'buy a bet', sub {
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
             is $fmb->{bet_class}, 'lookback_option', 'bet_class';
             is $fmb->{bet_type},  'LBFLOATCALL',             'bet_type';
-            is $fmb->{buy_price} + 0, 23.15, 'buy_price';
+            is $fmb->{buy_price} + 0, 23.5, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
             is !$fmb->{is_expired}, !0, 'is_expired';
             is !$fmb->{is_sold},    !0, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark},   qr/\btrade\[23\.15000\]/, 'remark';
+            like $fmb->{remark},   qr/\btrade\[23\.50000\]/, 'remark';
             is $fmb->{sell_price}, undef,                     'sell_price';
             is $fmb->{sell_time},  undef,                     'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
@@ -463,7 +469,7 @@ subtest 'buy a bet', sub {
             plan tests => 3;
             is $qv1->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $qv1->{transaction_id},          $trx->{id}, 'transaction_id';
-            is $qv1->{trade} + 0, 23.15, 'trade';
+            is $qv1->{trade} + 0, 23.5, 'trade';
         };
 
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
@@ -520,7 +526,7 @@ subtest 'sell a bet', sub {
             is $trx->{account_id}, $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'sell', 'action_type';
             is $trx->{amount} + 0, $contract->bid_price, 'amount';
-            is $trx->{balance_after} + 0, 5000 - 23.15 + $contract->bid_price, 'balance_after';
+            is $trx->{balance_after} + 0, 5000 - 23.5 + $contract->bid_price, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
             is $trx->{quantity},      1000,                      'quantity';
@@ -539,14 +545,14 @@ subtest 'sell a bet', sub {
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
             is $fmb->{bet_class}, 'lookback_option', 'bet_class';
             is $fmb->{bet_type},  'LBFLOATCALL',             'bet_type';
-            is $fmb->{buy_price} + 0, 23.15, 'buy_price';
+            is $fmb->{buy_price} + 0, 23.5, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
             is $fmb->{is_expired}, 0, 'is_expired';
             is !$fmb->{is_sold},    !1, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark}, qr/\btrade\[23\.15000\]/, 'remark';
+            like $fmb->{remark}, qr/\btrade\[23\.50000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price, 'sell_price';
             cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch,       '<=', time, 'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>',  time, 'settlement_time';
@@ -581,7 +587,7 @@ subtest 'sell a bet', sub {
             plan tests => 3;
             is $qv2->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             isnt $qv2->{transaction_id},        $trx->{id}, 'transaction_id';
-            is $qv2->{trade} + 0, 23.15, 'trade';
+            is $qv2->{trade} + 0, 23.5, 'trade';
         };
 
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
@@ -611,8 +617,8 @@ subtest 'sell_expired_contracts', sub {
             date_start   => ($now->epoch - 50) - (30*60),
             date_expiry  => $now->epoch - 50,
             current_tick => $tick,
-            entry_tick   => $tick,
-            exit_tick    => $tick,
+            entry_tick   => $old_tick1,
+            exit_tick    => $old_tick2,
             barrier      => 'S20P',
         });
 
@@ -635,7 +641,7 @@ subtest 'sell_expired_contracts', sub {
         }
 
         $acc_usd->load;
-        is $acc_usd->balance + 0, 999.54, 'USD balance is down to 900 plus';
+        is $acc_usd->balance + 0, 999.8, 'USD balance is down to 900 plus';
 
         # First sell some particular ones by id.
         my $res = BOM::Transaction::sell_expired_contracts + {
@@ -648,7 +654,7 @@ subtest 'sell_expired_contracts', sub {
             +{
             number_of_sold_bets => 2,
             skip_contract       => 0,
-            total_credited      => 1772.8,
+            total_credited      => 0.2,
             failures            => [],
             },
             'sold the two requested contracts';
