@@ -70,7 +70,7 @@ subtest 'buy' => sub {
         "barrier"       => "S20P",
     };
 
-    $params->{args}{price} = 7.48; 
+    $params->{args}{price} = 7.59; 
     my $old_balance = $client->default_account->load->balance;
     my $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
