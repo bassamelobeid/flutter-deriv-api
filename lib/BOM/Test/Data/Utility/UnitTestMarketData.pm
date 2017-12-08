@@ -21,6 +21,7 @@ use warnings;
 use JSON;
 use Carp qw( croak );
 use YAML::XS;
+use List::Util qw(uniq);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -35,8 +36,10 @@ use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::Utils::Test;
 use Quant::Framework::Asset;
 
-use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods generate_barriers_for_window);
+use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods generate_barriers_for_window update_predefined_highlow);
 use BOM::Product::ContractFinder;
+
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 BEGIN {
     die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
@@ -202,7 +205,18 @@ sub create_predefined_parameters_for {
     my ($symbol, $date) = @_;
 
     my $tp = create_trading_periods($symbol, $date);
+    my @start_times = sort { $a <=> $b } uniq map { $_->{date_start}->{epoch} } @$tp;
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => $symbol,
+            epoch      => $_,
+            quote      => 100,
+        }) for (@start_times);
     create_predefined_barriers($symbol, $_, $date) for (@$tp);
+    update_predefined_highlow({
+        symbol => $symbol,
+        epoch  => $date->epoch,
+        quote  => 100
+    });
     create_predefined_barriers_by_contract_category($symbol, $date);
 
     return;
