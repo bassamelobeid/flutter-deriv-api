@@ -17,10 +17,13 @@ pricing:
 misc:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/misc
 
-structure_and_schemas:
-	@$(PROVE) t /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite
+structure:
+	@$(PROVE) t
 
-test: structure_and_schemas accounts security pricing misc
+schemas:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite
+
+test: structure schemas accounts security pricing misc
 
 tidy:
 	find . -name '*.p?.bak' -delete
