@@ -221,7 +221,7 @@ has general_open_position_payout_limit => (
 );
 
 sub _build_general_open_position_payout_limit {
-    return from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
+    return $json->decode(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
 }
 
 sub BUILDARGS {
