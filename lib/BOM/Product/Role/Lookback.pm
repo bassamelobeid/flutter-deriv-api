@@ -49,6 +49,9 @@ sub _build_multiplier {
     return $multiplier_config->{$symbol};
 }
 
+# Notes:
+# The date_start + 1 is because for min and max we use nest tick after
+# date_start.
 sub _build_spot_min {
     my $self = shift;
 
