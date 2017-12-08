@@ -172,6 +172,7 @@ subtest 'put_call_parity_IH_japan' => sub {
         my $p = $c1->build_parameters;
         $p->{date_pricing} = $c1->date_start;
         $p->{product_type} = 'multi_barrier';
+        $p->{trading_window_start} = time;
         # test was done with the assumption of 10% pricing vol
         $p->{pricing_vol} = 0.1;
         my $c = produce_contract($p);
@@ -233,6 +234,7 @@ subtest 'put_call_parity_slope_japan' => sub {
         my $p = $c1->build_parameters;
         $p->{date_pricing} = $c1->date_start;
         $p->{product_type} = 'multi_barrier';
+        $p->{trading_window_start} = time;
         my $c = produce_contract($p);
         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
         my $call_theo_prob  = $c->pricing_engine->_base_probability;
@@ -284,6 +286,7 @@ subtest 'put_call_parity_vv_japan' => sub {
         my $p = $c1->build_parameters;
         $p->{date_pricing} = $c1->date_start;
         $p->{product_type} = 'multi_barrier';
+        $p->{trading_window_start} = time;
         my $c = produce_contract($p);
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
         my $contract_theo_prob          = $c->pricing_engine->base_probability->amount;
