@@ -5,7 +5,6 @@ use warnings;
 
 use Date::Utility;
 use JSON::MaybeXS;
-use LandingCompany::Offerings qw(get_offerings_flyby);
 use List::Util qw(first);
 use Quant::Framework::EconomicEventCalendar;
 use Try::Tiny;
