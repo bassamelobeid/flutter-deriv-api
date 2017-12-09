@@ -37,7 +37,7 @@ sub script_run {
 
     foreach my $event_param (@$events_received) {
         $event_param->{recorded_date} = Date::Utility->new->epoch;
-        Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::MaybeXS->new->encode($event_param) . "\n");
+        Path::Tiny::path("/feed/economic_events/$file_timestamp")->append_utf8(time . ' ' . JSON::MaybeXS->new->encode($event_param) . "\n");
     }
 
     try {
