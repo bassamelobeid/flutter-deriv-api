@@ -338,7 +338,7 @@ sub check_useragent {
     if ((not $c->stash('user_agent')) and $c->stash('logged_requests') < 3 and ($c->stash('source') // 0) == 1) {
         $c->stash('logged_requests', $c->stash('logged_requests') + 1);
         try {
-            Path::Tiny::path('/var/log/httpd/missing_ua_appid1.log')->append((
+            Path::Tiny::path('/var/log/httpd/missing_ua_appid1.log')->append_utf8((
                     join ',',
                     (map { $c->stash($_) // '' } qw/ source client_ip landing_company_name brand log_requests /),
                     (map { $c->tx->req->headers->header($_) // '-' } qw/ Origin Referer /),
