@@ -451,6 +451,7 @@ sub startup {
 
     for my $action (@$actions) {
         my $f             = '/home/git/regentmarkets/binary-websocket-api/config/v3/' . $action->[0];
+        # we expect File::Slurp::read_file return  the whole file as a string. So we give it a scalar environment
         my $in_validator  = JSON::Schema->new($json->decode(File::Slurp::read_file("$f/send.json") . ''), format => \%JSON::Schema::FORMATS);
         my $out_validator = JSON::Schema->new($json->decode(File::Slurp::read_file("$f/receive.json") . ''), format => \%JSON::Schema::FORMATS);
 
