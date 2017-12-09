@@ -113,7 +113,7 @@ my $product_profiles_compiled = {};
 sub _build_raw_custom_profiles {
     my $self = shift;
 
-    my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;    # use a pointer to avoid copying
+    my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;    # use a reference to avoid copying
     $product_profiles_compiled = $json->decode($product_profiles_txt = $$ptr)                    # copy and compile
         unless $$ptr eq $product_profiles_txt;
 
