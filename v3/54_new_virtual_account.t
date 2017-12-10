@@ -135,8 +135,9 @@ sub _get_token {
     my $tokens = $redis->execute('keys', 'VERIFICATION_TOKEN::*');
 
     my $code;
+    my $json = JSON::MaybeXS->new;
     foreach my $key (@{$tokens}) {
-        my $value = JSON::MaybeXS->new->decode($redis->get($key));
+        my $value = $json->decode(Encode::decode_utf8($redis->get($key)));
 
         if ($value->{email} eq $email) {
             $key =~ /^VERIFICATION_TOKEN::(\w+)$/;
