@@ -1264,10 +1264,10 @@ sub api_token {
         if (defined $params->{account_id}) {
             BOM::Platform::RedisReplicated::redis_write()->publish(
                 'TXNUPDATE::transaction_' . $params->{account_id},
-                $json->encode({
+                Encode::encode_utf8($json->encode({
                         error => {
                             code       => "TokenDeleted",
-                            account_id => $params->{account_id}}}));
+                            account_id => $params->{account_id}}})));
         }
     }
     if (my $display_name = $args->{new_token}) {
