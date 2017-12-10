@@ -295,8 +295,6 @@ sub parse_and_refine_setting {
         if (not defined $input_value or not defined $decoded) {
             $input_value = '{}';
         } else {
-            my $json =
-
                 $input_value = Encode::encode_utf8(
                 JSON::MaybeXS->new(
                     pretty    => 1,
