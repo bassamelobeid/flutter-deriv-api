@@ -35,7 +35,7 @@ Takes the following (named) parameters:
 
 =over 4
 
-=item * C<params> hashref that contains a Client::Account object under the key 'client'.
+=item * C<params> hashref that contains a Client::Account object under the key C<client>.
 
 =back
 
@@ -47,9 +47,9 @@ Returns any of the following:
 
 =over 4
 
-=item * C<code> stating 'MT5APISuspendedError'.
+=item * C<code> stating C<MT5APISuspendedError>.
 
-=item * C<message_to_client> that says 'MT5 API calls are suspended.'.
+=item * C<message_to_client> that says C<MT5 API calls are suspended.>.
 
 =back
 
