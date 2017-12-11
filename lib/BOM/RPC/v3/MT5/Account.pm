@@ -25,7 +25,7 @@ use BOM::Transaction;
 
 =head2 mt5_login_list
 
-$mt5_logins = BOM::RPC::v3::MT5::Account::mt5_login_list({ client => $client })
+    $mt5_logins = mt5_login_list({ client => $client })
 
 Takes a client object and returns all possible MT5 login IDs 
 associated with that client. Otherwise, returns an error message indicating
