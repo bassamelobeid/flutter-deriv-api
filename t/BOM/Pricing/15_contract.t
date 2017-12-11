@@ -51,8 +51,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
-        symbol => 'R_50',
-        date   => Date::Utility->new
+        symbol        => 'R_50',
+        recorded_date => $now
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -770,11 +770,82 @@ subtest 'send_ask - country validation' => sub {
     $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
 };
 
+subtest 'get_bid - expired contract' => sub {
+
+    # just one tick for missing market data
+    create_ticks([100, $now->epoch - 899, 'R_50'], [100.1, $now->epoch - 800, 'R_50'], [100, $now->epoch - 501, 'R_50']);
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
+        underlying => 'R_50',
+    });
+
+    my $contract = _create_contract(
+        current_tick  => $tick,
+        date_start    => $now->epoch - 900,
+        date_expiry   => $now->epoch - 500,
+        purchase_date => $now->epoch - 901
+    );
+    my $params = {
+        short_code      => $contract->shortcode,
+        contract_id     => $contract->id,
+        currency        => 'USD',
+        is_sold         => 0,
+        country_code    => 'cr',
+        landing_company => 'costarica',
+    };
+    my $result = $c->call_ok('get_bid', $params)->has_no_error->has_no_system_error->result;
+    ok $result->{is_expired}, 'contract expired';
+};
+
+subtest 'send_ask - landing company japan' => sub {
+    my $now = Date::Utility->new;
+    BOM::Test::Data::Utility::FeedTestDatabase::create_historical_ticks();
+    BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $now->epoch,
+        quote      => 100
+    });
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxUSDJPY',
+            recorded_date => $now,
+        });
+    my $params = {
+        client_ip => '127.0.0.1',
+        args      => {
+            "proposal"         => 1,
+            "amount"           => "100",
+            "basis"            => "payout",
+            "contract_type"    => "CALL",
+            "currency"         => "USD",
+            "duration"         => "60",
+            "duration_unit"    => "s",
+            "symbol"           => "R_50",
+            landing_company    => 'japan',
+            barrier            => 100,
+            "streaming_params" => {add_theo_probability => 1},
+        }};
+    my $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError')->result;
+    is $result->{error}->{message_to_client}, 'Trading is not offered for this asset.', 'error message is correct';
+
+    sleep(1); #needed to sleep prevent race condition
+    $params->{args}{contract_type} = 'CALLE';
+    $params->{args}{symbol}        = 'frxUSDJPY';
+    $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError')->result;
+    is $result->{error}->{message_to_client}, 'Trading is not offered for this duration.', 'error message is correct';
+
+    $params->{args}{duration}      = 2;
+    $params->{args}{duration_unit} = 'm';
+    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
+};
+
 done_testing();
 
 sub create_ticks {
     my @ticks = @_;
 
+    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables();
     for my $tick (@ticks) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             quote      => $tick->[0],
@@ -791,20 +862,23 @@ sub _create_contract {
 
     #postpone 10 minutes to avoid conflicts
     $now = $now->plus_time_interval('10m');
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 99,
-        underlying => 'R_50',
-    });
+    my $tick;
+    unless ($args{no_tick}) {
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            epoch      => $now->epoch - 99,
+            underlying => 'R_50',
+        });
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 52,
-        underlying => 'R_50',
-    });
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            epoch      => $now->epoch - 52,
+            underlying => 'R_50',
+        });
 
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch,
-        underlying => 'R_50',
-    });
+        $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            epoch      => $now->epoch,
+            underlying => 'R_50',
+        });
+    }
 
     my $symbol        = $args{underlying} ? $args{underlying} : 'R_50';
     my $date_start    = $now->epoch - 100;
@@ -828,6 +902,10 @@ sub _create_contract {
     };
     if ($args{date_pricing}) {
         $contract_data->{date_pricing} = $args{date_pricing};
+    }
+
+    if ($args{duration}) {
+        $contract_data->{duration} = $args{duration};
     }
 
     return produce_contract($contract_data);

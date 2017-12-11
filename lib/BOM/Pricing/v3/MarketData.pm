@@ -48,9 +48,22 @@ sub _get_digest {
 }
 
 sub trading_times {
-    my $params    = shift;
-    my $date      = try { Date::Utility->new($params->{args}->{trading_times}) } || Date::Utility->new;
-    my $language  = $params->{language} // 'en';
+    my $params = shift;
+    my $date;
+
+    if ($params->{args}->{trading_times} eq 'today') {
+        $date = Date::Utility->new;
+    } else {
+        $date = try { Date::Utility->new($params->{args}->{trading_times}) };
+    }
+
+    unless ($date) {
+        return BOM::Pricing::v3::Utility::create_error({
+                code              => 'InvalidDateFormat',
+                message_to_client => localize('Invalid date format.')});
+    }
+
+    my $language = $params->{language} // 'en';
     my $cache_key = 'trading_times_' . $language . '_' . $date->date_yyyymmdd;
 
     my $cached = _get_cache($cache_key);

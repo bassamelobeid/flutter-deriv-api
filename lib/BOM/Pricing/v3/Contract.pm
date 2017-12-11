@@ -206,9 +206,7 @@ sub handle_batch_contract {
     my $proposals = {};
 
     # This is done with an assumption that batch contracts has identical duration and contract category
-    if (my $error = _validate_offerings($batch_contract->_contracts->[0], $p2)) {
-        return $error;
-    }
+    my $offerings_error = _validate_offerings($batch_contract->_contracts->[0], $p2);
 
     my $ask_prices = $batch_contract->ask_prices;
     my $trading_window_start = $p2->{trading_period_start} // '';
@@ -249,6 +247,26 @@ sub handle_batch_contract {
             warn "Could not find barrier for key $key, available barriers: " . join ',', sort keys %{$ask_prices->{$contract_type}}
                 unless exists $ask_prices->{$contract_type}{$key};
             my $price = $ask_prices->{$contract_type}{$key} // {};
+            if ($offerings_error) {
+                my $new_error = {
+                    longcode => $price->{longcode},
+                    error    => {
+                        message_to_client => $offerings_error->{error}{message_to_client},
+                        code              => $offerings_error->{error}{code},
+                        details           => {
+                            display_value => $price->{error} ? $price->{error}{details}{display_value} : $price->{display_value},
+                            payout        => $price->{error} ? $price->{error}{details}{payout}        : $price->{display_value},
+                        }
+                    },
+                };
+                if (ref($barrier)) {
+                    $new_error->{error}{details}{barrier}  = $batch_contract->underlying->pipsized_value($barrier->{barrier});
+                    $new_error->{error}{details}{barrier2} = $batch_contract->underlying->pipsized_value($barrier->{barrie2});
+                } else {
+                    $new_error->{error}{details}{barrier} = $batch_contract->underlying->pipsized_value($barrier);
+                }
+                $price = $new_error;
+            }
             push @{$proposals->{$contract_type}}, $price;
         }
     }
@@ -311,12 +329,13 @@ sub get_bid {
         my $is_valid_to_sell = 1;
         my $validation_error;
         if (
-            my $cve = _validate_offerings(
+            not $contract->is_expired
+            and my $cve = _validate_offerings(
                 $contract,
                 {
-                    landing_company_short => $landing_company,
-                    country_code          => $country_code,
-                    action                => 'sell'
+                    landing_company => $landing_company,
+                    country_code    => $country_code,
+                    action          => 'sell'
                 }))
         {
             $is_valid_to_sell = 0;
