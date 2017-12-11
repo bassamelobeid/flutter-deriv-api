@@ -10,6 +10,7 @@ use BOM::Platform::AuditLog;
 use BOM::Platform::RedisReplicated;
 
 my $json = JSON::MaybeXS->new;
+
 sub user_by_access_token {
     my $access_token = shift;
 
@@ -33,8 +34,7 @@ sub login {
     my $user = BOM::Backoffice::Auth0::user_by_access_token($access_token);
     if ($user) {
         $user->{token} = $access_token;
-        BOM::Platform::RedisReplicated::redis_write->set("BINARYBOLOGIN::" . $user->{nickname},
-            Encode::encode_utf8($json->encode($user)));
+        BOM::Platform::RedisReplicated::redis_write->set("BINARYBOLOGIN::" . $user->{nickname}, Encode::encode_utf8($json->encode($user)));
         BOM::Platform::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $user->{nickname}, 24 * 3600);
 
         return $user;

@@ -36,6 +36,7 @@ my $static_config = {
 };
 
 my $json = JSON::MaybeXS->new;
+
 sub generate_commission_form {
     my $url = shift;
 
