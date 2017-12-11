@@ -1,3 +1,10 @@
+
+=head1 BOM::RPC::v3::Utility
+
+Utility package for BOM::RPC::v3
+
+=cut
+
 package BOM::RPC::v3::Utility;
 
 use strict;
@@ -637,10 +644,16 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
     return {longcodes => \%longcodes};
 }
 
-=head2 
+=head2 filter_out_suspended_cryptocurrencies
+
+    @valid_payout_currencies = filter_out_suspended_cryptocurrencies($landing_company);
+
 This subroutine checks for suspended cryptocurrencies 
+
 Accepts: Landing company name
-Returns: Arrayref of valid CR currencies.
+
+Returns: Sorted arrayref of valid CR currencies.
+
 =cut
 
 sub filter_out_suspended_cryptocurrencies {
@@ -648,9 +661,9 @@ sub filter_out_suspended_cryptocurrencies {
     my @currencies           = keys %{LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies};
 
     my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
-    my @payout_currencies =
+    my @valid_payout_currencies =
         sort grep { !exists $suspended_currencies{$_} } @currencies;
-    return \@payout_currencies;
+    return \@valid_payout_currencies;
 }
 
 1;
