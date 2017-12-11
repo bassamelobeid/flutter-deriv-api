@@ -822,9 +822,11 @@ subtest 'send_ask - landing company japan' => sub {
             "duration"         => "60",
             "duration_unit"    => "s",
             "symbol"           => "R_50",
+            product_type       => 'multi_barrier',
             landing_company    => 'japan',
             barrier            => 100,
             "streaming_params" => {add_theo_probability => 1},
+            trading_period_start => time,
         }};
     my $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError')->result;
     is $result->{error}->{message_to_client}, 'Trading is not offered for this asset.', 'error message is correct';
