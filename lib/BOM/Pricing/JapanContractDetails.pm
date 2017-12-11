@@ -116,8 +116,9 @@ sub verify_with_shortcode {
     my $priced_at_start = make_similar_contract(
         $original_contract,
         {
-            priced_at    => 'start',
-            product_type => 'multi_barrier',
+            priced_at       => 'start',
+            landing_company => $landing_company,
+            product_type    => 'multi_barrier',
         });
     my $purchase_time = $original_contract->date_start;
 
