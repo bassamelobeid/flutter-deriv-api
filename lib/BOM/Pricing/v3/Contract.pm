@@ -575,9 +575,13 @@ sub contracts_for {
     my $args                 = $params->{args};
     my $symbol               = $args->{contracts_for};
     my $currency             = $args->{currency} || 'USD';
-    my $product_type         = $args->{product_type} or die 'product_type is required';
-    my $landing_company_name = $args->{landing_company} or die 'landing_company is required';
+    my $landing_company_name = $args->{landing_company} // 'costarica';
+    my $product_type         = $args->{product_type};
     my $country_code         = $params->{country_code} // '';
+
+    unless ($product_type) {
+        $product_type = LandingCompany::Registry::get($landing_company_name)->default_offerings;
+    }
 
     my $finder        = BOM::Product::ContractFinder->new;
     my $method        = $product_type eq 'basic' ? 'basic_contracts_for' : 'multi_barrier_contracts_for';
