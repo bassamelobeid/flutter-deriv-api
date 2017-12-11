@@ -22,10 +22,6 @@ $mock->mock('_get_predefined_highlow', sub { (100, 90) });
 $mock->mock('update_predefined_highlow', sub { 1 });
 
 set_absolute_time(Date::Utility->new('2017-11-20 00:00:00')->epoch);
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
-    epoch      => Date::Utility->new->minus_time_interval('100d')->epoch,
-});
 
 my ($t, $rpc_ct);
 my $method = 'contracts_for';
@@ -53,12 +49,6 @@ subtest "Request $method" => sub {
     ok @{$result->{available}}, 'It should return available contracts';
     ok !grep { $_->{contract_type} =~ /^(EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
 
-    BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', Date::Utility->new);
-
-    $params[1]{args}{product_type}  = 'multi_barrier';
-    $params[1]{args}{contracts_for} = 'frxUSDJPY';
-    $params[1]{args}{landing_company} = 'japan';
-
     # mock distributor quote
     my $redis = BOM::Platform::RedisReplicated::redis_write();
     $redis->set(
@@ -66,6 +56,11 @@ subtest "Request $method" => sub {
         encode_json({
                 quote => 500,
             }));
+    BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', Date::Utility->new);
+
+    $params[1]{args}{product_type}  = 'multi_barrier';
+    $params[1]{args}{contracts_for} = 'frxUSDJPY';
+    $params[1]{args}{landing_company} = 'japan';
 
     my $mock_feeddb = Test::MockModule->new('Postgres::FeedDB::Spot');
     $mock_feeddb->mock(
