@@ -50,7 +50,7 @@ my $bet_params = {
     currency        => 'USD',
     payout          => 10,
     product_type    => 'multi_barrier',
-    trading_window_start => time,
+    trading_period_start => time,
     date_start      => $now,
     date_pricing    => $now,
 };

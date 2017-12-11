@@ -27,7 +27,7 @@ override apply_market_inefficient_limit => sub {
     return 0;
 };
 
-has trading_window_start => (
+has trading_period_start => (
     is       => 'ro',
     required => 1,
 );
@@ -214,10 +214,10 @@ sub _subvalidate_double_barrier {
 
 # Compose a string containing all the pricing info that needed to be log for Japan
 sub japan_pricing_info {
-    my ($self, $trading_window_start, $opposite_contract) = @_;
+    my ($self, $trading_period_start, $opposite_contract) = @_;
 
     my $bid_price = $self->payout - $opposite_contract->ask_price;
-    my @pricing_info = ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->_date_pricing_milliseconds);
+    my @pricing_info = ($self->shortcode, $trading_period_start, $self->ask_price, $bid_price, $self->_date_pricing_milliseconds);
 
     my $extra = $self->extra_info('string');
     my $pricing_info = join ',', @pricing_info, $extra;

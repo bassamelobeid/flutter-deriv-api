@@ -57,7 +57,7 @@ subtest 'predefined_contracts' => sub {
     ok $c->is_valid_to_buy, 'valid to buy.';
 
     $bet_params->{product_type} = 'multi_barrier';
-    $bet_params->{trading_window_start} = time;
+    $bet_params->{trading_period_start} = time;
     $bet_params->{bet_type}     = 'CALLE';
     $bet_params->{barrier}      = '100.010';
     $c                          = produce_contract($bet_params);

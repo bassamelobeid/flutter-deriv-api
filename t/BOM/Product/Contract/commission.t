@@ -143,7 +143,7 @@ subtest 'payout' => sub {
         currency     => 'JPY',
         payout       => 1000,
         product_type => 'multi_barrier',
-        trading_window_start => time,
+        trading_period_start => time,
     });
 
     cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex intraday non atm contract for japan is floored to 5%';
@@ -156,7 +156,7 @@ subtest 'payout' => sub {
         currency     => 'JPY',
         payout       => 1000,
         product_type => 'multi_barrier',
-        trading_window_start => time,
+        trading_period_start => time,
     });
     cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex daily non atm contract for japan is floored to 5%';
 
