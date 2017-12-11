@@ -24,11 +24,11 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_mas
 use Encode;
 use DataDog::DogStatsd::Helper;
 use Digest::MD5 qw(md5_hex);
-use File::Slurp;
 use Format::Util::Strings qw( defang );
 use JSON::MaybeXS;
 use JSON::Schema;
 use Mojolicious::Plugin::ClientIP::Pluggable;
+use Path::Tiny;
 use RateLimitations::Pluggable;
 use Scalar::Util qw(weaken);
 use Time::Duration::Concise;
@@ -451,9 +451,8 @@ sub startup {
 
     for my $action (@$actions) {
         my $f             = '/home/git/regentmarkets/binary-websocket-api/config/v3/' . $action->[0];
-        # we expect File::Slurp::read_file return  the whole file as a string. So we give it a scalar environment
-        my $in_validator  = JSON::Schema->new($json->decode(File::Slurp::read_file("$f/send.json") . ''), format => \%JSON::Schema::FORMATS);
-        my $out_validator = JSON::Schema->new($json->decode(File::Slurp::read_file("$f/receive.json") . ''), format => \%JSON::Schema::FORMATS);
+        my $in_validator  = JSON::Schema->new($json->decode(path("$f/send.json")->slurp_utf8), format => \%JSON::Schema::FORMATS);
+        my $out_validator = JSON::Schema->new($json->decode(path("$f/receive.json")->slurp_utf8), format => \%JSON::Schema::FORMATS);
 
         my $action_options = $action->[1] ||= {};
         $action_options->{in_validator}  = $in_validator;
