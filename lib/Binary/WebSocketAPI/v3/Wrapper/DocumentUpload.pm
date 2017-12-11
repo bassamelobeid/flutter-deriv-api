@@ -9,10 +9,15 @@ use Net::Async::Webservice::S3;
 use Future;
 use Variable::Disposition qw/retain_future/;
 use JSON::MaybeXS qw/decode_json/;
+use List::Util qw/first/;
 
 use Binary::WebSocketAPI::Hooks;
 
-use constant MAX_CHUNK_SIZE => 2**17;    #100KB
+use constant {
+    MAX_CHUNK_SIZE       => 2**17,    # Chunks bigger than 100KB are not allowed
+    UPLOAD_TIMEOUT       => 120,      # Effective after the last chunk is arrived
+    UPLOAD_STALL_TIMEOUT => 60,       # The greatest acceptable delay between each chunk
+};
 
 sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
@@ -36,7 +41,7 @@ sub add_upload_info {
         upload_id       => $upload_id,
     };
 
-    create_s3_instance($c, $upload_info);
+    wait_for_chunks_and_upload_to_s3($c, $upload_info);
 
     my $stash = {
         %{$current_stash},
@@ -187,7 +192,7 @@ sub upload_chunk {
     $stash->{$upload_id}->{sha1}->add($data);
     $stash->{$upload_id}->{received_bytes} = $new_received_bytes;
 
-    return add_upload_future($c, $upload_info->{pending_futures}, $data);
+    return resolve_with_received_chunk($c, $upload_info->{pending_futures}, $data);
 }
 
 sub create_error {
@@ -231,18 +236,39 @@ sub generate_upload_id {
 sub clean_up_on_finish {
     my ($c, $upload_info) = @_;
 
-    return if !$upload_info;
+    return unless $upload_info;
 
-    my $stash = $c->stash->{document_upload};
+    $_->cancel for @{$upload_info->{pending_futures}}, $upload_info->{put_future};
 
-    delete $stash->{$upload_info->{upload_id}} if exists $upload_info->{upload_id};
+    my $s3 = $upload_info->{s3};
+    $c->loop->remove($s3) if grep { $_ == $s3 } $c->loop->notifiers;
 
-    delete $upload_info->{pending_futures};
+    my $upload_id           = $upload_info->{upload_id};
+    my $stash               = $c->stash->{document_upload};
+    my $stashed_upload_info = $stash->{$upload_id};
 
-    $c->loop->remove($upload_info->{s3});
-    delete $upload_info->{s3};
+    return unless $stashed_upload_info;
+
+    delete $stashed_upload_info->{pending_futures};
+    delete $stashed_upload_info->{put_future};
+    delete $stashed_upload_info->{s3};
+    delete $stash->{$upload_id};
 
     return;
+}
+
+sub wait_for_chunks_and_upload_to_s3 {
+    my ($c, $upload_info) = @_;
+
+    my $s3 = create_s3_instance($c, $upload_info);
+
+    my $pending_futures = $upload_info->{pending_futures};
+
+    return $upload_info->{put_future} = $s3->put_object(
+        key          => $upload_info->{file_name},
+        value        => sub { wait_for_chunk($c, $pending_futures) },
+        value_length => $upload_info->{file_size},
+    )->on_fail(sub { send_upload_failure($c, $upload_info, 'unknown') });
 }
 
 sub create_s3_instance {
@@ -251,22 +277,14 @@ sub create_s3_instance {
     my $s3 = Net::Async::Webservice::S3->new(
         %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)},
         max_retries   => 1,
-        stall_timeout => 60,
+        stall_timeout => UPLOAD_STALL_TIMEOUT,
     );
 
     $c->loop->add($s3);
 
     $upload_info->{s3} = $s3;
 
-    my $pending_futures = $upload_info->{pending_futures};
-
-    $upload_info->{put_future} = $s3->put_object(
-        key          => $upload_info->{file_name},
-        value        => sub { add_upload_future($c, $pending_futures) },
-        value_length => $upload_info->{file_size},
-    );
-
-    return;
+    return $s3;
 }
 
 sub last_chunk_received {
@@ -274,36 +292,43 @@ sub last_chunk_received {
 
     return if $upload_info->{chunk_size} != 0;
 
-    # Breaking the ref cycle for the timeout future
-    my $put_future = $upload_info->{put_future};
-    delete $upload_info->{put_future};
-
     return retain_future(
-        Future->wait_any($put_future, $c->loop->timeout_future(after => 120),)->then(
+        Future->wait_any($upload_info->{put_future}, $c->loop->timeout_future(after => UPLOAD_TIMEOUT))->on_done(
             sub {
                 send_upload_successful($c, $upload_info, 'success');
-            },
+            }
+            )->on_fail(
             sub {
                 send_upload_failure($c, $upload_info, 'unknown');
             }));
 }
 
-sub add_upload_future {
+sub wait_for_chunk {
+    my ($c, $pending_futures) = @_;
+
+    my $upload_future = get_oldest_pending_future($c, $pending_futures, 1);
+
+    return $upload_future->on_ready(sub { shift @$pending_futures });
+}
+
+sub resolve_with_received_chunk {
     my ($c, $pending_futures, $received_chunk) = @_;
 
-    my ($current_pending_future) = grep { not($received_chunk and $_->is_ready) } @{$pending_futures};
+    my $upload_future = get_oldest_pending_future($c, $pending_futures);
 
-    my $upload_future = $current_pending_future || $c->loop->new_future;
+    return $upload_future->done($received_chunk);
+}
 
-    push @{$pending_futures}, $upload_future if not $current_pending_future;
+sub get_oldest_pending_future {
+    my ($c, $pending_futures, $include_ready_futures) = @_;
 
-    if ($received_chunk) {
-        $upload_future->done($received_chunk);
-    } else {
-        $upload_future->on_ready(sub { shift @{$pending_futures} });
-    }
+    my $first_pending_future = first { not $_->is_ready unless $include_ready_futures } @$pending_futures;
 
-    return $upload_future;
+    my $pending_future = $first_pending_future || $c->loop->new_future;
+
+    push @$pending_futures, $pending_future unless $first_pending_future;
+
+    return $pending_future;
 }
 
 1;
