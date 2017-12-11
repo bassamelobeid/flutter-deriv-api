@@ -1,3 +1,10 @@
+
+=head1 BOM::RPC::v3::Accounts
+
+This package contains methods for Account entities in our system.
+
+=cut
+
 package BOM::RPC::v3::Accounts;
 
 use 5.014;
@@ -39,6 +46,43 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
+=head2 payout_currencies
+
+    [$currency, @lc_currencies] = payout_currencies({
+        landing_company_name => $lc_name,
+        token_details        => {loginid => $loginid},
+    })
+
+Returns an arrayref containing the following:
+
+=over 4
+
+=item * A payout currency that is valid for a specific client
+
+=item * Multiple valid payout currencies for the landing company if a client is not provided.
+
+=back
+
+Takes a single C<$params> hashref containing the following keys:
+
+=over 4
+
+=item * landing_company_name
+
+=item * token_details, which may contain the following keys:
+
+=over 4
+
+=item * loginid
+
+=back
+
+=back
+
+Returns a sorted arrayref of valid payout currencies
+
+=cut
+
 sub payout_currencies {
     my $params = shift;
 
@@ -51,13 +95,15 @@ sub payout_currencies {
         });
     }
 
-    # if client has default_account he has already chosen his currency..
+    # If the client has a default_account, he has already chosen his currency.
+    # The client's currency is returned in this case.
     return [$client->currency] if $client && $client->default_account;
 
-    # or if client has not yet selected currency - we will use list from his LC
+    # If the client has not yet selected currency - we will use list from his landing company
     # or we may have a landing company even if we're not logged in - typically this
     # is obtained from the GeoIP country code lookup. If we have one, use it.
     my $lc = $client ? $client->landing_company : LandingCompany::Registry::get($params->{landing_company_name} || 'costarica');
+
     # ... but we fall back to Costa Rica as a useful default, since it has most
     # currencies enabled.
 
