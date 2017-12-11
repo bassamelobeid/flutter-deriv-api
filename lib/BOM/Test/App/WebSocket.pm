@@ -9,6 +9,7 @@ use Encode;
 use JSON::MaybeXS;
 use BOM::Test::Helper qw/build_wsapi_test/;
 
+my $json = JSON::MaybeXS->new;
 sub build_test_app {
     my ($self, $args) = @_;
     return build_wsapi_test($args, {}, sub { _store_stream_data($self->{streams}, @_) });
@@ -24,7 +25,7 @@ sub test_schema {
     my @subscribed_streams_ids = map { $_->{id} } values %{$self->{streams}};
     while ($i++ < 5 && !$result) {
         $t->message_ok;
-        my $message = JSON::MaybeXS->new->decode(Encode::decode_utf8($t->message->[1]));
+        my $message = $json->decode(Encode::decode_utf8($t->message->[1]));
         # skip subscribed stream's messages
         next
             if ref $message->{$message->{msg_type}} eq 'HASH'
