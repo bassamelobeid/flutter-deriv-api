@@ -3,6 +3,14 @@ use warnings;
 
 use Test::Most;
 use Test::Warn;
+
+no warnings qw/redefine/;
+
+BEGIN {
+    # Test should fail if Future DEBUG mode shows any warning
+    $ENV{PERL_FUTURE_DEBUG} = 1;
+}
+
 use JSON::MaybeXS qw/decode_json encode_json/;
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Digest::SHA qw/sha1_hex/;
@@ -19,8 +27,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use constant MAX_FILE_SIZE  => 2**20 * 3;    # 3MB
 use constant MAX_CHUNK_SIZE => 2**17;
 
-warning_like { override_subs() }[qr/Subroutine.*redefined.*/, qr/Subroutine.*redefined.*/],
-    'We override last_chunk_received and create_s3_instance to avoid using s3 for tests';
+override_subs();
 
 $ENV{DOCUMENT_AUTH_S3_ACCESS} = 'TestingS3Access';
 $ENV{DOCUMENT_AUTH_S3_SECRET} = 'TestingS3Secret';
@@ -50,6 +57,49 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $req_id      = 1;
 my $CHUNK_SIZE  = 6;
 my $PASSTHROUGH = {key => 'value'};
+
+my $generic_req = {
+    passthrough     => $PASSTHROUGH,
+    document_upload => 1,
+    document_id     => '12456',
+    document_format => 'JPEG',
+    document_type   => 'passport',
+    expiration_date => '2020-01-01',
+};
+
+subtest 'Fail during upload' => sub {
+    my $data   = 'Some text';
+    my $length = length $data;
+
+    my $req = {
+        %$generic_req,
+        req_id    => ++$req_id,
+        file_size => $length,
+    };
+
+    my $c = get_c();
+
+    $t = $t->send_ok({json => $req})->message_ok;
+    my $res       = decode_json($t->message->[1]);
+    my $upload_id = $res->{document_upload}->{upload_id};
+    my $call_type = $res->{document_upload}->{call_type};
+
+    my @frames = gen_frames($data, $call_type, $upload_id);
+
+    $t = $t->send_ok({binary => $frames[0]});
+
+    # let the above frame land before failing
+    $c->loop->delay_future(after => 0.01)->on_ready(
+        sub {
+            $c->stash->{document_upload}->{$upload_id}->{put_future}->fail('Ungracefully');
+        });
+
+    $t   = $t->message_ok;
+    $res = decode_json($t->message->[1]);
+    my $error = $res->{error};
+
+    is $error->{code}, 'UploadDenied', 'Upload should fail if put_object fails';
+};
 
 subtest 'Encoded json passed as binary frame' => sub {
     $t = $t->send_ok({binary => encode_json({ping => 1})})->message_ok;
@@ -88,15 +138,13 @@ subtest 'Invalid s3 config' => sub {
     my $length = length $data;
 
     my $req = {
-        req_id          => ++$req_id,
-        passthrough     => $PASSTHROUGH,
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'JPEG',
-        document_type   => 'passport',
-        file_size       => $length,
-        expiration_date => '2020-01-01',
+        %$generic_req,
+        req_id    => ++$req_id,
+        file_size => $length,
     };
+
+    # Valid bucket name to cause error
+    $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'ValidBucket';
 
     $t = $t->send_ok({json => $req})->message_ok;
     my $res       = decode_json($t->message->[1]);
@@ -104,9 +152,6 @@ subtest 'Invalid s3 config' => sub {
     my $call_type = $res->{document_upload}->{call_type};
 
     my @frames = gen_frames($data, $call_type, $upload_id);
-
-    # Valid bucket name to cause error
-    $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'ValidBucket';
 
     $t   = $t->send_ok({binary => $frames[0]});
     $t   = $t->message_ok;
@@ -125,14 +170,9 @@ subtest 'Invalid s3 config' => sub {
 
 subtest 'binary metadata should be correctly sent' => sub {
     my $req = {
-        req_id          => ++$req_id,
-        passthrough     => $PASSTHROUGH,
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'JPEG',
-        document_type   => 'passport',
-        file_size       => 1,
-        expiration_date => '2020-01-01',
+        %$generic_req,
+        req_id    => ++$req_id,
+        file_size => 1,
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -188,14 +228,9 @@ subtest 'sending two files concurrently' => sub {
     my $length = length $data;
 
     my $req1 = {
-        req_id          => ++$req_id,
-        passthrough     => $PASSTHROUGH,
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'JPEG',
-        document_type   => 'passport',
-        file_size       => $length,
-        expiration_date => '2020-01-01',
+        %$generic_req,
+        req_id    => ++$req_id,
+        file_size => $length,
     };
 
     my $req2 = {%{$req1}, req_id => ++$req_id};
@@ -243,12 +278,8 @@ subtest 'Send two files one by one' => sub {
     my $length = length $data;
 
     document_upload_ok({
-            document_upload => 1,
-            document_id     => '12456',
-            document_format => 'JPEG',
-            document_type   => 'passport',
-            file_size       => $length,
-            expiration_date => '2020-01-01',
+            %$generic_req,
+            file_size => $length,
         },
         $data
     );
@@ -257,7 +288,7 @@ subtest 'Send two files one by one' => sub {
     $length = length $data;
 
     document_upload_ok({
-            document_upload => 1,
+            %$generic_req,
             document_format => 'PNG',
             document_type   => 'bankstatement',
             file_size       => $length,
@@ -270,14 +301,9 @@ subtest 'Maximum file size' => sub {
     my $max_size = MAX_FILE_SIZE + 1;
 
     my $req = {
-        req_id          => ++$req_id,
-        passthrough     => $PASSTHROUGH,
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'PNG',
-        document_type   => 'passport',
-        file_size       => $max_size,
-        expiration_date => '2020-01-01',
+        %$generic_req,
+        req_id    => ++$req_id,
+        file_size => $max_size,
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -288,12 +314,10 @@ subtest 'Maximum file size' => sub {
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
 
     my $metadata = {
-        document_upload => 1,
-        document_id     => '124568',
+        %$generic_req,
         document_format => 'PNG',
         document_type   => 'driverslicense',
         file_size       => $max_size - 1,
-        expiration_date => '2020-01-01',
     };
 
     my $file = pack "A$max_size", ' ';
@@ -315,14 +339,10 @@ subtest 'Maximum file size' => sub {
 
 subtest 'Invalid document_format' => sub {
     my $req = {
+        %$generic_req,
         req_id          => ++$req_id,
-        passthrough     => $PASSTHROUGH,
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'INVALID',
-        document_type   => 'passport',
         file_size       => 1,
-        expiration_date => '2020-01-01',
+        document_format => 'INVALID',
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -338,14 +358,9 @@ subtest 'sending extra data after EOF chunk' => sub {
     my $size = length $data;
 
     my $req = {
-        req_id          => ++$req_id,
-        passthrough     => $PASSTHROUGH,
-        document_upload => 1,
-        document_id     => '12456',
-        document_format => 'JPEG',
-        document_type   => 'passport',
-        file_size       => $size,
-        expiration_date => '2020-01-01',
+        %$generic_req,
+        req_id    => ++$req_id,
+        file_size => $size,
     };
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -422,8 +437,7 @@ sub upload {
     my ($metadata, $data, $check_receive) = @_;
 
     my $req = {
-        req_id      => ++$req_id,
-        passthrough => $PASSTHROUGH,
+        req_id => ++$req_id,
         %{$metadata}};
 
     $t = $t->send_ok({json => $req})->message_ok;
@@ -471,52 +485,48 @@ sub document_upload_ok {
 }
 
 sub override_subs {
+    my $last_chunk_received = \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::last_chunk_received;
     *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::last_chunk_received = sub {
         my ($c, $upload_info) = @_;
 
-        my $stash     = $c->stash->{document_upload};
-        my $upload_id = $upload_info->{upload_id};
-        $stash->{$upload_id}->{last_chunk_arrived} //= $c->loop->new_future;
+        $upload_info->{last_chunk_arrived}->done if $upload_info->{chunk_size} == 0;
 
-        return if $upload_info->{chunk_size} != 0;
-
-        $upload_info->{last_chunk_arrived}->done;
-
-        my $put_future = $upload_info->{put_future};
-        delete $upload_info->{put_future};
+        return $last_chunk_received->($c, $upload_info);
     };
 
+    my $create_s3_instance = \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::create_s3_instance;
     *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::create_s3_instance = sub {
         my ($c, $upload_info) = @_;
 
-        my $s3 = Net::Async::Webservice::S3->new(
-            %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)},
-            max_retries => 1,
-            timeout     => 60,
-        );
+        $upload_info->{last_chunk_arrived} = $c->loop->new_future;
+
+        return $create_s3_instance->($c, $upload_info) unless $ENV{DOCUMENT_AUTH_S3_BUCKET} eq 'TestingS3Bucket';
+
+        my $s3 = MockS3->new;
 
         $c->loop->add($s3);
 
-        $upload_info->{s3} = $s3;
+        return $upload_info->{s3} = $s3;
+    };
 
-        $upload_info->{put_future} = $s3->put_object(
-            key          => '',
-            value        => sub { },
-            value_length => 0
-        );
+    my $clean_up_on_finish = \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::clean_up_on_finish;
+    *Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::clean_up_on_finish = sub {
+        my ($c, $upload_info) = @_;
 
-        $upload_info->{put_future}->on_fail(
-            sub {
-                Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::send_upload_failure($c, $upload_info, 'unknown')
-                    if not $ENV{DOCUMENT_AUTH_S3_BUCKET} eq 'TestingS3Bucket';
-            });
+        $clean_up_on_finish->($c, $upload_info);
+
+        return unless exists $upload_info->{last_chunk_arrived};
+
+        $upload_info->{last_chunk_arrived}->cancel;
     };
 }
+
+sub get_c { my ($c) = values $t->app->active_connections; $c }
 
 sub receive_ok {
     my ($upload_id, $data) = @_;
 
-    my ($c) = values $t->app->active_connections;
+    my $c           = get_c();
     my $upload_info = $c->stash->{document_upload}->{$upload_id};
 
     retain_future(receive_loop($c, $upload_info, $data));
@@ -529,7 +539,7 @@ sub receive_loop {
     $upload_info->{test_received_size} //= 0;
     my $pending_futures = $upload_info->{pending_futures};
 
-    return Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::add_upload_future($c, $pending_futures)->then(
+    return Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::wait_for_chunk($c, $pending_futures)->then(
         sub {
             my $msg  = shift;
             my $size = length $data;
@@ -540,11 +550,14 @@ sub receive_loop {
 
             is $test_digest->hexdigest, sha1_hex($data), 'Data received correctly';
 
-            return $upload_info->{last_chunk_arrived}->then(
-                sub {
-                    return Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::send_upload_successful($c, $upload_info, 'success');
-                });
+            return $upload_info->{last_chunk_arrived}->on_ready($upload_info->{put_future});
         });
 }
 
 done_testing();
+
+package MockS3;
+
+use base qw( IO::Async::Notifier );
+
+sub put_object { shift->loop->new_future }
