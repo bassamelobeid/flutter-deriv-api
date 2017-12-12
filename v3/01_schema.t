@@ -3,7 +3,6 @@ use Test::Mojo;
 use JSON::Schema;
 use Encode;
 use JSON::MaybeXS;
-use File::Slurp;
 use File::Basename;
 use Data::Dumper;
 use Finance::Asset;
@@ -52,8 +51,8 @@ explain "Testing version: $v";
 foreach my $f (grep { -d } glob "$v/*") {
     $test_name = File::Basename::basename($f);
     explain $f;
-    my $str = File::Slurp::read_file("$f/example.json");
-    my $send = $json->decode(Encode::decode_utf8($str));
+    my $str = path("$f/example.json")->slurp_utf8;
+    my $send = $json->decode($str);
     $t->send_ok({json => $send}, "send request for $test_name");
     if ($f eq "$v/ticks") {
         # upcoming $t->message_ok for 'ticks' WS API call subscribes to FEED::R_50 channel
@@ -72,8 +71,8 @@ foreach my $f (grep { -d } glob "$v/*") {
         }
     }
     $t->message_ok("$test_name got a response");
-    $str = File::Slurp::read_file("$f/receive.json");
-    my $validator = JSON::Schema->new(Encode::decode_utf8($json->decode($str)));
+    $str = path("$f/receive.json")->slurp_utf8;
+    my $validator = JSON::Schema->new($json->decode($str));
     my $result    = $validator->validate($json->decode(Encode::decode_utf8($t->message->[1])));
     ok $result, "$f response is valid";
     if (not $result) { print " - $_\n" foreach $result->errors; print Data::Dumper::Dumper($json->decode($t->message->[1])) }
