@@ -77,25 +77,13 @@ sub _build_spot_min_max {
 sub _build_spot_min {
     my $self = shift;
 
-    my $spot_min = @{
-        $self->underlying->get_high_low_for_period({
-                start => $self->date_start->epoch + 1,
-                end   => $self->date_expiry->epoch,
-            })}{'low'} // $self->pricing_spot;
-
-    return $spot_min;
+    return $self->spot_min_max->{low};
 }
 
 sub _build_spot_max {
     my $self = shift;
 
-    my $spot_max = @{
-        $self->underlying->get_high_low_for_period({
-                start => $self->date_start->epoch + 1,
-                end   => $self->date_expiry->epoch,
-            })}{'high'} // $self->pricing_spot;
-
-    return $spot_max;
+    return $self->spot_min_max->{high};
 }
 
 sub _build_priced_with_intraday_model {
