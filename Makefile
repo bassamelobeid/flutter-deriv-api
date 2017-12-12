@@ -5,26 +5,25 @@ P=/etc/rmg/bin/prove --timer -v -rl
 
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
-v3_1:
-	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(0\|1\|2\|4\)')
+accounts:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/accounts
 
-v3_2:
-	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(5\|6\|7\)')
+security:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/security
 
-v3_3:
-	@$(PROVE) $$(ls -1d /home/git/regentmarkets/bom-websocket-tests/v3/* | grep 'v3/\(8\|9\)')
+pricing:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/pricing
 
-json_schemas:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/proposal.t
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/assets.t
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/accounts.t
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/copytrading.t
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/multiple_account.t
+misc:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/misc
 
 structure:
-	@$(PROVE) t/*.t
+	@$(PROVE) t
 
-test: structure v3_1 v3_2 v3_3 json_schemas
+schema:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite
+
+test: structure schema accounts security pricing misc
 
 tidy:
 	find . -name '*.p?.bak' -delete
