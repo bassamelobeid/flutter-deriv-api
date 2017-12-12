@@ -7,7 +7,7 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 11;
+use Test::More tests => 12;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
 use Test::Warnings;
@@ -429,4 +429,12 @@ CONF
             is $client->binary_user_id, $el->[0], "$el->[1] has binary_user_id $el->[0]";
         }
     }
+};
+
+subtest 'clients_for_landing_company' => sub {
+    $user = BOM::Platform::User->new({email => $email},);
+    my @clients = $user->clients_for_landing_company('costarica');
+    is(scalar @clients, 2, "one cr account");
+    is_deeply([map { $_->landing_company->short } @clients], [('costarica') x 2], 'lc correct');
+    is_deeply([map { $_->loginid } @clients], [qw/CR10000 CR10001/], "clients are correct");
 };
