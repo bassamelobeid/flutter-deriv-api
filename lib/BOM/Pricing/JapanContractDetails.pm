@@ -13,6 +13,7 @@ use Path::Tiny;
 use Excel::Writer::XLSX;
 use LandingCompany::Registry;
 use Volatility::EconomicEvents;
+use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Platform::Runtime;
@@ -58,12 +59,14 @@ sub verify_with_id {
     my $landing_company = $args->{landing_company};
     my $details         = $args->{details};
 
-    my $action_type     = $details->{action_type};
-    my $requested_price = $details->{order_price};
-    my $ask_price       = $details->{ask_price};
-    my $bid_price       = $details->{bid_price};
-    my $traded_price    = $action_type eq 'buy' ? $ask_price : $bid_price;
-    my $slippage        = $details->{price_slippage} // 0;
+    my $action_type          = $details->{action_type};
+    my $requested_price      = $details->{order_price};
+    my $ask_price            = $details->{ask_price};
+    my $bid_price            = $details->{bid_price};
+    my $traded_price         = $action_type eq 'buy' ? $ask_price : $bid_price;
+    my $slippage             = $details->{price_slippage} // 0;
+    my $trading_period_start = $details->{trading_period_start}
+        or die 'trading_period_start not found for contract with transaction_id [' . $id . ']';
     # apply slippage according to reflect the difference between traded price and recomputed price
     my $adjusted_traded_contract_price =
         ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
@@ -82,8 +85,9 @@ sub verify_with_id {
         landing_company => $landing_company,
         ask_price       => $adjusted_traded_contract_price,
         ($action_type eq 'sell' ? (start => $details->{sell_time}) : ()),
-        action_type => $action_type,
-        extra       => $extra,
+        action_type          => $action_type,
+        trading_period_start => $trading_period_start,
+        extra                => $extra,
     });
     my $contract_args = {
         loginID         => $details->{loginid},
@@ -112,8 +116,13 @@ sub verify_with_shortcode {
     my $currency        = $args->{currency};
     my $extra           = $args->{extra} // undef;
 
-    my $original_contract = produce_contract($short_code, $currency);
-    my $priced_at_start = make_similar_contract(
+    my $bet_parameters = shortcode_to_parameters($short_code, $currency);
+    # trading_period_start is required but not used in price calculation. This is for backward compatibility where shortcode does not contain trading_period_start.
+    unless (exists $bet_parameters->{trading_period_start}) {
+        $bet_parameters->{trading_period_start} = $args->{trading_period_start} // time;
+    }
+    my $original_contract = produce_contract($bet_parameters);
+    my $priced_at_start   = make_similar_contract(
         $original_contract,
         {
             priced_at       => 'start',
