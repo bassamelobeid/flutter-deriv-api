@@ -1,8 +1,6 @@
 use strict;
 use warnings;
 
-use Test::Warnings qw/warning/;
-
 BEGIN {
     require "./lib/BOM/Backoffice/PlackApp.pm";
     BOM::Backoffice::PlackApp::Streaming->import();
@@ -19,13 +17,10 @@ my $PATH    = Cwd::abs_path;
 my %tested_modules;
 
 subtest "Preload all CGIs" => sub {
-    my $app;
-    warning {
-        $app = BOM::Backoffice::PlackApp::Streaming->new(
-            preload => [qw/*.cgi/],
-            root    => '/home/git/regentmarkets/bom-backoffice'
-        )->to_app;
-    };
+    my $app = BOM::Backoffice::PlackApp::Streaming->new(
+        preload => [qw/*.cgi/],
+        root    => '/home/git/regentmarkets/bom-backoffice'
+    )->to_app;
 
     @tested_modules{keys %INC} = undef;
 
