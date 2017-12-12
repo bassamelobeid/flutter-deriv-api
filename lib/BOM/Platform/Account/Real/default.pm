@@ -411,7 +411,7 @@ sub validate_account_details {
         return $dob_error if $dob_error;
     }
 
-    my $acc_type = LandingCompany::Registry::get_by_broker($broker)->short;
+    my $acc_type = LandingCompany::Registry->get_by_broker($broker)->short;
 
     foreach my $key (get_account_fields($acc_type)) {
         my $value = $args->{$key};
