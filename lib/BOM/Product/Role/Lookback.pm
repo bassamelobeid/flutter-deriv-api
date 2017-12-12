@@ -49,6 +49,28 @@ sub _build_multiplier {
     return $multiplier_config->{$symbol} // 0;
 }
 
+has [qw(spot_min_max)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_spot_min_max {
+    my $self = shift;
+
+    my ($high, $low) = @{
+        $self->underlying->get_high_low_for_period({
+                start => $self->date_start->epoch + 1,
+                end   => $self->date_expiry->epoch,
+            })}{'high', 'low'};
+
+    my $high_low = {
+        high => $high // $self->pricing_spot,
+        low  => $low  // $self->pricing_spot,
+    };
+
+    return $high_low;
+}
+
 # Notes:
 # The date_start + 1 is because for min and max we use nest tick after
 # date_start.
