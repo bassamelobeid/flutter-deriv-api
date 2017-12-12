@@ -377,8 +377,7 @@ sub get_account_status {
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();
     $financial_assessment = ref($financial_assessment) ? $json->decode($financial_assessment->data || '{}') : {};
-    push @status,
-        'financial_assessment_not_complete'
+    push @status, 'financial_assessment_not_complete'
         if (
         any { !length $financial_assessment->{$_}->{answer} }
         keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
