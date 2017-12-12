@@ -4,6 +4,7 @@ use JSON::Schema;
 use Encode;
 use JSON::MaybeXS;
 use File::Basename;
+use Path::Tiny;
 use Data::Dumper;
 use Finance::Asset;
 # we need this import here so the market-data db will be fresh for the test
