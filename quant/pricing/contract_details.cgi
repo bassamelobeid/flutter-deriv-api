@@ -60,6 +60,7 @@ if ($cgi->param('upload_file')) {
     $args->{details} = $details;
 
     my $pricing_parameters = BOM::Pricing::JapanContractDetails::verify_with_id($args);
+    print $pricing_parameters->{error} and return if exists $pricing_parameters->{error};
     if (exists $pricing_parameters->{contract_details}->{description}) {
         $pricing_parameters->{contract_details}->{description} =
             BOM::Backoffice::Request::localize($pricing_parameters->{contract_details}->{description});
