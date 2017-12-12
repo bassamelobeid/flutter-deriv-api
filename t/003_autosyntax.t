@@ -1,7 +1,14 @@
 use strict;
+use warnings;
+
+use Test::Warnings qw/warning/;
+
+BEGIN {
+    require "./lib/BOM/Backoffice/PlackApp.pm";
+    BOM::Backoffice::PlackApp::Streaming->import();
+}
 
 use Test::More;
-use Test::Syntax::Aggregate;
 use File::Find::Rule;
 use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticrc';
 use Test::Strict;
@@ -9,26 +16,47 @@ use Cwd;
 
 my $pattern = $ARGV[0];        # confines test to just files matching this pattern.
 my $PATH    = Cwd::abs_path;
+my %tested_modules;
 
-my $used_modules = `grep -Phor "use \\K\\w*::[\\w:]*" $PATH | grep -v Moose| grep -v BOM::Test|sort|uniq`;
+subtest "Preload all CGIs" => sub {
+    my $app;
+    warning {
+        $app = BOM::Backoffice::PlackApp::Streaming->new(
+            preload => [qw/*.cgi/],
+            root    => '/home/git/regentmarkets/bom-backoffice'
+        )->to_app;
+    };
 
-my @preload_modules = split "\n", $used_modules;
+    @tested_modules{keys %INC} = undef;
 
-my $exclude_from_check_scripts = qr/PlackApp|StaffPages/;
+    ok $app, "App can be initialized with all CGIs";
+};
 
-my @scripts = sort grep { $_ =~ /$pattern/ unless not $pattern } File::Find::Rule->file->name(qr/\.p[lm]|\.cgi$/)->in($PATH);
+subtest 'Check modules which are not covered by above test' => sub {
+    my @scripts = get_scripts(qr/\.pm$/);
 
-subtest 'Run syntax check on all modules' => sub {
-    check_scripts_syntax(
-        preload       => [@preload_modules],
-        scripts       => [grep { $_ !~ /$exclude_from_check_scripts/ } @scripts],
-        hide_warnings => 1,
-    );
-    syntax_ok($_) for grep { /$exclude_from_check_scripts/ } @scripts;
+    my @remaining_modules = grep { !is_module_tested($_) } @scripts;
+
+    syntax_ok($_) for @remaining_modules;
+};
+
+subtest 'Check syntax for pl files' => sub {
+    syntax_ok($_) for get_scripts(qr/\.pl$/);
 };
 
 subtest 'Run perl critic on all modules' => sub {
-    all_critic_ok(@scripts);
+    all_critic_ok(get_scripts(qr/\.p[lm]|\.cgi$/));
 };
+
+sub get_scripts {
+    my @scripts = File::Find::Rule->file->name(shift)->in($PATH);
+
+    return sort grep { $pattern ? /$pattern/ : 1 } @scripts;
+}
+
+sub is_module_tested {
+    my $m = shift;
+    grep { $m =~ /$_/ } keys %tested_modules;
+}
 
 done_testing;
