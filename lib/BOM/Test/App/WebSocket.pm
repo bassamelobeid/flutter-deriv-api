@@ -10,6 +10,7 @@ use JSON::MaybeXS;
 use BOM::Test::Helper qw/build_wsapi_test/;
 
 my $json = JSON::MaybeXS->new;
+
 sub build_test_app {
     my ($self, $args) = @_;
     return build_wsapi_test($args, {}, sub { _store_stream_data($self->{streams}, @_) });
