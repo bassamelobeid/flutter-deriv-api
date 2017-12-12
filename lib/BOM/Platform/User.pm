@@ -169,6 +169,21 @@ sub _get_client_cookie_string {
     return $str;
 }
 
+=head2 clients_for_landing_company
+
+get clients given special landing company short name.
+    $user->clients_for_landing_company('costarica');
+
+=cut
+
+sub clients_for_landing_company {
+    my $self      = shift;
+    my $lc_short  = shift // die 'need landing_company';
+    my @login_ids = keys %{$self->loginid_details};
+    return map { Client::Account->new({loginid => $_, db_operation => 'replica'}) }
+        grep { LandingCompany::Registry->get_by_loginid($_)->short eq $lc_short } @login_ids;
+}
+
 sub loginid_details {
     my $self = shift;
 
