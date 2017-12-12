@@ -17,8 +17,6 @@ subtest $method => sub {
         language => 'EN',
         args     => {
             active_symbols => 'brief',
-            landing_company => 'costarica',
-            product_type => 'basic',
         }};
 
     my $result = $c->call_ok($method, $params)->has_no_system_error->result;
