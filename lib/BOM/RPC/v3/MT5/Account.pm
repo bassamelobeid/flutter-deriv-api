@@ -12,6 +12,8 @@ use Locale::Country::Extra;
 use Brands;
 use WebService::MyAffiliates;
 
+use BOM::RPC::Registry '-dsl';
+
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
 use BOM::Platform::Config;
@@ -23,7 +25,9 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Email;
 use BOM::Transaction;
 
-sub mt5_login_list {
+common_before_actions qw(auth);
+
+rpc mt5_login_list => sub {
     my $params = shift;
     my $client = $params->{client};
 
@@ -48,7 +52,7 @@ sub mt5_login_list {
         push @array, $acc;
     }
     return \@array;
-}
+};
 
 # limit number of requests to once per minute
 sub _throttle {
@@ -62,7 +66,7 @@ sub _throttle {
     return 0;
 }
 
-sub mt5_new_account {
+rpc mt5_new_account => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -205,7 +209,7 @@ sub mt5_new_account {
         balance      => $balance,
         account_type => $account_type,
         ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()};
-}
+};
 
 sub _check_logins {
     my ($client, $logins) = @_;
@@ -217,7 +221,7 @@ sub _check_logins {
     return 1;
 }
 
-sub mt5_get_settings {
+rpc mt5_get_settings => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -247,21 +251,20 @@ sub mt5_get_settings {
     }
 
     return $settings;
-}
+};
 
 sub _mt5_is_real_account {
     my ($client, $mt_login) = @_;
 
     my $settings = mt5_get_settings({
-        client => $client,
-        args   => {login => $mt_login},
-    });
+            client => $client,
+            args   => {login => $mt_login}});
 
     return $settings if ($settings->{group} // '') =~ /^real\\/;
     return;
 }
 
-sub mt5_set_settings {
+rpc mt5_set_settings => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -287,9 +290,9 @@ sub mt5_set_settings {
 
     $settings->{country} = $country_code;
     return $settings;
-}
+};
 
-sub mt5_password_check {
+rpc mt5_password_check => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -309,9 +312,9 @@ sub mt5_password_check {
                 message_to_client => $status->{error}});
     }
     return 1;
-}
+};
 
-sub mt5_password_change {
+rpc mt5_password_change => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -342,7 +345,7 @@ sub mt5_password_change {
                 message_to_client => $status->{error}});
     }
     return 1;
-}
+};
 
 sub _send_email {
     my %args = @_;
@@ -363,7 +366,7 @@ sub _send_email {
     });
 }
 
-sub mt5_deposit {
+rpc mt5_deposit => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -501,9 +504,9 @@ sub mt5_deposit {
         status                => 1,
         binary_transaction_id => $txn->id
     };
-}
+};
 
-sub mt5_withdrawal {
+rpc mt5_withdrawal => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -627,7 +630,7 @@ sub mt5_withdrawal {
         );
         return $error_sub->($error->{-message_to_client});
     };
-}
+};
 
 sub _is_mt5_suspended {
     my $app_config = BOM::Platform::Runtime->instance->app_config;
