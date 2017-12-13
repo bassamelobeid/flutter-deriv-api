@@ -32,13 +32,14 @@ my $input             = request()->params;
 
 my ($client, $message);
 if ($input->{'dcctype'} ne 'file_content') {
-    $client = Client::Account::get_instance({
-        'loginid'    => uc($input->{'clientloginid'}),
-        db_operation => 'replica'
-    });
 
-    if (not $client) {
-        print "ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist! Perhaps you made a typo?";
+    unless (length $input->{'amount'} > 0) {
+        print "ERROR: No amount was specified";
+        code_exit_BO();
+    }
+
+    unless (length $input->{'clientloginid'} > 0) {
+        print "ERROR: No LoginID for the client was specified";
         code_exit_BO();
     }
 
@@ -46,6 +47,16 @@ if ($input->{'dcctype'} ne 'file_content') {
 
     if ($input->{'amount'} !~ /$curr_regex/) {
         print "ERROR in amount: " . $input->{'amount'};
+        code_exit_BO();
+    }
+
+    $client = Client::Account::get_instance({
+        'loginid'    => uc($input->{'clientloginid'}),
+        db_operation => 'replica'
+    });
+
+    if (not $client) {
+        print "ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist! Perhaps you made a typo?";
         code_exit_BO();
     }
 }
