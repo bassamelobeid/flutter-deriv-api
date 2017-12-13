@@ -165,9 +165,9 @@ sub ico_status {
     my $currency   = $params->{args}{currency} || 'USD';
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     my $ico_info   = live_open_ico_bids($currency);
-    $ico_info->{final_price_usd} = financialrounding('amount', $currency, $app_config->system->suspend->ico_final_price);
-    $ico_info->{final_price} = amount_from_to_currency($ico_info->{final_price_usd}, USD => $currency);
-    $ico_info->{ico_status} = (
+    $ico_info->{final_price_usd} = $app_config->system->suspend->ico_final_price;
+    $ico_info->{final_price}     = amount_from_to_currency($ico_info->{final_price_usd}, USD => $currency);
+    $ico_info->{ico_status}      = (
         $app_config->system->suspend->is_auction_ended
             or not $app_config->system->suspend->is_auction_started
     ) ? 'closed' : 'open';
