@@ -110,8 +110,9 @@ subtest 'new account' => sub {
         $params->{args}->{mainPassword}   = 'Efgh4567';
         $params->{args}->{leverage}       = 100;
 
-        my $res = $c->call_ok($method, $params)->{response};
-        like($res->{rpc_response}->{result}->{login}, qr/[0-9]+/, 'Should return MT5 ID');
+        $c->call_ok($method, $params)
+            ->has_no_error();
+        like($c->response->{rpc_response}->{result}->{login}, qr/[0-9]+/, 'Should return MT5 ID');
     }
 };
 
