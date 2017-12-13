@@ -33,12 +33,12 @@ my $input             = request()->params;
 my ($client, $message);
 if ($input->{'dcctype'} ne 'file_content') {
 
-    unless (length $input->{'amount'}) {
+    unless ($input->{'amount'}) {
         print "ERROR: No amount was specified";
         code_exit_BO();
     }
 
-    unless (length $input->{'clientloginid'}) {
+    unless ($input->{'clientloginid'}) {
         print "ERROR: No LoginID for the client was specified";
         code_exit_BO();
     }
@@ -46,7 +46,7 @@ if ($input->{'dcctype'} ne 'file_content') {
     my $curr_regex = LandingCompany::Registry::get_currency_type($input->{'currency'}) eq 'fiat' ? '^\d*\.?\d{1,2}$' : '^\d*\.?\d{1,8}$';
 
     if ($input->{'amount'} !~ /$curr_regex/) {
-        print "ERROR in amount: " . $input->{'amount'};
+        print "ERROR: Invalid amount: " . $input->{'amount'};
         code_exit_BO();
     }
 
