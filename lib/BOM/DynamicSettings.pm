@@ -181,7 +181,7 @@ sub get_settings_by_group {
                 system.suspend.expensive_api_calls
                 system.suspend.is_auction_ended
                 system.suspend.is_auction_started
-                system.suspend.is_claim_allowed_ico
+                system.suspend.ico_claim_allowed
                 system.suspend.ico_final_price
                 system.suspend.ico_minimum_bid_in_usd
                 system.suspend.ico_initial_deposit_percentage
