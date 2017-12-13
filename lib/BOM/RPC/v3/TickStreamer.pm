@@ -6,6 +6,8 @@ use warnings;
 use Finance::Asset;
 use Date::Utility;
 
+use BOM::RPC::Registry '-dsl';
+
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Contract;
 use BOM::MarketData qw(create_underlying);
@@ -14,7 +16,7 @@ use BOM::Platform::Context qw (localize request);
 use Quant::Framework;
 use BOM::Platform::Chronicle;
 
-sub ticks {
+rpc ticks => sub {
     my $params = shift;
 
     my $symbol   = $params->{symbol};
@@ -24,9 +26,9 @@ sub ticks {
     }
 
     return {stash => {"${symbol}_display_decimals" => $response->display_decimals}};
-}
+};
 
-sub ticks_history {
+rpc ticks_history => sub {
     my $params = shift;
 
     my $args   = $params->{args};
@@ -98,7 +100,7 @@ sub ticks_history {
         data    => $result,
         publish => $publish,
         ($args->{granularity}) ? (granularity => $args->{granularity}) : ()};
-}
+};
 
 sub _ticks {
     my $args = shift;

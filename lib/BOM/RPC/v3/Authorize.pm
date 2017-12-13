@@ -8,6 +8,8 @@ use Format::Util::Numbers qw/formatnumber/;
 
 use Client::Account;
 
+use BOM::RPC::Registry '-dsl';
+
 use BOM::Platform::AuditLog;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::User;
@@ -15,7 +17,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
 use BOM::Platform::User;
 
-sub authorize {
+rpc authorize => sub {
     my $params = shift;
     my ($token, $token_details, $client_ip) = @{$params}{qw/token token_details client_ip/};
 
@@ -133,9 +135,9 @@ sub authorize {
             is_virtual           => ($client->is_virtual ? 1 : 0),
         },
     };
-}
+};
 
-sub logout {
+rpc logout => sub {
     my $params = shift;
 
     if (my $email = $params->{email}) {
@@ -170,6 +172,6 @@ sub logout {
         }
     }
     return {status => 1};
-}
+};
 
 1;

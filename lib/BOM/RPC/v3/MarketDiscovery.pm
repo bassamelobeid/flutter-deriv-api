@@ -8,6 +8,8 @@ use Date::Utility;
 use Cache::RedisDB;
 use Time::Duration::Concise::Localize;
 
+use BOM::RPC::Registry '-dsl';
+
 use BOM::RPC::v3::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -18,7 +20,7 @@ use BOM::Platform::Chronicle;
 use Quant::Framework;
 use LandingCompany::Registry;
 
-sub active_symbols {
+rpc active_symbols => sub {
     my $params = shift;
 
     my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
@@ -69,7 +71,7 @@ sub active_symbols {
     }
 
     return $active_symbols;
-}
+};
 
 sub _description {
     my $symbol           = shift;
