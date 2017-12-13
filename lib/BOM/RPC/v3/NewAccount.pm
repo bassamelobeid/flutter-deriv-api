@@ -12,6 +12,8 @@ use Email::Valid;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
+use BOM::RPC::Registry '-dsl';
+
 use Brands;
 
 use Client::Account;
@@ -34,13 +36,17 @@ use BOM::Platform::Context qw (request);
 use BOM::Database::Model::OAuth;
 use BOM::Platform::PaymentNotificationQueue;
 
+common_before_actions qw(auth);
+
 sub _create_oauth_token {
     my $loginid = shift;
     my ($access_token) = BOM::Database::Model::OAuth->new->store_access_token_only('1', $loginid);
     return $access_token;
 }
 
-sub new_account_virtual {
+rpc "new_account_virtual",
+    before_actions => [],    # unauthenticated
+    sub {
     my $params = shift;
     my $args   = $params->{args};
     my $err_code;
@@ -104,7 +110,7 @@ sub new_account_virtual {
         balance     => formatnumber('amount', $account->currency_code, $account->balance),
         oauth_token => _create_oauth_token($client->loginid),
     };
-}
+    };
 
 sub request_email {
     my ($email, $args) = @_;
@@ -128,7 +134,9 @@ sub get_verification_uri {
     return BOM::Database::Model::OAuth->new->get_verification_uri_by_app_id($app_id);
 }
 
-sub verify_email {
+rpc "verify_email",
+    before_actions => [],    # unauthenticated
+    sub {
     my $params = shift;
 
     my $email = $params->{args}->{verify_email};
@@ -186,7 +194,7 @@ sub verify_email {
     }
 
     return {status => 1};    # always return 1, so not to leak client's email
-}
+    };
 
 sub _update_professional_existing_clients {
 
@@ -220,7 +228,7 @@ sub _get_professional_details_clients {
     return (\@clients, $professional_status, $professional_requested);
 }
 
-sub new_account_real {
+rpc new_account_real => sub {
     my $params = shift;
 
     my ($client, $args) = @{$params}{qw/client args/};
@@ -335,7 +343,7 @@ sub new_account_real {
         oauth_token               => _create_oauth_token($new_client->loginid),
         $args->{currency} ? (currency => $new_client->currency) : (),
     };
-}
+};
 
 sub set_details {
     my ($client, $args) = @_;
@@ -352,7 +360,7 @@ sub set_details {
     return $client;
 }
 
-sub new_account_maltainvest {
+rpc new_account_maltainvest => sub {
     my $params = shift;
 
     my ($client, $args) = @{$params}{qw/client args/};
@@ -431,9 +439,9 @@ sub new_account_maltainvest {
         landing_company_shortcode => $landing_company->short,
         oauth_token               => _create_oauth_token($new_client->loginid),
     };
-}
+};
 
-sub new_account_japan {
+rpc new_account_japan => sub {
     my $params = shift;
 
     my ($client, $args) = @{$params}{qw/client args/};
@@ -506,9 +514,9 @@ sub new_account_japan {
         landing_company_shortcode => $landing_company->short,
         oauth_token               => _create_oauth_token($new_client->loginid),
     };
-}
+};
 
-sub new_sub_account {
+rpc new_sub_account => sub {
     my $params = shift;
 
     my $error_map = BOM::RPC::v3::Utility::error_map();
@@ -553,6 +561,6 @@ sub new_sub_account {
         landing_company_shortcode => $new_client->landing_company->short,
         oauth_token               => _create_oauth_token($new_client->loginid),
     };
-}
+};
 
 1;
