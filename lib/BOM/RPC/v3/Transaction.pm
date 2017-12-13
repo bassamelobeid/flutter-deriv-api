@@ -10,6 +10,8 @@ use Scalar::Util qw(blessed);
 
 use Format::Util::Numbers qw/formatnumber/;
 
+use BOM::RPC::Registry '-dsl';
+
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
@@ -21,6 +23,7 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
 
 my $json = JSON::MaybeXS->new;
+common_before_actions qw(auth validate_tnc check_trade_status compliance_checks check_tax_information);
 
 sub trade_copiers {
     my $params = shift;
@@ -55,7 +58,7 @@ sub trade_copiers {
     return 1;
 }
 
-sub buy {
+rpc buy => sub {
     my $params = shift;
 
     my $client               = $params->{client} // die "client should be authed when get here";
@@ -152,9 +155,9 @@ sub buy {
     };
 
     return $response;
-}
+};
 
-sub buy_contract_for_multiple_accounts {
+rpc buy_contract_for_multiple_accounts => sub {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
@@ -249,7 +252,7 @@ sub buy_contract_for_multiple_accounts {
     }
 
     return +{result => $token_list_res->{result}};
-}
+};
 
 sub _check_token_list {
     my $tokens = shift;
@@ -300,7 +303,7 @@ sub _check_token_list {
     };
 }
 
-sub sell_contract_for_multiple_accounts {
+rpc sell_contract_for_multiple_accounts => sub {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
@@ -367,9 +370,9 @@ sub sell_contract_for_multiple_accounts {
     }
 
     return +{result => $data_to_return};
-}
+};
 
-sub sell {
+rpc sell => sub {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
@@ -434,6 +437,6 @@ sub sell {
         balance_after  => formatnumber('amount', $client->currency, $trx_rec->balance_after),
         sold_for       => formatnumber('price', $client->currency, $trx_rec->amount),
     };
-}
+};
 
 1;

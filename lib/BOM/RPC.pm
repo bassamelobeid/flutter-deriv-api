@@ -17,6 +17,7 @@ use Scalar::Util q(blessed);
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
+use BOM::RPC::Registry;
 use Client::Account;
 use BOM::Database::Rose::DB;
 use BOM::RPC::v3::Utility;
@@ -27,7 +28,6 @@ use BOM::RPC::v3::Transaction;
 use BOM::RPC::v3::MarketDiscovery;
 use BOM::RPC::v3::Authorize;
 use BOM::RPC::v3::Cashier;
-use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
@@ -38,9 +38,11 @@ use BOM::RPC::v3::CopyTrading::Statistics;
 use BOM::RPC::v3::CopyTrading;
 use BOM::Transaction::Validation;
 use BOM::RPC::v3::DocumentUpload;
+use BOM::RPC::v3::Pricing;
 
-use BOM::Pricing::v3::Contract;
-use BOM::Pricing::v3::MarketData;
+# TODO(leonerd): this one RPC is unusual, coming from Utility.pm which doesn't
+# contain any other RPCs
+BOM::RPC::Registry::register(longcode => \&BOM::RPC::v3::Utility::longcode);
 
 my $json = JSON::MaybeXS->new;
 
@@ -84,7 +86,7 @@ sub _auth {
     return;
 }
 
-sub register {
+sub _make_rpc_service_and_register {
     my ($method, $code, $before_actions) = @_;
 
     return MojoX::JSON::RPC::Service->new->register(
@@ -205,117 +207,15 @@ sub startup {
         $log->info(@_);
     };
 
-    my @services = (
-        ['residence_list', \&BOM::RPC::v3::Static::residence_list],
-        ['states_list',    \&BOM::RPC::v3::Static::states_list],
-        ['website_status', \&BOM::RPC::v3::Static::website_status],
-        ['ico_status',     \&BOM::RPC::v3::Static::ico_status],
+    my %services = map {
+        my ($method, $code, $before_actions) = @$_;
 
-        ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
-        ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
-
-        ['buy', \&BOM::RPC::v3::Transaction::buy, [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]],
-        [
-            'buy_contract_for_multiple_accounts',
-            \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts,
-            [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]
-        ],
-        ['sell', \&BOM::RPC::v3::Transaction::sell, [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]],
-        [
-            'sell_contract_for_multiple_accounts',
-            \&BOM::RPC::v3::Transaction::sell_contract_for_multiple_accounts,
-            [qw(auth validate_tnc check_trade_status compliance_checks check_tax_information)]
-        ],
-
-        ['active_symbols', \&BOM::RPC::v3::MarketDiscovery::active_symbols],
-
-        ['authorize', \&BOM::RPC::v3::Authorize::authorize],
-        ['logout',    \&BOM::RPC::v3::Authorize::logout],
-
-        ['get_limits', \&BOM::RPC::v3::Cashier::get_limits, [qw(auth)]],
-        ['paymentagent_list',         \&BOM::RPC::v3::Cashier::paymentagent_list],
-        ['paymentagent_withdraw',     \&BOM::RPC::v3::Cashier::paymentagent_withdraw, [qw(auth)]],
-        ['paymentagent_transfer',     \&BOM::RPC::v3::Cashier::paymentagent_transfer, [qw(auth)]],
-        ['transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts, [qw(auth)]],
-        ['cashier',                   \&BOM::RPC::v3::Cashier::cashier, [qw(auth validate_tnc compliance_checks)]],
-        ['topup_virtual',             \&BOM::RPC::v3::Cashier::topup_virtual, [qw(auth)]],
-
-        ['payout_currencies',       \&BOM::RPC::v3::Accounts::payout_currencies],
-        ['landing_company',         \&BOM::RPC::v3::Accounts::landing_company],
-        ['landing_company_details', \&BOM::RPC::v3::Accounts::landing_company_details],
-
-        ['statement',                \&BOM::RPC::v3::Accounts::statement,                [qw(auth)]],
-        ['profit_table',             \&BOM::RPC::v3::Accounts::profit_table,             [qw(auth)]],
-        ['get_account_status',       \&BOM::RPC::v3::Accounts::get_account_status,       [qw(auth)]],
-        ['change_password',          \&BOM::RPC::v3::Accounts::change_password,          [qw(auth)]],
-        ['cashier_password',         \&BOM::RPC::v3::Accounts::cashier_password,         [qw(auth)]],
-        ['reset_password',           \&BOM::RPC::v3::Accounts::reset_password],
-        ['get_settings',             \&BOM::RPC::v3::Accounts::get_settings,             [qw(auth)]],
-        ['set_settings',             \&BOM::RPC::v3::Accounts::set_settings,             [qw(auth)]],
-        ['get_self_exclusion',       \&BOM::RPC::v3::Accounts::get_self_exclusion,       [qw(auth)]],
-        ['set_self_exclusion',       \&BOM::RPC::v3::Accounts::set_self_exclusion,       [qw(auth)]],
-        ['balance',                  \&BOM::RPC::v3::Accounts::balance,                  [qw(auth)]],
-        ['api_token',                \&BOM::RPC::v3::Accounts::api_token,                [qw(auth)]],
-        ['login_history',            \&BOM::RPC::v3::Accounts::login_history,            [qw(auth)]],
-        ['set_account_currency',     \&BOM::RPC::v3::Accounts::set_account_currency,     [qw(auth)]],
-        ['tnc_approval',             \&BOM::RPC::v3::Accounts::tnc_approval,             [qw(auth)]],
-        ['set_financial_assessment', \&BOM::RPC::v3::Accounts::set_financial_assessment, [qw(auth)]],
-        ['get_financial_assessment', \&BOM::RPC::v3::Accounts::get_financial_assessment, [qw(auth)]],
-        ['reality_check',            \&BOM::RPC::v3::Accounts::reality_check,            [qw(auth)]],
-
-        ['verify_email', \&BOM::RPC::v3::NewAccount::verify_email],
-
-        ['new_account_real',        \&BOM::RPC::v3::NewAccount::new_account_real,         [qw(auth)]],
-        ['new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest,  [qw(auth)]],
-        ['new_account_japan',       \&BOM::RPC::v3::NewAccount::new_account_japan,        [qw(auth)]],
-        ['new_account_virtual',     \&BOM::RPC::v3::NewAccount::new_account_virtual],
-        ['new_sub_account',         \&BOM::RPC::v3::NewAccount::new_sub_account,          [qw(auth)]],
-        ['jp_knowledge_test',       \&BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test, [qw(auth)]],
-
-        ['portfolio',              \&BOM::RPC::v3::PortfolioManagement::portfolio,              [qw(auth)]],
-        ['sell_expired',           \&BOM::RPC::v3::PortfolioManagement::sell_expired,           [qw(auth)]],
-        ['proposal_open_contract', \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract, [qw(auth)]],
-
-        ['app_register',       \&BOM::RPC::v3::App::register,           [qw(auth)]],
-        ['app_list',           \&BOM::RPC::v3::App::list,               [qw(auth)]],
-        ['app_get',            \&BOM::RPC::v3::App::get,                [qw(auth)]],
-        ['app_update',         \&BOM::RPC::v3::App::update,             [qw(auth)]],
-        ['app_delete',         \&BOM::RPC::v3::App::delete,             [qw(auth)]],
-        ['oauth_apps',         \&BOM::RPC::v3::App::oauth_apps,         [qw(auth)]],
-        ['revoke_oauth_app',   \&BOM::RPC::v3::App::revoke_oauth_app,   [qw(auth)]],
-        ['app_markup_details', \&BOM::RPC::v3::App::app_markup_details, [qw(auth)]],
-
-        ['mt5_login_list',      \&BOM::RPC::v3::MT5::Account::mt5_login_list,      [qw(auth)]],
-        ['mt5_new_account',     \&BOM::RPC::v3::MT5::Account::mt5_new_account,     [qw(auth)]],
-        ['mt5_get_settings',    \&BOM::RPC::v3::MT5::Account::mt5_get_settings,    [qw(auth)]],
-        ['mt5_set_settings',    \&BOM::RPC::v3::MT5::Account::mt5_set_settings,    [qw(auth)]],
-        ['mt5_password_check',  \&BOM::RPC::v3::MT5::Account::mt5_password_check,  [qw(auth)]],
-        ['mt5_password_change', \&BOM::RPC::v3::MT5::Account::mt5_password_change, [qw(auth)]],
-        ['mt5_deposit',         \&BOM::RPC::v3::MT5::Account::mt5_deposit,         [qw(auth)]],
-        ['mt5_withdrawal',      \&BOM::RPC::v3::MT5::Account::mt5_withdrawal,      [qw(auth)]],
-
-        ['copytrading_statistics', \&BOM::RPC::v3::CopyTrading::Statistics::copytrading_statistics],
-        ['copy_start',             \&BOM::RPC::v3::CopyTrading::copy_start, [qw(auth)]],
-        ['copy_stop',              \&BOM::RPC::v3::CopyTrading::copy_stop, [qw(auth)]],
-
-        ['document_upload', \&BOM::RPC::v3::DocumentUpload::upload, [qw(auth)]],
-        ['longcode',        \&BOM::RPC::v3::Utility::longcode],
-        ['send_ask',        \&BOM::Pricing::v3::Contract::send_ask],
-        ['get_bid',         \&BOM::Pricing::v3::Contract::get_bid],
-        ['get_contract_details', \&BOM::Pricing::v3::Contract::get_contract_details],
-        ['contracts_for',        \&BOM::Pricing::v3::Contract::contracts_for],
-        ['trading_times',        \&BOM::Pricing::v3::MarketData::trading_times],
-        ['asset_index',          \&BOM::Pricing::v3::MarketData::asset_index],
-
-    );
-    my $services = {};
-    foreach my $srv (@services) {
-        $services->{'/' . $srv->[0]} = register(@$srv);
-    }
+        "/$method" => _make_rpc_service_and_register($method, $code, $before_actions);
+    } BOM::RPC::Registry::get_service_defs();
 
     $app->plugin(
         'json_rpc_dispatcher' => {
-            services          => $services,
+            services          => \%services,
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
                 my $path = $dispatcher->req->url->path;

@@ -9,6 +9,8 @@ use DateTime;
 use Date::Utility;
 use HTML::Entities qw(encode_entities);
 
+use BOM::RPC::Registry '-dsl';
+
 use Brands;
 use LandingCompany::Registry;
 use BOM::RPC::v3::Utility;
@@ -22,6 +24,7 @@ use BOM::Platform::AuditLog;
 use BOM::Database::Helper::QuestionsAnswered;
 
 my $json = JSON::MaybeXS->new;
+common_before_actions qw(auth);
 
 sub get_jp_account_status {
     my $client = shift;
@@ -110,7 +113,7 @@ sub _knowledge_test_available_date {
     return $dt;
 }
 
-sub jp_knowledge_test {
+rpc jp_knowledge_test => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -247,7 +250,7 @@ support@binary.com',
     }
 
     return {test_taken_epoch => $now->epoch};
-}
+};
 
 sub get_jp_settings {
     my $client = shift;

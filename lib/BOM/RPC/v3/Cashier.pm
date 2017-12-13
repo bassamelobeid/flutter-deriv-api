@@ -25,6 +25,8 @@ use LandingCompany::Registry;
 use Client::Account::PaymentAgent;
 use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
+use BOM::RPC::Registry '-dsl';
+
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::User;
 use BOM::Platform::Client::DoughFlowClient;
@@ -46,9 +48,13 @@ use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
 use Quant::Framework;
 
+common_before_actions qw(auth);
+
 my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 
-sub cashier {
+rpc "cashier",
+    before_actions => [qw(auth validate_tnc compliance_checks)],
+    sub {
     my $params = shift;
 
     my $error_sub = sub {
@@ -213,7 +219,7 @@ sub cashier {
         . $action;
     BOM::Platform::AuditLog::log('redirecting to doughflow', $df_client->loginid);
     return $url;
-}
+    };
 
 sub _get_handoff_token_key {
     my $loginid = shift;
@@ -279,7 +285,7 @@ sub _get_cashier_url {
     return $url;
 }
 
-sub get_limits {
+rpc get_limits => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -358,9 +364,11 @@ sub get_limits {
     $limit->{remainder} = formatnumber('price', $currency, amount_from_to_currency($remainder, $withdrawal_limit_curr, $currency));
 
     return $limit;
-}
+};
 
-sub paymentagent_list {
+rpc "paymentagent_list",
+    before_actions => [],    # unauthenticated
+    sub {
     my $params = shift;
 
     my ($language, $args, $token_details) = @{$params}{qw/language args token_details/};
@@ -414,9 +422,9 @@ sub paymentagent_list {
         available_countries => $countries,
         list                => $payment_agent_table_row
     };
-}
+    };
 
-sub paymentagent_transfer {
+rpc paymentagent_transfer => sub {
     my $params = shift;
 
     my $source    = $params->{source};
@@ -667,9 +675,9 @@ The [_4] team.', $currency, $amount, encode_entities($payment_agent->payment_age
         client_to_full_name => $client_to->full_name,
         client_to_loginid   => $loginid_to,
         transaction_id      => $response->{transaction_id}};
-}
+};
 
-sub paymentagent_withdraw {
+rpc paymentagent_withdraw => sub {
     my $params = shift;
 
     my $source = $params->{source};
@@ -941,7 +949,7 @@ sub paymentagent_withdraw {
         status            => 1,
         paymentagent_name => $paymentagent->payment_agent_name,
         transaction_id    => $response->{transaction_id}};
-}
+};
 
 sub __client_withdrawal_notes {
     my $arg_ref  = shift;
@@ -982,7 +990,7 @@ sub __client_withdrawal_notes {
     return ($error_message);
 }
 
-sub transfer_between_accounts {
+rpc transfer_between_accounts => sub {
     my $params = shift;
 
     my ($client, $source) = @{$params}{qw/client source/};
@@ -1196,9 +1204,9 @@ sub transfer_between_accounts {
         client_to_full_name => $client_to->full_name,
         client_to_loginid   => $loginid_to
     };
-}
+};
 
-sub topup_virtual {
+rpc topup_virtual => sub {
     my $params = shift;
 
     my ($client, $source) = @{$params}{qw/client source/};
@@ -1234,7 +1242,7 @@ sub topup_virtual {
         amount   => $amount,
         currency => $curr
     };
-}
+};
 
 sub _get_amount_and_count {
     my $loginid  = shift;
