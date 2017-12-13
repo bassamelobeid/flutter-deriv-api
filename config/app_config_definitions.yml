@@ -294,6 +294,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        is_claim_allowed_ico:
+          description: "Flag to allow claim tokens functinality"
+          isa: Bool
+          default: 0
+          global: 1
         ico_final_price:
           description: "The final price of the  ICO auction"
           isa: Num
