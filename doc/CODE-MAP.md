@@ -25,6 +25,11 @@ A Mojolicious-based RPC server that accepts method calls encoded in JSON over (h
    Stores the mapping from RPC names to (anonymous) functions that implement the behaviour of the RPCs.
    Also implements a keyword-like DSL to ease implementation of RPCs in other modules.
 
+ * `lib/BOM/RPC/v3/...` - implement RPCs
+
+   The bulk of the code in this repository is the actual implementation of RPC handling functions.
+   These live in individual files that populate names within the `BOM::RPC::v3::...` namespace.
+
 
 # Lifecycle
 
