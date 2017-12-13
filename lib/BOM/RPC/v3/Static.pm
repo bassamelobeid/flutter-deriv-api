@@ -180,7 +180,7 @@ rpc ico_status => sub {
     };
 
     $ico_info->{initial_deposit_percentage} = $app_config->system->suspend->ico_initial_deposit_percentage;
-    $ico_info->{is_claim_allowed} = $app_config->system->suspend->ico_claim_allowed;
+    $ico_info->{is_claim_allowed}           = $app_config->system->suspend->ico_claim_allowed;
 
     return $ico_info;
 };
