@@ -24,6 +24,8 @@ use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
+use BOM::RPC::Registry '-dsl';
+
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::Japan::NewAccount;
@@ -45,6 +47,8 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
+
+common_before_actions qw(auth);
 
 =head2 payout_currencies
 
@@ -83,7 +87,9 @@ Returns a sorted arrayref of valid payout currencies
 
 =cut
 
-sub payout_currencies {
+rpc "payout_currencies",
+    before_actions => [],    # unauthenticated
+    sub {
     my $params = shift;
 
     my $token_details = $params->{token_details};
@@ -109,9 +115,11 @@ sub payout_currencies {
 
     # Remove cryptocurrencies that have been suspended
     return BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);
-}
+    };
 
-sub landing_company {
+rpc "landing_company",
+    before_actions => [],    # unauthenticated
+    sub {
     my $params = shift;
 
     my $country  = $params->{args}->{landing_company};
@@ -140,7 +148,7 @@ sub landing_company {
     }
 
     return \%landing_company;
-}
+    };
 
 =head2 landing_company_details
 
@@ -168,7 +176,9 @@ Returns a hashref containing the keys from __build_landing_company($lc)
 
 =cut
 
-sub landing_company_details {
+rpc "landing_company_details",
+    before_actions => [],    # unauthenticated
+    sub {
     my $params = shift;
 
     my $lc = LandingCompany::Registry::get($params->{args}->{landing_company_details});
@@ -177,7 +187,7 @@ sub landing_company_details {
             message_to_client => localize('Unknown landing company.')}) unless $lc;
 
     return __build_landing_company($lc);
-}
+    };
 
 =head2 __build_landing_company
 
@@ -252,7 +262,7 @@ sub __build_landing_company {
     };
 }
 
-sub statement {
+rpc statement => sub {
     my $params = shift;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
@@ -328,9 +338,9 @@ sub statement {
         transactions => [@txns],
         count        => scalar @txns
     };
-}
+};
 
-sub profit_table {
+rpc profit_table => sub {
     my $params = shift;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
@@ -405,9 +415,9 @@ sub profit_table {
     return {
         transactions => \@transactions,
         count        => scalar(@transactions)};
-}
+};
 
-sub balance {
+rpc balance => sub {
     my $params = shift;
 
     my $client         = $params->{client};
@@ -422,11 +432,10 @@ sub balance {
     return {
         loginid  => $client_loginid,
         currency => $client->default_account->currency_code,
-        balance => formatnumber('amount', $client->default_account->currency_code, $client->default_account->balance)};
+        balance  => formatnumber('amount', $client->default_account->currency_code, $client->default_account->balance)};
+};
 
-}
-
-sub get_account_status {
+rpc get_account_status => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -494,9 +503,9 @@ sub get_account_status {
         prompt_client_to_authenticate => $prompt_client_to_authenticate,
         risk_classification           => $risk_classification
     };
-}
+};
 
-sub change_password {
+rpc change_password => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -562,9 +571,9 @@ sub change_password {
         });
 
     return {status => 1};
-}
+};
 
-sub cashier_password {
+rpc cashier_password => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -678,9 +687,11 @@ sub cashier_password {
             return {status => 0};
         }
     }
-}
+};
 
-sub reset_password {
+rpc "reset_password",
+    before_actions => [],    # unauthenticated
+    sub {
     my $params = shift;
     my $args   = $params->{args};
     my $email  = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
@@ -753,9 +764,9 @@ sub reset_password {
         });
 
     return {status => 1};
-}
+    };
 
-sub get_settings {
+rpc get_settings => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -810,9 +821,9 @@ sub get_settings {
         $jp_account_status ? (jp_account_status => $jp_account_status) : (),
         $jp_real_settings  ? (jp_settings       => $jp_real_settings)  : (),
     };
-}
+};
 
-sub set_settings {
+rpc set_settings => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -1097,14 +1108,14 @@ sub set_settings {
     BOM::Platform::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
     return {status => 1};
-}
+};
 
-sub get_self_exclusion {
+rpc get_self_exclusion => sub {
     my $params = shift;
 
     my $client = $params->{client};
     return _get_self_exclusion_details($client);
-}
+};
 
 sub _get_self_exclusion_details {
     my $client = shift;
@@ -1151,7 +1162,7 @@ sub _get_self_exclusion_details {
     return $get_self_exclusion;
 }
 
-sub set_self_exclusion {
+rpc set_self_exclusion => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -1353,9 +1364,9 @@ sub set_self_exclusion {
     $client->save();
 
     return {status => 1};
-}
+};
 
-sub api_token {
+rpc api_token => sub {
     my $params = shift;
 
     my ($client, $args, $client_ip) = @{$params}{qw/client args client_ip/};
@@ -1425,9 +1436,9 @@ sub api_token {
     $rtn->{tokens} = $m->get_tokens_by_loginid($client->loginid);
 
     return $rtn;
-}
+};
 
-sub tnc_approval {
+rpc tnc_approval => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -1457,9 +1468,9 @@ sub tnc_approval {
     }
 
     return {status => 1};
-}
+};
 
-sub login_history {
+rpc login_history => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -1491,10 +1502,9 @@ sub login_history {
     }
 
     return {records => [@history]};
+};
 
-}
-
-sub set_account_currency {
+rpc set_account_currency => sub {
     my $params = shift;
 
     my ($client, $currency) = @{$params}{qw/client currency/};
@@ -1528,9 +1538,9 @@ sub set_account_currency {
     return {status => 1} if (not $client->default_account and $client->set_default_account($currency));
 
     return {status => 0};
-}
+};
 
-sub set_financial_assessment {
+rpc set_financial_assessment => sub {
     my $params = shift;
 
     my $client         = $params->{client};
@@ -1577,9 +1587,9 @@ sub set_financial_assessment {
         }) if $client->landing_company->short eq 'maltainvest';
 
     return $response;
-}
+};
 
-sub get_financial_assessment {
+rpc get_financial_assessment => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -1600,9 +1610,9 @@ sub get_financial_assessment {
     }
 
     return $response;
-}
+};
 
-sub reality_check {
+rpc reality_check => sub {
     my $params = shift;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
@@ -1664,6 +1674,6 @@ sub reality_check {
     $summary->{open_contract_count} = $data->{open_cnt}      // 0;
 
     return $summary;
-}
+};
 
 1;

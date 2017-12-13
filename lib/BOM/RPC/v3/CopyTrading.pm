@@ -9,9 +9,13 @@ use BOM::Platform::Copier;
 use Client::Account;
 use Try::Tiny;
 
+use BOM::RPC::Registry '-dsl';
+
 use Finance::Contract::Category;
 
-sub copy_start {
+common_before_actions qw(auth);
+
+rpc copy_start => sub {
     my $params = shift;
     my $args   = $params->{args};
 
@@ -89,9 +93,9 @@ sub copy_start {
     });
 
     return {status => 1};
-}
+};
 
-sub copy_stop {
+rpc copy_stop => sub {
     my $params = shift;
     my $args   = $params->{args};
 
@@ -119,7 +123,7 @@ sub copy_stop {
     );
 
     return {status => 1};
-}
+};
 
 1;
 
