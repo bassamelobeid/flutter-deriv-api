@@ -164,29 +164,7 @@ Takes a single C<$params> hashref containing the following keys:
 
 =back
 
-Returns a hashref containing the following keys:
-
-=over 4
-
-=item * shortcode
-
-=item * name
-
-=item * address
-
-=item * country
-
-=item * legal_default_currency
-
-=item * legal_allowed_currencies
-
-=item * legal_allowed_markets
-
-=item * legal_allowed_contract_categories
-
-=item * has_reality_check
-
-=back
+Returns a hashref containing the keys from __build_landing_company($lc)
 
 =cut
 
@@ -203,7 +181,7 @@ sub landing_company_details {
 
 =head2 __build_landing_company
 
-$landing_company_details = landing_company_details($lc)
+$landing_company_details = __build_landing_company($lc)
 
 Returns a hashref containing the following:
 
