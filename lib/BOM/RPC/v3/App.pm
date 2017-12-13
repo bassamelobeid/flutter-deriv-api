@@ -13,7 +13,11 @@ use BOM::Database::ClientDB;
 use Date::Utility;
 use DataDog::DogStatsd::Helper;
 
-sub register {
+use BOM::RPC::Registry '-dsl';
+
+common_before_actions qw(auth);
+
+rpc app_register => sub {
     my $params = shift;
 
     my $client  = $params->{client};
@@ -61,9 +65,9 @@ sub register {
     });
 
     return $app;
-}
+};
 
-sub update {
+rpc app_update => sub {
     my $params = shift;
 
     my $client  = $params->{client};
@@ -120,7 +124,7 @@ sub update {
         });
 
     return $app;
-}
+};
 
 sub __validate_app_links {
     my @sites = @_;
@@ -135,7 +139,7 @@ sub __validate_app_links {
     return;
 }
 
-sub list {
+rpc app_list => sub {
     my $params = shift;
 
     my $client  = $params->{client};
@@ -144,9 +148,9 @@ sub list {
 
     my $oauth = BOM::Database::Model::OAuth->new;
     return $oauth->get_apps_by_user_id($user_id);
-}
+};
 
-sub get {
+rpc app_get => sub {
     my $params = shift;
 
     my $client  = $params->{client};
@@ -163,9 +167,9 @@ sub get {
         }) unless $app;
 
     return $app;
-}
+};
 
-sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
+rpc app_delete => sub {
     my $params = shift;
 
     my $client  = $params->{client};
@@ -177,9 +181,9 @@ sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     my $status = $oauth->delete_app($user_id, $app_id);
 
     return $status ? 1 : 0;
-}
+};
 
-sub oauth_apps {
+rpc oauth_apps => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -187,9 +191,9 @@ sub oauth_apps {
     my $oauth = BOM::Database::Model::OAuth->new;
 
     return $oauth->get_used_apps_by_loginid($client->loginid);
-}
+};
 
-sub revoke_oauth_app {
+rpc revoke_oauth_app => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -201,8 +205,9 @@ sub revoke_oauth_app {
     }
 
     return $status;
-}
+};
 
+# Not an RPC
 sub verify_app {
     my $params = shift;
 
@@ -226,7 +231,7 @@ sub verify_app {
         }};
 }
 
-sub app_markup_details {
+rpc app_markup_details => sub {
     my $params  = shift;
     my $args    = $params->{args};
     my $client  = $params->{client};
@@ -280,6 +285,6 @@ sub app_markup_details {
                     $args->{sort}           || undef
                 );
             })};
-}
+};
 
 1;
