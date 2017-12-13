@@ -215,6 +215,12 @@ has 'staking_limits' => (
     lazy_build => 1,
 );
 
+has reset_time => (
+    is         => 'ro',
+    isa        => 'Time::Duration::Concise',
+    lazy_build => 1,
+);
+
 has apply_market_inefficient_limit => (
     is         => 'ro',
     lazy_build => 1,

@@ -99,6 +99,14 @@ sub _build_priced_with_intraday_model {
     return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
 }
 
+sub _build_reset_time {
+    my $self     = shift;
+    my $duration = $self->date_expiry->epoch - $self->date_start->epoch;
+
+    my $reset_time = Time::Duration::Concise->new(interval => $duration . 's');
+    return $reset_time;
+}
+
 sub is_binary {
     return 1;
 }
