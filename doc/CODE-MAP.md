@@ -30,6 +30,16 @@ A Mojolicious-based RPC server that accepts method calls encoded in JSON over (h
    The bulk of the code in this repository is the actual implementation of RPC handling functions.
    These live in individual files that populate names within the `BOM::RPC::v3::...` namespace.
 
+ * `t/schema_suite/...` - JSON-based end-to-end tests
+
+   Use `BOM::Test::Suite::DSL` to end-to-end test RPC methods by sending and receiving JSON strings
+
+ * `t/schema_suite/config/...` - sample JSON strings used by schema tests
+
+ * `t/BOM/RPC/...` - unit tests for RPC methods
+
+   These can generally invoke RPC-handling functions more directly than via JSON RPC, and may set up mocked environments or other test fixtures.
+
 
 # Lifecycle
 
