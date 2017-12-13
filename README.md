@@ -65,9 +65,20 @@ At this point, control returns to the Mojolicious core where it awaits incoming 
 
 # Testing
 
-    # run all test scripts
-    make test
-    # run one script
-    prove t/BOM/001_structure.t
-    # run one script with perl
-    perl -It/lib -MBOM::Test -MBOM::Test::RPC::BomRpc -MBOM::Test::RPC::PricingRpc t/BOM/001_structure.t
+To run all test scripts:
+
+```
+$ make test
+```
+
+To run one script:
+
+```
+$ prove t/BOM/001_structure.t
+```
+
+To run one script with perl:
+
+```
+$ perl -It/lib -MBOM::Test -MBOM::Test::RPC::BomRpc -MBOM::Test::RPC::PricingRpc t/BOM/001_structure.t
+```
