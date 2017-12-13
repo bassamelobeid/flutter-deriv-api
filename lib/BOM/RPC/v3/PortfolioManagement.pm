@@ -7,6 +7,8 @@ use Date::Utility;
 use Try::Tiny;
 use Format::Util::Numbers qw/formatnumber/;
 
+use BOM::RPC::Registry '-dsl';
+
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Accounts;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -15,7 +17,9 @@ use BOM::Platform::Context qw (request localize);
 use BOM::Platform::Runtime;
 use BOM::Transaction;
 
-sub portfolio {
+common_before_actions qw(auth);
+
+rpc portfolio => sub {
     my $params = shift;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
@@ -72,7 +76,7 @@ sub portfolio {
     }
 
     return $portfolio;
-}
+};
 
 sub __get_open_contracts {
     my $client = shift;
@@ -86,12 +90,12 @@ sub __get_open_contracts {
 
 }
 
-sub sell_expired {
+rpc sell_expired => sub {
     my $params = shift;
 
     my $client = $params->{client};
     return _sell_expired_contracts($client, $params->{source});
-}
+};
 
 sub _sell_expired_contracts {
     my ($client, $source) = @_;
@@ -114,7 +118,7 @@ sub _sell_expired_contracts {
     return $response;
 }
 
-sub proposal_open_contract {
+rpc proposal_open_contract => sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -158,7 +162,7 @@ sub proposal_open_contract {
         $response->{$id} = $bid;
     }
     return $response;
-}
+};
 
 sub __get_contract_details_by_id {
     my $client      = shift;

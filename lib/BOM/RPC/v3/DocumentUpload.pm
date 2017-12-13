@@ -8,9 +8,13 @@ use Date::Utility;
 use BOM::Platform::Email qw(send_email);
 use Try::Tiny;
 
+use BOM::RPC::Registry '-dsl';
+
 use constant MAX_FILE_SIZE => 3 * 2**20;
 
-sub upload {
+common_before_actions qw(auth);
+
+rpc document_upload => sub {
     my $params = shift;
     my $args   = $params->{args};
     my $status = $args->{status};
@@ -23,7 +27,7 @@ sub upload {
     return successful_upload($params) if $status and $status eq 'success';
 
     return create_upload_error();
-}
+};
 
 sub start_document_upload {
     my $params          = shift;

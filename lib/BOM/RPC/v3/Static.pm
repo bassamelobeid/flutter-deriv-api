@@ -14,6 +14,8 @@ use Format::Util::Numbers qw/financialrounding/;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
 
+use BOM::RPC::Registry '-dsl';
+
 use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
 use BOM::Platform::Config;
@@ -24,7 +26,7 @@ use BOM::RPC::v3::Utility;
 # How wide each ICO histogram bucket is, in USD
 use constant ICO_BUCKET_SIZE => 0.20;
 
-sub residence_list {
+rpc residence_list => sub {
     my $residence_countries_list;
 
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
@@ -54,15 +56,15 @@ sub residence_list {
     }
 
     return $residence_countries_list;
-}
+};
 
-sub states_list {
+rpc states_list => sub {
     my $params = shift;
 
     my $states = BOM::Platform::Locale::get_state_option($params->{args}->{states_list});
     $states = [grep { $_->{value} ne '' } @$states];
     return $states;
-}
+};
 
 sub _currencies_config {
     my $amt_precision = Format::Util::Numbers::get_precision_config()->{price};
@@ -144,7 +146,7 @@ SQL
     };
 }
 
-sub website_status {
+rpc website_status => sub {
     my $params = shift;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
@@ -156,9 +158,9 @@ sub website_status {
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
     };
-}
+};
 
-sub ico_status {
+rpc ico_status => sub {
     my $params = shift;
 
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
@@ -181,6 +183,6 @@ sub ico_status {
     $ico_info->{is_claim_allowed} = $app_config->system->suspend->ico_claim_allowed;
 
     return $ico_info;
-}
+};
 
 1;
