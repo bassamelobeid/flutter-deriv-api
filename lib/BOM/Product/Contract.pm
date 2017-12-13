@@ -814,6 +814,12 @@ sub _build_exit_tick {
     return $exit_tick;
 }
 
+# TO DO, landing_company to be moved out from Contract.
+has landing_company => (
+    is      => 'ro',
+    default => undef,
+);
+
 sub _build_risk_profile {
     my $self = shift;
 
@@ -828,6 +834,7 @@ sub _build_risk_profile {
         submarket_name                 => $self->underlying->submarket->name,
         underlying_risk_profile        => $self->underlying->risk_profile,
         underlying_risk_profile_setter => $self->underlying->risk_profile_setter,
+        $self->landing_company ? (landing_company => $self->landing_company) : (),
     );
 }
 

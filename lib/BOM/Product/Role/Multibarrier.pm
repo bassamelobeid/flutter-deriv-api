@@ -32,11 +32,6 @@ has trading_period_start => (
     required => 1,
 );
 
-has landing_company => (
-    is      => 'ro',
-    default => 'japan',
-);
-
 =head2 predefined_contracts
 
 Some landing company requires script contract offerings in which we will have pre-set
@@ -73,25 +68,6 @@ sub _build_predefined_contracts {
 
     return \%info;
 }
-
-override risk_profile => sub {
-    my $self = shift;
-
-    return BOM::Platform::RiskProfile->new(
-        underlying                     => $self->underlying,
-        contract_category              => $self->category_code,
-        expiry_type                    => $self->expiry_type,
-        start_type                     => ($self->is_forward_starting ? 'forward' : 'spot'),
-        currency                       => $self->currency,
-        barrier_category               => $self->barrier_category,
-        landing_company                => $self->landing_company,
-        symbol                         => $self->underlying->symbol,
-        market_name                    => $self->underlying->market->name,
-        submarket_name                 => $self->underlying->submarket->name,
-        underlying_risk_profile        => $self->underlying->risk_profile,
-        underlying_risk_profile_setter => $self->underlying->risk_profile_setter,
-    );
-};
 
 around _validate_start_and_expiry_date => sub {
     my $orig = shift;
