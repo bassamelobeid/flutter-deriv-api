@@ -275,6 +275,12 @@ sub is_valid_to_sell {
 
     return 1 if ($self->binaryico_auction_status eq 'unsuccessful bid' or $self->binaryico_auction_status eq 'bid');
 
+    $self->add_errors({
+        message           => 'ICO successful bids cannot be sold back',
+        severity          => 99,
+        message_to_client => [$ERROR_MAPPING->{IcoSuccessSellNotAllowed}],
+    });
+
     return 0;
 
 }
@@ -298,8 +304,7 @@ sub _build_shortcode {
 }
 
 sub longcode {
-    my $self = shift;
-    return 'Binary ICO: ' . $self->binaryico_auction_status;
+    return 'Binary ICO';
 }
 
 sub is_expired {
