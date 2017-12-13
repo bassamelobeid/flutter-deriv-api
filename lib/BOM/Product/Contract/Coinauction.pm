@@ -1,5 +1,16 @@
 package BOM::Product::Contract::Coinauction;
 
+=head1 NAME
+
+BOM::Product::Contract::Coinauction - represent a contract object for ico contracts
+
+=head1 DESCRIPTION
+
+This class defines contract for binary ico. It provides functionality specific to
+binary ico and methods that differentiate it from other contracts.
+
+=cut
+
 use Moose;
 use Date::Utility;
 use Try::Tiny;
@@ -152,7 +163,6 @@ sub _build_binaryico_auction_status {
         $self->bid_price($self->ask_price);
         return 'bid';
     }
-
 }
 
 has build_parameters => (
@@ -282,7 +292,6 @@ sub is_valid_to_sell {
     });
 
     return 0;
-
 }
 
 has [qw(shortcode)] => (
