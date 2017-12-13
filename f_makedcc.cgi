@@ -33,12 +33,12 @@ my $input             = request()->params;
 my ($client, $message);
 if ($input->{'dcctype'} ne 'file_content') {
 
-    unless (length $input->{'amount'} > 0) {
+    unless (length $input->{'amount'}) {
         print "ERROR: No amount was specified";
         code_exit_BO();
     }
 
-    unless (length $input->{'clientloginid'} > 0) {
+    unless (length $input->{'clientloginid'}) {
         print "ERROR: No LoginID for the client was specified";
         code_exit_BO();
     }
