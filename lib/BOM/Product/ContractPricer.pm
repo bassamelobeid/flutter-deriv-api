@@ -293,11 +293,11 @@ sub _create_new_interface_engine {
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
         %pricing_parameters = (
             %contract_config,
-            t                 => $self->timeinyears->amount,
-            reset_time        => $self->reset_time->days / 365;
-                discount_rate => $self->discount_rate,
-            mu  => $self->mu,
-            vol => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+            t             => $self->timeinyears->amount,
+            reset_time    => $self->reset_time->days / 365,
+            discount_rate => $self->discount_rate,
+            mu            => $self->mu,
+            vol           => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Lookback') {
         %pricing_parameters = (
