@@ -144,11 +144,11 @@ sub landing_company {
 
 =head2 landing_company_details
 
-Returns the details of a landing_company object.
-
 $landing_company_details = landing_company_details({
     landing_company_name => $lc,
 })
+
+Returns the details of a landing_company object.
 
 Takes a single C<$params> hashref containing the following keys:
 
@@ -203,9 +203,9 @@ sub landing_company_details {
 
 =head2 __build_landing_company
 
-Returns a hashref containing the following:
-
 $landing_company_details = landing_company_details($lc)
+
+Returns a hashref containing the following:
 
 =over 4
 
