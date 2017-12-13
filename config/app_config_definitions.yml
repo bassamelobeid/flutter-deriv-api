@@ -294,7 +294,7 @@ system:
           isa: Bool
           default: 0
           global: 1
-        is_claim_allowed_ico:
+        ico_claim_allowed:
           description: "Flag to allow claim tokens functinality"
           isa: Bool
           default: 0
