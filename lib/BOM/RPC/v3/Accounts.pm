@@ -142,6 +142,54 @@ sub landing_company {
     return \%landing_company;
 }
 
+=head2 landing_company_details
+
+Returns the details of a landing_company object.
+
+$landing_company_details = landing_company_details({
+    landing_company_name => $lc,
+})
+
+Takes a single C<$params> hashref containing the following keys:
+
+=over 4
+
+=item * args, which may contain the following keys:
+
+=over 4
+
+=item * landing_company_details
+
+=back
+
+=back
+
+Returns a hashref containing the following keys:
+
+=over 4
+
+=item * shortcode
+
+=item * name
+
+=item * address
+
+=item * country
+
+=item * legal_default_currency
+
+=item * legal_allowed_currencies
+
+=item * legal_allowed_markets
+
+=item * legal_allowed_contract_categories
+
+=item * has_reality_check
+
+=back
+
+=cut
+
 sub landing_company_details {
     my $params = shift;
 
@@ -152,6 +200,60 @@ sub landing_company_details {
 
     return __build_landing_company($lc);
 }
+
+=head2 __build_landing_company
+
+Returns a hashref containing the following:
+
+$landing_company_details = landing_company_details($lc)
+
+=over 4
+
+=item * shortcode
+
+=item * name
+
+=item * address
+
+=item * country
+
+=item * legal_default_currency
+
+=item * legal_allowed_currencies
+
+=item * legal_allowed_markets
+
+=item * legal_allowed_contract_categories
+
+=item * has_reality_check
+
+=back
+
+Takes a single C<$lc> object that contains the following methods:
+
+=over 4
+
+=item * short
+
+=item * name
+
+=item * address
+
+=item * country
+
+=item * legal_default_currency
+
+=item * legal_allowed_markets
+
+=item * legal_allowed_contract_categories
+
+=item * has_reality_check
+
+=back
+
+Returns a hashref of landing_company parameters
+
+=cut
 
 sub __build_landing_company {
     my ($lc) = @_;
