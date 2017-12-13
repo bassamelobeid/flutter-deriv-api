@@ -8,6 +8,8 @@ use Performance::Probability qw(get_performance_probability);
 
 use Client::Account;
 
+use BOM::RPC::Registry '-dsl';
+
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -16,7 +18,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::RedisReplicated;
 
-sub copytrading_statistics {
+rpc copytrading_statistics => sub {
     my $params = shift->{args};
 
     my $trader_id = uc $params->{trader_id};
@@ -183,7 +185,7 @@ sub copytrading_statistics {
     }
 
     return $result_hash;
-}
+};
 
 sub _year_performance {
     my ($currency, @months) = @_;
