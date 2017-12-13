@@ -19,7 +19,7 @@ use BOM::RPC::v3::Cashier;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::User;
-use BOM::MT5::User;
+use BOM::MT5::User::Async;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email;
@@ -175,7 +175,7 @@ rpc mt5_new_account => sub {
         $args->{country} = $country_name if ($country_name);
     }
 
-    my $status = BOM::MT5::User::create_user($args);
+    my $status = BOM::MT5::User::Async::create_user($args);
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5CreateUserError',
@@ -191,7 +191,7 @@ rpc mt5_new_account => sub {
     # funds in Virtual money
     if ($account_type eq 'demo') {
         $balance = 10000;
-        $status  = BOM::MT5::User::deposit({
+        $status  = BOM::MT5::User::Async::deposit({
             login   => $mt5_login,
             amount  => $balance,
             comment => 'Binary MT5 Virtual Money deposit.'
@@ -234,7 +234,7 @@ rpc mt5_get_settings => sub {
     # MT5 login not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
-    my $settings = BOM::MT5::User::get_user($login);
+    my $settings = BOM::MT5::User::Async::get_user($login);
     if (ref $settings eq 'HASH' and $settings->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5GetUserError',
@@ -281,7 +281,7 @@ rpc mt5_set_settings => sub {
     my $country_name = Locale::Country::Extra->new()->country_from_code($country_code);
     $args->{country} = $country_name if ($country_name);
 
-    my $settings = BOM::MT5::User::update_user($args);
+    my $settings = BOM::MT5::User::Async::update_user($args);
     if (ref $settings eq 'HASH' and $settings->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5UpdateUserError',
@@ -305,7 +305,7 @@ rpc mt5_password_check => sub {
     # MT5 login not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
-    my $status = BOM::MT5::User::password_check($args);
+    my $status = BOM::MT5::User::Async::password_check($args);
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5PasswordCheckError',
@@ -327,7 +327,7 @@ rpc mt5_password_change => sub {
     # MT5 login not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
-    my $status = BOM::MT5::User::password_check({
+    my $status = BOM::MT5::User::Async::password_check({
             login    => $args->{login},
             password => $args->{old_password}});
     if ($status->{error}) {
@@ -336,7 +336,7 @@ rpc mt5_password_change => sub {
                 message_to_client => $status->{error}});
     }
 
-    $status = BOM::MT5::User::password_change({
+    $status = BOM::MT5::User::Async::password_change({
             login        => $args->{login},
             new_password => $args->{new_password}});
     if ($status->{error}) {
@@ -483,7 +483,7 @@ rpc mt5_deposit => sub {
     $payment->save(cascade => 1);
 
     # deposit to MT5 a/c
-    my $status = BOM::MT5::User::deposit({
+    my $status = BOM::MT5::User::Async::deposit({
         login   => $to_mt5,
         amount  => $amount,
         comment => $comment
@@ -581,7 +581,7 @@ rpc mt5_withdrawal => sub {
 
     my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
     # withdraw from MT5 a/c
-    my $status = BOM::MT5::User::withdrawal({
+    my $status = BOM::MT5::User::Async::withdrawal({
         login   => $fm_mt5,
         amount  => $amount,
         comment => $comment
