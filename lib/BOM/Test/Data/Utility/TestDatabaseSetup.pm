@@ -8,6 +8,8 @@ use Try::Tiny;
 use DBIx::Migration;
 use BOM::Test;
 
+use constant SNAPSHOT_DIR => '/tmp/test-db-snapshots';
+
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
 BEGIN {
@@ -18,8 +20,10 @@ sub prepare_unit_test_database {
     my $self = shift;
 
     try {
+        return if $self->_restore_snapshot;
         $self->_migrate_changesets;
         $self->_post_import_operations;
+        $self->_create_snapshot;
     }
     catch {
         Carp::croak '[' . $0 . '] preparing unit test database failed. ' . $_;
@@ -222,6 +226,30 @@ sub _update_sequence_of {
     return $current_sequence_value;
 }
 
+sub _restore_snapshot {
+    my $self = shift;
+    return 0 if !-f $self->snapshot;
+
+    my $connection_settings = $self->_connection_parameters;
+    system("PGPASSWORD=" . $connection_settings->{password} .
+        " /usr/lib/postgresql/$connection_settings->{pg_version}/bin/pg_restore" .
+        " -Fc -U postgres -h localhost -p $connection_settings->{port} -cd $connection_settings->{database}" .
+        " -1 " . $self->snapshot);
+    return 1;
+}
+
+sub _create_snapshot {
+    my $self = shift;
+    mkdir SNAPSHOT_DIR if !-d SNAPSHOT_DIR;
+
+    my $connection_settings = $self->_connection_parameters;
+    system("PGPASSWORD=" . $connection_settings->{password} .
+        " /usr/lib/postgresql/$connection_settings->{pg_version}/bin/pg_dump" .
+        " -Fc -U postgres -h localhost -p $connection_settings->{port} $connection_settings->{database}" .
+        " -f " . $self->snapshot);
+    return;
+}
+
 sub BUILD {
     my $self = shift;
 
@@ -229,6 +257,12 @@ sub BUILD {
         unless (BOM::Test::env() eq 'development');
     $ENV{TEST_DATABASE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
     return;
+}
+
+sub snapshot { SNAPSHOT_DIR . "/" . shift->_db_name . ".snapshot" }
+
+END {
+    system("rm -rf " . SNAPSHOT_DIR);
 }
 
 1;

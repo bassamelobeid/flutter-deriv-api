@@ -41,6 +41,7 @@ sub _build__connection_parameters {
         user           => 'postgres',
         password       => 'mRX1E3Mi00oS8LG',
         pgbouncer_port => '6432',
+        pg_version     => '9.6',
     };
 }
 
