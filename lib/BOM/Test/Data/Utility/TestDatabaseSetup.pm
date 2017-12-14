@@ -8,7 +8,11 @@ use Try::Tiny;
 use DBIx::Migration;
 use BOM::Test;
 
-use constant SNAPSHOT_DIR => '/tmp/test-db-snapshots';
+use constant {
+    SNAPSHOT_DIR => '/tmp/test-db-snapshots',
+    PG_DIR      => '/usr/lib/postgresql',
+    PSQL         => '/etc/rmg/bin/psql',
+};
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
@@ -233,7 +237,7 @@ sub _restore_snapshot {
     my $connection_settings = $self->_connection_parameters;
     system(   "PGPASSWORD="
             . $connection_settings->{password}
-            . " /usr/lib/postgresql/$connection_settings->{pg_version}/bin/pg_restore"
+            . " " . $self->pg_path . "/pg_restore"
             . " -Fc -U postgres -h localhost -p $connection_settings->{port} -cd $connection_settings->{database}" . " -1 "
             . $self->snapshot);
     return 1;
@@ -246,7 +250,7 @@ sub _create_snapshot {
     my $connection_settings = $self->_connection_parameters;
     system(   "PGPASSWORD="
             . $connection_settings->{password}
-            . " /usr/lib/postgresql/$connection_settings->{pg_version}/bin/pg_dump"
+            . " " . $self->pg_path . "/pg_dump"
             . " -Fc -U postgres -h localhost -p $connection_settings->{port} $connection_settings->{database}" . " -f "
             . $self->snapshot);
     return;
@@ -262,6 +266,25 @@ sub BUILD {
 }
 
 sub snapshot { return SNAPSHOT_DIR . "/" . shift->_db_name . ".snapshot" }
+
+sub pg_path { return PG_DIR . "/" . shift->server_version . "/bin/" }
+
+sub server_version {
+    my $self = shift;
+
+    my $connection_settings = $self->_connection_parameters;
+    my $ver_query = "PGPASSWORD="
+            . $connection_settings->{password}
+            . " " . PSQL . " -U postgres -h localhost -p " . $connection_settings->{port} . " -c 'SELECT version();'";
+
+    my $ver = qx/$ver_query/;
+
+    $ver =~ /PostgreSQL (\d\.\d)/;
+
+    die "Cannot find the server version for " . $self->_db_name if not $1;
+
+    return $1;
+}
 
 END {
     system("rm -rf " . SNAPSHOT_DIR);
