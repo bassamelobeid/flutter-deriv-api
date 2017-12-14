@@ -337,6 +337,33 @@ rpc profit_table => sub {
         count        => scalar(@transactions)};
 };
 
+=head2 balance
+
+    my $balance_obj = balance({ client => $client });
+
+Returns balance for the default account of the client. If there is no default account,
+balance as 0.00 with empty string as currency type is returned.
+
+Takes the following (named) parameters:
+
+=over 4
+
+=item * C<params> - A hashref with reference to Client::Account object under the key C<client>
+
+=back
+
+Returns a hashref with following items
+
+=over 4
+
+=item * C<loginid> - Login ID for the default account. E.g. : CR90000000
+
+=item * C<currency> - Currency in which the balance is being represented. E.g. : BTC
+
+=item * C<balance> - Balance for the default account. E.g. : 100.00
+ 
+=cut
+
 rpc balance => sub {
     my $params = shift;
 
