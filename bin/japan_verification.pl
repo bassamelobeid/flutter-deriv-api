@@ -14,6 +14,8 @@ use warnings;
 
 use feature qw(say);
 
+# load this file to force MOJO::JSON to use JSON::MaybeXS
+use Mojo::JSON::MaybeXS;
 use BOM::Platform::Runtime;
 
 use BOM::Product::Contract::Finder::Japan;
