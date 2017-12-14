@@ -261,7 +261,7 @@ sub BUILD {
     return;
 }
 
-sub snapshot { SNAPSHOT_DIR . "/" . shift->_db_name . ".snapshot" }
+sub snapshot { return SNAPSHOT_DIR . "/" . shift->_db_name . ".snapshot" }
 
 END {
     system("rm -rf " . SNAPSHOT_DIR);
