@@ -144,9 +144,9 @@ sub landing_company {
 
 =head2 landing_company_details
 
-$landing_company_details = landing_company_details({
-    landing_company_name => $lc,
-})
+    $landing_company_details = landing_company_details({
+        landing_company_name => $lc,
+    })
 
 Returns the details of a landing_company object.
 
@@ -181,7 +181,7 @@ sub landing_company_details {
 
 =head2 __build_landing_company
 
-$landing_company_details = __build_landing_company($lc)
+    $landing_company_details = __build_landing_company($lc)
 
 Returns a hashref containing the following:
 
