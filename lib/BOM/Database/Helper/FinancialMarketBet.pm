@@ -559,7 +559,8 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
             $bet->{quantity} // 1,
 
             # data_collection.quants_bet_variables
-            $qv ? Encode::encode_utf8($json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col})) : undef,
+            # TODO NOTICE the `$v` should be changed from string to number. Otherwise Cpanel::JSON::XS will change integer string '123' to float '123.0'
+            $qv ? Encode::encode_utf8($json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => $v + 0) : () } @qv_col})) : undef,
         );
     }
 
