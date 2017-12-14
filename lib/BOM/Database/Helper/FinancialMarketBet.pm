@@ -232,7 +232,7 @@ sub batch_buy_bet {
         $bet{quantity} // 1,
 
         # data_collection.quants_bet_variables
-        $qv ? Encode::encode_utf8($json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => $v + 0) : () } @qv_col})) : undef,
+        $qv ? Encode::encode_utf8($json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => "$v") : () } @qv_col})) : undef,
     );
 
     my $dbic_code = sub {
@@ -318,7 +318,7 @@ sub sell_bet {
         $bet->{quantity} // 1,
 
         # data_collection.quants_bet_variables
-        $qv ? Encode::encode_utf8($json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => $v + 0) : () } @qv_col})) : undef,
+        $qv ? Encode::encode_utf8($json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => "$v") : () } @qv_col})) : undef,
     );
 
     my $dbic_code = sub {
@@ -414,7 +414,7 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
             $transdata->{remark} // '',                                                   # -- 10
             $transdata->{source},                                                         # -- 11
             $self->bet_data->{quantity} // 1,
-            $qv ? Encode::encode_utf8($json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => $v + 0) : () } @qv_col})) : undef,    # -- 12
+            $qv ? Encode::encode_utf8($json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => "$v") : () } @qv_col})) : undef,    # -- 12
             map { $_->{client_loginid} } @{$self->account_data}                                                                    # -- 13...
         );
         my $all_rows = $stmt->fetchall_arrayref;
@@ -560,8 +560,9 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
 
             # data_collection.quants_bet_variables
             # TODO NOTICE the `$v` should be changed from string to number. Otherwise Cpanel::JSON::XS will change integer string '123' to float '123.0'
+            # please refer to https://trello.com/c/4sjibBuP/6197-json-handling-1#comment-5a1b88650c5575743c027ef7
             # we should change that value directly in module BOM::Database::Model::DataCollection::QuantsBetVariables
-            $qv ? Encode::encode_utf8($json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => $v + 0) : () } @qv_col})) : undef,
+            $qv ? Encode::encode_utf8($json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => "$v") : () } @qv_col})) : undef,
         );
     }
 
