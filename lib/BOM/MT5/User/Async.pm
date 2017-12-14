@@ -42,7 +42,7 @@ sub __user_fields {
     return @fields;
 }
 
-sub __php_call {
+sub _invoke_mt5 {
     my ($cmd, $param) = @_;
 
     my $in = encode_json($param);
@@ -64,7 +64,7 @@ sub __php_call {
         },
     );
 
-    return $f->get;
+    return $f;
 }
 
 sub create_user {
@@ -74,31 +74,35 @@ sub create_user {
     my $param  = {};
     $param->{$_} = $args->{$_} for (@fields);
 
-    my $hash = __php_call('UserAdd', $param);
+    return _invoke_mt5('UserAdd', $param)->then(sub {
+        my ($hash) = @_;
 
-    if ($hash->{error}) {
-        return {error => $hash->{error}};
-    }
+        if ($hash->{error}) {
+            return Future->done({error => $hash->{error}});
+        }
 
-    return {login => $hash->{login}};
+        return Future->done({login => $hash->{login}});
+    });
 }
 
 sub get_user {
     my $login = shift;
     my $param = {login => $login};
 
-    my $hash = __php_call('UserGet', $param);
+    return _invoke_mt5('UserGet', $param)->then(sub {
+        my ($hash) = @_;
 
-    if ($hash->{error}) {
-        return {error => $hash->{error}};
-    }
+        if ($hash->{error}) {
+            return Future->done({error => $hash->{error}});
+        }
 
-    my $ret    = $hash->{user};
-    my @fields = __user_fields('get_user');
+        my $ret    = $hash->{user};
+        my @fields = __user_fields('get_user');
 
-    my $mt_user;
-    $mt_user->{$_} = $ret->{$_} for (@fields);
-    return $mt_user;
+        my $mt_user;
+        $mt_user->{$_} = $ret->{$_} for (@fields);
+        return Future->done($mt_user);
+    });
 }
 
 sub update_user {
@@ -108,18 +112,20 @@ sub update_user {
     my $param = {};
     $param->{$_} = $args->{$_} for (@fields);
 
-    my $hash = __php_call('UserUpdate', $param);
+    return _invoke_mt5('UserUpdate', $param)->then(sub {
+        my ($hash) = @_;
 
-    if ($hash->{error}) {
-        return {error => $hash->{error}};
-    }
+        if ($hash->{error}) {
+            return Future->done({error => $hash->{error}});
+        }
 
-    my $ret = $hash->{user};
-    @fields = __user_fields('get_user');
+        my $ret = $hash->{user};
+        @fields = __user_fields('get_user');
 
-    my $mt_user;
-    $mt_user->{$_} = $ret->{$_} for (@fields);
-    return $mt_user;
+        my $mt_user;
+        $mt_user->{$_} = $ret->{$_} for (@fields);
+        return Future->done($mt_user);
+    });
 }
 
 sub password_check {
@@ -128,12 +134,14 @@ sub password_check {
         login    => $args->{login},
         password => $args->{password}};
 
-    my $hash = __php_call('UserPasswordCheck', $param);
+    return _invoke_mt5('UserPasswordCheck', $param)->then(sub {
+        my ($hash) = @_;
 
-    if ($hash->{error}) {
-        return {error => $hash->{error}};
-    }
-    return {status => 1};
+        if ($hash->{error}) {
+            return Future->done({error => $hash->{error}});
+        }
+        return Future->done({status => 1});
+    });
 }
 
 sub password_change {
@@ -142,12 +150,14 @@ sub password_change {
         login        => $args->{login},
         new_password => $args->{new_password}};
 
-    my $hash = __php_call('UserPasswordChange', $param);
+    return _invoke_mt5('UserPasswordChange', $param)->then(sub {
+        my ($hash) = @_;
 
-    if ($hash->{error}) {
-        return {error => $hash->{error}};
-    }
-    return {status => 1};
+        if ($hash->{error}) {
+            return Future->done({error => $hash->{error}});
+        }
+        return Future->done({status => 1});
+    });
 }
 
 sub deposit {
@@ -159,13 +169,15 @@ sub deposit {
         type        => '2'                 # enum DEAL_BALANCE = 2
     };
 
-    my $hash = __php_call('UserDepositChange', $param);
+    return _invoke_mt5('UserDepositChange', $param)->then(sub {
+        my ($hash) = @_;
 
-    if ($hash->{error}) {
-        return {error => $hash->{error}};
-    }
+        if ($hash->{error}) {
+            return Future->done({error => $hash->{error}});
+        }
 
-    return {status => 1};
+        return Future->done({status => 1});
+    });
 }
 
 sub withdrawal {
@@ -180,13 +192,15 @@ sub withdrawal {
         type        => '2'                 # enum DEAL_BALANCE = 2
     };
 
-    my $hash = __php_call('UserDepositChange', $param);
+    return _invoke_mt5('UserDepositChange', $param)->then( sub {
+        my ($hash) = @_;
 
-    if ($hash->{error}) {
-        return {error => $hash->{error}};
-    }
+        if ($hash->{error}) {
+            return Future->done({error => $hash->{error}});
+        }
 
-    return {status => 1};
+        return Future->done({status => 1});
+    });
 }
 
 1;

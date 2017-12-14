@@ -175,7 +175,7 @@ rpc mt5_new_account => sub {
         $args->{country} = $country_name if ($country_name);
     }
 
-    my $status = BOM::MT5::User::Async::create_user($args);
+    my $status = BOM::MT5::User::Async::create_user($args)->get;
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5CreateUserError',
@@ -195,7 +195,7 @@ rpc mt5_new_account => sub {
             login   => $mt5_login,
             amount  => $balance,
             comment => 'Binary MT5 Virtual Money deposit.'
-        });
+        })->get;
 
         # deposit failed
         if ($status->{error}) {
@@ -234,7 +234,7 @@ rpc mt5_get_settings => sub {
     # MT5 login not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
-    my $settings = BOM::MT5::User::Async::get_user($login);
+    my $settings = BOM::MT5::User::Async::get_user($login)->get;
     if (ref $settings eq 'HASH' and $settings->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5GetUserError',
@@ -281,7 +281,7 @@ rpc mt5_set_settings => sub {
     my $country_name = Locale::Country::Extra->new()->country_from_code($country_code);
     $args->{country} = $country_name if ($country_name);
 
-    my $settings = BOM::MT5::User::Async::update_user($args);
+    my $settings = BOM::MT5::User::Async::update_user($args)->get;
     if (ref $settings eq 'HASH' and $settings->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5UpdateUserError',
@@ -305,7 +305,7 @@ rpc mt5_password_check => sub {
     # MT5 login not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
-    my $status = BOM::MT5::User::Async::password_check($args);
+    my $status = BOM::MT5::User::Async::password_check($args)->get;
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5PasswordCheckError',
@@ -329,7 +329,7 @@ rpc mt5_password_change => sub {
 
     my $status = BOM::MT5::User::Async::password_check({
             login    => $args->{login},
-            password => $args->{old_password}});
+            password => $args->{old_password}})->get;
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5PasswordChangeError',
@@ -338,7 +338,7 @@ rpc mt5_password_change => sub {
 
     $status = BOM::MT5::User::Async::password_change({
             login        => $args->{login},
-            new_password => $args->{new_password}});
+            new_password => $args->{new_password}})->get;
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5PasswordChangeError',
@@ -487,7 +487,7 @@ rpc mt5_deposit => sub {
         login   => $to_mt5,
         amount  => $amount,
         comment => $comment
-    });
+    })->get;
 
     if ($status->{error}) {
         _send_email(
@@ -585,7 +585,7 @@ rpc mt5_withdrawal => sub {
         login   => $fm_mt5,
         amount  => $amount,
         comment => $comment
-    });
+    })->get;
 
     if ($status->{error}) {
         return $error_sub->($status->{error});
