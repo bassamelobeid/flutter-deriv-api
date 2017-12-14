@@ -292,8 +292,4 @@ sub server_version {
     return $1;
 }
 
-END {
-    system("rm -rf " . SNAPSHOT_DIR);
-}
-
 1;
