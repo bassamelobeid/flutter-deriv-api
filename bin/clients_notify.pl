@@ -3,6 +3,8 @@ use warnings;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
+# load this file to force MOJO::JSON to use JSON::MaybeXS
+use MOJO::JSON::MaybeXS;
 use YAML::XS;
 use Mojo::Redis2;
 use JSON::MaybeXS;
