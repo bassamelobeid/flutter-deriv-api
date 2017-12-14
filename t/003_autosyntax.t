@@ -14,7 +14,7 @@ use Cwd;
 
 my $pattern = $ARGV[0];        # confines test to just files matching this pattern.
 my $PATH    = Cwd::abs_path;
-my %tested_modules;
+my @tested_modules;
 
 subtest "Preload all CGIs" => sub {
     my $app = BOM::Backoffice::PlackApp::Streaming->new(
@@ -22,7 +22,7 @@ subtest "Preload all CGIs" => sub {
         root    => '/home/git/regentmarkets/bom-backoffice'
     )->to_app;
 
-    @tested_modules{keys %INC} = undef;
+    @tested_modules = keys %INC;
 
     ok $app, "App can be initialized with all CGIs";
 };
@@ -51,7 +51,7 @@ sub get_scripts {
 
 sub is_module_tested {
     my $m = shift;
-    grep { $m =~ /$_/ } keys %tested_modules;
+    grep { $m =~ /$_/ } @tested_modules;
 }
 
 done_testing;
