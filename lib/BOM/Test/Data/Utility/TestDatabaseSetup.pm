@@ -10,7 +10,7 @@ use BOM::Test;
 
 use constant {
     SNAPSHOT_DIR => '/tmp/test-db-snapshots',
-    PG_DIR      => '/usr/lib/postgresql',
+    PG_DIR       => '/usr/lib/postgresql',
     PSQL         => '/etc/rmg/bin/psql',
 };
 
@@ -236,8 +236,9 @@ sub _restore_snapshot {
 
     my $connection_settings = $self->_connection_parameters;
     system(   "PGPASSWORD="
-            . $connection_settings->{password}
-            . " " . $self->pg_path . "/pg_restore"
+            . $connection_settings->{password} . " "
+            . $self->pg_path
+            . "/pg_restore"
             . " -Fc -U postgres -h localhost -p $connection_settings->{port} -cd $connection_settings->{database}" . " -1 "
             . $self->snapshot);
     return 1;
@@ -249,8 +250,9 @@ sub _create_snapshot {
 
     my $connection_settings = $self->_connection_parameters;
     system(   "PGPASSWORD="
-            . $connection_settings->{password}
-            . " " . $self->pg_path . "/pg_dump"
+            . $connection_settings->{password} . " "
+            . $self->pg_path
+            . "/pg_dump"
             . " -Fc -U postgres -h localhost -p $connection_settings->{port} $connection_settings->{database}" . " -f "
             . $self->snapshot);
     return;
@@ -273,9 +275,13 @@ sub server_version {
     my $self = shift;
 
     my $connection_settings = $self->_connection_parameters;
-    my $ver_query = "PGPASSWORD="
-            . $connection_settings->{password}
-            . " " . PSQL . " -U postgres -h localhost -p " . $connection_settings->{port} . " -c 'SELECT version();'";
+    my $ver_query =
+          "PGPASSWORD="
+        . $connection_settings->{password} . " "
+        . PSQL
+        . " -U postgres -h localhost -p "
+        . $connection_settings->{port}
+        . " -c 'SELECT version();'";
 
     my $ver = qx/$ver_query/;
 
