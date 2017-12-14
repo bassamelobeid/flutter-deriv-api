@@ -25,6 +25,8 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Email;
 use BOM::Transaction;
 
+common_before_actions qw(auth);
+
 =head2 mt5_login_list
 
     $mt5_logins = mt5_login_list({ client => $client })
@@ -66,10 +68,6 @@ Returns any of the following:
 =back
 
 =cut
-
-sub mt5_login_list {
-
-common_before_actions qw(auth);
 
 rpc mt5_login_list => sub {
 
