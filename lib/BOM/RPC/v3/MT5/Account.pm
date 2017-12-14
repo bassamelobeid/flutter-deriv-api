@@ -63,7 +63,7 @@ Returns any of the following:
 
 =item * C<login> - The MT5 loginID of the client.
 
-=item * (Optional) C<group> - The group the loginID belongs to.
+=item * C<group> - (optional) The group the loginID belongs to.
 
 =back
 
