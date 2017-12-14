@@ -5,6 +5,11 @@ use warnings;
 use JSON;
 use IPC::Run3;
 
+# We know we're running inside a Mojo app so this is best
+use IO::Async::Loop::Mojo;
+
+my $loop = IO::Async::Loop::Mojo->new;
+
 sub __user_fields {
     my $action = shift;
     my @fields = qw(
@@ -43,12 +48,23 @@ sub __php_call {
     my $in = encode_json($param);
 
     my @cmd = ('php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php', $cmd);
-    my ($out, $err);
-    run3 \@cmd, \$in, \$out, \$err;
 
-    warn "MT5 PHP call error: $err from $in\n" if defined($err) && length($err);
-    $out =~ s/[\x0D\x0A]//g;
-    return decode_json($out);
+    # TODO(leonerd): This ought to be a method on IO::Async::Loop itself
+    my $f = $loop->new_future;
+    $loop->run_child(
+        command => \@cmd,
+        stdin => $in,
+        on_finish => sub {
+            my (undef, $exitcode, $out, $err) = @_;
+            warn "MT5 PHP call nonzero status: $exitcode\n" if $exitcode;
+            warn "MT5 PHP call error: $err from $in\n" if defined($err) && length($err);
+
+            $out =~ s/[\x0D\x0A]//g;
+            $f->done(decode_json($out));
+        },
+    );
+
+    return $f->get;
 }
 
 sub create_user {
