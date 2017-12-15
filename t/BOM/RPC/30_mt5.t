@@ -101,4 +101,21 @@ subtest 'password check' => sub {
         ->has_no_error('no error for mt5_password_check');
 };
 
+subtest 'password change' => sub {
+    my $method = 'mt5_password_change';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            login        => "1000",
+            old_password => 'Efgh4567',
+            new_password => 'Ijkl6789',
+        },
+    };
+    $c->call_ok($method, $params)
+        ->has_no_error('no error for mt5_password_change');
+    # This call yields a truth integer directly, not a hash
+    is($c->result, 1, 'result');
+};
+
 done_testing();

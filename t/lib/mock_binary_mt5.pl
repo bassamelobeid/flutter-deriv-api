@@ -97,6 +97,20 @@ sub cmd_UserUpdate {
     };
 }
 
+sub cmd_UserPasswordChange {
+    my ($input) = @_;
+
+    $input->{login} eq $LOGIN or
+        die "TODO: mock UserUpdate on unknown login\n";
+
+    $input->{new_password} eq "Ijkl6789" or
+        die "UserPasswordChange with unexpected new_password=$input->{new_password}\n";
+
+    return {
+        ret_code => MT_RET_OK,
+    };
+}
+
 sub cmd_UserPasswordCheck {
     my ($input) = @_;
 
