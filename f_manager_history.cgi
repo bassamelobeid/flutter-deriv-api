@@ -86,9 +86,9 @@ my $dbic = $clientdb->db->dbic;
 
 my $withdrawals_to_date = $dbic->run(
     fixup => sub {
-        my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_withdrawals(?)");
-        $sth->execute($client->loginid);
-        return $sth->fetchall_hashref(qw/client_loginid currency_code/);
+        my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_withdrawals(?, ?)");
+        $sth->execute($client->loginid, $currency);
+        return $sth->fetchall_hashref('client_loginid');
     });
 
 BOM::Backoffice::Request::template->process(
