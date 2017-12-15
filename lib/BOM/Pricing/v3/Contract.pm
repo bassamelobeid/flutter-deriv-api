@@ -93,7 +93,7 @@ sub contract_metadata {
     my ($contract) = @_;
     return +{
         app_markup_percentage => $contract->app_markup_percentage,
-        ($contract->is_binary) ? (staking_limits => $contract->staking_limits) : (),
+        ($contract->is_binary) ? (staking_limits => $contract->staking_limits) : (),    #staking limits only apply to binary
         deep_otm_threshold => $contract->otm_threshold,
         base_commission    => $contract->base_commission,
     };
@@ -364,7 +364,7 @@ sub get_bid {
             currency            => $contract->currency,
             longcode            => localize($contract->longcode),
             shortcode           => $contract->shortcode,
-            ($contract->is_binary) ? (payout => $contract->payout) : (),
+            ($contract->is_binary) ? (payout => $contract->payout) : (),    # The concept of payout only applies to binary
             contract_type => $contract->code,
             bid_price     => formatnumber('price', $contract->currency, $contract->bid_price),
         };
@@ -374,7 +374,7 @@ sub get_bid {
             $response->{status} = $sell_price == $contract->payout ? "won" : "lost";
         } elsif ($is_sold and not $is_expired) {
             $response->{status} = 'sold';
-        } else {    # not sold
+        } else {                                                            # not sold
             $response->{status} = 'open';
         }
 
