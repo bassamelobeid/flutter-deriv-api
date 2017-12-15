@@ -184,7 +184,6 @@ sub get_settings_by_group {
                 system.suspend.ico_claim_allowed
                 system.suspend.ico_final_price
                 system.suspend.ico_minimum_bid_in_usd
-                system.suspend.ico_initial_deposit_percentage
                 system.suspend.all_logins
                 system.suspend.social_logins
                 system.suspend.logins
