@@ -125,7 +125,6 @@ sub generate_trading_times {
                     {
                     name       => localize($ul->{name}),
                     symbol     => $ul->{symbol},
-                    settlement => $ul->{settlement} || '',
                     events     => $ul->{events},
                     times      => $ul->{times},
                     ($ul->{feed_license} ne 'realtime') ? (feed_license => $ul->{feed_license}) : (),
