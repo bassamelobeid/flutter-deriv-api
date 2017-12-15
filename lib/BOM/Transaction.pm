@@ -791,8 +791,8 @@ sub prepare_bet_data_for_sell {
         id         => scalar $self->contract_id,
         sell_price => scalar $self->price,
         sell_time  => scalar $contract->date_pricing->db_timestamp,
-        quantity   => $contract->is_binary ? 1 : $contract->unit;
-            $contract->category_code eq 'asian' && $contract->is_after_settlement
+        quantity   => $contract->is_binary ? 1 : $contract->unit,
+        $contract->category_code eq 'asian' && $contract->is_after_settlement
         ? (absolute_barrier => scalar $contract->barrier->as_absolute)
         : (),
     };
@@ -1433,7 +1433,8 @@ sub sell_expired_contracts {
 
         try {
             if ($contract->is_valid_to_sell) {
-                @{$bet}{qw/sell_price sell_time is_expired/} = ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
+                @{$bet}{qw/sell_price sell_time is_expired/} =
+                    ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute
                     if $contract->category_code eq 'asian' and $contract->is_after_settlement;
                 $bet->{quantity} = 1;
