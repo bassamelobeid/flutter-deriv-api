@@ -43,7 +43,8 @@ if ($input->{'dcctype'} ne 'file_content') {
         code_exit_BO();
     }
 
-    my $curr_regex = LandingCompany::Registry::get_currency_type($input->{'currency'}) eq 'fiat' ? qr/^(?:\d*\.\d{1,2}|\d+\.?)$/ : qr/^(?:\d*\.\d{1,8}|\d+\.?)$/;
+    my $curr_regex =
+        LandingCompany::Registry::get_currency_type($input->{'currency'}) eq 'fiat' ? qr/^(?:\d*\.\d{1,2}|\d+\.?)$/ : qr/^(?:\d*\.\d{1,8}|\d+\.?)$/;
 
     if ($input->{'amount'} !~ $curr_regex) {
         print "ERROR: Invalid amount: " . $input->{'amount'};
