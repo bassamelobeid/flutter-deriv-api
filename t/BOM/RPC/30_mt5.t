@@ -66,6 +66,7 @@ subtest 'get settings' => sub {
         ->has_no_error('no error for mt5_get_settings');
     is($c->result->{login},   "1000",  'result->{login}');
     is($c->result->{balance}, 1234.56, 'result->{balance}');
+    is($c->result->{country}, "mt",    'result->{country}');
 };
 
 done_testing();

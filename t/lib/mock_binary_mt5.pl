@@ -33,6 +33,9 @@ sub cmd_UserAdd {
     $input->{email} eq 'test.account@binary.com' or
         die "TODO: mock UserAdd on unknown email\n";
 
+    $input->{country} eq 'Malta' or
+        die "UserAdd with unexpected country=$input->{country}\n";
+
     return {
         ret_code => MT_RET_OK,
         login    => $LOGIN,
@@ -61,6 +64,8 @@ sub cmd_UserGet {
         user     => {
             login   => $LOGIN,
             email   => 'test.account@binary.com',
+            name    => "Test",
+            country => "Malta",
             balance => "1234.56",
         },
     };
