@@ -22,6 +22,7 @@ use DateTime;
 use Error::Base;
 use Cache::RedisDB;
 use Crypt::NamedKeys;
+use Scalar::Util qw(looks_like_number);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Config;
@@ -374,13 +375,18 @@ sub _validate_staff_payment_limit {
     my $amount = shift;
 
     my $payment_limits = JSON::from_json(BOM::Platform::Runtime->instance->app_config->payments->payment_limits);
-    if (exists $payment_limits->{$self->staff}) {
+    if ($payment_limits->{$self->staff} and looks_like_number($payment_limits->{$self->staff})) {
         if ($amount > $payment_limits->{$self->staff}) {
             return Error::Base->cuss(
                 -type => 'AmountGreaterThanLimit',
                 -mesg => 'The amount is larger than authorization limit for staff',
             );
         }
+    } else {
+        return Error::Base->cuss(
+            -type => 'NoPaymentLimitForUser',
+            -mesg => 'There is no payment limit configured in the backoffice payment_limits for this user',
+        );
     }
     return;
 }
