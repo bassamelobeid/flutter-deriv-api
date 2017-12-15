@@ -130,7 +130,7 @@ sub validate_trx_buy {
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
         for (qw/ _validate_payout_limit _validate_stake_limit /) {
-            next if not $self->transaction->contract->is_binary;
+            next unless $self->transaction->contract->is_binary;
             $res = $self->$_($c->{client});
             next unless $res;
             if ($self->transaction && $self->transaction->multiple) {
