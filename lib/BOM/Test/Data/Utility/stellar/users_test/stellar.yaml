@@ -1,0 +1,4 @@
+project_name: 'users_test'
+tracked_databases: ['users_test']
+url: 'postgresql://postgres:mRX1E3Mi00oS8LG@localhost:5436/template1'
+stellar_url: 'postgresql://postgres:mRX1E3Mi00oS8LG@localhost:5436/stellar_data'
