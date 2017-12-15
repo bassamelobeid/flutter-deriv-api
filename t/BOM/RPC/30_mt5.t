@@ -50,6 +50,7 @@ subtest 'new account' => sub {
     };
     $c->call_ok($method, $params)
         ->has_no_error('no error for mt5_new_account');
+    is($c->result->{login}, "1000", 'result->{login}');
 };
 
 done_testing();
