@@ -49,3 +49,19 @@ sub cmd_UserDepositChange {
         ret_code => MT_RET_OK,
     };
 }
+
+sub cmd_UserGet {
+    my ($input) = @_;
+
+    $input->{login} eq $LOGIN or
+        die "TODO: mock UserGet on unknown login\n";
+
+    return {
+        ret_code => MT_RET_OK,
+        user     => {
+            login   => $LOGIN,
+            email   => 'test.account@binary.com',
+            balance => "1234.56",
+        },
+    };
+}

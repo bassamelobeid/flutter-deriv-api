@@ -53,4 +53,19 @@ subtest 'new account' => sub {
     is($c->result->{login}, "1000", 'result->{login}');
 };
 
+subtest 'get settings' => sub {
+    my $method = 'mt5_get_settings';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            login => "1000",
+        },
+    };
+    $c->call_ok($method, $params)
+        ->has_no_error('no error for mt5_get_settings');
+    is($c->result->{login},   "1000",  'result->{login}');
+    is($c->result->{balance}, 1234.56, 'result->{balance}');
+};
+
 done_testing();
