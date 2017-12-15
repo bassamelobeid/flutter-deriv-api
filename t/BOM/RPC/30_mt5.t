@@ -87,4 +87,18 @@ subtest 'set settings' => sub {
     is($c->result->{country}, "mt",    'result->{country}');
 };
 
+subtest 'password check' => sub {
+    my $method = 'mt5_password_check';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            login    => "1000",
+            password => 'Efgh4567',
+        },
+    };
+    $c->call_ok($method, $params)
+        ->has_no_error('no error for mt5_password_check');
+};
+
 done_testing();

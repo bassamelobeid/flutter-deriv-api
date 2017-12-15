@@ -10,7 +10,8 @@ use constant {
     MT_RET_OK => 0,
 };
 
-my $LOGIN = "1000";
+my $LOGIN    = "1000";
+my $PASSWORD = "Efgh4567";
 
 my $json = JSON::MaybeXS->new;
 
@@ -35,6 +36,8 @@ sub cmd_UserAdd {
 
     $input->{country} eq 'Malta' or
         die "UserAdd with unexpected country=$input->{country}\n";
+    $input->{mainPassword} eq $PASSWORD or
+        die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
 
     return {
         ret_code => MT_RET_OK,
@@ -91,5 +94,19 @@ sub cmd_UserUpdate {
             country => "Malta",
             balance => "1234.56",
         },
+    };
+}
+
+sub cmd_UserPasswordCheck {
+    my ($input) = @_;
+
+    $input->{login} eq $LOGIN or
+        die "TODO: mock UserUpdate on unknown login\n";
+
+    $input->{password} eq $PASSWORD or
+        die "UserPasswordCheck with unexpected password=$input->{password}\n";
+
+    return {
+        ret_code => MT_RET_OK,
     };
 }
