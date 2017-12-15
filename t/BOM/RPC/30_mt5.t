@@ -69,4 +69,22 @@ subtest 'get settings' => sub {
     is($c->result->{country}, "mt",    'result->{country}');
 };
 
+subtest 'set settings' => sub {
+    my $method = 'mt5_set_settings';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            login   => "1000",
+            name    => "Test2",
+            country => 'mt',
+        },
+    };
+    $c->call_ok($method, $params)
+        ->has_no_error('no error for mt5_set_settings');
+    is($c->result->{login},   "1000",  'result->{login}');
+    is($c->result->{name},    "Test2", 'result->{name}');
+    is($c->result->{country}, "mt",    'result->{country}');
+};
+
 done_testing();

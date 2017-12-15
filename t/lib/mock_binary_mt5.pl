@@ -70,3 +70,26 @@ sub cmd_UserGet {
         },
     };
 }
+
+sub cmd_UserUpdate {
+    my ($input) = @_;
+
+    $input->{login} eq $LOGIN or
+        die "TODO: mock UserUpdate on unknown login\n";
+
+    $input->{name} eq "Test2" or
+        die "UserUpdate with unexpected name$input->{name}\n";
+    $input->{country} eq 'Malta' or
+        die "UserUpdate with unexpected country=$input->{country}\n";
+
+    return {
+        ret_code => MT_RET_OK,
+        user     => {
+            login   => $LOGIN,
+            email   => 'test.account@binary.com',
+            name    => "Test2",
+            country => "Malta",
+            balance => "1234.56",
+        },
+    };
+}
