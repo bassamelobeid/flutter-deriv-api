@@ -14,9 +14,6 @@ security:
 pricing:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/pricing
 
-json_schemas:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite
-
 misc:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/misc
 
