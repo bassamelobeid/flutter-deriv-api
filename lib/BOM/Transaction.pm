@@ -394,7 +394,7 @@ sub calculate_limits {
         stats_inc('transaction.open_position_limit.failure');
     };
 
-    if (not $contract->is_binary) {
+    unless ($contract->is_binary) {
         $limits{lookback_open_position_limit} = $static_config->{lookback_limits}{open_position_limits}{$currency};
 
         my $rp                       = $contract->risk_profile;
@@ -791,8 +791,8 @@ sub prepare_bet_data_for_sell {
         id         => scalar $self->contract_id,
         sell_price => scalar $self->price,
         sell_time  => scalar $contract->date_pricing->db_timestamp,
-        $contract->is_binary ? (quantity => 1) : (quantity => $contract->unit),
-        $contract->category_code eq 'asian' && $contract->is_after_settlement
+        quantity   => $contract->is_binary ? 1 : $contract->unit;
+            $contract->category_code eq 'asian' && $contract->is_after_settlement
         ? (absolute_barrier => scalar $contract->barrier->as_absolute)
         : (),
     };
@@ -1289,11 +1289,6 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         -type              => 'LookbackOpenPositionLimitExceeded',
         -mesg              => 'Lookback open positions limit exceeded',
         -message_to_client => BOM::Platform::Context::localize('Lookback open positions limit exceeded.'),
-    ),
-    BI111 => Error::Base->cuss(
-        -type              => 'LookbackDailyTurnoverLimitExceeded',
-        -mesg              => 'Lookback daily turnover limit exceeded',
-        -message_to_client => BOM::Platform::Context::localize('Lookback daily turnover limit exceeded.'),
     ),
 );
 
