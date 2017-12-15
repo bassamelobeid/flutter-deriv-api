@@ -236,9 +236,7 @@ sub _restore_snapshot {
 
     warn "restoring snapshot for " . $self->_db_name;
     my $connection_settings = $self->_connection_parameters;
-    system(   "PGPASSWORD=" . $connection_settings->{password} . " " . $self->pg_path . "/pg_restore"
-            . " -Fc -U postgres -h localhost -p " . $connection_settings->{port}
-            . " -d " . $connection_settings->{database} . " " . $self->snapshot);
+    system("cd /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/" . $self->_db_name . "; stellar restore");
     return 1;
 }
 
@@ -247,9 +245,7 @@ sub _create_snapshot {
     mkdir SNAPSHOT_DIR if !-d SNAPSHOT_DIR;
 
     my $connection_settings = $self->_connection_parameters;
-    system(   "PGPASSWORD=" . $connection_settings->{password} . " " . $self->pg_path . "/pg_dump"
-            . " -Tdbix* -a -Fc -U postgres -h localhost -p " . $connection_settings->{port}
-            . " " . $connection_settings->{database} . " -f " . $self->snapshot);
+    system("cd /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/" . $self->_db_name . "; stellar snapshot; touch " . $self->snapshot);
     return;
 }
 
