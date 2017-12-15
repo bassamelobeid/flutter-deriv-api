@@ -120,10 +120,7 @@ sub validate_trx_buy {
     ### _validate_trade_pricing_adjustment may contain some expensive calculations
     #### And last per-client checks must be after this calculations.
 
-    $res =
-        ($self->transaction->contract->is_binary)
-        ? $self->_validate_trade_pricing_adjustment()
-        : $self->_validate_trade_pricing_adjustment_lookbacks();
+    $res = $self->_validate_trade_pricing_adjustment();
     return $res if $res;
 
     CLI: for my $c (@$clients) {
@@ -344,6 +341,18 @@ sub _validate_sell_pricing_adjustment_non_binary {
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
+    my $contract = $self->transaction->contract;
+
+    if ($contract->is_binary) {
+        return $self->_validate_trade_pricing_adjustment_binary;
+    } else {
+        return $self->_validate_trade_pricing_adjustment_non_binary;
+    }
+}
+
+sub _validate_trade_pricing_adjustment_binary {
+    my $self = shift;
+
     my $amount_type = $self->transaction->amount_type;
     my $contract    = $self->transaction->contract;
 
@@ -411,7 +420,7 @@ sub _validate_trade_pricing_adjustment {
     return;
 }
 
-sub _validate_trade_pricing_adjustment_lookbacks {
+sub _validate_trade_pricing_adjustment_non_binary {
     my $self = shift;
 
     my $contract = $self->transaction->contract;
