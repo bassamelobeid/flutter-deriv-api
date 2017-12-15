@@ -234,13 +234,11 @@ sub _restore_snapshot {
     my $self = shift;
     return 0 if !-f $self->snapshot;
 
+    warn "restoring snapshot for " . $self->_db_name;
     my $connection_settings = $self->_connection_parameters;
-    system(   "PGPASSWORD="
-            . $connection_settings->{password} . " "
-            . $self->pg_path
-            . "/pg_restore"
-            . " -Fc -U postgres -h localhost -p $connection_settings->{port} -cd $connection_settings->{database}" . " -1 "
-            . $self->snapshot);
+    system(   "PGPASSWORD=" . $connection_settings->{password} . " " . $self->pg_path . "/pg_restore"
+            . " -Fc -U postgres -h localhost -p " . $connection_settings->{port}
+            . " -d " . $connection_settings->{database} . " " . $self->snapshot);
     return 1;
 }
 
@@ -249,12 +247,9 @@ sub _create_snapshot {
     mkdir SNAPSHOT_DIR if !-d SNAPSHOT_DIR;
 
     my $connection_settings = $self->_connection_parameters;
-    system(   "PGPASSWORD="
-            . $connection_settings->{password} . " "
-            . $self->pg_path
-            . "/pg_dump"
-            . " -Fc -U postgres -h localhost -p $connection_settings->{port} $connection_settings->{database}" . " -f "
-            . $self->snapshot);
+    system(   "PGPASSWORD=" . $connection_settings->{password} . " " . $self->pg_path . "/pg_dump"
+            . " -Tdbix* -a -Fc -U postgres -h localhost -p " . $connection_settings->{port}
+            . " " . $connection_settings->{database} . " -f " . $self->snapshot);
     return;
 }
 
