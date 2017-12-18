@@ -292,6 +292,79 @@ rpc mt5_set_settings => sub {
     return $settings;
 };
 
+=head2 mt5_password_check
+
+    $mt5_pass_check = mt5_password_check({
+        client  => $client,
+        args    => $args
+    })
+    
+Takes a client object and a hash reference as inputs and returns 1 upon successful
+validation of the user's password.
+    
+Takes the following (named) parameters as inputs:
+    
+=over 4
+
+=item * C<params> hashref that contains:
+
+=over 4
+
+=item * A Client::Account object under the key C<client>.
+
+=item * A hash reference under the key C<args> that contains the MT5 login id 
+under C<login> key.
+
+=back
+
+=back
+
+Returns any of the following:
+
+=over 4
+
+=item * A hashref error message that contains the following keys, based on the given error:
+
+=over 4
+
+=item * MT5 suspended
+
+=over 4
+
+=item * C<code> stating C<MT5APISuspendedError>.
+
+=item * C<message_to_client> that says C<MT5 API calls are suspended.>.
+
+=back
+
+=item * Permission denied
+
+=over 4
+
+=item * C<code> stating C<PermissionDenied>.
+
+=item * C<message_to_client> that says C<Permission denied.>.
+
+=back
+
+=item * Retrieval Error
+
+=over 4
+
+=item * C<code> stating C<MT5PasswordCheckError>.
+
+=item * C<message_to_client> that says C<Network error.>.
+
+=back
+
+=back
+
+=item * Returns 1, indicating successful validation.
+
+=back
+
+=cut
+
 rpc mt5_password_check => sub {
     my $params = shift;
 
@@ -314,6 +387,88 @@ rpc mt5_password_check => sub {
     return 1;
 };
 
+=head2 mt5_password_change
+
+    $mt5_pass_change = mt5_password_change({
+        client  => $client,
+        args    => $args
+    })
+    
+Takes a client object and a hash reference as inputs and returns 1 upon successful
+change of the user's MT5 account password.
+    
+Takes the following (named) parameters as inputs:
+    
+=over 4
+
+=item * C<params> hashref that contains:
+
+=over 4
+
+=item * A Client::Account object under the key C<client>.
+
+=item * A hash reference under the key C<args> that contains:
+
+=over 4
+
+=item * C<login> that contains the MT5 login id.
+
+=item * C<old_password> that contains the user's current password.
+
+=item * C<new_password> that contains the user's new password. 
+
+=back
+
+=back
+
+=back
+
+Returns any of the following:
+
+=over 4
+
+=item * A hashref error message that contains the following keys, based on the given error:
+
+=over 4
+
+=item * MT5 suspended
+
+=over 4
+
+=item * C<code> stating C<MT5APISuspendedError>.
+
+=item * C<message_to_client> that says C<MT5 API calls are suspended.>.
+
+=back
+
+=item * Permission denied
+
+=over 4
+
+=item * C<code> stating C<PermissionDenied>.
+
+=item * C<message_to_client> that says C<Permission denied.>.
+
+=back
+
+=item * Retrieval Error
+
+=over 4
+
+=item * C<code> stating C<MT5PasswordChangeError>.
+
+=item * C<message_to_client> that says C<Network error.>.
+
+=back
+
+=back
+
+=item * Returns 1, indicating successful change.
+
+=back
+
+=cut
+
 rpc mt5_password_change => sub {
     my $params = shift;
 
@@ -328,7 +483,7 @@ rpc mt5_password_change => sub {
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
     my $status = BOM::MT5::User::password_check({
-            login    => $args->{login},
+            login    => $login,
             password => $args->{old_password}});
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -337,7 +492,7 @@ rpc mt5_password_change => sub {
     }
 
     $status = BOM::MT5::User::password_change({
-            login        => $args->{login},
+            login        => $login,
             new_password => $args->{new_password}});
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
