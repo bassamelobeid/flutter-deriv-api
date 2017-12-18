@@ -244,7 +244,10 @@ sub _create_snapshot {
     mkdir SNAPSHOT_DIR if !-d SNAPSHOT_DIR;
 
     my $connection_settings = $self->_connection_parameters;
-    system("cd /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/" . $self->_db_name . "; stellar snapshot >/dev/null; touch " . $self->snapshot);
+    system(   "cd /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/"
+            . $self->_db_name
+            . "; stellar snapshot >/dev/null; touch "
+            . $self->snapshot);
     return;
 }
 
