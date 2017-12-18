@@ -201,18 +201,22 @@ sub _build_encoder {
 }
 
 has 'redis_read' => (
-    is      => 'ro',
-    default => sub {
-        BOM::Platform::RedisReplicated::redis_read();
-    },
+    is         => 'ro',
+    lazy_build => 1,
 );
 
+sub _build_redis_read {
+    return BOM::Platform::RedisReplicated::redis_read();
+}
+
 has 'redis_write' => (
-    is      => 'ro',
-    default => sub {
-        BOM::Platform::RedisReplicated::redis_write();
-    },
+    is         => 'ro',
+    lazy_build => 1,
 );
+
+sub _build_redis_write {
+    return BOM::Platform::RedisReplicated::redis_write();
+}
 
 =head1 SUBROUTINES/METHODS
 =head2 _make_key
