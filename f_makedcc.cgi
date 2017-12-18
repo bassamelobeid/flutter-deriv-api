@@ -43,10 +43,12 @@ if ($input->{'dcctype'} ne 'file_content') {
         code_exit_BO();
     }
 
-    my $curr_regex =
+    # Regular expression for checking valid currency format depending on the type of currency.
+    # Upto 2 decimal positions are allowed for fiat currencies and 8 for Cryptocurrencies.
+    my $currency_regex =
         LandingCompany::Registry::get_currency_type($input->{'currency'}) eq 'fiat' ? qr/^(?:\d*\.\d{1,2}|\d+\.?)$/ : qr/^(?:\d*\.\d{1,8}|\d+\.?)$/;
 
-    if ($input->{'amount'} !~ $curr_regex) {
+    if ($input->{'amount'} !~ $currency_regex) {
         print "ERROR: Invalid amount: " . $input->{'amount'};
         code_exit_BO();
     }
