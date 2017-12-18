@@ -272,18 +272,21 @@ sub _get_decimate_from_cache {
 
     my $redis = $self->redis_read;
 
+    my @parts        = ([$start, $end, 0]);
+    my $end_date     = Date::Utility->new($end);
+    my $start_of_day = $end_date->truncate_to_day;
     # first 20-minute of each day, we will perform this check
-    my $use_distributor_ticks = 0;
-    my $end_date              = Date::Utility->new($end);
-    if ($end - $end_date->truncate_to_day->epoch < 20 * 60) {
-        $use_distributor_ticks =
-            not _trading_calendar()->trades_on(Quant::Framework::Underlying->new($which)->exchange, $end_date->minus_time_interval('1d'));
+    if ($end - $start_of_day->epoch < 20 * 60
+        and not _trading_calendar()->trades_on(Quant::Framework::Underlying->new($which)->exchange, $end_date->minus_time_interval('1d')))
+    {
+        @parts = ([$start, $start_of_day->epoch - 1, 1], [$start_of_day->epoch, $end, 0]);
     }
 
     my @res;
-    my $key = $self->_make_key($which, 1, $use_distributor_ticks);
-
-    @res = map { $self->decoder->decode($_) } @{$redis->zrangebyscore($key, $start, $end)};
+    foreach my $part (@parts) {
+        my $key = $self->_make_key($which, 1, $part->[2]);
+        push @res, (map { $self->decoder->decode($_) } @{$redis->zrangebyscore($key, $part->[0], $part->[1])});
+    }
 
     return \@res;
 }
