@@ -19,6 +19,7 @@ use Moose;
 
 use BOM::Platform::RedisReplicated;
 
+use Quant::Framework;
 use List::Util qw( first min max );
 use Quant::Framework::Underlying;
 use Data::Decimate qw(decimate);
@@ -218,9 +219,10 @@ has 'redis_write' => (
 =cut
 
 sub _make_key {
-    my ($self, $symbol, $decimate) = @_;
+    my ($self, $symbol, $decimate, $use_distributor_ticks) = @_;
 
     my @bits = ("DECIMATE", $symbol);
+    unshift @bits, 'DISTRIBUTOR' if $use_distributor_ticks;
     if ($decimate) {
         push @bits, ($self->sampling_frequency->as_concise_string, 'DEC');
     } else {
@@ -265,12 +267,24 @@ sub _get_decimate_from_cache {
 
     my $redis = $self->redis_read;
 
+    # first 20-minute of each day, we will perform this check
+    my $use_distributor_ticks = 0;
+    my $end_date              = Date::Utility->new($end);
+    if ($end - $end_date->truncate_to_day->epoch < 20 * 60) {
+        $use_distributor_ticks =
+            not _trading_calendar()->trades_on(Quant::Framework::Underlying->new($which)->exchange, $end_date->minus_time_interval('1d'));
+    }
+
     my @res;
-    my $key = $self->_make_key($which, 1);
+    my $key = $self->_make_key($which, 1, $use_distributor_ticks);
 
     @res = map { $self->decoder->decode($_) } @{$redis->zrangebyscore($key, $start, $end)};
 
     return \@res;
+}
+
+sub _trading_calendar {
+    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
 }
 
 =head2 _get_raw_from_cache
