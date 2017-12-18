@@ -234,9 +234,8 @@ sub _restore_snapshot {
     my $self = shift;
     return 0 if !-f $self->snapshot;
 
-    warn "restoring snapshot for " . $self->_db_name;
     my $connection_settings = $self->_connection_parameters;
-    system("cd /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/" . $self->_db_name . "; stellar restore");
+    system("cd /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/" . $self->_db_name . "; stellar restore >/dev/null");
     return 1;
 }
 
@@ -245,7 +244,7 @@ sub _create_snapshot {
     mkdir SNAPSHOT_DIR if !-d SNAPSHOT_DIR;
 
     my $connection_settings = $self->_connection_parameters;
-    system("cd /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/" . $self->_db_name . "; stellar snapshot; touch " . $self->snapshot);
+    system("cd /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/" . $self->_db_name . "; stellar snapshot >/dev/null; touch " . $self->snapshot);
     return;
 }
 
