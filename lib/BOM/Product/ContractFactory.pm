@@ -67,6 +67,8 @@ use BOM::Product::Contract::Lbfloatcall;
 use BOM::Product::Contract::Lbfloatput;
 use BOM::Product::Contract::Lbhighlow;
 use BOM::Product::Contract::Binaryico;
+use BOM::Product::Contract::Resetcall;
+use BOM::Product::Contract::Resetput;
 
 =head2 produce_contract
 
