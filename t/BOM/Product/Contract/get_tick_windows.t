@@ -45,8 +45,8 @@ subtest 'event spans contract pricing time' => sub {
         sub {
             [{
                     release_date => $now->minus_time_interval('5m')->epoch,
-                    duration      => 600,
-                    magnitude     => 10,
+                    duration     => 600,
+                    magnitude    => 10,
                 }];
         });
     my $windows = $c->_get_tick_windows($period);
@@ -62,8 +62,8 @@ subtest 'one event which does not span the contract pricing time - so two window
         sub {
             [{
                     release_date => $now->minus_time_interval('10m')->epoch,
-                    duration      => 300,
-                    magnitude     => 10,
+                    duration     => 300,
+                    magnitude    => 10,
                 }];
         });
     my $windows = $c->_get_tick_windows($period);
@@ -81,13 +81,13 @@ subtest 'two overlapping events - two windows' => sub {
         sub {
             [{
                     release_date => $now->minus_time_interval('10m')->epoch,
-                    duration      => 300,
-                    magnitude     => 10,
+                    duration     => 300,
+                    magnitude    => 10,
                 },
                 {
                     release_date => $now->minus_time_interval('15m')->epoch,
-                    duration      => 600,
-                    magnitude     => 10,
+                    duration     => 600,
+                    magnitude    => 10,
                 },
             ];
         });
@@ -106,13 +106,13 @@ subtest 'two overlapping events, second event\'s duration cross first event - tw
         sub {
             [{
                     release_date => $now->minus_time_interval('10m')->epoch,
-                    duration      => 300,
-                    magnitude     => 10,
+                    duration     => 300,
+                    magnitude    => 10,
                 },
                 {
                     release_date => $now->minus_time_interval('15m')->epoch,
-                    duration      => 660,
-                    magnitude     => 10,
+                    duration     => 660,
+                    magnitude    => 10,
                 },
             ];
         });
@@ -131,18 +131,18 @@ subtest '3 events with two overlapping events - three windows' => sub {
         sub {
             [{
                     release_date => $now->minus_time_interval('10m')->epoch,
-                    duration      => 300,
-                    magnitude     => 10,
+                    duration     => 300,
+                    magnitude    => 10,
                 },
                 {
                     release_date => $now->minus_time_interval('15m')->epoch,
-                    duration      => 600,
-                    magnitude     => 10,
+                    duration     => 600,
+                    magnitude    => 10,
                 },
                 {
                     release_date => $now->minus_time_interval('25m')->epoch,
-                    duration      => 300,
-                    magnitude     => 10,
+                    duration     => 300,
+                    magnitude    => 10,
                 },
             ];
         });
@@ -163,13 +163,13 @@ subtest 'indentical release date with different duration impact - two windows' =
         sub {
             [{
                     release_date => $now->minus_time_interval('20m')->epoch,
-                    duration      => 300,
-                    magnitude     => 10,
+                    duration     => 300,
+                    magnitude    => 10,
                 },
                 {
                     release_date => $now->minus_time_interval('20m')->epoch,
-                    duration      => 1200,
-                    magnitude     => 10,
+                    duration     => 1200,
+                    magnitude    => 10,
                 },
             ];
         });
