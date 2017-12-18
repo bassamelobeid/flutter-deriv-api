@@ -294,7 +294,7 @@ sub _create_new_interface_engine {
         %pricing_parameters = (
             %contract_config,
             t             => $self->timeinyears->amount,
-            reset_time    => $self->reset_time->days / 365,
+            reset_time    => 0.5 * $self->timeinyears->amount,
             discount_rate => $self->discount_rate,
             mu            => $self->mu,
             vol           => $self->pricing_vol_for_two_barriers // $self->pricing_vol,

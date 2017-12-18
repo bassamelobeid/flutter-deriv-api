@@ -100,8 +100,8 @@ sub _build_priced_with_intraday_model {
 }
 
 sub _build_reset_time {
-    my $self     = shift;
-    my $duration = $self->date_expiry->epoch - $self->date_start->epoch;
+    my $self = shift;
+    my $duration = 0.5 * ($self->date_expiry->epoch - $self->date_start->epoch);
 
     my $reset_time = Time::Duration::Concise->new(interval => $duration . 's');
     return $reset_time;
