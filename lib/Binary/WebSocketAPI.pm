@@ -10,7 +10,7 @@ use Mojo::Redis2;
 use Mojo::IOLoop;
 
 use Binary::WebSocketAPI::Hooks;
-use Binary::WebSocketAPI::Plugins::Introspection;
+
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Transaction;
 use Binary::WebSocketAPI::v3::Wrapper::Authorize;
@@ -97,6 +97,7 @@ sub startup {
     push @{$app->plugins->namespaces}, 'Binary::WebSocketAPI::Plugins';
     $app->plugin('Introspection' => {port => 0});
     $app->plugin('RateLimits');
+    $app->plugin('Longcode');
 
     $app->hook(
         before_dispatch => sub {
