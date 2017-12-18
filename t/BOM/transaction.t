@@ -30,7 +30,6 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
@@ -773,7 +772,8 @@ subtest 'max_open_bets validation', sub {
 
         my $error = do {
             my $mock_client = Test::MockModule->new('Client::Account');
-            $mock_client->mock(get_limit_for_self_exclusion_open_positions => sub { note "mocked Client->get_limit_for_self_exclusion_open_positions returning 2"; 2 });
+            $mock_client->mock(get_limit_for_self_exclusion_open_positions =>
+                    sub { note "mocked Client->get_limit_for_self_exclusion_open_positions returning 2"; 2 });
             $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 20"; 20 });
 
             my $lim = $txn->calculate_limits;
@@ -849,7 +849,8 @@ subtest 'max_open_bets validation in presence of expired bets', sub {
         my $txn_id_buy_expired_contract;
         my $error = do {
             my $mock_client = Test::MockModule->new('Client::Account');
-            $mock_client->mock(get_limit_for_self_exclusion_open_positions => sub { note "mocked Client->get_limit_for_self_exclusion_open_positions returning 2"; 2 });
+            $mock_client->mock(get_limit_for_self_exclusion_open_positions =>
+                    sub { note "mocked Client->get_limit_for_self_exclusion_open_positions returning 2"; 2 });
             $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 1"; 1 });
 
             my $lim = $txn->calculate_limits;
