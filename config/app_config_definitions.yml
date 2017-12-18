@@ -294,6 +294,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        ico_claim_allowed:
+          description: "Flag to allow claim tokens functinality"
+          isa: Bool
+          default: 0
+          global: 1
         ico_final_price:
           description: "The final price of the  ICO auction"
           isa: Num
@@ -308,7 +313,6 @@ system:
           description: 'Percentage of deposit required to place ico bid'
           isa: Num
           default: 5
-          global: 1
         mt5:
           description: "Suspend MT5 API calls"
           isa: Bool
