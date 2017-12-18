@@ -164,7 +164,7 @@ rpc mt5_new_account => sub {
         if (ref $setting eq 'HASH' and ($setting->{group} // '') eq $group) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'MT5CreateUserError',
-                    message_to_client => localize('You already have a [_1] account [_2]', $account_type, $login)});
+                    message_to_client => localize('You already have a [_1] account [_2].', $account_type, $login)});
         }
     }
 
