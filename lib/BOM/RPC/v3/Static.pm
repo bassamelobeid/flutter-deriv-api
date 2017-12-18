@@ -3,7 +3,8 @@ package BOM::RPC::v3::Static;
 use strict;
 use warnings;
 
-use Format::Util::Numbers;
+no indirect;
+
 use List::Util qw( min max );
 use List::UtilsBy qw(nsort_by);
 use Time::HiRes ();
@@ -13,18 +14,18 @@ use LandingCompany::Registry;
 use Format::Util::Numbers qw/financialrounding/;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
+use Unicode::UTF8 qw(decode_utf8);
+use JSON::MaybeXS;
 
 use BOM::RPC::Registry '-dsl';
 
+use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (request);
 use BOM::Database::ClientDB;
 use BOM::RPC::v3::Utility;
-
-# How wide each ICO histogram bucket is, in USD
-use constant ICO_BUCKET_SIZE => 0.20;
 
 rpc residence_list => sub {
     my $residence_countries_list;
@@ -86,64 +87,14 @@ sub _currencies_config {
     return \%currencies_config;
 }
 
+my $json = JSON::MaybeXS->new;
+
 sub live_open_ico_bids {
     my ($currency) = @_;
 
-    my $start = Time::HiRes::time();
     $currency //= 'USD';
-    my $clientdb = BOM::Database::ClientDB->new({
-        broker_code => 'CR',
-        operation   => 'replica',
-    });
-    my $bids = $clientdb->db->dbh->selectall_arrayref(<<'SQL', {Slice => {}});
-SELECT  acc.currency_code as "currency",
-        qbv.binaryico_number_of_tokens as "tokens",
-        qbv.binaryico_per_token_bid_price as "unit_price"
-FROM    bet.financial_market_bet_open AS fmb
-JOIN    transaction.account AS acc ON fmb.account_id = acc.id
-JOIN    transaction.transaction AS txn ON fmb.id = txn.financial_market_bet_id
-JOIN    data_collection.quants_bet_variables as qbv ON txn.id = qbv.transaction_id
-WHERE   fmb.bet_class = 'coinauction_bet'
-SQL
-
-    # Divide these items into buckets - currently hardcoded at currency equivalent of 20c
-    my %sum;
-    my $bucket_size = ICO_BUCKET_SIZE;
-    # Tiny adjustment to ensure bucket sizes are even
-    my $epsilon   = 0.001;
-    my $count     = 0;
-    my $total_usd = 0;
-    for my $bid (nsort_by { $_->{unit_price} } @$bids) {
-        my $unit_price_usd = financialrounding(
-            price => $currency,
-            in_USD($bid->{unit_price}, $bid->{currency}));
-
-        my $bucket = financialrounding(
-            price => 'USD',
-            $bucket_size * int(($epsilon + $unit_price_usd) / $bucket_size));
-        $sum{$bucket} += $unit_price_usd * $bid->{tokens};
-        $total_usd    += $unit_price_usd * $bid->{tokens};
-        $count        += $bid->{tokens};
-    }
-    my $app_config      = BOM::Platform::Runtime->instance->app_config;
-    my $minimum_bid_usd = financialrounding(
-        price => 'USD',
-        $app_config->system->suspend->ico_minimum_bid_in_usd
-    );
-    my $minimum_bid = financialrounding(
-        price => $currency,
-        amount_from_to_currency($minimum_bid_usd, USD => $currency));
-    stats_gauge('binary.ico.bids.count',     $count);
-    stats_gauge('binary.ico.bids.total_usd', $total_usd);
-    my $elapsed = 1000.0 * (Time::HiRes::time() - $start);
-    stats_timing('binary.ico.bids.calculation.elapsed', $elapsed);
-    return {
-        currency              => $currency,
-        histogram_bucket_size => $bucket_size,
-        minimum_bid           => $minimum_bid,
-        minimum_bid_usd       => $minimum_bid_usd,
-        histogram             => \%sum
-    };
+    my $status = BOM::Platform::RedisReplicated::redis_read()->get('ico::status::' . $currency) or return {};
+    return $json->decode(decode_utf8($status));
 }
 
 rpc website_status => sub {
@@ -168,7 +119,7 @@ rpc ico_status => sub {
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     my $ico_info   = live_open_ico_bids($currency);
     $ico_info->{final_price_usd} = $app_config->system->suspend->ico_final_price;
-    $ico_info->{final_price}     = amount_from_to_currency($ico_info->{final_price_usd}, USD => $currency);
+    $ico_info->{final_price}     = financialrounding('amount', $currency, amount_from_to_currency($ico_info->{final_price_usd}, USD => $currency));
     $ico_info->{ico_status}      = (
         $app_config->system->suspend->is_auction_ended
             or not $app_config->system->suspend->is_auction_started
@@ -180,6 +131,7 @@ rpc ico_status => sub {
     };
 
     $ico_info->{initial_deposit_percentage} = $app_config->system->suspend->ico_initial_deposit_percentage;
+    $ico_info->{is_claim_allowed}           = $app_config->system->suspend->ico_claim_allowed;
 
     return $ico_info;
 };
