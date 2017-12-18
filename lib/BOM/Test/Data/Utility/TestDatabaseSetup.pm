@@ -88,7 +88,7 @@ sub _migrate_changesets {
         }
     }
 
-    $self->_create_dbs unless $self->_restore_db_from_snapshot;
+    $self->_create_dbs unless $self->_restore_dbs_from_snapshot;
 
     foreach (@bouncer_dbs) {
         $b_db = $_;
@@ -232,7 +232,7 @@ sub _update_sequence_of {
     return $current_sequence_value;
 }
 
-sub _restore_db_from_snapshot {
+sub _restore_dbs_from_snapshot {
     my $self = shift;
     return 0 if !-f $self->snapshot;
 
