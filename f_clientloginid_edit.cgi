@@ -450,13 +450,14 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $new_value = substr($val, 0, 30);
             }
             next CLIENT_KEY if $new_value eq $doc->$document_field();
-            try {
+            my $set_success = try {
                 $doc->$document_field($new_value);
-            }
-            catch {
+                1;
+            };
+            if (not $set_success) {
                 print qq{<p style="color:red">ERROR: Could not set $document_field for doc $id with $val: $_</p>};
                 next CLIENT_KEY;
-            };
+            }
             $doc->db($client->set_db('write'));
             $doc->save;
             next CLIENT_KEY;
