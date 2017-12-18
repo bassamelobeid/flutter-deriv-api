@@ -18,6 +18,7 @@ use 5.010;
 use Moose;
 
 use BOM::Platform::RedisReplicated;
+use BOM::Platform::Chronicle;
 
 use Quant::Framework;
 use List::Util qw( first min max );
@@ -288,7 +289,7 @@ sub _get_decimate_from_cache {
 }
 
 sub _trading_calendar {
-    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
 }
 
 =head2 _get_raw_from_cache
