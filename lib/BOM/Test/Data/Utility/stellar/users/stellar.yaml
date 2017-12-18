@@ -1,0 +1,6 @@
+logging: 30
+migrate_from_0_3_2: false
+project_name: users
+stellar_url: postgresql://postgres:mRX1E3Mi00oS8LG@localhost:5436/stellar_data
+tracked_databases: [users]
+url: postgresql://postgres:mRX1E3Mi00oS8LG@localhost:5436/template1
