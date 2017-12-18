@@ -59,10 +59,6 @@ sub db_handler {
 sub _migrate_changesets {
     my $self = shift;
 
-    my $dbh = $self->db_handler('postgres');
-    $dbh->{RaiseError} = 1;    # die if we cannot perform any of the operations below
-    $dbh->{PrintError} = 0;
-
     # first teminate all other connections
     my $pooler = $self->db_handler('pgbouncer');
     $pooler->{RaiseError}        = 1;
@@ -96,70 +92,7 @@ sub _migrate_changesets {
         }
     }
 
-    my $snapshot_restored = $self->_restore_snapshot;
-
-    if (not $snapshot_restored) {
-        #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
-        {
-            local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /is not a PostgreSQL server process/; };
-            $dbh->do(
-                'select pid, pg_terminate_backend(pid) terminated
-               from pg_stat_get_activity(NULL::integer) s(datid, pid)
-              where pid<>pg_backend_pid()'
-            );
-        }
-        $dbh->do('drop database if exists ' . $self->_db_name);
-        $dbh->do('create database ' . $self->_db_name);
-        $dbh->disconnect();
-
-        my $m = DBIx::Migration->new({
-            'dsn'      => $self->dsn,
-            'dir'      => $self->_db_migrations_dir,
-            'username' => 'postgres',
-            'password' => $self->_connection_parameters->{'password'},
-        });
-        $m->migrate();
-
-        # apply DB functions
-        $m->psql(sort glob $self->_db_migrations_dir . '/functions/*.sql')
-            if -d $self->_db_migrations_dir . '/functions';
-
-        # migrate for collectordb schema
-        if ($self->_db_migrations_dir =~ /bom-postgres-clientdb/) {
-            $m = DBIx::Migration->new({
-                dsn                 => $self->dsn,
-                dir                 => '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/',
-                tablename_extension => 'collector',
-                username            => 'postgres',
-                password            => $self->_connection_parameters->{'password'},
-            });
-
-            $m->migrate();
-
-            # apply DB functions
-            $m->psql(sort glob '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/functions/*.sql')
-                if -d '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/functions';
-        }
-        if (-f $self->_db_migrations_dir . '/unit_test_dml.sql') {
-            $m->psql({
-                    before => "SET session_replication_role TO 'replica';\n",
-                    after  => ";\nSET session_replication_role TO 'origin';\n"
-                },
-                $self->_db_migrations_dir . '/unit_test_dml.sql'
-            );
-        }
-        # TODO the file devbox_server_user_mapping.sql was removed because it seems be useless. Will recover it back if necessary later.
-        if ((-f $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql') && $self->_db_name =~ m/_test/) {
-            $m->psql({
-                    before => "SET session_replication_role TO 'replica';\n",
-                    after  => ";\nSET session_replication_role TO 'origin';\n"
-                },
-                $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql'
-            );
-        }
-
-        $self->_create_snapshot;
-    }
+    $self->_create_dbs unless $self->_restore_db_from_snapshot;
 
     foreach (@bouncer_dbs) {
         $b_db = $_;
@@ -180,6 +113,75 @@ sub _migrate_changesets {
     }
 
     return 1;
+}
+
+sub _create_dbs {
+    my $self = shift;
+
+    my $dbh = $self->db_handler('postgres');
+    $dbh->{RaiseError} = 1;    # die if we cannot perform any of the operations below
+    $dbh->{PrintError} = 0;
+
+    #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
+    {
+        local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /is not a PostgreSQL server process/; };
+        $dbh->do(
+            'select pid, pg_terminate_backend(pid) terminated
+           from pg_stat_get_activity(NULL::integer) s(datid, pid)
+          where pid<>pg_backend_pid()'
+        );
+    }
+    $dbh->do('drop database if exists ' . $self->_db_name);
+    $dbh->do('create database ' . $self->_db_name);
+    $dbh->disconnect();
+
+    my $m = DBIx::Migration->new({
+        'dsn'      => $self->dsn,
+        'dir'      => $self->_db_migrations_dir,
+        'username' => 'postgres',
+        'password' => $self->_connection_parameters->{'password'},
+    });
+    $m->migrate();
+
+    # apply DB functions
+    $m->psql(sort glob $self->_db_migrations_dir . '/functions/*.sql')
+        if -d $self->_db_migrations_dir . '/functions';
+
+    # migrate for collectordb schema
+    if ($self->_db_migrations_dir =~ /bom-postgres-clientdb/) {
+        $m = DBIx::Migration->new({
+            dsn                 => $self->dsn,
+            dir                 => '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/',
+            tablename_extension => 'collector',
+            username            => 'postgres',
+            password            => $self->_connection_parameters->{'password'},
+        });
+
+        $m->migrate();
+
+        # apply DB functions
+        $m->psql(sort glob '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/functions/*.sql')
+            if -d '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/functions';
+    }
+    if (-f $self->_db_migrations_dir . '/unit_test_dml.sql') {
+        $m->psql({
+                before => "SET session_replication_role TO 'replica';\n",
+                after  => ";\nSET session_replication_role TO 'origin';\n"
+            },
+            $self->_db_migrations_dir . '/unit_test_dml.sql'
+        );
+    }
+    # TODO the file devbox_server_user_mapping.sql was removed because it seems be useless. Will recover it back if necessary later.
+    if ((-f $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql') && $self->_db_name =~ m/_test/) {
+        $m->psql({
+                before => "SET session_replication_role TO 'replica';\n",
+                after  => ";\nSET session_replication_role TO 'origin';\n"
+            },
+            $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql'
+        );
+    }
+
+    $self->_create_snapshot;
 }
 
 sub _migrate_file {
@@ -234,7 +236,7 @@ sub _update_sequence_of {
     return $current_sequence_value;
 }
 
-sub _restore_snapshot {
+sub _restore_db_from_snapshot {
     my $self = shift;
     return 0 if !-f $self->snapshot;
 
