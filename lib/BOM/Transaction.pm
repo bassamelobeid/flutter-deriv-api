@@ -26,6 +26,7 @@ use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Platform::Context qw(localize request);
+use BOM::Platform::RedisReplicated;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -602,6 +603,13 @@ sub buy {
         # otherwise the function re-throws the exception
         $error_status = $self->_recover($_);
     };
+    try {
+        my $contract = $self->contract;
+        BOM::Platform::RedisReplicated::redis_write()->publish('ico::bid' => $contract->shortcode) if $contract->is_binaryico;
+    }
+    catch {
+        warn "Failed to notify Redis about ICO bid (buy) - $_\n";
+    };
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     return $self->stats_stop(
@@ -864,6 +872,13 @@ sub sell {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         $error_status = $self->_recover($_);
+    };
+    try {
+        my $contract = $self->contract;
+        BOM::Platform::RedisReplicated::redis_write()->publish('ico::bid' => $contract->shortcode) if $contract->is_binaryico;
+    }
+    catch {
+        warn "Failed to notify Redis about ICO bid (sell) - $_\n";
     };
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 

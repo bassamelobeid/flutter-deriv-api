@@ -1184,8 +1184,8 @@ subtest 'country offerings validation' => sub {
             my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                     broker_code => 'CR',
                     residence   => $test_data->[0]});
-            my $unpermitted_duration   = $now->plus_time_interval($test_data->[1]);
-            my $permitted_duration = $unpermitted_duration->plus_time_interval($test_data->[3]);
+            my $unpermitted_duration = $now->plus_time_interval($test_data->[1]);
+            my $permitted_duration   = $unpermitted_duration->plus_time_interval($test_data->[3]);
             my $contract_args        = {
                 underlying   => create_underlying('R_100'),
                 bet_type     => 'CALL',
@@ -1226,7 +1226,8 @@ subtest 'country offerings validation' => sub {
             my $err = BOM::Transaction::Validation->new({
                     transaction => $transaction,
                     clients     => [$client]})->_validate_offerings_buy($client);
-            is $err->{'-message_to_client'}, 'Trading is not offered for this duration.', 'cannot buy financial instrument less than ' . $test_data->[1];
+            is $err->{'-message_to_client'}, 'Trading is not offered for this duration.',
+                'cannot buy financial instrument less than ' . $test_data->[1];
 
             $contract_args->{date_expiry} = $permitted_duration;
             $contract = produce_contract($contract_args);
