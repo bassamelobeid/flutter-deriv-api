@@ -56,6 +56,7 @@ my $config = {
         IcoNotStarted                 => 'The ICO has not yet started.',
         IcoNotAllowed                 => 'The ICO is not available for the account.',
         IcoExceptionThrown            => 'Sorry, your request could not be processed at this moment.',
+        IcoSuccessSellNotAllowed      => 'Successful bids cannot be cancelled after the auction has ended.',
         MarketIsClosed                => 'This market is presently closed.',
         MarketIsClosedTryVolatility   => 'This market is presently closed. Try out the Volatility Indices which are always open.',
         MarketNotOpen                 => 'The market must be open at the start time.',

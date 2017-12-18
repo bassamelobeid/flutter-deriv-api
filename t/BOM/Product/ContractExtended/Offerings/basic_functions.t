@@ -18,7 +18,7 @@ use List::MoreUtils qw( all none );
 use BOM::Product::Offerings::DisplayHelper;
 use LandingCompany::Offerings;
 
-my $o = LandingCompany::Offerings->get('costarica', {current_revision => 0});
+my $o               = LandingCompany::Offerings->get('costarica', {current_revision => 0});
 my $expected_levels = 4;
 my $offerings       = new_ok('BOM::Product::Offerings::DisplayHelper' => [{offerings => $o}]);
 
