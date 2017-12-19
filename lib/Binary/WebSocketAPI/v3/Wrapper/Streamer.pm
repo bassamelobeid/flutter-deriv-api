@@ -509,24 +509,28 @@ sub process_transaction_updates {
     ### new proposal_open_contract stream after buy
     ### we have to do it here. we have not longcode in payout.
     ### we'll start new bid stream if we have proposal_open_contract subscription and have bought a new contract
-    ($payload->{action_type} eq 'buy' ? _create_poc_stream($c, $payload) : Future->done)->then(sub {
-        my $args = {};
-        foreach my $type (keys %{$channel}) {
-            $args = (exists $channel->{$type}->{args}) ? $channel->{$type}->{args} : {};
+    ($payload->{action_type} eq 'buy' ? _create_poc_stream($c, $payload) : Future->done)->then(
+        sub {
+            my $args = {};
+            foreach my $type (keys %{$channel}) {
+                $args = (exists $channel->{$type}->{args}) ? $channel->{$type}->{args} : {};
 
-            _update_balance($c, $args, $payload, $channel->{$type}->{uuid})
-                if $type eq 'balance';
+                _update_balance($c, $args, $payload, $channel->{$type}->{uuid})
+                    if $type eq 'balance';
 
-            _update_transaction($c, $args, $payload, $channel->{$type}->{uuid})
-                if $type eq 'transaction';
+                _update_transaction($c, $args, $payload, $channel->{$type}->{uuid})
+                    if $type eq 'transaction';
 
-            ### proposal_open_contract stream. Type is UUID
-            _close_proposal_open_contract_stream($c, $args, $payload, $channel->{$type}->{contract_id}, $type)
-                if $type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/;
+                ### proposal_open_contract stream. Type is UUID
+                _close_proposal_open_contract_stream($c, $args, $payload, $channel->{$type}->{contract_id}, $type)
+                    if $type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/;
 
-        }
-        Future->done;
-    }, sub { warn "ERROR - @_" })->retain;
+            }
+            Future->done;
+        },
+        sub {
+            warn "ERROR - @_";
+        })->retain;
     return;
 }
 
@@ -574,48 +578,49 @@ sub _create_poc_stream {
 
     return Future->done unless $poc_args && $payload->{financial_market_bet_id};
 
-    return $c->longcode(
-        $payload->{short_code},
-        $payload->{currency_code}
-    )->then(sub {
-        my ($longcode) = @_;
-        $payload->{longcode} = $longcode
-            or warn "Had no longcode for "
-            . $payload->{short_code}
-            . " currency "
-            . $payload->{currency_code}
-            . " language "
-            . $c->stash('language');
-        Future->done;
-    }, sub {
-        my ($error, $category, @details) = @_;
-        warn "Longcode failure, falling back to placeholder text - $error ($category: @details)\n";
-        $payload->{longcode} = $c->l('Could not retrieve contract details');
-        Future->done;
-    })->then(sub {
-        my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::_pricing_channel_for_bid(
-            $c,
-            $poc_args,
-            {
-                shortcode   => $payload->{short_code},
-                currency    => $payload->{currency_code},
-                is_sold     => $payload->{sell_time} ? 1 : 0,
-                contract_id => $payload->{financial_market_bet_id},
-                buy_price   => $payload->{purchase_price},
-                account_id  => $payload->{account_id},
-                longcode => $payload->{longcode} || $payload->{payment_remark},
-                transaction_ids => {buy => $payload->{id}},
-                purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
-                sell_price      => undef,
-                sell_time       => undef,
-            });
+    return $c->longcode($payload->{short_code}, $payload->{currency_code})->then(
+        sub {
+            my ($longcode) = @_;
+            $payload->{longcode} = $longcode
+                or warn "Had no longcode for "
+                . $payload->{short_code}
+                . " currency "
+                . $payload->{currency_code}
+                . " language "
+                . $c->stash('language');
+            Future->done;
+        },
+        sub {
+            my ($error, $category, @details) = @_;
+            warn "Longcode failure, falling back to placeholder text - $error ($category: @details)\n";
+            $payload->{longcode} = $c->l('Could not retrieve contract details');
+            Future->done;
+        }
+        )->then(
+        sub {
+            my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::_pricing_channel_for_bid(
+                $c,
+                $poc_args,
+                {
+                    shortcode   => $payload->{short_code},
+                    currency    => $payload->{currency_code},
+                    is_sold     => $payload->{sell_time} ? 1 : 0,
+                    contract_id => $payload->{financial_market_bet_id},
+                    buy_price   => $payload->{purchase_price},
+                    account_id  => $payload->{account_id},
+                    longcode => $payload->{longcode} || $payload->{payment_remark},
+                    transaction_ids => {buy => $payload->{id}},
+                    purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
+                    sell_price      => undef,
+                    sell_time       => undef,
+                });
 
-warn "UUID $uuid is a pricing channel for bid generated via longcode stuff";
-        # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-        transaction_channel($c, 'subscribe', $payload->{account_id}, $uuid, $poc_args, $payload->{financial_market_bet_id})
-            if $uuid;
-        return Future->done;
-    });
+            warn "UUID $uuid is a pricing channel for bid generated via longcode stuff";
+            # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+            transaction_channel($c, 'subscribe', $payload->{account_id}, $uuid, $poc_args, $payload->{financial_market_bet_id})
+                if $uuid;
+            return Future->done;
+        });
 }
 
 sub _update_balance {

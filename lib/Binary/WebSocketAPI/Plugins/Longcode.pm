@@ -97,7 +97,7 @@ Example:
 sub longcode {
     my ($self, $c, $short_code, $currency_code) = @_;
     my $language = $c->stash('language') // die 'need a language';
-    die 'no currency' unless $currency_code;
+    die 'no currency'  unless $currency_code;
     die 'no shortcode' unless $short_code;
 
     # Return cached value immediately
