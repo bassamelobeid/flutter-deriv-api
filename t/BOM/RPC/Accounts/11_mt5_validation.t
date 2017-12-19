@@ -64,7 +64,7 @@ subtest 'new account' => sub {
     delete $params->{args}->{mt5_account_type};
     $c->call_ok($method, $params)->has_error->error_message_is('Invalid sub account type.', 'Sub account mandatory for financial');
 
-    $params->{args}->{mt5_account_type} = 'stp';
+    $params->{args}->{mt5_account_type} = 'cent';
     $c->call_ok($method, $params)
         ->has_error->error_message_is('Please complete financial assessment.', 'Financial assessment mandatory for financial account');
 
