@@ -72,7 +72,7 @@
     },
     "trading_period_start": {
       "type": "integer",
-      "description":"[For japan only] An epoch value of a predefined trading period start time"
+      "description":"An epoch value of a predefined trading period start time"
     },
     "product_type": {
       "type": "string",
