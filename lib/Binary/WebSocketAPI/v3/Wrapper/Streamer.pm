@@ -613,7 +613,6 @@ sub _create_poc_stream {
                     sell_time       => undef,
                 });
 
-            warn "UUID $uuid is a pricing channel for bid generated via longcode stuff";
             # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
             transaction_channel($c, 'subscribe', $payload->{account_id}, $uuid, $poc_args, $payload->{financial_market_bet_id})
                 if $uuid;
