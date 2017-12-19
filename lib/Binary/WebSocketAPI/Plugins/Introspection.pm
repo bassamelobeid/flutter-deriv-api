@@ -401,7 +401,15 @@ command divert => sub {
     $redis->get(
         'app_id::diverted',
         sub {
-            my ($redis, $ids) = @_;
+            my ($redis, $err, $ids) = @_;
+            if ($err) {
+                warn "Error reading diverted app IDs from Redis: $err\n";
+                return $f->fail(
+                    $err,
+                    redis => $app_id,
+                    $service
+                );
+            }
             # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
             # No value => no update.
             %Binary::WebSocketAPI::DIVERT_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))} if $ids;
@@ -449,7 +457,15 @@ command block => sub {
     $redis->get(
         'app_id::blocked',
         sub {
-            my ($redis, $ids) = @_;
+            my ($redis, $err, $ids) = @_;
+            if ($err) {
+                warn "Error reading blocked app IDs from Redis: $err\n";
+                return $f->fail(
+                    $err,
+                    redis => $app_id,
+                    $service
+                );
+            }
             %Binary::WebSocketAPI::BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))} if $ids;
             my $rslt = {blocked => \%Binary::WebSocketAPI::BLOCK_APP_IDS};
             if ($app_id) {

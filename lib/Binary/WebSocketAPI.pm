@@ -539,7 +539,11 @@ sub startup {
     $redis->get(
         'app_id::diverted',
         sub {
-            my ($redis, $ids) = @_;
+            my ($redis, $err, $ids) = @_;
+            if ($err) {
+                warn "Error reading diverted app IDs from Redis: $err\n";
+                return;
+            }
             return unless $ids;
             warn "Have diverted app_ids, applying: $ids\n";
             # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
@@ -549,7 +553,11 @@ sub startup {
     $redis->get(
         'app_id::blocked',
         sub {
-            my ($redis, $ids) = @_;
+            my ($redis, $err, $ids) = @_;
+            if ($err) {
+                warn "Error reading blocked app IDs from Redis: $err\n";
+                return;
+            }
             return unless $ids;
             warn "Have blocked app_ids, applying: $ids\n";
             %BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
