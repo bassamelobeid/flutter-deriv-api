@@ -624,7 +624,7 @@ subtest 'sell_expired_contracts', sub {
             contract      => $contract_expired,
             price         => $contract_expired->ask_price,
             amount_type   => 'payout',
-            unit          => $contract->payout,
+            payout          => 50,
             purchase_date => $now->epoch - (30*60+51),
         });
 
