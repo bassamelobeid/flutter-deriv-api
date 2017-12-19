@@ -243,13 +243,15 @@ rpc new_account_real => sub {
         if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/)
         and not $ico_only;
 
+    $client->residence($args->{residence}) unless $client->residence;
+
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'real', $args);
     return $error if $error;
 
-    my $residence = $client->residence;
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-    my $company = $countries_instance->gaming_company_for_country($residence) // $countries_instance->financial_company_for_country($residence);
-    my $broker  = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $company = $countries_instance->gaming_company_for_country($client->residence)
+        // $countries_instance->financial_company_for_country($client->residence);
+    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
     # EU clients signing up for ICO get a CR account with trading disabled
     $broker = 'CR' if $ico_only;
@@ -277,7 +279,7 @@ rpc new_account_real => sub {
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
         ip => $params->{client_ip} // '',
-        country => uc($params->{country_code} // ''),
+        country => uc($client->residence // ''),
         from_client => $client,
         user        => $user,
         details     => $details_ref->{details},
