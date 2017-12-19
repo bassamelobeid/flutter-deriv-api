@@ -1,6 +1,7 @@
 package BOM::OAuth::O;
 
 use strict;
+use warnings;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
@@ -11,19 +12,32 @@ use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any firstval);
 use HTML::Entities;
 use Format::Util::Strings qw( defang );
+use List::MoreUtils qw(none);
 
 use Client::Account;
 use LandingCompany::Registry;
+use Brands;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
+use BOM::OAuth::Helper;
 
 # fetch social login feature status from settings
 sub _is_social_login_suspended {
     return BOM::Platform::Runtime->instance->app_config->system->suspend->social_logins;
+}
+
+# determine availability status of social login feature
+sub _is_social_login_available {
+    my $self = shift;
+
+    return
+            !_is_social_login_suspended
+        and scalar @{$self->stash('login_providers')} > 0
+        and $self->stash('request')->country_code ne 'jp';
 }
 
 sub _oauth_model {
@@ -41,11 +55,13 @@ sub authorize {
     my $app         = $oauth_model->verify_app($app_id);
     return $c->_bad_request('the request was missing valid app_id') unless $app;
 
-    my $request_country_code = $c->{stash}->{request}->{country_code};
-
     # setup oneall callback url
     my $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
     $c->stash('oneall_callback' => $oneall_callback);
+
+    my $brand_name = BOM::OAuth::Helper->extract_brand_from_params($c->stash('request')->params) // $c->stash('brand')->name;
+    # load available networks for brand
+    $c->stash('login_providers' => Brands->new(name => $brand_name)->login_providers);
 
     my $client;
     # try to retrieve client from session
@@ -61,7 +77,7 @@ sub authorize {
         $client = $c->_get_client;
     } elsif ($c->session('_oneall_user_id')) {
         # Prevent Japan IP access social login feature.
-        if ($request_country_code ne 'jp') {
+        if ($c->stash('request')->country_code ne 'jp') {
             # Get client from Oneall Social Login.
             my $oneall_user_id = $c->session('_oneall_user_id');
             $client = $c->_login($app, $oneall_user_id) or return;
@@ -70,34 +86,31 @@ sub authorize {
         }
     }
 
-    my $brand_name = $c->stash('brand')->name;
+    # detect and validate social_login param if provided
+    if (my $method = $c->param('social_signup')) {
+        return $c->_bad_request('the request was missing valid social login method')
+            unless grep { $method eq $_ } @{$c->stash('login_providers')};
+        $c->stash('login_method' => $method);
+    }
 
-    # show error when no client found in session
-    # show login form
-    return $c->render(
-        template   => _get_login_template_name($brand_name),
-        layout     => $brand_name,
-        app        => $app,
-        error      => delete $c->session->{_oneall_error} || '',
-        csrf_token => $c->csrf_token,
-        r          => $c->stash('request'),
-        # prevent feature rendering
-        social_login => (not _is_social_login_suspended and $request_country_code ne 'jp'),
-    ) unless $client;
+    my %template_params = (
+        template         => _get_login_template_name($brand_name),
+        layout           => $brand_name,
+        app              => $app,
+        r                => $c->stash('request'),
+        csrf_token       => $c->csrf_token,
+        use_social_login => $c->_is_social_login_available,
+        login_method     => $c->stash('login_method'),
+        login_providers  => $c->stash('login_providers'),
+    );
+
+    # show error when no client found in session show login form
+    if (!$client) {
+        $template_params{error} = delete $c->session->{_oneall_error} || '';
+        return $c->render(%template_params);
+    }
 
     my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
-
-    # show error if stash brand name is not in the list
-    # of allowed brands for landing company
-    return $c->render(
-        template     => _get_login_template_name($brand_name),
-        layout       => $brand_name,
-        app          => $app,
-        error        => localize('This account is unavailable.'),
-        r            => $c->stash('request'),
-        csrf_token   => $c->csrf_token,
-        social_login => (not _is_social_login_suspended and $request_country_code ne 'jp'),
-    ) if grep { $brand_name ne $_ } @{$client->landing_company->allowed_for_brands};
 
     my $redirect_uri = $app->{redirect_uri};
 
@@ -177,9 +190,10 @@ sub _login {
 
     my ($user, $last_login, $err, $client);
 
-    my $email    = defang($c->param('email'));
-    my $password = $c->param('password');
-    my $brand    = $c->stash('brand');
+    my $email      = defang($c->param('email'));
+    my $password   = $c->param('password');
+    my $brand      = $c->stash('brand');
+    my $brand_name = BOM::OAuth::Helper->extract_brand_from_params($c->stash('request')->params) // $brand->name;
 
     # TODO get rid of LOGIN label
     LOGIN:
@@ -236,13 +250,7 @@ sub _login {
             $client = firstval { !exists $result->{self_excluded}->{$_->loginid} } (@clients);
         }
 
-        my $lc = $client->landing_company;
-        if (grep { $brand->name ne $_ } @{$lc->allowed_for_brands}) {
-            $err = localize('This account is unavailable.');
-        } elsif (
-            grep {
-                $client->loginid =~ /^$_/
-            } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}
+        if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}
             or ($oneall_user_id and _is_social_login_suspended))
         {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
@@ -255,13 +263,15 @@ sub _login {
 
     if ($err) {
         $c->render(
-            template     => _get_login_template_name($brand->name),
-            layout       => $brand->name,
-            app          => $app,
-            error        => $err,
-            r            => $c->stash('request'),
-            csrf_token   => $c->csrf_token,
-            social_login => (not _is_social_login_suspended and $c->{stash}->{request}->{country_code} ne 'jp'),
+            template         => _get_login_template_name($brand_name),
+            layout           => $brand_name,
+            app              => $app,
+            error            => $err,
+            r                => $c->stash('request'),
+            csrf_token       => $c->csrf_token,
+            use_social_login => $c->_is_social_login_available,
+            login_providers  => $c->stash('login_providers'),
+            login_method     => $c->stash('login_method'),
         );
         return;
     }

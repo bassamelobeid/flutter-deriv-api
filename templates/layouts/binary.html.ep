@@ -22,12 +22,10 @@
     <link rel="icon" type="image/png" sizes="32x32" href="https://style.binary.com/images/favicons/favicon-32x32.png">
 
     <script type="text/javascript">
-        var oneall_subdomain = 'binary';
-
-        /* The library is loaded asynchronously */
         var oa = document.createElement('script');
-        oa.type = 'text/javascript'; oa.async = true;
-        oa.src = '//' + oneall_subdomain + '.api.oneall.com/socialize/library.js?lang=<%= ($r->language eq "ZH_CN" || $r->language eq "ZH_TW") ? "zh" : lc($r->language) %>';
+        oa.type = 'text/javascript';
+        oa.async = false;
+        oa.src = '//binary.api.oneall.com/socialize/library.js?lang=<%= ($r->language eq "ZH_CN" || $r->language eq "ZH_TW") ? "zh" : lc($r->language) %>';
         var s = document.getElementsByTagName('script')[0];
         s.parentNode.insertBefore(oa, s);
     </script>

@@ -7,6 +7,14 @@
         <script type="text/javascript" src="https://style.champion-fx.com/oauth.js"></script>
         <link rel="icon" type="image/png" sizes="16x16" href="http://www.champion-fx.com/assets/images/favicons/CFX_favicon16.png">
         <link rel="icon" type="image/png" sizes="32x32" href="http://www.champion-fx.com/assets/images/favicons/CFX_favicon32.png">
+        <script type="text/javascript">
+            var oa = document.createElement('script');
+            oa.type = 'text/javascript';
+            oa.async = false;
+            oa.src = '//binary.api.oneall.com/socialize/library.js?lang=<%= ($r->language eq "ZH_CN" || $r->language eq "ZH_TW") ? "zh" : lc($r->language) %>';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(oa, s);
+        </script>
     </head>
     <body class="oauth">
         <div>
