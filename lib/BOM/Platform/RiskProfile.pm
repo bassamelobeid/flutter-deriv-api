@@ -289,7 +289,7 @@ sub _offerings_obj {
     my $landing_company_short = shift // 'costarica';
     my $country_code          = shift // '';
 
-    return LandingCompany::Registry::get($landing_company)->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+    return LandingCompany::Registry::get($landing_company_short)->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 }
 
 no Moose;
