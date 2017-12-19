@@ -1,3 +1,14 @@
+
+=head1 NAME
+
+BOM::Platform::Locale
+
+=head1 DESCRIPTION
+
+Package containing functions to support locality-related actions.
+
+=cut
+
 package BOM::Platform::Locale;
 
 use strict;
@@ -21,6 +32,28 @@ sub translate_salutation {
 
     return $translated_titles{uc $provided} || $provided;
 }
+
+=head2 get_state_option
+
+    $list_of_states = get_state_option($country_code)
+
+Given a 2-letter country code, returns a list of states for that country.
+
+Takes a scalar containing a 2-letter country code.
+
+Returns an arrayref of hashes, alphabetically sorted by the states in that country. 
+
+Each hash contains the following keys:
+
+=over 4
+
+=item * text (Name of state)
+
+=item * value (Index of state when sorted alphabetically)
+
+=back
+
+=cut
 
 sub get_state_option {
     my $country_code = shift or return;
@@ -101,10 +134,25 @@ sub get_state_option {
     return \@options;
 }
 
-=head get_state_by_id
+=head2 get_state_by_id
 
-Lookup full state name by state id and residence
-Returns undef when state is not found
+    $state_name = get_state_by_id($id, $residence)
+
+Lookup full state name by state id and residence.
+
+Returns undef when state is not found.
+
+Takes two scalars:
+
+=over 4
+
+=item * id (ID of a state, for example, 'BA' for Bali)
+
+=item * residence (2-letter country code, for example, 'id' for Indonesia)
+
+=back
+
+Returns the full name of the state if found (e.g. Bali), or undef otherwise.
 
 Usage: get_state_by_id('BA', 'id') => Bali
 
