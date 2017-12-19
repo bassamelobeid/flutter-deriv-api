@@ -150,7 +150,7 @@ has unit => (
 
 sub _build_unit {
     my $self = shift;
-    return $self->contract->is_binary ? 0 : $self->contract->unit;
+    return $self->contract->is_binary ? 1 : $self->contract->unit;
 }
 
 has amount_type => (
@@ -486,7 +486,7 @@ sub prepare_bet_data_for_buy {
     $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
-        quantity          => 1,
+        quantity          => $self->unit,
         short_code        => scalar $contract->shortcode,
         buy_price         => $self->price,
         remark            => $self->comment->[0] || '',
@@ -499,8 +499,6 @@ sub prepare_bet_data_for_buy {
         settlement_time   => scalar $contract->date_settlement->db_timestamp,
         payout_price      => scalar $self->payout,
     };
-
-    $bet_params->{quantity} = $contract->unit if not $contract->is_binary;
 
     $bet_params->{expiry_daily} = 1 if $contract->expiry_daily;
     $bet_params->{fixed_expiry} = 1 if $contract->fixed_expiry;
@@ -799,7 +797,7 @@ sub prepare_bet_data_for_sell {
         id         => scalar $self->contract_id,
         sell_price => scalar $self->price,
         sell_time  => scalar $contract->date_pricing->db_timestamp,
-        quantity   => $contract->is_binary ? 1 : $contract->unit,
+        quantity   => $self->unit,
         $contract->category_code eq 'asian' && $contract->is_after_settlement
         ? (absolute_barrier => scalar $contract->barrier->as_absolute)
         : (),
@@ -1452,8 +1450,7 @@ sub sell_expired_contracts {
                     ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute
                     if $contract->category_code eq 'asian' and $contract->is_after_settlement;
-                $bet->{quantity} = 1;
-                $bet->{quantity} = $contract->unit if not $contract->is_binary;
+                $bet->{quantity} = $self->unit;
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
@@ -1477,7 +1474,7 @@ sub sell_expired_contracts {
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
                 @{$bet}{qw/sell_price sell_time is_expired/} = ($bet->{buy_price}, $now->db_timestamp, $contract->is_expired);
-                $bet->{quantity} = $contract->is_binary ? 1 : $contract->unit;
+                $bet->{quantity} = $self->unit;
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
