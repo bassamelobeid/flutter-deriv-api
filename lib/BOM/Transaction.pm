@@ -499,6 +499,10 @@ sub prepare_bet_data_for_buy {
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
         $bet_params->{binaryico_number_of_tokens}    = $contract->binaryico_number_of_tokens;
         $bet_params->{binaryico_per_token_bid_price} = $contract->binaryico_per_token_bid_price;
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_RESET_BET) {
+        if ($contract->barrier) {
+            $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
+        }
     } else {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
