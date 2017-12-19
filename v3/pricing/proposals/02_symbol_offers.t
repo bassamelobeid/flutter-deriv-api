@@ -20,18 +20,21 @@ initialize_realtime_ticks_db();
 use Finance::Asset;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY);
 my $now = Date::Utility->new;
-BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', $now);
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxUSDJPY',
+    epoch      => $_,
+    quote      => 100,
+}) for ($now->minus_time_interval('366d')->epoch, $now->epoch);
+
+my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', $now);
+BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_barriers('frxUSDJPY', $_) for @$tp;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
         recorded_date => $now
     });
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
-    epoch      => $now->epoch,
-    quote      => 100,
-});
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxEURUSD', $now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -40,12 +43,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => 'frxEURUSD',
         recorded_date => $now
     });
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxEURUSD',
-    epoch      => $now->epoch,
-    quote      => 100,
-});
-
 my $t = build_wsapi_test({language => 'EN'});
 
 # test payout_currencies

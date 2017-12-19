@@ -62,8 +62,7 @@ my $contract_type_pairs = {
 };
 
 my $trading_frames = {};
-
-BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, Date::Utility->new);
+my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for($symbol, Date::Utility->new);
 initialize_realtime_ticks_db();
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY);
@@ -84,16 +83,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => $symbol,
         recorded_date => $now
     });
-
-#Add extra tick for 2 minutes, this is because for USDJPY the minimum duration
-#was increase from 1 to 3 minutes
-for (my $cnt = 0; $cnt < 3; $cnt += 1) {
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => $symbol,
-        epoch      => $now->epoch + 60 * $cnt,
-        quote      => 100,
-    });
-}
 
 my $t = build_wsapi_test();
 
@@ -161,7 +150,8 @@ SKIP: {
 }
 
 # Regenerate trading periods here to try avoid below bail out.
-BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, Date::Utility->new);
+BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables();
+BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for($symbol, Date::Utility->new);
 
 $contracts_for = $t->await::contracts_for({
     "contracts_for"   => $symbol,
@@ -227,11 +217,11 @@ SKIP: {
         $proposal_array_req_tpl->{amount}        = 1000;
         $proposal_array_req_tpl->{barriers}      = [{barrier => 111}];
         $proposal_array_req_tpl->{contract_type} = ['CALLE'];
-
+        $proposal_array_req_tpl->{product_type}  = 'multi_barrier';
         $response = $t->await::proposal_array($proposal_array_req_tpl);
         test_schema('proposal_array', $response);
 
-        ok $response->{proposal_array}{proposals}{CALLE}[0]{ask_price}, "proposal is ok, price presented";
+        is $response->{proposal_array}{proposals}{CALLE}[0]{error}{message}, 'Invalid expiry time.',  "ContractBuyValidationError : Invalid expiry time";
 
         $proposal_array_req_tpl->{barriers} = [{barrier => 111}];
 # Here we reset the amount back to 100 to ensure we get the minimum stake error for the next test.
