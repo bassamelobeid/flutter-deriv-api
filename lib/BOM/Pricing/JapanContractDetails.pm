@@ -67,9 +67,7 @@ sub verify_with_id {
         });
     my $pricing_engine_name = $priced_at_start->pricing_engine_name;
     return {error => "Can not obtain pricing parameter for this contract as we are not supporting this pricing engine " . $pricing_engine_name}
-        unless ($pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex'
-        and $pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
-        and $pricing_engine_name eq 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated');
+        if $pricing_engine_name !~ /(Forex|EuropeanDigitalSlope|VannaVolga)/;
 
     my $action_type     = $details->{action_type};
     my $requested_price = $details->{order_price};
