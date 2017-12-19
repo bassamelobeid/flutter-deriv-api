@@ -48,7 +48,7 @@ $redis->zadd('DECIMATE_frxUSDJPY_15s_DEC', $_->{epoch}, $encoder->encode($_)) fo
 my $response;
 
 my $currency = "USD";
-my $lc       = 'costarica';
+my $lc       = 'japan';
 my $pt       = 'multi_barrier';
 my $symbol   = "frxUSDJPY";
 
@@ -217,7 +217,6 @@ SKIP: {
         $proposal_array_req_tpl->{amount}        = 1000;
         $proposal_array_req_tpl->{barriers}      = [{barrier => 111}];
         $proposal_array_req_tpl->{contract_type} = ['CALLE'];
-        $proposal_array_req_tpl->{product_type}  = 'multi_barrier';
         $response = $t->await::proposal_array($proposal_array_req_tpl);
         test_schema('proposal_array', $response);
 
@@ -233,6 +232,7 @@ SKIP: {
         $proposal_array_req_tpl->{barriers} = [{barrier => 109}];
         $response = $t->await::proposal_array($proposal_array_req_tpl);
         test_schema('proposal_array', $response);
+        $DB::single=1;
         ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : This contract offers no return.";
     };
 
