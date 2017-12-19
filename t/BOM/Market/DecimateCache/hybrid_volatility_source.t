@@ -11,9 +11,9 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Market::DataDecimate;
 use Date::Utility;
-use Net::EmptyPort qw(empty_port);
-use BOM::Feed::Distributor;
+use JSON::XS qw/encode_json/;
 
+my $dc = BOM::Market::DataDecimate->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
     {
@@ -27,7 +27,6 @@ subtest 'hybrid fetch on tuesday where monday is a holiday' => sub {
     fill_distributor_ticks(\@ticks);
     my @decimate_ticks = map { +{symbol => 'frxUSDJPY', epoch => $_, quote => 99} } ($tuesday->epoch .. $tuesday->plus_time_interval('30m')->epoch);
     fill_decimate_ticks(\@decimate_ticks);
-    my $dc = BOM::Market::DataDecimate->new;
 
     foreach my $test ([
             $tuesday->minus_time_interval('20m'),
@@ -145,16 +144,37 @@ sub fill_decimate_ticks {
     }
 }
 
+my $now;
 sub fill_distributor_ticks {
     my $ticks = shift;
-    my $dist;
 
-    for (@$ticks) {
-        set_absolute_time($_->{epoch});
-        $dist //= BOM::Feed::Distributor->new(
-            no_bad_ticks_log => 1,
-            port             => empty_port(),
-        );
-        $dist->_save_tick_to_redis($_);
+    $now = $ticks->[0]->{epoch};
+    for my $tick (@$ticks) {
+        set_absolute_time($tick->{epoch});
+
+        my $redis         = $dc->redis_write();
+        $redis->set('Distributor::QUOTE::' . $tick->{symbol}, encode_json($tick));
+
+        # on first 20-minute of a trading session we will use mt5 feed to calculate volatility if previous day is not a trading day.
+        # Saving 31-minute worth of ticks.
+        my $key = $dc->_make_key($tick->{symbol}, 0, 1);
+        my $encoded_tick = $dc->encoder->encode($tick);
+        $redis->multi;
+        $redis->zadd($key, $tick->{epoch}, $encoded_tick);
+        $redis->zremrangebyscore($key, -inf, $tick->{epoch} - 31 * 60);
+
+        my $time = time;
+        if ($time == _next_interval()) {
+            my $decimated_key = $dc->_make_key($tick->{symbol}, 1, 1);
+            $redis->zadd($decimated_key, $tick->{epoch}, $encoded_tick);
+            $redis->zremrangebyscore($decimated_key, -inf, $tick->{epoch} - 31 * 60);
+            $now = $time;
+        }
+        $redis->exec;
     }
+}
+
+sub _next_interval {
+    my $decimate_interval = $dc->sampling_frequency->seconds;
+    return $now - ($now % $decimate_interval) + ($decimate_interval);
 }
