@@ -158,7 +158,7 @@ rpc mt5_new_account => sub {
     if ($account_type eq 'demo') {
         # demo will have demo for financial and demo for gaming
         if ($mt5_account_type) {
-            return $invalid_sub_type_error unless ($mt5_account_type =~ /^cent|standard|stp$/);
+            return $invalid_sub_type_error unless ($mt5_account_type =~ /^standard|stp$/);
 
             return BOM::RPC::v3::Utility::permission_error() if (($mt_company = $get_company_name->('financial')) eq 'none');
 
@@ -167,6 +167,7 @@ rpc mt5_new_account => sub {
             return BOM::RPC::v3::Utility::permission_error() if (($mt_company = $get_company_name->('gaming')) eq 'none');
             $group = 'demo\\' . $mt_company;
         }
+
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
         # 5 Sept 2016: only CR and Champion fully authenticated client can open MT real a/c
         return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ /^costarica|champion$/);
@@ -174,7 +175,7 @@ rpc mt5_new_account => sub {
         return BOM::RPC::v3::Utility::permission_error() if (($mt_company = $get_company_name->($account_type)) eq 'none');
 
         if ($account_type eq 'financial') {
-            return $invalid_sub_type_error unless $mt5_account_type =~ /^cent|standard|stp$/;
+            return $invalid_sub_type_error unless $mt5_account_type =~ /^standard|stp$/;
 
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'FinancialAssessmentMandatory',
