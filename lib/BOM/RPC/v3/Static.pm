@@ -1,3 +1,14 @@
+
+=head1 NAME
+
+BOM::RPC::v3::Static
+
+=head1 DESCRIPTION
+
+This is a package containing various utility functions for bom-rpc.
+
+=cut
+
 package BOM::RPC::v3::Static;
 
 use strict;
@@ -26,6 +37,28 @@ use BOM::Platform::Config;
 use BOM::Platform::Context qw (request);
 use BOM::Database::ClientDB;
 use BOM::RPC::v3::Utility;
+
+=head2 residence_list
+
+    $residence_list = residence_list()
+
+Does not take in any parameters.
+
+Returns an array of hashes, sorted by country name. Each contains the following:
+
+=over 4
+
+=item * text (country name)
+
+=item * value (2-letter country code)
+
+=item * phone_idd (International Direct Dialing code)
+
+=item * disabled (optional, only appears for countries where clients cannot open accounts)
+
+=back
+
+=cut
 
 rpc residence_list => sub {
     my $residence_countries_list;
@@ -58,6 +91,40 @@ rpc residence_list => sub {
 
     return $residence_countries_list;
 };
+
+=head2 states_list
+
+    $list_of_states = states_list({states_list => $states})
+
+Given a 2-letter country code, returns the list of states in a given country.
+
+Takes a single C<$params> hashref containing the following keys:
+
+=over 4
+
+=item * args which contains the following keys:
+
+=over 4
+
+=item * states_list (a 2-letter country code)
+
+=back
+
+=back
+
+Returns an array of hashes, alphabetically sorted by the states in that country. 
+
+Each hash contains the following keys:
+
+=over 4
+
+=item * text (Name of state)
+
+=item * value (Index of state when sorted alphabetically)
+
+=back
+
+=cut
 
 rpc states_list => sub {
     my $params = shift;
