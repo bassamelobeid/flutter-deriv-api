@@ -8,7 +8,10 @@ use Try::Tiny;
 use DBIx::Migration;
 use BOM::Test;
 
-use constant SNAPSHOT_DIR => '/tmp/test-db-snapshots';
+use constant {
+    SNAPSHOT_DIR => '/tmp/test-db-snapshots',
+    STELLAR_DIR  => '/home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/',
+};
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
@@ -236,21 +239,20 @@ sub _restore_dbs_from_snapshot {
     my $self = shift;
     return 0 if !-f $self->snapshot;
 
-    my $connection_settings = $self->_connection_parameters;
-    system("cd /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/" . $self->_db_name . "; stellar restore >/dev/null");
-    return 1;
+    my $stellar_dir = $self->stellar_dir;
+
+    # Return true if the snapshot is successfully restored
+    return !system("cd $stellar_dir && stellar restore >/dev/null");
 }
 
 sub _create_snapshot {
     my $self = shift;
     mkdir SNAPSHOT_DIR if !-d SNAPSHOT_DIR;
 
-    my $connection_settings = $self->_connection_parameters;
-    system(   "cd /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/"
-            . $self->_db_name
-            . "; stellar snapshot >/dev/null; touch "
-            . $self->snapshot);
-    return;
+    my ($stellar_dir, $snapshot) = ($self->stellar_dir, $self->snapshot);
+
+    # Touch the snapshot file if the snapshot is successfully created
+    return !system("cd $stellar_dir && stellar snapshot >/dev/null && touch $snapshot");
 }
 
 sub BUILD {
@@ -263,5 +265,7 @@ sub BUILD {
 }
 
 sub snapshot { return SNAPSHOT_DIR . "/" . shift->_db_name . ".snapshot" }
+
+sub stellar_dir { return STELLAR_DIR . "/" . shift->_db_name }
 
 1;
