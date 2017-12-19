@@ -370,6 +370,7 @@ subtest 'buy a bet', sub {
                 underlying => $underlying_R50,
                 bet_type   => 'RESETCALL',
                 currency   => 'USD',
+                payout     => 50,
                 duration   => '30m',
                 current_tick => $tick,
         });
@@ -378,6 +379,7 @@ subtest 'buy a bet', sub {
             client        => $cl,
             contract      => $contract,
             price         => $contract->ask_price,
+            payout        => $contract->payout,
             amount_type   => 'payout',
             source        => 19,
             purchase_date => Date::Utility->new(),
@@ -487,7 +489,7 @@ subtest 'sell a bet', sub {
                 underlying => $underlying_R50,
                 bet_type   => 'RESETCALL',
                 currency   => 'USD',
-                unit       => 1000,
+                payout     => 50,
                 duration   => '30m',
                 current_tick => $tick,
                 entry_tick   => $tick,
@@ -609,6 +611,7 @@ subtest 'sell_expired_contracts', sub {
             underlying   => $underlying_R50,
             bet_type     => 'RESETCALL',
             currency     => 'USD',
+            payout       => 50,
             date_start   => ($now->epoch - 50) - (30*60),
             date_expiry  => $now->epoch - 50,
             current_tick => $tick,
@@ -620,8 +623,8 @@ subtest 'sell_expired_contracts', sub {
             client        => $cl,
             contract      => $contract_expired,
             price         => $contract_expired->ask_price,
-            amount_type   => 'unit',
-            unit          => 10,
+            amount_type   => 'payout',
+            unit          => $contract->payout,
             purchase_date => $now->epoch - (30*60+51),
         });
 
