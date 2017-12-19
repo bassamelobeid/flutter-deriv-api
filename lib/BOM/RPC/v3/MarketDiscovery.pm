@@ -30,7 +30,10 @@ rpc active_symbols => sub {
 
     my $offerings_obj;
     if ($token_details and exists $token_details->{loginid}) {
-        my $client = Client::Account->new({loginid => $token_details->{loginid}});
+        my $client = Client::Account->new({
+            loginid      => $token_details->{loginid},
+            db_operation => 'replica'
+        });
         $product_type //= $client->landing_company->default_offerings;
         my $method = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
         $offerings_obj = $client->landing_company->$method($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
