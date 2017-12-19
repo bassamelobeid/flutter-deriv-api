@@ -376,8 +376,6 @@ Returns any of the following:
 
 =item * C<code> stating C<MT5APISuspendedError>.
 
-=item * C<message_to_client> that says C<MT5 API calls are suspended.>.
-
 =back
 
 =item * Permission denied
@@ -386,8 +384,6 @@ Returns any of the following:
 
 =item * C<code> stating C<PermissionDenied>.
 
-=item * C<message_to_client> that says C<Permission denied.>.
-
 =back
 
 =item * Retrieval Error
@@ -395,8 +391,6 @@ Returns any of the following:
 =over 4
 
 =item * C<code> stating C<MT5PasswordCheckError>.
-
-=item * C<message_to_client> that says C<Network error.>.
 
 =back
 
@@ -480,8 +474,6 @@ Returns any of the following:
 
 =item * C<code> stating C<MT5APISuspendedError>.
 
-=item * C<message_to_client> that says C<MT5 API calls are suspended.>.
-
 =back
 
 =item * Permission denied
@@ -490,8 +482,6 @@ Returns any of the following:
 
 =item * C<code> stating C<PermissionDenied>.
 
-=item * C<message_to_client> that says C<Permission denied.>.
-
 =back
 
 =item * Retrieval Error
@@ -499,8 +489,6 @@ Returns any of the following:
 =over 4
 
 =item * C<code> stating C<MT5PasswordChangeError>.
-
-=item * C<message_to_client> that says C<Network error.>.
 
 =back
 
