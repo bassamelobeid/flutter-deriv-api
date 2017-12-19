@@ -119,7 +119,7 @@ rpc ico_status => sub {
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     my $ico_info   = live_open_ico_bids($currency);
     $ico_info->{final_price_usd} = $app_config->system->suspend->ico_final_price;
-    $ico_info->{final_price}     = amount_from_to_currency($ico_info->{final_price_usd}, USD => $currency);
+    $ico_info->{final_price}     = financialrounding('amount', $currency, amount_from_to_currency($ico_info->{final_price_usd}, USD => $currency));
     $ico_info->{ico_status}      = (
         $app_config->system->suspend->is_auction_ended
             or not $app_config->system->suspend->is_auction_started
@@ -131,6 +131,7 @@ rpc ico_status => sub {
     };
 
     $ico_info->{initial_deposit_percentage} = $app_config->system->suspend->ico_initial_deposit_percentage;
+    $ico_info->{is_claim_allowed}           = $app_config->system->suspend->ico_claim_allowed;
 
     return $ico_info;
 };
