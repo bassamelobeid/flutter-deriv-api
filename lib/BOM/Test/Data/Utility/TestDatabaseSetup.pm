@@ -180,7 +180,7 @@ sub _create_dbs {
         );
     }
 
-    $self->_create_snapshot;
+    return $self->_create_snapshot;
 }
 
 sub _migrate_file {
