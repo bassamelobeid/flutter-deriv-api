@@ -283,7 +283,7 @@ sub setup_ticks {
                 "Distributor::QUOTE::$symbol",
                 Encode::encode_utf8(JSON::MaybeXS->new->encode({
                         quote => $quote,
-                        epcoh => $date->epoch,
+                        epoch => $date->epoch,
                     })));
         }
     }
