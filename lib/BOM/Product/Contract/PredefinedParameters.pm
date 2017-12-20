@@ -350,7 +350,8 @@ sub _get_spot {
       use Data::Dumper;
       warn "dump tick " . Dumper($tick_from_distributor_redis);
       warn "date_start epoch " . $date_start->epoch;
-        $redis_tick_from_date_start  = $date_start->epoch - $tick_from_distributor_redis->{epoch};
+      warn "tick from distributor redis epoch" . $tick_from_distributor_redis->{epoch};
+      $redis_tick_from_date_start  = $date_start->epoch - $tick_from_distributor_redis->{epoch};
     }
     my $tick_from_feeddb = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
     my $outdated_feeddb;
