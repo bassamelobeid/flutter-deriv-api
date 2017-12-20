@@ -405,7 +405,6 @@ sub calculate_limits {
         my @limits_arr = map { $_->{non_binary_contract_limit} } grep { exists $_->{non_binary_contract_limit}; } @{$non_binary_custom_limits[0]};
         my $custom_limit = min(@limits_arr);
         $limits{lookback_open_position_limit} = $custom_limit if defined $custom_limit;
-        $limits{lookback_quantity} = $self->unit * $self->contract->multiplier;
     }
 
     my $lim = $self->calculate_max_open_bets($client);
