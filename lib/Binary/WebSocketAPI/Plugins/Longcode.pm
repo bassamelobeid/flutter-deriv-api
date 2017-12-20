@@ -106,10 +106,10 @@ sub longcode {
         return Future->done($longcode);
     }
     my $req_key = $self->pending_request_key($currency_code, $language);
-    $log->tracef("Will look for currency code %s, language %s", $currency_code, $language);
+    $log->tracef("Will look for currency code %s, language %s shortcode %s", $currency_code, $language, $short_code);
     my $f = ($pending_short_codes_by_currency_and_language{$req_key}{$short_code} ||= Future::Mojo->new);
-    $self->trigger_longcode_lookup;
-    return $f;
+    $self->trigger_longcode_lookup($c);
+    return $f->retain;
 }
 
 =head2 trigger_longcode_lookup
@@ -210,6 +210,7 @@ sub process_next_batch {
                     }
                 }
                 $rpc_completion->done;
+                return;
             },
         });
     return $rpc_completion;
