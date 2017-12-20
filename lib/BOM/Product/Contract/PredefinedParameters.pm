@@ -345,13 +345,8 @@ sub _get_spot {
     my $redis_tick_json;
     my $redis_tick_from_date_start;
     if ($redis_tick_json = $redis->get('Distributor::QUOTE::' . $underlying->symbol)) {
-      $tick_from_distributor_redis = $json->decode(Encode::decode_utf8($redis_tick_json));
-      warn "got tick: " . $redis_tick_json;
-      use Data::Dumper;
-      warn "dump tick " . Dumper($tick_from_distributor_redis);
-      warn "date_start epoch " . $date_start->epoch;
-      warn "tick from distributor redis epoch" . $tick_from_distributor_redis->{epoch};
-      $redis_tick_from_date_start  = $date_start->epoch - $tick_from_distributor_redis->{epoch};
+        $tick_from_distributor_redis = $json->decode(Encode::decode_utf8($redis_tick_json));
+        $redis_tick_from_date_start  = $date_start->epoch - $tick_from_distributor_redis->{epoch};
     }
     my $tick_from_feeddb = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
     my $outdated_feeddb;
