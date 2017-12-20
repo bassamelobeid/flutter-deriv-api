@@ -494,6 +494,10 @@ sub _build_base_commission {
     }
     my $underlying_base = get_underlying_base_commission($args);
 
+    if (not $self->for_sale and $self->market->name eq 'volidx' and not $self->is_atm_bet and $self->remaining_time->seconds <= 60) {
+        $underlying_base = 0.02;
+    }
+
     return $underlying_base * $per_market_scaling / 100;
 }
 
