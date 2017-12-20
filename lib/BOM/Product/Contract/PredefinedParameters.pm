@@ -346,7 +346,7 @@ sub _get_spot {
     my $redis_tick_from_date_start;
     if ($redis_tick_json = $redis->get('Distributor::QUOTE::' . $underlying->symbol)) {
         $tick_from_distributor_redis = $json->decode(Encode::decode_utf8($redis_tick_json));
-        $redis_tick_from_date_start  = $date_start - $tick_from_distributor_redis->{epoch};
+        $redis_tick_from_date_start  = $date_start->epoch - $tick_from_distributor_redis->{epoch};
     }
     my $tick_from_feeddb = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
     my $outdated_feeddb;
@@ -358,7 +358,7 @@ sub _get_spot {
         $tick_from_feeddb = $underlying->spot_tick;
         $outdated_feeddb  = 1;
     }
-    my $feeddb_tick_from_date_start = $date_start - $tick_from_feeddb->epoch;
+    my $feeddb_tick_from_date_start = $date_start->epoch - $tick_from_feeddb->epoch;
 
     # We will compare the most recent tick from feedbd and also provider's redis and take the most recent one
     if (defined $tick_from_distributor_redis and $redis_tick_from_date_start >= 0 and $redis_tick_from_date_start < $feeddb_tick_from_date_start) {
