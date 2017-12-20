@@ -32,10 +32,16 @@ sub create_account {
     }
 
     my ($client, $error);
+    my $brand_name = $details->{brand_name} // request()->brand;
     try {
-        # default to virtual if residence is not set
+        # set virtual company if residence is provided otherwise use brand name to infer the broker code
+        my $default_virtual;
+        $default_virtual = 'champion-virtual' if $brand_name eq 'champion';
+        $default_virtual = 'virtual'          if $brand_name eq 'binary';
+        return {error => 'invalid brand company'} unless $default_virtual;
+
         my $company_name =
-            $residence ? Brands->new(name => request()->brand)->countries_instance->virtual_company_for_country($residence) : 'virtual';
+            $residence ? Brands->new(name => $brand_name)->countries_instance->virtual_company_for_country($residence) : $default_virtual;
 
         $client = Client::Account->register_and_return_new_client({
             broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],
