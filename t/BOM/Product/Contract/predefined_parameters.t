@@ -142,7 +142,6 @@ subtest 'predefined barriers' => sub {
     my $symbol = 'frxEURUSD';
     my $date   = Date::Utility->new("2015-08-24 00:00:00");
     setup_ticks($symbol, [[$date->minus_time_interval('400d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]]);
-
     my @inputs = ({
             match => {
                 contract_category => 'callput',
@@ -283,7 +282,7 @@ sub setup_ticks {
                 "Distributor::QUOTE::$symbol",
                 encode_json({
                         quote => $quote,
-                        epcoh => $date->epoch,
+                        epoch => $date->epoch,
                     }));
         }
     }
