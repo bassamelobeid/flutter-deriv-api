@@ -494,6 +494,9 @@ sub _build_base_commission {
     }
     my $underlying_base = get_underlying_base_commission($args);
 
+    # we are adding extra commission on these contracts for volatility indices because we have clients taking advantage of our fixed feed generation
+    # frequency (every 2-second a tick on the even second). By buying a 15-second  deep ITM contract on the even second, the actual contract duration is 14-second because
+    # we will always use the previous tick to settle the contract. Shorter deep ITM contract is more expensive, so the client is paying cheaper for a 14-second contract.
     if (not $self->for_sale and $self->market->name eq 'volidx' and not $self->is_atm_bet and $self->remaining_time->seconds < 60) {
         $underlying_base = 0.023;
     }
