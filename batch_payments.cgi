@@ -11,7 +11,7 @@ use Brands;
 use HTML::Entities;
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw(looks_like_number);
-use Scope::Guard qw/guard/;
+use Scope::Guard;
 
 use LandingCompany::Registry;
 
@@ -176,7 +176,7 @@ read_csv_row_and_callback(
             if (not $client_db->freeze) {
                 die "Account stuck in previous transaction $login_id";
             }
-            my $guard_scope = guard {
+            my $guard_scope = Scope::Guard::guard {
                 $client_db->unfreeze;
             };
 
