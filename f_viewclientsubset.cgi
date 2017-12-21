@@ -5,7 +5,7 @@ use strict;
 use warnings;
 no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
-use POSIX;
+use POSIX ();
 use Date::Utility;
 use Path::Tiny;
 use Brands;
