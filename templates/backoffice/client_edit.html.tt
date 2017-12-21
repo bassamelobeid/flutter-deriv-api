@@ -47,7 +47,7 @@ table#client_edit td{
 <table border="0" width="100%" id="client_edit">
     <tr>
         <td class="label">Email</td>
-        <td>: <b>[% client.email %]</b> (To edit client's email, <a href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | none %]">click here</a>)</td>
+        <td>: <b>[% client.email %]</b> [% IF !has_social_signup %](To edit client's email, <a href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | none %]">click here</a>)[% END %]</td>
     </tr>
     <tr>
         <td class="label">Social Signup</td>
