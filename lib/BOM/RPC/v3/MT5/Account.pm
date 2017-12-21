@@ -264,6 +264,73 @@ sub _check_logins {
     return 1;
 }
 
+=head2 mt5_get_settings
+
+    $user_mt5_settings = mt5_get_settings({
+        client  => $client,
+        args    => $args
+    })
+
+Takes a client object and a hash reference as inputs and returns the details of 
+the MT5 user, based on the MT5 login id passed.
+
+Takes the following (named) parameters as inputs:
+    
+=over 4
+
+=item * C<params> hashref that contains:
+
+=over 4
+
+=item * A Client::Account object under the key C<client>.
+
+=item * A hash reference under the key C<args> that contains the MT5 login id 
+under C<login> key.
+
+=back
+
+=back
+
+Returns any of the following:
+
+=over 4
+
+=item * A hashref error message that contains the following keys, based on the given error:
+
+=over 4
+
+=item * MT5 suspended
+
+=over 4
+
+=item * C<code> stating C<MT5APISuspendedError>.
+
+=back
+
+=item * Permission denied
+
+=over 4
+
+=item * C<code> stating C<PermissionDenied>.
+
+=back
+
+=item * Retrieval Error
+
+=over 4
+
+=item * C<code> stating C<MT5GetUserError>.
+
+=back
+
+=back
+
+=item * A hashref that contains the details of the user's MT5 account.
+
+=back
+
+=cut
+
 rpc mt5_get_settings => sub {
     my $params = shift;
 
@@ -306,6 +373,80 @@ sub _mt5_is_real_account {
     return $settings if ($settings->{group} // '') =~ /^real\\/;
     return;
 }
+
+=head2 mt5_set_settings
+
+$user_mt5_settings = mt5_set_settings({
+        client  => $client,
+        args    => $args
+    })
+    
+Takes a client object and a hash reference as inputs and returns the updated details of 
+the MT5 user, based on the MT5 login id passed, upon success.
+
+Takes the following (named) parameters as inputs:
+
+=over 4
+
+=item * C<params> hashref that contains:
+
+=over 4
+
+=item * A Client::Account object under the key C<client>.
+
+=item * A hash reference under the key C<args> that contains some of the following keys:
+
+=over 4
+
+=item * C<login> that contains the MT5 login id.
+
+=item * C<country> that contains the country code.
+
+=back
+
+=back
+
+=back
+
+Returns any of the following:
+
+=over 4
+
+=item * A hashref error message that contains the following keys, based on the given error:
+
+=over 4
+
+=item * MT5 suspended
+
+=over 4
+
+=item * C<code> stating C<MT5APISuspendedError>.
+
+=back
+
+=item * Permission denied
+
+=over 4
+
+=item * C<code> stating C<PermissionDenied>.
+
+=back
+
+=item * Update Error
+
+=over 4
+
+=item * C<code> stating C<MT5UpdateUserError>.
+
+=back
+
+=back
+
+=item * A hashref that contains the updated details of the user's MT5 account.
+
+=back
+    
+=cut
 
 rpc mt5_set_settings => sub {
     my $params = shift;
