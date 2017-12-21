@@ -1449,7 +1449,7 @@ sub sell_expired_contracts {
                     ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute
                     if $contract->category_code eq 'asian' and $contract->is_after_settlement;
-                $bet->{quantity} = $contract->is_binary ? 1 : $contract->unit;
+                $bet->{quantity} = ($contract->is_binaryico or $contract->is_binary) ? 1 : $contract->unit;
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
