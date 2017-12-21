@@ -50,14 +50,14 @@ test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_re
     '45.71', '65258.19';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
     'ONETOUCH', 'R_100', '2', 'm', '+200',
-    'Win payout if Volatility 100 Index touches entry spot plus 200.00 through 2 minutes after contract start time.', '11.50', '11.50', '65258.19';
+    'Win payout if Volatility 100 Index touches entry spot plus 200.00 through 2 minutes after contract start time.', '11.22', '11.22', '65258.19';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
     'ONETOUCH', 'R_100', '30', 'd', '69968.19', 'Win payout if Volatility 100 Index touches 69968.19 through close on 2016-09-08.', '79.49', '79.49',
     '65258.19';
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
     'EXPIRYMISS', 'R_100', '2', 'm', '+10', '-5',
     'Win payout if Volatility 100 Index ends outside entry spot minus 5.00 to entry spot plus 10.00 at 2 minutes after contract start time.',
-    '96.80', '96.80', '65258.19';
+    '96.76', '96.76', '65258.19';
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
     'EXPIRYRANGE', 'R_100', '30', 'd', '65968.19', '65068.19',
     'Win payout if Volatility 100 Index ends strictly between 65068.19 to 65968.19 at close on 2016-09-08.', '3.37', '3.37', '65258.19';
@@ -67,7 +67,7 @@ test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_re
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
     'UPORDOWN', 'R_100', '2', 'm', '+200', '-50',
     'Win payout if Volatility 100 Index goes outside entry spot minus 50.00 and entry spot plus 200.00 through 2 minutes after contract start time.',
-    '74.50', '74.50', '65258.19';
+    '73.99', '73.99', '65258.19';
 
 # frxUSDJPY
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
