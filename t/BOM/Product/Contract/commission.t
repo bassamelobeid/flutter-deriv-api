@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::MockModule;
-use Test::More tests => 6;
+use Test::More;
 use Test::Warnings;
 use Date::Utility;
 use JSON qw(to_json);
@@ -480,3 +480,23 @@ subtest 'flexible commission check for different markets' => sub {
     test_flexible_commission 'FTSE',      'indices',     10000;
 };
 
+subtest 'non ATM volatility indices variable commission structure' => sub {
+    my $args = {
+        bet_type => "CALL",
+        underlying => 'R_100',
+        duration => '59s',
+        payout => 100,
+        currency => 'USD',
+        barrier => 'S10P',
+    };
+    my $c = produce_contract($args);
+    is $c->base_commission, 2.3, 'base commission is 0.023 for less than 1-minute non ATM contract on R_100';
+    $args->{duration} = '60s';
+    $c = produce_contract($args);
+    is $c->base_commission, 1.5, 'base commission is 0.015 for 1-minute non ATM contract on R_100';
+    $args->{barrier} = 'S0P';
+    $args->{duration} = '59s';
+    is $c->base_commission, 1.5, 'base commission is 0.015 for less than 1-minute ATM contract on R_100';
+};
+
+done_testing;
