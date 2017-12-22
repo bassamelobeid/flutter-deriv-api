@@ -232,7 +232,7 @@ sub _initialize_contract_parameters {
 
     if (defined $pp->{tick_expiry}) {
         my $interval = 2 * $pp->{tick_count};
-        if ($pp->{underlying}->market->name eq 'volidx' and $pp->{barrier} ne 'S0P') {
+        if ($pp->{underlying}->market->name eq 'volidx') {
             my $start_epoch = $pp->{date_start}->epoch;
             my $adjustment = $start_epoch % 2 ? 1 : 2;
             $interval += $adjustment;
