@@ -525,7 +525,7 @@ sub _validate_start_and_expiry_date {
             push @blackout_checks,
                 [
                 [$start_epoch],
-                [[map { Date::Utility->new($pricing_date)->plus_time_interval($_)->epoch } qw(21h 23h)]],
+                [[map { Date::Utility->new($pricing_date)->plus_time_interval($_)->epoch } qw(21h 23h59m59s)]],
                 $ERROR_MAPPING->{TradingSuspendedSpecificHours}];
         }
     }
