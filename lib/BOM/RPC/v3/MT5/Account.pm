@@ -68,7 +68,7 @@ sub _throttle {
 
 # removes the database entry that limit requests to 1/minute
 # returns 1 if entry was present, 0 otherwise
-sub _reset_throttler {
+sub reset_throttler {
     my $loginid = shift;
     my $key     = 'MT5ACCOUNT::THROTTLE::' . $loginid;
     
