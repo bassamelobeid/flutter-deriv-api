@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use open qw[ :encoding(UTF-8) ];
-use POSIX;
+use POSIX ();
 use Path::Tiny;
 use BOM::Backoffice::GNUPlot;
 use Date::Utility;
