@@ -27,7 +27,7 @@ use BOM::Transaction;
 
 common_before_actions qw(auth);
 
-my $MT5_ACCOUNT_THROTTLE_KEY_PREFIX = 'MT5ACCOUNT::THROTTLE::';
+use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
 
 rpc mt5_login_list => sub {
     my $params = shift;
@@ -59,7 +59,7 @@ rpc mt5_login_list => sub {
 # limit number of requests to once per minute
 sub _throttle {
     my $loginid = shift;
-    my $key     = $MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
+    my $key     = MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
 
     return 1 if BOM::Platform::RedisReplicated::redis_read()->get($key);
 
@@ -72,7 +72,7 @@ sub _throttle {
 # returns 1 if entry was present, 0 otherwise
 sub reset_throttler {
     my $loginid = shift;
-    my $key     = $MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
+    my $key     = MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
     
     return BOM::Platform::RedisReplicated::redis_write->del($key);
 }
