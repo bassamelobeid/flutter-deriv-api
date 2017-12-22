@@ -395,18 +395,6 @@ sub calculate_limits {
         stats_inc('transaction.open_position_limit.failure');
     };
 
-    unless ($contract->is_binary) {
-        $limits{lookback_open_position_limit} = $static_config->{lookback_limits}{open_position_limits}{$currency};
-
-        my $rp                       = $contract->risk_profile;
-        my @cl_rp                    = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
-        my @non_binary_custom_limits = $rp->get_non_binary_limit_parameters(\@cl_rp);
-
-        my @limits_arr = map { $_->{non_binary_contract_limit} } grep { exists $_->{non_binary_contract_limit}; } @{$non_binary_custom_limits[0]};
-        my $custom_limit = min(@limits_arr);
-        $limits{lookback_open_position_limit} = $custom_limit if defined $custom_limit;
-    }
-
     my $lim = $self->calculate_max_open_bets($client);
     $limits{max_open_bets} = $lim if defined $lim;
 
@@ -456,7 +444,17 @@ sub calculate_limits {
 
     my $rp = $contract->risk_profile;
     my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
-    push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)} if $contract->is_binary;
+
+    if ($contract->is_binary) {
+        push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
+    } else {
+        $limits{lookback_open_position_limit} = $static_config->{lookback_limits}{open_position_limits}{$currency};
+        my @non_binary_custom_limits = $rp->get_non_binary_limit_parameters(\@cl_rp);
+
+        my @limits_arr = map { $_->{non_binary_contract_limit} } grep { exists $_->{non_binary_contract_limit}; } @{$non_binary_custom_limits[0]};
+        my $custom_limit = min(@limits_arr);
+        $limits{lookback_open_position_limit} = $custom_limit if defined $custom_limit;
+    }
 
     return \%limits;
 }
