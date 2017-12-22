@@ -80,12 +80,13 @@ subtest 'new account' => sub {
     $c->call_ok($method, $params)->has_error->error_message_is('Permission denied.', 'Only costarica and champion fx clients allowed.');
 
     SKIP: {
-        skip "Unable to Retrieve files from PHP MT5 Server Yet";
+        #skip "Unable to Retrieve files from PHP MT5 Server Yet";
 
         # testing unicode name
         $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
         });
+
         $test_client->email('test.account@binary.com');
         $test_client->save;
         my $user = BOM::Platform::User->create(
@@ -110,6 +111,7 @@ subtest 'new account' => sub {
         $params->{args}->{mainPassword}   = 'Efgh4567';
         $params->{args}->{leverage}       = 100;
 
+        BOM::RPC::v3::MT5::Account::_reset_throttler($test_client->loginid);
         my $res = $c->call_ok($method, $params)->{response};
         like($res->{rpc_response}->{result}->{login}, qr/[0-9]+/, 'Should return MT5 ID');
     }

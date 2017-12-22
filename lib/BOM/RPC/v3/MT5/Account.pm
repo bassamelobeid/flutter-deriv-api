@@ -66,6 +66,15 @@ sub _throttle {
     return 0;
 }
 
+# removes the database entry that limit requests to 1/minute
+# returns 1 if entry was present, 0 otherwise
+sub _reset_throttler {
+    my $loginid = shift;
+    my $key     = 'MT5ACCOUNT::THROTTLE::' . $loginid;
+    
+    return BOM::Platform::RedisReplicated::redis_write->del($key);
+}
+
 rpc mt5_new_account => sub {
     my $params = shift;
 
