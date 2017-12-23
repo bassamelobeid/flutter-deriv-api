@@ -150,6 +150,32 @@ rpc "landing_company",
     return \%landing_company;
     };
 
+=head2 landing_company_details
+
+    $landing_company_details = landing_company_details({
+        landing_company_name => $lc,
+    })
+
+Returns the details of a landing_company object.
+
+Takes a single C<$params> hashref containing the following keys:
+
+=over 4
+
+=item * args, which may contain the following keys:
+
+=over 4
+
+=item * landing_company_details
+
+=back
+
+=back
+
+Returns a hashref containing the keys from __build_landing_company($lc)
+
+=cut
+
 rpc "landing_company_details",
     before_actions => [],    # unauthenticated
     sub {
@@ -162,6 +188,60 @@ rpc "landing_company_details",
 
     return __build_landing_company($lc);
     };
+
+=head2 __build_landing_company
+
+    $landing_company_details = __build_landing_company($lc)
+
+Returns a hashref containing the following:
+
+=over 4
+
+=item * shortcode
+
+=item * name
+
+=item * address
+
+=item * country
+
+=item * legal_default_currency
+
+=item * legal_allowed_currencies
+
+=item * legal_allowed_markets
+
+=item * legal_allowed_contract_categories
+
+=item * has_reality_check
+
+=back
+
+Takes a single C<$lc> object that contains the following methods:
+
+=over 4
+
+=item * short
+
+=item * name
+
+=item * address
+
+=item * country
+
+=item * legal_default_currency
+
+=item * legal_allowed_markets
+
+=item * legal_allowed_contract_categories
+
+=item * has_reality_check
+
+=back
+
+Returns a hashref of landing_company parameters
+
+=cut
 
 sub __build_landing_company {
     my ($lc) = @_;
