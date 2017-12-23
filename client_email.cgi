@@ -79,6 +79,11 @@ if ($error) {
     code_exit_BO();
 }
 
+if ($user->has_social_signup) {
+    print "Cannot change email for users with social signup flag";
+    code_exit_BO();
+}
+
 if ($email ne $new_email) {
     if (BOM::Platform::User->new({email => $new_email})) {
         print "Email update not allowed, as same email [$encoded_new_email] already exists in system";
