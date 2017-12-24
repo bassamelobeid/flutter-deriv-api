@@ -57,6 +57,17 @@ sub verify_with_id {
     my $id              = $args->{transaction_id};
     my $landing_company = $args->{landing_company};
     my $details         = $args->{details};
+    my $parameters;
+    my $original_contract = produce_contract($details->{shortcode}, $details->{currency_code});
+    my $priced_at_start = make_similar_contract(
+        $original_contract,
+        {
+            priced_at       => 'start',
+            landing_company => $landing_company
+        });
+    my $pricing_engine_name = $priced_at_start->pricing_engine_name;
+    return {error => "Can not obtain pricing parameter for this contract as we are not supporting this pricing engine " . $pricing_engine_name}
+        if $pricing_engine_name !~ /(Forex|EuropeanDigitalSlope|VannaVolga)/;
 
     my $action_type     = $details->{action_type};
     my $requested_price = $details->{order_price};
@@ -76,7 +87,7 @@ sub verify_with_id {
     } else {
         $extra = join '_', (map { $details->{$_} } qw(pricing_spot high_barrier_vol));
     }
-    my $parameters = verify_with_shortcode({
+    $parameters = verify_with_shortcode({
         shortcode       => $details->{shortcode},
         currency        => $details->{currency_code},
         landing_company => $landing_company,
