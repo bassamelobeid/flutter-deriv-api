@@ -373,7 +373,7 @@ sub _payment_and_profit_report {
 
     @watched =
         sort { $a->{loginid} cmp $b->{loginid} }
-        sort { $a->{currency} cmp $b->{currency} } grep { $_->{reason} } @watched;
+        sort { $a->{currency} cmp $b->{currency} } grep { $_->{being_watched_for} } @watched;
 
     return {
         big_deposits    => \@big_deposits,
