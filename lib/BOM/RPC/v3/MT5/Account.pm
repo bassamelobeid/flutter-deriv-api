@@ -116,7 +116,7 @@ sub _throttle {
 sub reset_throttler {
     my $loginid = shift;
     my $key     = MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
-    
+
     return BOM::Platform::RedisReplicated::redis_write->del($key);
 }
 
