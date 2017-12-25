@@ -26,7 +26,6 @@ subtest $method => sub {
                 }
             ],
             'name'       => "AUD/JPY",
-            'settlement' => '',
             'times'      => {
                 'open'       => ['00:00:00'],
                 'close'      => ['23:59:59'],
