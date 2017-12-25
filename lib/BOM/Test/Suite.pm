@@ -23,6 +23,7 @@ use Client::Account;
 use BOM::Test::Data::Utility::UnitTestMarketData;    # we :init later for unit/auth test DBs
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase;
+use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::App;
 use Time::HiRes qw(tv_interval gettimeofday);
@@ -55,6 +56,7 @@ sub new {
 
     eval {
         # Start with a clean database
+        BOM::Test::Data::Utility::FeedTestDatabase->import(qw(:init));
         BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
         BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
         BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
