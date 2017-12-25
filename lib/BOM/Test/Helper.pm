@@ -18,9 +18,9 @@ use Data::Dumper;
 use Date::Utility;
 
 use BOM::Test;
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase;
+use BOM::Test::Data::Utility::UnitTestMarketData;
+use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Platform::Password;
 use BOM::Platform::User;
