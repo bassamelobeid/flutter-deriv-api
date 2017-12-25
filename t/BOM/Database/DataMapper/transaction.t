@@ -83,27 +83,27 @@ foreach my $bet_info (@bet_infos) {
 
         my $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({
 
-            account_data => {
-                client_loginid => $account->client_loginid,
-                currency_code  => $account->currency_code,
-            },
-            bet_data => {
-                underlying_symbol => $bet_info->{underlying_symbol},
-                payout_price      => 200,
-                buy_price         => $bet_info->{buy_price},
-                remark            => 'Test Remark',
-                purchase_time     => $start_time,
-                start_time        => $start_time,
-                expiry_time       => $end_time,
-                settlement_time   => $end_time,
-                is_expired        => 0,
-                is_sold           => 0,
-                bet_class         => $bet_info->{bet_class},
-                bet_type          => $bet_info->{bet_type},
-                quantity          => 1,
-            },
-            db  => $connection_builder->db,
-        });
+                account_data => {
+                    client_loginid => $account->client_loginid,
+                    currency_code  => $account->currency_code,
+                },
+                bet_data => {
+                    underlying_symbol => $bet_info->{underlying_symbol},
+                    payout_price      => 200,
+                    buy_price         => $bet_info->{buy_price},
+                    remark            => 'Test Remark',
+                    purchase_time     => $start_time,
+                    start_time        => $start_time,
+                    expiry_time       => $end_time,
+                    settlement_time   => $end_time,
+                    is_expired        => 0,
+                    is_sold           => 0,
+                    bet_class         => $bet_info->{bet_class},
+                    bet_type          => $bet_info->{bet_type},
+                    quantity          => 1,
+                },
+                db => $connection_builder->db,
+            });
 
         my ($fmb, $txn) = $financial_market_bet_helper->buy_bet;
         is $fmb->{bet_class}, $bet_info->{bet_class}, 'buy fmb object';
