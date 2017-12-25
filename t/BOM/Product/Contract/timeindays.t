@@ -421,6 +421,14 @@ subtest 'timeindays for non-ATM volatility indices' => sub {
     $args->{for_sale} = 1;
     $c                = produce_contract($args);
     is $c->timeindays->amount, 15 / 86400, 'no adjustment for_sale on volatility indices';
+
+    $args->{date_start} = $date_start_even;
+    $args->{duration}   = '5t';
+    $c                  = produce_contract($args);
+    is $c->timeindays->amount, 10 / 86400, '10 seconds in duration for a 5 tick contract that starts on an even second';
+    $args->{date_start} = $date_start_even->epoch + 1;
+    $c = produce_contract($args);
+    is $c->timeindays->amount, 10 / 86400, '10 seconds in duration for a 5 tick contract that starts on an odd second';
 };
 
 done_testing;

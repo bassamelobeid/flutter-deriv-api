@@ -257,7 +257,8 @@ sub _create_new_interface_engine {
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         my $backprice = ($self->underlying->for_date) ? 1 : 0;
-        my $apply_equal_tick_discount = ($self->code eq 'CALLE' or $self->code eq 'PUTE') ? 0 : 1;
+        # do not discount for EURUSD because because we have high tick expiry volume on it. We might revise this in the future.
+        my $apply_equal_tick_discount = ($self->code eq 'CALLE' or $self->code eq 'PUTE' or $self->underlying->symbol eq 'frxEURUSD') ? 0 : 1;
         %pricing_parameters = (
             apply_equal_tick_discount => $apply_equal_tick_discount,
             contract_type             => $self->pricing_code,
