@@ -21,7 +21,6 @@ use BOM::Platform::Config;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Runtime;
-use LandingCompany::Offerings;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -49,7 +48,7 @@ if ($r->param('update_limit')) {
     my $non_binary_contract_limit = $r->param('non_binary_contract_limit');
 
     my @known_keys    = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
-    my $offerings_obj = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
     my %known_values  = map { $_ => [$offerings_obj->values_for_key($_)] } @known_keys;
 
     # landing company is not part of offerings object.
