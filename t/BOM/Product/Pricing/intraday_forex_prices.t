@@ -8,7 +8,7 @@ use Test::Most tests => 5;
 use Test::Warnings;
 use Volatility::EconomicEvents;
 use YAML::XS qw(LoadFile);
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 use Date::Utility;
 
 use BOM::Market::DataDecimate;
@@ -116,7 +116,7 @@ my %skip_type = (
     LBHIGHLOW   => 1,
 );
 
-my @ct = grep { not $skip_type{$_} } grep { !$equal{$_} } LandingCompany::Offerings->get('costarica', $offerings_cfg)->query({
+my @ct = grep { not $skip_type{$_} } grep { !$equal{$_} } LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg)->query({
         underlying_symbol => $underlying->symbol,
         expiry_type       => 'intraday',
         start_type        => 'spot'

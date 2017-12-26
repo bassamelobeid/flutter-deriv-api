@@ -77,6 +77,7 @@ subtest "predefined contracts for symbol" => sub {
     );
     foreach my $u (keys %expected) {
         my $f = available_contracts_for_symbol({
+            landing_company => 'japan',
             symbol => $u,
             date   => $now,
         });
@@ -113,7 +114,7 @@ subtest "predefined trading_period" => sub {
         },
     );
 
-    my @offerings = BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY');
+    my @offerings = BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY','japan');
     is(scalar(@offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
     my $now = Date::Utility->new('2015-09-04 17:00:00');
     my $underlying = create_underlying('frxUSDJPY', $now);
@@ -190,7 +191,7 @@ subtest "check_intraday trading_period_JPY" => sub {
     );
 
     my @i_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
-        BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY');
+        BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY', 'japan');
     foreach my $date (sort keys %expected_intraday_trading_period) {
         my $now = Date::Utility->new($date);
         my $ex = create_underlying('frxUSDJPY', $now);
@@ -241,7 +242,7 @@ subtest "check_intraday trading_period_non_JPY" => sub {
     );
 
     my @e_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
-        BOM::Product::Contract::PredefinedParameters::_get_offerings('frxEURUSD');
+        BOM::Product::Contract::PredefinedParameters::_get_offerings('frxEURUSD', 'japan');
     foreach my $date (keys %expected_eur_intraday_trading_period) {
         my $now = Date::Utility->new($date);
         my $ex = create_underlying('frxEURUSD', $now);
