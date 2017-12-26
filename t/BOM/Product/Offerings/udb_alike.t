@@ -7,7 +7,7 @@ use Test::Warnings;
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 use BOM::MarketData qw(create_underlying_db);
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 
 my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
 
@@ -21,7 +21,7 @@ subtest 'Sets match' => sub {
         'start_type'        => 'available_start_types',
         'barrier_category'  => 'available_barrier_categories',
     );
-    my $offerings_obj = LandingCompany::Offerings->get('costarica', $offerings_cfg);
+    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg);
 
     while (my ($po, $udb_method) = each(%po_to_udb_method)) {
         # This is just a temporary hack to make the test pass.

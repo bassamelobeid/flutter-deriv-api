@@ -2,7 +2,7 @@ package BOM::Product::Script::GenerateTradingPeriods;
 use strict;
 use warnings;
 
-use LandingCompany::Offerings::MultiBarrier;
+use LandingCompany::Registry;
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods next_generation_epoch);
 use BOM::Platform::Runtime;
 use Time::HiRes qw(clock_nanosleep TIMER_ABSTIME CLOCK_REALTIME);
@@ -13,7 +13,7 @@ use List::Util qw(max);
 
 sub run {
 
-    my $offerings_obj = LandingCompany::Offerings::MultiBarrier->get('japan', BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj    = LandingCompany::Registry::get('japan')->multi_barrier_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
     my @selected_symbols = $offerings_obj->values_for_key('underlying_symbol');
 
     while (1) {
