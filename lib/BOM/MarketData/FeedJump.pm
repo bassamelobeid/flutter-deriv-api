@@ -30,7 +30,7 @@ use Mojo::Redis2;
 use BOM::Platform::QuantsConfig;
 use BOM::Platform::Chronicle;
 use Quant::Framework::EconomicEventCalendar;
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 
 use Try::Tiny;
 use namespace::autoclean;
@@ -56,7 +56,7 @@ sub BUILD {
     $self->_eec($eec);
 
     # we are only concern about the 9 forex pairs where we offer multi-barrier trading on.
-    my $offerings_obj = LandingCompany::Offerings->get('japan', BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get('japan')->multi_barrier_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
     my %symbols = map { $_ => 1 } $offerings_obj->values_for_key('underlying_symbol');
     $self->_symbols_to_perform_check(\%symbols);
 
