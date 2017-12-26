@@ -107,7 +107,7 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
     # Get a full list of symbols since some may have been updated/disabled
     # since the last time
     my @symbols =
-        LandingCompany::Regsitry::get('japan')->multi_barrier_offerings(BOM::Platform::Runtime->instance->get_offerings_config)
+        LandingCompany::Registry::get('japan')->multi_barrier_offerings(BOM::Platform::Runtime->instance->get_offerings_config)
         ->values_for_key('underlying_symbol');
     my $now = Time::HiRes::time;
     $log->debugf("Retrieved symbols - %.2fms", 1000 * ($now - $start));
