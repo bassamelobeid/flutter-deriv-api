@@ -15,7 +15,6 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Client::Account;
 use BOM::Platform::Context qw (localize request);
-use LandingCompany::Offerings;
 use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
 use Quant::Framework;
@@ -25,9 +24,9 @@ rpc active_symbols => sub {
     my $params = shift;
 
     my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
-    my $product_type = $params->{args}->{product_type} // 'basic';
-    my $language = $params->{language} || 'EN';
-    my $token_details = $params->{token_details};
+    my $product_type         = $params->{args}->{product_type};
+    my $language             = $params->{language} || 'EN';
+    my $token_details        = $params->{token_details};
 
     my $offerings_obj;
     if ($token_details and exists $token_details->{loginid}) {
@@ -35,10 +34,17 @@ rpc active_symbols => sub {
             loginid      => $token_details->{loginid},
             db_operation => 'replica'
         });
-        $offerings_obj = $client->landing_company->offerings_for_country($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
+        $product_type //= $client->landing_company->default_offerings;
+        my $method = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
+        $offerings_obj = $client->landing_company->$method($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
     }
 
-    $offerings_obj //= LandingCompany::Offerings->get($landing_company_name, BOM::Platform::Runtime->instance->get_offerings_config);
+    unless ($offerings_obj) {
+        my $landing_company = LandingCompany::Registry::get($landing_company_name);
+        $product_type //= $landing_company->default_offerings;
+        my $method = $product_type eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
+        $offerings_obj = $landing_company->$method(BOM::Platform::Runtime->instance->get_offerings_config);
+    }
     my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
     my ($namespace, $key) = (
         'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
