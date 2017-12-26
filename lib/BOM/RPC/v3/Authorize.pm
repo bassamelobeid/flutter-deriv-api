@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use List::MoreUtils qw(any);
 use Format::Util::Numbers qw/formatnumber/;
 
 use Client::Account;
@@ -98,21 +99,18 @@ rpc authorize => sub {
 
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
 
-    # Get the gaming company from the client's residence
-    my $gaming_company = $countries_instance->gaming_company_for_country($client->residence);
+    # Get the gaming and financial company from the client's residence
+    my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
+    my $financial_company = $countries_instance->financial_company_for_country($client->residence);
 
-    # Proceed if there is a company from the given residence
+    # Check if client has a gaming account or financial account
+    # Otherwise, add them to the array
     if ($gaming_company) {
-
-        # Add the company to the list if client has not created
-        push @upgradeable_accounts, $gaming_company if not(any { $_ eq $gaming_company } @client_shortcode_list);
-    }
-
-    # Get the financial company, only if the client has a gaming account
-    if (!@upgradeable_accounts) {
-        my $financial_company = $countries_instance->financial_company_for_country($client->residence);
-
-        push @upgradeable_accounts, $financial_company if not(any { $_ eq $financial_company } @client_shortcode_list);
+        my $gaming_company_present = any { $_->landing_company->short eq $gaming_company } @$client_list;
+        push @upgradeable_accounts, $gaming_company if not $gaming_company_present;
+    } else {
+        my $financial_company_present = any { $_->landing_company->short eq $financial_company } @$client_list;
+        push @upgradeable_accounts, $financial_company if not $financial_company_present;
     }
 
     my @account_list;
