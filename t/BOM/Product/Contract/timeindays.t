@@ -388,4 +388,48 @@ sub _sample_surface_data {
     };
 }
 
+subtest 'timeindays for non-ATM volatility indices' => sub {
+    my $date_start_even = Date::Utility->new('2017-12-21');
+    my $args            = {
+        bet_type   => 'CALL',
+        underlying => 'frxUSDJPY',
+        barrier    => 'S10P',
+        date_start => $date_start_even,
+        duration   => '1m',
+        currency   => 'USD',
+        payout     => 100,
+    };
+    my $c = produce_contract($args);
+    is $c->timeindays->amount, 60 / 86400, 'no adjustment made to forex';
+    $args->{underlying} = 'R_100';
+    $args->{duration}   = '5m';
+    $c                  = produce_contract($args);
+    is $c->timeindays->amount, 5 * 60 / 86400, 'no adjustment made to volatility indices if duration is 5m';
+    $args->{duration} = '15s';
+    $c = produce_contract($args);
+    is $c->timeindays->amount, 12 / 86400, 'date start adjusted by 2 seconds and date expiry adjusted by 1 second';
+    $args->{duration} = '16s';
+    $c = produce_contract($args);
+    is $c->timeindays->amount, 14 / 86400, 'date start adjusted 2 seconds';
+    $args->{date_start} = $date_start_even->epoch + 1;
+    $args->{duration}   = '15s';
+    $c                  = produce_contract($args);
+    is $c->timeindays->amount, 14 / 86400, 'date start adjusted by 1 second';
+    $args->{barrier} = 'S0P';
+    $c = produce_contract($args);
+    is $c->timeindays->amount, 15 / 86400, 'no adjustment for ATM contract on volatility indices';
+    $args->{barrier}  = 'S10P';
+    $args->{for_sale} = 1;
+    $c                = produce_contract($args);
+    is $c->timeindays->amount, 15 / 86400, 'no adjustment for_sale on volatility indices';
+
+    $args->{date_start} = $date_start_even;
+    $args->{duration}   = '5t';
+    $c                  = produce_contract($args);
+    is $c->timeindays->amount, 10 / 86400, '10 seconds in duration for a 5 tick contract that starts on an even second';
+    $args->{date_start} = $date_start_even->epoch + 1;
+    $c = produce_contract($args);
+    is $c->timeindays->amount, 10 / 86400, '10 seconds in duration for a 5 tick contract that starts on an odd second';
+};
+
 done_testing;
