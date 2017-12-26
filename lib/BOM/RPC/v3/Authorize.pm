@@ -7,6 +7,7 @@ use Date::Utility;
 use Format::Util::Numbers qw/formatnumber/;
 
 use Client::Account;
+use Brands;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -73,6 +74,8 @@ rpc authorize => sub {
     }
 
     my @sub_accounts;
+    my @upgradeable_accounts;
+
     my $is_omnibus = $client->allow_omnibus;
 
     my $_get_account_details = sub {
@@ -89,6 +92,23 @@ rpc authorize => sub {
             is_virtual           => $clnt->is_virtual ? 1 : 0,
             $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
     };
+
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+
+    # Get the gaming company from the client's residence
+    my $gaming_company = $countries_instance->gaming_company_for_country($client->residence);
+
+    # Proceed if there is a company from the given residence
+    if ($gaming_company) {
+
+        # Add the company to the list if client has not created
+        push @upgradeable_accounts, $gaming_company if not(any { $_ eq $gaming_company } @array);
+    }
+
+    # Get the financial company, only if the client has a gaming account
+    if (not $gaming_company) {
+        my $financial_company = $countries_instance->financial_company_for_country($client->residence);
+    }
 
     my $client_list = $user->get_clients_in_sorted_order([keys %{$user->loginid_details}]);
 
