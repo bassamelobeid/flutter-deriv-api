@@ -143,6 +143,7 @@ rpc authorize => sub {
         scopes                   => $scopes,
         is_virtual               => $client->is_virtual ? 1 : 0,
         allow_omnibus            => $client->allow_omnibus ? 1 : 0,
+        upgradeable_accounts     => \@upgradeable_accounts,
         account_list             => \@account_list,
         sub_accounts             => \@sub_accounts,
         stash                    => {
