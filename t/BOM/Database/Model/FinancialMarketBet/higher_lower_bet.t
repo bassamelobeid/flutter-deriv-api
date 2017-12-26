@@ -129,7 +129,7 @@ lives_ok {
         bet => $higher_lower,
         db  => $connection_builder->db,
     });
-    $higher_lower_helper->bet_data->{quantity} = 1;
+    $higher_lower_helper->bet_data->{quantity}   = 1;
     $higher_lower_helper->bet_data->{is_expired} = 1;
     $higher_lower_helper->sell_bet() // die "Bet not sold";
 }
