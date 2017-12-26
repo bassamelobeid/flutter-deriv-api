@@ -93,6 +93,9 @@ rpc authorize => sub {
             $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
     };
 
+    my $client_list = $user->get_clients_in_sorted_order([keys %{$user->loginid_details}]);
+    my @client_shortcode_list = map { $_->landing_company->short } @$client_list;
+
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
 
     # Get the gaming company from the client's residence
@@ -102,15 +105,15 @@ rpc authorize => sub {
     if ($gaming_company) {
 
         # Add the company to the list if client has not created
-        push @upgradeable_accounts, $gaming_company if not(any { $_ eq $gaming_company } @array);
+        push @upgradeable_accounts, $gaming_company if not(any { $_ eq $gaming_company } @client_shortcode_list);
     }
 
     # Get the financial company, only if the client has a gaming account
-    if (not $gaming_company) {
+    if (!@upgradeable_accounts) {
         my $financial_company = $countries_instance->financial_company_for_country($client->residence);
-    }
 
-    my $client_list = $user->get_clients_in_sorted_order([keys %{$user->loginid_details}]);
+        push @upgradeable_accounts, $financial_company if not(any { $_ eq $financial_company } @client_shortcode_list);
+    }
 
     my @account_list;
     my $currency;
