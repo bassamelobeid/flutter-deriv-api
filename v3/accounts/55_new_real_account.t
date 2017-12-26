@@ -176,20 +176,6 @@ subtest 'create account failed' => sub {
     $user->email_verified(1);
     $user->save;
 
-    subtest 'virtual no residence' => sub {
-        $vr_client->residence('');
-        $vr_client->save;
-
-        # create real acc
-        my %details = %client_details;
-        $details{residence} = 'id';
-
-        my $res = $t->await::new_account_real(\%details);
-
-        is($res->{error}->{code},    'NoResidence', 'cannot create real account as residence is not set');
-        is($res->{new_account_real}, undef,         'NO account created');
-    };
-
     $vr_client->residence('id');
     $vr_client->save;
 
