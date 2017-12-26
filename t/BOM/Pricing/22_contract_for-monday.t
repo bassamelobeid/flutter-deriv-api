@@ -65,6 +65,7 @@ subtest "Request $method" => sub {
         'Distributor::QUOTE::frxUSDJPY',
         encode_json({
                 quote => 500,
+                epoch => 1340871449
             }));
 
     my $mock_feeddb = Test::MockModule->new('Postgres::FeedDB::Spot');
@@ -74,7 +75,7 @@ subtest "Request $method" => sub {
             print "tick...\n";
             Postgres::FeedDB::Spot::Tick->new({
                 symbol => 'frxUSDJPY',
-                epoch  => 1340871449,
+                epoch  => 1340871448,
                 bid    => 2.01,
                 ask    => 2.03,
                 quote  => 2.02,
