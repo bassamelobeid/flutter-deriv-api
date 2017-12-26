@@ -665,7 +665,7 @@ sub _validate_offerings {
 
     try {
         my $lc = $args_copy->{landing_company} // 'costarica';
-        my $method = $lc =~ /japan/ ? 'multi_barrier_offerings_for_country' : 'offerings_for_country';
+        my $method = $lc =~ /japan/ ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
         my $landing_company = LandingCompany::Registry::get($lc);
 
         my $offerings_obj = $landing_company->$method($args_copy->{country_code} // '', BOM::Platform::Runtime->instance->get_offerings_config);
