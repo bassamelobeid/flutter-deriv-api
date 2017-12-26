@@ -17,6 +17,7 @@ use BOM::Platform::AuditLog;
 use BOM::DualControl;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Cookie;
+use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -31,6 +32,27 @@ my $input             = request()->params;
 
 my ($client, $message);
 if ($input->{'dcctype'} ne 'file_content') {
+
+    unless ($input->{'amount'}) {
+        print "ERROR: No amount was specified";
+        code_exit_BO();
+    }
+
+    unless ($input->{'clientloginid'}) {
+        print "ERROR: No LoginID for the client was specified";
+        code_exit_BO();
+    }
+
+    # Regular expression for checking valid currency format depending on the type of currency.
+    # Upto 2 decimal positions are allowed for fiat currencies and 8 for Cryptocurrencies.
+    my $currency_regex =
+        LandingCompany::Registry::get_currency_type($input->{'currency'}) eq 'fiat' ? qr/^(?:\d*\.\d{1,2}|\d+\.?)$/ : qr/^(?:\d*\.\d{1,8}|\d+\.?)$/;
+
+    if ($input->{'amount'} !~ $currency_regex) {
+        print "ERROR: Invalid amount: " . $input->{'amount'};
+        code_exit_BO();
+    }
+
     $client = Client::Account::get_instance({
         'loginid'    => uc($input->{'clientloginid'}),
         db_operation => 'replica'
@@ -38,14 +60,6 @@ if ($input->{'dcctype'} ne 'file_content') {
 
     if (not $client) {
         print "ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist! Perhaps you made a typo?";
-        code_exit_BO();
-    }
-
-    if ($input->{'amount'} =~ /^\d\d?\,\d\d\d\.?\d?\d?$/) {
-        $input->{'amount'} =~ s/\,//;
-    }
-    if ($input->{'amount'} !~ /^\d*\.?\d*$/) {
-        print "ERROR in amount: " . $input->{'amount'};
         code_exit_BO();
     }
 }
