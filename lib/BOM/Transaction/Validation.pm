@@ -152,7 +152,7 @@ sub _validate_offerings_sell {
 sub _validate_offerings {
     my ($self, $client, $action) = @_;
 
-    my $method = $client->landing_company->short =~ /japan/ ? 'multi_barrier_offerings_for_country' : 'offerings_for_country';
+    my $method = $client->landing_company->short =~ /japan/ ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
     my $offerings_obj = $client->landing_company->$method($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
 
     my $err = $offerings_obj->validate_offerings($self->transaction->contract->metadata($action));
