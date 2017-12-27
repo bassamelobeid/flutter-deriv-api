@@ -57,12 +57,6 @@ subtest "Request $method" => sub {
                 quote => 500,
                 epoch => 1340871449
             }));
-    BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', Date::Utility->new);
-
-    $params[1]{args}{product_type}  = 'multi_barrier';
-    $params[1]{args}{contracts_for} = 'frxUSDJPY';
-    $params[1]{args}{landing_company} = 'japan';
-
     my $mock_feeddb = Test::MockModule->new('Postgres::FeedDB::Spot');
     $mock_feeddb->mock(
         'tick_at',
@@ -76,6 +70,12 @@ subtest "Request $method" => sub {
                 quote  => 2.02,
             });
         });
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', Date::Utility->new);
+
+    $params[1]{args}{product_type}  = 'multi_barrier';
+    $params[1]{args}{contracts_for} = 'frxUSDJPY';
+    $params[1]{args}{landing_company} = 'japan';
 
     $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
     is_deeply [sort keys %{$result}],
