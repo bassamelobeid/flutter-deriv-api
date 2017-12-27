@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-
+use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 
@@ -29,13 +29,12 @@ my $user  = BOM::Platform::User->create(
 # Create client (UK - VRTC)
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
+    residence   => 'gb'
 });
-
-$client->residence('gb');
-$client->save;
 
 $user->add_loginid({loginid => $client->loginid});
 $user->save;
+$client->load;
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 my $authorize = $t->await::authorize({authorize => $token});
@@ -46,13 +45,12 @@ is_deeply $authorize->{authorize}->{upgradeable_accounts}, ['iom'], 'UK client c
 # Create client (UK - MX)
 $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
+    residence   => 'gb'
 });
-
-$client->residence('gb');
-$client->save;
 
 $user->add_loginid({loginid => $client->loginid});
 $user->save;
+$client->load;
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 $authorize = $t->await::authorize({authorize => $token});
@@ -63,16 +61,12 @@ is_deeply $authorize->{authorize}->{upgradeable_accounts}, ['maltainvest'], 'UK 
 # Create client (UK - MLT)
 $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MLT',
+    residence   => 'gb'
 });
-
-($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
-$authorize = $t->await::authorize({authorize => $token});
-
-$client->residence('gb');
-$client->save;
 
 $user->add_loginid({loginid => $client->loginid});
 $user->save;
+$client->load;
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 $authorize = $t->await::authorize({authorize => $token});
