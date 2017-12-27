@@ -11,6 +11,7 @@ use Quant::Framework::Underlying;
 
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Runtime;
+use BOM::Test::Helper::Client qw(create_client);
 
 my $ul = Quant::Framework::Underlying->new('frxUSDJPY');
 
@@ -180,54 +181,68 @@ subtest 'empty limit condition' => sub {
 
 subtest 'get_current_profile_definitions' => sub {
     my $expected = {
-        'commodities' => [{
-                'turnover_limit' => "50000.00",
-                'payout_limit'   => "5000.00",
-                'name'           => 'Commodities',
-                'profile_name'   => 'high_risk'
-            }
-        ],
-        'volidx' => [{
-                'turnover_limit' => "500000.00",
-                'payout_limit'   => "50000.00",
-                'name'           => 'Volatility Indices',
-                'profile_name'   => 'low_risk'
-            }
-        ],
-        'forex' => [{
-                'turnover_limit' => "100000.00",
-                'payout_limit'   => "20000.00",
-                'name'           => 'Major Pairs',
-                'profile_name'   => 'medium_risk',
-            },
-            {
-                'turnover_limit' => "50000.00",
-                'payout_limit'   => "5000.00",
-                'name'           => 'Minor Pairs',
-                'profile_name'   => 'high_risk',
-            },
-            {
-                'turnover_limit' => "50000.00",
-                'payout_limit'   => "5000.00",
-                'name'           => 'Smart FX',
-                'profile_name'   => 'high_risk',
-            },
-        ],
-        'stocks' => [{
-                'turnover_limit' => "1000.00",
-                'payout_limit'   => "100.00",
-                'name'           => 'OTC Stocks',
-                'profile_name'   => 'extreme_risk'
-            }
-        ],
-        'indices' => [{
-                'turnover_limit' => "100000.00",
-                'payout_limit'   => "20000.00",
-                'name'           => 'Indices',
-                'profile_name'   => 'medium_risk'
-            }]};
-    my $general = BOM::Platform::RiskProfile::get_current_profile_definitions;
-    is_deeply($general, $expected);
+        'CR' => {
+            'commodities' => [{
+                    'turnover_limit' => "50000.00",
+                    'payout_limit'   => "5000.00",
+                    'name'           => 'Commodities',
+                    'profile_name'   => 'high_risk'
+                }
+            ],
+            'volidx' => [{
+                    'turnover_limit' => "500000.00",
+                    'payout_limit'   => "50000.00",
+                    'name'           => 'Volatility Indices',
+                    'profile_name'   => 'low_risk'
+                }
+            ],
+            'forex' => [{
+                    'turnover_limit' => "100000.00",
+                    'payout_limit'   => "20000.00",
+                    'name'           => 'Major Pairs',
+                    'profile_name'   => 'medium_risk',
+                },
+                {
+                    'turnover_limit' => "50000.00",
+                    'payout_limit'   => "5000.00",
+                    'name'           => 'Minor Pairs',
+                    'profile_name'   => 'high_risk',
+                },
+                {
+                    'turnover_limit' => "50000.00",
+                    'payout_limit'   => "5000.00",
+                    'name'           => 'Smart FX',
+                    'profile_name'   => 'high_risk',
+                },
+            ],
+            'stocks' => [{
+                    'turnover_limit' => "1000.00",
+                    'payout_limit'   => "100.00",
+                    'name'           => 'OTC Stocks',
+                    'profile_name'   => 'extreme_risk'
+                }
+            ],
+            'indices' => [{
+                    'turnover_limit' => "100000.00",
+                    'payout_limit'   => "20000.00",
+                    'name'           => 'Indices',
+                    'profile_name'   => 'medium_risk'
+                }],
+        },
+        'JP' => {
+            'forex' => [{
+                    'turnover_limit' => "500000.00",
+                    'payout_limit'   => "100000.00",
+                    'name'           => 'Major Pairs',
+                    'profile_name'   => 'medium_risk',
+                }],
+        }
+    };
+    foreach my $broker (keys %$expected) {
+        my $client = create_client($broker);
+        my $general = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
+        is_deeply($general, $expected->{$broker}, $broker);
+    }
 };
 
 subtest 'check for risk_profile consistency' => sub {
