@@ -315,43 +315,40 @@ sub _get_spot {
     my $spot;
     my ($source, $quote) = ('unknown', 'unknown');
     my $date_start = Date::Utility->new($trading_period->{date_start}->{epoch});
-    # special handling at for barriers, which start at Monday at 00:00:00
-    # caused by our tick storage misdesign: ticks are available only for
-    # trading hours, meanwhile we have ticks from providers sinse Sunday 22:00.
-    # So, ticks will be taken directly from feed-redis.
+
     my $now = time;
-    # let's use abs() to tolerate time shifts; we tolerate upto 5m difference
-    # as there are not guarantee that the method will be invoked exactly at 00:00:00
-    # as well as for cases like restarts etc.
-    my $realtime = abs($now - $trading_period->{date_start}->{epoch}) < 5 * 60;
-    my $take_from_distributor =
-           $realtime
-        && ($date_start->day_of_week == 1)
-        && ($date_start->time_hhmmss eq '00:00:00');
-    if ($take_from_distributor) {
-        my $redis = BOM::Platform::RedisReplicated::redis_read();
-        if (my $tick_json = $redis->get('Distributor::QUOTE::' . $underlying->symbol)) {
-            $source = 'redis';
-            $quote  = $tick_json;
-            $spot   = decode_json($tick_json)->{quote};
-        }
+    my $tick_from_distributor_redis;
+    my $redis = BOM::Platform::RedisReplicated::redis_read();
+    my $redis_tick_json;
+    my $redis_tick_from_date_start;
+    if ($redis_tick_json = $redis->get('Distributor::QUOTE::' . $underlying->symbol)) {
+        $tick_from_distributor_redis = decode_json($redis_tick_json);
+        $redis_tick_from_date_start  = $date_start->epoch - $tick_from_distributor_redis->{epoch};
     }
-    if (!$take_from_distributor || !$spot) {
-        my $tick = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
-        $source = 'feed-db';
-        unless ($tick) {
-            # If spot at requested time is not present, we will use current spot.
-            # This should not happen in production, it is for QA purposes.
-            warn
-                "using current tick to calculate barrier for period [$trading_period->{date_start}->{date} - $trading_period->{date_expiry}->{date}]";
-            $tick   = $underlying->spot_tick;
-            $source = 'feed-db:outdated';
-        }
-        if ($tick) {
-            $spot = $tick->quote if $tick;
-            $quote = encode_json($tick->as_hash);
-        }
+    my $tick_from_feeddb = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
+    my $outdated_feeddb;
+    unless ($tick_from_feeddb) {
+        # If spot at requested time is not present, we will use current spot.
+        # This should not happen in production, it is for QA purposes.
+        warn "using current tick to calculate barrier for period [$trading_period->{date_start}->{date} - $trading_period->{date_expiry}->{date}]"
+            unless $tick_from_distributor_redis;
+        $tick_from_feeddb = $underlying->spot_tick;
+        $outdated_feeddb  = 1;
     }
+    my $feeddb_tick_from_date_start = $date_start->epoch - $tick_from_feeddb->epoch;
+
+    # We will compare the most recent tick from feedbd and also provider's redis and take the most recent one
+    if (defined $tick_from_distributor_redis and $redis_tick_from_date_start >= 0 and $redis_tick_from_date_start < $feeddb_tick_from_date_start) {
+        $spot   = $tick_from_distributor_redis->{quote};
+        $source = 'redis';
+        $quote  = $redis_tick_json;
+
+    } else {
+        $spot   = $tick_from_feeddb->quote;
+        $source = $outdated_feeddb ? 'feed-db:outdated' : 'feeddb';
+        $quote  = encode_json($tick_from_feeddb->as_hash);
+    }
+
     if (!defined $spot) {
         die 'Could not retrieve tick for ' . $underlying->symbol . ' at ' . $date_start->datetime;
     }
