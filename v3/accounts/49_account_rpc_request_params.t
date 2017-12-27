@@ -61,12 +61,12 @@ is_deeply $authorize->{authorize}->{upgradeable_accounts}, ['maltainvest'], 'UK 
 # Create client (UK - MLT)
 $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MLT',
-    residence   => 'gb'
+    residence   => 'gb',
+    email       => $email
 });
 
 $user->add_loginid({loginid => $client->loginid});
 $user->save;
-$client->load;
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 $authorize = $t->await::authorize({authorize => $token});
