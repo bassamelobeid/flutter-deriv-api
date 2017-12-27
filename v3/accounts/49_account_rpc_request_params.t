@@ -52,8 +52,8 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $user->add_loginid({loginid => $client->loginid});
 $user->save;
 
-($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
-$authorize = $t->await::authorize({authorize => $token});
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+my $authorize = $t->await::authorize({authorize => $token});
 
 # Test 2
 is_deeply $authorize->{authorize}->{upgradeable_accounts}, ['maltainvest'], 'UK client can upgrade to maltainvest.';
