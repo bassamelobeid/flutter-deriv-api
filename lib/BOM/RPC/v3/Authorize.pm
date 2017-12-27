@@ -103,12 +103,19 @@ rpc authorize => sub {
     my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
     my $financial_company = $countries_instance->financial_company_for_country($client->residence);
 
+    # Check if the two are same or not
+    my $same_company = ($gaming_company and $financial_company and ($gaming_company eq $financial_company));
+
     # Check if client has a gaming account or financial account
-    # Otherwise, add them to the array
+    # Otherwise, add them to the list
+    # NOTE: Gaming has higher priority over financial
     if ($gaming_company) {
         my $gaming_company_present = any { $_->landing_company->short eq $gaming_company } @$client_list;
         push @upgradeable_accounts, $gaming_company if not $gaming_company_present;
-    } else {
+    }
+
+    # Financial account is added to the list only if the list is empty and the two companies are not same
+    if (!@upgradeable_accounts && !$same_company) {
         my $financial_company_present = any { $_->landing_company->short eq $financial_company } @$client_list;
         push @upgradeable_accounts, $financial_company if not $financial_company_present;
     }
