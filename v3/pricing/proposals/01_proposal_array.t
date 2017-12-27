@@ -48,7 +48,7 @@ $redis->zadd('DECIMATE_frxUSDJPY_15s_DEC', $_->{epoch}, $encoder->encode($_)) fo
 my $response;
 
 my $currency = "USD";
-my $lc       = 'costarica';
+my $lc       = 'japan';
 my $pt       = 'multi_barrier';
 my $symbol   = "frxUSDJPY";
 
@@ -183,7 +183,6 @@ my $fixed_bars = [map { {barrier => $_} } @$barriers];
 
 SKIP: {
     skip 'Forex test does not work on the weekends.', 1 if $skip;
-
     if ($put->{trading_period}{date_expiry}{epoch} - Date::Utility->new->epoch <= 900) {
         BAIL_OUT("Too close to the trading window border. Trading is not offered for this duration.");
         done_testing();
