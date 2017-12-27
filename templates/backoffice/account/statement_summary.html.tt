@@ -1,4 +1,4 @@
-<table style="border: 1px solid black;">
+<table style="border: 1px solid black;" width=50%>
 <tr>
 <td colspan="2">Last <select name="months" onchange="this.form.submit()">
 [% FOR i IN [1..12] %]
@@ -12,11 +12,11 @@ selected
 <tr>
 [% FOR t IN ['deposits', 'withdrawals'] %]
 <td><table>
-    <tr><td colspan="2" style="border-bottom: 1px solid #888888;">[% t %], [% currency %]</td></tr>
+    <tr><td colspan="2" style="border-bottom: 1px solid #888888;">[% t %] [% currency %]</td></tr>
     [% FOR ps IN summary.$t %]
         <tr>
         <td width="180"  style="border-right: 1px solid #888888;">[% IF ps.0 == 'total' %]<b>TOTAL</b>[% ELSE; ps.0; END %]</td>
-        <td width="30">[% ps.1 %]</td>
+        <td width="30">[% formatnumber('amount', currency, ps.1) %]</td>
         </tr>
     [% END %]
     </table></td>

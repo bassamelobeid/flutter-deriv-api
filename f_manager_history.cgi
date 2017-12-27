@@ -89,7 +89,9 @@ my $withdrawals_to_date = $dbic->run(
         my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_withdrawals(?, ?)");
         $sth->execute($client->loginid, $currency);
         return $sth->fetchall_hashref('client_loginid');
-    });
+    }) // 0;
+
+$withdrawals_to_date->{$client->loginid}->{amount} = 0 if !($withdrawals_to_date->{$client->loginid}->{amount});
 
 BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
