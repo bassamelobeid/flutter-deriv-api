@@ -41,7 +41,7 @@ my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $clie
 my $authorize = $t->await::authorize({authorize => $token});
 
 # Test 1
-is $authorize->{authorize}->{upgradeable_accounts}, ('iom'), 'UK client can upgrade to IOM.';
+is_deeply $authorize->{authorize}->{upgradeable_accounts}, ['iom'], 'UK client can upgrade to IOM.';
 
 # Create client (UK - MX)
 $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -58,7 +58,7 @@ $user->save;
 $authorize = $t->await::authorize({authorize => $token});
 
 # Test 2
-is $authorize->{authorize}->{upgradeable_accounts}, ('maltainvest'), 'UK client can upgrade to maltainvest.';
+is_deeply $authorize->{authorize}->{upgradeable_accounts}, ['maltainvest'], 'UK client can upgrade to maltainvest.';
 
 # Create client (UK - MLT)
 $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -78,7 +78,7 @@ $user->save;
 $authorize = $t->await::authorize({authorize => $token});
 
 # Test 3
-is $authorize->{authorize}->{upgradeable_accounts}, (), 'UK client has upgraded all accounts.';
+is_deeply $authorize->{authorize}->{upgradeable_accounts}, [], 'UK client has upgraded all accounts.';
 
 # UK Client testing (Done)
 
