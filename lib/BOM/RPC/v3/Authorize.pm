@@ -111,13 +111,13 @@ rpc authorize => sub {
     # NOTE: Gaming has higher priority over financial
     if ($gaming_company) {
         my $gaming_company_present = any { $_->landing_company->short eq $gaming_company } @$client_list;
-        push @upgradeable_accounts, $gaming_company if not $gaming_company_present;
+        push @upgradeable_accounts, $gaming_company if !$gaming_company_present;
     }
 
     # Financial account is added to the list only if the list is empty and the two companies are not same
     if (!@upgradeable_accounts && !$same_company) {
         my $financial_company_present = any { $_->landing_company->short eq $financial_company } @$client_list;
-        push @upgradeable_accounts, $financial_company if not $financial_company_present;
+        push @upgradeable_accounts, $financial_company if !$financial_company_present;
     }
 
     my @account_list;
