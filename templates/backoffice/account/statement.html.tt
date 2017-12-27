@@ -7,6 +7,7 @@
 <form  action="[% self_post %]" method=post>
 [% INCLUDE 'backoffice/account/statement_summary.html.tt' %]
 <table width=100%><tr>
+<td align=left> Client deposits for the lifetime of the account: [% deposits_to_date %] [% currency %]
 <td align=left> Client withdrawals for the lifetime of the account: [% withdrawals_to_date %] [% currency %]
 </td>
 </tr>

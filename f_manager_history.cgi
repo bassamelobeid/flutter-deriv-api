@@ -89,7 +89,14 @@ my $withdrawals_to_date = $dbic->run(
         my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_withdrawals(?, ?)");
         $sth->execute($client->loginid, $currency);
         return $sth->fetchall_hashref('client_loginid');
-    }) // 0;
+    });
+
+my $deposits_to_date = $dbic->run(
+    fixup => sub {
+        my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits(?, ?)");
+        $sth->execute($client->loginid, $currency);
+        return $sth->fetchall_hashref('client_loginid');
+    });
 
 $withdrawals_to_date->{$client->loginid}->{amount} = 0 if !($withdrawals_to_date->{$client->loginid}->{amount});
 
@@ -98,6 +105,7 @@ BOM::Backoffice::Request::template->process(
     {
         transactions            => $statement->{transactions},
         withdrawals_to_date     => formatnumber('amount', $currency, $withdrawals_to_date->{$client->loginid}->{amount}),
+        deposits_to_date        => formatnumber('amount', $currency, $deposits_to_date->{$client->loginid}->{amount}),
         balance                 => $statement->{balance},
         currency                => $currency,
         loginid                 => $client->loginid,
