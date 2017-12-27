@@ -9,7 +9,7 @@ use List::Util qw(first);
 use Quant::Framework::EconomicEventCalendar;
 use Try::Tiny;
 use Volatility::Seasonality;
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 
 use BOM::Backoffice::Request;
 use BOM::MarketData qw(create_underlying_db);
@@ -192,7 +192,7 @@ sub _get_affected_underlying_symbols {
     return @symbols if @symbols;
 
     # default to costarica since it does not matter
-    my $offerings_obj = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
     @symbols = $offerings_obj->query({submarket => 'major_pairs'}, ['underlying_symbol']);
     return @symbols;
 }
