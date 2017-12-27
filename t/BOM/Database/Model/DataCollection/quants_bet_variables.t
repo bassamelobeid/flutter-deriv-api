@@ -55,26 +55,26 @@ lives_ok {
     });
 
     $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({
-        account_data => {
-            client_loginid => $account->client_loginid,
-            currency_code  => $account->currency_code,
-        },
-        bet_data => {
-            'underlying_symbol' => 'frxUSDJPY',
-            'payout_price'      => 200,
-            'buy_price'         => 20,
-            'remark'            => 'Test Remark',
-            'purchase_time'     => '2010-12-02 12:00:00',
-            'start_time'        => '2010-12-02 12:00:00',
-            'expiry_time'       => '2010-12-02 14:00:00',
-            'bet_class'         => 'higher_lower_bet',
-            'bet_type'          => 'CALL',
-            'short_code'        => 'CALL_FRXUSDJPY_15_23_OCT_09_S30_05H5648',
-            'quantity'          => 1,
-        },
-        quants_bet_variables => $quants_bet_variables,
-        db                   => $connection_builder->db,
-    });
+            account_data => {
+                client_loginid => $account->client_loginid,
+                currency_code  => $account->currency_code,
+            },
+            bet_data => {
+                'underlying_symbol' => 'frxUSDJPY',
+                'payout_price'      => 200,
+                'buy_price'         => 20,
+                'remark'            => 'Test Remark',
+                'purchase_time'     => '2010-12-02 12:00:00',
+                'start_time'        => '2010-12-02 12:00:00',
+                'expiry_time'       => '2010-12-02 14:00:00',
+                'bet_class'         => 'higher_lower_bet',
+                'bet_type'          => 'CALL',
+                'short_code'        => 'CALL_FRXUSDJPY_15_23_OCT_09_S30_05H5648',
+                'quantity'          => 1,
+            },
+            quants_bet_variables => $quants_bet_variables,
+            db                   => $connection_builder->db,
+        });
 
     ($fmb, $txn) = $financial_market_bet_helper->buy_bet;
 }
