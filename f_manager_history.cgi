@@ -99,6 +99,7 @@ my $deposits_to_date = $dbic->run(
     });
 
 $withdrawals_to_date->{$client->loginid}->{amount} = 0 if !($withdrawals_to_date->{$client->loginid}->{amount});
+$deposits_to_date->{$client->loginid}->{amount}    = 0 if !($deposits_to_date->{$client->loginid}->{amount});
 
 BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
