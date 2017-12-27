@@ -14,7 +14,7 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use BOM::Product::ContractFactory qw(produce_contract);
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 use Date::Utility;
 use Finance::Asset;
 use BOM::MarketData qw(create_underlying);
@@ -42,7 +42,7 @@ $mocked2->mock(
         [map { {quote => 100, symbol => 'frxUSDJPY', decimate_epoch => $_} } (0 .. 10)];
     });
 
-my $offerings_obj  = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
+my $offerings_obj  = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 my $now            = Date::Utility->new;
 my @contract_types = $offerings_obj->values_for_key('contract_type');
 my @submarkets     = $offerings_obj->values_for_key('submarket');

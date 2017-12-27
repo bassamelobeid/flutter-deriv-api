@@ -14,7 +14,7 @@ use Test::MockModule;
 use Format::Util::Numbers qw/roundcommon/;
 
 use Test::BOM::UnitTestPrice;
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::Runtime;
@@ -37,7 +37,7 @@ my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pri
 my @underlying_symbols = ('frxBROUSD', 'AEX', 'frxXAUUSD', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
 my $payout_currency    = 'USD';
 my $spot               = 100;
-my $offerings_obj      = LandingCompany::Offerings->get('costarica', $offerings_cfg);
+my $offerings_obj      = LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg);
 
 foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     Test::BOM::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);

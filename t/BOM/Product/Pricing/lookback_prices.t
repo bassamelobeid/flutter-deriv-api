@@ -9,7 +9,7 @@ use Test::Exception;
 use Format::Util::Numbers qw(roundnear);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::Runtime;
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
@@ -38,7 +38,7 @@ my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pri
 my @underlying_symbols = ('R_100');
 my $payout_currency    = 'USD';
 my $spot               = 100;
-my $offerings_obj      = LandingCompany::Offerings->get('costarica', $offerings_cfg);
+my $offerings_obj      = LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg);
 
 foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     Test::BOM::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
