@@ -16,7 +16,7 @@ use Format::Util::Numbers qw/formatnumber/;
 
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Config;
@@ -289,7 +289,7 @@ sub _match_conditions {
 sub _offerings_obj {
     my $landing_company = shift // 'costarica';
 
-    return LandingCompany::Offerings->get($landing_company, BOM::Platform::Runtime->instance->get_offerings_config);
+    return LandingCompany::Registry::get($landing_company)->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
 }
 
 no Moose;
