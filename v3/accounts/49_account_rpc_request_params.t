@@ -27,20 +27,20 @@ my $user  = BOM::Platform::User->create(
 );
 
 # Create client (UK - VRTC)
-#my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-#    broker_code => 'VRTC',
-#    residence   => 'gb'
-#});
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+    residence   => 'gb',
+    email       => $email
+});
 
-#$user->add_loginid({loginid => $client->loginid});
-#$user->save;
-#$client->load;
+$user->add_loginid({loginid => $client->loginid});
+$user->save;
 
-#my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
-#my $authorize = $t->await::authorize({authorize => $token});
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+my $authorize = $t->await::authorize({authorize => $token});
 
 # Test 1
-#is_deeply $authorize->{authorize}->{upgradeable_accounts}, ['iom'], 'UK client can upgrade to IOM.';
+is_deeply $authorize->{authorize}->{upgradeable_accounts}, ['iom'], 'UK client can upgrade to IOM.';
 
 # Create client (UK - MX)
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -52,13 +52,13 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $user->add_loginid({loginid => $client->loginid});
 $user->save;
 
-my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
-my $authorize = $t->await::authorize({authorize => $token});
+($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+$authorize = $t->await::authorize({authorize => $token});
 
 # Test 2
 is_deeply $authorize->{authorize}->{upgradeable_accounts}, ['maltainvest'], 'UK client can upgrade to maltainvest.';
 
-# Create client (UK - MLT)
+# Create client (UK - MF)
 $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
     residence   => 'gb',
