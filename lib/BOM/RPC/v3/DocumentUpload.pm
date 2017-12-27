@@ -83,7 +83,7 @@ sub successful_upload {
     try {
         ($result) = $client->db->dbic->run(
             ping => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)', undef, $args->{file_id}, $args->{checksum}, undef);
+                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?, ?)', undef, $args->{file_id}, $args->{checksum}, undef, $client->loginid);
             });
     }
     catch {
@@ -91,6 +91,8 @@ sub successful_upload {
     };
 
     return create_upload_error('doc_not_found') if not $result;
+    
+    return create_upload_error('duplicate_document') if $result == -1;
 
     if ($error_occured) {
         warn 'Failed to update the uploaded document in the db';
@@ -189,6 +191,8 @@ sub create_upload_error {
         $message = localize('Document not found.');
     } elsif ($reason eq 'max_size') {
         $message = localize('Maximum file size reached. Maximum allowed is [_1]', MAX_FILE_SIZE);
+    } elsif ($reason eq 'duplicate_document') {
+        $message = localize('Document already uploaded.');
     } else {    # Default
         $message = localize('Sorry, an error occurred while processing your request.');
     }
