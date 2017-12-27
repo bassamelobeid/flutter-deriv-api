@@ -60,7 +60,7 @@
         },
         "upgradeable_accounts": {
           "type" : "array",
-          "description": "List of accounts the client can upgrade to"
+          "description": "List of landing company shortcodes the client can upgrade to"
         },
         "account_list": {
           "type": "array",
