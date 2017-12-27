@@ -93,6 +93,7 @@ subtest $method => sub {
         'landing_company_fullname' => 'Binary (C.R.) S.A.',
         'allow_omnibus'            => 0,
         'sub_accounts'             => [],
+        'upgradeable_accounts'     => [],
         'account_list'             => [{
                 'currency'             => '',
                 'is_ico_only'          => '0',
