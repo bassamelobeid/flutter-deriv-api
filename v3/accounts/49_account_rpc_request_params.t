@@ -60,7 +60,7 @@ is_deeply $authorize->{authorize}->{upgradeable_accounts}, ['maltainvest'], 'UK 
 
 # Create client (UK - MLT)
 $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MLT',
+    broker_code => 'MF',
     residence   => 'gb',
     email       => $email
 });
