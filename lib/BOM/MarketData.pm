@@ -6,7 +6,7 @@ use warnings;
 
 use BOM::Platform::Chronicle;
 use BOM::Platform::Runtime;
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 
 use Quant::Framework::Underlying;
 use LandingCompany::UnderlyingDB;
@@ -40,7 +40,7 @@ sub create_underlying_db {
     $result->chronicle_reader(BOM::Platform::Chronicle::get_chronicle_reader);
     $result->chronicle_writer(BOM::Platform::Chronicle::get_chronicle_writer);
     $result->quant_config($quant_config);
-    $result->offerings_flyby(LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config));
+    $result->offerings_flyby(LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config));
 
     return $result;
 }
