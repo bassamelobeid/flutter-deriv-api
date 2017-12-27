@@ -25,7 +25,7 @@ use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
 use BOM::Product::Offerings::DisplayHelper;
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 
 sub _get_cache {
     my ($name) = @_;
@@ -218,8 +218,8 @@ Returns a hashref containing the following:
 sub generate_trading_times {
     my $date = shift;
 
-    my $offerings = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
-    my $tree = BOM::Product::Offerings::DisplayHelper->new(
+    my $offerings = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+    my $tree      = BOM::Product::Offerings::DisplayHelper->new(
         date      => $date,
         offerings => $offerings
         )->decorate_tree(
@@ -306,7 +306,7 @@ sub generate_asset_index {
     my ($country_code, $landing_company_name, $language) = @_;
 
     my $config = BOM::Platform::Runtime->instance->get_offerings_config;
-    my $offerings = LandingCompany::Offerings->get($country_code, $config) // LandingCompany::Offerings->get($landing_company_name, $config);
+    my $offerings = LandingCompany::Registry::get($landing_company_name)->basic_offerings_for_country($country_code, $config);
 
     my $asset_index = BOM::Product::Offerings::DisplayHelper->new(offerings => $offerings)->decorate_tree(
         markets => {

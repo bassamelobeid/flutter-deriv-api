@@ -57,6 +57,7 @@ subtest "Request $method" => sub {
 
     $params[1]{args}{product_type}  = 'multi_barrier';
     $params[1]{args}{contracts_for} = 'frxUSDJPY';
+    $params[1]{args}{landing_company} = 'japan';
 
     # mock distributor quote
     my $redis = BOM::Platform::RedisReplicated::redis_write();
