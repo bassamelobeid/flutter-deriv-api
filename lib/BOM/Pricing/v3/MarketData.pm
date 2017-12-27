@@ -1,3 +1,14 @@
+
+=head1 NAME
+
+BOM::Pricing::v3::MarketData
+
+=head1 DESCRIPTION
+
+Package containing functions to obtain market data.
+
+=cut
+
 package BOM::Pricing::v3::MarketData;
 
 use strict;
@@ -47,6 +58,30 @@ sub _get_digest {
     return $digest;
 }
 
+=head2 trading_times
+
+    $trading_times = trading_times({trading_times => $date})
+
+Given a date, returns the trading times of the trading markets for that date.BOM::Pricing::v3::MarketData
+
+Takes a single C<$params> hashref containing the following keys:
+
+=over 4
+
+=item * args, which may contain the following keys:
+
+=over 4
+
+=item * trading_times (a string containing a date in yyyy-mm-dd format, or "today")
+
+=back
+
+=back
+
+Returns a hashref containing values returned by the generate_trading_times($date) subroutine.
+
+=cut
+
 sub trading_times {
     my $params = shift;
     my $date;
@@ -73,6 +108,38 @@ sub trading_times {
     return $cached;
 }
 
+=head2 asset_index
+
+    $asset_index = asset_index({
+        'landing_company' => $landing_company_name,
+        'language'        => $language,
+        'country_code'    => $country_code,
+        });
+
+Returns a list of all available markets and a summary of the contracts available for those markets.
+
+Takes a single C<$params> hashref containing the following keys:
+
+=over 4
+
+=item * language, a 2-letter language code
+
+=item * country_code, a 2-letter country code
+
+=item * args, which contains the following keys:
+
+=over 4
+
+=item * landing_company, the landing company name
+
+=back
+
+=back
+
+Returns an arrayref containing values returned by the generate_asset_index($country_code, $landing_company_name, $language) subroutine.
+
+=cut
+
 sub asset_index {
     my $params               = shift;
     my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
@@ -90,8 +157,63 @@ sub asset_index {
     my ($cached, $cache_key) = generate_asset_index($country_code, $landing_company_name, $language);
     _set_cache($cache_key, $cached);
     return $cached;
-
 }
+
+=head2 generate_trading_times
+
+    $trading_times = generate_trading_times($date)
+
+Returns a hashref containing market trading times.
+
+Accepts a Date::Utility object, $date.
+
+Returns a hashref containing the following:
+
+=over 4
+
+=item * markets, an arrayref containing a hashref that represents the various markets (e.g. Forex, OTC Stocks). Each hashref contains the following:
+
+=over 4
+
+=item * name (e.g. Forex, OTC)
+
+=item * submarkets, an arrayref containing a hashref that represents the various symbols/underlyings. Each hashref contains the following:
+
+=over 4
+
+=item * events, an arrayref containing hashrefs that contain economic events affecting this symbol. Each hashref contains:
+
+=over 4
+
+=item * dates, a string containing the dates of the associated event
+
+=item * descrip, a string containing the description of the event
+
+=back
+
+=item * name, the name of a symbol (e.g. "AUD/JPY", "AUD/USD")
+
+=item * symbol, the underlying symbol (e.g. "frxAUDJPY", "frxAUDUSD")
+
+=item * times, a hashref containing the following values:
+
+=over 4
+
+=item * open, an arrayref containing a string representing the market opening time in the HH:MM:SS format
+
+=item * close, an arrayref containing a string representing the market closing time in the HH:MM:SS format
+
+=item * settlement, a string representing the settlement time for contracts in the HH:MM:SS format
+
+=back
+
+=back
+
+=back
+
+=back
+
+=cut
 
 sub generate_trading_times {
     my $date = shift;
@@ -123,11 +245,10 @@ sub generate_trading_times {
             for my $ul (@{$sbm->{underlyings}}) {
                 push @{$submarket->{symbols}},
                     {
-                    name       => localize($ul->{name}),
-                    symbol     => $ul->{symbol},
-                    settlement => $ul->{settlement} || '',
-                    events     => $ul->{events},
-                    times      => $ul->{times},
+                    name   => localize($ul->{name}),
+                    symbol => $ul->{symbol},
+                    events => $ul->{events},
+                    times  => $ul->{times},
                     ($ul->{feed_license} ne 'realtime') ? (feed_license => $ul->{feed_license}) : (),
                     ($ul->{delay_amount} > 0)           ? (delay_amount => $ul->{delay_amount}) : (),
                     };
@@ -136,6 +257,50 @@ sub generate_trading_times {
     }
     return $trading_times,;
 }
+
+=head2 generate_asset_index
+
+    $asset_index = generate_asset_index($country_code, $landing_company_name, $language)
+
+Returns a a list of all available markets for a given landing company and a summary of available contracts for purchase.
+
+Takes the following scalars:
+
+=over 4
+
+=item * language, a 2-letter language code
+
+=item * country_code, a 2-letter country code (e.g. 'id')
+
+=item * landing_company_name, the name of a landing company (e.g. 'costarica')
+
+=back
+
+Returns an arrayref, where each array element contains the following values (in order):
+
+=over 4
+
+=item * underlying (e.g. frxAUDJPY)
+
+=item * symbol (e.g. AUD/JPY)
+
+=item * an arrayref containing the various contract categories. Each arrayref contains arrayrefs with the following entries:
+
+=over 4
+
+=item * contract_code, the internal code for the contract type
+
+=item * contract_name, the name of the contract
+
+=item * min_expiry, the minimum expiry time of the contract
+
+=item * max_expiry, the maximum expiry time of the contract
+
+=back
+
+=back
+
+=cut
 
 sub generate_asset_index {
     my ($country_code, $landing_company_name, $language) = @_;

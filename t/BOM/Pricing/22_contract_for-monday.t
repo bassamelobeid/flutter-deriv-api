@@ -55,6 +55,7 @@ subtest "Request $method" => sub {
         'Distributor::QUOTE::frxUSDJPY',
         encode_json({
                 quote => 500,
+                epoch => 1340871449
             }));
     BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', Date::Utility->new);
 
@@ -69,7 +70,7 @@ subtest "Request $method" => sub {
             print "tick...\n";
             Postgres::FeedDB::Spot::Tick->new({
                 symbol => 'frxUSDJPY',
-                epoch  => 1340871449,
+                epoch  => 1340871448,
                 bid    => 2.01,
                 ask    => 2.03,
                 quote  => 2.02,
