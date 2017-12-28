@@ -9,7 +9,6 @@ use TAP::Harness;
 use YAML::XS qw(LoadFile);
 use Test::More qw(no_plan);
 use Test::MockModule;
-use JSON qw(decode_json);
 use File::Spec;
 
 use lib qw(/home/git/regentmarkets/bom/t/BOM/Product);
