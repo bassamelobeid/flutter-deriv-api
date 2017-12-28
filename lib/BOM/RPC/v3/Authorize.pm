@@ -135,17 +135,18 @@ rpc authorize => sub {
     if (!@upgradeable_landing_companies && $client->landing_company->short eq 'costarica' && !$ico_client_present) {
 
         # Get siblings of the current client
-        my $siblings = get_real_account_siblings_information($client->loginid);
+        my $siblings             = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid);
         my $landing_company_name = $client->landing_company->short;
-        
+
         # Check for fiat
-        my $fiat_check = grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
+        my $fiat_check = grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings // 0;
 
         # Check for crypto
         my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
         my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
 
-        my $client_num_crypto = (grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'crypto' } keys %$siblings) // 0;
+        my $client_num_crypto =
+            (grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'crypto' } keys %$siblings) // 0;
 
         my $cryptocheck = ($lc_num_crypto && $lc_num_crypto == $client_num_crypto);
 

@@ -434,7 +434,7 @@ sub validate_make_new_account {
 
     # check if client has fiat currency, if not then return as we
     # allow them to open new account
-    return undef unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
+    return undef unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency} // '') eq 'fiat' } keys %$siblings;
 
     my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
     my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
@@ -444,7 +444,8 @@ sub validate_make_new_account {
 
     # send error if number of crypto account of client is same
     # as number of crypto account supported by landing company
-    my $client_num_crypto = (grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'crypto' } keys %$siblings) // 0;
+    my $client_num_crypto = (grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency} // '') eq 'crypto' } keys %$siblings)
+        // 0;
     return $error if ($lc_num_crypto eq $client_num_crypto);
 
     return undef;
