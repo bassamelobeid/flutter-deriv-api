@@ -11,9 +11,11 @@ use Client::Account;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
+use BOM::Database::ClientDB;
 use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
+use Format::Util::Numbers qw/formatnumber/;
 
 PrintContentType();
 
@@ -79,10 +81,22 @@ my $summary = client_statement_summary({
     before   => Date::Utility->new()->datetime,
 });
 
+my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+my $dbic = $clientdb->db->dbic;
+
+my ($deposits_to_date, $withdrawals_to_date) = $dbic->run(
+    fixup => sub {
+        my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits_and_withdrawals(?, ?)");
+        $sth->execute($client->loginid, $currency);
+        return @{$sth->fetchall_arrayref->[0]};
+    });
+
 BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
     {
         transactions            => $statement->{transactions},
+        withdrawals_to_date     => formatnumber('amount', $currency, $withdrawals_to_date),
+        deposits_to_date        => formatnumber('amount', $currency, $deposits_to_date),
         balance                 => $statement->{balance},
         currency                => $currency,
         loginid                 => $client->loginid,
