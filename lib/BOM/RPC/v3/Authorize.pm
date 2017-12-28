@@ -75,7 +75,7 @@ rpc authorize => sub {
     }
 
     my @sub_accounts;
-    my @upgradeable_accounts;
+    my @upgradeable_landing_companies;
 
     my $is_omnibus = $client->allow_omnibus;
 
@@ -113,7 +113,7 @@ rpc authorize => sub {
     # NOTE: Gaming has higher priority over financial
     if ($gaming_company && !$ico_client_present) {
         my $gaming_company_present = any { $_->landing_company->short eq $gaming_company } @$client_list;
-        push @upgradeable_accounts, $gaming_company if !$gaming_company_present;
+        push @upgradeable_landing_companies, $gaming_company if !$gaming_company_present;
     }
 
     # Financial account is added to the list:
@@ -121,9 +121,9 @@ rpc authorize => sub {
     # - two companies are not same
     # - there is no ico client
     # - current client is not virtual
-    if (!@upgradeable_accounts && !$same_company && !$ico_client_present && !$client->is_virtual) {
+    if (!@upgradeable_landing_companies && !$same_company && !$ico_client_present && !$client->is_virtual) {
         my $financial_company_present = any { $_->landing_company->short eq $financial_company } @$client_list;
-        push @upgradeable_accounts, $financial_company if !$financial_company_present;
+        push @upgradeable_landing_companies, $financial_company if !$financial_company_present;
     }
 
     my @account_list;
@@ -149,15 +149,15 @@ rpc authorize => sub {
         currency => ($account ? $account->currency_code : ''),
         email    => $client->email,
         country  => $client->residence,
-        landing_company_name     => $lc->short,
-        landing_company_fullname => $lc->name,
-        scopes                   => $scopes,
-        is_virtual               => $client->is_virtual ? 1 : 0,
-        allow_omnibus            => $client->allow_omnibus ? 1 : 0,
-        upgradeable_accounts     => \@upgradeable_accounts,
-        account_list             => \@account_list,
-        sub_accounts             => \@sub_accounts,
-        stash                    => {
+        landing_company_name          => $lc->short,
+        landing_company_fullname      => $lc->name,
+        scopes                        => $scopes,
+        is_virtual                    => $client->is_virtual ? 1 : 0,
+        allow_omnibus                 => $client->allow_omnibus ? 1 : 0,
+        upgradeable_landing_companies => \@upgradeable_landing_companies,
+        account_list                  => \@account_list,
+        sub_accounts                  => \@sub_accounts,
+        stash                         => {
             loginid              => $client->loginid,
             email                => $client->email,
             token                => $token,
