@@ -19,6 +19,8 @@ use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
 use BOM::Platform::User;
 
+use LandingCompany::Registry;
+
 rpc authorize => sub {
     my $params = shift;
     my ($token, $token_details, $client_ip) = @{$params}{qw/token token_details client_ip/};
@@ -124,6 +126,30 @@ rpc authorize => sub {
     if (!@upgradeable_landing_companies && !$same_company && !$ico_client_present && !$client->is_virtual) {
         my $financial_company_present = any { $_->landing_company->short eq $financial_company } @$client_list;
         push @upgradeable_landing_companies, $financial_company if !$financial_company_present;
+    }
+
+    # Multiple CR account scenario:
+    # - client's landing company is CR
+    # - there is no ico client
+    # - client can upgrade to other CR accounts, assuming no fiat currency OR other cryptocurrencies
+    if (!@upgradeable_landing_companies && $client->landing_company->short eq 'costarica' && !$ico_client_present) {
+
+        # Get siblings of the current client
+        my $siblings = get_real_account_siblings_information($client->loginid);
+
+        # Check for fiat
+        my $fiat_check = grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
+
+        # Check for crypto
+        my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
+        my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
+
+        my $client_num_crypto = (grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'crypto' } keys %$siblings) // 0;
+
+        my $cryptocheck = ($lc_num_crypto && $lc_num_crypto == $client_num_crypto);
+
+        # Push to upgradeable_landing_companies, if possible to open another CR account
+        push @upgradeable_landing_companies, 'costarica' if (!$fiat_check || !$cryptocheck);
     }
 
     my @account_list;
