@@ -215,9 +215,9 @@ subtest $method => sub {
 subtest 'upgradeable_landing_companies' => sub {
 
     my $params = {};
-    $email = 'denmark@binary.com';
+    my $email  = 'denmark@binary.com';
 
-    $user = BOM::Platform::User->create(
+    my $user = BOM::Platform::User->create(
         email    => $email,
         password => '1234',
     );
