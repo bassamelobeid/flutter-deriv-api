@@ -98,6 +98,9 @@ rpc authorize => sub {
 
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
 
+    # Flag for checking ICO clients
+    my $ico_client_present = any { $_->get_status('ico_only') } @$client_list;
+
     # Get the gaming and financial company from the client's residence
     my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
     my $financial_company = $countries_instance->financial_company_for_country($client->residence);
@@ -108,13 +111,13 @@ rpc authorize => sub {
     # Check if client has a gaming account or financial account
     # Otherwise, add them to the list
     # NOTE: Gaming has higher priority over financial
-    if ($gaming_company) {
+    if ($gaming_company && !$ico_client_present) {
         my $gaming_company_present = any { $_->landing_company->short eq $gaming_company } @$client_list;
         push @upgradeable_accounts, $gaming_company if !$gaming_company_present;
     }
 
     # Financial account is added to the list only if the list is empty and the two companies are not same
-    if (!@upgradeable_accounts && !$same_company) {
+    if (!@upgradeable_accounts && !$same_company && !$ico_client_present) {
         my $financial_company_present = any { $_->landing_company->short eq $financial_company } @$client_list;
         push @upgradeable_accounts, $financial_company if !$financial_company_present;
     }
