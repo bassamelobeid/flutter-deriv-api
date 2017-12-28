@@ -310,9 +310,11 @@ sub _match_conditions {
 }
 
 sub _offerings_obj {
-    my $landing_company = shift // 'costarica';
+    my $landing_company_short = shift // 'costarica';
 
-    return LandingCompany::Registry::get($landing_company)->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+    my $landing_company = LandingCompany::Registry::get($landing_company_short);
+    my $method = $landing_company->default_offerings eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
+    return $landing_company->$method(BOM::Platform::Runtime->instance->get_offerings_config);
 }
 
 no Moose;
