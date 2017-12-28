@@ -70,6 +70,7 @@ sub _build_base_profile {
 
     my $min = @{RISK_PROFILES()};
     for (@$ap) {
+        next if not defined $_->{risk_profile};
         my $tmp = $risk_profile_rank{$_->{risk_profile}};
         $min = $tmp if $tmp < $min;
         last if $min == 0;
