@@ -129,7 +129,7 @@ sub produce_batch_contract {
 sub _validate_input_parameters {
     my $params = shift;
 
-    return if $params->{bet_type} =~ /BINARYICO|LEGACY/ or $params->{for_sale};
+    return if $params->{bet_type} =~ /BINARYICO|INVALID/i or $params->{for_sale};
 
     BOM::Product::Exception->throw(
         error_code => 'MissingRequiredInput',
