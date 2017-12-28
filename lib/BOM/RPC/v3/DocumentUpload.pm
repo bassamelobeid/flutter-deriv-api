@@ -87,12 +87,13 @@ sub successful_upload {
             });
     }
     catch {
+        # The custom exception for a duplicated document upload was raised
+        return create_upload_error('duplicate_document') if $_ =~ /duplicate_document/;
+        # Another internal exception was raised
         $error_occured = 1;
     };
 
     return create_upload_error('doc_not_found') if not $result;
-    
-    return create_upload_error('duplicate_document') if $result == -1;
 
     if ($error_occured) {
         warn 'Failed to update the uploaded document in the db';
