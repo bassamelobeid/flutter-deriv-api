@@ -127,6 +127,11 @@ override _build_ask_price => sub {
 override _build_bid_price => sub {
     my $self = shift;
 
+    if ($self->is_expired) {
+        my $bid_price = $self->theo_price;
+        return financialrounding('amount', $self->currency, $bid_price);
+    }
+
     return financialrounding('amount', $self->currency, $self->theo_price * (1 - $self->lookback_base_commission));
 };
 
