@@ -6,7 +6,7 @@ use LandingCompany::Registry;
 use BOM::Platform::Runtime;
 use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow);
 use Cache::RedisDB;
-use JSON qw(from_json);
+use JSON::MaybeXS;
 
 #Update high and low of symbols for predefined periods.
 sub run {
@@ -18,7 +18,7 @@ sub run {
     $redis->subscription_loop(
         subscribe        => [map { 'FEED_LATEST_TICK::' . $_ } @symbols],
         default_callback => sub {
-            my $tick_data = from_json($_[3]);
+            my $tick_data = JSON::MaybeXS->new->decode($_[3]);
             update_predefined_highlow($tick_data);
         },
     );

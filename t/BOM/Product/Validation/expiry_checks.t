@@ -5,7 +5,6 @@ use Test::Most;
 use Test::Warnings;
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
