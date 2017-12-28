@@ -21,13 +21,14 @@ use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master |;
 
+use Encode;
 use DataDog::DogStatsd::Helper;
 use Digest::MD5 qw(md5_hex);
-use File::Slurp;
 use Format::Util::Strings qw( defang );
 use JSON::MaybeXS;
 use JSON::Schema;
 use Mojolicious::Plugin::ClientIP::Pluggable;
+use Path::Tiny;
 use RateLimitations::Pluggable;
 use Scalar::Util qw(weaken);
 use Time::Duration::Concise;
@@ -40,6 +41,8 @@ our %DIVERT_APP_IDS;
 # These apps are blocked entirely.
 # This list is also overwritten by Redis.
 our %BLOCK_APP_IDS;
+
+my $json = JSON::MaybeXS->new;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -449,8 +452,8 @@ sub startup {
 
     for my $action (@$actions) {
         my $f             = '/home/git/regentmarkets/binary-websocket-api/config/v3/' . $action->[0];
-        my $in_validator  = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")), format => \%JSON::Schema::FORMATS);
-        my $out_validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")), format => \%JSON::Schema::FORMATS);
+        my $in_validator  = JSON::Schema->new($json->decode(path("$f/send.json")->slurp_utf8), format => \%JSON::Schema::FORMATS);
+        my $out_validator = JSON::Schema->new($json->decode(path("$f/receive.json")->slurp_utf8), format => \%JSON::Schema::FORMATS);
 
         my $action_options = $action->[1] ||= {};
         $action_options->{in_validator}  = $in_validator;
@@ -548,7 +551,7 @@ sub startup {
             warn "Have diverted app_ids, applying: $ids\n";
             # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
             # No value => no update.
-            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
+            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
         });
     $redis->get(
         'app_id::blocked',
@@ -560,7 +563,7 @@ sub startup {
             }
             return unless $ids;
             warn "Have blocked app_ids, applying: $ids\n";
-            %BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))};
+            %BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
         });
     return;
 

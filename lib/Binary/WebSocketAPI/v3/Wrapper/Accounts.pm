@@ -4,7 +4,6 @@ use 5.014;
 use strict;
 use warnings;
 
-use JSON;
 use List::Util qw(first);
 
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;

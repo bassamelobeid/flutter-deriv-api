@@ -6,11 +6,13 @@ use warnings;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Future;
-use JSON;
+use JSON::MaybeXS;
 use Mojo::IOLoop;
 use Path::Tiny;
 use Try::Tiny;
 use Data::Dumper;
+
+my $json = JSON::MaybeXS->new;
 
 sub start_timing {
     my (undef, $req_storage) = @_;
@@ -269,7 +271,7 @@ sub output_validation {
         my $output_validation_result = $req_storage->{out_validator}->validate($api_response);
         if (not $output_validation_result) {
             my $error = join(" - ", $output_validation_result->errors);
-            $c->app->log->warn("Invalid output parameter for [ " . JSON::to_json($api_response) . " error: $error ]");
+            $c->app->log->warn("Invalid output parameter for [ " . $json->encode($api_response) . " error: $error ]");
             %$api_response = %{
                 $c->new_error($req_storage->{msg_type} || $req_storage->{name},
                     'OutputValidationFailed', $c->l("Output validation failed: ") . $error)};
@@ -336,11 +338,11 @@ sub check_useragent {
     if ((not $c->stash('user_agent')) and $c->stash('logged_requests') < 3 and ($c->stash('source') // 0) == 1) {
         $c->stash('logged_requests', $c->stash('logged_requests') + 1);
         try {
-            Path::Tiny::path('/var/log/httpd/missing_ua_appid1.log')->append((
+            Path::Tiny::path('/var/log/httpd/missing_ua_appid1.log')->append_utf8((
                     join ',',
                     (map { $c->stash($_) // '' } qw/ source client_ip landing_company_name brand log_requests /),
                     (map { $c->tx->req->headers->header($_) // '-' } qw/ Origin Referer /),
-                    JSON::to_json($c->stash('introspection')->{last_call_received} // {})
+                    $json->encode($c->stash('introspection')->{last_call_received} // {})
                 ),
                 "\n"
             );

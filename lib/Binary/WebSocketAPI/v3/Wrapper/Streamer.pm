@@ -3,12 +3,12 @@ package Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use strict;
 use warnings;
 
-use JSON;
 use Date::Utility;
+use Encode;
 use Mojo::Redis::Processor;
 use Time::HiRes qw(gettimeofday);
 use List::MoreUtils qw(last_index);
-use JSON::XS qw(encode_json decode_json);
+use JSON::MaybeXS;
 use Scalar::Util qw (looks_like_number refaddr weaken);
 use Format::Util::Numbers qw/formatnumber/;
 
@@ -18,6 +18,8 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw( ws_redis_master shared_redis )
 
 use utf8;
 use Try::Tiny;
+
+my $json = JSON::MaybeXS->new;
 
 sub website_status {
     my ($c, $req_storage) = @_;
@@ -52,7 +54,7 @@ sub website_status {
                     ### to config
                     my $current_state = ws_redis_master()->get("NOTIFY::broadcast::state");
 
-                    $current_state = eval { decode_json($current_state) }
+                    $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
                     $website_status->{site_status} = $current_state->{site_status} // 'up';
                     $website_status->{message}     = $current_state->{message}     // ''
@@ -104,7 +106,7 @@ sub send_notification {
             return unless ws_redis_master()->get($is_on_key);    ### Need 1 for continuing
         }
 
-        $message = eval { decode_json $message } unless ref $message eq 'HASH';
+        $message = eval { $json->decode(Encode::decode_utf8($message)) } unless ref $message eq 'HASH';
         delete $message->{message} if $message->{site_status} ne 'down';
 
         $client_shared->{c}->send({
@@ -271,7 +273,7 @@ sub ticks_history {
 
 sub process_realtime_events {
     my ($shared_info, $msg, $chan) = @_;
-    my $payload = decode_json($msg);
+    my $payload = $json->decode(Encode::decode_utf8($msg));
 
     # pick the per-user controller to send-back notifications to
     # related users only
@@ -495,7 +497,7 @@ sub process_transaction_updates {
 
     return unless $channel;
 
-    my $payload = JSON::from_json($message);
+    my $payload = $json->decode($message);
 
     return unless $payload && ref $payload eq 'HASH';
 

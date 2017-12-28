@@ -3,9 +3,12 @@ use warnings;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
+# load this file to force MOJO::JSON to use JSON::MaybeXS
+use MOJO::JSON::MaybeXS;
 use YAML::XS;
 use Mojo::Redis2;
-use JSON::XS qw | encode_json |;
+use JSON::MaybeXS;
+use Encode;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 
 STDOUT->autoflush(1);
@@ -56,10 +59,10 @@ if ( $status || $message ) {
     my $is_on_value = $is_on;
     print $ws_redis_master->set($is_on_key, $is_on_value), "\n" if $is_on_value;
 
-    my $mess_obj = encode_json ( {
+    my $mess_obj = Encode::encode_utf8(JSON::MaybeXS->new->encode( {
         site_status => $status  // "up",
         message     => $message // ""
-    } );
+    } ));
     print $ws_redis_master->set($state_key, $mess_obj), "\n";
 
     my $subscribes_count =  $ws_redis_master->publish($channel_name, $mess_obj);
