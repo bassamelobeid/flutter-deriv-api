@@ -58,7 +58,7 @@
           "pattern": "^(1|0)$",
           "description": "1 for omnibus account, 0 for normal clients"
         },
-        "upgradeable_accounts": {
+        "upgradeable_landing_companies": {
           "type" : "array",
           "description": "List of landing company shortcodes the client can upgrade to"
         },
