@@ -154,12 +154,6 @@ sub _validate_input_parameters {
             error_args => ['symbol']);
     }
 
-    unless (any { $params->{bet_type} eq $_ } $offerings->values_for_key('contract_type')) {
-        BOM::Product::Exception->throw(
-            error_code => 'InvalidInput',
-            error_args => ['contract_type']);
-    }
-
     return;
 }
 
