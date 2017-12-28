@@ -1,7 +1,8 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
+use Encode;
+use JSON::MaybeXS;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
@@ -22,6 +23,7 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client->email($email);
 $test_client->save;
 
+my $json = JSON::MaybeXS->new;
 my $test_loginid = $test_client->loginid;
 my $user         = BOM::Platform::User->create(
     email    => $email,
@@ -41,12 +43,12 @@ my $t = build_wsapi_test();
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_loginid);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $res = decode_json($t->message->[1]);
+my $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{authorize}->{email}, 'raunak@binary.com', 'Correct email for oauth token';
 test_schema('authorize', $res);
 
 $t = $t->send_ok({json => {login_history => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is scalar(@{$res->{login_history}}), 1, 'got correct number of login history records';
 ok $res->{login_history}->[0]->{action},      'login history record has action key';
 ok $res->{login_history}->[0]->{environment}, 'login history record has environment key';
