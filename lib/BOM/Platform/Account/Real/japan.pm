@@ -3,7 +3,8 @@ package BOM::Platform::Account::Real::japan;
 use strict;
 use warnings;
 
-use JSON qw(encode_json);
+use Encode;
+use JSON::MaybeXS;
 use BOM::Platform::Account::Real::default;
 
 sub _validate {
@@ -52,7 +53,7 @@ sub create_account {
 
     my $client = $register->{client};
     $client->financial_assessment({
-        data => encode_json($financial_assessment),
+        data => Encode::encode_utf8(JSON::MaybeXS->new->encode($financial_assessment)),
     });
 
     $client->set_exclusion->max_losses($daily_loss_limit);
