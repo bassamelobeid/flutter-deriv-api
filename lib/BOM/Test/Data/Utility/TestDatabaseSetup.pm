@@ -7,10 +7,12 @@ use File::Slurp;
 use Try::Tiny;
 use DBIx::Migration;
 use BOM::Test;
+use Digest::MD5;
 
 use constant {
     SNAPSHOT_DIR => '/tmp/test-db-snapshots',
     STELLAR_DIR  => '/home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/',
+    PG_DIR_GLOB  => '/home/git/regentmarkets/bom-postgres*',
 };
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
@@ -237,22 +239,22 @@ sub _update_sequence_of {
 
 sub _restore_dbs_from_snapshot {
     my $self = shift;
-    return 0 if !-f $self->snapshot;
+    return 0 unless -f $self->snapshot;
 
     my $stellar_dir = $self->stellar_dir;
 
     # Return true if the snapshot is successfully restored
-    return !system("cd $stellar_dir && stellar restore >/dev/null");
+    return !system("cd $stellar_dir && stellar restore >/dev/null 2>&1");
 }
 
 sub _create_snapshot {
     my $self = shift;
-    mkdir SNAPSHOT_DIR if !-d SNAPSHOT_DIR;
+    mkdir SNAPSHOT_DIR unless -d SNAPSHOT_DIR;
 
     my ($stellar_dir, $snapshot) = ($self->stellar_dir, $self->snapshot);
 
     # Touch the snapshot file if the snapshot is successfully created
-    return !system("cd $stellar_dir && stellar snapshot >/dev/null && touch $snapshot");
+    return !system("cd $stellar_dir && stellar snapshot >/dev/null 2>&1 && touch $snapshot");
 }
 
 sub BUILD {
@@ -264,8 +266,30 @@ sub BUILD {
     return;
 }
 
-sub snapshot { return SNAPSHOT_DIR . "/" . shift->_db_name . ".snapshot" }
+sub snapshot {
+    my $self     = shift;
+    my $checksum = $self->pg_code_checksum;
+
+    # Do not create a snapshot if checksum is not available
+    return SNAPSHOT_DIR unless $checksum;
+    return SNAPSHOT_DIR . "/" . $self->_db_name . "-$checksum.snapshot";
+}
 
 sub stellar_dir { return STELLAR_DIR . "/" . shift->_db_name }
+
+sub pg_code_checksum {
+    my $md5   = Digest::MD5->new;
+    my $pg_ar = SNAPSHOT_DIR . '/pg.tar';
+
+    # Make an archive containing the bom-postgres* with order and permission preserved
+    # Return if creating the archive fails
+    return undef if system("tar -Ppscf $pg_ar " . PG_DIR_GLOB . " >/dev/null 2>&1");
+
+    open(my $f, '<:raw', $pg_ar);
+    $md5->addfile($f);
+    close($f);
+
+    return $md5->hexdigest;
+}
 
 1;
