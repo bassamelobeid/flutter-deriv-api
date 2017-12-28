@@ -136,7 +136,8 @@ rpc authorize => sub {
 
         # Get siblings of the current client
         my $siblings = get_real_account_siblings_information($client->loginid);
-
+        my $landing_company_name = $client->landing_company->short;
+        
         # Check for fiat
         my $fiat_check = grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
 
