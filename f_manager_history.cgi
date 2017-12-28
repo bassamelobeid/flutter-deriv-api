@@ -84,21 +84,19 @@ my $summary = client_statement_summary({
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbic = $clientdb->db->dbic;
 
-my $deposits_withdrawals_to_date = $dbic->run(
+my ($deposits_to_date, $withdrawals_to_date) = $dbic->run(
     fixup => sub {
         my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits_and_withdrawals(?, ?)");
         $sth->execute($client->loginid, $currency);
-        return $sth->fetchall_hashref('client_loginid');
+        return @{$sth->fetchall_arrayref->[0]};
     });
-$deposits_withdrawals_to_date->{$client->loginid}->{withdrawals} = 0 if !($deposits_withdrawals_to_date->{$client->loginid}->{withdrawals});
-$deposits_withdrawals_to_date->{$client->loginid}->{deposits}    = 0 if !($deposits_withdrawals_to_date->{$client->loginid}->{deposits});
 
 BOM::Backoffice::Request::template->process(
     'backoffice/account/statement.html.tt',
     {
         transactions            => $statement->{transactions},
-        withdrawals_to_date     => formatnumber('amount', $currency, $deposits_withdrawals_to_date->{$client->loginid}->{withdrawals}),
-        deposits_to_date        => formatnumber('amount', $currency, $deposits_withdrawals_to_date->{$client->loginid}->{deposits}),
+        withdrawals_to_date     => formatnumber('amount', $currency, $withdrawals_to_date),
+        deposits_to_date        => formatnumber('amount', $currency, $deposits_to_date),
         balance                 => $statement->{balance},
         currency                => $currency,
         loginid                 => $client->loginid,
