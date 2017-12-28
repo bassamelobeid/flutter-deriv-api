@@ -2,7 +2,7 @@ package BOM::Test::Suite;
 use strict;
 use warnings;
 use Test::Most;
-use JSON;
+use JSON::MaybeXS;
 use Data::Dumper;
 use BOM::Test::Time qw(set_date);    # should be on top
 
@@ -251,7 +251,7 @@ sub exec_test {
             $send_file,
             template_values => $args{template_values},
         );
-        my $req_params = JSON::from_json($content);
+        my $req_params = JSON::MaybeXS->new->decode($content);
 
         $req_params = $test_app->adjust_req_params($req_params, {language => $self->{language}});
 
@@ -303,7 +303,7 @@ sub _get_token {
 
     my $code;
     foreach my $key (@{$tokens}) {
-        my $value = JSON::from_json($redis->get($key));
+        my $value = JSON::MaybeXS->new->decode(Encode::decode_utf8($redis->get($key)));
 
         if ($value->{email} eq $email) {
             $key =~ /^VERIFICATION_TOKEN::(\w+)$/;

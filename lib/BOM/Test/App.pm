@@ -7,7 +7,7 @@ use Moo;
 use Role::Tiny::With;
 
 use Data::Dumper;
-use JSON;
+use JSON::MaybeXS;
 use Test::More;
 
 sub BUILD {
@@ -28,7 +28,7 @@ sub BUILD {
 sub _test_schema {
     my ($self, $result, $expected_json_schema, $descr, $should_be_failed) = @_;
 
-    my $validator  = JSON::Schema->new(JSON::from_json($expected_json_schema));
+    my $validator  = JSON::Schema->new(JSON::MaybeXS->new->decode($expected_json_schema));
     my $valid      = $validator->validate($result);
     my $test_level = $Test::Builder::Level;
     local $Test::Builder::Level = $test_level + 3;
