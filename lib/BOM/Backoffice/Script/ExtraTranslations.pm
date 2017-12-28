@@ -9,7 +9,7 @@ use File::ShareDir;
 use Module::Load::Conditional qw( can_load );
 use Locale::Maketext::Extract;
 use YAML::XS qw(LoadFile);
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 
 use Finance::Contract::Category;
 use Finance::Asset::Market::Registry;
@@ -193,8 +193,10 @@ sub add_contract_categories {
     my $self = shift;
 
     my $fh = $self->pot_append_fh;
-    my @all_categories = map { Finance::Contract::Category->new($_) }
-        LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config)->values_for_key('contract_category');
+    my @all_categories =
+        map { Finance::Contract::Category->new($_) }
+        LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config)
+        ->values_for_key('contract_category');
     foreach my $contract_category (@all_categories) {
         if ($contract_category->display_name) {
             my $msgid = $self->msg_id($contract_category->display_name);
