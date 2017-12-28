@@ -1295,7 +1295,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         -mesg              => 'Rounding exceed permitted epsilon',
         -message_to_client => BOM::Platform::Context::localize('Only a maximum of two decimal points are allowed for the amount.'),
     ),
-    BI110 => Error::Base->cuss(
+    BI005 => Error::Base->cuss(
         -type              => 'LookbackOpenPositionLimitExceeded',
         -mesg              => 'Lookback open positions limit exceeded',
         -message_to_client => BOM::Platform::Context::localize('Lookback open positions limit exceeded.'),
