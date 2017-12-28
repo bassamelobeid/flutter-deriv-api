@@ -6,12 +6,13 @@ use warnings;
 use Exporter 'import';
 our @EXPORT_OK = qw( request auth_request decode_json deposit withdraw balance new_client);
 
+use Encode;
 use FindBin qw/$Bin/;
 use Test::More;
 use Plack::Test;
 use Plack::Util;
 use URI;
-use JSON ();
+use JSON::MaybeXS ();
 use HTTP::Headers;
 use HTTP::Request;
 use Digest::MD5 qw/md5_hex/;
@@ -87,7 +88,7 @@ sub __request {
 }
 
 sub decode_json {
-    eval { JSON::decode_json($_[0]) };
+    eval { JSON::MaybeXS->new->decode(Encode::decode_utf8($_[0])) };
 }
 
 ## common
