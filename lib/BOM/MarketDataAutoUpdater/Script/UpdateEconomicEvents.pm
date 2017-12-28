@@ -8,7 +8,7 @@ use BOM::MarketData qw(create_underlying create_underlying_db);
 use BOM::Platform::Runtime;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
-use JSON;
+use JSON::MaybeXS;
 use Path::Tiny;
 use BOM::Platform::Chronicle;
 use Try::Tiny;
@@ -37,7 +37,7 @@ sub script_run {
 
     foreach my $event_param (@$events_received) {
         $event_param->{recorded_date} = Date::Utility->new->epoch;
-        Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param) . "\n");
+        Path::Tiny::path("/feed/economic_events/$file_timestamp")->append_utf8(time . ' ' . JSON::MaybeXS->new->encode($event_param) . "\n");
     }
 
     try {
