@@ -212,6 +212,65 @@ subtest $method => sub {
     delete $params->{args};
 };
 
+subtest 'upgradeable_landing_companies' => sub {
+
+    my $params = {};
+    $email = 'denmark@binary.com';
+
+    $user = BOM::Platform::User->create(
+        email    => $email,
+        password => '1234',
+    );
+
+    # Create VRTC account (Denmark)
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        residence   => 'dk',
+        email       => $email
+    });
+
+    $user->add_loginid({loginid => $client->loginid});
+    $user->save;
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+
+    # Test 1
+    my $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['malta'], 'Client can upgrade to malta.';
+
+    # Create MLT account
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+        residence   => 'dk',
+        email       => $email
+    });
+
+    $user->add_loginid({loginid => $client->loginid});
+    $user->save;
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+
+    # Test 2
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client can upgrade to maltainvest.';
+
+    # Create MF account
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+        residence   => 'dk',
+        email       => $email
+    });
+
+    $user->add_loginid({loginid => $client->loginid});
+    $user->save;
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+
+    # Test 3
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client has upgraded all accounts.';
+};
+
 my $new_token;
 subtest 'logout' => sub {
     ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
