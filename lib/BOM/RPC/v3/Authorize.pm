@@ -95,7 +95,6 @@ rpc authorize => sub {
     };
 
     my $client_list = $user->get_clients_in_sorted_order([keys %{$user->loginid_details}]);
-    my @client_shortcode_list = map { $_->landing_company->short } @$client_list;
 
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
 
