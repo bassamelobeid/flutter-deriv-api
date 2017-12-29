@@ -3,7 +3,6 @@ use Test::FailWarnings;
 use Test::MockTime qw( set_absolute_time restore_time );
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
