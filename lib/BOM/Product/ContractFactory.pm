@@ -159,7 +159,7 @@ sub _validate_input_parameters {
     unless (any { $us eq $_ } $offerings->values_for_key('underlying_symbol')) {
         BOM::Product::Exception->throw(
             error_code => 'InvalidInput',
-            error_args => ['symbol']);
+            error_args => ['asset']);
     }
 
     return;
