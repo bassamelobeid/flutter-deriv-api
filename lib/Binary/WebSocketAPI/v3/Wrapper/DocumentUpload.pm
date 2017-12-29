@@ -4,10 +4,9 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use Digest::SHA;
+use Digest::MD5;
 use Net::Async::Webservice::S3;
 use Future;
-use Variable::Disposition qw/retain_future/;
 use JSON::MaybeXS qw/decode_json/;
 use List::Util qw/first/;
 
@@ -35,7 +34,7 @@ sub add_upload_info {
         call_type       => $rpc_response->{call_type},
         file_name       => $rpc_response->{file_name},
         file_size       => $args->{file_size},
-        sha1            => Digest::SHA->new,
+        md5             => Digest::MD5->new,
         received_bytes  => 0,
         pending_futures => [],
         upload_id       => $upload_id,
@@ -133,14 +132,14 @@ sub send_upload_failure {
 }
 
 sub send_upload_successful {
-    my ($c, $upload_info, $status) = @_;
+    my ($c, $upload_info, $status, $checksum) = @_;
 
     clean_up_on_finish($c, $upload_info);
 
     my $upload_finished = {
         size      => $upload_info->{received_bytes},
-        checksum  => $upload_info->{sha1}->hexdigest,
         call_type => $upload_info->{call_type},
+        checksum  => $checksum,
         status    => $status,
     };
 
@@ -189,7 +188,7 @@ sub upload_chunk {
 
     return send_upload_failure($c, $upload_info, 'size_mismatch') if $new_received_bytes > $upload_info->{file_size};
 
-    $stash->{$upload_id}->{sha1}->add($data);
+    $stash->{$upload_id}->{md5}->add($data);
     $stash->{$upload_id}->{received_bytes} = $new_received_bytes;
 
     return resolve_with_received_chunk($c, $upload_info->{pending_futures}, $data);
@@ -292,15 +291,19 @@ sub last_chunk_received {
 
     return if $upload_info->{chunk_size} != 0;
 
-    return retain_future(
-        Future->wait_any($upload_info->{put_future}, $c->loop->timeout_future(after => UPLOAD_TIMEOUT))->on_done(
-            sub {
-                send_upload_successful($c, $upload_info, 'success');
-            }
-            )->on_fail(
-            sub {
-                send_upload_failure($c, $upload_info, 'unknown');
-            }));
+    return Future->wait_any($upload_info->{put_future}, $c->loop->timeout_future(after => UPLOAD_TIMEOUT))->on_done(
+        sub {
+            my $etag = shift;
+            $etag =~ s/"//g;
+            my $checksum = $upload_info->{md5}->hexdigest;
+            return send_upload_successful($c, $upload_info, 'success', $checksum) if $checksum eq $etag;
+            warn 'S3 etag does not match the checksum, this indicates a bug in the upload process';
+            send_upload_failure($c, $upload_info, 'unknown');
+        }
+        )->on_fail(
+        sub {
+            send_upload_failure($c, $upload_info, 'unknown');
+        })->retain;
 }
 
 sub wait_for_chunk {
