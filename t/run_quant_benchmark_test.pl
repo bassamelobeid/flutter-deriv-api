@@ -30,10 +30,6 @@ sub documentation {
 
 sub _benchmark_testing_setup {
 
-    # some underlying we do not offer anymore but the tests still have it
-    my $mock = Test::MockModule->new('BOM::Product::ContractFactory');
-    $mock->mock('_validate_input_parameters', sub {});
-
     $Quant::Framework::Underlying::interest_rates_source = 'market';
 
     my $file_path = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/interest_rates.csv';

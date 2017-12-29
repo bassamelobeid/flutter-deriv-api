@@ -87,6 +87,10 @@ sub price_superderivatives_bets_locally {
     my $csv       = Text::CSV->new();
     my $breakdown = {};
     my $i         = 0;
+    # some underlying we do not offer anymore but the tests still have it
+    my $mock = Test::MockModule->new('BOM::Product::ContractFactory');
+    $mock->mock('_validate_input_parameters', sub {});
+
     my $module = Test::MockModule->new('Quant::Framework::VolSurface::Moneyness');
     my $spot_reference = 0;
     $module->mock('spot_reference', sub { return $spot_reference; });
