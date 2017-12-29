@@ -11,16 +11,17 @@ BEGIN {
 use Test::More;
 use Test::Mojo;
 
+use Encode;
 use JSON::Schema;
-use JSON;
+use JSON::MaybeXS;
 use File::Slurp;
 use Data::Dumper;
 use Date::Utility;
 
 use BOM::Test;
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase;
+use BOM::Test::Data::Utility::UnitTestMarketData;
+use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Platform::Password;
 use BOM::Platform::User;
@@ -142,7 +143,7 @@ sub test_schema {
     my ($type, $data) = @_;
 
     my $validator =
-        JSON::Schema->new(JSON::from_json(File::Slurp::read_file($ENV{WEBSOCKET_API_REPO_PATH} . "/config/$version/$type/receive.json")));
+        JSON::Schema->new(JSON::MaybeXS->new->decode(path($ENV{WEBSOCKET_API_REPO_PATH} . "/config/$version/$type/receive.json")->slurp_utf8));
     my $result = $validator->validate($data);
     ok $result, "$type response is valid";
     if (not $result) {
@@ -198,7 +199,7 @@ sub call_mocked_client {
     $module->mock('new', sub { return $fake_rpc_client });
 
     $t = $t->send_ok({json => $json})->message_ok;
-    my $res = decode_json($t->message->[1]);
+    my $res = JSON::MaybeXS->new->decode(Encode::decode_utf8($t->message->[1]));
 
     $module->unmock_all;
     return ($res, $call_params);

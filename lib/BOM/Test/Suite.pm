@@ -2,7 +2,7 @@ package BOM::Test::Suite;
 use strict;
 use warnings;
 use Test::Most;
-use JSON;
+use JSON::MaybeXS;
 use Data::Dumper;
 use BOM::Test::Time qw(set_date);    # should be on top
 
@@ -23,6 +23,7 @@ use Client::Account;
 use BOM::Test::Data::Utility::UnitTestMarketData;    # we :init later for unit/auth test DBs
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase;
+use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::App;
 use Time::HiRes qw(tv_interval gettimeofday);
@@ -55,6 +56,7 @@ sub new {
 
     eval {
         # Start with a clean database
+        BOM::Test::Data::Utility::FeedTestDatabase->import(qw(:init));
         BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
         BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
         BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
@@ -249,7 +251,7 @@ sub exec_test {
             $send_file,
             template_values => $args{template_values},
         );
-        my $req_params = JSON::from_json($content);
+        my $req_params = JSON::MaybeXS->new->decode($content);
 
         $req_params = $test_app->adjust_req_params($req_params, {language => $self->{language}});
 
@@ -301,7 +303,7 @@ sub _get_token {
 
     my $code;
     foreach my $key (@{$tokens}) {
-        my $value = JSON::from_json($redis->get($key));
+        my $value = JSON::MaybeXS->new->decode(Encode::decode_utf8($redis->get($key)));
 
         if ($value->{email} eq $email) {
             $key =~ /^VERIFICATION_TOKEN::(\w+)$/;
