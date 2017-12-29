@@ -246,7 +246,7 @@ subtest 'send_ask - invalid symbol' => sub {
             "streaming_params" => {add_theo_probability => 1},
         }};
 
-    my $result = $c->call_ok('send_ask', $params)->has_error->error_code_is('OfferingsValidationError')
+    my $result = $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')
         ->error_message_is('Trading is not offered for this asset.');
 };
 
