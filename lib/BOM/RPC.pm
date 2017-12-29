@@ -12,7 +12,7 @@ use Proc::CPUUsage;
 use Time::HiRes;
 use Try::Tiny;
 use Path::Tiny;
-use JSON::XS;
+use JSON::MaybeXS;
 use Scalar::Util q(blessed);
 
 use BOM::Platform::Context qw(localize);
@@ -43,6 +43,8 @@ use BOM::RPC::v3::Pricing;
 # TODO(leonerd): this one RPC is unusual, coming from Utility.pm which doesn't
 # contain any other RPCs
 BOM::RPC::Registry::register(longcode => \&BOM::RPC::v3::Utility::longcode);
+
+my $json = JSON::MaybeXS->new;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -160,7 +162,7 @@ sub _make_rpc_service_and_register {
                 $params->{client} = blessed($params->{client}) . ' object: ' . $params->{client}->loginid
                     if eval { $params->{client}->can('loginid') };
                 defined blessed($_) and $_ = blessed($_) . ' object' for (values %$params);
-                warn "Exception when handling $method - $_ with parameters " . encode_json $params;
+                warn "Exception when handling $method - $_ with parameters " . $json->encode($params);
                 BOM::RPC::v3::Utility::create_error({
                         code              => 'InternalServerError',
                         message_to_client => localize("Sorry, an error occurred while processing your account.")});

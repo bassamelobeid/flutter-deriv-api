@@ -11,7 +11,8 @@ use 5.014;
 use strict;
 use warnings;
 
-use JSON;
+use Encode;
+use JSON::MaybeXS;
 use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
@@ -48,6 +49,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
+my $json = JSON::MaybeXS->new;
 common_before_actions qw(auth);
 
 =head2 payout_currencies
@@ -489,7 +491,7 @@ rpc get_account_status => sub {
     push @status, 'social_signup' if $user->has_social_signup;
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();
-    $financial_assessment = ref($financial_assessment) ? from_json($financial_assessment->data || '{}') : {};
+    $financial_assessment = ref($financial_assessment) ? $json->decode($financial_assessment->data || '{}') : {};
     push @status,
         'financial_assessment_not_complete'
         if (
@@ -1425,10 +1427,11 @@ rpc api_token => sub {
         if (defined $params->{account_id}) {
             BOM::Platform::RedisReplicated::redis_write()->publish(
                 'TXNUPDATE::transaction_' . $params->{account_id},
-                JSON::to_json({
-                        error => {
-                            code       => "TokenDeleted",
-                            account_id => $params->{account_id}}}));
+                Encode::encode_utf8(
+                    $json->encode({
+                            error => {
+                                code       => "TokenDeleted",
+                                account_id => $params->{account_id}}})));
         }
     }
     if (my $display_name = $args->{new_token}) {
@@ -1585,7 +1588,7 @@ rpc set_financial_assessment => sub {
             next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
             $cli->financial_assessment({
-                data => encode_json $financial_evaluation->{user_data},
+                data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),
             });
             $cli->save;
         }
@@ -1625,7 +1628,7 @@ rpc get_financial_assessment => sub {
     my $response             = {};
     my $financial_assessment = $client->financial_assessment();
     if ($financial_assessment) {
-        my $data = from_json $financial_assessment->data;
+        my $data = $json->decode($financial_assessment->data);
         if ($data) {
             foreach my $key (keys %$data) {
                 unless ($key =~ /total_score/) {
