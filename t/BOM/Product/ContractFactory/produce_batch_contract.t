@@ -14,7 +14,7 @@ use Postgres::FeedDB::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use Date::Utility;
-use JSON qw(to_json);
+use JSON::MaybeXS;
 
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked_decimate->mock(
@@ -24,7 +24,7 @@ $mocked_decimate->mock(
     });
 my %custom_otm =
     map { rand(1234) => {conditions => {market => $_, expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
-BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json(\%custom_otm));
+BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(JSON::MaybeXS->new->encode(\%custom_otm));
 
 my $now = Date::Utility->new('2017-03-15');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});

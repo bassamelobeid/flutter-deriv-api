@@ -21,7 +21,6 @@ use BOM::MarketData::Types;
 use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
-use JSON qw( from_json to_json decode_json );
 
 my $now  = Date::Utility->new('2012-01-19T01:00:00Z')->epoch;
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

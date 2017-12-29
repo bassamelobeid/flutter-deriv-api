@@ -7,7 +7,6 @@ use Test::Warnings qw/warning/;
 use Scalar::Util qw( looks_like_number );
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 use Date::Utility;
 
 use BOM::Product::ContractFactory qw( produce_contract );

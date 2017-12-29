@@ -3,7 +3,7 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
-use JSON qw(from_json);
+use JSON::MaybeXS;
 use Math::Util::CalculatedValue::Validatable;
 use List::Util qw(max);
 use List::MoreUtils qw(none all);
@@ -429,7 +429,7 @@ sub _build_forqqq {
 sub _build_otm_threshold {
     my $self = shift;
 
-    my $custom_otm       = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold // {});
+    my $custom_otm       = JSON::MaybeXS->new->decode(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold // {});
     my @known_conditions = qw(expiry_type is_atm_bet);
     my %mapper           = (
         underlying_symbol => $self->underlying->symbol,
