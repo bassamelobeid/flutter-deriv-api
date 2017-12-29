@@ -7,7 +7,7 @@ no indirect;
 use Scalar::Util qw(blessed);
 use Try::Tiny;
 use List::MoreUtils qw(none);
-use JSON::XS;
+use JSON::MaybeXS;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
@@ -31,6 +31,8 @@ use Locale::Country::Extra;
 use BOM::Pricing::v3::Utility;
 
 use feature "state";
+
+my $json = JSON::MaybeXS->new->allow_blessed;
 
 sub _create_error {
     my $args = shift;
@@ -308,7 +310,7 @@ sub get_bid {
         $contract                            = produce_contract($bet_params);
     }
     catch {
-        warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
+        warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . $json->encode($bet_params);
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'GetProposalFailure',
                 message_to_client => localize('Cannot create contract')});
@@ -549,7 +551,7 @@ sub get_contract_details {
         $contract                            = produce_contract($bet_params);
     }
     catch {
-        warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
+        warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . $json->encode($bet_params);
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'GetContractDetails',
                 message_to_client => localize('Cannot create contract')});
@@ -644,7 +646,7 @@ sub _get_error_message {
     if ($log_exception) {
         _log_exception(_get_ask => $reason);
     } else {
-        warn __PACKAGE__ . " _get_ask produce_contract failed: $reason, parameters: " . JSON::XS->new->allow_blessed->encode($args_copy);
+        warn __PACKAGE__ . " _get_ask produce_contract failed: $reason, parameters: " . $json->encode($args_copy);
     }
 
     return ['Cannot create contract'];

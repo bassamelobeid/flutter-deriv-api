@@ -14,6 +14,8 @@ use warnings;
 
 use feature qw(say);
 
+# load this file to force MOJO::JSON to use JSON::MaybeXS
+use Mojo::JSON::MaybeXS;
 use BOM::Platform::Runtime;
 
 use BOM::Product::Contract::Finder::Japan;
@@ -22,7 +24,6 @@ use BOM::Product::Contract::Batch;
 use BOM::Pricing::JapanContractDetails;
 use BOM::MarketData qw(create_underlying);
 
-use JSON::XS qw(encode_json);
 use List::UtilsBy qw(rev_nsort_by);
 use Pricing::Engine::EuropeanDigitalSlope;
 use Date::Utility;
