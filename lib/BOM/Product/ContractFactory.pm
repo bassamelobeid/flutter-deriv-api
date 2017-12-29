@@ -141,11 +141,9 @@ sub _validate_input_parameters {
     BOM::Product::Exception->throw(error_code => 'SameExpiryStartTime') if $start->epoch == $expiry->epoch;
     BOM::Product::Exception->throw(error_code => 'PastExpiryTime')      if $expiry->is_before($start);
 
-    my $lc_short     = $params->{landing_company} // 'costarica';
-    my $lc           = LandingCompany::Registry::get($lc_short);
-    my $product_type = $params->{product_type} // $lc->default_offerings;
-    my $method       = $product_type eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
-    my $offerings    = $lc->$method(BOM::Platform::Runtime->instance->get_offerings_config());
+    # hard-coded costarica because that's the widest offerings range we have.
+    my $lc        = LandingCompany::Registry::get('costarica');
+    my $offerings = $lc->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config());
 
     my $us = $params->{underlying}->symbol;
 
