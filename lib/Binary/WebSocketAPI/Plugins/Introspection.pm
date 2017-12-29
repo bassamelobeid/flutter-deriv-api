@@ -8,6 +8,7 @@ use parent qw(Mojolicious::Plugin);
 no indirect;
 
 use curry::weak;
+use Encode;
 use Mojo::IOLoop;
 use Future;
 use Future::Mojo;
@@ -412,7 +413,7 @@ command divert => sub {
             }
             # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
             # No value => no update.
-            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))} if $ids;
+            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))} if $ids;
             my $rslt = {diversions => \%Binary::WebSocketAPI::DIVERT_APP_IDS};
             if ($app_id) {
                 if ($service) {
@@ -421,7 +422,7 @@ command divert => sub {
                     delete $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
                 }
                 $redis->set(
-                    'app_id::diverted' => Encode::encode_utf8(JSON::MaybeXS->new->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS)),
+                    'app_id::diverted' => Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::DIVERT_APP_IDS)),
                     sub {
                         my ($redis, $err) = @_;
                         unless ($err) {
@@ -466,7 +467,7 @@ command block => sub {
                     $service
                 );
             }
-            %Binary::WebSocketAPI::BLOCK_APP_IDS = %{JSON::MaybeXS->new->decode(Encode::decode_utf8($ids))} if $ids;
+            %Binary::WebSocketAPI::BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))} if $ids;
             my $rslt = {blocked => \%Binary::WebSocketAPI::BLOCK_APP_IDS};
             if ($app_id) {
                 if ($service) {
@@ -475,7 +476,7 @@ command block => sub {
                     delete $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id};
                 }
                 $redis->set(
-                    'app_id::blocked' => Encode::encode_utf8(JSON::MaybeXS->new->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS)),
+                    'app_id::blocked' => Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS)),
                     sub {
                         my ($redis, $err) = @_;
                         unless ($err) {

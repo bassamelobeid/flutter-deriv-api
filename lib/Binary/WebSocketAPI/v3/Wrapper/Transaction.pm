@@ -4,7 +4,6 @@ package Binary::WebSocketAPI::v3::Wrapper::Transaction;
 use strict;
 use warnings;
 
-use JSON;
 use List::Util qw(first);
 
 use Binary::WebSocketAPI::v3::Wrapper::System;
