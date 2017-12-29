@@ -54,8 +54,20 @@ sub _set_cache {
 }
 
 sub _get_digest {
-    my $digest = _get_config_key(BOM::Platform::Runtime->instance->get_offerings_config);
-    return $digest;
+
+    my $offerings_config     = BOM::Platform::Runtime->instance->get_offerings_config();
+    my $trading_calendar_rev = 0;
+    my $reader               = BOM::Platform::Chronicle::get_chronicle_reader();
+    # information on 'Resources' are dependent information on trading calendar. A hard cache of 1 day will
+    # make information on 'Resources' out of date. Those this doesn't happen very often but we need to get this right.
+    for (['holidays', 'holidays'], ['partial_trading', 'early_closes'], ['partial_trading', 'late_opens']) {
+        my $rev = $reader->get($_->[0], $_->[1] . '_revision');
+        $trading_calendar_rev += $rev->{epoch} if $rev;
+    }
+
+    $offerings_config->{trading_calendar_revision} = $trading_calendar_rev;
+
+    return _get_config_key($offerings_config);
 }
 
 =head2 trading_times
