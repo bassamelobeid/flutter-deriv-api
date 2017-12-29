@@ -3,8 +3,8 @@ use warnings;
 
 use Getopt::Long;
 use Path::Tiny;
-use FileHandle;
 use Date::Utility;
+use File::stat;
 
 use Brands;
 
@@ -48,22 +48,27 @@ my $reporter        = BOM::MyAffiliates::ActivityReporter->new();
 my $processing_date = Date::Utility->new($from_date->epoch);
 my @csv_filenames;
 
-while ($to_date->days_between($processing_date) >= 0) {
-    my @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy);
+my $output_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
+path($output_dir)->mkpath if (not -d $output_dir);
 
-    my $output_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
-    Path::Tiny::path($output_dir)->mkpath if (not -d $output_dir);
+while ($to_date->days_between($processing_date) >= 0) {
     my $output_filename = $output_dir . 'pl_' . $processing_date->date_yyyymmdd . '.csv';
 
-    my $fh = FileHandle->new('>' . $output_filename);
-
-    # Date, Player, P&L, Deposits, Runbet Turnover, Intraday Turnover, Other Turnover
-    foreach my $line (@csv) {
-        chomp $line;
-        print $fh $line . "\n" if $line;
+    # check if file exist and is not of size 0
+    if (-e $output_filename and stat($output_filename)->size > 0) {
+        $processing_date = Date::Utility->new($processing_date->epoch + 86400);
+        next;
     }
 
-    undef $fh;
+    my @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy);
+
+    # Date, Player, P&L, Deposits, Runbet Turnover, Intraday Turnover, Other Turnover
+    my @lines;
+    foreach my $line (@csv) {
+        chomp $line;
+        push @lines, $line . "\n" if $line;
+    }
+    path($output_filename)->spew_utf8(@lines);
 
     push @csv_filenames, $output_filename;
 
