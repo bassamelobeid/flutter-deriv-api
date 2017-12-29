@@ -11,7 +11,7 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Platform::RedisReplicated;
 use await;
-my $t = build_wsapi_test();
+my $t    = build_wsapi_test();
 my $json = JSON::MaybeXS->new;
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

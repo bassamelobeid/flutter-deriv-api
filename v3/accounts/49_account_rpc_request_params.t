@@ -56,7 +56,7 @@ $user->save;
 $authorize = $t->await::authorize({authorize => $token});
 
 # Test 2 (Client should be able to upgrade to maltainvest)
-is_deeply $authorize->{authorize}->{upgradeable_landing_companies}, ['maltainvest'], 'UK client can upgrade to maltainvest.';
+is_deeply $authorize->{authorize}->{upgradeable_landing_companies}, [];
 
 # Create client (UK - MF)
 $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
