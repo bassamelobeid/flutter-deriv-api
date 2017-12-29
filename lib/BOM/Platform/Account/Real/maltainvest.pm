@@ -3,7 +3,8 @@ package BOM::Platform::Account::Real::maltainvest;
 use strict;
 use warnings;
 
-use JSON qw(encode_json);
+use Encode;
+use JSON::MaybeXS;
 use Date::Utility;
 
 use Brands;
@@ -45,7 +46,7 @@ sub create_account {
 
     my $client = $register->{client};
     $client->financial_assessment({
-        data => encode_json($financial_assessment->{user_data}),
+        data => Encode::encode_utf8(JSON::MaybeXS->new->encode($financial_assessment->{user_data})),
     });
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
     $client->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure') if $accept_risk;
