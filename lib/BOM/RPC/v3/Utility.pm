@@ -313,13 +313,19 @@ sub get_real_account_siblings_information {
     return $siblings;
 }
 
+=head2 get_client_currency_information
+    get_client_currency_information($siblings, $landing_company_name)
+    
+    Get the currency statuses (fiat and crypto) of the clients, based on the landing company.
+=cut
+
 sub get_client_currency_information {
     my ($siblings, $landing_company_name) = @_;
 
-    my $fiat_check = grep { ((LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency})) // '') eq 'fiat' } keys %$siblings;
+    my $fiat_check = grep { ((LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency})) // '') eq 'fiat' } keys %$siblings // 0;
 
     my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
-    my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
+    my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies} // 0;
 
     my $client_num_crypto = grep { ((LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency})) // '') eq 'crypto' } keys %$siblings
         // 0;
