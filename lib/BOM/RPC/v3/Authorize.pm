@@ -107,15 +107,11 @@ rpc authorize => sub {
     my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
     my $financial_company = $countries_instance->financial_company_for_country($client->residence);
 
-    # Check if the two are same or not
-    my $same_company = ($gaming_company and $financial_company and ($gaming_company eq $financial_company));
-
     # Check if client has a gaming account or financial account
     # Otherwise, add them to the list
     # NOTE: Gaming has higher priority over financial
-    if ($gaming_company && !$ico_client_present) {
-        my $gaming_company_present = any { $_->landing_company->short eq $gaming_company } @$client_list;
-        push @upgradeable_landing_companies, $gaming_company if !$gaming_company_present;
+    if ($gaming_company && !$ico_client_present && !(any { $_->landing_company->short eq $gaming_company } @$client_list)) {
+        push @upgradeable_landing_companies, $gaming_company;
     }
 
     # Financial account is added to the list:
@@ -123,9 +119,13 @@ rpc authorize => sub {
     # - two companies are not same
     # - there is no ico client
     # - current client is not virtual
-    if (!@upgradeable_landing_companies && !$same_company && !$ico_client_present && !$client->is_virtual) {
-        my $financial_company_present = any { $_->landing_company->short eq $financial_company } @$client_list;
-        push @upgradeable_landing_companies, $financial_company if !$financial_company_present;
+    if (   !@upgradeable_landing_companies
+        && !($gaming_company and $financial_company and ($gaming_company eq $financial_company))
+        && !$ico_client_present
+        && !$client->is_virtual
+        && !(any { $_->landing_company->short eq $financial_company } @$client_list))
+    {
+        push @upgradeable_landing_companies, $financial_company;
     }
 
     # Multiple CR account scenario:
