@@ -66,15 +66,8 @@ sub _get_upgradeable_landing_companies {
         # Get siblings of the current client
         my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid);
 
-        # Check for fiat
-        my $fiat_check = grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings // 0;
-
-        # Check for crypto
-        my $legal_allowed_currencies = LandingCompany::Registry::get($client->landing_company->short)->legal_allowed_currencies;
-        my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
-
-        my $client_num_crypto =
-            (grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'crypto' } keys %$siblings) // 0;
+        my ($fiat_check, $lc_num_crypto, $client_num_crypto) =
+            BOM::RPC::v3::Utility::get_client_currency_information($siblings, $client->landing_company->short);
 
         my $cryptocheck = ($lc_num_crypto && $lc_num_crypto == $client_num_crypto);
 
