@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-
 use utf8;
 use Test::Most;
 use Test::Deep;
@@ -8,7 +7,8 @@ use Test::Mojo;
 use Test::MockModule;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
-use JSON;
+use Encode;
+use JSON::MaybeXS;
 use Encode qw(encode);
 use Email::Folder::Search;
 
@@ -683,7 +683,7 @@ subtest $method => sub {
     sub test_financial_assessment {
         my ($data, $is_present, $msg) = @_;
         $test_client->financial_assessment({
-            data => encode_json $data,
+            data => Encode::encode_utf8(JSON::MaybeXS->new->encode($data)),
         });
         $test_client->save();
         my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
