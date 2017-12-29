@@ -23,11 +23,16 @@ use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use Text::CSV;
 
+
 sub documentation {
     return 'This script runs quant\'s pricing-related datasets';
 }
 
 sub _benchmark_testing_setup {
+
+    # some underlying we do not offer anymore but the tests still have it
+    my $mock = Test::MockModule->new('BOM::Product::ContractFactory');
+    $mock->mock('_validate_input_parameters', sub {});
 
     $Quant::Framework::Underlying::interest_rates_source = 'market';
 
