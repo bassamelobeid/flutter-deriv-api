@@ -1,9 +1,13 @@
 #!/etc/rmg/bin/perl
 use strict;
 use warnings;
+
+# load this file to force MOJO::JSON to use JSON::MaybeXS
+use Mojo::JSON::MaybeXS;
 use BOM::Platform::RedisReplicated;
 use DataDog::DogStatsd::Helper;
-use JSON::XS qw/decode_json/;
+use Encode;
+use JSON::MaybeXS;
 use Date::Utility;
 use Time::HiRes ();
 use Mojo::UserAgent;
@@ -22,7 +26,7 @@ for (
 {
     my $e = 0;
     try {
-        %entry = @{decode_json($redis->get($_))};
+        %entry = @{JSON::MaybeXS->new->decode(Encode::decode_utf8($redis->get($_)))};
     }
     catch {
         $e = 1;

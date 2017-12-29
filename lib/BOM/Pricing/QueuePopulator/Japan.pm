@@ -21,7 +21,8 @@ use BOM::Platform::Runtime;
 use BOM::Product::ContractFinder;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData qw(create_underlying);
-use JSON::XS qw(encode_json);
+use Encode;
+use JSON::MaybeXS;
 use List::UtilsBy qw(rev_nsort_by bundle_by);
 use Pricing::Engine::EuropeanDigitalSlope;
 use LandingCompany::Registry;
@@ -176,7 +177,7 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
                     trading_period_start   => $contract_parameters->{trading_period}{date_start}{epoch},
                 );
                 $log->tracef("Contract parameters will be %s", \@pricing_queue_args);
-                push @jobs, "PRICER_KEYS::" . encode_json(\@pricing_queue_args);
+                push @jobs, "PRICER_KEYS::" . Encode::encode_utf8(JSON::MaybeXS->new->encode(\@pricing_queue_args));
             }
         }
     }
