@@ -9,7 +9,6 @@ use Test::Warnings qw/warning/;
 use DateTime;
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 use Date::Utility;
 use Postgres::FeedDB::Spot::Tick;
 

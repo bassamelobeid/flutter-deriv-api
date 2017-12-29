@@ -7,7 +7,7 @@ use Test::MockModule;
 use Test::More;
 use Test::Warnings;
 use Date::Utility;
-use JSON qw(to_json);
+use JSON::MaybeXS;
 use Math::Util::CalculatedValue::Validatable;
 use Format::Util::Numbers qw/roundcommon/;
 
@@ -77,7 +77,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix');
 my %custom_otm =
     map { rand(1234) => {conditions => {market => $_, expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
-BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json(\%custom_otm));
+BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(JSON::MaybeXS->new->encode(\%custom_otm));
 
 subtest 'payout' => sub {
     my $payout                = 10;

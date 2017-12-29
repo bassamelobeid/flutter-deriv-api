@@ -8,7 +8,6 @@ use Test::Warnings;
 use Test::Exception;
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);

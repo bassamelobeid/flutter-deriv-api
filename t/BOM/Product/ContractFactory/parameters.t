@@ -8,7 +8,6 @@ use Test::Exception;
 use Test::MockModule;
 
 use File::Spec;
-use JSON qw(decode_json);
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;

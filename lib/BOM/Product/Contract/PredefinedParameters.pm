@@ -7,8 +7,8 @@ use Exporter qw(import);
 our @EXPORT_OK =
     qw(get_predefined_barriers_by_contract_category get_expired_barriers get_available_barriers get_trading_periods generate_barriers_for_window generate_trading_periods update_predefined_highlow next_generation_epoch);
 
-use JSON::MaybeXS qw/encode_json decode_json/;
-use JSON qw(to_json from_json);
+use Encode;
+use JSON::MaybeXS;
 use Time::HiRes;
 use Date::Utility;
 use List::Util qw(first min max);
@@ -25,6 +25,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
 
 my $cache_namespace = 'predefined_parameters';
+my $json            = JSON::MaybeXS->new;
 
 sub _trading_calendar {
     my $for_date = shift;
@@ -129,7 +130,7 @@ sub update_predefined_highlow {
         my ($new_high, $new_low);
 
         if ($cache) {
-            my $current_highlow = from_json($cache);
+            my $current_highlow = $json->decode($cache);
             my ($high, $low) = map { $current_highlow->[$_] } (0, 1);
             $new_high = max($new_quote, $high);
             $new_low = min($new_quote, $low);
@@ -143,7 +144,7 @@ sub update_predefined_highlow {
         }
         my $ttl = max(1, $period->{date_expiry}->{epoch} - $now);
         # not using chronicle here because we don't want to save historical highlow data
-        BOM::Platform::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, to_json([$new_high, $new_low]), 'EX', $ttl);
+        BOM::Platform::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, $json->encode([$new_high, $new_low]), 'EX', $ttl);
     }
 
     return 1;
@@ -164,7 +165,7 @@ sub _get_predefined_highlow {
     my $highlow_key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
     my $cache = BOM::Platform::RedisReplicated::redis_read->get($cache_namespace . '::' . $highlow_key);
 
-    return @{from_json($cache)} if ($cache);
+    return @{$json->decode($cache)} if ($cache);
     return ();
 }
 
@@ -322,7 +323,7 @@ sub _get_spot {
     my $redis_tick_json;
     my $redis_tick_from_date_start;
     if ($redis_tick_json = $redis->get('Distributor::QUOTE::' . $underlying->symbol)) {
-        $tick_from_distributor_redis = decode_json($redis_tick_json);
+        $tick_from_distributor_redis = $json->decode(Encode::decode_utf8($redis_tick_json));
         $redis_tick_from_date_start  = $date_start->epoch - $tick_from_distributor_redis->{epoch};
     }
     my $tick_from_feeddb = $underlying->tick_at($trading_period->{date_start}->{epoch}, {allow_inconsistent => 1});
@@ -346,7 +347,7 @@ sub _get_spot {
     } else {
         $spot   = $tick_from_feeddb->quote;
         $source = $outdated_feeddb ? 'feed-db:outdated' : 'feeddb';
-        $quote  = encode_json($tick_from_feeddb->as_hash);
+        $quote  = Encode::encode_utf8($json->encode($tick_from_feeddb->as_hash));
     }
 
     if (!defined $spot) {

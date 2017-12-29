@@ -5,7 +5,6 @@ use Test::Most;
 use Test::Warnings;
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 use Date::Utility;
 
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
