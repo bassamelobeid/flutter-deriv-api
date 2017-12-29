@@ -15,6 +15,7 @@ use Cache::RedisDB;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;
+use BOM::Test::Helper::Client qw(create_client);
 use Client::Account;
 use BOM::Platform::Runtime;
 use BOM::Transaction;
@@ -493,10 +494,11 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     );
 
     # check if market name is allowed for landing company
-    $new_underlying = create_underlying('R50');
+    $new_underlying = create_underlying('R_50');
+    my $new_client  = create_client('JP');
     $new_contract   = produce_contract({
         underlying   => $new_underlying,
-        bet_type     => 'CALL',
+        bet_type     => 'CALLE',
         currency     => $currency,
         payout       => 1000,
         date_start   => $now,
@@ -507,14 +509,14 @@ subtest 'Validate Jurisdiction Restriction' => sub {
 
     $new_transaction = BOM::Transaction->new({
         purchase_date => $contract->date_start,
-        client        => $client,
+        client        => $new_client,
         contract      => $new_contract,
     });
 
     $error = BOM::Transaction::Validation->new({
-            clients     => [$client],
+            clients     => [$new_client],
             transaction => $new_transaction
-        })->_validate_jurisdictional_restrictions($client);
+        })->_validate_jurisdictional_restrictions($new_client);
     is($error->get_type, 'NotLegalMarket', 'Market name is not in the list of legal allowed markets.');
     like(
         $error->{-message_to_client},
