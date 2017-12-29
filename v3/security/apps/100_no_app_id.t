@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-use JSON;
 use Test::More;
 use BOM::Test::Helper qw/build_mojo_test launch_redis/;
 

@@ -1,7 +1,8 @@
 use strict;
 use warnings;
 use Test::More;
-use JSON;
+use Encode;
+use JSON::MaybeXS;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -14,7 +15,7 @@ use BOM::Database::Model::OAuth;
 
 my $t    = build_wsapi_test();
 my $cr_1 = create_test_user();
-
+my $json = JSON::MaybeXS->new;
 # cleanup
 my $oauth = BOM::Database::Model::OAuth->new();
 my $dbh   = $oauth->dbic->dbh;
@@ -32,21 +33,21 @@ my $app_id = $app->{app_id};
 
 my ($token) = $oauth->store_access_token_only($app_id, $cr_1);
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
-my $authorize = decode_json($t->message->[1]);
+my $authorize = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $authorize->{authorize}->{loginid}, $cr_1;
 $t = $t->send_ok({json => {sell_expired => 1}})->message_ok;
-my $res = decode_json($t->message->[1]);
+my $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{error}->{code}, 'PermissionDenied', 'PermissionDenied b/c it is trade';
 $t = $t->send_ok({json => {get_account_status => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
 ok $res->{get_account_status}, 'get_account_status is read scope';
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only($app_id, $cr_1);
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
-$authorize = decode_json($t->message->[1]);
+$authorize = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $authorize->{authorize}->{loginid}, $cr_1;
 $t = $t->send_ok({json => {tnc_approval => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{error}->{code}, 'PermissionDenied', 'PermissionDenied b/c it is read';
 
 $t->finish_ok;
