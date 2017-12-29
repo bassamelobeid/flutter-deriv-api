@@ -153,7 +153,6 @@ rpc authorize => sub {
     };
 
     my $client_list = $user->get_clients_in_sorted_order([keys %{$user->loginid_details}]);
-    my $upgradeable_landing_companies = _get_upgradeable_landing_companies($client_list, $client);
 
     my @account_list;
     my $currency;
@@ -178,12 +177,12 @@ rpc authorize => sub {
         currency => ($account ? $account->currency_code : ''),
         email    => $client->email,
         country  => $client->residence,
-        landing_company_name          => $lc->short,
-        landing_company_fullname      => $lc->name,
-        scopes                        => $scopes,
-        is_virtual                    => $client->is_virtual ? 1 : 0,
-        allow_omnibus                 => $client->allow_omnibus ? 1 : 0,
-        upgradeable_landing_companies => $upgradeable_landing_companies,
+        landing_company_name     => $lc->short,
+        landing_company_fullname => $lc->name,
+        scopes                   => $scopes,
+        is_virtual               => $client->is_virtual ? 1 : 0,
+        allow_omnibus            => $client->allow_omnibus ? 1 : 0,
+        upgradeable_landing_companies => _get_upgradeable_landing_companies($client_list, $client),
         account_list                  => \@account_list,
         sub_accounts                  => \@sub_accounts,
         stash                         => {
