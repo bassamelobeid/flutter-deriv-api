@@ -21,6 +21,70 @@ use BOM::Platform::User;
 
 use LandingCompany::Registry;
 
+sub _get_upgradeable_landing_companies {
+    my ($client_list, $client) = @_;
+
+    # List to store upgradeable companies
+    my @upgradeable_landing_companies;
+
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+
+    # Flag for checking ICO clients
+    my $ico_client_present = any { $_->get_status('ico_only') } @$client_list;
+
+    # Get the gaming and financial company from the client's residence
+    my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
+    my $financial_company = $countries_instance->financial_company_for_country($client->residence);
+
+    # Check if client has a gaming account or financial account
+    # Otherwise, add them to the list
+    # NOTE: Gaming has higher priority over financial
+    if ($gaming_company && !$ico_client_present && !(any { $_->landing_company->short eq $gaming_company } @$client_list)) {
+        push @upgradeable_landing_companies, $gaming_company;
+    }
+
+    # Financial account is added to the list:
+    # - if the list is empty
+    # - two companies are not same
+    # - there is no ico client
+    # - current client is not virtual
+    if (   !@upgradeable_landing_companies
+        && !($gaming_company and $financial_company and ($gaming_company eq $financial_company))
+        && !$ico_client_present
+        && !$client->is_virtual
+        && !(any { $_->landing_company->short eq $financial_company } @$client_list))
+    {
+        push @upgradeable_landing_companies, $financial_company;
+    }
+
+    # Multiple CR account scenario:
+    # - client's landing company is CR
+    # - there is no ico client
+    # - client can upgrade to other CR accounts, assuming no fiat currency OR other cryptocurrencies
+    if (!@upgradeable_landing_companies && $client->landing_company->short eq 'costarica' && !$ico_client_present) {
+
+        # Get siblings of the current client
+        my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid);
+
+        # Check for fiat
+        my $fiat_check = grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings // 0;
+
+        # Check for crypto
+        my $legal_allowed_currencies = LandingCompany::Registry::get($client->landing_company->short)->legal_allowed_currencies;
+        my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
+
+        my $client_num_crypto =
+            (grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'crypto' } keys %$siblings) // 0;
+
+        my $cryptocheck = ($lc_num_crypto && $lc_num_crypto == $client_num_crypto);
+
+        # Push to upgradeable_landing_companies, if possible to open another CR account
+        push @upgradeable_landing_companies, 'costarica' if (!$fiat_check || !$cryptocheck);
+    }
+
+    return \@upgradeable_landing_companies;
+}
+
 rpc authorize => sub {
     my $params = shift;
     my ($token, $token_details, $client_ip) = @{$params}{qw/token token_details client_ip/};
@@ -77,7 +141,6 @@ rpc authorize => sub {
     }
 
     my @sub_accounts;
-    my @upgradeable_landing_companies;
 
     my $is_omnibus = $client->allow_omnibus;
 
@@ -97,62 +160,7 @@ rpc authorize => sub {
     };
 
     my $client_list = $user->get_clients_in_sorted_order([keys %{$user->loginid_details}]);
-
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-
-    # Flag for checking ICO clients
-    my $ico_client_present = any { $_->get_status('ico_only') } @$client_list;
-
-    # Get the gaming and financial company from the client's residence
-    my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
-    my $financial_company = $countries_instance->financial_company_for_country($client->residence);
-
-    # Check if client has a gaming account or financial account
-    # Otherwise, add them to the list
-    # NOTE: Gaming has higher priority over financial
-    if ($gaming_company && !$ico_client_present && !(any { $_->landing_company->short eq $gaming_company } @$client_list)) {
-        push @upgradeable_landing_companies, $gaming_company;
-    }
-
-    # Financial account is added to the list:
-    # - if the list is empty
-    # - two companies are not same
-    # - there is no ico client
-    # - current client is not virtual
-    if (   !@upgradeable_landing_companies
-        && !($gaming_company and $financial_company and ($gaming_company eq $financial_company))
-        && !$ico_client_present
-        && !$client->is_virtual
-        && !(any { $_->landing_company->short eq $financial_company } @$client_list))
-    {
-        push @upgradeable_landing_companies, $financial_company;
-    }
-
-    # Multiple CR account scenario:
-    # - client's landing company is CR
-    # - there is no ico client
-    # - client can upgrade to other CR accounts, assuming no fiat currency OR other cryptocurrencies
-    if (!@upgradeable_landing_companies && $client->landing_company->short eq 'costarica' && !$ico_client_present) {
-
-        # Get siblings of the current client
-        my $siblings             = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid);
-        my $landing_company_name = $client->landing_company->short;
-
-        # Check for fiat
-        my $fiat_check = grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings // 0;
-
-        # Check for crypto
-        my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
-        my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
-
-        my $client_num_crypto =
-            (grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'crypto' } keys %$siblings) // 0;
-
-        my $cryptocheck = ($lc_num_crypto && $lc_num_crypto == $client_num_crypto);
-
-        # Push to upgradeable_landing_companies, if possible to open another CR account
-        push @upgradeable_landing_companies, 'costarica' if (!$fiat_check || !$cryptocheck);
-    }
+    my $upgradeable_landing_companies = _get_upgradeable_landing_companies($client_list, $client);
 
     my @account_list;
     my $currency;
@@ -182,7 +190,7 @@ rpc authorize => sub {
         scopes                        => $scopes,
         is_virtual                    => $client->is_virtual ? 1 : 0,
         allow_omnibus                 => $client->allow_omnibus ? 1 : 0,
-        upgradeable_landing_companies => \@upgradeable_landing_companies,
+        upgradeable_landing_companies => $upgradeable_landing_companies,
         account_list                  => \@account_list,
         sub_accounts                  => \@sub_accounts,
         stash                         => {
