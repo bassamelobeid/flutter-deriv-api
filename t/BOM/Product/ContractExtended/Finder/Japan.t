@@ -78,8 +78,8 @@ subtest "predefined contracts for symbol" => sub {
     foreach my $u (keys %expected) {
         my $f = available_contracts_for_symbol({
             landing_company => 'japan',
-            symbol => $u,
-            date   => $now,
+            symbol          => $u,
+            date            => $now,
         });
         my %got;
         $got{$_->{contract_category}}++ for (@{$f->{available}});
@@ -114,7 +114,7 @@ subtest "predefined trading_period" => sub {
         },
     );
 
-    my @offerings = BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY','japan');
+    my @offerings = BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY', 'japan');
     is(scalar(@offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
     my $now = Date::Utility->new('2015-09-04 17:00:00');
     my $underlying = create_underlying('frxUSDJPY', $now);

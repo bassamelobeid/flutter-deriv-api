@@ -145,9 +145,17 @@ sub _validate_input_parameters {
     my $lc           = LandingCompany::Registry::get($lc_short);
     my $product_type = $params->{product_type} // $lc->default_offerings;
     my $method       = $product_type eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
-    my $offerings    = $lc->$method(BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings    = $lc->$method(BOM::Platform::Runtime->instance->get_offerings_config());
 
     my $us = $params->{underlying}->symbol;
+
+    # these will be handled in validation later.
+    return
+           if $offerings->config->{suspend_trading}
+        or $offerings->config->{disabled_markets}{$params->{underlying}->market->name}
+        or $offerings->config->{suspend_trades}{$us}
+        or $offerings->config->{suspend_buy}{$us};
+
     unless (any { $us eq $_ } $offerings->values_for_key('underlying_symbol')) {
         BOM::Product::Exception->throw(
             error_code => 'InvalidInput',

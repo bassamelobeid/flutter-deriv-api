@@ -49,6 +49,7 @@ subtest 'Ico variations' => sub {
     ok $c->is_valid_to_buy, 'is valid to buy';
 
     $bet_params->{bet_type} = 'CALL';
+    $bet_params->{underlying} = 'frxUSDJPY';
     $c = produce_contract({
         %$bet_params,
         date_expiry => Date::Utility->new->epoch + 30,
