@@ -704,12 +704,14 @@ sub _build_date_start_blackouts {
     my $calendar   = $self->trading_calendar;
     my $start      = $self->date_start;
 
-    # We need to set sod_blackout_start for forex on Monday morning because otherwise, if there is no tick ,it will always take Friday's last tick and trigger the missing feed check
+    # We need to set sod_blackout_start for forex if the previous calendar day is a non-trading day. Otherwise, if there is no tick ,it will always take last tick on the day before and trigger missing feed check.
     if (my $sod = $calendar->opening_on($underlying->exchange, $start)) {
         my $sod_blackout =
-              ($underlying->sod_blackout_start) ? $underlying->sod_blackout_start
-            : ($underlying->market->name eq 'forex' and $self->is_forward_starting and $start->day_of_week == 1) ? '10m'
-            :                                                                                                      '';
+            ($underlying->sod_blackout_start) ? $underlying->sod_blackout_start
+            : (     $underlying->market->name eq 'forex'
+                and $self->is_forward_starting
+                and not $self->trading_calendar->trades_on($self->underlying->exchange, $start->minus_time_interval('1d'))) ? '10m'
+            : '';
         if ($sod_blackout) {
             push @periods, [$sod->epoch, $sod->plus_time_interval($sod_blackout)->epoch];
         }
