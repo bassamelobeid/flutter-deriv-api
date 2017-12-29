@@ -43,7 +43,16 @@ sub _get_upgradeable_landing_companies {
         push @upgradeable_landing_companies, $gaming_company;
     }
 
-    # Financial account is added to the list:
+    # Some countries have financial but not gaming account
+    if (   !@upgradeable_landing_companies
+        && !$gaming_company
+        && $financial_company
+        && !(any { $_->landing_company->short eq $financial_company } @$client_list))
+    {
+        push @upgradeable_landing_companies, $financial_company;
+    }
+
+    # Some countries have both financial and gaming. Financial is added:
     # - if the list is empty
     # - two companies are not same
     # - there is no ico client
