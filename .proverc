@@ -1,2 +1,2 @@
 -MBOM::Test
---exec '/etc/rmg/bin/perl -It/lib -MTest::Warnings'
+--exec '/etc/rmg/bin/perl -It/lib -MTest::Warnings -MMojo::JSON::MaybeXS'

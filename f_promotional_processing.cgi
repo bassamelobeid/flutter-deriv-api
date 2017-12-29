@@ -3,7 +3,7 @@ package main;
 use strict;
 use warnings;
 
-use JSON;
+use JSON::MaybeXS;
 
 use Brands;
 use f_brokerincludeall;
@@ -29,6 +29,7 @@ s/_promo$// for (@approved, @rejected);
 
 my $tac_url = 'https://www.binary.com/en/terms-and-conditions.html?selected_tab=promo-tac-tab';
 
+my $json = JSON::MaybeXS->new;
 CLIENT:
 foreach my $loginid (@approved, @rejected) {
 
@@ -42,7 +43,7 @@ foreach my $loginid (@approved, @rejected) {
 
         my $cpc = $client->client_promo_code || die "no promocode for client $client";
         my $pc = $cpc->promotion;
-        $pc->{_json} = eval { JSON::from_json($pc->promo_code_config) } || {};
+        $pc->{_json} = eval { $json->decode($pc->promo_code_config) } || {};
 
         my $amount   = $pc->{_json}->{amount}   || die "no amount for promocode $pc";
         my $currency = $pc->{_json}->{currency} || die "no currency for promocode $pc";

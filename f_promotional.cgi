@@ -6,7 +6,7 @@ no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix the
 
 use Locale::Country;
 use DateTime;
-use JSON;
+use JSON::MaybeXS;
 use File::stat qw( stat );
 
 use Brands;
@@ -48,7 +48,7 @@ if (@$pcs) {
 
     my %pcs_by_currency;
     for my $pc (@$pcs) {
-        $pc->{_json} ||= eval { JSON::from_json($pc->promo_code_config) } || {};
+        $pc->{_json} ||= eval { JSON::MaybeXS->new->decode($pc->promo_code_config) } || {};
         my $currency = $pc->{_json}->{currency} || next;
         $pcs_by_currency{$currency}++;
     }
@@ -262,7 +262,7 @@ foreach my $client (@clients) {
 
     my $cpc = $client->client_promo_code || die "$client must have a client-promo-code by now";
     my $pc = $cpc->promotion;
-    $pc->{_json} ||= eval { JSON::from_json($pc->promo_code_config) } || {};
+    $pc->{_json} ||= eval { JSON::MaybeXS->new->decode($pc->promo_code_config) } || {};
 
     my $currency = $pc->{_json}->{currency};
     if ($currency eq 'ALL') {

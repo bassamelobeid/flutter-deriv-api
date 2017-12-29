@@ -16,7 +16,7 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use CGI;
-use JSON qw( from_json to_json );
+use JSON::MaybeXS;
 use URL::Encode qw( url_decode );
 use BOM::MarketData qw(create_underlying);
 
@@ -35,7 +35,7 @@ my $spot          = $cgi->param('spot');
 
 my $surface_string = url_decode($cgi->param('surface'));
 $surface_string =~ s/point/./g;
-my $surface_data = from_json($surface_string);
+my $surface_data = JSON::MaybeXS->new->decode($surface_string);
 
 my $class = 'Quant::Framework::VolSurface::' . ($type eq 'moneyness' ? 'Moneyness' : 'Delta');
 my $surface;
@@ -58,5 +58,5 @@ if ($surface->is_valid) {
 }
 
 PrintContentType_JSON();
-print to_json($response);
+print JSON::MaybeXS->new->encode($response);
 code_exit_BO();

@@ -195,7 +195,7 @@ if ($input{whattodo} eq 'uploadID') {
 
     foreach my $i (1 .. 4) {
         my $doctype         = $cgi->param('doctype_' . $i);
-        my $filetoupload    = $cgi->param('FILE_' . $i);
+        my $filetoupload    = $cgi->upload('FILE_' . $i);
         my $docformat       = $cgi->param('docformat_' . $i);
         my $expiration_date = $cgi->param('expiration_date_' . $i);
         my $document_id     = substr(encode_entities($cgi->param('document_id_' . $i)), 0, 30);
