@@ -48,8 +48,10 @@ sub _get_upgradeable_landing_companies {
     # - two companies are not same
     # - there is no ico client
     # - current client is not virtual
-    if (   !@upgradeable_landing_companies
-        && !($gaming_company and $financial_company and ($gaming_company eq $financial_company))
+    if (  !@upgradeable_landing_companies
+        && $gaming_company
+        && $financial_company
+        && $gaming_company ne $financial_company
         && !$ico_client_present
         && !$client->is_virtual
         && !(any { $_->landing_company->short eq $financial_company } @$client_list))
