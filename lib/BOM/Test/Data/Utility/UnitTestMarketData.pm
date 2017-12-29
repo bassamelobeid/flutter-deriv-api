@@ -18,7 +18,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use JSON;
+use JSON::MaybeXS;
 use Carp qw( croak );
 use YAML::XS;
 use List::Util qw(uniq);
@@ -134,7 +134,7 @@ sub _init {
     $writer->set(
         'interest_rates',
         'JPY-USD',
-        JSON::from_json(
+        JSON::MaybeXS->new->decode(
             "{\"symbol\":\"JPY-USD\",\"rates\":{\"365\":\"2.339\",\"180\":\"2.498\",\"90\":\"2.599\",\"30\":\"2.599\",\"7\":\"2.686\"},\"date\":\"2016-01-26T17:00:03Z\",\"type\":\"market\"}"
         ),
         Date::Utility->new

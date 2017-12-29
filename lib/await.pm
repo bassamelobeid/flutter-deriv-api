@@ -3,7 +3,8 @@ package await;
 use strict;
 use warnings;
 
-use JSON::XS qw| decode_json |;
+use Encode;
+use JSON::MaybeXS;
 use IO::Async::Loop;
 use Test::More;
 
@@ -97,7 +98,7 @@ sub get_data {
             die "Socket was closed while waiting for response (timeout)";
         }
         my $msg  = $t->message->[1];
-        my $data = decode_json($msg);
+        my $data = JSON::MaybeXS->new->decode(Encode::decode_utf8($msg));
 
         return $data if not exists($params->{req_id}) or (exists($data->{req_id}) and $data->{req_id} == $params->{req_id});
 
