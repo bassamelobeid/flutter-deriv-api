@@ -66,7 +66,7 @@ sub has_no_error {
 
     my $result = $self->result;
     return $self unless $self->_test('ok', $result , "response for /$method has result");
-    $self->_test('ok', !$result->{error}, $description) or Test::More::diag("error: " . result->{error}{code});
+    $self->_test('ok', !$result->{error}, $description) or Test::More::diag("error: " . $result->{error}{code});
     return $self;
 }
 
