@@ -2,7 +2,7 @@ package BOM::Test::RPC::Client;
 
 use Data::Dumper;
 use MojoX::JSON::RPC::Client;
-use Test::More ();
+use Test::More qw();
 use Data::UUID;
 
 use Moose;
@@ -65,7 +65,7 @@ sub has_no_error {
     $description ||= "response for /$method has no error";
 
     my $result = $self->result;
-    $self->_test('ok', $result && !$result->{error}, $description) or diag("error: $result->{error}");
+    $self->_test('ok', $result && !$result->{error}, $description) or Test::More::diag("error: $result->{error}");
     return $self;
 }
 
