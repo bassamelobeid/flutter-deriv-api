@@ -22,6 +22,8 @@ use BOM::Platform::Token;
 use utf8;
 
 my ($t, $rpc_ct);
+scope_guard { restore_time(); };
+set_absolute_time('2017-12-29T00:00:00Z');
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -154,8 +156,6 @@ subtest 'call params validation' => sub {
 };
 
 subtest 'validation' => sub {
-    scope_guard { restore_time(); };
-    set_absolute_time('2017-12-29T00:00:00Z');
     # random loginid to make it fail
     $params->{token} = $token;
     $params->{args}->{account_from} = 'CR123';
