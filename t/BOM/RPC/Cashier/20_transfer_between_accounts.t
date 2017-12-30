@@ -21,9 +21,11 @@ use BOM::Platform::Token;
 
 use utf8;
 
-my ($t, $rpc_ct);
+# Test will fail at weekend. So we mock the time
 scope_guard { restore_time(); };
 set_absolute_time('2017-12-29T00:00:00Z');
+
+my ($t, $rpc_ct);
 
 subtest 'Initialization' => sub {
     lives_ok {
