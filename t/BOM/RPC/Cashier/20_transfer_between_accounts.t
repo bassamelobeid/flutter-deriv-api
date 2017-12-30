@@ -6,7 +6,8 @@ use Test::Mojo;
 use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warn;
-
+use Test::MockTime qw/set_absolute_time restore_time/;
+use Guard;
 use MojoX::JSON::RPC::Client;
 use POSIX qw/ ceil /;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
@@ -153,6 +154,8 @@ subtest 'call params validation' => sub {
 };
 
 subtest 'validation' => sub {
+    scope_guard { restore_time(); };
+    set_absolute_time('2017-12-29T00:00:00Z');
     # random loginid to make it fail
     $params->{token} = $token;
     $params->{args}->{account_from} = 'CR123';
