@@ -39,13 +39,15 @@ sub _get_upgradeable_landing_companies {
     # Check if client has a gaming account or financial account
     # Otherwise, add them to the list
     # NOTE: Gaming has higher priority over financial
-    if ($gaming_company && !$ico_client_present && !(any { $_->landing_company->short eq $gaming_company } @$client_list)) {
+    if (   $gaming_company
+        && !$client->get_status('duplicate_account')
+        && !(any { $_->landing_company->short eq $gaming_company } @$client_list))
+    {
         push @upgradeable_landing_companies, $gaming_company;
     }
 
     # Some countries have financial but not gaming account
-    if (   !@upgradeable_landing_companies
-        && !$gaming_company
+    if (  !$gaming_company
         && $financial_company
         && !(any { $_->landing_company->short eq $financial_company } @$client_list))
     {
