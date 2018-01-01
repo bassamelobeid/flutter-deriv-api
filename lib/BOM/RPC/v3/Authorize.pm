@@ -36,11 +36,14 @@ sub _get_upgradeable_landing_companies {
     my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
     my $financial_company = $countries_instance->financial_company_for_country($client->residence);
 
-    # Check if client has a gaming account or financial account
+    # Check for duplicate account
+    my $duplicate_account_present = any { $_->get_status('duplicate_account') } @$client_list;
+
+    # Check if client has a gaming account or financial account, and check for duplicate status
     # Otherwise, add them to the list
     # NOTE: Gaming has higher priority over financial
     if (   $gaming_company
-        && !$client->get_status('duplicate_account')
+        && !$duplicate_account_present
         && !(any { $_->landing_company->short eq $gaming_company } @$client_list))
     {
         push @upgradeable_landing_companies, $gaming_company;
@@ -59,10 +62,8 @@ sub _get_upgradeable_landing_companies {
     # - two companies are not same
     # - there is no ico client
     # - current client is not virtual
-    if (  !@upgradeable_landing_companies
-        && $gaming_company
-        && $financial_company
-        && $gaming_company ne $financial_company
+    if (   !@upgradeable_landing_companies
+        && ($gaming_company && $financial_company && $gaming_company ne $financial_company)
         && !$ico_client_present
         && !$client->is_virtual
         && !(any { $_->landing_company->short eq $financial_company } @$client_list))
@@ -74,7 +75,7 @@ sub _get_upgradeable_landing_companies {
     # - client's landing company is CR
     # - there is no ico client
     # - client can upgrade to other CR accounts, assuming no fiat currency OR other cryptocurrencies
-    if (!@upgradeable_landing_companies && $client->landing_company->short eq 'costarica' && !$ico_client_present) {
+    if ($client->landing_company->short eq 'costarica' && !$ico_client_present) {
 
         # Get siblings of the current client
         my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid);
@@ -86,6 +87,12 @@ sub _get_upgradeable_landing_companies {
 
         # Push to upgradeable_landing_companies, if possible to open another CR account
         push @upgradeable_landing_companies, 'costarica' if (!$fiat_check || !$cryptocheck);
+    }
+
+    # In some cases, client has VRTC, MX/MLT, MF account
+    # MX/MLT account will get disabled, so MF should not have any companies
+    if (@upgradeable_landing_companies && !$client->is_virtual && !$duplicate_account_present) {
+        @upgradeable_landing_companies = ();
     }
 
     return \@upgradeable_landing_companies;
