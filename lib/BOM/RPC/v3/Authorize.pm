@@ -39,11 +39,11 @@ sub _get_upgradeable_landing_companies {
     # Check for duplicate account
     my $duplicate_account_present = any { $_->get_status('duplicate_account') } @$client_list;
 
-    # Check if client has a gaming account or financial account, and check for duplicate account
+    # Check if client has a gaming account or financial account
     # Otherwise, add them to the list
     # NOTE: Gaming has higher priority over financial
     if (   $gaming_company
-        && !$duplicate_account_present
+        && $client->is_virtual
         && !(any { $_->landing_company->short eq $gaming_company } @$client_list))
     {
         push @upgradeable_landing_companies, $gaming_company;
@@ -52,9 +52,16 @@ sub _get_upgradeable_landing_companies {
     # Some countries have financial but not gaming account
     if (  !$gaming_company
         && $financial_company
+        && $client->is_virtual
         && !(any { $_->landing_company->short eq $financial_company } @$client_list))
     {
         push @upgradeable_landing_companies, $financial_company;
+    }
+
+    # In some cases, client has VRTC, MX/MLT, MF account
+    # MX/MLT account will get duplicated, so MF should not have any companies
+    if (@upgradeable_landing_companies && !$client->is_virtual) {
+        @upgradeable_landing_companies = ();
     }
 
     # Some countries have both financial and gaming. Financial is added:
@@ -87,12 +94,6 @@ sub _get_upgradeable_landing_companies {
 
         # Push to upgradeable_landing_companies, if possible to open another CR account
         push @upgradeable_landing_companies, 'costarica' if (!$fiat_check || !$cryptocheck);
-    }
-
-    # In some cases, client has VRTC, MX/MLT, MF account
-    # MX/MLT account will get duplicated, so MF should not have any companies
-    if (@upgradeable_landing_companies && !$client->is_virtual && !$duplicate_account_present) {
-        @upgradeable_landing_companies = ();
     }
 
     return \@upgradeable_landing_companies;
