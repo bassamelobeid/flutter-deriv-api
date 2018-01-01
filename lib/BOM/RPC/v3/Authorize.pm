@@ -36,9 +36,6 @@ sub _get_upgradeable_landing_companies {
     my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
     my $financial_company = $countries_instance->financial_company_for_country($client->residence);
 
-    # Check for duplicate account
-    my $duplicate_account_present = any { $_->get_status('duplicate_account') } @$client_list;
-
     # Check if client has a gaming account or financial account
     # Otherwise, add them to the list
     # NOTE: Gaming has higher priority over financial
@@ -59,7 +56,7 @@ sub _get_upgradeable_landing_companies {
     }
 
     # In some cases, client has VRTC, MX/MLT, MF account
-    # MX/MLT account will get duplicated, so MF should not have any companies
+    # MX/MLT account might get duplicated, so MF should not have any companies
     if (@upgradeable_landing_companies && !$client->is_virtual) {
         @upgradeable_landing_companies = ();
     }
