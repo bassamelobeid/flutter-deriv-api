@@ -313,6 +313,26 @@ sub get_real_account_siblings_information {
     return $siblings;
 }
 
+=head2 get_client_currency_information
+    get_client_currency_information($siblings, $landing_company_name)
+    
+    Get the currency statuses (fiat and crypto) of the clients, based on the landing company.
+=cut
+
+sub get_client_currency_information {
+    my ($siblings, $landing_company_name) = @_;
+
+    my $fiat_check = grep { ((LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency})) // '') eq 'fiat' } keys %$siblings;
+
+    my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
+    my $lc_num_crypto = grep { ($legal_allowed_currencies->{$_} // '') eq 'crypto' } keys %{$legal_allowed_currencies};
+
+    my $client_num_crypto = (grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'crypto' } keys %$siblings)
+        // 0;
+
+    return ($fiat_check, $lc_num_crypto, $client_num_crypto);
+}
+
 =head2 validate_make_new_account
 
     validate_make_new_account($client, $account_type, $request_data)
@@ -431,20 +451,18 @@ sub validate_make_new_account {
     # check if all currencies are exhausted i.e.
     # - if client has one type of fiat currency don't allow them to open another
     # - if client has all of allowed cryptocurrency
+    my ($fiat_check, $lc_num_crypto, $client_num_crypto) = get_client_currency_information($siblings, $landing_company_name);
 
     # check if client has fiat currency, if not then return as we
     # allow them to open new account
-    return undef unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
+    return undef unless $fiat_check;
 
-    my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
-    my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
     # check if landing company supports crypto currency
     # else return error as client exhausted fiat currency
     return $error unless $lc_num_crypto;
 
     # send error if number of crypto account of client is same
     # as number of crypto account supported by landing company
-    my $client_num_crypto = (grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'crypto' } keys %$siblings) // 0;
     return $error if ($lc_num_crypto eq $client_num_crypto);
 
     return undef;
@@ -469,7 +487,8 @@ sub validate_set_currency {
             message_to_client => localize('Please note that you are limited to one account per currency type.')});
     # if fiat then check if client has already any fiat, if yes then don't allow
     return $error
-        if ($type eq 'fiat' and grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings);
+        if ($type eq 'fiat'
+        and grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings);
     # if crypto check if client has same crypto, if yes then don't allow
     return $error if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
 
