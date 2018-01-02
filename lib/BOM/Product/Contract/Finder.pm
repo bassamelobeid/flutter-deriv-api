@@ -88,6 +88,7 @@ sub available_contracts_for_symbol {
                 push @trade_dates, $date;
             }
 
+            my @options = ();
             for (my $i = 0; $i <= $#trade_dates; $i++) {
                 my $date       = $trade_dates[$i];
                 my $period     = $calendar->trading_period($exchange, $date);
@@ -97,13 +98,14 @@ sub available_contracts_for_symbol {
                 {
                     $adjustment = 60 * 10;
                 }
-                push @{$o->{forward_starting_options}},
+                push @options,
                     +{
                     date  => Date::Utility->new($period->{open})->truncate_to_day->epoch,
                     open  => $period->{open} + $adjustment,
                     close => $period->{close},
                     @blackout_periods ? (blackouts => \@blackout_periods) : ()};
             }
+            $o->{forward_starting_options} = \@options;
         }
 
         # This key is being used to decide whether to show additional
