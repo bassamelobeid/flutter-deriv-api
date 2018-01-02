@@ -88,17 +88,22 @@ sub available_contracts_for_symbol {
                 push @trade_dates, $date;
             }
 
-            $o->{forward_starting_options} = [
-                map { {
-                        date  => Date::Utility->new($_->{open})->truncate_to_day->epoch,
-                        open  => $_->{open},
-                        close => $_->{close},
-                        @blackout_periods ? (blackouts => \@blackout_periods) : ()}
-                    }
-                    map {
-                    @{$calendar->trading_period($exchange, $_)}
-                    } @trade_dates
-            ];
+            for (my $i = 0; $i <= $#trade_dates; $i++) {
+                my $date       = $trade_dates[$i];
+                my $period     = $calendar->trading_period($exchange, $date);
+                my $adjustment = 0;
+                if (($i == 0 and not $calendar->trades_on($exchange, $date->minus_time_interval('1d')))
+                    or $date->days_between($trade_dates[$i - 1]) > 1)
+                {
+                    $adjustment = 60 * 10;
+                }
+                push @{$o->{forward_starting_options}},
+                    +{
+                    date  => Date::Utility->new($period->{open})->truncate_to_day->epoch,
+                    open  => $period->{open} + $adjustment,
+                    close => $period->{close},
+                    @blackout_periods ? (blackouts => \@blackout_periods) : ()};
+            }
         }
 
         # This key is being used to decide whether to show additional
