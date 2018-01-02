@@ -59,9 +59,10 @@ my $tmp_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 
 $tmp_client->db->dbic->run(
-    ping => sub {
+                           ping => sub {
+                             my $date = Date::Utility->new->db_timestamp;
         $_->do(
-            "insert into data_collection.exchange_rate (source_currency, target_currency,rate) values('BTC','USD','$btc_usd_rate')"
+            "insert into data_collection.exchange_rate (source_currency, target_currency,rate) values('BTC','$date','$btc_usd_rate')"
         );
     });
 
