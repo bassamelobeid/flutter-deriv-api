@@ -62,7 +62,7 @@ $tmp_client->db->dbic->run(
                            ping => sub {
                              my $date = Date::Utility->new->db_timestamp;
         $_->do(
-            "insert into data_collection.exchange_rate (source_currency, target_currency,rate) values('BTC','$date','$btc_usd_rate')"
+            "insert into data_collection.exchange_rate (source_currency, target_currency,date, rate) values('BTC','USD', $date','$btc_usd_rate')"
         );
     });
 
