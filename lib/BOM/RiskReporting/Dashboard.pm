@@ -18,6 +18,7 @@ use List::Util qw(max first sum);
 use JSON qw(to_json from_json);
 use Moose;
 use Try::Tiny;
+use Math::BigFloat;
 use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundcommon);
@@ -224,7 +225,7 @@ sub _open_bets_report {
         my $seconds_to_expiry = Date::Utility->new($bet_details->{expiry_time})->epoch - time;
         $total_open += $normalized_mtm;
         my $til_expiry = Time::Duration::Concise::Localize->new(
-            interval => max(0, $seconds_to_expiry),
+            interval => max(0, Math->BigFloat->new($seconds_to_expiry)),
             locale   => BOM::Backoffice::Request::request()->language
         );
         $bet_details->{longcode} = try { BOM::Backoffice::Request::localize($bet->longcode) } catch { 'Description unavailable' };
