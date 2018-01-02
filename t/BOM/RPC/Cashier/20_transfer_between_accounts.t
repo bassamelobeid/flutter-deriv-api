@@ -483,7 +483,7 @@ subtest 'transfer with fees' => sub {
 
     # fiat to crypto to is 1% and exchange rate is 4000 for BTC
     my $fee_percent     = 1;
-    my $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
+    my $transfer_amount = ($amount - $amount * $fee_percent / 100) / $btc_usd_rate;
     my $current_balance = $client_cr1->default_account->load->balance;
     cmp_ok $current_balance, '==', 1 + $transfer_amount, 'correct balance after transfer including fees';
     cmp_ok $client_cr->default_account->load->balance, '==', 1000 - $amount, 'correct balance, exact amount deducted';
