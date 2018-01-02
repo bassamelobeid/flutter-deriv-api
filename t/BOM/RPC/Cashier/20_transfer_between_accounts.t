@@ -39,18 +39,6 @@ my $params = {
 
 my ($method, $email, $client_vr, $client_cr, $client_cr1, $client_mlt, $client_mf, $user, $token) = ('transfer_between_accounts');
 
-my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
-my $btc_usd_rate;
-$mocked_CurrencyConverter->mock(
-    'in_USD',
-    sub {
-        my $price         = shift;
-        my $from_currency = shift;
-        $from_currency eq 'BTC' and return ($btc_usd_rate // 4000) * $price;
-        $from_currency eq 'USD' and return 1 * $price;
-
-        return 0;
-    });
 
 subtest 'call params validation' => sub {
     $email = 'dummy' . rand(999) . '@binary.com';
@@ -436,17 +424,6 @@ subtest 'transfer with fees' => sub {
 
     $client_cr->set_default_account('USD');
     $client_cr1->set_default_account('BTC');
-    ($btc_usd_rate) = $client_cr->db->dbic->run(
-                                              ping => sub {
-                                                $_->selectrow_array("select rate from data_collection.exchange_rate t where t.source_currency = 'BTC' and t.target_currency = 'USD' order by t.date desc");
-                                              }
-                                               );
-    diag("btc_usd_rate is $btc_usd_rate");
-#    $client_cr->db->dbic->run(
-#                              ping => sub {
-#                                $_->do("insert into data_collection.exchange_rate (source_currency, target_currency, date, rate) values('BTC','USD', '2018-01-01 11:11:11','4000')" );
-#                              }
-#                             );
     $user = BOM::Platform::User->create(
         email    => $email,
         password => BOM::Platform::Password::hashpw('jskjd8292922'));
@@ -481,9 +458,9 @@ subtest 'transfer with fees' => sub {
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr1->loginid, 'Transaction successful';
 
-    # fiat to crypto to is 1% and exchange rate is 4000 for BTC
+    # fiat to crypto to is 1% and exchange rate is in_USD('BTC',1) for BTC
     my $fee_percent     = 1;
-    my $transfer_amount = ($amount - $amount * $fee_percent / 100) / $btc_usd_rate;
+    my $transfer_amount = ($amount - $amount * $fee_percent / 100) / in_USD('BTC',1);
     my $current_balance = $client_cr1->default_account->load->balance;
     cmp_ok $current_balance, '==', 1 + $transfer_amount, 'correct balance after transfer including fees';
     cmp_ok $client_cr->default_account->load->balance, '==', 1000 - $amount, 'correct balance, exact amount deducted';
@@ -500,7 +477,7 @@ subtest 'transfer with fees' => sub {
     is $result->{client_to_loginid}, $client_cr->loginid, 'Transaction successful';
 
     # crypto to fiat is 1%
-    $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
+    $transfer_amount = ($amount - $amount * $fee_percent / 100) * in_USD('BTC',1);
     cmp_ok $client_cr->default_account->load->balance, '==', 990 + $transfer_amount, 'correct balance after transfer including fees';
     cmp_ok $client_cr1->default_account->load->balance, '==', $current_balance - $amount, 'correct balance after transfer including fees';
 };
@@ -572,7 +549,7 @@ subtest 'paymentagent transfer' => sub {
 
     # crypto to fiat is 1% and fiat to crypto is 1%
     my $fee_percent     = 1;
-    my $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
+    my $transfer_amount = ($amount - $amount * $fee_percent / 100) * in_USD('BTC',1);
     diag "transfer amount in test: $transfer_amount\n";
     cmp_ok $client_cr->default_account->load->balance, '==', 1 - $amount, 'correct balance after transfer including fees';
     my $current_balance = $client_cr1->default_account->load->balance;
@@ -605,7 +582,7 @@ subtest 'paymentagent transfer' => sub {
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr1->loginid, 'Transaction successful';
 
-    $transfer_amount = ($amount - $amount * 0 / 100) * 4000;
+    $transfer_amount = ($amount - $amount * 0 / 100) * in_USD('BTC',1);
     cmp_ok $client_cr->default_account->load->balance, '==', 0.9 - $amount, 'correct balance after transfer including fees';
     cmp_ok $client_cr1->default_account->load->balance, '==', $current_balance + $transfer_amount,
         'correct balance after transfer excluding fees as payment agent is authenticated';
