@@ -98,12 +98,14 @@ sub available_contracts_for_symbol {
                 {
                     $adjustment = 60 * 10;
                 }
-                push @options,
+                push @options, map {
                     +{
-                    date  => Date::Utility->new($period->{open})->truncate_to_day->epoch,
-                    open  => $period->{open} + $adjustment,
-                    close => $period->{close},
-                    @blackout_periods ? (blackouts => \@blackout_periods) : ()};
+                        date  => Date::Utility->new($_->{open})->truncate_to_day->epoch,
+                        open  => $_->{open} + $adjustment,
+                        close => $_->{close},
+                        @blackout_periods ? (blackouts => \@blackout_periods) : (),
+                        }
+                } @$period;
             }
             $o->{forward_starting_options} = \@options;
         }
