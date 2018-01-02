@@ -46,7 +46,7 @@ $mocked_CurrencyConverter->mock(
     sub {
         my $price         = shift;
         my $from_currency = shift;
-        $from_currency eq 'BTC' and return $btc_usd_rate * $price;
+        $from_currency eq 'BTC' and return ($btc_usd_rate // 4000) * $price;
         $from_currency eq 'USD' and return 1 * $price;
 
         return 0;
@@ -440,7 +440,8 @@ subtest 'transfer with fees' => sub {
                                               ping => sub {
                                                 $_->selectrow_array("select rate from data_collection.exchange_rate t where t.source_currency = 'BTC' and t.target_currency = 'USD' order by t.date desc");
                                               }
-                                             );
+                                               );
+    diag("btc_usd_rate is $btc_usd_rate");
 #    $client_cr->db->dbic->run(
 #                              ping => sub {
 #                                $_->do("insert into data_collection.exchange_rate (source_currency, target_currency, date, rate) values('BTC','USD', '2018-01-01 11:11:11','4000')" );
