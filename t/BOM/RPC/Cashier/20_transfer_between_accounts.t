@@ -439,7 +439,7 @@ subtest 'transfer with fees' => sub {
 
     $client_cr->db->dbic->run(
                               ping => sub {
-                                $_->do(insert into data_collection.exchange_rate (source_currency, target_currency, date, rate) values('BTC','USD', '2018-01-01 11:11:11','4000') );
+                                $_->do("insert into data_collection.exchange_rate (source_currency, target_currency, date, rate) values('BTC','USD', '2018-01-01 11:11:11','4000')" );
                               }
                              )
     $user = BOM::Platform::User->create(
