@@ -7,6 +7,7 @@ use Moo;
 use Error::Base;
 use List::Util qw(min max first any);
 use YAML::XS qw(LoadFile);
+use JSON::MaybeXS;
 
 use Format::Util::Numbers qw/formatnumber/;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
@@ -26,6 +27,7 @@ has clients => (
 
 has transaction => (is => 'ro');
 
+my $json = JSON::MaybeXS->new;
 ################ Client and transaction validation ########################
 
 sub validate_trx_sell {
@@ -357,7 +359,7 @@ sub _slippage {
                 shortcode   => $contract->shortcode,
                 action_type => $p->{action},
                 reason      => 'SLIPPAGE',
-                details     => JSON::to_json({
+                details     => $json->encode({
                         order_price      => $self->transaction->price,
                         recomputed_price => $p->{action} eq 'buy' ? $contract->ask_price : $contract->bid_price,
                         slippage         => $self->transaction->price - $contract->ask_price,
@@ -401,7 +403,7 @@ sub _invalid_contract {
                     shortcode   => $contract->shortcode,
                     action_type => $p->{action},
                     reason      => $message_to_client,
-                    details     => JSON::to_json({
+                    details     => $json->encode({
                             current_tick_epoch => $contract->current_tick->epoch,
                             pricing_epoch      => $contract->date_pricing->epoch,
                             option_type        => $contract->code,

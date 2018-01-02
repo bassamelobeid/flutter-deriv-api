@@ -9,7 +9,7 @@ use Error::Base;
 use Path::Tiny;
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(tv_interval gettimeofday time);
-use JSON qw( from_json to_json );
+use JSON::MaybeXS;
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Try::Tiny;
@@ -46,6 +46,7 @@ use BOM::Transaction::Validation;
 
 =cut
 
+my $json = JSON::MaybeXS->new;
 has client => (
     is  => 'ro',
     isa => 'Client::Account',
@@ -222,7 +223,7 @@ has general_open_position_payout_limit => (
 );
 
 sub _build_general_open_position_payout_limit {
-    return from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
+    return $json->decode(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
 }
 
 sub BUILDARGS {
