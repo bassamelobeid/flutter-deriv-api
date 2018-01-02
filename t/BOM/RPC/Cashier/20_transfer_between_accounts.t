@@ -562,7 +562,7 @@ subtest 'paymentagent transfer' => sub {
     # crypto to fiat is 1% and fiat to crypto is 1%
     my $fee_percent     = 1;
     my $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
-    warn "transfer amount in test: $transfer_amount\n";
+    diag "transfer amount in test: $transfer_amount\n";
     cmp_ok $client_cr->default_account->load->balance, '==', 1 - $amount, 'correct balance after transfer including fees';
     my $current_balance = $client_cr1->default_account->load->balance;
     cmp_ok $current_balance, '==', 1000 + $transfer_amount, 'correct balance after transfer including fees as payment agent is not authenticated';
