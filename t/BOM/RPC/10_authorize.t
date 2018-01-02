@@ -81,19 +81,20 @@ subtest $method => sub {
             'landing_company_name' => 'costarica',
             'is_virtual'           => '0'
         },
-        'currency'                 => '',
-        'email'                    => 'dummy@binary.com',
-        'scopes'                   => ['read', 'admin', 'trade', 'payments'],
-        'balance'                  => '0.00',
-        'landing_company_name'     => 'costarica',
-        'fullname'                 => $test_client->full_name,
-        'loginid'                  => $test_client->loginid,
-        'is_virtual'               => '0',
-        'country'                  => 'id',
-        'landing_company_fullname' => 'Binary (C.R.) S.A.',
-        'allow_omnibus'            => 0,
-        'sub_accounts'             => [],
-        'account_list'             => [{
+        'currency'                      => '',
+        'email'                         => 'dummy@binary.com',
+        'scopes'                        => ['read', 'admin', 'trade', 'payments'],
+        'balance'                       => '0.00',
+        'landing_company_name'          => 'costarica',
+        'fullname'                      => $test_client->full_name,
+        'loginid'                       => $test_client->loginid,
+        'is_virtual'                    => '0',
+        'country'                       => 'id',
+        'landing_company_fullname'      => 'Binary (C.R.) S.A.',
+        'allow_omnibus'                 => 0,
+        'sub_accounts'                  => [],
+        'upgradeable_landing_companies' => ['costarica'],
+        'account_list'                  => [{
                 'currency'             => '',
                 'is_ico_only'          => '0',
                 'is_disabled'          => '0',
@@ -209,6 +210,65 @@ subtest $method => sub {
     ok($history_records->[0]{environment}, 'environment is present');
 
     delete $params->{args};
+};
+
+subtest 'upgradeable_landing_companies' => sub {
+
+    my $params = {};
+    my $email  = 'denmark@binary.com';
+
+    my $user = BOM::Platform::User->create(
+        email    => $email,
+        password => '1234',
+    );
+
+    # Create VRTC account (Denmark)
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        residence   => 'dk',
+        email       => $email
+    });
+
+    $user->add_loginid({loginid => $client->loginid});
+    $user->save;
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+
+    # Test 1
+    my $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['malta'], 'Client can upgrade to malta.';
+
+    # Create MLT account
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+        residence   => 'dk',
+        email       => $email
+    });
+
+    $user->add_loginid({loginid => $client->loginid});
+    $user->save;
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+
+    # Test 2
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client can upgrade to maltainvest.';
+
+    # Create MF account
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+        residence   => 'dk',
+        email       => $email
+    });
+
+    $user->add_loginid({loginid => $client->loginid});
+    $user->save;
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+
+    # Test 3
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client has upgraded all accounts.';
 };
 
 my $new_token;
