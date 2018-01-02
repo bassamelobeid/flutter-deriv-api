@@ -438,7 +438,7 @@ subtest 'transfer with fees' => sub {
     $client_cr1->set_default_account('BTC');
     ($btc_usd_rate) = $client_cr->db->dbic->run(
                                               ping => sub {
-                                                $_->selectrow_array("select rate from data_collection.exchange_rate where source_currency = 'BTC' and target_currncy = 'USD' order by date desc");
+                                                $_->selectrow_array("select rate from data_collection.exchange_rate t where t.source_currency = 'BTC' and t.target_currncy = 'USD' order by t.date desc");
                                               }
                                              );
 #    $client_cr->db->dbic->run(
