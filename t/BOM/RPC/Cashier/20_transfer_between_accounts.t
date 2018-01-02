@@ -422,6 +422,7 @@ subtest $method => sub {
 };
 
 subtest 'transfer with fees' => sub {
+
     $email     = 'new_transfer_email' . rand(999) . '@sample.com';
     $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -436,6 +437,11 @@ subtest 'transfer with fees' => sub {
     $client_cr->set_default_account('USD');
     $client_cr1->set_default_account('BTC');
 
+    $client_cr->db->dbic->run(
+                              ping => sub {
+                                $_->do(insert into data_collection.exchange_rate (source_currency, target_currency, date, rate) values('BTC','USD', '2018-01-01 11:11:11','4000') );
+                              }
+                             )
     $user = BOM::Platform::User->create(
         email    => $email,
         password => BOM::Platform::Password::hashpw('jskjd8292922'));
