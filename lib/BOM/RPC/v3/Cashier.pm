@@ -1170,7 +1170,7 @@ rpc transfer_between_accounts => sub {
     if ($err) {
         return $error_audit_sub->($err);
     }
-    warn "amount $amount, to_amount $to_amount, fee $fees";
+
     my $response;
     try {
         my $remark = 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to . '.';

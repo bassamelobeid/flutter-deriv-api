@@ -11,7 +11,7 @@ services:
 cache: apt
 env:
     - TEST_SUITE=test SH=bash
-#    - TEST_SUITE=json_schemas
+    - TEST_SUITE=json_schemas
 notifications:
     slack:
         rooms:
@@ -65,7 +65,7 @@ install:
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
 script:
     - /etc/rmg/bin/perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - PERL5OPT=-MTest::Warnings prove -v --timer -rl t/BOM/RPC/Cashier/20_transfer_between_accounts.t
+    - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
