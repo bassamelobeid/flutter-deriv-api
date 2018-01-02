@@ -14,7 +14,7 @@ use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
 use Client::Account;
 
 use BOM::Test::RPC::Client;
-use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init)
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token;
 
