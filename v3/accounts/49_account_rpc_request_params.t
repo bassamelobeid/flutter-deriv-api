@@ -19,26 +19,84 @@ use BOM::Test::Helper::FinancialAssessment;
 
 my $t = build_wsapi_test({language => 'EN'});
 
-# prepare client
-my $email  = 'test-binary@binary.com';
+# UK Client testing (Start)
+my $email = 'uk_client@binary.com';
+my $user  = BOM::Platform::User->create(
+    email    => $email,
+    password => '1234'
+);
+
+# Create client (UK - VRTC)
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+    residence   => 'gb',
+    email       => $email
+});
+
+$user->add_loginid({loginid => $client->loginid});
+$user->save;
+
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+my $authorize = $t->await::authorize({authorize => $token});
+
+# Test 1 (Client should be able to upgrade to IOM)
+is_deeply $authorize->{authorize}->{upgradeable_landing_companies}, ['iom'], 'UK client can upgrade to IOM.';
+
+# Create client (UK - MX)
+$client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MX',
+    residence   => 'gb',
+    email       => $email
+});
+
+$user->add_loginid({loginid => $client->loginid});
+$user->save;
+
+($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+$authorize = $t->await::authorize({authorize => $token});
+
+# Test 2 (Client should be able to upgrade to maltainvest)
+is_deeply $authorize->{authorize}->{upgradeable_landing_companies}, [];
+
+# Create client (UK - MF)
+$client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+    residence   => 'gb',
+    email       => $email
+});
+
+$user->add_loginid({loginid => $client->loginid});
+$user->save;
+
+($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+$authorize = $t->await::authorize({authorize => $token});
+
+# Test 3 (Client cannot upgrade anymore)
+is_deeply $authorize->{authorize}->{upgradeable_landing_companies}, [], 'UK client has upgraded all accounts.';
+
+# UK Client testing (Done)
+
+# prepare client (normal cr account)
+$email  = 'test-binary@binary.com';
+$client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+
 $client->email($email);
 $client->save;
 $client->set_default_account('USD');
 
 my $loginid = $client->loginid;
-my $user    = BOM::Platform::User->create(
+$user = BOM::Platform::User->create(
     email    => $email,
     password => '1234',
 );
 $user->add_loginid({loginid => $loginid});
 $user->save;
 
-my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
+($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
-my $authorize = $t->await::authorize({authorize => $token});
+$authorize = $t->await::authorize({authorize => $token});
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
 

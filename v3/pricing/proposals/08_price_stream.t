@@ -26,9 +26,9 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 build_test_R_50_data();
 
-my $t = build_wsapi_test();
+my $t     = build_wsapi_test();
 my $token = BOM::Database::Model::AccessToken->new->create_token("CR2002", 'Test', ['price', 'trade']);
-my $json = JSON::MaybeXS->new;
+my $json  = JSON::MaybeXS->new;
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
 my ($req, $res, $start, $end);
