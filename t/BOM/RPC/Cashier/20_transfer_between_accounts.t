@@ -40,13 +40,13 @@ my $params = {
 my ($method, $email, $client_vr, $client_cr, $client_cr1, $client_mlt, $client_mf, $user, $token) = ('transfer_between_accounts');
 
 my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+my $btc_usd_rate;
 $mocked_CurrencyConverter->mock(
     'in_USD',
     sub {
         my $price         = shift;
         my $from_currency = shift;
-
-        $from_currency eq 'BTC' and return 4000 * $price;
+        $from_currency eq 'BTC' and return $btc_usd_rate * $price;
         $from_currency eq 'USD' and return 1 * $price;
 
         return 0;
@@ -436,12 +436,16 @@ subtest 'transfer with fees' => sub {
 
     $client_cr->set_default_account('USD');
     $client_cr1->set_default_account('BTC');
-
-    $client_cr->db->dbic->run(
-                              ping => sub {
-                                $_->do("insert into data_collection.exchange_rate (source_currency, target_currency, date, rate) values('BTC','USD', '2018-01-01 11:11:11','4000')" );
-                              }
-                             );
+    ($btc_usd_rate) = $client_cr->db->dbic->run(
+                                              ping => sub {
+                                                $_->selectrow_array("select rate from data_collection.exchange_rate where source_currency = 'BTC' and target_currncy = 'USD' order by date desc");
+                                              }
+                                             );
+#    $client_cr->db->dbic->run(
+#                              ping => sub {
+#                                $_->do("insert into data_collection.exchange_rate (source_currency, target_currency, date, rate) values('BTC','USD', '2018-01-01 11:11:11','4000')" );
+#                              }
+#                             );
     $user = BOM::Platform::User->create(
         email    => $email,
         password => BOM::Platform::Password::hashpw('jskjd8292922'));
