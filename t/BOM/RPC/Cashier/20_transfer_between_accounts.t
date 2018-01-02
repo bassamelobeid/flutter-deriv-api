@@ -441,7 +441,7 @@ subtest 'transfer with fees' => sub {
                               ping => sub {
                                 $_->do("insert into data_collection.exchange_rate (source_currency, target_currency, date, rate) values('BTC','USD', '2018-01-01 11:11:11','4000')" );
                               }
-                             )
+                             );
     $user = BOM::Platform::User->create(
         email    => $email,
         password => BOM::Platform::Password::hashpw('jskjd8292922'));
