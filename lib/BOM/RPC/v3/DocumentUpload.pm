@@ -90,7 +90,7 @@ sub successful_upload {
         # The custom exception for a duplicated document upload was raised
         if ($_ =~ /duplicate_document/) {
             # TODO: This needs to be verified
-            my $doc = $client->find_client_authentication_document(query => [id => $args->{file_id}]);
+            my ($doc) = $client->find_client_authentication_document(query => [id => $args->{file_id}]);
             $doc->delete;
             
             return create_upload_error('duplicate_document');
