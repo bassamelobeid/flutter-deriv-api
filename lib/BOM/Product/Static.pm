@@ -24,7 +24,7 @@ my $config = {
         # it will be consistent in case in future we want to send
         # these as error codes to RPC/Pricing
         InvalidTickExpiry           => 'Invalid duration (tick) for contract type ([_1]).',
-        InvalidBarrierMixedBarrier  => 'Invalid barrier (Could not mixed single barrier and double barrier contracts).',
+        InvalidBarrierMixedBarrier  => 'Invalid barrier (Contract can have only one type of barrier).',
         InvalidBarrierSingle        => 'Invalid barrier (Single barrier input is expected).',
         InvalidBarrierDouble        => 'Invalid barrier (Double barrier input is expected).',
         InvalidBarrierDifferentType => 'Invalid barrier (Barrier type must be the same for double-barrier contracts).',

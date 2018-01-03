@@ -151,7 +151,7 @@ subtest 'produce_batch_contract - error check' => sub {
     }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier (Could not mixed single barrier and double barrier contracts).';
+        is $_->message_to_client->[0], 'Invalid barrier (Contract can have only one type of barrier).';
     };
 
     $args->{bet_types} = ['CALL', 'ONETOUCH'];
