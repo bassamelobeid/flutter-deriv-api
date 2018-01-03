@@ -79,6 +79,7 @@ sub successful_upload {
     }
 
     my $result;
+    my $duplicate = 0;
     my $error_occured;
     try {
         ($result) = $client->db->dbic->run(
@@ -93,7 +94,7 @@ sub successful_upload {
             my ($doc) = $client->find_client_authentication_document(query => [id => $args->{file_id}]);
             if ($doc) {
                 $doc->delete;
-                return create_upload_error('duplicate_document');
+                $duplicate = 1;
             }
         }
         else {
@@ -102,6 +103,7 @@ sub successful_upload {
         }
     };
 
+    return create_upload_error('duplicate_document') if $duplicate;
     return create_upload_error('doc_not_found') if not $result;
 
     if ($error_occured) {

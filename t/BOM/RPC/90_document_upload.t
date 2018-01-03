@@ -106,6 +106,30 @@ ok(!get_notification_email(), 'CS notification email should only be sent once');
 $args->{file_id} = 1231531;
 $c->call_ok($method, $params)->has_error->error_message_is('Document not found.', 'error if document is not present');
 
+# --- Attempt to upload same document again (checksum collision) with different document ID ---
+$args = {};
+$params->{args} = $args;
+$args->{document_type}   = "passport";
+$args->{document_format} = "jpg";
+$args->{expiration_date} = "2117-08-11"; 
+$args->{document_id} = "ABCD1235";
+$result = $c->call_ok($method, $params)->result;
+($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
+# Succesfully retrieved object from database.
+is($doc->document_id, $args->{document_id}, 'document is saved in db');
+is($doc->status,      'uploading',          'document status is set to uploading');
+
+$args = {
+    status   => 'success',
+    checksum => 'FileChecksum2',
+    file_id  => $result->{file_id}};
+$params->{args} = $args;
+Test::Warnings::allow_warnings('duplicate_document');
+$c->call_ok($method, $params)->has_error->error_message_is('Document already uploaded.', 'error if same document is uploaded twice');
+
+($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
+is($doc, undef, 'document is not found after upload complete');
+
 sub get_notification_email {
     my ($msg) = $mailbox->search(
         email   => 'authentications@binary.com',
