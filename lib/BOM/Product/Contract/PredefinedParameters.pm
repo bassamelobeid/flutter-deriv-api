@@ -57,7 +57,10 @@ sub get_trading_periods {
     my @key      = trading_period_key($underlying->symbol, $date);
     my $cache    = BOM::Platform::Chronicle::get_chronicle_reader($for_date)->$method(@key, $for_date);
 
-    return $cache // [];
+    return $cache if $cache;
+
+    # just in case the trading period generation is not quick enough, we don't want to return an empty list on production
+    return generate_trading_periods($underlying->symbol, $date);
 }
 
 =head2 generate_trading_periods
