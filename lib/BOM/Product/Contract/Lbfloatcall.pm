@@ -12,7 +12,7 @@ sub check_expiry_conditions {
     if ($self->exit_tick) {
         my ($low, $close) = @{$self->get_ohlc_for_period()}{qw(low close)};
         if (defined $low and defined $close) {
-            my $value = $close - $low;
+            my $value = $self->exit_tick->quote - $low;
             $self->value($value);
         }
     }

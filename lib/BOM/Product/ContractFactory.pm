@@ -62,8 +62,6 @@ use BOM::Product::Contract::Range;
 use BOM::Product::Contract::Upordown;
 use BOM::Product::Contract::Vanilla_call;
 use BOM::Product::Contract::Vanilla_put;
-use BOM::Product::Contract::Lbfixedcall;
-use BOM::Product::Contract::Lbfixedput;
 use BOM::Product::Contract::Lbfloatcall;
 use BOM::Product::Contract::Lbfloatput;
 use BOM::Product::Contract::Lbhighlow;
