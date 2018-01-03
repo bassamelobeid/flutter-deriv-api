@@ -71,6 +71,7 @@ sub _build_base_profile {
 
     my $min = @{RISK_PROFILES()};
     for (@$ap) {
+        next if not defined $_->{risk_profile};
         my $tmp = $risk_profile_rank{$_->{risk_profile}};
         $min = $tmp if $tmp < $min;
         last if $min == 0;
@@ -139,13 +140,36 @@ sub get_risk_profile {
     return RISK_PROFILES->[$min];
 }
 
+sub get_non_binary_limit_parameters {
+    my $self = shift;
+    my $ap = shift || [];
+
+    return [
+        map {
+            my $params;
+
+            if ($_->{non_binary_contract_limit}) {
+                $params = {
+                    name                      => $_->{name},
+                    non_binary_contract_limit => $_->{non_binary_contract_limit},
+                };
+            }
+
+            $params;
+            } @{$self->custom_profiles},
+        @$ap
+    ];
+}
+
 sub get_turnover_limit_parameters {
     my $self = shift;
     my $ap = shift || [];
 
     return [
         map {
-            my $params = {
+            my $params;
+
+            $params = {
                 name  => $_->{name},
                 limit => BOM::Platform::Config::quants->{risk_profile}->{$_->{risk_profile}}{turnover}{$self->currency},
             };
@@ -268,7 +292,7 @@ sub get_current_profile_definitions {
 }
 
 my %_no_condition;
-@_no_condition{qw(name risk_profile updated_by updated_on)} = ();
+@_no_condition{qw(name risk_profile updated_by updated_on non_binary_contract_limit)} = ();
 
 sub _match_conditions {
     my ($self, $custom, $additional_info) = @_;
