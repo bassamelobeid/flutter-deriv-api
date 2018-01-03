@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Try::Tiny;
 use Time::HiRes;
 use Test::MockTime qw/:all/;
 use Test::Most qw(-Test::Deep);
@@ -384,7 +385,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
 };
 
 subtest 'invalid barriers knocked down for great justice' => sub {
-    plan tests => 7;
+    plan tests => 6;
 
     my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -419,8 +420,13 @@ subtest 'invalid barriers knocked down for great justice' => sub {
 
     $bet_params->{low_barrier} = -100;      # Fine, we'll set our low barrier like you want.
     $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/^Non-positive barrier/, qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
-    test_error_list('buy', $bet, $expected_reasons);
+    try {
+        $bet->is_valid_to_buy;
+    } catch {
+        isa_ok $_, 'BOM::Product::Exception';
+        is $_->message_to_client->[0], 'Invalid barrier ([_1]).';
+        like $_->message_to_client->[1], qr/Barrier type must be the same for double-barrier contracts./, 'correct error args';
+    };
 
     $bet_params->{low_barrier} = 111;       # Sigh, ok, then, what about this one?
     $bet = produce_contract($bet_params);
