@@ -2,7 +2,7 @@ package BOM::Test::RPC::Client;
 
 use Data::Dumper;
 use MojoX::JSON::RPC::Client;
-use Test::More ();
+use Test::More qw();
 use Data::UUID;
 
 use Moose;
@@ -65,7 +65,9 @@ sub has_no_error {
     $description ||= "response for /$method has no error";
 
     my $result = $self->result;
-    $self->_test('ok', $result && !$result->{error}, $description);
+    return $self unless $self->_test('ok', $result, "response for /$method has result");
+    $self->_test('ok', !$result->{error}, $description)
+        or Test::More::diag("error: " . $result->{error}{code} . " " . $result->{error}{message_to_client});
     return $self;
 }
 
@@ -133,8 +135,7 @@ sub _test {
 
     my $test_level = $Test::Builder::Level;
     local $Test::Builder::Level = $test_level + 3;
-    Test::More->can($name)->(@args);
-    return;
+    return Test::More->can($name)->(@args);
 }
 
 __PACKAGE__->meta->make_immutable;
