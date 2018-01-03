@@ -103,10 +103,8 @@ sub supplied_barrier_type {
 
     if ($self->two_barriers) {
         # die here to prevent exception thrown later in pip sizing non interger barrier.
-        BOM::Product::Exception->throw(
-            error_code => 'InvalidBarrierWithReason',
-            error_args => ['Barrier type must be the same for double-barrier contracts.']
-        ) if $self->high_barrier->supplied_type ne $self->low_barrier->supplied_type;
+        BOM::Product::Exception->throw(error_code => 'InvalidBarrierDifferentType')
+            if $self->high_barrier->supplied_type ne $self->low_barrier->supplied_type;
         return $self->high_barrier->supplied_type;
     }
     return $self->barrier->supplied_type;
