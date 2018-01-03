@@ -32,6 +32,10 @@ my $token = $m->create_token($test_client->loginid, 'test token');
 
 @BOM::MT5::User::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
+# Throttle function limits requests to 1 per minute which may cause
+# consecutive tests to fail without a reset.
+BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
 subtest 'new account' => sub {
     my $method = 'mt5_new_account';
     my $params = {
