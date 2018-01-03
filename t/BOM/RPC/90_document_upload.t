@@ -87,7 +87,7 @@ $params->{args} = $args;
 $mailbox->clear;
 my $client_id = uc $test_client->loginid;
 $result = $c->call_ok($method, $params)->result;
-#like(get_notification_email()->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
+like(get_notification_email()->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
 
 ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 is($doc->status,                                              'uploaded',           'document\'s status changed');
