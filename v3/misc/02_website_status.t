@@ -13,7 +13,7 @@ use Clone;
 use BOM::Platform::Chronicle;
 
 my $json = JSON::MaybeXS->new;
-my $t = build_wsapi_test();
+my $t    = build_wsapi_test();
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
 my $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 

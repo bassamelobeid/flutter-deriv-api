@@ -18,7 +18,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Runtime;
 
 build_test_R_50_data();
-my $t = build_wsapi_test();
+my $t    = build_wsapi_test();
 my $json = JSON::MaybeXS->new;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -183,7 +183,8 @@ subtest 'check two contracts subscription' => sub {
 
         };
 
-        BOM::Platform::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, Encode::encode_utf8($json->encode($msg)));
+        BOM::Platform::RedisReplicated::redis_write()
+            ->publish('TXNUPDATE::transaction_' . $msg->{account_id}, Encode::encode_utf8($json->encode($msg)));
 
         sleep 2;    ### we must wait for pricing rpc response
 
