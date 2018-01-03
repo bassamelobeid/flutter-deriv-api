@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More;
 use Test::Warnings;
 use Test::Exception;
 use Test::MockTime qw(set_absolute_time);
@@ -16,7 +16,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 
 my $now = Date::Utility->new;
-use BOM::Test::Data::Utility::UnitTestMarketData;
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
@@ -172,3 +172,33 @@ subtest 'basis_tick for forward starting contract' => sub {
     is $c->_basis_tick->epoch, $date_start->epoch, 'correct epoch for tick';
     is $c->shortcode, $expected_shortcode, 'shortcode is correct';
 };
+
+subtest 'forward starting on Forex when previous day is a holiday' => sub {
+    my $now = Date::Utility->new('2017-12-22');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'holiday',
+        {
+            calendar => {
+                Date::Utility->new('2017-12-25')->epoch => {
+                    'chritmas' => ['FOREX'],
+                }
+            },
+            recorded_date => $now->minus_time_interval('5m'),
+        });
+    my $c = produce_contract({
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        date_pricing => $now,
+        date_start   => Date::Utility->new('2017-12-26 00:00:00'),
+        duration     => '1h',
+        barrier      => 'S0P',
+        currency     => 'USD',
+        payout       => 10
+    });
+
+    my $err;
+    ok $err = $c->_validate_start_and_expiry_date(), 'got an error';
+    is $err->{message}, 'blackout period [symbol: frxUSDJPY] [from: 1514246400] [to: 1514247000]', 'correct error message';
+};
+
+done_testing();
