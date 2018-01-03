@@ -10,9 +10,9 @@ sub check_expiry_conditions {
     my $self = shift;
 
     if ($self->exit_tick) {
-        my ($high, $close) = @{$self->get_ohlc_for_period()}{qw(high close)};
-        if (defined $high and defined close) {
-            my $value = $high - $close;
+        my ($high) = @{$self->get_ohlc_for_period()}{qw(high)};
+        if (defined $high) {
+            my $value = $high - $self->exit_tick->quote;
             $self->value($value);
         }
     }

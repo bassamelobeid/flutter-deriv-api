@@ -47,7 +47,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 my $bet_params = {
-    bet_type     => 'LBFIXEDCALL',
+    bet_type     => 'LBFLOATCALL',
     underlying   => 'R_100',
     date_start   => $now,
     date_pricing => $now,

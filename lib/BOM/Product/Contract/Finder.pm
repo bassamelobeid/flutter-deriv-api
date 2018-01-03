@@ -114,6 +114,7 @@ sub available_contracts_for_symbol {
         # barrier field on the frontend.
         $o->{barriers} =
               $cat->two_barriers    ? 2
+            : $cc eq 'lookback'     ? 0
             : $cc eq 'asian'        ? 0
             : $cc eq 'digits'       ? 1
             : $cc eq 'touchnotouch' ? 1

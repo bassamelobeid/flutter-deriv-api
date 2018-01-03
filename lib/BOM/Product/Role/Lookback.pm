@@ -4,8 +4,12 @@ use Moose::Role;
 use Time::Duration::Concise;
 use List::Util qw(min max first);
 use Format::Util::Numbers qw/financialrounding/;
+use YAML::XS qw(LoadFile);
+use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use BOM::Product::Static;
+
+my $multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_contract_multiplier.yml');
 
 has [qw(spot_min spot_max)] => (
     is         => 'ro',
@@ -17,28 +21,69 @@ has unit => (
     isa => 'Num',
 );
 
+has multiplier => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+has lookback_base_commission => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+sub _build_lookback_base_commission {
+    my $self = shift;
+    my $args = {underlying_symbol => $self->underlying->symbol};
+    if ($self->can('landing_company')) {
+        $args->{landing_company} = $self->landing_company;
+    }
+    my $underlying_base = get_underlying_base_commission($args);
+    return $underlying_base;
+}
+
+sub _build_multiplier {
+    my $self   = shift;
+    my $symbol = $self->underlying->symbol;
+    return $multiplier_config->{$symbol} // 0;
+}
+
+has [qw(spot_min_max)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_spot_min_max {
+    my $self = shift;
+
+    my ($high, $low) = @{
+        $self->underlying->get_high_low_for_period({
+                start => $self->date_start->epoch + 1,
+                end   => $self->date_expiry->epoch,
+            })}{'high', 'low'};
+
+    my $high_low = {
+        high => $high // $self->pricing_spot,
+        low  => $low  // $self->pricing_spot,
+    };
+
+    return $high_low;
+}
+
+# Notes:
+# The date_start + 1 is because for min and max we use nest tick after
+# date_start.
 sub _build_spot_min {
     my $self = shift;
 
-    my $spot_min = @{
-        $self->underlying->get_high_low_for_period({
-                start => $self->date_start->epoch,
-                end   => $self->date_expiry->epoch,
-            })}{'low'} // $self->pricing_spot;
-
-    return $spot_min;
+    return $self->spot_min_max->{low};
 }
 
 sub _build_spot_max {
     my $self = shift;
 
-    my $spot_max = @{
-        $self->underlying->get_high_low_for_period({
-                start => $self->date_start->epoch,
-                end   => $self->date_expiry->epoch,
-            })}{'high'} // $self->pricing_spot;
-
-    return $spot_max;
+    return $self->spot_min_max->{high};
 }
 
 sub _build_priced_with_intraday_model {
@@ -57,7 +102,7 @@ sub get_ohlc_for_period {
     }
 
     return $self->underlying->get_high_low_for_period({
-        start => $start_epoch,
+        start => $start_epoch + 1,
         end   => $end_epoch
     });
 }
@@ -65,19 +110,29 @@ sub get_ohlc_for_period {
 override _build_theo_price => sub {
     my $self = shift;
 
-    return $self->pricing_engine->theo_price * $self->unit;
+    if ($self->is_expired) {
+        my $final_price = $self->value;
+        return $final_price > 0 ? $final_price * $self->unit * $self->multiplier : 0;
+    }
+
+    return $self->pricing_engine->theo_price * $self->unit * $self->multiplier;
 };
 
 override _build_ask_price => sub {
     my $self = shift;
 
-    return financialrounding('amount', $self->currency, $self->theo_price);
+    return financialrounding('amount', $self->currency, $self->theo_price * (1 + $self->lookback_base_commission));
 };
 
 override _build_bid_price => sub {
     my $self = shift;
 
-    return financialrounding('amount', $self->currency, $self->theo_price);
+    if ($self->is_expired) {
+        my $bid_price = $self->theo_price;
+        return financialrounding('amount', $self->currency, $bid_price);
+    }
+
+    return financialrounding('amount', $self->currency, $self->theo_price * (1 - $self->lookback_base_commission));
 };
 
 override _validate_price => sub {
@@ -117,6 +172,10 @@ override shortcode => sub {
 
     if (defined $self->supplied_barrier and $self->barrier_at_start) {
         push @shortcode_elements, ($self->_barrier_for_shortcode_string($self->supplied_barrier), 0);
+    }
+
+    if (defined $self->multiplier) {
+        push @shortcode_elements, $self->multiplier;
     }
 
     return uc join '_', @shortcode_elements;
