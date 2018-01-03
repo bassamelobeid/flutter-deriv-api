@@ -43,7 +43,9 @@ sub validate_trx_sell {
 
     my @contract_validation_method = qw/_is_valid_to_sell/;
     # For ICO, there is no need to have slippage, date pricing validation
-    push @contract_validation_method, qw(_validate_sell_pricing_adjustment _validate_date_pricing)
+    push @contract_validation_method, '_validate_sell_pricing_adjustment' unless $self->transaction->contract->is_binaryico;
+
+    push @contract_validation_method, qw(_validate_date_pricing)
         unless $self->transaction->contract->is_binaryico;
 
     CLI: for my $c (@$clients) {
@@ -62,6 +64,7 @@ sub validate_trx_sell {
 
     foreach my $c_method (@contract_validation_method) {
         my $res = $self->$c_method();
+
         return $res if $res;
     }
     return;
@@ -118,12 +121,14 @@ sub validate_trx_buy {
     ### Order is very important
     ### _validate_trade_pricing_adjustment may contain some expensive calculations
     #### And last per-client checks must be after this calculations.
+
     $res = $self->_validate_trade_pricing_adjustment();
     return $res if $res;
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
         for (qw/ _validate_payout_limit _validate_stake_limit /) {
+            next unless $self->transaction->contract->is_binary;
             $res = $self->$_($c->{client});
             next unless $res;
             if ($self->transaction && $self->transaction->multiple) {
@@ -208,6 +213,19 @@ sub _validate_sell_pricing_adjustment {
     my $self = shift;
 
     my $contract = $self->transaction->contract;
+    if ($contract->is_binary) {
+
+        return $self->_validate_sell_pricing_adjustment_binary;
+    } else {
+
+        return $self->_validate_sell_pricing_adjustment_non_binary;
+    }
+}
+
+sub _validate_sell_pricing_adjustment_binary {
+    my $self = shift;
+
+    my $contract = $self->transaction->contract;
 
     if (not defined $self->transaction->price) {
         $self->transaction->price($contract->bid_price);
@@ -265,7 +283,76 @@ sub _validate_sell_pricing_adjustment {
     return;
 }
 
+sub _validate_sell_pricing_adjustment_non_binary {
+    my $self = shift;
+
+    my $contract = $self->transaction->contract;
+
+    if (not defined $self->transaction->price) {
+        $self->transaction->price($contract->bid_price);
+        return;
+    }
+
+    if ($contract->is_expired) {
+        return Error::Base->cuss(
+            -type              => 'BetExpired',
+            -mesg              => 'Contract expired with a new price',
+            -message_to_client => localize('The contract has expired'),
+        );
+    }
+
+    my $requested_price  = $self->transaction->price;
+    my $recomputed_price = $contract->bid_price;
+    # set the requested price and recomputed  price to be store in db
+    ### TODO: move out from validation
+    $self->transaction->requested_price($requested_price);
+    $self->transaction->recomputed_price($recomputed_price);
+    my $move         = ($recomputed_price - $requested_price) / $requested_price;
+    my $slippage     = $recomputed_price - $requested_price;
+    my $allowed_move = $contract->allowed_slippage;
+
+    return if $move == 0;
+
+    my $final_value;
+    if ($allowed_move == 0) {
+        $final_value = $recomputed_price;
+    } elsif (abs($move) > $allowed_move) {
+        return $self->_write_to_rejected({
+            action            => 'sell',
+            amount            => $requested_price,
+            recomputed_amount => $recomputed_price
+        });
+    } else {
+        if ($move <= $allowed_move) {
+            $final_value = $requested_price;
+            # We absorbed the price difference here and we want to keep it in our book.
+            $self->transaction->price_slippage($slippage);
+        } elsif ($move > 0) {
+            $self->transaction->execute_at_better_price(1);
+            # We need to keep record of slippage even it is executed at better price
+            $self->transaction->price_slippage($slippage);
+            $final_value = $recomputed_price;
+        }
+    }
+
+    $self->transaction->price($final_value);
+
+    return;
+}
+
 sub _validate_trade_pricing_adjustment {
+    my $self = shift;
+
+    my $contract = $self->transaction->contract;
+
+    if ($contract->is_binary) {
+        return $self->_validate_trade_pricing_adjustment_binary;
+    } else {
+        return $self->_validate_trade_pricing_adjustment_non_binary;
+    }
+}
+
+sub _validate_trade_pricing_adjustment_binary {
     my $self = shift;
 
     my $amount_type = $self->transaction->amount_type;
@@ -331,6 +418,59 @@ sub _validate_trade_pricing_adjustment {
             });
         $self->transaction->contract($new_contract);
     }
+
+    return;
+}
+
+sub _validate_trade_pricing_adjustment_non_binary {
+    my $self = shift;
+
+    my $contract = $self->transaction->contract;
+
+    my $requested_price = $self->transaction->price;
+    # set the requested price and recomputed price to be store in db
+    $self->transaction->requested_price($self->transaction->price);
+    $self->transaction->recomputed_price($contract->ask_price);
+    my $recomputed_price = $contract->ask_price;
+    my $move             = ($requested_price - $recomputed_price) / $requested_price;
+    my $slippage         = $self->transaction->price - $contract->ask_price;
+    my $allowed_move     = $contract->allowed_slippage;
+
+    my ($amount, $recomputed_amount) = ($self->transaction->price, $contract->ask_price);
+
+    return if $move == 0;
+
+    my $final_value;
+
+    return Error::Base->cuss(
+        -type              => 'BetExpired',
+        -mesg              => 'Bet expired with a new price[' . $recomputed_amount . '] (old price[' . $amount . '])',
+        -message_to_client => localize('The contract has expired'),
+    ) if $contract->is_expired;
+
+    if ($allowed_move == 0) {
+        $final_value = $recomputed_amount;
+    } elsif (abs($move) > $allowed_move) {
+        return $self->_write_to_rejected({
+            action            => 'buy',
+            amount            => $amount,
+            recomputed_amount => $recomputed_amount
+        });
+    } else {
+        if (abs($move) <= $allowed_move) {
+            $final_value = $amount;
+            # We absorbed the price difference here and we want to keep it in our book.
+            $self->transaction->price_slippage($slippage);
+        } elsif ($move > 0) {
+            $self->transaction->execute_at_better_price(1);
+            # We need to keep record of slippage even it is executed at better price
+            $self->transaction->price_slippage($slippage);
+            $final_value = $recomputed_amount;
+        }
+    }
+
+    # adjust the value here
+    $self->transaction->price($final_value);
 
     return;
 }
