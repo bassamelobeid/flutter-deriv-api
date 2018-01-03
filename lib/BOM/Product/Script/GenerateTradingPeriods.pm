@@ -8,7 +8,9 @@ use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods nex
 use BOM::Platform::Runtime;
 use Time::HiRes qw(clock_nanosleep TIMER_ABSTIME CLOCK_REALTIME);
 use Date::Utility;
-use List::Util qw(max);
+use List::Util qw(max min);
+use Scalar::Util qw(looks_like_number);
+use Parallel::ForkManager;
 
 #This daemon generates predefined trading periods for selected underlying symbols at every hour
 
@@ -18,12 +20,18 @@ sub run {
     my @selected_symbols = $offerings_obj->values_for_key('underlying_symbol');
     my $chronicle_writer = BOM::Platform::Chronicle::get_chronicle_writer();
     my $finder           = BOM::Product::ContractFinder->new;
+    my $cpu_info         = `/usr/bin/env nproc`;
+    chomp $cpu_info;
+    $cpu_info = looks_like_number($cpu_info) ? $cpu_info / 2 : 4;    # we should have 4 cores?
+    my $processes = min($cpu_info, scalar @selected_symbols);
+    my $fm = Parallel::ForkManager->new($processes);
 
     while (1) {
         my $now  = Date::Utility->new;
         my $next = next_generation_epoch($now);
 
         foreach my $symbol (@selected_symbols) {
+            $fm->start and next;
             my $tp = generate_trading_periods($symbol, $now);
             next unless @$tp;
             my @redis_key = BOM::Product::Contract::PredefinedParameters::trading_period_key($symbol, $now);
@@ -45,7 +53,9 @@ sub run {
             my @barrier_key = BOM::Product::Contract::PredefinedParameters::barrier_by_category_key($symbol);
             my $by_category = $finder->multi_barrier_contracts_by_category_for({symbol => $symbol});
             $chronicle_writer->set(@barrier_key, $by_category, $now, 1, $ttl);
+            $fm->finish;
         }
+        $fm->wait_all_children;
 
         clock_nanosleep(CLOCK_REALTIME, $next * 1e9, TIMER_ABSTIME);
     }
