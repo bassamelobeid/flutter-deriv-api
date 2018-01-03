@@ -59,6 +59,7 @@ use BOM::Product::Types;
 use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
 use BOM::Product::Static;
+use BOM::Product::Exception;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
 
 use BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -99,7 +100,15 @@ sub absolute_barrier_multiplier {
 
 sub supplied_barrier_type {
     my $self = shift;
-    return $self->high_barrier->supplied_type if $self->two_barriers;
+
+    if ($self->two_barriers) {
+        # die here to prevent exception thrown later in pip sizing non interger barrier.
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidBarrierWithReason',
+            error_args => ['Barrier type must be the same for double-barrier contracts.']
+        ) if $self->high_barrier->supplied_type ne $self->low_barrier->supplied_type;
+        return $self->high_barrier->supplied_type;
+    }
     return $self->barrier->supplied_type;
 }
 
