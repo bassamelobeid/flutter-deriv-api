@@ -79,7 +79,7 @@ sub successful_upload {
     }
 
     my $result;
-    my $duplicate = 0;
+    my $duplicate;
     my $error_occured;
     try {
         ($result) = $client->db->dbic->run(
@@ -89,9 +89,8 @@ sub successful_upload {
             });
     }
     catch {
-        # The custom exception for a duplicated document upload was raised
         if ($_ =~ /duplicate_document/) {
-            # TODO: This needs to be verified
+            # The custom exception for a duplicated document upload was raised
             my ($doc) = $client->find_client_authentication_document(query => [id => $args->{file_id}]);
             if ($doc) {
                 $doc->delete;
