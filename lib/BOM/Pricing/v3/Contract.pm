@@ -14,6 +14,7 @@ use Time::HiRes;
 use Time::Duration::Concise::Localize;
 
 use Format::Util::Numbers qw/formatnumber/;
+use Scalar::Util::Numeric qw(isint);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -94,9 +95,9 @@ sub contract_metadata {
     my ($contract) = @_;
     return +{
         app_markup_percentage => $contract->app_markup_percentage,
-        staking_limits        => $contract->staking_limits,
-        deep_otm_threshold    => $contract->otm_threshold,
-        base_commission       => $contract->base_commission,
+        ($contract->is_binary) ? (staking_limits => $contract->staking_limits) : (),    #staking limits only apply to binary
+        deep_otm_threshold => $contract->otm_threshold,
+        base_commission    => $contract->base_commission,
     };
 }
 
@@ -178,7 +179,7 @@ sub _get_ask {
                 contract_parameters => $contract_parameters,
             };
 
-            if ($streaming_params->{add_theo_probability}) {
+            if ($streaming_params->{add_theo_probability} and $contract->is_binary) {
                 $response->{theo_probability} = $contract->theo_probability->amount;
             }
 
@@ -364,10 +365,10 @@ sub get_bid {
             date_settlement     => $contract->date_settlement->epoch,
             currency            => $contract->currency,
             longcode            => localize($contract->longcode),
-            shortcode           => $short_code,
-            payout              => $contract->payout,
-            contract_type       => $contract->code,
-            bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
+            shortcode           => $contract->shortcode,
+            ($contract->is_binary) ? (payout => $contract->payout) : (),    # The concept of payout only applies to binary
+            contract_type => $contract->code,
+            bid_price     => formatnumber('price', $contract->currency, $contract->bid_price),
         };
 
         if ($is_sold and $is_expired) {
@@ -375,7 +376,7 @@ sub get_bid {
             $response->{status} = $sell_price == $contract->payout ? "won" : "lost";
         } elsif ($is_sold and not $is_expired) {
             $response->{status} = 'sold';
-        } else {    # not sold
+        } else {                                                            # not sold
             $response->{status} = 'open';
         }
 
@@ -500,6 +501,10 @@ sub send_ask {
     # provide landing_company information when it is available.
     $params->{args}->{landing_company} = $params->{landing_company}
         if $params->{landing_company};
+
+    # Here we have to do something like this because we are re-using
+    # amout in the API for specifiying no of contracts.
+    $params->{args}->{unit} //= $params->{args}->{amount};
 
     # copy country_code when it is available.
     $params->{args}->{country_code} = $params->{country_code} if $params->{country_code};
