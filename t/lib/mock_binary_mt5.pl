@@ -10,8 +10,14 @@ use constant {
     MT_RET_OK => 0,
 };
 
-my $LOGIN    = "1000";
-my $PASSWORD = "Efgh4567";
+my %DETAILS = (
+    login    => '1000',
+    password => 'Efgh4567',
+    email    => 'test.account@binary.com',
+    name     => 'Test',
+    country  => 'Malta',
+    balance  => '1234.56',
+);
 
 my $json = JSON::MaybeXS->new;
 
@@ -31,24 +37,24 @@ else {
 sub cmd_UserAdd {
     my ($input) = @_;
 
-    $input->{email} eq 'test.account@binary.com' or
+    $input->{email} eq $DETAILS{email} or
         die "TODO: mock UserAdd on unknown email\n";
 
-    $input->{country} eq 'Malta' or
+    $input->{country} eq $DETAILS{country} or
         die "UserAdd with unexpected country=$input->{country}\n";
-    $input->{mainPassword} eq $PASSWORD or
+    $input->{mainPassword} eq $DETAILS{password} or
         die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
 
     return {
         ret_code => MT_RET_OK,
-        login    => $LOGIN,
+        login    => $DETAILS{login},
     };
 }
 
 sub cmd_UserDepositChange {
     my ($input) = @_;
 
-    $input->{login} eq $LOGIN or
+    $input->{login} eq $DETAILS{login} or
         die "TODO: mock UserDepositChange on unknown login\n";
 
     return {
@@ -59,17 +65,17 @@ sub cmd_UserDepositChange {
 sub cmd_UserGet {
     my ($input) = @_;
 
-    $input->{login} eq $LOGIN or
+    $input->{login} eq $DETAILS{login} or
         die "TODO: mock UserGet on unknown login\n";
 
     return {
         ret_code => MT_RET_OK,
         user     => {
-            login   => $LOGIN,
-            email   => 'test.account@binary.com',
-            name    => "Test",
-            country => "Malta",
-            balance => "1234.56",
+            login   => $DETAILS{login},
+            email   => $DETAILS{email},
+            name    => $DETAILS{name},
+            country => $DETAILS{country},
+            balance => $DETAILS{balance},
         },
     };
 }
@@ -77,22 +83,22 @@ sub cmd_UserGet {
 sub cmd_UserUpdate {
     my ($input) = @_;
 
-    $input->{login} eq $LOGIN or
+    $input->{login} eq $DETAILS{login} or
         die "TODO: mock UserUpdate on unknown login\n";
 
     $input->{name} eq "Test2" or
         die "UserUpdate with unexpected name$input->{name}\n";
-    $input->{country} eq 'Malta' or
+    $input->{country} eq $DETAILS{country} or
         die "UserUpdate with unexpected country=$input->{country}\n";
 
     return {
         ret_code => MT_RET_OK,
         user     => {
-            login   => $LOGIN,
-            email   => 'test.account@binary.com',
+            login   => $DETAILS{login},
+            email   => $DETAILS{email},
             name    => "Test2",
-            country => "Malta",
-            balance => "1234.56",
+            country => $DETAILS{country},
+            balance => $DETAILS{balance},
         },
     };
 }
@@ -100,7 +106,7 @@ sub cmd_UserUpdate {
 sub cmd_UserPasswordChange {
     my ($input) = @_;
 
-    $input->{login} eq $LOGIN or
+    $input->{login} eq $DETAILS{login} or
         die "TODO: mock UserUpdate on unknown login\n";
 
     $input->{new_password} eq "Ijkl6789" or
@@ -114,10 +120,10 @@ sub cmd_UserPasswordChange {
 sub cmd_UserPasswordCheck {
     my ($input) = @_;
 
-    $input->{login} eq $LOGIN or
+    $input->{login} eq $DETAILS{login} or
         die "TODO: mock UserUpdate on unknown login\n";
 
-    $input->{password} eq $PASSWORD or
+    $input->{password} eq $DETAILS{password} or
         die "UserPasswordCheck with unexpected password=$input->{password}\n";
 
     return {
