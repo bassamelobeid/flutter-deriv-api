@@ -19,7 +19,7 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 #   t/BOM/RPC/30_mt5.t
 #   t/lib/mock_binary_mt5.pl
 my %DETAILS = (
-    login    => '1000',
+    login    => '__MOCK__',
     password => 'Efgh4567',
     email    => 'test.account@binary.com',
     name     => 'Test',
