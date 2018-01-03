@@ -2,7 +2,7 @@ package BOM::Test::RPC::Client;
 
 use Data::Dumper;
 use MojoX::JSON::RPC::Client;
-use Test::More ();
+use Test::More qw();
 use Data::UUID;
 
 use Moose;
@@ -65,6 +65,7 @@ sub has_no_error {
     $description ||= "response for /$method has no error";
 
     my $result = $self->result;
+    return $self unless $self->_test('ok', $result, "response for /$method has result");
     # Most RPCs return a HASH ref with an 'error' key on failure.
     # A few RPCs (e.g. mt5_password_check) return a boolean truth on success
     my $failed = ref($result) && $result->{error};
