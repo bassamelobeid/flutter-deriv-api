@@ -29,7 +29,7 @@ my %DETAILS = (
 );
 
 # Setup a test user
-my $test_client = create_client();
+my $test_client = create_client('MF');    # broker_code = MF to ensure ID_DOCUMENT passes
 $test_client->email($DETAILS{email});
 $test_client->save;
 
@@ -155,6 +155,24 @@ subtest 'deposit' => sub {
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
     # TODO(leonerd): assert that account balance is now 1000-150 = 850
+};
+
+subtest 'withdrawal' => sub {
+    # TODO(leonerd): assertions in here about balance amounts would be
+    #   sensitive to results of the previous test of mt5_deposit.
+    my $method = "mt5_withdrawal";
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_mt5  => "__MOCK__",
+            to_binary => $test_client->loginid,
+            amount    => 150,
+        },
+    };
+    $c->call_ok($method, $params)
+        ->has_no_error('no error for mt5_withdrawal');
+    ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 };
 
 done_testing();
