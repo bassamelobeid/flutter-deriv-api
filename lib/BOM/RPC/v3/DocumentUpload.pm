@@ -84,7 +84,8 @@ sub successful_upload {
     try {
         ($result) = $client->db->dbic->run(
             ping => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?, ?)', undef, $args->{file_id}, $args->{checksum}, undef, $client->loginid);
+                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?, ?)',
+                    undef, $args->{file_id}, $args->{checksum}, undef, $client->loginid);
             });
     }
     catch {
@@ -96,8 +97,7 @@ sub successful_upload {
                 $doc->delete;
                 $duplicate = 1;
             }
-        }
-        else {
+        } else {
             # Another internal exception was raised
             $error_occured = 1;
         }
