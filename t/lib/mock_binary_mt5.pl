@@ -19,6 +19,7 @@ my %DETAILS = (
     password => 'Efgh4567',
     email    => 'test.account@binary.com',
     name     => 'Test',
+    group    => 'real\something',
     country  => 'Malta',
     balance  => '1234.56',
 );
@@ -78,6 +79,7 @@ sub cmd_UserGet {
             login   => $DETAILS{login},
             email   => $DETAILS{email},
             name    => $DETAILS{name},
+            group   => $DETAILS{group},
             country => $DETAILS{country},
             balance => $DETAILS{balance},
         },

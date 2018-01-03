@@ -8,7 +8,7 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Helper::Client qw(create_client);
+use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Platform::User;
 use BOM::MT5::User;
 
@@ -23,6 +23,7 @@ my %DETAILS = (
     password => 'Efgh4567',
     email    => 'test.account@binary.com',
     name     => 'Test',
+    group    => 'real\something',
     country  => 'Malta',
     balance  => '1234.56',
 );
@@ -38,6 +39,7 @@ my $user = BOM::Platform::User->create(
 );
 $user->save;
 $user->add_loginid({loginid => $test_client->loginid});
+$user->add_loginid({loginid => 'MT' . $DETAILS{login}});
 $user->save;
 
 my $m = BOM::Database::Model::AccessToken->new;
@@ -132,6 +134,27 @@ subtest 'password change' => sub {
         ->has_no_error('no error for mt5_password_change');
     # This call yields a truth integer directly, not a hash
     is($c->result, 1, 'result');
+};
+
+subtest 'deposit' => sub {
+    # User needs some real money now
+    top_up $test_client, USD => 1000;
+
+    my $method = "mt5_deposit";
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_binary => $test_client->loginid,
+            to_mt5      => "__MOCK__",
+            amount      => 150,
+        },
+    };
+    $c->call_ok($method, $params)
+        ->has_no_error('no error for mt5_deposit');
+    ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
+
+    # TODO(leonerd): assert that account balance is now 1000-150 = 850
 };
 
 done_testing();
