@@ -8,15 +8,14 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Test::Helper::Client qw(create_client);
 use BOM::Platform::User;
 use BOM::MT5::User;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 # Setup a test user
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
+my $test_client = create_client();
 $test_client->email('test.account@binary.com');
 $test_client->save;
 
