@@ -151,8 +151,7 @@ subtest 'produce_batch_contract - error check' => sub {
     }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier ([_1]).';
-        like $_->message_to_client->[1], qr/Could not mixed single barrier and double barrier contracts/, 'correct error args';
+        is $_->message_to_client->[0], 'Invalid barrier (Could not mixed single barrier and double barrier contracts).';
     };
 
     $args->{bet_types} = ['CALL', 'ONETOUCH'];
@@ -168,8 +167,7 @@ subtest 'produce_batch_contract - error check' => sub {
     }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier ([_1]).';
-        like $_->message_to_client->[1], qr/Single barrier input is expected/, 'correct error args';
+        is $_->message_to_client->[0], 'Invalid barrier (Single barrier input is expected).';
     };
     $args->{bet_types} = ['RANGE', 'EXPIRYRANGE'];
     try {
@@ -178,8 +176,7 @@ subtest 'produce_batch_contract - error check' => sub {
     }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier ([_1]).';
-        like $_->message_to_client->[1], qr/Double barrier input is expected/, 'correct error args';
+        is $_->message_to_client->[0], 'Invalid barrier (Double barrier input is expected).';
     };
 };
 
