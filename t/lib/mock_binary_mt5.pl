@@ -10,6 +10,10 @@ use constant {
     MT_RET_OK => 0,
 };
 
+# Mocked account details
+# This hash shared between two files, and should be kept in-sync to avoid test failures
+#   t/BOM/RPC/30_mt5.t
+#   t/lib/mock_binary_mt5.pl
 my %DETAILS = (
     login    => '1000',
     password => 'Efgh4567',

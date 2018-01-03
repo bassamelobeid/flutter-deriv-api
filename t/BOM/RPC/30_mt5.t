@@ -14,13 +14,26 @@ use BOM::MT5::User;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
+# Mocked account details
+# This hash shared between two files, and should be kept in-sync to avoid test failures
+#   t/BOM/RPC/30_mt5.t
+#   t/lib/mock_binary_mt5.pl
+my %DETAILS = (
+    login    => '1000',
+    password => 'Efgh4567',
+    email    => 'test.account@binary.com',
+    name     => 'Test',
+    country  => 'Malta',
+    balance  => '1234.56',
+);
+
 # Setup a test user
 my $test_client = create_client();
-$test_client->email('test.account@binary.com');
+$test_client->email($DETAILS{email});
 $test_client->save;
 
 my $user = BOM::Platform::User->create(
-    email    => 'test.account@binary.com',
+    email    => $DETAILS{email},
     password => 's3kr1t',
 );
 $user->save;
@@ -44,16 +57,16 @@ subtest 'new account' => sub {
         args     => {
             account_type   => 'demo',
             country        => 'mt',
-            email          => 'test.account@binary.com',
-            name           => 'Test',
+            email          => $DETAILS{email},
+            name           => $DETAILS{name},
             investPassword => 'Abcd1234',
-            mainPassword   => 'Efgh4567',
+            mainPassword   => $DETAILS{password},
             leverage       => 100,
         },
     };
     $c->call_ok($method, $params)
         ->has_no_error('no error for mt5_new_account');
-    is($c->result->{login}, "1000", 'result->{login}');
+    is($c->result->{login}, $DETAILS{login}, 'result->{login}');
 };
 
 subtest 'get settings' => sub {
@@ -62,14 +75,14 @@ subtest 'get settings' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login => "1000",
+            login => $DETAILS{login},
         },
     };
     $c->call_ok($method, $params)
         ->has_no_error('no error for mt5_get_settings');
-    is($c->result->{login},   "1000",  'result->{login}');
-    is($c->result->{balance}, 1234.56, 'result->{balance}');
-    is($c->result->{country}, "mt",    'result->{country}');
+    is($c->result->{login},   $DETAILS{login},   'result->{login}');
+    is($c->result->{balance}, $DETAILS{balance}, 'result->{balance}');
+    is($c->result->{country}, "mt",              'result->{country}');
 };
 
 subtest 'set settings' => sub {
@@ -78,14 +91,14 @@ subtest 'set settings' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login   => "1000",
+            login   => $DETAILS{login},
             name    => "Test2",
             country => 'mt',
         },
     };
     $c->call_ok($method, $params)
         ->has_no_error('no error for mt5_set_settings');
-    is($c->result->{login},   "1000",  'result->{login}');
+    is($c->result->{login},   $DETAILS{login}, 'result->{login}');
     is($c->result->{name},    "Test2", 'result->{name}');
     is($c->result->{country}, "mt",    'result->{country}');
 };
@@ -96,8 +109,8 @@ subtest 'password check' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login    => "1000",
-            password => 'Efgh4567',
+            login    => $DETAILS{login},
+            password => $DETAILS{password},
         },
     };
     $c->call_ok($method, $params)
@@ -110,8 +123,8 @@ subtest 'password change' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login        => "1000",
-            old_password => 'Efgh4567',
+            login        => $DETAILS{login},
+            old_password => $DETAILS{password},
             new_password => 'Ijkl6789',
         },
     };
