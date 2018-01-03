@@ -131,9 +131,8 @@ sub _validate_input_parameters {
 
     return if $params->{bet_type} =~ /BINARYICO|INVALID/i or $params->{for_sale};
 
-    BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredInput',
-        error_args => ['date_start']) unless $params->{date_start};    # date_expiry is validated in BOM::Product::Categorizer
+    BOM::Product::Exception->throw(error_code => 'MissingRequiredStart')
+        unless $params->{date_start};    # date_expiry is validated in BOM::Product::Categorizer
 
     my $start  = Date::Utility->new($params->{date_start});
     my $expiry = Date::Utility->new($params->{date_expiry});
@@ -155,9 +154,7 @@ sub _validate_input_parameters {
         or $offerings->config->{suspend_buy}{$us};
 
     unless (any { $us eq $_ } $offerings->values_for_key('underlying_symbol')) {
-        BOM::Product::Exception->throw(
-            error_code => 'InvalidInput',
-            error_args => ['asset']);
+        BOM::Product::Exception->throw(error_code => 'InvalidInputAsset');
     }
 
     return;
