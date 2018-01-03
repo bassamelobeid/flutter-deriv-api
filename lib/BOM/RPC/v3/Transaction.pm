@@ -79,6 +79,11 @@ rpc buy => sub {
     my $amount_type = $contract_parameters->{amount_type};
     my $response;
 
+    #Here again, we are re using amount in the API for specifying
+    #no of contracts. Internally for non-binary we will use unit.
+    #If we use amount, this will create confusion with the amount use for
+    #binary contract.
+    $contract_parameters->{unit} //= $contract_parameters->{amount};
     $response = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
     return $response if $response;
 
@@ -95,8 +100,8 @@ rpc buy => sub {
             client              => $client,
             contract_parameters => $contract_parameters,
             price               => ($price || 0),
-            (defined $payout)      ? (payout      => $payout)      : (),
-            (defined $amount_type) ? (amount_type => $amount_type) : (),
+            (defined $payout) ? (payout => $payout) : (),
+            (defined $amount_type) ? (amount_type => $amount_type) : (amount_type => 'unit'),
             purchase_date => $purchase_date,
             source        => $source,
             (defined $trading_period_start)
