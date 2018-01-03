@@ -46,6 +46,9 @@ test_sendrecv_params 'buy_contract_for_multiple_accounts/test_send_invalid_token
     'buy_contract_for_multiple_accounts/test_receive_invalid_token.json',
     $suite->get_stashed('proposal/id'), $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'dummy1234';
 
+# Buy Lookbacks
+test_sendrecv_params 'buy/test_send_lookback_with_params.json', 'buy/test_receive_lookback_with_params.json', 'unit', '16.28', '0';
+
 # ADMIN SCOPE CALLS (GENERAL)
 test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json', 'test';
 test_sendrecv_params 'api_token/test_send.json', 'api_token/test_receive.json', $suite->get_stashed('api_token/api_token/tokens/0/token');
