@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use open ':encoding(UTF-8)';
+use List::Util qw(pairgrep);
 use JSON::MaybeXS;
 
 use constant {
@@ -83,12 +84,7 @@ sub cmd_UserGet {
     return {
         ret_code => MT_RET_OK,
         user     => {
-            login   => $DETAILS{login},
-            email   => $DETAILS{email},
-            name    => $DETAILS{name},
-            group   => $DETAILS{group},
-            country => $DETAILS{country},
-            balance => $DETAILS{balance},
+            pairgrep { $a ne "password" } %DETAILS
         },
     };
 }
@@ -107,11 +103,8 @@ sub cmd_UserUpdate {
     return {
         ret_code => MT_RET_OK,
         user     => {
-            login   => $DETAILS{login},
-            email   => $DETAILS{email},
+            (pairgrep { $a ne "password" } %DETAILS),
             name    => "Test2",
-            country => $DETAILS{country},
-            balance => $DETAILS{balance},
         },
     };
 }
