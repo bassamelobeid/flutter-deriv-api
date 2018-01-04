@@ -227,7 +227,8 @@ subtest 'get_current_profile_definitions' => sub {
                     'payout_limit'   => "20000.00",
                     'name'           => 'Indices',
                     'profile_name'   => 'medium_risk'
-                }],
+                }
+            ],
         },
         'JP' => {
             'forex' => [{
@@ -235,11 +236,11 @@ subtest 'get_current_profile_definitions' => sub {
                     'payout_limit'   => "100000.00",
                     'name'           => 'Major Pairs',
                     'profile_name'   => 'medium_risk',
-                }],
-        }
-    };
+                }
+            ],
+        }};
     foreach my $broker (keys %$expected) {
-        my $client = create_client($broker);
+        my $client  = create_client($broker);
         my $general = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
         is_deeply($general, $expected->{$broker}, $broker);
     }
