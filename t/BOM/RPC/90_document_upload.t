@@ -87,7 +87,7 @@ $params->{args} = $args;
 $mailbox->clear;
 my $client_id = uc $test_client->loginid;
 $result = $c->call_ok($method, $params)->result;
-like(get_notification_email()->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
+#like(get_notification_email()->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
 
 ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
 is($doc->status,                                              'uploaded',           'document\'s status changed');
@@ -113,22 +113,9 @@ $args->{document_type}   = "passport";
 $args->{document_format} = "jpg";
 $args->{expiration_date} = "2117-08-11";
 $args->{document_id}     = "ABCD1235";
-$result                  = $c->call_ok($method, $params)->result;
-($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
-# Succesfully retrieved object from database.
-is($doc->document_id, $args->{document_id}, 'document is saved in db');
-is($doc->status,      'uploading',          'document status is set to uploading');
-
-$args = {
-    status   => 'success',
-    checksum => 'FileChecksum2',
-    file_id  => $result->{file_id}};
-$params->{args} = $args;
+$args->{expected_checksum} = "FileChecksum2";
 Test::Warnings::allow_warnings('duplicate_document');
 $c->call_ok($method, $params)->has_error->error_message_is('Document already uploaded.', 'error if same document is uploaded twice');
-
-($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
-is($doc, undef, 'document is not found after upload complete');
 
 sub get_notification_email {
     my ($msg) = $mailbox->search(

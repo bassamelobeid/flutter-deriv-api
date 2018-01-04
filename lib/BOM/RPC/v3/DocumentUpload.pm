@@ -30,12 +30,13 @@ rpc document_upload => sub {
 };
 
 sub start_document_upload {
-    my $params          = shift;
-    my $client          = $params->{client};
-    my $args            = $params->{args};
-    my $document_type   = $args->{document_type};
-    my $document_format = $args->{document_format};
-    my $loginid         = $client->loginid;
+    my $params            = shift;
+    my $client            = $params->{client};
+    my $args              = $params->{args};
+    my $document_type     = $args->{document_type};
+    my $document_format   = $args->{document_format};
+    my $loginid           = $client->loginid;
+    my $expected_checksum = $args->{expected_checksum};
 
     unless ($client->get_db eq 'write') {
         $client->set_db('write');
@@ -43,19 +44,25 @@ sub start_document_upload {
 
     my $id;
     my $error_occured;
+    my $duplicate;
     try {
         ($id) = $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_array(
-                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?)',
+                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
                     undef, $loginid, $document_type, $document_format,
                     $args->{expiration_date},
-                    ($args->{document_id} || ''));
+                    ($args->{document_id} || ''),
+                    $expected_checksum
+                );
             });
     }
     catch {
+        $duplicate = 1 if $_ =~ /duplicate_document/;
         $error_occured = 1;
     };
+
+    return create_upload_error('duplicate_document') if $duplicate;
 
     if ($error_occured or not $id) {
         warn 'start_document_upload in the db was not successful';
@@ -79,30 +86,17 @@ sub successful_upload {
     }
 
     my $result;
-    my $duplicate;
     my $error_occured;
     try {
         ($result) = $client->db->dbic->run(
             ping => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?, ?)',
-                    undef, $args->{file_id}, $args->{checksum}, undef, $client->loginid);
+                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)', undef, $args->{file_id}, $args->{checksum}, undef);
             });
     }
     catch {
-        if ($_ =~ /duplicate_document/) {
-            # The custom exception for a duplicated document upload was raised
-            my ($doc) = $client->find_client_authentication_document(query => [id => $args->{file_id}]);
-            if ($doc) {
-                $doc->delete;
-                $duplicate = 1;
-            }
-        } else {
-            # Another internal exception was raised
-            $error_occured = 1;
-        }
+        $error_occured = 1;
     };
 
-    return create_upload_error('duplicate_document') if $duplicate;
     return create_upload_error('doc_not_found') if not $result;
 
     if ($error_occured) {
