@@ -29,9 +29,6 @@ sub _get_upgradeable_landing_companies {
 
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
 
-    # Flag for checking ICO clients
-    my $ico_client_present = any { $_->get_status('ico_only') } @$client_list;
-
     # Get the gaming and financial company from the client's residence
     my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
     my $financial_company = $countries_instance->financial_company_for_country($client->residence);
@@ -68,7 +65,7 @@ sub _get_upgradeable_landing_companies {
     # - current client is not virtual
     if (   !@upgradeable_landing_companies
         && ($gaming_company && $financial_company && $gaming_company ne $financial_company)
-        && !$ico_client_present
+        && !$client->get_status('ico_only')
         && !$client->is_virtual
         && !(any { $_->landing_company->short eq $financial_company } @$client_list))
     {
@@ -79,7 +76,7 @@ sub _get_upgradeable_landing_companies {
     # - client's landing company is CR
     # - there is no ico client
     # - client can upgrade to other CR accounts, assuming no fiat currency OR other cryptocurrencies
-    if ($client->landing_company->short eq 'costarica' && !$ico_client_present) {
+    if ($client->landing_company->short eq 'costarica' && !$client->get_status('ico_only')) {
 
         # Get siblings of the current client
         my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid);
