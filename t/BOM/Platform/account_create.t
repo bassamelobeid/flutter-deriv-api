@@ -160,7 +160,7 @@ subtest 'create account' => sub {
         is($real_client->account_opening_reason, $real_client_details{account_opening_reason}, "Account Opening Reason should be the same");
 
         # MF acc
-        if ($broker eq 'MLT') {
+        if ($broker eq 'MLT' or $broker eq 'MX') {
             lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
             is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
             my $cl = Client::Account->new({loginid => $real_acc->{client}->loginid});
