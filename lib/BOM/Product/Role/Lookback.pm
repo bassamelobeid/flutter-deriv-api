@@ -175,7 +175,7 @@ override shortcode => sub {
     }
 
     if (defined $self->multiplier) {
-        push @shortcode_elements, $self->multiplier;
+        push @shortcode_elements, 'M' . $self->multiplier;
     }
 
     return uc join '_', @shortcode_elements;
