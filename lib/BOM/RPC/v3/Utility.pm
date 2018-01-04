@@ -30,6 +30,7 @@ use Brands;
 use LandingCompany::Registry;
 
 use BOM::Platform::Context qw(localize request);
+use BOM::Platform::ProveID;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::RedisReplicated;
 use BOM::Database::Model::AccessToken;
@@ -411,15 +412,20 @@ sub validate_make_new_account {
     }
 
     # as maltainvest can be opened in few ways, upgrade from malta,
-    # directly from virtual for Germany as residence
+    # directly from virtual for Germany as residence, from iom
     # or from maltainvest itself as we support multiple account now
     # so upgrade is only allow once
-    if (($account_type and $account_type eq 'maltainvest') and $landing_company_name eq 'malta') {
+    if (($account_type and $account_type eq 'maltainvest') and $landing_company_name =~ /^(?:malta|iom)$/) {
         # return error if client already has maltainvest account
         return create_error({
                 code              => 'FinancialAccountExists',
                 message_to_client => localize('You already have a financial money account. Please switch accounts to trade financial products.')}
         ) if (grep { $siblings->{$_}->{landing_company_name} eq 'maltainvest' } keys %$siblings);
+
+        my $iom_validation_error;
+        $iom_validation_error = _validate_iom_client($client) if $landing_company_name eq 'iom';
+
+        return $iom_validation_error if $iom_validation_error;
 
         # if from malta and account type is maltainvest, assign
         # maltainvest to landing company as client is upgrading
@@ -464,6 +470,29 @@ sub validate_make_new_account {
     # send error if number of crypto account of client is same
     # as number of crypto account supported by landing company
     return $error if ($lc_num_crypto eq $client_num_crypto);
+
+    return undef;
+}
+
+sub _validate_iom_client {
+    my $client = shift;
+
+    return create_error({
+            code              => 'UnwelcomeAccount',
+            message_to_client => localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client->loginid)}
+    ) if $client->get_status('unwelcome');
+
+    # If MX account has not done 192, BUT is authenticated, we allow them to open MF
+    return undef if $client->client_fully_authenticated;
+
+    return create_error({
+            code => 'KYCRequired',
+            message_to_client =>
+                localize('Before proceeding, please complete the identity verification process (KYC) for your [_1] account.', $client->loginid)})
+        unless BOM::Platform::ProveID->new(
+        client        => $client,
+        search_option => "ProveID_KYC"
+        )->has_done_request;
 
     return undef;
 }
