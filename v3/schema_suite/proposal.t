@@ -145,6 +145,11 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'frxUSDJPY', '7', 'd', 'Win payout if USD/JPY is strictly higher than entry spot at close on 2016-08-16.', '56.59', '56.59',
     '97.140';
 
+# R_100 Lookbacks
+test_sendrecv_params 'proposal/test_send_lookback.json', 'proposal/test_receive_lookback.json', 
+    'LBFLOATCALL', 'R_100', '15', 'm', '+0.1',  'Receive 0.01 per point difference between Volatility 100 Index\'s exit spot and lowest value at 15 minutes after contract start time.', '28.19', '28.19', '65258.19';
+
+
 # test for negative amount
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive_negative.json', '-1', 'ASIANU', 'R_100', '5', 't';
 

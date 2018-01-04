@@ -1,0 +1,12 @@
+{
+  "buy": 1,
+  "price": 16.28,
+  "parameters": {
+    "amount": 10,
+    "contract_type": "LBFLOATCALL",
+    "currency": "USD",
+    "symbol": "R_100",
+    "duration": 5,
+    "duration_unit": "m"
+  }
+}

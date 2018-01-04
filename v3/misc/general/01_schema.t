@@ -52,7 +52,7 @@ explain "Testing version: $v";
 foreach my $f (grep { -d } glob "$v/*") {
     $test_name = File::Basename::basename($f);
     explain $f;
-    my $str = path("$f/example.json")->slurp_utf8;
+    my $str  = path("$f/example.json")->slurp_utf8;
     my $send = $json->decode($str);
     $t->send_ok({json => $send}, "send request for $test_name");
     if ($f eq "$v/ticks") {

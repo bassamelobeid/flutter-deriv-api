@@ -15,7 +15,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
-my $t = build_wsapi_test();
+my $t    = build_wsapi_test();
 my $json = JSON::MaybeXS->new;
 
 # prepare client
