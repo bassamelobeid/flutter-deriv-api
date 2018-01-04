@@ -179,7 +179,6 @@ sub create_client {
     });
 }
 
-
 sub top_up {
     my ($c, $cur, $amount) = @_;
 
@@ -367,13 +366,13 @@ subtest 'buy a bet', sub {
     plan tests => 11;
     lives_ok {
         my $contract = produce_contract({
-                underlying => $underlying_R50,
-                bet_type   => 'LBFLOATCALL',
-                currency   => 'USD',
-                unit       => 50,
-                duration   => '30m',
-                current_tick => $tick,
-                barrier      => 'S20P',
+            underlying   => $underlying_R50,
+            bet_type     => 'LBFLOATCALL',
+            currency     => 'USD',
+            unit         => 50,
+            duration     => '30m',
+            current_tick => $tick,
+            barrier      => 'S20P',
         });
 
         my $txn = BOM::Transaction->new({
@@ -385,7 +384,6 @@ subtest 'buy a bet', sub {
             source        => 19,
             purchase_date => Date::Utility->new(),
         });
-
 
         my $error = $txn->buy;
         is $error, undef, 'no error';
@@ -420,7 +418,7 @@ subtest 'buy a bet', sub {
             is $trx->{balance_after} + 0, 5000 - 1.17, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
-            is $trx->{quantity},      50,                      'quantity';
+            is $trx->{quantity},      50,                     'quantity';
             is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
             is $trx->{remark},        undef,                  'remark';
             is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
@@ -435,7 +433,7 @@ subtest 'buy a bet', sub {
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
             is $fmb->{bet_class}, 'lookback_option', 'bet_class';
-            is $fmb->{bet_type},  'LBFLOATCALL',             'bet_type';
+            is $fmb->{bet_type},  'LBFLOATCALL',     'bet_type';
             is $fmb->{buy_price} + 0, 1.17, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
@@ -444,8 +442,8 @@ subtest 'buy a bet', sub {
             is !$fmb->{is_sold},    !0, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             like $fmb->{remark},   qr/\btrade\[1\.17000\]/, 'remark';
-            is $fmb->{sell_price}, undef,                     'sell_price';
-            is $fmb->{sell_time},  undef,                     'sell_time';
+            is $fmb->{sell_price}, undef,                   'sell_price';
+            is $fmb->{sell_time},  undef,                   'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
             like $fmb->{short_code}, qr/CALL/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
@@ -459,7 +457,7 @@ subtest 'buy a bet', sub {
             plan tests => 4;
             is $chld->{absolute_barrier}, undef, 'absolute_barrier';
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{prediction},       undef, 'prediction';
+            is $chld->{prediction},       undef,  'prediction';
             is $chld->{relative_barrier}, 'S20P', 'relative_barrier';
         };
 
@@ -487,15 +485,15 @@ subtest 'sell a bet', sub {
         my $reset_time = guard { restore_time };
 
         my $contract = produce_contract({
-                underlying => $underlying_R50,
-                bet_type   => 'LBFLOATCALL',
-                currency   => 'USD',
-                unit       => 50,
-                duration   => '30m',
-                current_tick => $tick,
-                entry_tick   => $tick,
-                exit_tick    => $tick,
-                barrier      => 'S20P',
+            underlying   => $underlying_R50,
+            bet_type     => 'LBFLOATCALL',
+            currency     => 'USD',
+            unit         => 50,
+            duration     => '30m',
+            current_tick => $tick,
+            entry_tick   => $tick,
+            exit_tick    => $tick,
+            barrier      => 'S20P',
         });
         my $txn;
         #note 'bid price: ' . $contract->bid_price;
@@ -529,7 +527,7 @@ subtest 'sell a bet', sub {
             is $trx->{balance_after} + 0, 5000 - 1.17 + $contract->bid_price, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
-            is $trx->{quantity},      50,                      'quantity';
+            is $trx->{quantity},      50,                     'quantity';
             is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
             is $trx->{remark},        undef,                  'remark';
             is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
@@ -544,13 +542,13 @@ subtest 'sell a bet', sub {
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
             is $fmb->{bet_class}, 'lookback_option', 'bet_class';
-            is $fmb->{bet_type},  'LBFLOATCALL',             'bet_type';
+            is $fmb->{bet_type},  'LBFLOATCALL',     'bet_type';
             is $fmb->{buy_price} + 0, 1.17, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is $fmb->{is_expired}, 0, 'is_expired';
-            is !$fmb->{is_sold},    !1, 'is_sold';
+            is $fmb->{is_expired},   0,     'is_expired';
+            is !$fmb->{is_sold}, !1, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             like $fmb->{remark}, qr/\btrade\[1\.17000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price, 'sell_price';
@@ -568,7 +566,7 @@ subtest 'sell a bet', sub {
             plan tests => 4;
             is $chld->{absolute_barrier}, undef, 'absolute_barrier';
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{prediction},       undef, 'prediction';
+            is $chld->{prediction},       undef,  'prediction';
             is $chld->{relative_barrier}, 'S20P', 'relative_barrier';
         };
 
@@ -614,7 +612,7 @@ subtest 'sell_expired_contracts', sub {
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
             unit         => 10,
-            date_start   => ($now->epoch - 50) - (30*60),
+            date_start   => ($now->epoch - 50) - (30 * 60),
             date_expiry  => $now->epoch - 50,
             current_tick => $tick,
             entry_tick   => $old_tick1,
@@ -628,7 +626,7 @@ subtest 'sell_expired_contracts', sub {
             price         => $contract_expired->ask_price,
             amount_type   => 'unit',
             unit          => 10,
-            purchase_date => $now->epoch - (30*60+51),
+            purchase_date => $now->epoch - (30 * 60 + 51),
         });
 
         my (@expired_txnids, @expired_fmbids, @unexpired_fmbids);
