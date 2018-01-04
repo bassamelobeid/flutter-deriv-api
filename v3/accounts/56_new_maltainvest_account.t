@@ -18,7 +18,8 @@ use await;
 ## do not send email
 use Test::MockModule;
 my $client_mocked = Test::MockModule->new('Client::Account');
-$client_mocked->mock('add_note', sub { return 1 });
+$client_mocked->mock('add_note',                   sub { return 1 });
+$client_mocked->mock('client_fully_authenticated', sub { return 1 });
 
 my $t = build_wsapi_test();
 
@@ -128,57 +129,78 @@ subtest 'VR upgrade to MF - Germany' => sub {
     };
 };
 
-subtest 'CR / MX client cannot upgrade to MF' => sub {
-    my %broker_map = (
-        'CR' => {
-            residence  => 'id',
-            email      => 'test+id@binary.com',
-            first_name => 'first name ID',
-        },
-        'MX' => {
-            residence  => 'gb',
-            email      => 'test+gb@binary.com',
-            first_name => 'first name GB',
-        },
-    );
+subtest 'CR client cannot upgrade to MF' => sub {
+    # create VR acc, authorize
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'test+id@binary.com',
+        residence       => 'id',
+        client_password => 'abc123',
+    });
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    $t->await::authorize({authorize => $token});
 
-    foreach my $broker (keys %broker_map) {
-        my $map = $broker_map{$broker};
-        # create VR acc, authorize
-        my ($vr_client, $user) = create_vr_account({
-            email           => $map->{email},
-            residence       => $map->{residence},
-            client_password => 'abc123',
-        });
-        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    subtest 'create CR acc, authorize' => sub {
+        my %details = %client_details;
+        $details{first_name} = 'first name ID';
+        $details{residence}  = 'id';
+
+        my $res = $t->await::new_account_real(\%details);
+        ok($res->{new_account_real});
+        test_schema('new_account_real', $res);
+
+        my $loginid = $res->{new_account_real}->{client_id};
+        like($loginid, qr/^CR\d+$/, "got CR client $loginid");
+
+        ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
         $t->await::authorize({authorize => $token});
+    };
 
-        subtest 'create MX / CR acc, authorize' => sub {
-            my %details = %client_details;
-            $details{first_name} = $map->{first_name};
-            $details{residence}  = $map->{residence};
+    subtest 'CR cannot upgrade to MF' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        my $res = $t->await::new_account_maltainvest(\%details);
 
-            my $res = $t->await::new_account_real(\%details);
-            ok($res->{new_account_real});
-            test_schema('new_account_real', $res);
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'PermissionDenied', "no MF upgrade for CR");
+        is($res->{new_account_maltainvest}, undef, 'NO account created');
+    };
+};
 
-            my $loginid = $res->{new_account_real}->{client_id};
-            like($loginid, qr/^$broker\d+$/, "got $broker client $loginid");
+subtest 'MX client can upgrade to MF' => sub {
+    # create VR acc, authorize
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'test+gb@binary.com',
+        residence       => 'gb',
+        client_password => 'abc123',
+    });
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    $t->await::authorize({authorize => $token});
 
-            ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-            $t->await::authorize({authorize => $token});
-        };
+    subtest 'create MX acc, authorize' => sub {
+        my %details = %client_details;
+        $details{first_name} = 'first name GB';
+        $details{residence}  = 'gb';
 
-        subtest 'no MF upgrade for MX' => sub {
-            my %details = (%client_details, %$mf_details);
-            delete $details{new_account_real};
-            my $res = $t->await::new_account_maltainvest(\%details);
+        my $res = $t->await::new_account_real(\%details);
+        ok($res->{new_account_real});
+        test_schema('new_account_real', $res);
 
-            is($res->{msg_type}, 'new_account_maltainvest');
-            is($res->{error}->{code}, 'PermissionDenied', "no MF upgrade for $broker");
-            is($res->{new_account_maltainvest}, undef, 'NO account created');
-        };
-    }
+        my $loginid = $res->{new_account_real}->{client_id};
+        like($loginid, qr/^MX\d+$/, "got MX client $loginid");
+
+        ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
+        $t->await::authorize({authorize => $token});
+    };
+
+    subtest 'MX can upgrade to MF' => sub {
+        my %details = (%client_details, %$mf_details);
+        $details{residence} = 'gb';
+        delete $details{new_account_real};
+        my $res = $t->await::new_account_maltainvest(\%details);
+
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'KYCRequired', "MF upgrade for MX need KYC for unauthenticated client");
+    };
 };
 
 sub create_vr_account {
