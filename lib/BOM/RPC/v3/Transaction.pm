@@ -4,7 +4,8 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use JSON::XS qw/encode_json/;
+use Encode;
+use JSON::MaybeXS;
 use Scalar::Util qw(blessed);
 
 use Format::Util::Numbers qw/formatnumber/;
@@ -21,6 +22,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
 
+my $json = JSON::MaybeXS->new;
 common_before_actions qw(auth validate_tnc check_trade_status compliance_checks check_tax_information);
 
 sub trade_copiers {
@@ -77,6 +79,11 @@ rpc buy => sub {
     my $amount_type = $contract_parameters->{amount_type};
     my $response;
 
+    #Here again, we are re using amount in the API for specifying
+    #no of contracts. Internally for non-binary we will use unit.
+    #If we use amount, this will create confusion with the amount use for
+    #binary contract.
+    $contract_parameters->{unit} //= $contract_parameters->{amount};
     $response = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
     return $response if $response;
 
@@ -93,8 +100,8 @@ rpc buy => sub {
             client              => $client,
             contract_parameters => $contract_parameters,
             price               => ($price || 0),
-            (defined $payout)      ? (payout      => $payout)      : (),
-            (defined $amount_type) ? (amount_type => $amount_type) : (),
+            (defined $payout) ? (payout => $payout) : (),
+            (defined $amount_type) ? (amount_type => $amount_type) : (amount_type => 'unit'),
             purchase_date => $purchase_date,
             source        => $source,
             (defined $trading_period_start)
@@ -116,7 +123,7 @@ rpc buy => sub {
             $message_to_client = $_->message_to_client;
         } else {
             $message_to_client = ['Cannot create contract'];
-            warn __PACKAGE__ . " buy failed: '$_', parameters: " . encode_json($contract_parameters);
+            warn __PACKAGE__ . " buy failed: '$_', parameters: " . $json->encode($contract_parameters);
         }
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
@@ -221,7 +228,7 @@ rpc buy_contract_for_multiple_accounts => sub {
     catch {
         warn __PACKAGE__
             . " buy_contract_for_multiple_accounts failed with error [$_], parameters: "
-            . (eval { encode_json($contract_parameters) } // 'could not encode, ' . $@);
+            . (eval { $json->encode($contract_parameters) } // 'could not encode, ' . $@);
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});

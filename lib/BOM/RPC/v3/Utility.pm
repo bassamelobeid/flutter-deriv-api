@@ -30,6 +30,7 @@ use Brands;
 use LandingCompany::Registry;
 
 use BOM::Platform::Context qw(localize request);
+use BOM::Platform::ProveID;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::RedisReplicated;
 use BOM::Database::Model::AccessToken;
@@ -313,6 +314,26 @@ sub get_real_account_siblings_information {
     return $siblings;
 }
 
+=head2 get_client_currency_information
+    get_client_currency_information($siblings, $landing_company_name)
+    
+    Get the currency statuses (fiat and crypto) of the clients, based on the landing company.
+=cut
+
+sub get_client_currency_information {
+    my ($siblings, $landing_company_name) = @_;
+
+    my $fiat_check = grep { ((LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency})) // '') eq 'fiat' } keys %$siblings;
+
+    my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
+    my $lc_num_crypto = grep { ($legal_allowed_currencies->{$_} // '') eq 'crypto' } keys %{$legal_allowed_currencies};
+
+    my $client_num_crypto = (grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'crypto' } keys %$siblings)
+        // 0;
+
+    return ($fiat_check, $lc_num_crypto, $client_num_crypto);
+}
+
 =head2 validate_make_new_account
 
     validate_make_new_account($client, $account_type, $request_data)
@@ -391,15 +412,20 @@ sub validate_make_new_account {
     }
 
     # as maltainvest can be opened in few ways, upgrade from malta,
-    # directly from virtual for Germany as residence
+    # directly from virtual for Germany as residence, from iom
     # or from maltainvest itself as we support multiple account now
     # so upgrade is only allow once
-    if (($account_type and $account_type eq 'maltainvest') and $landing_company_name eq 'malta') {
+    if (($account_type and $account_type eq 'maltainvest') and $landing_company_name =~ /^(?:malta|iom)$/) {
         # return error if client already has maltainvest account
         return create_error({
                 code              => 'FinancialAccountExists',
                 message_to_client => localize('You already have a financial money account. Please switch accounts to trade financial products.')}
         ) if (grep { $siblings->{$_}->{landing_company_name} eq 'maltainvest' } keys %$siblings);
+
+        my $iom_validation_error;
+        $iom_validation_error = _validate_iom_client($client) if $landing_company_name eq 'iom';
+
+        return $iom_validation_error if $iom_validation_error;
 
         # if from malta and account type is maltainvest, assign
         # maltainvest to landing company as client is upgrading
@@ -431,21 +457,42 @@ sub validate_make_new_account {
     # check if all currencies are exhausted i.e.
     # - if client has one type of fiat currency don't allow them to open another
     # - if client has all of allowed cryptocurrency
+    my ($fiat_check, $lc_num_crypto, $client_num_crypto) = get_client_currency_information($siblings, $landing_company_name);
 
     # check if client has fiat currency, if not then return as we
     # allow them to open new account
-    return undef unless grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'fiat' } keys %$siblings;
+    return undef unless $fiat_check;
 
-    my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
-    my $lc_num_crypto = grep { $legal_allowed_currencies->{$_} eq 'crypto' } keys %{$legal_allowed_currencies};
     # check if landing company supports crypto currency
     # else return error as client exhausted fiat currency
     return $error unless $lc_num_crypto;
 
     # send error if number of crypto account of client is same
     # as number of crypto account supported by landing company
-    my $client_num_crypto = (grep { LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) eq 'crypto' } keys %$siblings) // 0;
     return $error if ($lc_num_crypto eq $client_num_crypto);
+
+    return undef;
+}
+
+sub _validate_iom_client {
+    my $client = shift;
+
+    return create_error({
+            code              => 'UnwelcomeAccount',
+            message_to_client => localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client->loginid)}
+    ) if $client->get_status('unwelcome');
+
+    # If MX account has not done 192, BUT is authenticated, we allow them to open MF
+    return undef if $client->client_fully_authenticated;
+
+    return create_error({
+            code => 'KYCRequired',
+            message_to_client =>
+                localize('Before proceeding, please complete the identity verification process (KYC) for your [_1] account.', $client->loginid)})
+        unless BOM::Platform::ProveID->new(
+        client        => $client,
+        search_option => "ProveID_KYC"
+        )->has_done_request;
 
     return undef;
 }
@@ -469,7 +516,8 @@ sub validate_set_currency {
             message_to_client => localize('Please note that you are limited to one account per currency type.')});
     # if fiat then check if client has already any fiat, if yes then don't allow
     return $error
-        if ($type eq 'fiat' and grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings);
+        if ($type eq 'fiat'
+        and grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings);
     # if crypto check if client has same crypto, if yes then don't allow
     return $error if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
 

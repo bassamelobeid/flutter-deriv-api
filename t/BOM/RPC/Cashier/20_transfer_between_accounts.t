@@ -40,16 +40,29 @@ my $params = {
 my ($method, $email, $client_vr, $client_cr, $client_cr1, $client_mlt, $client_mf, $user, $token) = ('transfer_between_accounts');
 
 my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+my $btc_usd_rate             = 4000;
 $mocked_CurrencyConverter->mock(
     'in_USD',
     sub {
         my $price         = shift;
         my $from_currency = shift;
 
-        $from_currency eq 'BTC' and return 4000 * $price;
+        $from_currency eq 'BTC' and return $btc_usd_rate * $price;
         $from_currency eq 'USD' and return 1 * $price;
 
         return 0;
+    });
+
+my $tmp_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+    email       => 'tmp@abcdfef.com'
+});
+
+$tmp_client->db->dbic->run(
+    ping => sub {
+        my $date = Date::Utility->new->db_timestamp;
+        $_->do(
+            "insert into data_collection.exchange_rate (source_currency, target_currency,date, rate) values('BTC','USD', '$date','$btc_usd_rate')");
     });
 
 subtest 'call params validation' => sub {

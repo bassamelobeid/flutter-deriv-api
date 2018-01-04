@@ -11,7 +11,8 @@ use 5.014;
 use strict;
 use warnings;
 
-use JSON;
+use Encode;
+use JSON::MaybeXS;
 use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
@@ -48,6 +49,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
+my $json = JSON::MaybeXS->new;
 common_before_actions qw(auth);
 
 =head2 payout_currencies
@@ -150,6 +152,32 @@ rpc "landing_company",
     return \%landing_company;
     };
 
+=head2 landing_company_details
+
+    $landing_company_details = landing_company_details({
+        landing_company_name => $lc,
+    })
+
+Returns the details of a landing_company object.
+
+Takes a single C<$params> hashref containing the following keys:
+
+=over 4
+
+=item * args, which may contain the following keys:
+
+=over 4
+
+=item * landing_company_details
+
+=back
+
+=back
+
+Returns a hashref containing the keys from __build_landing_company($lc)
+
+=cut
+
 rpc "landing_company_details",
     before_actions => [],    # unauthenticated
     sub {
@@ -162,6 +190,60 @@ rpc "landing_company_details",
 
     return __build_landing_company($lc);
     };
+
+=head2 __build_landing_company
+
+    $landing_company_details = __build_landing_company($lc)
+
+Returns a hashref containing the following:
+
+=over 4
+
+=item * shortcode
+
+=item * name
+
+=item * address
+
+=item * country
+
+=item * legal_default_currency
+
+=item * legal_allowed_currencies
+
+=item * legal_allowed_markets
+
+=item * legal_allowed_contract_categories
+
+=item * has_reality_check
+
+=back
+
+Takes a single C<$lc> object that contains the following methods:
+
+=over 4
+
+=item * short
+
+=item * name
+
+=item * address
+
+=item * country
+
+=item * legal_default_currency
+
+=item * legal_allowed_markets
+
+=item * legal_allowed_contract_categories
+
+=item * has_reality_check
+
+=back
+
+Returns a hashref of landing_company parameters
+
+=cut
 
 sub __build_landing_company {
     my ($lc) = @_;
@@ -337,6 +419,33 @@ rpc profit_table => sub {
         count        => scalar(@transactions)};
 };
 
+=head2 balance
+
+    my $balance_obj = balance({ client => $client });
+
+Returns balance for the default account of the client. If there is no default account,
+balance as 0.00 with empty string as currency type is returned.
+
+Takes the following (named) parameters:
+
+=over 4
+
+=item * C<params> - A hashref with reference to Client::Account object under the key C<client>
+
+=back
+
+Returns a hashref with following items
+
+=over 4
+
+=item * C<loginid> - Login ID for the default account. E.g. : CR90000000
+
+=item * C<currency> - Currency in which the balance is being represented. E.g. : BTC
+
+=item * C<balance> - Balance for the default account. E.g. : 100.00
+ 
+=cut
+
 rpc balance => sub {
     my $params = shift;
 
@@ -382,7 +491,7 @@ rpc get_account_status => sub {
     push @status, 'social_signup' if $user->has_social_signup;
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();
-    $financial_assessment = ref($financial_assessment) ? from_json($financial_assessment->data || '{}') : {};
+    $financial_assessment = ref($financial_assessment) ? $json->decode($financial_assessment->data || '{}') : {};
     push @status,
         'financial_assessment_not_complete'
         if (
@@ -1318,10 +1427,11 @@ rpc api_token => sub {
         if (defined $params->{account_id}) {
             BOM::Platform::RedisReplicated::redis_write()->publish(
                 'TXNUPDATE::transaction_' . $params->{account_id},
-                JSON::to_json({
-                        error => {
-                            code       => "TokenDeleted",
-                            account_id => $params->{account_id}}}));
+                Encode::encode_utf8(
+                    $json->encode({
+                            error => {
+                                code       => "TokenDeleted",
+                                account_id => $params->{account_id}}})));
         }
     }
     if (my $display_name = $args->{new_token}) {
@@ -1478,7 +1588,7 @@ rpc set_financial_assessment => sub {
             next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
             $cli->financial_assessment({
-                data => encode_json $financial_evaluation->{user_data},
+                data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),
             });
             $cli->save;
         }
@@ -1518,7 +1628,7 @@ rpc get_financial_assessment => sub {
     my $response             = {};
     my $financial_assessment = $client->financial_assessment();
     if ($financial_assessment) {
-        my $data = from_json $financial_assessment->data;
+        my $data = $json->decode($financial_assessment->data);
         if ($data) {
             foreach my $key (keys %$data) {
                 unless ($key =~ /total_score/) {
