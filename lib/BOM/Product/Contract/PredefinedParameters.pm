@@ -121,7 +121,7 @@ sub update_predefined_highlow {
     my $tick_data = shift;
 
     my $underlying = create_underlying($tick_data->{symbol});
-    my $now        = $tick_data->{epoch};
+    my $tick_epoch = $tick_data->{epoch};
     my @periods    = @{get_trading_periods($underlying->symbol)};
     my $new_quote  = $tick_data->{quote};
 
@@ -138,14 +138,16 @@ sub update_predefined_highlow {
             $new_high = max($new_quote, $high);
             $new_low = min($new_quote, $low);
         } else {
-            my $db_highlow = $underlying->get_high_low_for_period({
-                start => $period->{date_start}->{epoch},
-                end   => $now,
+            my $start_epoch = $period->{date_start}->{epoch};
+            my $end_epoch   = max($tick_epoch, $start_epoch);
+            my $db_highlow  = $underlying->get_high_low_for_period({
+                start => $start_epoch,
+                end   => $end_epoch,
             });
             $new_high = defined $db_highlow->{high} ? max($new_quote, $db_highlow->{high}) : $new_quote;
             $new_low = defined $db_highlow->{low} ? min($new_quote, $db_highlow->{low}) : $new_quote;
         }
-        my $ttl = max(1, $period->{date_expiry}->{epoch} - $now);
+        my $ttl = max(1, $period->{date_expiry}->{epoch} - $tick_epoch);
         # not using chronicle here because we don't want to save historical highlow data
         BOM::Platform::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, $json->encode([$new_high, $new_low]), 'EX', $ttl);
     }
