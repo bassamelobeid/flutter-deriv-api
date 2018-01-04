@@ -32,7 +32,6 @@ subtest 'Sets match' => sub {
         if ($po eq 'contract_category') {
 
             push @result, 'coinauction';
-            push @result, 'lookback';
         }
         eq_or_diff([sort @result], [sort $udb->$udb_method], $po . ' list match with UnderlyingDB->' . $udb_method);
 
