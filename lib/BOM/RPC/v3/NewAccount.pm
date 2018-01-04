@@ -192,7 +192,8 @@ rpc "verify_email",
         $payment_sub->($type);
     }
 
-    return {status => 1};    # always return 1, so not to leak client's email
+    # always return 1, so not to leak client's email
+    return {status => 1};
     };
 
 sub _update_professional_existing_clients {
@@ -200,20 +201,16 @@ sub _update_professional_existing_clients {
     my ($clients, $professional_status, $professional_requested) = @_;
 
     if ($professional_requested && $clients) {
-
         foreach my $client (@{$clients}) {
             my $error = BOM::RPC::v3::Utility::set_professional_status($client, $professional_status, $professional_requested);
             return $error if $error;
         }
-
     }
 
     return undef;
-
 }
 
 sub _get_professional_details_clients {
-
     my ($user, $args) = @_;
 
     # Filter out MF/CR clients
@@ -368,10 +365,10 @@ rpc new_account_maltainvest => sub {
 
     $args->{client_type} //= 'retail';
 
-    # send error if anyone other than maltainvest, virtual, malta
-    # tried to make this call
+    # send error if anyone other than maltainvest, virtual,
+    # malta, iom tried to make this call
     return BOM::RPC::v3::Utility::permission_error()
-        if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest)$/);
+        if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest|iom)$/);
 
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'maltainvest', $args);
     return $error if $error;
