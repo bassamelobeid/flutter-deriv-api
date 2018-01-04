@@ -136,26 +136,26 @@ subtest 'payout' => sub {
     }
 
     $c = produce_contract({
-        bet_type     => 'CALL',
-        underlying   => 'frxUSDJPY',
-        barrier      => 'S50000P',
-        duration     => '1h',
-        currency     => 'JPY',
-        payout       => 1000,
-        product_type => 'multi_barrier',
+        bet_type             => 'CALL',
+        underlying           => 'frxUSDJPY',
+        barrier              => 'S50000P',
+        duration             => '1h',
+        currency             => 'JPY',
+        payout               => 1000,
+        product_type         => 'multi_barrier',
         trading_period_start => time,
     });
 
     cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex intraday non atm contract for japan is floored to 5%';
 
     $c = produce_contract({
-        bet_type     => 'CALL',
-        underlying   => 'frxUSDJPY',
-        barrier      => 'S5000000P',
-        duration     => '2d',
-        currency     => 'JPY',
-        payout       => 1000,
-        product_type => 'multi_barrier',
+        bet_type             => 'CALL',
+        underlying           => 'frxUSDJPY',
+        barrier              => 'S5000000P',
+        duration             => '2d',
+        currency             => 'JPY',
+        payout               => 1000,
+        product_type         => 'multi_barrier',
         trading_period_start => time,
     });
     cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex daily non atm contract for japan is floored to 5%';
@@ -485,19 +485,19 @@ subtest 'flexible commission check for different markets' => sub {
 
 subtest 'non ATM volatility indices variable commission structure' => sub {
     my $args = {
-        bet_type => "CALL",
+        bet_type   => "CALL",
         underlying => 'R_100',
-        duration => '59s',
-        payout => 100,
-        currency => 'USD',
-        barrier => 'S10P',
+        duration   => '59s',
+        payout     => 100,
+        currency   => 'USD',
+        barrier    => 'S10P',
     };
     my $c = produce_contract($args);
     is $c->base_commission, 2.3, 'base commission is 0.023 for less than 1-minute non ATM contract on R_100';
     $args->{duration} = '60s';
     $c = produce_contract($args);
     is $c->base_commission, 1.5, 'base commission is 0.015 for 1-minute non ATM contract on R_100';
-    $args->{barrier} = 'S0P';
+    $args->{barrier}  = 'S0P';
     $args->{duration} = '59s';
     is $c->base_commission, 1.5, 'base commission is 0.015 for less than 1-minute ATM contract on R_100';
 };

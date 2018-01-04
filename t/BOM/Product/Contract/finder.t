@@ -57,7 +57,7 @@ subtest "basic_contracts_for" => sub {
             digits       => 6,
         },
         frxUSDJPY => {
-            callput      => 12,
+            callput      => 10,
             touchnotouch => 2,    # only daily
             staysinout   => 2,
             endsinout    => 2,

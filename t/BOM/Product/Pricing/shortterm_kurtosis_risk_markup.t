@@ -42,17 +42,17 @@ my $fake_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $bet_params = {
-    underlying      => 'frxUSDJPY',
-    bet_type        => 'CALL',
-    duration        => '15m',
-    barrier         => 'S10P',
-    current_tick    => $fake_tick,
-    currency        => 'USD',
-    payout          => 10,
-    product_type    => 'multi_barrier',
+    underlying           => 'frxUSDJPY',
+    bet_type             => 'CALL',
+    duration             => '15m',
+    barrier              => 'S10P',
+    current_tick         => $fake_tick,
+    currency             => 'USD',
+    payout               => 10,
+    product_type         => 'multi_barrier',
     trading_period_start => time,
-    date_start      => $now,
-    date_pricing    => $now,
+    date_start           => $now,
+    date_pricing         => $now,
 };
 
 subtest 'non atm short term kurtosis markup' => sub {

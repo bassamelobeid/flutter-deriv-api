@@ -361,9 +361,9 @@ subtest 'date start blackouts' => sub {
     $bet_params->{duration}   = '4h59m59s';
     $c                        = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for random';
-    $bet_params->{underlying}      = 'frxAUDUSD';
-    $bet_params->{barrier}         = 76.8999;
-    $bet_params->{product_type} = 'multi_barrier';
+    $bet_params->{underlying}           = 'frxAUDUSD';
+    $bet_params->{barrier}              = 76.8999;
+    $bet_params->{product_type}         = 'multi_barrier';
     $bet_params->{trading_period_start} = time;
     Cache::RedisDB->flushall;
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;

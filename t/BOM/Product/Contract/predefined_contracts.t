@@ -27,6 +27,7 @@ $mocked_decimate->mock(
 my $now = Date::Utility->new('2016-09-28 10:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 
+$DB::single = 1;
 BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', $now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -56,11 +57,11 @@ subtest 'predefined_contracts' => sub {
     ok !$c->can('predefined_contracts'), 'no predefined_contracts for costarica';
     ok $c->is_valid_to_buy, 'valid to buy.';
 
-    $bet_params->{product_type} = 'multi_barrier';
+    $bet_params->{product_type}         = 'multi_barrier';
     $bet_params->{trading_period_start} = time;
-    $bet_params->{bet_type}     = 'CALLE';
-    $bet_params->{barrier}      = '100.010';
-    $c                          = produce_contract($bet_params);
+    $bet_params->{bet_type}             = 'CALLE';
+    $bet_params->{barrier}              = '100.010';
+    $c                                  = produce_contract($bet_params);
     ok %{$c->predefined_contracts}, 'has predefined_contracts for japan';
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply($c->primary_validation_error->message_to_client, ['Invalid expiry time.']);
