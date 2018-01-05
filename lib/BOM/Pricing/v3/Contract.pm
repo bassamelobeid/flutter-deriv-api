@@ -186,6 +186,12 @@ sub _get_ask {
             if ($contract->underlying->feed_license eq 'realtime') {
                 $response->{spot} = $contract->current_spot;
             }
+
+            unless ($contract->is_binary) {
+                $response->{multiplier} = $contract->multiplier;
+                $response->{spot_min}   = $contract->spot_min;
+                $response->{spot_max}   = $contract->spot_max;
+            }
         }
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
