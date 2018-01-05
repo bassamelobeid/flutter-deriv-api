@@ -401,6 +401,12 @@ sub get_bid {
             $response->{entry_tick}      = $entry_spot;
             $response->{entry_spot}      = $entry_spot;
             $response->{entry_tick_time} = $contract->entry_spot_epoch;
+
+            unless ($contract->is_binary) {
+                $response->{spot_min} = $contract->spot_min;
+                $response->{spot_max} = $contract->spot_max;
+            }
+
             if ($contract->two_barriers) {
                 $response->{high_barrier} = $contract->high_barrier->as_absolute;
                 $response->{low_barrier}  = $contract->low_barrier->as_absolute;
