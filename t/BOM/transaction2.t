@@ -30,7 +30,7 @@ use BOM::MarketData::Types;
 
 use Crypt::NamedKeys;
 
-my $json = JSON::MaybeXS->new;
+my $json   = JSON::MaybeXS->new;
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked->mock(
     'get',

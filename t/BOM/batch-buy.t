@@ -37,7 +37,7 @@ use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use JSON::MaybeXS;
-my $json = JSON::MaybeXS->new;
+my $json         = JSON::MaybeXS->new;
 my $datadog_mock = Test::MockModule->new('DataDog::DogStatsd');
 my @datadog_actions;
 $datadog_mock->mock(increment => sub { shift; push @datadog_actions, $json->encode({increment => [@_]}); return; });
