@@ -19,6 +19,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
 use Quant::Framework;
 use LandingCompany::Registry;
+use Sort::Naturally;
 
 rpc active_symbols => sub {
     my $params = shift;
@@ -66,7 +67,7 @@ rpc active_symbols => sub {
             $desc->{allow_forward_starting} = 1 if $forward_starting{$symbol};
             push @{$active_symbols}, $desc;
         }
-
+        @{$active_symbols} = sort {ncmp($a->{display_name},$b->{display_name})} @{$active_symbols};
         Cache::RedisDB->set($namespace, $key, $active_symbols, 30 - time % 30);
     }
 
