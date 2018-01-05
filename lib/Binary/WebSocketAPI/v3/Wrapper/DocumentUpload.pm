@@ -38,6 +38,7 @@ sub add_upload_info {
         received_bytes  => 0,
         pending_futures => [],
         upload_id       => $upload_id,
+        expected_checksum => $args->{expected_checksum}
     };
 
     wait_for_chunks_and_upload_to_s3($c, $upload_info);
@@ -290,12 +291,14 @@ sub last_chunk_received {
     my ($c, $upload_info) = @_;
 
     return if $upload_info->{chunk_size} != 0;
+    
+    my $checksum = $upload_info->{md5}->hexdigest;
+    return send_upload_failure($c, $upload_info, 'checksum_mismatch') if $checksum ne $upload_info->{expected_checksum};
 
     return Future->wait_any($upload_info->{put_future}, $c->loop->timeout_future(after => UPLOAD_TIMEOUT))->on_done(
         sub {
             my $etag = shift;
             $etag =~ s/"//g;
-            my $checksum = $upload_info->{md5}->hexdigest;
             return send_upload_successful($c, $upload_info, 'success', $checksum) if $checksum eq $etag;
             warn 'S3 etag does not match the checksum, this indicates a bug in the upload process';
             send_upload_failure($c, $upload_info, 'unknown');
