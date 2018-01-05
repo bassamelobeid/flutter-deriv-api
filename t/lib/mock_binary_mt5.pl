@@ -9,6 +9,7 @@ use JSON::MaybeXS;
 
 use constant {
     MT_RET_OK => 0,
+    MT_RET_USR_INVALID_PASSWORD => 3006,
 };
 
 # Mocked account details
@@ -129,8 +130,10 @@ sub cmd_UserPasswordCheck {
     $input->{login} eq $DETAILS{login} or
         die "TODO: mock UserUpdate on unknown login\n";
 
-    $input->{password} eq $DETAILS{password} or
-        die "UserPasswordCheck with unexpected password=$input->{password}\n";
+    $input->{password} eq $DETAILS{password} or return {
+        ret_code => MT_RET_USR_INVALID_PASSWORD,
+        error    => 'Invalid account password',
+    };
 
     return {
         ret_code => MT_RET_OK,
