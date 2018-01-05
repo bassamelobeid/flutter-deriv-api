@@ -27,16 +27,16 @@ subtest 'non trading day' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($supported_symbol, $saturday);
     my $offerings = get_predefined_offerings({
         landing_company => 'japan',
-        symbol => $supported_symbol,
-        date   => $saturday
+        symbol          => $supported_symbol,
+        date            => $saturday
     });
     ok !@$offerings, 'no offerings were generated on non trading day';
     setup_ticks($supported_symbol, [[$monday->minus_time_interval('400d')], [$monday]]);
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($supported_symbol, $monday);
     $offerings = get_predefined_offerings({
         landing_company => 'japan',
-        symbol => $supported_symbol,
-        date   => $monday
+        symbol          => $supported_symbol,
+        date            => $monday
     });
     ok @$offerings, 'generates predefined offerings on a trading day';
 };
@@ -122,8 +122,8 @@ subtest 'intraday trading period' => sub {
         BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $date);
         my $offerings = get_predefined_offerings({
             landing_company => 'japan',
-            symbol => $symbol,
-            date   => $date
+            symbol          => $symbol,
+            date            => $date
         });
         my @intraday = grep { $_->{expiry_type} eq 'intraday' } @$offerings;
         is scalar(@intraday), $count, 'expected ' . $count . ' offerings on intraday at 00:00GMT';
@@ -228,8 +228,8 @@ subtest 'predefined barriers' => sub {
         setup_ticks($symbol, $test->{ticks});
         my $offerings = get_predefined_offerings({
             landing_company => 'japan',
-            symbol => $symbol,
-            date   => $generation_date
+            symbol          => $symbol,
+            date            => $generation_date
         });
         my $m        = $test->{match};
         my $offering = first {
@@ -258,13 +258,19 @@ subtest 'update_predefined_highlow' => sub {
         };
         my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $now);
         ok update_predefined_highlow($new_tick), 'updated highlow';
-        my $offering = get_predefined_offerings({symbol => $symbol, landing_company => 'japan'});
+        my $offering = get_predefined_offerings({
+            symbol          => $symbol,
+            landing_company => 'japan'
+        });
         my $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
         ok !scalar(@{$touch->{expired_barriers}}), 'no expired barrier detected';
         $new_tick->{epoch} += 1;
         $new_tick->{quote} = 125;
         ok update_predefined_highlow($new_tick), 'next update';
-        $offering = get_predefined_offerings({symbol => $symbol, landing_company => 'japan'});
+        $offering = get_predefined_offerings({
+            symbol          => $symbol,
+            landing_company => 'japan'
+        });
         $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
         ok scalar(@{$touch->{expired_barriers}}), 'expired barrier detected';
     }
@@ -285,10 +291,11 @@ sub setup_ticks {
         if ($quote) {
             BOM::Platform::RedisReplicated::redis_write()->set(
                 "Distributor::QUOTE::$symbol",
-                Encode::encode_utf8(JSON::MaybeXS->new->encode({
-                        quote => $quote,
-                        epoch => $date->epoch,
-                    })));
+                Encode::encode_utf8(
+                    JSON::MaybeXS->new->encode({
+                            quote => $quote,
+                            epoch => $date->epoch,
+                        })));
         }
     }
 }

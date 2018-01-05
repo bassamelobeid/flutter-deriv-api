@@ -89,9 +89,9 @@ subtest 'produce_contract exception' => sub {
         }
         catch {
             isa_ok $_, 'BOM::Product::Exception';
-            is $_->message_to_client->[0], 'Missing required contract parameters ([_1]).';
             my $missing = (keys %$undef)[0];
-            like $_->message_to_client->[1], qr/$missing/, 'correct error args';
+            $missing = $missing eq 'duration' ? 'date_expiry or duration' : $missing;
+            is $_->message_to_client->[0], 'Missing required contract parameters ('.$missing.').';
         }
     }
 };

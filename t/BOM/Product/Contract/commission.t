@@ -64,14 +64,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now,
-    }) for qw(FCHI FTSE);
+    }) for qw(FCHI);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol        => $_,
         recorded_date => $now,
-    }) for qw(FCHI FTSE);
+    }) for qw(FCHI);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix');
 my %custom_otm =
@@ -470,31 +470,29 @@ subtest 'flexible commission check for different markets' => sub {
     test_flexible_commission 'frxUSDJPY', 'forex',       70;
     test_flexible_commission 'frxXAUUSD', 'commodities', 70;
     test_flexible_commission 'FCHI',      'indices',     170;
-    test_flexible_commission 'FTSE',      'indices',     25;
 
     test_flexible_commission 'R_100',     'volidx',      10000;
     test_flexible_commission 'frxEURUSD', 'forex',       10000;
     test_flexible_commission 'frxUSDJPY', 'forex',       10000;
     test_flexible_commission 'frxXAUUSD', 'commodities', 10000;
     test_flexible_commission 'FCHI',      'indices',     10000;
-    test_flexible_commission 'FTSE',      'indices',     10000;
 };
 
 subtest 'non ATM volatility indices variable commission structure' => sub {
     my $args = {
-        bet_type => "CALL",
+        bet_type   => "CALL",
         underlying => 'R_100',
-        duration => '59s',
-        payout => 100,
-        currency => 'USD',
-        barrier => 'S10P',
+        duration   => '59s',
+        payout     => 100,
+        currency   => 'USD',
+        barrier    => 'S10P',
     };
     my $c = produce_contract($args);
     is $c->base_commission, 2.3, 'base commission is 0.023 for less than 1-minute non ATM contract on R_100';
     $args->{duration} = '60s';
     $c = produce_contract($args);
     is $c->base_commission, 1.5, 'base commission is 0.015 for 1-minute non ATM contract on R_100';
-    $args->{barrier} = 'S0P';
+    $args->{barrier}  = 'S0P';
     $args->{duration} = '59s';
     is $c->base_commission, 1.5, 'base commission is 0.015 for less than 1-minute ATM contract on R_100';
 };
