@@ -189,8 +189,6 @@ sub _get_ask {
 
             unless ($contract->is_binary) {
                 $response->{multiplier} = $contract->multiplier;
-                $response->{spot_min}   = $contract->spot_min;
-                $response->{spot_max}   = $contract->spot_max;
             }
         }
         my $pen = $contract->pricing_engine_name;
