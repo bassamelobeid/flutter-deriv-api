@@ -8,6 +8,9 @@ use IPC::Run3;
 # We know we're running inside a Mojo app so this is best
 use IO::Async::Loop::Mojo;
 
+# Overrideable in unit tests
+our @MT5_WRAPPER_COMMAND = ('php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php');
+
 my $loop = IO::Async::Loop::Mojo->new;
 
 sub __user_fields {
@@ -47,12 +50,10 @@ sub _invoke_mt5 {
 
     my $in = encode_json($param);
 
-    my @cmd = ('php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php', $cmd);
-
     # TODO(leonerd): This ought to be a method on IO::Async::Loop itself
     my $f = $loop->new_future;
     $loop->run_child(
-        command => \@cmd,
+        command => [@MT5_WRAPPER_COMMAND, $cmd],
         stdin => $in,
         on_finish => sub {
             my (undef, $exitcode, $out, $err) = @_;
