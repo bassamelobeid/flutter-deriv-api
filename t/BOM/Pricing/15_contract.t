@@ -173,7 +173,7 @@ subtest 'get_ask' => sub {
     $params->{symbol} = "invalid symbol";
     $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
     ok $result->{error}, 'error for invalid symbol';
-    is $result->{error}{code}, 'OfferingsValidationError', 'error code is OfferingsValidationError';
+    is $result->{error}{code}, 'ContractCreationFailure', 'error code is ContractCreationFailure';
     is $result->{error}{message_to_client}, 'Trading is not offered for this asset.', 'correct message to client';
 
     cmp_deeply(
@@ -246,7 +246,7 @@ subtest 'send_ask - invalid symbol' => sub {
             "streaming_params" => {add_theo_probability => 1},
         }};
 
-    my $result = $c->call_ok('send_ask', $params)->has_error->error_code_is('OfferingsValidationError')
+    my $result = $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')
         ->error_message_is('Trading is not offered for this asset.');
 };
 
