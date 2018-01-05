@@ -128,6 +128,11 @@ subtest 'password check' => sub {
     $c->call_ok($method, $params)
         ->has_no_error('no error for mt5_password_check');
 
+    $params->{args}{password} = "wrong";
+    $c->call_ok($method, $params)
+        ->has_error('error for mt5_password_check wrong password')
+        ->error_code_is('MT5PasswordCheckError', 'error code for mt5_password_check wrong password');
+
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)
         ->has_error('error for mt5_password_check wrong login')
