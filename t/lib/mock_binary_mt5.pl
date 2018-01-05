@@ -17,7 +17,7 @@ use constant {
 #   t/BOM/RPC/30_mt5.t
 #   t/lib/mock_binary_mt5.pl
 my %DETAILS = (
-    login    => '__MOCK__',
+    login    => '123454321',
     password => 'Efgh4567',
     email    => 'test.account@binary.com',
     name     => 'Test',

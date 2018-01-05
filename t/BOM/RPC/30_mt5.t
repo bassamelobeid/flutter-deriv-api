@@ -19,7 +19,7 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 #   t/BOM/RPC/30_mt5.t
 #   t/lib/mock_binary_mt5.pl
 my %DETAILS = (
-    login    => '__MOCK__',
+    login    => '123454321',
     password => 'Efgh4567',
     email    => 'test.account@binary.com',
     name     => 'Test',
@@ -171,7 +171,7 @@ subtest 'deposit' => sub {
         token    => $token,
         args     => {
             from_binary => $test_client->loginid,
-            to_mt5      => "__MOCK__",
+            to_mt5      => $DETAILS{login},
             amount      => 150,
         },
     };
@@ -195,7 +195,7 @@ subtest 'withdrawal' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => "__MOCK__",
+            from_mt5  => $DETAILS{login},
             to_binary => $test_client->loginid,
             amount    => 150,
         },
