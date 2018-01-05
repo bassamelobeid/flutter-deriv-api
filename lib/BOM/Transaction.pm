@@ -351,19 +351,7 @@ sub calculate_max_open_bets {
     my $self   = shift;
     my $client = shift;
 
-    # for tick trades only self-exclusion matters
-    return $client->get_limit_for_self_exclusion_open_positions
-        if $self->contract->tick_expiry;
-
-    my $se_lim     = $client->get_limit_for_self_exclusion_open_positions;
-    my $binary_lim = $client->get_limit_for_open_positions;
-
-    # if both are given the least is chosen
-    return $se_lim < $binary_lim ? $se_lim : $binary_lim
-        if (defined $se_lim and defined $binary_lim);
-
-    # otherwise use the one that's defined if any
-    return $binary_lim // $se_lim;
+    return $client->get_limit_for_open_positions;
 }
 
 sub calculate_limits {
