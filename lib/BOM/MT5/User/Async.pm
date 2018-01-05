@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use JSON;
 use IPC::Run3;
+use Try::Tiny;
 
 # We know we're running inside a Mojo app so this is best
 use IO::Async::Loop::Mojo;
@@ -60,8 +61,19 @@ sub _invoke_mt5 {
             warn "MT5 PHP call nonzero status: $exitcode\n" if $exitcode;
             warn "MT5 PHP call error: $err from $in\n" if defined($err) && length($err);
 
+            if($exitcode) {
+                return $f->fail("binary_mt5 exited non-zero status ($exitcode)", mt5 => $cmd, $err);
+            }
+
             $out =~ s/[\x0D\x0A]//g;
-            $f->done(decode_json($out));
+            try {
+                $out = decode_json($out);
+                $f->done($out);
+            }
+            catch {
+                my $e = $_; chomp $e;
+                $f->fail($e, mt5 => $cmd);
+            };
         },
     );
 
