@@ -31,6 +31,8 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
+my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml') or code_exit_BO("Not accessible. Please check if you are on right url.");
+
 my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 # Currency is utilised in Deposit and Withdrawal views accordingly
@@ -54,8 +56,6 @@ my $view_action = request()->param('view_action') // '';
 
 code_exit_BO("Invalid currency.")
     if $currency !~ /^[A-Z]{3}$/;
-
-my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
 
 my $currency_url = $cfg->{blockchain_url}{$currency};
 code_exit_BO('No currency urls for ' . $currency) unless $currency_url->{transaction} and $currency_url->{address};
