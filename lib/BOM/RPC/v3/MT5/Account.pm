@@ -89,7 +89,7 @@ rpc mt5_login_list => sub {
 
         $setting = mt5_get_settings({
                 client => $client,
-                args   => {login => $login}});
+                args   => {login => $login}})->get;
         if (ref $setting eq 'HASH' && $setting->{group}) {
             $acc->{group} = $setting->{group};
         }
@@ -213,7 +213,7 @@ rpc mt5_new_account => sub {
 
         my $setting = mt5_get_settings({
                 client => $client,
-                args   => {login => $login}});
+                args   => {login => $login}})->get;
 
         if (ref $setting eq 'HASH' and ($setting->{group} // '') eq $group) {
             return BOM::RPC::v3::Utility::create_error({
@@ -342,36 +342,39 @@ Returns any of the following:
 
 =cut
 
-rpc mt5_get_settings => sub {
+async_rpc mt5_get_settings => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
-    return $mt5_suspended if $mt5_suspended;
+    return Future->done($mt5_suspended) if $mt5_suspended;
 
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
+    return Future->done(BOM::RPC::v3::Utility::permission_error()) unless _check_logins($client, ['MT' . $login]);
 
-    my $settings = BOM::MT5::User::Async::get_user($login)->get;
-    if (ref $settings eq 'HASH' and $settings->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'MT5GetUserError',
-                message_to_client => $settings->{error}});
-    }
+    return BOM::MT5::User::Async::get_user($login)->then(sub {
+        my ($settings) = @_;
 
-    if (my $country = $settings->{country}) {
-        my $country_code = Locale::Country::Extra->new()->code_from_country($country);
-        if ($country_code) {
-            $settings->{country} = $country_code;
-        } else {
-            warn "Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra";
+        if (ref $settings eq 'HASH' and $settings->{error}) {
+            return Future->done(BOM::RPC::v3::Utility::create_error({
+                    code              => 'MT5GetUserError',
+                    message_to_client => $settings->{error}}));
         }
-    }
 
-    return $settings;
+        if (my $country = $settings->{country}) {
+            my $country_code = Locale::Country::Extra->new()->code_from_country($country);
+            if ($country_code) {
+                $settings->{country} = $country_code;
+            } else {
+                warn "Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra";
+            }
+        }
+
+        return Future->done($settings);
+    });
 };
 
 sub _mt5_is_real_account {
@@ -379,7 +382,7 @@ sub _mt5_is_real_account {
 
     my $settings = mt5_get_settings({
             client => $client,
-            args   => {login => $mt_login}});
+            args   => {login => $mt_login}})->get;
 
     return $settings if ($settings->{group} // '') =~ /^real\\/;
     return;
@@ -459,32 +462,35 @@ Returns any of the following:
     
 =cut
 
-rpc mt5_set_settings => sub {
+async_rpc mt5_set_settings => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
-    return $mt5_suspended if $mt5_suspended;
+    return Future->done($mt5_suspended) if $mt5_suspended;
 
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
+    return Future->done(BOM::RPC::v3::Utility::permission_error()) unless _check_logins($client, ['MT' . $login]);
 
     my $country_code = $args->{country};
     my $country_name = Locale::Country::Extra->new()->country_from_code($country_code);
     $args->{country} = $country_name if ($country_name);
 
-    my $settings = BOM::MT5::User::Async::update_user($args)->get;
-    if (ref $settings eq 'HASH' and $settings->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'MT5UpdateUserError',
-                message_to_client => $settings->{error}});
-    }
+    return BOM::MT5::User::Async::update_user($args)->then(sub {
+        my ($settings) = @_;
 
-    $settings->{country} = $country_code;
-    return $settings;
+        if (ref $settings eq 'HASH' and $settings->{error}) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'MT5UpdateUserError',
+                    message_to_client => $settings->{error}});
+        }
+
+        $settings->{country} = $country_code;
+        return Future->done($settings);
+    });
 };
 
 =head2 mt5_password_check
