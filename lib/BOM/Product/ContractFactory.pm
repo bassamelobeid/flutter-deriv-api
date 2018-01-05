@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Cache::RedisDB;
-use List::Util qw( first );
+use List::Util qw(first any);
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use YAML::XS qw(LoadFile);
@@ -12,6 +12,7 @@ use File::ShareDir;
 use Try::Tiny;
 
 use Postgres::FeedDB::Spot::Tick;
+use LandingCompany::Registry;
 
 use BOM::Product::Exception;
 use BOM::Product::Categorizer;
@@ -77,8 +78,11 @@ sub produce_contract {
         $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process()->[0];
     }
 
+    _validate_input_parameters($params_ref);
+
     my $product_type = $params_ref->{product_type} // 'basic';
     $product_type =~ s/_//;
+
     my $landing_company = $params_ref->{landing_company};
     my $role            = 'BOM::Product::Role::' . ucfirst lc $product_type;
     my $role_exists     = $role->can('meta');
@@ -93,7 +97,7 @@ sub produce_contract {
         if $contract_class->isa('BOM::Product::Contract::Coinauction')
         and $landing_company ne 'costarica';
 
-    return _validate_input_parameters($contract_class->new($params_ref)) unless $role_exists;
+    return $contract_class->new($params_ref) unless $role_exists;
 
     # we're applying role. For speed reasons, we're not using $role->meta->apply($contract_obj),
     # but create an anonymous class with needed role. This is done only once and cached
@@ -105,7 +109,7 @@ sub produce_contract {
         cache        => 1,
     );
 
-    return _validate_input_parameters($contract_class->new_object($params_ref));
+    return $contract_class->new_object($params_ref);
 }
 
 sub produce_batch_contract {
@@ -116,14 +120,37 @@ sub produce_batch_contract {
 }
 
 sub _validate_input_parameters {
-    my $contract = shift;
+    my $params = shift;
 
-    unless ($contract->is_binaryico || $contract->for_sale || $contract->is_legacy) {
-        BOM::Product::Exception->throw(error_code => 'SameExpiryStartTime') if $contract->date_start->epoch == $contract->date_expiry->epoch;
-        BOM::Product::Exception->throw(error_code => 'PastExpiryTime')      if $contract->date_expiry->is_before($contract->date_start);
+    return if $params->{bet_type} =~ /BINARYICO|INVALID/i or $params->{for_sale};
+
+    BOM::Product::Exception->throw(error_code => 'MissingRequiredStart')
+        unless $params->{date_start};    # date_expiry is validated in BOM::Product::Categorizer
+
+    my $start  = Date::Utility->new($params->{date_start});
+    my $expiry = Date::Utility->new($params->{date_expiry});
+
+    BOM::Product::Exception->throw(error_code => 'SameExpiryStartTime') if $start->epoch == $expiry->epoch;
+    BOM::Product::Exception->throw(error_code => 'PastExpiryTime')      if $expiry->is_before($start);
+
+    # hard-coded costarica because that's the widest offerings range we have.
+    my $lc        = LandingCompany::Registry::get('costarica');
+    my $offerings = $lc->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config());
+
+    my $us = $params->{underlying}->symbol;
+
+    # these will be handled in validation later.
+    return
+           if $offerings->config->{suspend_trading}
+        or $offerings->config->{disabled_markets}{$params->{underlying}->market->name}
+        or $offerings->config->{suspend_trades}{$us}
+        or $offerings->config->{suspend_buy}{$us};
+
+    unless (any { $us eq $_ } $offerings->values_for_key('underlying_symbol')) {
+        BOM::Product::Exception->throw(error_code => 'InvalidInputAsset');
     }
 
-    return $contract;
+    return;
 }
 
 sub _args_to_ref {

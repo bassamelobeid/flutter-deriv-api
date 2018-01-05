@@ -490,7 +490,7 @@ volsurface:
                   '98': 0.0955082
                 vol_spread:
                   '100': 0.0039984375
-    FTSE:
+    FCHI:
         surfaces:
               '183':
                 smile:
@@ -823,7 +823,7 @@ currency:
            275: 0.5798
            365: 0.6435,
 index:
-    FTSE:
+    FCHI:
         rates:
            1: 44.34
            2: 22.17
@@ -1194,16 +1194,16 @@ index:
         rates:
            365: 0
 expected_result:
-  FTSE:
+  FCHI:
     CALL:
       ask_prob: 0.5587
       barrier: 6689
       commission_markup: 0.025
       duration: 8d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
-      risk_markup: 0.0071
+      risk_markup: 0.0073
       spot: 6685.31
-      theo_prob: 0.5374
+      theo_prob: 0.5367
       total_markup: 0.0328
     EXPIRYRANGE:
       ask_prob: 0.7824
@@ -1214,7 +1214,7 @@ expected_result:
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.00805105485034356
       spot: 6688.93
-      theo_prob: 0.759479750227188
+      theo_prob: 0.7606
       total_markup: 0.0281
     NOTOUCH:
       ask_prob: 0.8705
@@ -1224,7 +1224,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.094
       spot: 6685.31
-      theo_prob: 0.8145
+      theo_prob: 0.8152
       total_markup: 0.147
     RANGE:
       ask_prob: 0.1

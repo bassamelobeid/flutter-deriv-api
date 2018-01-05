@@ -41,26 +41,20 @@ sub BUILD {
     my $barrier_type_count = grep { $_->{category}->two_barriers } @$c_types;
 
     if ($barrier_type_count > 0 and $barrier_type_count < scalar(@$c_types)) {
-        BOM::Product::Exception->throw(
-            error_code => 'InvalidBarrierWithReason',
-            error_args => ['Could not mixed single barrier and double barrier contracts']);
+        BOM::Product::Exception->throw(error_code => 'InvalidBarrierMixedBarrier');
     }
 
     # $barrier_type_count == 0, single barrier contract
     # $barrier_type_count == @$c_types, double barrier contract
     if ($barrier_type_count == 0 and grep { ref $_ } @$barriers) {
-        BOM::Product::Exception->throw(
-            error_code => 'InvalidBarrierWithReason',
-            error_args => ['Single barrier input is expected']);
+        BOM::Product::Exception->throw(error_code => 'InvalidBarrierSingle');
     } elsif (
         $barrier_type_count == scalar(@$c_types) and grep {
             !ref $_
         } @$barriers
         )
     {
-        BOM::Product::Exception->throw(
-            error_code => 'InvalidBarrierWithReason',
-            error_args => ['Double barrier input is expected']);
+        BOM::Product::Exception->throw(error_code => 'InvalidBarrierDouble');
     }
 
     return;
@@ -82,10 +76,7 @@ sub _build_contract_types {
     } elsif ($p->{bet_type}) {
         $c_types = [$p->{bet_type}];
     } else {
-        BOM::Product::Exception->throw(
-            error_code => 'MissingRequiredInput',
-            error_args => ['bet_type'],
-        );
+        BOM::Product::Exception->throw(error_code => 'MissingRequiredBetType');
     }
 
     return [map { $self->_initialize_contract_config($_) } @$c_types];
@@ -154,12 +145,8 @@ sub _initialize_contract_parameters {
     # always build shortcode
     delete $pp->{shortcode};
 
-    BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredInput',
-        error_args => ['currency']) unless $pp->{currency};
-    BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredInput',
-        error_args => ['underlying']) unless $pp->{underlying};
+    BOM::Product::Exception->throw(error_code => 'MissingRequiredCurrency')   unless $pp->{currency};
+    BOM::Product::Exception->throw(error_code => 'MissingRequiredUnderlying') unless $pp->{underlying};
 
     # set date start if not given. If we want to price a contract starting now, date_start should never be provided!
     unless ($pp->{date_start}) {
@@ -279,9 +266,7 @@ sub _initialize_contract_parameters {
     $pp->{date_start} //= 1;    # Error conditions if it's not legacy or run, I guess.
 
     if ($pp->{bet_type} and not($pp->{bet_type} eq 'BINARYICO' or $pp->{bet_type} eq 'Invalid') and not $pp->{date_expiry}) {
-        BOM::Product::Exception->throw(
-            error_code => 'MissingRequiredInput',
-            error_args => ['date_expiry or duration']);
+        BOM::Product::Exception->throw(error_code => 'MissingRequiredExpiry');
     }
 
     # For Ico, the date_start , date_expiry and ask price will be determined in the Coinauction object
@@ -295,9 +280,7 @@ sub _initialize_contract_parameters {
 sub _initialize_contract_config {
     my ($self, $c_type) = @_;
 
-    BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredInput',
-        error_args => ['contract_type']) unless $c_type;
+    BOM::Product::Exception->throw(error_code => 'MissingRequiredBetType') unless $c_type;
 
     my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
 

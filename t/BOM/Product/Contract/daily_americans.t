@@ -18,7 +18,7 @@ use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
 initialize_realtime_ticks_db();
-my $ul   = create_underlying('FTSE');
+my $ul   = create_underlying('FCHI');
 my $when = Date::Utility->new('2015-11-08 16:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -39,7 +39,7 @@ my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 10000,
 });
 BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-    underlying => 'FTSE',
+    underlying => 'FCHI',
     epoch      => $when->truncate_to_day->plus_time_interval('1d')->epoch,
     open       => 10000,
     high       => 12000,
@@ -60,7 +60,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-    underlying => 'FTSE',
+    underlying => 'FCHI',
     epoch      => $when->truncate_to_day->plus_time_interval('2d')->epoch,
     open       => 10000,
     high       => 15000,

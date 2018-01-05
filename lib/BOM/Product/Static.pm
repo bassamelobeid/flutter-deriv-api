@@ -23,9 +23,17 @@ my $config = {
         # kept camel case because RPC/WS/Pricing follow this convention
         # it will be consistent in case in future we want to send
         # these as error codes to RPC/Pricing
+        InvalidInputAsset           => 'Trading is not offered for this asset.',
         InvalidTickExpiry           => 'Invalid duration (tick) for contract type ([_1]).',
-        InvalidBarrierWithReason    => 'Invalid barrier ([_1]).',
-        MissingRequiredInput        => 'Missing required contract parameters ([_1]).',
+        InvalidBarrierMixedBarrier  => 'Invalid barrier (Contract can have only one type of barrier).',
+        InvalidBarrierSingle        => 'Invalid barrier (Single barrier input is expected).',
+        InvalidBarrierDouble        => 'Invalid barrier (Double barrier input is expected).',
+        InvalidBarrierDifferentType => 'Invalid barrier (Barrier type must be the same for double-barrier contracts).',
+        MissingRequiredUnderlying   => 'Missing required contract parameters (underlying).',
+        MissingRequiredExpiry       => 'Missing required contract parameters (date_expiry or duration).',
+        MissingRequiredStart        => 'Missing required contract parameters (date_start).',
+        MissingRequiredBetType      => 'Missing required contract parameters (bet_type).',
+        MissingRequiredCurrency     => 'Missing required contract parameters (currency).',
         AlreadyExpired              => 'This contract has already expired.',
         BarrierNotInRange           => 'Barrier is not an integer in range of [_1] to [_2].',
         BarrierOutOfRange           => 'Barrier is out of acceptable range.',

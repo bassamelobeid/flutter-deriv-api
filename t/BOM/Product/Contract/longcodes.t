@@ -15,18 +15,18 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 subtest 'Proper form' => sub {
     my @shortcodes = (
         qw~
-            CALL_RDBULL_100_1393816299_1393828299_S0P_0
+            CALL_R_100_100_1393816299_1393828299_S0P_0
             ONETOUCH_FRXAUDJPY_100_1394502374_1394509574_S133P_0
             CALL_FRXEURUSD_100_1394502338_1394509538_S0P_0
             CALL_FRXEURUSD_100_1394502112_1394512912_S0P_0
             CALL_FRXNZDUSD_100_1394502169_1394512969_S0P_0
             PUT_FRXUSDJPY_100_1394502298_1394513098_S0P_0
             CALL_FRXNZDUSD_100_1394502392_1394509592_S0P_0
-            CALL_FRXEURNOK_100_1394503200_1394514000_S0P_0
-            PUT_FRXEURNOK_100_1394502900_1394513700_S0P_0
+            CALL_FRXEURUSD_100_1394503200_1394514000_S0P_0
+            PUT_FRXEURUSD_100_1394502900_1394513700_S0P_0
             CALL_FRXUSDJPY_100_1394501981_1394573981_S0P_0
             ONETOUCH_FRXAUDJPY_100_1394502043_1394538043_S300P_0
-            PUT_FRXEURNOK_100_1394590423_1394591143_S0P_0
+            PUT_FRXEURUSD_100_1394590423_1394591143_S0P_0
             ~
     );
     my @currencies = ('USD', 'EUR', 'RUR');    # Inexhaustive, incorrect list: just to be sure the currency is not accidentally hard-coded.
@@ -74,7 +74,7 @@ subtest 'Proper form' => sub {
         $c->longcode,
         [
             'Win payout if [_1] is strictly lower than [_4] at [_3] after [_2].',
-            'EUR/NOK',
+            'EUR/USD',
             ['contract start time'],
             {
                 class => 'Time::Duration::Concise::Localize',

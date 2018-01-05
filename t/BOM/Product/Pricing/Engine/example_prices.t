@@ -174,7 +174,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => $_,
         recorded_date => $recorded_date,
         surface       => $volsurface->{$_}{surfaces},
-    }) for qw(FTSE GDAXI);
+    }) for qw(FCHI GDAXI);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
@@ -183,13 +183,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date          => Date::Utility->new,
         recorded_date => $recorded_date,
         rates         => $dividend->{$_}{rates},
-    }) for qw( FTSE GDAXI);
+    }) for qw( FCHI GDAXI);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',
     {
         recorded_date => $recorded_date,
         correlations  => {
-            FTSE => {
+            FCHI => {
                 GBP => {
                     '3M'  => 0.356,
                     '6M'  => 0.336,
@@ -242,7 +242,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         },
     });
 
-foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
+foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FCHI', 'GDAXI') {
     foreach my $bet_type ('CALL', 'NOTOUCH', 'RANGE', 'EXPIRYRANGE', 'DIGITMATCH') {
         my $expectations = $expected_result->{$underlying}->{$bet_type};
         next unless scalar keys %$expectations;
