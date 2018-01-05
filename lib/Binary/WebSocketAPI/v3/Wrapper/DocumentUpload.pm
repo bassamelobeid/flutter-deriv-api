@@ -30,16 +30,15 @@ sub add_upload_info {
 
     my $upload_info = {
         %{$call_params},
-        file_id         => $rpc_response->{file_id},
-        call_type       => $rpc_response->{call_type},
-        file_name       => $rpc_response->{file_name},
-        file_size       => $args->{file_size},
-        md5             => Digest::MD5->new,
-        received_bytes  => 0,
-        pending_futures => [],
-        upload_id       => $upload_id,
-        expected_checksum => $args->{expected_checksum}
-    };
+        file_id           => $rpc_response->{file_id},
+        call_type         => $rpc_response->{call_type},
+        file_name         => $rpc_response->{file_name},
+        file_size         => $args->{file_size},
+        md5               => Digest::MD5->new,
+        received_bytes    => 0,
+        pending_futures   => [],
+        upload_id         => $upload_id,
+        expected_checksum => $args->{expected_checksum}};
 
     wait_for_chunks_and_upload_to_s3($c, $upload_info);
 
@@ -291,7 +290,7 @@ sub last_chunk_received {
     my ($c, $upload_info) = @_;
 
     return if $upload_info->{chunk_size} != 0;
-    
+
     my $checksum = $upload_info->{md5}->hexdigest;
     return send_upload_failure($c, $upload_info, 'checksum_mismatch') if $checksum ne $upload_info->{expected_checksum};
 
