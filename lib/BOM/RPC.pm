@@ -87,10 +87,14 @@ sub _auth {
 }
 
 sub _make_rpc_service_and_register {
-    my ($method, $code, $before_actions) = @_;
+    my ($def) = @_;
+
+    my $method         = $def->name;
+    my $code           = $def->code;
+    my @before_actions = @{ $def->before_actions || [] };
 
     return MojoX::JSON::RPC::Service->new->register(
-        $method,
+        $def->name,
         sub {
             # let's have an copy, which will be dumped to log if something goes wrong
             my @original_args = @_;
@@ -115,7 +119,7 @@ sub _make_rpc_service_and_register {
                 $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
             }
 
-            for my $act (@$before_actions) {
+            for my $act (@before_actions) {
                 my $err;
                 if ($act eq 'auth') {
                     $err = _auth($params);
@@ -208,9 +212,8 @@ sub startup {
     };
 
     my %services = map {
-        my ($method, $code, $before_actions) = @$_;
-
-        "/$method" => _make_rpc_service_and_register($method, $code, $before_actions);
+        my $method = $_->name;
+        "/$method" => _make_rpc_service_and_register($_);
     } BOM::RPC::Registry::get_service_defs();
 
     $app->plugin(

@@ -7,6 +7,9 @@ use warnings;
 use Carp;
 
 use Sub::Util qw(set_subname);
+use Struct::Dumb qw(readonly_struct);
+
+readonly_struct ServiceDef => [qw(name code before_actions)], named_constructor => 1;
 
 =head1 DOMAIN-SPECIFIC-LANGUAGE
 
@@ -130,10 +133,11 @@ sub register {
 
     Carp::croak "Too late to BOM::RPC::Registry::register" if $done_startup;
 
-    push @service_defs,
-        [
-        $name => $code,
-        $args{before_actions}];
+    push @service_defs, ServiceDef(
+        name           => $name,
+        code           => $code,
+        before_actions => $args{before_actions},
+    );
     return;
 }
 
