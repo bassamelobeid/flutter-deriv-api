@@ -9,7 +9,7 @@ use Carp;
 use Sub::Util qw(set_subname);
 use Struct::Dumb qw(readonly_struct);
 
-readonly_struct ServiceDef => [qw(name code before_actions)], named_constructor => 1;
+readonly_struct ServiceDef => [qw(name code before_actions is_async)], named_constructor => 1;
 
 =head1 DOMAIN-SPECIFIC-LANGUAGE
 
@@ -36,6 +36,15 @@ The code reference will also be installed as a function of the same name in
 the calling package. This is provided in order to support the prevailing style
 of using named functions to implement RPC options, as code exists in various
 places (such as unit tests) that expects to be able to invoke these directly.
+
+=head2 async_rpc
+
+    async_rpc $name => %opts..., sub {
+        CODE... returning Future
+    }
+
+A shortcut for defining an RPC with the C<async> option set; i.e. one whose
+results are returned asynchronously via a L<Future>.
 
 =head2 common_before_actions
 
@@ -69,20 +78,27 @@ sub import_dsl_into {
 
     my @common_before_actions;
 
+    my $rpc_keyword = sub {
+        my $code = pop;
+        my $name = shift;
+        my %opts = @_;
+
+        $opts{before_actions} //= \@common_before_actions if @common_before_actions;
+
+        register($name, set_subname("RPC[$name]" => $code), %opts);
+
+        no strict 'refs';
+        *{"${caller}::$name"} = $code;
+
+        return;
+    };
+
     my %subs = (
-        rpc => sub {
+        rpc => $rpc_keyword,
+
+        async_rpc => sub {
             my $code = pop;
-            my $name = shift;
-            my %opts = @_;
-
-            $opts{before_actions} //= \@common_before_actions if @common_before_actions;
-
-            register($name, set_subname("RPC[$name]" => $code), %opts);
-
-            no strict 'refs';
-            *{"${caller}::$name"} = $code;
-
-            return;
+            $rpc_keyword->(@_, async => 1, $code);
         },
 
         common_before_actions => sub {
@@ -120,6 +136,12 @@ the main code.
 
 TODO(leonerd): discover this interface more and document it better
 
+=item async => BOOL
+
+Optional boolean. If true, the code is expected to return a L<Future>
+instance, which will possibly-asynchronously resolve to the eventual result of
+the RPC. If not, the code should return its result directly.
+
 =back
 
 =cut
@@ -137,6 +159,7 @@ sub register {
         name           => $name,
         code           => $code,
         before_actions => $args{before_actions},
+        is_async       => !!$args{async},
     );
     return;
 }

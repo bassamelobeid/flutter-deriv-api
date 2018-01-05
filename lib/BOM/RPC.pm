@@ -93,6 +93,14 @@ sub _make_rpc_service_and_register {
     my $code           = $def->code;
     my @before_actions = @{ $def->before_actions || [] };
 
+    if($def->is_async) {
+        my $async_code = $code;
+        $code = sub {
+            my $f = $async_code->(@_);
+            return $f->get;
+        };
+    }
+
     return MojoX::JSON::RPC::Service->new->register(
         $def->name,
         sub {
