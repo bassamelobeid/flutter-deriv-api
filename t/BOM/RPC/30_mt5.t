@@ -85,6 +85,11 @@ subtest 'get settings' => sub {
     is($c->result->{login},   $DETAILS{login},   'result->{login}');
     is($c->result->{balance}, $DETAILS{balance}, 'result->{balance}');
     is($c->result->{country}, "mt",              'result->{country}');
+
+    $params->{args}{login} = "MTwrong";
+    $c->call_ok($method, $params)
+        ->has_error('error for mt5_get_settings wrong login')
+        ->error_code_is('PermissionDenied', 'error code for mt5_get_settings wrong login');
 };
 
 subtest 'set settings' => sub {
@@ -103,6 +108,11 @@ subtest 'set settings' => sub {
     is($c->result->{login},   $DETAILS{login}, 'result->{login}');
     is($c->result->{name},    "Test2", 'result->{name}');
     is($c->result->{country}, "mt",    'result->{country}');
+
+    $params->{args}{login} = "MTwrong";
+    $c->call_ok($method, $params)
+        ->has_error('error for mt5_set_settings wrong login')
+        ->error_code_is('PermissionDenied', 'error code for mt5_set_settings wrong login');
 };
 
 subtest 'password check' => sub {
@@ -117,6 +127,11 @@ subtest 'password check' => sub {
     };
     $c->call_ok($method, $params)
         ->has_no_error('no error for mt5_password_check');
+
+    $params->{args}{login} = "MTwrong";
+    $c->call_ok($method, $params)
+        ->has_error('error for mt5_password_check wrong login')
+        ->error_code_is('PermissionDenied', 'error code for mt5_password_check wrong login');
 };
 
 subtest 'password change' => sub {
@@ -134,6 +149,11 @@ subtest 'password change' => sub {
         ->has_no_error('no error for mt5_password_change');
     # This call yields a truth integer directly, not a hash
     is($c->result, 1, 'result');
+
+    $params->{args}{login} = "MTwrong";
+    $c->call_ok($method, $params)
+        ->has_error('error for mt5_password_change wrong login')
+        ->error_code_is('PermissionDenied', 'error code for mt5_password_change wrong login');
 };
 
 subtest 'deposit' => sub {
@@ -155,6 +175,11 @@ subtest 'deposit' => sub {
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
     # TODO(leonerd): assert that account balance is now 1000-150 = 850
+
+    $params->{args}{to_mt5} = "MTwrong";
+    $c->call_ok($method, $params)
+        ->has_error('error for mt5_deposit wrong login')
+        ->error_code_is('PermissionDenied', 'error code for mt5_deposit wrong login');
 };
 
 subtest 'withdrawal' => sub {
@@ -173,6 +198,11 @@ subtest 'withdrawal' => sub {
     $c->call_ok($method, $params)
         ->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
+
+    $params->{args}{from_mt5} = "MTwrong";
+    $c->call_ok($method, $params)
+        ->has_error('error for mt5_withdrawal wrong login')
+        ->error_code_is('PermissionDenied', 'error code for mt5_withdrawal wrong login');
 };
 
 done_testing();
