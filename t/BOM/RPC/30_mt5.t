@@ -10,7 +10,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Platform::User;
-use BOM::MT5::User;
+use BOM::MT5::User::Async;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
@@ -45,7 +45,7 @@ $user->save;
 my $m = BOM::Database::Model::AccessToken->new;
 my $token = $m->create_token($test_client->loginid, 'test token');
 
-@BOM::MT5::User::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+@BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
 # Throttle function limits requests to 1 per minute which may cause
 # consecutive tests to fail without a reset.
