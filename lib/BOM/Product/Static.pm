@@ -25,7 +25,10 @@ my $config = {
         # these as error codes to RPC/Pricing
         InvalidInputAsset           => 'Trading is not offered for this asset.',
         InvalidTickExpiry           => 'Invalid duration (tick) for contract type ([_1]).',
-        InvalidBarrierWithReason    => 'Invalid barrier ([_1]).',
+        InvalidBarrierMixedBarrier  => 'Invalid barrier (Contract can have only one type of barrier).',
+        InvalidBarrierSingle        => 'Invalid barrier (Single barrier input is expected).',
+        InvalidBarrierDouble        => 'Invalid barrier (Double barrier input is expected).',
+        InvalidBarrierDifferentType => 'Invalid barrier (Barrier type must be the same for double-barrier contracts).',
         MissingRequiredUnderlying   => 'Missing required contract parameters (underlying).',
         MissingRequiredExpiry       => 'Missing required contract parameters (date_expiry or duration).',
         MissingRequiredStart        => 'Missing required contract parameters (date_start).',
