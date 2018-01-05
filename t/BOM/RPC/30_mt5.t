@@ -92,6 +92,20 @@ subtest 'get settings' => sub {
         ->error_code_is('PermissionDenied', 'error code for mt5_get_settings wrong login');
 };
 
+subtest 'login list' => sub {
+    my $method = 'mt5_login_list';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {},
+    };
+    $c->call_ok($method, $params)
+        ->has_no_error('no error for mt5_login_list');
+    is_deeply($c->result,
+        [{login => $DETAILS{login}, group => $DETAILS{group}}],
+        'mt5_login_list result');
+};
+
 subtest 'set settings' => sub {
     my $method = 'mt5_set_settings';
     my $params = {
