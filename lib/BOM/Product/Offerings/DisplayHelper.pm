@@ -29,6 +29,7 @@ use BOM::MarketData::Types;
 use BOM::Platform::Chronicle;
 use Quant::Framework;
 use BOM::Platform::Runtime;
+use Sort::Naturally;
 
 =head1 ATTRIBUTES
 
@@ -245,7 +246,7 @@ sub _build_tree {
                 parent      => $market_info,
             };
             foreach my $ul (
-                sort { $a->display_name cmp $b->display_name }
+                sort { ncmp($a->display_name, $b->display_name) }
                 map  { create_underlying($_) } $offerings_obj->query({
                         market    => $market->name,
                         submarket => $submarket->name
