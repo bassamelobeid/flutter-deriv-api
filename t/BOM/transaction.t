@@ -772,9 +772,7 @@ subtest 'max_open_bets validation', sub {
 
         my $error = do {
             my $mock_client = Test::MockModule->new('Client::Account');
-            $mock_client->mock(get_limit_for_self_exclusion_open_positions =>
-                    sub { note "mocked Client->get_limit_for_self_exclusion_open_positions returning 2"; 2 });
-            $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 20"; 20 });
+            $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 2"; 2 });
 
             my $lim = $txn->calculate_limits;
             is $lim->{max_open_bets}, 2, 'calculate limit';
@@ -849,9 +847,7 @@ subtest 'max_open_bets validation in presence of expired bets', sub {
         my $txn_id_buy_expired_contract;
         my $error = do {
             my $mock_client = Test::MockModule->new('Client::Account');
-            $mock_client->mock(get_limit_for_self_exclusion_open_positions =>
-                    sub { note "mocked Client->get_limit_for_self_exclusion_open_positions returning 2"; 2 });
-            $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 1"; 1 });
+            $mock_client->mock(get_limit_for_open_positions => sub { note "mocked Client->get_limit_for_open_positions returning 2"; 2 });
 
             my $lim = $txn->calculate_limits;
             is $lim->{max_open_bets}, 2, 'for tick trades our own open position limit is ignored';
