@@ -567,13 +567,16 @@ async_rpc mt5_password_check => sub {
     # MT5 login not belongs to user
     return Future->done(BOM::RPC::v3::Utility::permission_error()) unless _check_logins($client, ['MT' . $login]);
 
-    my $status = BOM::MT5::User::Async::password_check($args)->get;
-    if ($status->{error}) {
-        return Future->done(BOM::RPC::v3::Utility::create_error({
+    return BOM::MT5::User::Async::password_check($args)->then(sub {
+        my ($status) = @_;
+
+        if ($status->{error}) {
+            return Future->done(BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5PasswordCheckError',
                 message_to_client => $status->{error}}));
-    }
-    return Future->done(1);
+        }
+        return Future->done(1);
+    });
 };
 
 =head2 mt5_password_change
@@ -665,24 +668,30 @@ async_rpc mt5_password_change => sub {
     # MT5 login not belongs to user
     return Future->done(BOM::RPC::v3::Utility::permission_error()) unless _check_logins($client, ['MT' . $login]);
 
-    my $status = BOM::MT5::User::Async::password_check({
+    return BOM::MT5::User::Async::password_check({
             login    => $login,
-            password => $args->{old_password}})->get;
-    if ($status->{error}) {
-        return Future->done(BOM::RPC::v3::Utility::create_error({
-                code              => 'MT5PasswordChangeError',
-                message_to_client => $status->{error}}));
-    }
+            password => $args->{old_password}})->then(sub {
+        my ($status) = @_;
 
-    $status = BOM::MT5::User::Async::password_change({
+        if ($status->{error}) {
+            return Future->done(BOM::RPC::v3::Utility::create_error({
+                    code              => 'MT5PasswordChangeError',
+                    message_to_client => $status->{error}}));
+        }
+
+        return BOM::MT5::User::Async::password_change({
             login        => $login,
-            new_password => $args->{new_password}})->get;
-    if ($status->{error}) {
-        return Future->done(BOM::RPC::v3::Utility::create_error({
-                code              => 'MT5PasswordChangeError',
-                message_to_client => $status->{error}}));
-    }
-    return Future->done(1);
+            new_password => $args->{new_password}});
+    })->then(sub {
+        my ($status) = @_;
+
+        if ($status->{error}) {
+            return Future->done(BOM::RPC::v3::Utility::create_error({
+                    code              => 'MT5PasswordChangeError',
+                    message_to_client => $status->{error}}));
+        }
+        return Future->done(1);
+    });
 };
 
 sub _send_email {
