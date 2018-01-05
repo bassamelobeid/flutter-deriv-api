@@ -67,8 +67,9 @@ sub has_no_error {
     my $result = $self->result;
     return $self unless $self->_test('ok', $result, "response for /$method has result");
     # Most RPCs return a HASH ref with an 'error' key on failure.
-    # A few RPCs (e.g. mt5_password_check) return a boolean truth on success
-    my $failed = ref($result) && $result->{error};
+    # A few RPCs (e.g. mt5_password_check) return a boolean truth on success,
+    # others return ARRAY refs on success.
+    my $failed = ref($result) eq 'HASH' && $result->{error};
     $self->_test('ok', !$failed, $description)
         or Test::More::diag("Expected no error, got\n", Data::Dumper->Dump([$result], [qw(result)]));
     return $self;
