@@ -55,7 +55,6 @@ subtest 'sell' => sub {
     $client->clr_status('disabled');
     $client->save;
 
-
     #sold  contract should be hold 2 minutes and interval should more than 15
     my $now           = time;
     my $contract_data = Test::BOM::RPC::Contract::prepare_contract(
