@@ -402,16 +402,24 @@ sub get_bid {
             $response->{entry_spot}      = $entry_spot;
             $response->{entry_tick_time} = $contract->entry_spot_epoch;
 
-            unless ($contract->is_binary) {
-                $response->{spot_min} = $contract->spot_min;
-                $response->{spot_max} = $contract->spot_max;
-            }
-
             if ($contract->two_barriers) {
                 $response->{high_barrier} = $contract->high_barrier->as_absolute;
                 $response->{low_barrier}  = $contract->low_barrier->as_absolute;
             } elsif ($contract->barrier) {
                 $response->{barrier} = $contract->barrier->as_absolute;
+            }
+
+            #Add some comment here
+            #Tactical approach
+            unless ($contract->is_binary) {
+                if ($contract->code eq 'LBHIGHLOW') {
+                    $response->{high_barrier} = $contract->spot_max;
+                    $response->{low_barrier}  = $contract->spot_min;
+                } elsif ($contract->code eq 'LBFLOATCALL') {
+                    $response->{barrier} = $contract->spot_min;
+                } else {
+                    $response->{barrier} = $contract->spot_max;
+                }
             }
         }
 
