@@ -234,6 +234,28 @@ subtest 'Checksum not matching the etag' => sub {
     ok $error->{code}, 'Upload should be failed for incorrect checksum';
 };
 
+subtest 'Duplicate upload rejected' => sub {
+    # First upload
+    my $data   = 'File';
+    my $length = length $data;
+    my %upload_info = document_upload_ok($data, file_size => $length);
+
+    # Request to upload the same file again
+    my $req = {
+        %generic_req,
+        req_id          => ++$req_id,
+        file_size       => $length,
+        document_format => 'JPEG',
+        expected_checksum => md5_hex($data),
+    };
+
+    my $res = $t->await::document_upload($req);
+    ok $res->{error}, 'Document already uploaded';
+};
+
+#subtest 'Document with wrong checksum rejected' => sub {
+#};
+
 sub gen_frames {
     my ($data,      %upload_info) = @_;
     my ($call_type, $upload_id)   = @upload_info{qw/call_type upload_id/};
