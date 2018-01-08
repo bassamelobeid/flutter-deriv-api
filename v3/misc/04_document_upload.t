@@ -292,7 +292,7 @@ sub request_upload {
 
     is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
-    
+
     ok $res->{document_upload}, 'Returns document_upload';
 
     my $upload_id = $res->{document_upload}->{upload_id};
