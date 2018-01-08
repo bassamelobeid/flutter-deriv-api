@@ -21,7 +21,7 @@ my %DETAILS = (
     password => 'Efgh4567',
     email    => 'test.account@binary.com',
     name     => 'Test',
-    group    => 'real\something',
+    group    => 'real\costarica',
     country  => 'Malta',
     balance  => '1234.56',
 );
@@ -51,6 +51,8 @@ sub cmd_UserAdd {
         die "UserAdd with unexpected country=$input->{country}\n";
     $input->{mainPassword} eq $DETAILS{password} or
         die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
+    $input->{group} eq $DETAILS{group} or
+        die "UserAdd with unexpected group=$input->{group}\n";
 
     return {
         ret_code => MT_RET_OK,

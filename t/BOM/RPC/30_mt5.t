@@ -23,7 +23,7 @@ my %DETAILS = (
     password => 'Efgh4567',
     email    => 'test.account@binary.com',
     name     => 'Test',
-    group    => 'real\something',
+    group    => 'real\costarica',
     country  => 'Malta',
     balance  => '1234.56',
 );
@@ -40,7 +40,6 @@ my $user = BOM::Platform::User->create(
 );
 $user->save;
 $user->add_loginid({loginid => $test_client->loginid});
-$user->add_loginid({loginid => 'MT' . $DETAILS{login}});
 $user->save;
 
 my $m = BOM::Database::Model::AccessToken->new;
@@ -58,7 +57,7 @@ subtest 'new account' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            account_type   => 'demo',
+            account_type   => 'gaming',
             country        => 'mt',
             email          => $DETAILS{email},
             name           => $DETAILS{name},
