@@ -53,6 +53,10 @@
           "type": "number",
           "description": "Example: 10",
           "required": 1
+        },
+        "multiplier": {
+          "type": "number",
+          "description": "Example: 0.01",
         }
       }
     },
