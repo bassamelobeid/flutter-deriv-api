@@ -29,8 +29,9 @@ my %DETAILS = (
 );
 
 # Setup a test user
-my $test_client = create_client('MF');    # broker_code = MF to ensure ID_DOCUMENT passes
+my $test_client = create_client('CR');
 $test_client->email($DETAILS{email});
+$test_client->set_authentication('ID_DOCUMENT')->status('pass');
 $test_client->save;
 
 my $user = BOM::Platform::User->create(
