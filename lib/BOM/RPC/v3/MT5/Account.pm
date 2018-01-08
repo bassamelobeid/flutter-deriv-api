@@ -11,6 +11,7 @@ use File::ShareDir;
 use Locale::Country::Extra;
 use Brands;
 use WebService::MyAffiliates;
+use Future::Utils qw(fmap1);
 
 use BOM::RPC::Registry '-dsl';
 
@@ -76,21 +77,26 @@ sub get_mt5_logins {
 
     $user ||= BOM::Platform::User->new({email => $client->email});
 
-    return map {
-        $_ =~ /^MT(\d+)$/;
+    my $f = fmap1 {
+        shift =~ /^MT(\d+)$/;
         my $login = $1;
 
-        my $setting = mt5_get_settings({
+        return mt5_get_settings({
                 client => $client,
-                args   => {login => $login}})->get;
+                args   => {login => $login}})->then(sub {
+            my ($setting) = @_;
 
-        my $acc = {login => $login};
-        if (ref $setting eq 'HASH' && $setting->{group}) {
-            $acc->{group} = $setting->{group};
-        }
+            my $acc = {login => $login};
+            if (ref $setting eq 'HASH' && $setting->{group}) {
+                $acc->{group} = $setting->{group};
+            }
 
-        $acc;
-    } $user->mt5_logins;
+            return Future->done($acc);
+        });
+    } foreach => [$user->mt5_logins],
+      concurrent => 4;
+
+    return $f->get;
 }
 
 rpc mt5_login_list => sub {
