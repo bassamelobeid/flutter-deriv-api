@@ -69,6 +69,12 @@ subtest 'new account' => sub {
     $c->call_ok($method, $params)
         ->has_no_error('no error for mt5_new_account');
     is($c->result->{login}, $DETAILS{login}, 'result->{login}');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    $c->call_ok($method, $params)
+        ->has_error('error from duplicate mt5_new_account')
+        ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account');
 };
 
 subtest 'get settings' => sub {
