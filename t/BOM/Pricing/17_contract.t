@@ -250,6 +250,7 @@ subtest 'get_ask' => sub {
         'display_value'       => '20.82',
         'ask_price'           => '20.82',
         'longcode'            => "Receive 0.1 per point difference between Volatility 50 Index's exit spot and lowest value at 15 minutes after contract start time.",
+        'multiplier'          => '0.1',
         'spot'                => '963.3054',
         'payout'              => '0',
         'contract_parameters' => {
@@ -285,7 +286,7 @@ subtest 'send_ask' => sub {
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys =
-        [sort { $a cmp $b } (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout contract_parameters))];
+        [sort { $a cmp $b } (qw(longcode spot display_value multiplier ask_price spot_time date_start rpc_time payout contract_parameters))];
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
