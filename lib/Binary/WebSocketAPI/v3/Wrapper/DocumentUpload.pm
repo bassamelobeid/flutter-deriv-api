@@ -292,7 +292,10 @@ sub last_chunk_received {
     return if $upload_info->{chunk_size} != 0;
 
     my $checksum = $upload_info->{md5}->hexdigest;
-    return send_upload_failure($c, $upload_info, 'checksum_mismatch') if $checksum ne $upload_info->{expected_checksum};
+    if ($checksum ne $upload_info->{expected_checksum}){
+        send_upload_failure($c, $upload_info, 'checksum_mismatch');
+        return 1;
+    }
 
     return Future->wait_any($upload_info->{put_future}, $c->loop->timeout_future(after => UPLOAD_TIMEOUT))->on_done(
         sub {
