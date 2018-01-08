@@ -77,7 +77,7 @@ sub get_mt5_logins {
 
     $user ||= BOM::Platform::User->new({email => $client->email});
 
-    my $f = fmap1 {
+    return fmap1 {
         shift =~ /^MT(\d+)$/;
         my $login = $1;
 
@@ -95,8 +95,6 @@ sub get_mt5_logins {
         });
     } foreach => [$user->mt5_logins],
       concurrent => 4;
-
-    return $f->get;
 }
 
 rpc mt5_login_list => sub {
@@ -107,7 +105,7 @@ rpc mt5_login_list => sub {
     my $mt5_suspended = _is_mt5_suspended();
     return $mt5_suspended if $mt5_suspended;
 
-    return [ get_mt5_logins($client) ];
+    return [ get_mt5_logins($client)->get ];
 };
 
 # limit number of requests to once per minute
@@ -218,7 +216,7 @@ rpc mt5_new_account => sub {
     # client can have only 1 MT demo & 1 MT real a/c
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    my @logins = get_mt5_logins($client, $user);
+    my @logins = get_mt5_logins($client, $user)->get;
     foreach (@logins) {
         if(($_->{group} // '') eq $group) {
             my $login = $_->{login};
