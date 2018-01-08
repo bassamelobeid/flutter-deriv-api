@@ -57,7 +57,7 @@ subtest 'Fail during upload' => sub {
     my $data   = 'Some text';
     my $length = length $data;
 
-    my %upload_info = request_upload(file_size => $length);
+    my %upload_info = request_upload($data, file_size => $length);
 
     my @frames = gen_frames($data, %upload_info);
     my $upload_id = $upload_info{upload_id};
@@ -82,7 +82,7 @@ subtest 'Invalid s3 config' => sub {
     # Valid bucket name to cause error
     $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'ValidBucket';
 
-    my %upload_info = request_upload(file_size => $length);
+    my %upload_info = request_upload($data, file_size => $length);
 
     # revert bucket name
     $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'TestingS3Bucket';
@@ -109,7 +109,7 @@ subtest 'binary frame should be sent correctly' => sub {
     $res = send_warning((pack 'N3A*', 1, 1, 1, 'A'), qr/Unknown upload request/);
     ok $res->{error}, 'Should ask for document_upload first';
 
-    my %upload_info = request_upload(file_size => 1);
+    my %upload_info = request_upload('N', file_size => 1);
 
     my ($call_type, $upload_id) = @upload_info{qw/call_type upload_id/};
 
@@ -130,7 +130,7 @@ subtest 'sending two files concurrently' => sub {
 
     my @requests;
     for my $i (0 .. 1) {
-        my $upload_info = {request_upload(file_size => $length)};
+        my $upload_info = {request_upload($data, file_size => $length)};
         receive_ok($data, %$upload_info);
         $requests[$i]->{upload_info} = $upload_info;
         $requests[$i]->{frames} = [gen_frames($data, %$upload_info)];
@@ -188,6 +188,7 @@ subtest 'Invalid document_format' => sub {
         req_id          => ++$req_id,
         file_size       => 1,
         document_format => 'INVALID',
+        expected_checksum => 'INVALID',
     };
 
     my $res = $t->await::document_upload($req);
@@ -209,10 +210,10 @@ subtest 'sending extra data after EOF chunk' => sub {
 };
 
 subtest 'Checksum not matching the etag' => sub {
-    my $data   = 'Some text is here';
+    my $data   = 'Some more text is here';
     my $length = length $data;
 
-    my %upload_info = request_upload(file_size => $length);
+    my %upload_info = request_upload($data, file_size => $length);
 
     receive_ok($data, %upload_info);
     my @frames = gen_frames($data, %upload_info);
@@ -245,7 +246,7 @@ sub gen_frames {
 sub upload_error {
     my ($data, $warning, %metadata) = @_;
 
-    my %upload_info = request_upload(%metadata);
+    my %upload_info = request_upload($data, %metadata);
 
     my $res;
     warning_like {
@@ -279,18 +280,19 @@ sub upload_ok {
 }
 
 sub request_upload {
-    my %metadata = @_;
+    my ($data, %metadata) = @_;
 
     my $req = {
         %generic_req, %metadata,
         req_id => ++$req_id,
+        expected_checksum => md5_hex($data),
     };
 
     my $res = $t->await::document_upload($req);
 
     is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
-
+    
     ok $res->{document_upload}, 'Returns document_upload';
 
     my $upload_id = $res->{document_upload}->{upload_id};
@@ -309,7 +311,7 @@ sub request_upload {
 sub upload {
     my ($data, %metadata) = @_;
 
-    my %upload_info = request_upload(%metadata);
+    my %upload_info = request_upload($data, %metadata);
 
     my $res = send_chunks($data, %upload_info);
     my $req = $upload_info{req};
