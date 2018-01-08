@@ -76,10 +76,8 @@ sub get_mt5_logins {
 
     $user ||= BOM::Platform::User->new({email => $client->email});
 
-    my @logins;
-
-    foreach my $loginid ($user->mt5_logins) {
-        $loginid =~ /^MT(\d+)$/;
+    return map {
+        $_ =~ /^MT(\d+)$/;
         my $login = $1;
 
         my $setting = mt5_get_settings({
@@ -91,10 +89,8 @@ sub get_mt5_logins {
             $acc->{group} = $setting->{group};
         }
 
-        push @logins, $acc;
-    }
-
-    return @logins;
+        $acc;
+    } $user->mt5_logins;
 }
 
 rpc mt5_login_list => sub {
