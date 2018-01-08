@@ -250,11 +250,32 @@ subtest 'Duplicate upload rejected' => sub {
     };
 
     my $res = $t->await::document_upload($req);
-    ok $res->{error}, 'Document already uploaded';
+    ok $res->{error}, 'Error occured';
+    is $res->{error}->{message_to_client}, 'Document already uploaded.', 'Error for duplicate document';
 };
 
-#subtest 'Document with wrong checksum rejected' => sub {
-#};
+subtest 'Document with wrong checksum rejected' => sub {
+    my $data   = 'This is the expected text';
+    my $other_data   = 'This is not expected text';
+    my $length = length $data;
+    my $checksum = md5_hex($data);
+
+    my %upload_info = request_upload($data, file_size => $length);
+
+    receive_ok($other_data, %upload_info);
+    my @frames = gen_frames($other_data, %upload_info);
+
+    my $res;
+    for my $i (0 .. $#frames) {
+        my $upload_id = $upload_info{upload_id};
+        $t->send_ok({binary => $frames[$i]});
+    }
+    $res = get_response($t);
+        
+    my $error = $res->{error};
+    is $error->{code}, 'UploadDenied', "Upload should be denied for file that doesn't match expected checksum";
+};
+
 
 sub gen_frames {
     my ($data,      %upload_info) = @_;
