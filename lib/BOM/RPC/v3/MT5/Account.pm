@@ -71,6 +71,32 @@ Returns any of the following:
 
 =cut
 
+sub get_mt5_logins {
+    my ($client, $user) = @_;
+
+    $user ||= BOM::Platform::User->new({email => $client->email});
+
+    my @logins;
+
+    foreach my $loginid ($user->mt5_logins) {
+        $loginid =~ /^MT(\d+)$/;
+        my $login = $1;
+
+        my $setting = mt5_get_settings({
+                client => $client,
+                args   => {login => $login}})->get;
+
+        my $acc = {login => $login};
+        if (ref $setting eq 'HASH' && $setting->{group}) {
+            $acc->{group} = $setting->{group};
+        }
+
+        push @logins, $acc;
+    }
+
+    return @logins;
+}
+
 rpc mt5_login_list => sub {
 
     my $params = shift;
@@ -79,24 +105,7 @@ rpc mt5_login_list => sub {
     my $mt5_suspended = _is_mt5_suspended();
     return $mt5_suspended if $mt5_suspended;
 
-    my $setting;
-
-    my @array;
-    foreach (BOM::Platform::User->new({email => $client->email})->mt5_logins) {
-        $_ =~ /^MT(\d+)$/;
-        my $login = $1;
-        my $acc = {login => $login};
-
-        $setting = mt5_get_settings({
-                client => $client,
-                args   => {login => $login}})->get;
-        if (ref $setting eq 'HASH' && $setting->{group}) {
-            $acc->{group} = $setting->{group};
-        }
-
-        push @array, $acc;
-    }
-    return \@array;
+    return [ get_mt5_logins($client) ];
 };
 
 # limit number of requests to once per minute
@@ -207,15 +216,11 @@ rpc mt5_new_account => sub {
     # client can have only 1 MT demo & 1 MT real a/c
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    foreach my $loginid ($user->mt5_logins) {
-        $loginid =~ /^MT(\d+)$/;
-        my $login = $1;
+    my @logins = get_mt5_logins($client, $user);
+    foreach (@logins) {
+        if(($_->{group} // '') eq $group) {
+            my $login = $_->{login};
 
-        my $setting = mt5_get_settings({
-                client => $client,
-                args   => {login => $login}})->get;
-
-        if (ref $setting eq 'HASH' and ($setting->{group} // '') eq $group) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'MT5CreateUserError',
                     message_to_client => localize('You already have a [_1] account [_2].', $account_type, $login)});
