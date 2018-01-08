@@ -24,51 +24,81 @@ use Sort::Naturally;
 rpc active_symbols => sub {
     my $params = shift;
 
-    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
-    my $product_type         = $params->{args}->{product_type};
-    my $language             = $params->{language} || 'EN';
-    my $token_details        = $params->{token_details};
+    my $landing_company_name =
+      $params->{args}->{landing_company} || 'costarica';
+    my $product_type  = $params->{args}->{product_type};
+    my $language      = $params->{language} || 'EN';
+    my $token_details = $params->{token_details};
 
     my $offerings_obj;
-    if ($token_details and exists $token_details->{loginid}) {
-        my $client = Client::Account->new({
-            loginid      => $token_details->{loginid},
-            db_operation => 'replica'
-        });
+    if ( $token_details and exists $token_details->{loginid} ) {
+        my $client = Client::Account->new(
+            {
+                loginid      => $token_details->{loginid},
+                db_operation => 'replica'
+            }
+        );
         $product_type //= $client->landing_company->default_offerings;
-        my $method = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
-        $offerings_obj = $client->landing_company->$method($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
+        my $method =
+          $product_type eq 'basic'
+          ? 'basic_offerings_for_country'
+          : 'multi_barrier_offerings_for_country';
+        $offerings_obj = $client->landing_company->$method( $client->residence,
+            BOM::Platform::Runtime->instance->get_offerings_config );
     }
 
     unless ($offerings_obj) {
-        my $landing_company = LandingCompany::Registry::get($landing_company_name);
+        my $landing_company =
+          LandingCompany::Registry::get($landing_company_name);
         $product_type //= $landing_company->default_offerings;
-        my $method = $product_type eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
-        $offerings_obj = $landing_company->$method(BOM::Platform::Runtime->instance->get_offerings_config);
+        my $method =
+          $product_type eq 'basic'
+          ? 'basic_offerings'
+          : 'multi_barrier_offerings';
+        $offerings_obj = $landing_company->$method(
+            BOM::Platform::Runtime->instance->get_offerings_config );
     }
-    my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
-    my ($namespace, $key) = (
-        'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
+    my $appconfig_revision =
+      BOM::Platform::Runtime->instance->app_config->current_revision;
+    my ( $namespace, $key ) = (
+        'legal_allowed_markets',
+        join(
+            '::',
+            (
+                $params->{args}->{active_symbols}, $language,
+                $offerings_obj->name,              $product_type,
+                $appconfig_revision
+            )
+        )
     );
 
     my $active_symbols;
-    if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
+    if ( my $cached_symbols = Cache::RedisDB->get( $namespace, $key ) ) {
         $active_symbols = $cached_symbols;
-    } else {
-        # For multi_barrier product_type, we can only offer major forex pairs as of now.
+    }
+    else {
+# For multi_barrier product_type, we can only offer major forex pairs as of now.
         my @all_active =
-              $product_type eq 'multi_barrier'
-            ? $offerings_obj->query({submarket => 'major_pairs'}, ['underlying_symbol'])
-            : $offerings_obj->values_for_key('underlying_symbol');
-        # symbols would be active if we allow forward starting contracts on them.
-        my %forward_starting = map { $_ => 1 } $offerings_obj->query({start_type => 'forward'}, ['underlying_symbol']);
+          $product_type eq 'multi_barrier'
+          ? $offerings_obj->query( { submarket => 'major_pairs' },
+            ['underlying_symbol'] )
+          : $offerings_obj->values_for_key('underlying_symbol');
+
+       # symbols would be active if we allow forward starting contracts on them.
+        my %forward_starting =
+          map { $_ => 1 } $offerings_obj->query( { start_type => 'forward' },
+            ['underlying_symbol'] );
         foreach my $symbol (@all_active) {
-            my $desc = _description($symbol, $params->{args}->{active_symbols});
+            my $desc =
+              _description( $symbol, $params->{args}->{active_symbols} );
             $desc->{allow_forward_starting} = 1 if $forward_starting{$symbol};
             push @{$active_symbols}, $desc;
         }
-        @{$active_symbols} = sort {ncmp($a->{display_name},$b->{display_name})} @{$active_symbols};
-        Cache::RedisDB->set($namespace, $key, $active_symbols, 30 - time % 30);
+        @{$active_symbols} =
+          sort { ncmp( $a->{display_name}, $b->{display_name} ) }
+          @{$active_symbols};
+        Cache::RedisDB->set( $namespace, $key, $active_symbols,
+            30 - time % 30 );
     }
 
     return $active_symbols;
@@ -78,12 +108,19 @@ sub _description {
     my $symbol           = shift;
     my $by               = shift || 'brief';
     my $ul               = create_underlying($symbol) || return;
-    my $trading_calendar = eval { Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader) };
-    my $iim              = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
-    # sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
-    my $exchange_is_open = $trading_calendar ? $trading_calendar->is_open_at($ul->exchange, Date::Utility->new) : '';
-    my ($spot, $spot_time, $spot_age) = ('', '', '');
-    if ($spot = eval { $ul->spot }) {
+    my $trading_calendar = eval {
+        Quant::Framework->new
+          ->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+    };
+    my $iim = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
+
+# sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
+    my $exchange_is_open =
+        $trading_calendar
+      ? $trading_calendar->is_open_at( $ul->exchange, Date::Utility->new )
+      : '';
+    my ( $spot, $spot_time, $spot_age ) = ( '', '', '' );
+    if ( $spot = eval { $ul->spot } ) {
         $spot_time = $ul->spot_time;
         $spot_age  = $ul->spot_age;
     }
@@ -91,16 +128,16 @@ sub _description {
         symbol                 => $symbol,
         display_name           => $ul->display_name,
         symbol_type            => $ul->instrument_type,
-        market_display_name    => localize($ul->market->display_name),
+        market_display_name    => localize( $ul->market->display_name ),
         market                 => $ul->market->name,
         submarket              => $ul->submarket->name,
-        submarket_display_name => localize($ul->submarket->display_name),
+        submarket_display_name => localize( $ul->submarket->display_name ),
         exchange_is_open       => $exchange_is_open || 0,
         is_trading_suspended   => 0,
         pip                    => $ul->pip_size . "",
     };
 
-    if ($by eq 'full') {
+    if ( $by eq 'full' ) {
         $response->{exchange_name}             = $ul->exchange_name;
         $response->{delay_amount}              = $ul->delay_amount;
         $response->{quoted_currency_symbol}    = $ul->quoted_currency_symbol;
