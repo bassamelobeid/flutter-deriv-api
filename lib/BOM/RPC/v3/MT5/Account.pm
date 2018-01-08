@@ -97,15 +97,18 @@ sub get_mt5_logins {
       concurrent => 4;
 }
 
-rpc mt5_login_list => sub {
-
+async_rpc mt5_login_list => sub {
     my $params = shift;
+
     my $client = $params->{client};
 
     my $mt5_suspended = _is_mt5_suspended();
-    return $mt5_suspended if $mt5_suspended;
+    return Future->done($mt5_suspended) if $mt5_suspended;
 
-    return [ get_mt5_logins($client)->get ];
+    return get_mt5_logins($client)->then(sub {
+        my (@logins) = @_;
+        return Future->done(\@logins);
+    });
 };
 
 # limit number of requests to once per minute
