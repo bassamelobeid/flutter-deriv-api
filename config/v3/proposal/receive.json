@@ -56,7 +56,7 @@
         },
         "multiplier": {
           "type": "number",
-          "description": "Example: 0.01",
+          "description": "Example: 0.01"
         }
       }
     },
