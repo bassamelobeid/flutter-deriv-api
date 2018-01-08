@@ -3,7 +3,6 @@ package main;
 use strict;
 use warnings;
 
-use Client::Account;
 use Date::Utility;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 use JSON::MaybeXS;
@@ -13,9 +12,12 @@ use POSIX ();
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use YAML::XS;
 use Math::BigFloat;
+use Try::Tiny;
 
 use Bitcoin::RPC::Client;
 use Ethereum::RPC::Client;
+
+use Client::Account;
 
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
@@ -31,7 +33,14 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
-my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml') or code_exit_BO("Not accessible. Please check if you are on right url.");
+my $cfg;
+
+try {
+    $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml')
+}
+catch {
+    code_exit_BO("Not accessible. Please check url to make sure you are requesting correct server.");
+};
 
 my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
