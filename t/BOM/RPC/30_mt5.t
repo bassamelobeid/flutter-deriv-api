@@ -66,8 +66,7 @@ subtest 'new account' => sub {
             leverage       => 100,
         },
     };
-    $c->call_ok($method, $params)
-        ->has_no_error('no error for mt5_new_account');
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
     is($c->result->{login}, $DETAILS{login}, 'result->{login}');
 };
 
@@ -80,8 +79,7 @@ subtest 'get settings' => sub {
             login => $DETAILS{login},
         },
     };
-    $c->call_ok($method, $params)
-        ->has_no_error('no error for mt5_get_settings');
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_get_settings');
     is($c->result->{login},   $DETAILS{login},   'result->{login}');
     is($c->result->{balance}, $DETAILS{balance}, 'result->{balance}');
     is($c->result->{country}, "mt",              'result->{country}');
@@ -98,11 +96,10 @@ subtest 'set settings' => sub {
             country => 'mt',
         },
     };
-    $c->call_ok($method, $params)
-        ->has_no_error('no error for mt5_set_settings');
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_set_settings');
     is($c->result->{login},   $DETAILS{login}, 'result->{login}');
-    is($c->result->{name},    "Test2", 'result->{name}');
-    is($c->result->{country}, "mt",    'result->{country}');
+    is($c->result->{name},    "Test2",         'result->{name}');
+    is($c->result->{country}, "mt",            'result->{country}');
 };
 
 subtest 'password check' => sub {
@@ -115,8 +112,7 @@ subtest 'password check' => sub {
             password => $DETAILS{password},
         },
     };
-    $c->call_ok($method, $params)
-        ->has_no_error('no error for mt5_password_check');
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_password_check');
 };
 
 subtest 'password change' => sub {
@@ -130,8 +126,7 @@ subtest 'password change' => sub {
             new_password => 'Ijkl6789',
         },
     };
-    $c->call_ok($method, $params)
-        ->has_no_error('no error for mt5_password_change');
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
     # This call yields a truth integer directly, not a hash
     is($c->result, 1, 'result');
 };
@@ -150,8 +145,7 @@ subtest 'deposit' => sub {
             amount      => 150,
         },
     };
-    $c->call_ok($method, $params)
-        ->has_no_error('no error for mt5_deposit');
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
     # TODO(leonerd): assert that account balance is now 1000-150 = 850
@@ -170,8 +164,7 @@ subtest 'withdrawal' => sub {
             amount    => 150,
         },
     };
-    $c->call_ok($method, $params)
-        ->has_no_error('no error for mt5_withdrawal');
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 };
 
