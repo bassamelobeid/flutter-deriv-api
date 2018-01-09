@@ -242,7 +242,7 @@ sub _create_template {
     $dbh->do('DROP DATABASE IF EXISTS ' . $self->_db_name);
     $dbh->do('ALTER DATABASE ' . $self->_db_name . ' RENAME TO ' . $self->_template_name);
     $dbh->do('CREATE DATABASE ' . $self->_db_name . ' WITH TEMPLATE ' . $self->_template_name);
-    $dbh->disconnect();
+    return $dbh->disconnect();
 }
 
 sub _kill_all_pg_connections {
@@ -296,7 +296,7 @@ sub _get_db_dir {
     return $migration_dir, $migration_dir =~ /bom-postgres-clientdb/ ? COLLECTOR_DB_DIR : ();
 }
 
-sub _template_name { shift->_db_name . '_template' }
+sub _template_name { return shift->_db_name . '_template' }
 
 sub BUILD {
     my $self = shift;
