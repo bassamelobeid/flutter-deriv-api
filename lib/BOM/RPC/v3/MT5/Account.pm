@@ -229,58 +229,80 @@ async_rpc mt5_new_account => sub {
     # client can have only 1 MT demo & 1 MT real a/c
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    my @logins = get_mt5_logins($client, $user)->get;
-    foreach (@logins) {
-        if(($_->{group} // '') eq $group) {
-            my $login = $_->{login};
+    return get_mt5_logins($client, $user)->then(sub {
+        my (@logins) = @_;
 
-            return Future->done(BOM::RPC::v3::Utility::create_error({
-                    code              => 'MT5CreateUserError',
-                    message_to_client => localize('You already have a [_1] account [_2].', $account_type, $login)}));
+        foreach (@logins) {
+            if(($_->{group} // '') eq $group) {
+                my $login = $_->{login};
+
+                return Future->done(BOM::RPC::v3::Utility::create_error({
+                        code              => 'MT5CreateUserError',
+                        message_to_client => localize('You already have a [_1] account [_2].', $account_type, $login)}));
+            }
         }
-    }
 
-    $args->{group} = $group;
+        $args->{group} = $group;
 
-    if ($args->{country}) {
-        my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
-        $args->{country} = $country_name if ($country_name);
-    }
-
-    my $status = BOM::MT5::User::Async::create_user($args)->get;
-    if ($status->{error}) {
-        return Future->done(BOM::RPC::v3::Utility::create_error({
-                code              => 'MT5CreateUserError',
-                message_to_client => $status->{error}}));
-    }
-    my $mt5_login = $status->{login};
-
-    # eg: MT5 login: 1000, we store MT1000
-    $user->add_loginid({loginid => 'MT' . $mt5_login});
-    $user->save;
-
-    my $balance = 0;
-    # funds in Virtual money
-    if ($account_type eq 'demo') {
-        $balance = 10000;
-        $status  = BOM::MT5::User::Async::deposit({
-            login   => $mt5_login,
-            amount  => $balance,
-            comment => 'Binary MT5 Virtual Money deposit.'
-        })->get;
-
-        # deposit failed
-        if ($status->{error}) {
-            warn "MT5: deposit failed for virtual account with error " . $status->{error};
-            $balance = 0;
+        if ($args->{country}) {
+            my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
+            $args->{country} = $country_name if ($country_name);
         }
-    }
 
-    return Future->done({
-        login        => $mt5_login,
-        balance      => $balance,
-        account_type => $account_type,
-        ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
+        # TODO(leonerd): This has to nest because of the `Future->done` in the
+        #   foreach loop above. A better use of errors-as-failures might avoid
+        #   this.
+        return BOM::MT5::User::Async::create_user($args)->then(sub {
+            my ($status) = @_;
+
+            if ($status->{error}) {
+                return Future->done(BOM::RPC::v3::Utility::create_error({
+                        code              => 'MT5CreateUserError',
+                        message_to_client => $status->{error}}));
+            }
+            my $mt5_login = $status->{login};
+
+            # eg: MT5 login: 1000, we store MT1000
+            $user->add_loginid({loginid => 'MT' . $mt5_login});
+            $user->save;
+
+            my $balance = 0;
+            # TODO(leonerd): This other somewhat-ugly structure implements
+            #   conditional execution of a Future-returning block. It's a bit
+            #   messy. See also
+            #     https://rt.cpan.org/Ticket/Display.html?id=124040
+            return (do {
+                if ($account_type eq 'demo') {
+                    # funds in Virtual money
+                    $balance = 10000;
+                    BOM::MT5::User::Async::deposit({
+                        login   => $mt5_login,
+                        amount  => $balance,
+                        comment => 'Binary MT5 Virtual Money deposit.'
+                    })->on_done(sub {
+                        # TODO(leonerd): It'd be nice to turn these into failed
+                        #   Futures from BOM::MT5::User::Async also.
+                        my ($status) = @_;
+
+                        # deposit failed
+                        if ($status->{error}) {
+                            warn "MT5: deposit failed for virtual account with error " . $status->{error};
+                            $balance = 0;
+                        }
+                    });
+                }
+                else {
+                    Future->done;
+                }
+            })->then(sub {
+                return Future->done({
+                    login        => $mt5_login,
+                    balance      => $balance,
+                    account_type => $account_type,
+                    ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
+            });
+        });
+    });
 };
 
 sub _check_logins {
