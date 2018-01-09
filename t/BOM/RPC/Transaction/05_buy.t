@@ -69,7 +69,6 @@ subtest 'buy' => sub {
         };
         $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'ContractCreationFailure')
             ->error_message_is('Missing required contract parameters (bet_type).', 'Missing required contract parameters (bet_type).');
-
     }
 
     my (undef, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client => $client);
@@ -126,6 +125,31 @@ subtest 'buy' => sub {
     #Try setting trading period start in parameters.
     $params->{contract_parameters}{trading_period_start} = time - 3600;
     $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
+
+    $params->{contract_parameters} = {
+        "proposal"      => 1,
+        "amount"        => "0.95",
+        "basis"         => "stake",
+        "contract_type" => "CALL",
+        "currency"      => "USD",
+        "duration"      => "5",
+        "duration_unit" => "t",
+        "symbol"        => "R_50",
+        "ask-price"     => "0.95",
+        "payout"        => "1.84",
+    };
+
+    $params->{contract_parameters}->{amount} = "0.956";
+    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidAmount', 'Invalid precision for amount');
+
+    $params->{contract_parameters}->{amount} = "0.95";
+    $params->{args}{price} = "0.956";
+    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidPrice', 'Invalid precision for price');
+
+    $params->{args}{price} = "0.95";
+    $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
+    ok $result->{contract_id},    'buy response has contract id';
+    ok $result->{transaction_id}, 'buy response has transaction id';
 };
 
 subtest 'app_markup' => sub {

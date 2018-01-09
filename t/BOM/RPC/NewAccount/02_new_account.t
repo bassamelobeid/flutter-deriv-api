@@ -364,7 +364,7 @@ subtest $method => sub {
     subtest 'Create new account maltainvest from MLT' => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token}               = $auth_token;
-        $params->{args}->{residence}   = 'cz';
+        $params->{args}->{residence}   = 'gb';
 
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
@@ -378,6 +378,79 @@ subtest $method => sub {
         # make sure data is same, as in first account, regardless of what we have provided
         my $cl = Client::Account->new({loginid => $new_loginid});
         is $client_mlt->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
+
+        $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
+        is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
+        $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
+        isnt(keys $result, 0, 'MF client has financial assessment set');
+    };
+
+    my $client_mx;
+    subtest 'Init MX MF' => sub {
+        lives_ok {
+            my $password = 'jskjd8292922';
+            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            $email = 'mx_email' . rand(999) . '@binary.com';
+            $user  = BOM::Platform::User->create(
+                email    => $email,
+                password => $hash_pwd
+            );
+            $user->save;
+            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'VRTC',
+                email       => $email,
+                residence   => 'gb',
+            });
+            $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'MX',
+                email       => $email,
+                residence   => 'gb',
+            });
+            $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
+
+            $user->add_loginid({loginid => $client->loginid});
+            $user->add_loginid({loginid => $client_mx->loginid});
+            $user->email_verified(1);
+            $user->save;
+        }
+        'Initial users and clients';
+    };
+
+    subtest 'Create new account maltainvest from MX' => sub {
+        $params->{args}->{accept_risk} = 1;
+        $params->{token}               = $auth_token;
+        $params->{args}->{residence}   = 'gb';
+
+        # call with totally random values - our client still should have correct one
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
+        $params->{args}->{phone}         = '1234567890';
+        $params->{args}->{date_of_birth} = '1990-09-09';
+
+        $client_mx->set_status('unwelcome', 'system', 'test');
+        $client_mx->save;
+
+        my $result = $rpc_ct->call_ok($method, $params)->result;
+        is $result->{error}->{code}, 'UnwelcomeAccount', 'Client marked as unwelcome';
+
+        $client_mx->clr_status('unwelcome');
+        $client_mx->save;
+
+        $result = $rpc_ct->call_ok($method, $params)->result;
+        is $result->{error}->{code}, 'KYCRequired', 'Client KYC is pending';
+
+        my $mock_client = Test::MockModule->new('Client::Account');
+        $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
+
+        $result = $rpc_ct->call_ok($method, $params)->result;
+
+        $mock_client->unmock_all();
+
+        my $new_loginid = $result->{client_id};
+        my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
+
+        # make sure data is same, as in first account, regardless of what we have provided
+        my $cl = Client::Account->new({loginid => $new_loginid});
+        is $client_mx->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
 
         $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
