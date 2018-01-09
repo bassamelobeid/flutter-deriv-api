@@ -4,8 +4,9 @@ use strict;
 use warnings;
 
 use Data::Compare;
+use Encode;
 use HTML::Entities;
-use JSON qw( from_json to_json );
+use JSON::MaybeXS;
 use Text::CSV;
 use Try::Tiny;
 
@@ -181,9 +182,9 @@ sub get_settings_by_group {
                 system.suspend.expensive_api_calls
                 system.suspend.is_auction_ended
                 system.suspend.is_auction_started
+                system.suspend.ico_claim_allowed
                 system.suspend.ico_final_price
                 system.suspend.ico_minimum_bid_in_usd
-                system.suspend.ico_initial_deposit_percentage
                 system.suspend.all_logins
                 system.suspend.social_logins
                 system.suspend.logins
@@ -286,7 +287,7 @@ sub parse_and_refine_setting {
     } elsif ($type eq 'json_string') {
         my $decoded;
         try {
-            $decoded = from_json($input_value);
+            $decoded = JSON::MaybeXS->new->decode($input_value);
         }
         catch {
             warn("Error: decoding of $input_value failed - $_");
@@ -294,13 +295,11 @@ sub parse_and_refine_setting {
         if (not defined $input_value or not defined $decoded) {
             $input_value = '{}';
         } else {
-            $input_value = to_json(
-                $decoded,
-                {
-                    utf8      => 1,
+            $input_value = Encode::encode_utf8(
+                JSON::MaybeXS->new(
                     pretty    => 1,
                     canonical => 1,
-                });
+                )->encode($decoded));
         }
         $display_value = $input_value;
     } else {

@@ -1,22 +1,37 @@
-[%
-MACRO documents_info BLOCK;
-'Possible documents for ' _ data.country _ '<br>'  | none;
-FOREACH i IN data.keys;
-    NEXT IF i == 'country';
-    IF i == 'CONCAT';
-            '<input type="submit" name="mifir_set_concat" value="CONCAT"><br>' | none;
-            NEXT;
-    END;
-    '<b>' _ i _ '</b>, can be obtained from:<ul>' | none;
-    FOREACH j IN data.$i;
-        '<li>' _ j _ '</li>' | none;
-    END;
-    '</ul>' | none;
-END;
-END;
-%]
+[%- MACRO documents_info BLOCK; -%]
+    [% IF citizenship %]
+        Citizenship of $citizenship
+        <br>
+        [% IF data.country %]
+            Possible documents for [% data.country %]
+        [% END %]
+        <br>
+        <!-- We need to show concat for non EU citizens as well
+            so if its not in mifir countries list it means its non EU
+        -->
+        [% IF !data.country and citizenship %]
+            <input type="submit" name="mifir_set_concat" value="CONCAT">
+        [% END %]
+        [% FOREACH i IN data.keys %]
+            [% NEXT IF i == 'country' %]
+            [% IF i == 'CONCAT' %]
+                    <input type="submit" name="mifir_set_concat" value="CONCAT">
+                    <br>
+                    [% NEXT %]
+            [% END %]
+            <b> $i </b>, can be obtained from:
+            <ul>
+                [% FOREACH j IN data.$i %]
+                    <li> $j </li>
+                [% END %]
+            </ul>
+        [% END %]
+    [% ELSE %]
+        Citizenship not selected
+    [% END %]
+[%- END -%]
 
-[% IF client.broker == 'MF' %]
+[% IF client.landing_company.short == 'maltainvest' %]
     <tr>
         <td class="small_header" colspan="2">#MIFIR ID Number</td>
     </tr>
@@ -33,7 +48,7 @@ END;
         </td>
         <td style="padding-top: 0px; padding-left: 10px">
         [% c = client.citizen.upper %]
-        [% documents_info(data => mifir_config.countries.$c) %]
+        [% documents_info(data => mifir_config.countries.$c, citizenship => c) %]
         </td>
         </tr>
         </table>

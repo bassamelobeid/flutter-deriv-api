@@ -13,7 +13,7 @@ test:
 	/etc/rmg/bin/prove --timer -v -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::Warnings' t/BOM
 
 syntax:
-	/etc/rmg/bin/prove --timer -v -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::Warnings' $(wildcard t/0*.t)
+	/etc/rmg/bin/prove --timer -v -l -I./t -r --exec '/etc/rmg/bin/perl -MTest::Warnings -MMojo::JSON::MaybeXS' $(wildcard t/0*.t)
 
 i18n:
 	xgettext.pl -P haml=haml -P perl=pl,pm,t -P tt2=tt,tt2 -P generic=html.ep\

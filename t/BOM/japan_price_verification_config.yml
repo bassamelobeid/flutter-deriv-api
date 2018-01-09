@@ -84,7 +84,7 @@ slope:
   ask_probability:
     commission_markup: 0.035
     risk_markup: 0.0119589842669399
-    theoretical_probability: 0.932933039355503
+    theoretical_probability: 0.932933039355516
   bs_probability:
     call_K: 78.300
     call_S: 79.817
@@ -92,7 +92,7 @@ slope:
     call_mu: 0
     call_payout: 1000
     call_t: 0.0321427891933029
-    call_vol: 0.0726586181836465
+    call_vol: 0.0726586181836466
   commission_markup:
     base_commission: 0.035
     commission_multiplier: 1
@@ -122,20 +122,20 @@ slope:
     opposite_contract_put_discount_rate: 0.0266870816706373
     opposite_contract_put_mu: 0
     opposite_contract_put_payout: 1000
-    opposite_contract_put_slope: -0.00260796462712987
+    opposite_contract_put_slope: -0.00260796462713681
     opposite_contract_put_t: 0.0321427891933029
     opposite_contract_put_vanilla_vega: 1.90900686456103
-    opposite_contract_put_vol: 0.0726586181836465
+    opposite_contract_put_vol: 0.0726586181836466
     opposite_contract_put_weight: 1
     opposite_contract_risk_markup: 0.0119589842669399
     opposite_contract_spot_spread_markup: 0.00308207820096861
-    opposite_contract_theoretical_probability: 0.066209531207052
+    opposite_contract_theoretical_probability: 0.0662095312070389
     opposite_contract_vol_spread_markup: 0.0208358903329113
   risk_markup:
     spot_spread_markup: 0.00308207820096861
     vol_spread_markup: 0.0208358903329113
   slope_adjustment:
-    call_slope: -0.00260796462712987
+    call_slope: -0.00260796462713681
     call_vanilla_vega: 1.90900686456103
     call_weight: -1
 vana_volga:

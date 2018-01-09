@@ -4,11 +4,15 @@ use warnings;
 use strict;
 
 use File::Slurp;
-use Amazon::S3;
+use Try::Tiny;
+use IO::Async::Loop;
+use Net::Async::Webservice::S3;
 use Amazon::S3::SignedURLGenerator;
-use Digest::SHA qw(sha1_hex);
+use Digest::MD5 qw(md5_hex);
 
 use BOM::Backoffice::Config;
+
+use constant UPLOAD_TIMEOUT => 120;
 
 my $document_auth_s3 = BOM::Backoffice::Config::config->{document_auth_s3};
 
@@ -38,21 +42,39 @@ sub get_s3_url {
 }
 
 sub upload {
-    my ($filename, $original_filename) = @_;
+    my ($original_filename, $upload_file_handle) = @_;
 
-    my $s3 = Amazon::S3->new({
-        aws_access_key_id     => $access_key,
-        aws_secret_access_key => $secret_key,
-        retry                 => 1,
-        timeout               => 60
-    });
+    # slurp the content
+    my $content = do { local $/; <$upload_file_handle> };
+    # content can be 0 therefore check with defined
+    die 'Unable to read the upload file handle' unless defined $content;
 
-    my $s3_bucket = $s3->bucket($bucket) or die 'Could not retrieve the requested s3 bucket';
-    my $file = read_file($original_filename, binmode => ':raw') or die "Unable to read file: $original_filename";
+    my %config = %$document_auth_s3;
+    delete $config{region};
 
-    $s3_bucket->add_key($filename, $file) or die 'Unable to upload the file to s3.';
+    my $s3 = Net::Async::Webservice::S3->new(
+        %config,
+        timeout => UPLOAD_TIMEOUT,
+    );
 
-    return sha1_hex($file);
+    my $loop = IO::Async::Loop->new;
+    $loop->add($s3);
+
+    my $checksum = md5_hex($content);
+
+    my $etag;
+    try {
+        ($etag) = $s3->put_object(
+            key   => $original_filename,
+            value => $content,
+            meta  => {checksum => $checksum},
+        )->get;
+    }
+    catch {
+        die "Upload Error: " . shift;
+    };
+
+    return $etag =~ s/"//gr;
 }
 
 1;

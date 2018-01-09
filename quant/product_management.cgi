@@ -8,7 +8,7 @@ use warnings;
 use Date::Utility;
 use Digest::MD5 qw(md5_hex);
 use HTML::Entities;
-use JSON qw(from_json to_json);
+use JSON::MaybeXS;
 use LandingCompany::Registry;
 use List::Util qw(first);
 use f_brokerincludeall;
@@ -21,9 +21,9 @@ use BOM::Platform::Config;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Runtime;
-use LandingCompany::Offerings;
 
 BOM::Backoffice::Sysinit::init();
+my $json = JSON::MaybeXS->new;
 
 PrintContentType();
 BrokerPresentation('Product Management');
@@ -43,9 +43,15 @@ my %allowed_multiple = (
 my $need_to_save = 0;
 
 if ($r->param('update_limit')) {
+
+    my $landing_company           = $r->param('landing_company');
+    my $contract_category         = $r->param('contract_category');
+    my $non_binary_contract_limit = $r->param('non_binary_contract_limit');
+
     my @known_keys    = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
-    my $offerings_obj = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
     my %known_values  = map { $_ => [$offerings_obj->values_for_key($_)] } @known_keys;
+
     # landing company is not part of offerings object.
     $known_values{landing_company} = [map { $_->short } LandingCompany::Registry::all()];
     my %ref;
@@ -68,6 +74,7 @@ if ($r->param('update_limit')) {
     my $has_custom_conditions = keys %ref;
     if (my $custom_name = $r->param('custom_name')) {
         $ref{name} = $custom_name;
+        $ref{non_binary_contract_limit} = $non_binary_contract_limit if $contract_category eq 'lookback';
     } elsif ($has_custom_conditions) {
         code_exit_BO('Name is required.');
     }
@@ -75,24 +82,24 @@ if ($r->param('update_limit')) {
     my $p = $r->param('risk_profile');
     if ($p and $known_profiles{$p}) {
         $ref{risk_profile} = $p;
-    } elsif ($has_custom_conditions) {
+    } elsif ($has_custom_conditions and $contract_category ne 'lookback') {
         code_exit_BO('Unrecognize risk profile.');
     }
 
     if (my $id = $r->param('client_loginid')) {
-        my $current = from_json($quants_config->custom_client_profiles);
+        my $current = $json->decode($quants_config->custom_client_profiles);
         my $comment = $r->param('comment');
         $current->{$id}->{custom_limits}->{$uniq_key} = \%ref    if $has_custom_conditions;
         $current->{$id}->{reason}                     = $comment if $comment;
         $current->{$id}->{updated_by}                 = $staff;
         $current->{$id}->{updated_on}                 = Date::Utility->new->date;
-        $quants_config->custom_client_profiles(to_json($current));
+        $quants_config->custom_client_profiles($json->encode($current));
     } else {
-        my $current = from_json($quants_config->custom_product_profiles);
+        my $current = $json->decode($quants_config->custom_product_profiles);
         $ref{updated_by}      = $staff;
         $ref{updated_on}      = Date::Utility->new->date;
         $current->{$uniq_key} = \%ref;
-        $quants_config->custom_product_profiles(to_json($current));
+        $quants_config->custom_product_profiles($json->encode($current));
     }
 
     $need_to_save = 1;
@@ -103,22 +110,22 @@ if ($r->param('delete_limit')) {
     code_exit_BO('ID is required. Nothing is deleted.') if not $id;
 
     if (my $client_loginid = $r->param('client_loginid')) {
-        my $current = from_json($quants_config->custom_client_profiles);
+        my $current = $json->decode($quants_config->custom_client_profiles);
         delete $current->{$client_loginid}->{custom_limits}->{$id};
-        $quants_config->custom_client_profiles(to_json($current));
+        $quants_config->custom_client_profiles($json->encode($current));
     } else {
-        my $current = from_json($quants_config->custom_product_profiles);
+        my $current = $json->decode($quants_config->custom_product_profiles);
         delete $current->{$id};
-        $quants_config->custom_product_profiles(to_json($current));
+        $quants_config->custom_product_profiles($json->encode($current));
     }
     $need_to_save = 1;
 }
 
 if ($r->param('delete_client')) {
     my $client_loginid = $r->param('client_loginid');
-    my $current        = from_json($quants_config->custom_client_profiles);
+    my $current        = $json->decode($quants_config->custom_client_profiles);
     delete $current->{$client_loginid};
-    $quants_config->custom_client_profiles(to_json($current));
+    $quants_config->custom_client_profiles($json->encode($current));
     $need_to_save = 1;
 }
 
@@ -129,7 +136,7 @@ if ($r->param('update_otm')) {
 
     code_exit_BO('Maximum value of OTM threshold is 1.') if $r->param('otm_value') > 1;
 
-    my $current = from_json($quants_config->custom_otm_threshold);
+    my $current = $json->decode($quants_config->custom_otm_threshold);
 
     # underlying symbol supercedes market
     my $which = $r->param('underlying_symbol') ? 'underlying_symbol' : 'market';
@@ -145,18 +152,18 @@ if ($r->param('update_otm')) {
             value => $r->param('otm_value'),
         };
     }
-    $quants_config->custom_otm_threshold(to_json($current));
+    $quants_config->custom_otm_threshold($json->encode($current));
     $need_to_save = 1;
 }
 
 if ($r->param('delete_otm')) {
-    my $current = from_json($quants_config->custom_otm_threshold);
+    my $current = $json->decode($quants_config->custom_otm_threshold);
     unless ($r->param('otm_id')) {
         code_exit_BO('Please specify otm id to delete.');
     }
 
     delete $current->{$r->param('otm_id')};
-    $quants_config->custom_otm_threshold(to_json($current));
+    $quants_config->custom_otm_threshold($json->encode($current));
     $need_to_save = 1;
 }
 
@@ -176,7 +183,7 @@ BOM::Backoffice::Request::template->process(
 
 Bar("Existing limits");
 
-my $custom_limits = from_json($quants_config->custom_product_profiles);
+my $custom_limits = $json->decode($quants_config->custom_product_profiles);
 
 my @output;
 foreach my $id (keys %$custom_limits) {
@@ -202,7 +209,7 @@ BOM::Backoffice::Request::template->process(
 
 Bar("Custom Client Limits");
 
-my $custom_client_limits = from_json($quants_config->custom_client_profiles);
+my $custom_client_limits = $json->decode($quants_config->custom_client_profiles);
 
 my @client_output;
 foreach my $client_loginid (keys %$custom_client_limits) {
@@ -254,7 +261,7 @@ BOM::Backoffice::Request::template->process(
     'backoffice/update_otm_threshold.html.tt',
     {
         url             => request()->url_for('backoffice/quant/product_management.cgi'),
-        existing_custom => from_json($quants_config->custom_otm_threshold),
+        existing_custom => $json->decode($quants_config->custom_otm_threshold),
     }) || die BOM::Backoffice::Request::template->error;
 
 code_exit_BO();

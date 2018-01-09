@@ -5,7 +5,8 @@ use strict;
 use warnings;
 no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 use open qw[ :encoding(UTF-8) ];
-use JSON;
+use Encode;
+use JSON::MaybeXS;
 use Data::Dumper;
 use Date::Utility;
 use Try::Tiny;
@@ -272,7 +273,7 @@ sub _get_desk_com_entries {
     my $response     = `curl $curl_url`;
     my @desk_entries = ();
     try {
-        $response = decode_json $response;
+        $response = JSON::MaybeXS->new->decode(Encode::decode_utf8($response));
         if ($response->{total_entries} > 0 and $response->{_embedded} and $response->{_embedded}->{entries}) {
             foreach (sort { Date::Utility->new($a->{created_at})->epoch <=> Date::Utility->new($b->{created_at})->epoch }
                 @{$response->{_embedded}->{entries}})

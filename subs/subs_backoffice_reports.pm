@@ -4,7 +4,7 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use Date::Manip;
-use JSON qw(from_json to_json);
+use JSON::MaybeXS;
 use List::Util qw( min max );
 use Cache::RedisDB;
 use Format::Util::Numbers qw/roundcommon financialrounding/;
@@ -72,7 +72,7 @@ sub DailyTurnOverReport {
 
     # get latest cache
     my $cache_query = Cache::RedisDB->get($cache_prefix, $latest_time->db_timestamp);
-    $cache_query = from_json($cache_query);
+    $cache_query = JSON::MaybeXS->new->decode($cache_query);
 
     my $aggregate_transactions = $cache_query->{agg_txn};
     my $active_clients         = $cache_query->{active_clients};
