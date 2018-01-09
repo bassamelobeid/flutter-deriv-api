@@ -1,6 +1,0 @@
-logging: 30
-migrate_from_0_3_2: false
-project_name: auth_test
-stellar_url: postgresql://postgres:mRX1E3Mi00oS8LG@localhost:5435/stellar_data
-tracked_databases: [auth_test]
-url: postgresql://postgres:mRX1E3Mi00oS8LG@localhost:5435/template1

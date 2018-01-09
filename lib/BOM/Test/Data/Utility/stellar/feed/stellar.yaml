@@ -1,6 +1,0 @@
-logging: 30
-migrate_from_0_3_2: false
-project_name: feed
-stellar_url: postgresql://postgres:mRX1E3Mi00oS8LG@localhost:5433/stellar_data
-tracked_databases: [feed]
-url: postgresql://postgres:mRX1E3Mi00oS8LG@localhost:5433/template1
