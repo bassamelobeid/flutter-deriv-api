@@ -409,8 +409,14 @@ sub get_bid {
                 $response->{barrier} = $contract->barrier->as_absolute;
             }
 
-            #Add some comment here
-            #Tactical approach
+            #Note:
+            #This is just a tactical/temporary solution for now for the UI to work.
+            #For the strategic solution
+            #we will need to refactor Finance-Contract and bom.
+            #It is a bit complicated compared to our other existing products because:
+            #1. Lookback contract comes with 2 different number of barriers(FLOATCALL/PUT with 1 barrier
+            #   and HIGHLOW with 2 barriers).
+            #2. It is a changing barrier(s) over the life of the options.
             unless ($contract->is_binary) {
                 if ($contract->code eq 'LBHIGHLOW') {
                     $response->{high_barrier} = $contract->spot_max;
