@@ -13,6 +13,7 @@ use Data::Dumper;
 use HTML::Entities;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use Try::Tiny;
+use Digest::MD5 qw/md5_hex/;
 
 use Brands;
 use LandingCompany::Registry;
@@ -263,10 +264,11 @@ if ($input{whattodo} eq 'uploadID') {
             ($id) = $client->db->dbic->run(
                 ping => sub {
                     $_->selectrow_array(
-                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?)',
+                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
                         undef, $loginid, $doctype, $docformat,
                         $expiration_date || undef,
                         $document_id     || '',
+                        md5_hex(read_file($filetoupload, binmode => ':raw')),
                     );
                 });
         }
