@@ -289,7 +289,7 @@ sub create_s3_instance {
 sub last_chunk_received {
     my ($c, $upload_info) = @_;
 
-    return if $upload_info->{chunk_size} != 0;
+    return 0 if $upload_info->{chunk_size} != 0;
 
     my $checksum = $upload_info->{md5}->hexdigest;
     if ($checksum ne $upload_info->{expected_checksum}) {
