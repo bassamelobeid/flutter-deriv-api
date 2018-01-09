@@ -30,6 +30,16 @@ common_before_actions qw(auth);
 
 use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
 
+# TODO(leonerd):
+#   These helpers exist mostly to coördinate the idea of error management in
+#   Future-chained async RPC methods. This logic would probably be a lot neater
+#   if Future failure was used to indicate RPC-level errors as well, as its
+#   shortcircuiting behaviour would be useful here.
+
+sub permission_error_future {
+    return Future->done(BOM::RPC::v3::Utility::permission_error());
+}
+
 =head2 mt5_login_list
 
     $mt5_logins = mt5_login_list({ client => $client })
@@ -132,34 +142,34 @@ sub reset_throttler {
     return BOM::Platform::RedisReplicated::redis_write->del($key);
 }
 
-rpc mt5_new_account => sub {
+async_rpc mt5_new_account => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
-    return $mt5_suspended if $mt5_suspended;
+    return Future->done($mt5_suspended) if $mt5_suspended;
 
     my ($client, $args) = @{$params}{qw/client args/};
     my $account_type     = delete $args->{account_type};
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $brand            = Brands->new(name => request()->brand);
 
-    return BOM::RPC::v3::Utility::create_error({
+    return Future->done(BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidAccountType',
-            message_to_client => localize('Invalid account type.')}) if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
+            message_to_client => localize('Invalid account type.')})) if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
     my $residence = $client->residence;
-    return BOM::RPC::v3::Utility::create_error({
+    return Future->done(BOM::RPC::v3::Utility::create_error({
             code              => 'NoResidence',
-            message_to_client => localize('Please set your country of residence.')}) unless $residence;
+            message_to_client => localize('Please set your country of residence.')})) unless $residence;
 
     my $countries_list = $brand->countries_instance->countries_list;
-    return BOM::RPC::v3::Utility::permission_error()
+    return permission_error_future()
         unless $countries_list->{$residence};
 
-    return BOM::RPC::v3::Utility::create_error({
+    return Future->done(BOM::RPC::v3::Utility::create_error({
             code              => 'MT5SamePassword',
             message_to_client => localize('Investor password cannot be same as main password.')}
-    ) if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
+    )) if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
 
     my $invalid_sub_type_error = BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidSubAccountType',
@@ -181,27 +191,27 @@ rpc mt5_new_account => sub {
     if ($account_type eq 'demo') {
         # demo will have demo for financial and demo for gaming
         if ($mt5_account_type) {
-            return $invalid_sub_type_error unless ($mt5_account_type =~ /^cent|standard|stp$/);
+            return Future->done($invalid_sub_type_error) unless ($mt5_account_type =~ /^cent|standard|stp$/);
 
-            return BOM::RPC::v3::Utility::permission_error() if (($mt_company = $get_company_name->('financial')) eq 'none');
+            return permission_error_future() if (($mt_company = $get_company_name->('financial')) eq 'none');
 
             $group = 'demo\\' . $mt_company . '_' . $mt5_account_type;
         } else {
-            return BOM::RPC::v3::Utility::permission_error() if (($mt_company = $get_company_name->('gaming')) eq 'none');
+            return permission_error_future() if (($mt_company = $get_company_name->('gaming')) eq 'none');
             $group = 'demo\\' . $mt_company;
         }
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
         # 5 Sept 2016: only CR and Champion fully authenticated client can open MT real a/c
-        return BOM::RPC::v3::Utility::permission_error() if ($client->landing_company->short !~ /^costarica|champion$/);
+        return permission_error_future() if ($client->landing_company->short !~ /^costarica|champion$/);
 
-        return BOM::RPC::v3::Utility::permission_error() if (($mt_company = $get_company_name->($account_type)) eq 'none');
+        return permission_error_future() if (($mt_company = $get_company_name->($account_type)) eq 'none');
 
         if ($account_type eq 'financial') {
-            return $invalid_sub_type_error unless $mt5_account_type =~ /^cent|standard|stp$/;
+            return Future->done($invalid_sub_type_error) unless $mt5_account_type =~ /^cent|standard|stp$/;
 
-            return BOM::RPC::v3::Utility::create_error({
+            return Future->done(BOM::RPC::v3::Utility::create_error({
                     code              => 'FinancialAssessmentMandatory',
-                    message_to_client => localize('Please complete financial assessment.')}) unless $client->financial_assessment();
+                    message_to_client => localize('Please complete financial assessment.')})) unless $client->financial_assessment();
         }
 
         # populate mt5 agent account associated with affiliate token
@@ -212,9 +222,9 @@ rpc mt5_new_account => sub {
         $group .= "_$residence" if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
     }
 
-    return BOM::RPC::v3::Utility::create_error({
+    return Future->done(BOM::RPC::v3::Utility::create_error({
             code              => 'MT5CreateUserError',
-            message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
+            message_to_client => localize('Request too frequent. Please try again later.')})) if _throttle($client->loginid);
 
     # client can have only 1 MT demo & 1 MT real a/c
     my $user = BOM::Platform::User->new({email => $client->email});
@@ -224,9 +234,9 @@ rpc mt5_new_account => sub {
         if(($_->{group} // '') eq $group) {
             my $login = $_->{login};
 
-            return BOM::RPC::v3::Utility::create_error({
+            return Future->done(BOM::RPC::v3::Utility::create_error({
                     code              => 'MT5CreateUserError',
-                    message_to_client => localize('You already have a [_1] account [_2].', $account_type, $login)});
+                    message_to_client => localize('You already have a [_1] account [_2].', $account_type, $login)}));
         }
     }
 
@@ -239,9 +249,9 @@ rpc mt5_new_account => sub {
 
     my $status = BOM::MT5::User::Async::create_user($args)->get;
     if ($status->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
+        return Future->done(BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5CreateUserError',
-                message_to_client => $status->{error}});
+                message_to_client => $status->{error}}));
     }
     my $mt5_login = $status->{login};
 
@@ -266,11 +276,11 @@ rpc mt5_new_account => sub {
         }
     }
 
-    return {
+    return Future->done({
         login        => $mt5_login,
         balance      => $balance,
         account_type => $account_type,
-        ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()};
+        ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
 };
 
 sub _check_logins {
