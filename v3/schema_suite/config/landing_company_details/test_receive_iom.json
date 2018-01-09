@@ -45,11 +45,11 @@
                 },
                 "legal_allowed_markets": {
                     "type": "array",
-                    "minItems": 5,
+                    "minItems": 1,
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(commodities|forex|indices|stocks|volidx)$",
+                        "pattern": "^volidx$",
                         "required": "1"
                     }
                 },
