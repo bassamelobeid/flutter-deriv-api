@@ -7,7 +7,6 @@ use File::Slurp;
 use Try::Tiny;
 use DBIx::Migration;
 use BOM::Test;
-use Digest::MD5;
 use Date::Utility;
 use Test::More;
 use File::Find::Rule;
