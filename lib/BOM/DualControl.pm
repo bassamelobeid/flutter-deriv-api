@@ -26,6 +26,7 @@ use Scalar::Util qw(looks_like_number);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Config;
+use JSON::MaybeXS;
 
 has staff => (
     is       => 'ro',
@@ -374,7 +375,7 @@ sub _validate_staff_payment_limit {
     my $self   = shift;
     my $amount = shift;
 
-    my $payment_limits = JSON::from_json(BOM::Platform::Runtime->instance->app_config->payments->payment_limits);
+    my $payment_limits = JSON::MaybeXS->new->decode(BOM::Platform::Runtime->instance->app_config->payments->payment_limits);
     if ($payment_limits->{$self->staff} and looks_like_number($payment_limits->{$self->staff})) {
         if ($amount > $payment_limits->{$self->staff}) {
             return Error::Base->cuss(

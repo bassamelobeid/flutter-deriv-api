@@ -4,17 +4,19 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use JSON qw(to_json);
+use JSON::MaybeXS;
 use List::Util qw(first);
 use Quant::Framework::EconomicEventCalendar;
 use Try::Tiny;
 use Volatility::Seasonality;
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 
 use BOM::Backoffice::Request;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::Platform::Chronicle;
 use BOM::Platform::Runtime;
+
+my $json = JSON::MaybeXS->new;
 
 sub get_economic_events_for_date {
     my $date = shift;
@@ -37,9 +39,9 @@ sub get_economic_events_for_date {
         (values %{$eec->_get_deleted()});
     my @l = _get_affected_underlying_symbols();
     return {
-        categorized_events => to_json(\@events),
-        deleted_events     => to_json(\@deleted_events),
-        underlying_symbols => to_json([sort @l]),
+        categorized_events => $json->encode(\@events),
+        deleted_events     => $json->encode(\@deleted_events),
+        underlying_symbols => $json->encode([sort @l]),
     };
 }
 
@@ -190,7 +192,7 @@ sub _get_affected_underlying_symbols {
     return @symbols if @symbols;
 
     # default to costarica since it does not matter
-    my $offerings_obj = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
     @symbols = $offerings_obj->query({submarket => 'major_pairs'}, ['underlying_symbol']);
     return @symbols;
 }

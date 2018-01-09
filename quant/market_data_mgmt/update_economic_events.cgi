@@ -6,30 +6,30 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/regentmarkets/bom/cgi/oop);
 
-use JSON qw(to_json);
+use JSON::MaybeXS;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::EconomicEventTool;
 BOM::Backoffice::Sysinit::init();
-
+my $json = JSON::MaybeXS->new;
 ## Updates economic event list
 if (request()->param('get_event')) {
-    print to_json(BOM::Backoffice::EconomicEventTool::get_economic_events_for_date(request()->param('date')));
+    print $json->encode(BOM::Backoffice::EconomicEventTool::get_economic_events_for_date(request()->param('date')));
 }
 
 ## Delete economic event
 if (request()->param('delete_event')) {
-    print to_json(BOM::Backoffice::EconomicEventTool::delete_by_id(request()->param('event_id')));
+    print $json->encode(BOM::Backoffice::EconomicEventTool::delete_by_id(request()->param('event_id')));
 }
 
 if (request()->param('restore_event')) {
-    print to_json(BOM::Backoffice::EconomicEventTool::restore_by_id(request()->param('event_id'), request()->param('type')));
+    print $json->encode(BOM::Backoffice::EconomicEventTool::restore_by_id(request()->param('event_id'), request()->param('type')));
 }
 
 ## Update with custom magnitude
 if (request()->param('update_event')) {
     my $args =
         {map { $_ => request()->param($_) } qw/id vol_change duration decay_factor vol_change_before duration_before decay_factor_before underlying/};
-    print to_json(BOM::Backoffice::EconomicEventTool::update_by_id($args));
+    print $json->encode(BOM::Backoffice::EconomicEventTool::update_by_id($args));
 }
 
 ## Add new economic event
@@ -41,5 +41,5 @@ if (request()->param('save_event')) {
         source       => request()->param('source'),
         release_date => request()->param('release_date'),
     };
-    print to_json(BOM::Backoffice::EconomicEventTool::save_new_event($param));
+    print $json->encode(BOM::Backoffice::EconomicEventTool::save_new_event($param));
 }
