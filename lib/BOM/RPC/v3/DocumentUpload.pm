@@ -44,7 +44,7 @@ sub start_document_upload {
 
     my $id;
     my $error_occured;
-    my $duplicate;
+    my $duplicate_doc_error;
     try {
         ($id) = $client->db->dbic->run(
             ping => sub {
@@ -58,11 +58,11 @@ sub start_document_upload {
             });
     }
     catch {
-        $duplicate = 1 if $_ =~ /duplicate_document/;
+        $duplicate_doc_error = 1 if /duplicate_document/;
         $error_occured = 1;
     };
 
-    return create_upload_error('duplicate_document') if $duplicate;
+    return create_upload_error('duplicate_document') if $duplicate_doc_error;
 
     if ($error_occured or not $id) {
         warn 'start_document_upload in the db was not successful';

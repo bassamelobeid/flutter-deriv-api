@@ -133,13 +133,15 @@ subtest 'Attempt with non-existent file ID' => sub {
 };
 
 subtest 'Attempt to upload same document again (checksum collision) with different document ID' => sub {
-    $args                      = {};
-    $params->{args}            = $args;
-    $args->{document_type}     = $doc_type;
-    $args->{document_format}   = $doc_format;
-    $args->{expiration_date}   = $exp_date_future;
-    $args->{document_id}       = $doc_id_2;
-    $args->{expected_checksum} = $other_checksum;
+    $args = {
+        document_type    => $doc_type,
+        document_format   => $doc_format,
+        expiration_date   => $exp_date_future,
+        document_id       => $doc_id_2,
+        expected_checksum => $other_checksum
+    };
+    $params->{args} = $args;
+
     Test::Warnings::allow_warnings('duplicate_document');
     $c->call_ok($method, $params)->has_error->error_message_is('Document already uploaded.', 'error if same document is uploaded twice');
 };
