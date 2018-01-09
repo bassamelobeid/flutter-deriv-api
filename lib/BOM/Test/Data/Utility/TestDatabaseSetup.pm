@@ -9,6 +9,7 @@ use DBIx::Migration;
 use BOM::Test;
 use Digest::MD5;
 use Date::Utility;
+use Test::More;
 use File::Find::Rule;
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
@@ -226,26 +227,41 @@ sub _restore_dbs_from_template {
     my $self = shift;
     return 0 unless $self->_is_template_usable;
 
-    my $dbh = $self->_kill_all_pg_connections;
+    my $is_successful = 0;
+    try {
+        my $dbh = $self->_kill_all_pg_connections;
 
-    $dbh->do('DROP DATABASE IF EXISTS ' . $self->_db_name);
-    $dbh->do('CREATE DATABASE ' . $self->_db_name . ' WITH TEMPLATE ' . $self->_template_name);
-    $dbh->disconnect();
-    return 1;
+        $dbh->do('DROP DATABASE IF EXISTS ' . $self->_db_name);
+        $dbh->do('CREATE DATABASE ' . $self->_db_name . ' WITH TEMPLATE ' . $self->_template_name);
+        $dbh->disconnect();
+        $is_successful = 1;
+    }
+    catch {
+        note 'Falling back to restoring schemas, because restoring the db template failed for ' . $self->_db_name . ' with error: ' . $_;
+    };
+
+    return $is_successful;
 }
 
 sub _create_template {
     my $self = shift;
 
-    my $dbh = $self->_kill_all_pg_connections;
+    try {
+        my $dbh = $self->_kill_all_pg_connections;
 
-    # suppress 'NOTICE:  database ".*template" does not exist, skipping'
-    local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /database ".*_template" does not exist, skipping/; };
+        # suppress 'NOTICE:  database ".*template" does not exist, skipping'
+        local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /database ".*_template" does not exist, skipping/; };
 
-    $dbh->do('DROP DATABASE IF EXISTS ' . $self->_template_name);
-    $dbh->do('ALTER DATABASE ' . $self->_db_name . ' RENAME TO ' . $self->_template_name);
-    $dbh->do('CREATE DATABASE ' . $self->_db_name . ' WITH TEMPLATE ' . $self->_template_name);
-    return $dbh->disconnect();
+        $dbh->do('DROP DATABASE IF EXISTS ' . $self->_template_name);
+        $dbh->do('ALTER DATABASE ' . $self->_db_name . ' RENAME TO ' . $self->_template_name);
+        $dbh->do('CREATE DATABASE ' . $self->_db_name . ' WITH TEMPLATE ' . $self->_template_name);
+        $dbh->disconnect();
+    }
+    catch {
+        note 'Creating the db template failed for ' . $self->_db_name . ' with error: ' . $_;
+    };
+
+    return;
 }
 
 sub _kill_all_pg_connections {
