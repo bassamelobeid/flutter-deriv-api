@@ -239,6 +239,9 @@ sub _create_template {
 
     my $dbh = $self->_kill_all_pg_connections;
 
+    # suppress 'NOTICE:  database ".*template" does not exist, skipping'
+    local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /database ".*_template" does not exist, skipping/; };
+
     $dbh->do('DROP DATABASE IF EXISTS ' . $self->_template_name);
     $dbh->do('ALTER DATABASE ' . $self->_db_name . ' RENAME TO ' . $self->_template_name);
     $dbh->do('CREATE DATABASE ' . $self->_db_name . ' WITH TEMPLATE ' . $self->_template_name);
