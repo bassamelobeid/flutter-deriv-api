@@ -8,7 +8,7 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber financialrounding/;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -70,9 +70,14 @@ subtest 'buy' => sub {
         "barrier"       => "S20P",
     };
 
-    $params->{args}{price} = 7.59*0.5; 
-    my $old_balance = $client->default_account->load->balance;
-    my $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
+    $params->{args}{price} = 7.59 * 0.5;
+
+    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidPrice', 'Invalid precision for price');
+
+    $params->{args}{price} = financialrounding('price', 'USD', 7.59 * 0.5);
+
+    my $old_balance   = $client->default_account->load->balance;
+    my $result        = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
             transaction_id
             contract_id
