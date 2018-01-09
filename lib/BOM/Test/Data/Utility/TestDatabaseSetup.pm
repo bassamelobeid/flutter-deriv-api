@@ -8,14 +8,12 @@ use Try::Tiny;
 use DBIx::Migration;
 use BOM::Test;
 use Digest::MD5;
-
-use constant {
-    SNAPSHOT_DIR => '/tmp/test-db-snapshots',
-    STELLAR_DIR  => '/home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/stellar/',
-    PG_DIR_GLOB  => '/home/git/regentmarkets/bom-postgres*',
-};
+use Date::Utility;
+use File::Find::Rule;
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
+
+use constant COLLECTOR_DB_DIR => '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/';
 
 BEGIN {
     die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
@@ -93,7 +91,7 @@ sub _migrate_changesets {
         }
     }
 
-    $self->_create_dbs unless $self->_restore_dbs_from_snapshot;
+    $self->_create_dbs unless $self->_restore_dbs_from_template;
 
     foreach (@bouncer_dbs) {
         $b_db = $_;
@@ -119,19 +117,7 @@ sub _migrate_changesets {
 sub _create_dbs {
     my $self = shift;
 
-    my $dbh = $self->db_handler('postgres');
-    $dbh->{RaiseError} = 1;    # die if we cannot perform any of the operations below
-    $dbh->{PrintError} = 0;
-
-    #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
-    {
-        local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /is not a PostgreSQL server process/; };
-        $dbh->do(
-            'select pid, pg_terminate_backend(pid) terminated
-           from pg_stat_get_activity(NULL::integer) s(datid, pid)
-          where pid<>pg_backend_pid()'
-        );
-    }
+    my $dbh = $self->_kill_all_pg_connections;
     $dbh->do('drop database if exists ' . $self->_db_name);
     $dbh->do('create database ' . $self->_db_name);
     $dbh->disconnect();
@@ -152,7 +138,7 @@ sub _create_dbs {
     if ($self->_db_migrations_dir =~ /bom-postgres-clientdb/) {
         $m = DBIx::Migration->new({
             dsn                 => $self->dsn,
-            dir                 => '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/',
+            dir                 => COLLECTOR_DB_DIR,
             tablename_extension => 'collector',
             username            => 'postgres',
             password            => $self->_connection_parameters->{'password'},
@@ -161,8 +147,7 @@ sub _create_dbs {
         $m->migrate();
 
         # apply DB functions
-        $m->psql(sort glob '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/functions/*.sql')
-            if -d '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/functions';
+        $m->psql(sort glob COLLECTOR_DB_DIR . '/functions/*.sql') if -d COLLECTOR_DB_DIR . '/functions';
     }
     if (-f $self->_db_migrations_dir . '/unit_test_dml.sql') {
         $m->psql({
@@ -182,7 +167,7 @@ sub _create_dbs {
         );
     }
 
-    return $self->_create_snapshot;
+    return $self->_create_template;
 }
 
 sub _migrate_file {
@@ -237,25 +222,81 @@ sub _update_sequence_of {
     return $current_sequence_value;
 }
 
-sub _restore_dbs_from_snapshot {
+sub _restore_dbs_from_template {
     my $self = shift;
-    return 0 unless -f $self->snapshot;
+    return 0 unless $self->_is_template_usable;
 
-    my $stellar_dir = $self->stellar_dir;
+    my $dbh = $self->_kill_all_pg_connections;
 
-    # Return true if the snapshot is successfully restored
-    return !system("cd $stellar_dir && stellar restore >/dev/null 2>&1");
+    $dbh->do('DROP DATABASE IF EXISTS ' . $self->_db_name);
+    $dbh->do('CREATE DATABASE ' . $self->_db_name . ' WITH TEMPLATE ' . $self->_template_name);
+    $dbh->disconnect();
+    return 1;
 }
 
-sub _create_snapshot {
+sub _create_template {
     my $self = shift;
-    mkdir SNAPSHOT_DIR unless -d SNAPSHOT_DIR;
 
-    my ($stellar_dir, $snapshot) = ($self->stellar_dir, $self->snapshot);
+    my $dbh = $self->_kill_all_pg_connections;
 
-    # Touch the snapshot file if the snapshot is successfully created
-    return !system("cd $stellar_dir && stellar snapshot >/dev/null 2>&1 && touch $snapshot");
+    $dbh->do('DROP DATABASE IF EXISTS ' . $self->_db_name);
+    $dbh->do('ALTER DATABASE ' . $self->_db_name . ' RENAME TO ' . $self->_template_name);
+    $dbh->do('CREATE DATABASE ' . $self->_db_name . ' WITH TEMPLATE ' . $self->_template_name);
+    $dbh->disconnect();
 }
+
+sub _kill_all_pg_connections {
+    my $self = shift;
+
+    my $dbh = $self->db_handler('postgres');
+    $dbh->{RaiseError} = 1;    # die if we cannot perform any of the operations below
+    $dbh->{PrintError} = 0;
+
+    #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
+    {
+        local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /is not a PostgreSQL server process/; };
+        $dbh->do(
+            'select pid, pg_terminate_backend(pid) terminated
+           from pg_stat_get_activity(NULL::integer) s(datid, pid)
+          where pid<>pg_backend_pid()'
+        );
+    }
+
+    return $dbh;
+}
+
+sub _is_template_usable {
+    my $self = shift;
+
+    my $template_date = $self->_get_template_age->epoch;
+
+    return not File::Find::Rule->file->mtime(">$template_date")->in($self->_get_db_dir);
+}
+
+sub _get_template_age {
+    my $self = shift;
+    my $dbh  = $self->db_handler('postgres');
+    $dbh->{RaiseError} = 1;    # die if we cannot perform any of the operations below
+    $dbh->{PrintError} = 0;
+    my $template_name = $self->_db_name . '_template';
+
+    my ($template_date) = $dbh->selectrow_array(<<SQL);
+    SELECT (pg_stat_file('base/'||oid ||'/PG_VERSION')).modification
+    FROM pg_database where datname='$template_name'
+SQL
+
+    return $template_date ? Date::Utility->new($template_date =~ s/\+00$//gr) : Date::Utility->new(0);
+}
+
+sub _get_db_dir {
+    my $self = shift;
+
+    my $migration_dir = $self->_db_migrations_dir;
+
+    return $migration_dir, $migration_dir =~ /bom-postgres-clientdb/ ? COLLECTOR_DB_DIR : ();
+}
+
+sub _template_name { shift->_db_name . '_template' }
 
 sub BUILD {
     my $self = shift;
@@ -264,32 +305,6 @@ sub BUILD {
         unless (BOM::Test::env() eq 'development');
     $ENV{TEST_DATABASE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
     return;
-}
-
-sub snapshot {
-    my $self     = shift;
-    my $checksum = $self->pg_code_checksum;
-
-    # Do not create a snapshot if checksum is not available
-    return SNAPSHOT_DIR unless $checksum;
-    return SNAPSHOT_DIR . "/" . $self->_db_name . "-$checksum.snapshot";
-}
-
-sub stellar_dir { return STELLAR_DIR . "/" . shift->_db_name }
-
-sub pg_code_checksum {
-    my $md5   = Digest::MD5->new;
-    my $pg_ar = SNAPSHOT_DIR . '/pg.tar';
-
-    # Make an archive containing the bom-postgres* with order and permission preserved
-    # Return if creating the archive fails
-    return undef if system("tar -Ppscf $pg_ar " . PG_DIR_GLOB . " >/dev/null 2>&1");
-
-    open(my $f, '<:raw', $pg_ar);
-    $md5->addfile($f);
-    close($f);
-
-    return $md5->hexdigest;
 }
 
 1;
