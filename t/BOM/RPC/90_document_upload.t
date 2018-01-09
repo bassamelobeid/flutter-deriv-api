@@ -23,17 +23,27 @@ my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
-my $method = 'document_upload';
-my $params = { language => 'EN' };
-my $args   = {};
+my $method          = 'document_upload';
+my $params          = { language => 'EN' };
+my $args            = {};
 my $result;
 my $doc;
-my $checksum = 'FileChecksum';
-my $other_checksum = 'FileChecksum2';
 my $client_id;
 
+my $doc_type        = 'passport';
+my $doc_format      = 'jpg';
+my $checksum        = 'FileChecksum';
+my $other_checksum  = 'FileChecksum2';
+my $exp_date_past   = '2017-08-09';
+my $exp_date_future = '2117-08-11';
+my $doc_id_1        = 'ABCD1234';
+my $doc_id_2        = 'ABCD1235';
+
+my $invalid_token   = 12345;
+my $invalid_file_id = 1231531;
+
 subtest "Invalid token shouldn't be allowed to upload" => sub {
-    $params->{token}  = 12345;
+    $params->{token}  = $invalid_token;
     $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
 };
 
@@ -58,24 +68,24 @@ $params->{args} = $args;
 # -------  END Create real currency account  --------
 
 subtest 'Expired documents' => sub {
-    $args->{expiration_date} = "2017-08-09";    # Expired documents.
+    $args->{expiration_date} = $exp_date_past;    # Expired documents.
     $c->call_ok($method, $params)
         ->has_error->error_message_is('Expiration date cannot be less than or equal to current date.', 'check expiration_date is before current date');
 };
 
 subtest 'Unsuccessful finished upload' => sub {
-    $args->{expiration_date} = "2117-08-11";    # 100 years is all I give you, humanity!
+    $args->{expiration_date} = $exp_date_future;    # 100 years is all I give you, humanity!
     $c->call_ok($method, $params)
         ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
 };
 
 subtest 'Error for no document_id' => sub {
-    $args->{document_type}   = "passport";
-    $args->{document_format} = "jpg";
+    $args->{document_type}   = $doc_type;
+    $args->{document_format} = $doc_format;
     
     $c->call_ok($method, $params)->has_error->error_message_is('Document ID is required.', 'document_id is required');
     
-    $args->{document_id} = "ABCD1234";
+    $args->{document_id} = $doc_id_1;
     $result = $c->call_ok($method, $params)->result;
     ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
     # Succesfully retrieved object from database.
@@ -98,7 +108,7 @@ subtest 'Upload doc and send CS notification email' => sub {
     $mailbox->clear;
     $client_id = uc $test_client->loginid;
     $result = $c->call_ok($method, $params)->result;
-    #like(get_notification_email()->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
+    like(get_notification_email()->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
 };
 
 subtest 'Status and checksum of newly uploaded document' => sub {
@@ -118,17 +128,17 @@ subtest 'Upload a (different) doc into the same record to ensure CS team is only
 };
 
 subtest 'Attempt with non-existent file ID' => sub {
-    $args->{file_id} = 1231531;
+    $args->{file_id} = $invalid_file_id;
     $c->call_ok($method, $params)->has_error->error_message_is('Document not found.', 'error if document is not present');
 };
 
 subtest 'Attempt to upload same document again (checksum collision) with different document ID' => sub {
-    $args                    = {};
-    $params->{args}          = $args;
-    $args->{document_type}   = "passport";
-    $args->{document_format} = "jpg";
-    $args->{expiration_date} = "2117-08-11";
-    $args->{document_id}     = "ABCD1235";
+    $args                      = {};
+    $params->{args}            = $args;
+    $args->{document_type}     = $doc_type;
+    $args->{document_format}   = $doc_format;
+    $args->{expiration_date}   = $exp_date_future;
+    $args->{document_id}       = $doc_id_2;
     $args->{expected_checksum} = $other_checksum;
     Test::Warnings::allow_warnings('duplicate_document');
     $c->call_ok($method, $params)->has_error->error_message_is('Document already uploaded.', 'error if same document is uploaded twice');
