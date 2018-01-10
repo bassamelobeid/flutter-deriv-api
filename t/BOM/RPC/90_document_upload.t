@@ -30,14 +30,16 @@ my $result;
 my $doc;
 my $client_id;
 
-my $doc_type        = 'passport';
-my $doc_format      = 'jpg';
-my $checksum        = 'FileChecksum';
-my $other_checksum  = 'FileChecksum2';
-my $exp_date_past   = '2017-08-09';
-my $exp_date_future = '2117-08-11';
-my $doc_id_1        = 'ABCD1234';
-my $doc_id_2        = 'ABCD1235';
+use constant {
+    DOC_TYPE        => 'passport',
+    DOC_FORMAT      => 'jpg',
+    CHECKSUM        => 'FileChecksum',
+    OTHER_CHECKSUM  => 'FileChecksum2',
+    EXP_DATE_PAST   => '2017-08-09',
+    EXP_DATE_FUTURE => '2117-08-11',
+    DOC_ID_1        => 'ABCD1234',
+    DOC_ID_2        => 'ABCD1235'
+};
 
 my $invalid_token   = 12345;
 my $invalid_file_id = 1231531;
@@ -68,24 +70,24 @@ $params->{args} = $args;
 # -------  END Create real currency account  --------
 
 subtest 'Expired documents' => sub {
-    $args->{expiration_date} = $exp_date_past;    # Expired documents.
+    $args->{expiration_date} = EXP_DATE_PAST;    # Expired documents.
     $c->call_ok($method, $params)
         ->has_error->error_message_is('Expiration date cannot be less than or equal to current date.', 'check expiration_date is before current date');
 };
 
 subtest 'Unsuccessful finished upload' => sub {
-    $args->{expiration_date} = $exp_date_future;    # 100 years is all I give you, humanity!
+    $args->{expiration_date} = EXP_DATE_FUTURE;    # 100 years is all I give you, humanity!
     $c->call_ok($method, $params)
         ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
 };
 
 subtest 'Error for no document_id' => sub {
-    $args->{document_type}   = $doc_type;
-    $args->{document_format} = $doc_format;
+    $args->{document_type}   = DOC_TYPE;
+    $args->{document_format} = DOC_FORMAT;
     
     $c->call_ok($method, $params)->has_error->error_message_is('Document ID is required.', 'document_id is required');
     
-    $args->{document_id} = $doc_id_1;
+    $args->{document_id} = DOC_ID_1;
     $result = $c->call_ok($method, $params)->result;
     ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
     # Succesfully retrieved object from database.
@@ -101,7 +103,7 @@ subtest 'Document with no expiration_date' => sub {
 subtest 'Upload doc and send CS notification email' => sub {
     $args = {
         status   => 'success',
-        checksum => $checksum,
+        checksum => CHECKSUM,
         file_id  => $result->{file_id}};
     $params->{args} = $args;
     
@@ -117,12 +119,12 @@ subtest 'Status and checksum of newly uploaded document' => sub {
     is($test_client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
     ok(!$test_client->get_status('document_needs_action'), 'Document should not be in needs_action state');
     ok $doc->file_name, 'Filename should not be empty';
-    is $doc->checksum, $checksum, 'Checksum should be added correctly';
+    is $doc->checksum, CHECKSUM, 'Checksum should be added correctly';
 };
 
 subtest 'Upload a (different) doc into the same record to ensure CS team is only sent 1 email' => sub {
     $mailbox->clear;
-    $args->{checksum} = $other_checksum;
+    $args->{checksum} = OTHER_CHECKSUM;
     $result = $c->call_ok($method, $params)->result;
     ok(!get_notification_email(), 'CS notification email should only be sent once');
 };
@@ -134,11 +136,11 @@ subtest 'Attempt with non-existent file ID' => sub {
 
 subtest 'Attempt to upload same document again (checksum collision) with different document ID' => sub {
     $args = {
-        document_type    => $doc_type,
-        document_format   => $doc_format,
-        expiration_date   => $exp_date_future,
-        document_id       => $doc_id_2,
-        expected_checksum => $other_checksum
+        document_type     => DOC_TYPE,
+        document_format   => DOC_FORMAT,
+        expiration_date   => EXP_DATE_FUTURE,
+        document_id       => DOC_ID_2,
+        expected_checksum => OTHER_CHECKSUM
     };
     $params->{args} = $args;
 
