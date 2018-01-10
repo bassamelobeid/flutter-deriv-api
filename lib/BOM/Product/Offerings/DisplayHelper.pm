@@ -23,13 +23,12 @@ use Finance::Asset::SubMarket;
 use Finance::Contract::Category;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-
+use Sort::Naturally;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Chronicle;
 use Quant::Framework;
 use BOM::Platform::Runtime;
-use Sort::Naturally;
 
 =head1 ATTRIBUTES
 
@@ -132,9 +131,7 @@ my %known_decorations = (
                     push @closes, $break->[0];
                 }
             }
-            @{$times->{close}} =
-                map  { $_->$display_method }
-                sort { $a->epoch <=> $b->epoch } @closes;
+            @{$times->{close}} = map { $_->$display_method } sort { $a->epoch <=> $b->epoch } @closes;
         }
         push @{$times->{open}},  $no_data if not @{$times->{open}};
         push @{$times->{close}}, $no_data if not @{$times->{close}};
@@ -158,7 +155,6 @@ my %known_decorations = (
             my %seen_rules;
             foreach my $day (0 .. $how_long) {
                 my $when = $trading_day->plus_time_interval($day . 'd');
-
                 # Assumption is these are all mutually exclusive.
                 # If you would both open late and close early, you'd make it a holiday.
                 # If you have a holiday you wouldn't open or close at all.
@@ -167,12 +163,10 @@ my %known_decorations = (
                 my $change_rules = $trading_calendar->regularly_adjusts_trading_hours_on($exchange, $when);
                 my $early_closes = $trading_calendar->closes_early_on($exchange, $when);
                 if ($early_closes) {
-
-# Finance::Calendar does not have access to our localization methods, so we localize here instead
-# Only set the rule as Friday if it is early close due to Friday.
+                    # Finance::Calendar does not have access to our localization methods, so we localize here instead
+                    # Only set the rule as Friday if it is early close due to Friday.
                     $rule = $change_rules->{daily_close}->{rule}
-                        if (defined $change_rules->{daily_close}->{rule}
-                        and $early_closes->hour . 'h' eq $change_rules->{daily_close}->{to});
+                        if (defined $change_rules->{daily_close}->{rule} and $early_closes->hour . 'h' eq $change_rules->{daily_close}->{to});
                     $message =
                           $self->c
                         ? $self->c->l('Closes early (at [_1])', $trading_calendar->closing_on($exchange, $when)->time_hhmm)
@@ -189,23 +183,16 @@ my %known_decorations = (
                     $message = $holiday_desc;
                 }
                 if ($message) {
-
-# This would be easier here with a hash, but then they might end up out of order.
-# I'd rather deal with that here than in TT.
+                    # This would be easier here with a hash, but then they might end up out of order.
+                    # I'd rather deal with that here than in TT.
 
                     my $where = first_index { $_->{descrip} eq $message } @events;
-
                     # first_index returns -1 for not found.  Idiots.
                     my $explain = $rule // $when->$date_display_method;
                     if ($where != -1) {
-                        $events[$where]->{dates} .= ', ' . $explain
-                            unless ($rule
-                            && $explain eq $rule
-                            && $seen_rules{$rule});
+                        $events[$where]->{dates} .= ', ' . $explain unless ($rule && $explain eq $rule && $seen_rules{$rule});
                     } else {
-                        if (    $when->is_same_as($trading_day)
-                            and $trading_day->is_same_as($today))
-                        {
+                        if ($when->is_same_as($trading_day) and $trading_day->is_same_as($today)) {
                             $explain = $self->c ? $self->c->l('today') : 'today';
                         }
                         push @events,
@@ -259,7 +246,7 @@ sub _build_tree {
             };
             foreach my $ul (
                 sort { ncmp($a->display_name, $b->display_name) }
-                map { create_underlying($_) } $offerings_obj->query({
+                map  { create_underlying($_) } $offerings_obj->query({
                         market    => $market->name,
                         submarket => $submarket->name
                     },
