@@ -56,7 +56,6 @@ sub log_msg {
 }
 
 sub userdb {
-    my $ip = shift;
 
     # We can't use BOM::Database::UserDB here because it connects
     # through pgbouncer in transaction mode.
