@@ -881,26 +881,28 @@ async_rpc mt5_deposit => sub {
     $payment->save(cascade => 1);
 
     # deposit to MT5 a/c
-    my $status = BOM::MT5::User::Async::deposit({
+    return BOM::MT5::User::Async::deposit({
         login   => $to_mt5,
         amount  => $amount,
         comment => $comment
-    })->get;
+    })->then(sub {
+        my ($status) = @_;
 
-    if ($status->{error}) {
-        _send_email(
-            loginid => $fm_loginid,
-            mt5_id  => $to_mt5,
-            amount  => $amount,
-            action  => 'deposit',
-            error   => $status->{error},
-        );
-        return $error_sub->($status->{error});
-    }
+        if ($status->{error}) {
+            _send_email(
+                loginid => $fm_loginid,
+                mt5_id  => $to_mt5,
+                amount  => $amount,
+                action  => 'deposit',
+                error   => $status->{error},
+            );
+            return $error_sub->($status->{error});
+        }
 
-    return Future->done({
-        status                => 1,
-        binary_transaction_id => $txn->id
+        return Future->done({
+            status                => 1,
+            binary_transaction_id => $txn->id
+        });
     });
 };
 
@@ -979,57 +981,59 @@ async_rpc mt5_withdrawal => sub {
 
     my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
     # withdraw from MT5 a/c
-    my $status = BOM::MT5::User::Async::withdrawal({
+    return BOM::MT5::User::Async::withdrawal({
         login   => $fm_mt5,
         amount  => $amount,
         comment => $comment
-    })->get;
+    })->then(sub {
+        my ($status) = @_;
 
-    if ($status->{error}) {
-        return $error_sub->($status->{error});
-    }
+        if ($status->{error}) {
+            return $error_sub->($status->{error});
+        }
 
-    # TODO(leonerd): This Try::Tiny try block returns a Future in either case.
-    #   We might want to consider using Future->try somehow instead.
-    return try {
-        # deposit to Binary a/c
-        my $account = $to_client->set_default_account('USD');
-        my ($payment) = $account->add_payment({
-            amount               => $amount,
-            payment_gateway_code => 'account_transfer',
-            payment_type_code    => 'internal_transfer',
-            status               => 'OK',
-            staff_loginid        => $to_loginid,
-            remark               => $comment,
-        });
-        my ($txn) = $payment->add_transaction({
-            account_id    => $account->id,
-            amount        => $amount,
-            staff_loginid => $to_loginid,
-            referrer_type => 'payment',
-            action_type   => 'deposit',
-            quantity      => 1,
-            source        => $source,
-        });
-        $account->save(cascade => 1);
-        $payment->save(cascade => 1);
+        # TODO(leonerd): This Try::Tiny try block returns a Future in either case.
+        #   We might want to consider using Future->try somehow instead.
+        return try {
+            # deposit to Binary a/c
+            my $account = $to_client->set_default_account('USD');
+            my ($payment) = $account->add_payment({
+                amount               => $amount,
+                payment_gateway_code => 'account_transfer',
+                payment_type_code    => 'internal_transfer',
+                status               => 'OK',
+                staff_loginid        => $to_loginid,
+                remark               => $comment,
+            });
+            my ($txn) = $payment->add_transaction({
+                account_id    => $account->id,
+                amount        => $amount,
+                staff_loginid => $to_loginid,
+                referrer_type => 'payment',
+                action_type   => 'deposit',
+                quantity      => 1,
+                source        => $source,
+            });
+            $account->save(cascade => 1);
+            $payment->save(cascade => 1);
 
-        return Future->done({
-            status                => 1,
-            binary_transaction_id => $txn->id
-        });
-    }
-    catch {
-        my $error = BOM::Transaction->format_error(err => $_);
-        _send_email(
-            loginid => $to_loginid,
-            mt5_id  => $fm_mt5,
-            amount  => $amount,
-            action  => 'withdraw',
-            error   => $error->get_mesg,
-        );
-        return $error_sub->($error->{-message_to_client});
-    };
+            return Future->done({
+                status                => 1,
+                binary_transaction_id => $txn->id
+            });
+        }
+        catch {
+            my $error = BOM::Transaction->format_error(err => $_);
+            _send_email(
+                loginid => $to_loginid,
+                mt5_id  => $fm_mt5,
+                amount  => $amount,
+                action  => 'withdraw',
+                error   => $error->get_mesg,
+            );
+            return $error_sub->($error->{-message_to_client});
+        };
+    });
 };
 
 sub _is_mt5_suspended {
