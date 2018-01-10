@@ -3,7 +3,6 @@ package BOM::Backoffice::Script::DocumentUpload;
 use warnings;
 use strict;
 
-use File::Slurp;
 use Try::Tiny;
 use IO::Async::Loop;
 use Net::Async::Webservice::S3;

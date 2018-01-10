@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use File::Find::Rule;
-use File::Slurp;
+use Path::Tiny;
 
 use BOM::Platform::ProveID;
 use BOM::Platform::Runtime;
@@ -21,7 +21,7 @@ for my $broker (LandingCompany::Registry::all_broker_codes) {
     File::Find::Rule->new->file->exec(sub { -M $_ < 30 })->exec(sub { !-e "$pdf_dir/$_.pdf" })->exec(
         sub {
             my ($loginid, $search_option) = $_ =~ /^([^.]+)[.]([^.]+)$/;
-            my $result_as_xml = read_file($_);
+            my $result_as_xml = path($_)->slurp_utf8;
             my $client = eval { Client::Account->new({loginid => $loginid, db_operation => 'replica'}) } || do {
                 my $err = $@;
                 warn("Error: can't identify client $loginid: $err");
