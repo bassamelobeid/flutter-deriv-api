@@ -325,6 +325,8 @@ sub _get_db_dir {
 sub _template_name { return shift->_db_name . '_template' }
 
 sub _postgres_dbh {
+    my $self = shift;
+
     my $dbh = $self->db_handler('postgres');
 
     $dbh->{RaiseError} = 1;    # die if we cannot perform any of the operations below
