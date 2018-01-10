@@ -3,12 +3,10 @@ package BOM::Backoffice::Script::DocumentUpload;
 use warnings;
 use strict;
 
-use File::Slurp;
 use Try::Tiny;
 use IO::Async::Loop;
 use Net::Async::Webservice::S3;
 use Amazon::S3::SignedURLGenerator;
-use Digest::MD5 qw(md5_hex);
 
 use BOM::Backoffice::Config;
 
@@ -42,10 +40,8 @@ sub get_s3_url {
 }
 
 sub upload {
-    my ($original_filename, $upload_file_handle) = @_;
+    my ($original_filename, $content, $checksum) = @_;
 
-    # slurp the content
-    my $content = do { local $/; <$upload_file_handle> };
     # content can be 0 therefore check with defined
     die 'Unable to read the upload file handle' unless defined $content;
 
@@ -59,8 +55,6 @@ sub upload {
 
     my $loop = IO::Async::Loop->new;
     $loop->add($s3);
-
-    my $checksum = md5_hex($content);
 
     my $etag;
     try {

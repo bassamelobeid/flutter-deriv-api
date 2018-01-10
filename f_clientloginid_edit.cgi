@@ -259,6 +259,9 @@ if ($input{whattodo} eq 'uploadID') {
             $client->set_db('write');
         }
 
+        $file_contents = do {local $/; <$filetoupload> };
+        $file_checksum = md5_hex($file_contents);
+
         my $id;
         my $error_occured;
         try {
@@ -269,7 +272,7 @@ if ($input{whattodo} eq 'uploadID') {
                         undef, $loginid, $doctype, $docformat,
                         $expiration_date || undef,
                         $document_id     || '',
-                        md5_hex(read_file($filetoupload, binmode => ':raw')),
+                        $file_checksum,
                     );
                 });
         }
@@ -281,7 +284,7 @@ if ($input{whattodo} eq 'uploadID') {
 
         my $new_file_name = "$loginid.$doctype.$id.$docformat";
 
-        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload) or die "Upload failed for $filetoupload";
+        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $file_contents, $file_checksum) or die "Upload failed for $filetoupload";
 
         my $query_result;
         try {
