@@ -19,6 +19,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
 use Quant::Framework;
 use LandingCompany::Registry;
+use Sort::Naturally;
 
 rpc active_symbols => sub {
     my $params = shift;
