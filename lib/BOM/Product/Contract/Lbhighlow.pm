@@ -26,6 +26,24 @@ override two_barriers => sub {
     return 1;
 };
 
+sub _build_low_barrier {
+    my $self = shift;
+
+    my $barrier;
+    $barrier = $self->make_barrier($self->spot_min);
+
+    return $barrier;
+}
+
+sub _build_high_barrier {
+    my $self = shift;
+
+    my $barrier;
+    $barrier = $self->make_barrier($self->spot_max);
+
+    return $barrier;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
