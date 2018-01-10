@@ -268,9 +268,7 @@ sub _create_template {
 sub _kill_all_pg_connections {
     my $self = shift;
 
-    my $dbh = $self->db_handler('postgres');
-    $dbh->{RaiseError} = 1;    # die if we cannot perform any of the operations below
-    $dbh->{PrintError} = 0;
+    my $dbh = $self->_postgres_dbh;
 
     #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
     {
@@ -288,26 +286,26 @@ sub _kill_all_pg_connections {
 sub _is_template_usable {
     my $self = shift;
 
-    my $template_date = $self->_get_template_age->epoch;
-
     my @timestamps = map { `cd $_; make -s timestamp`; stat("$_/timestamp")->mtime } $self->_get_db_dir;
 
-    return $template_date > max @timestamps;
+    return $self->_get_template_age > max @timestamps;
 }
 
 sub _get_template_age {
     my $self = shift;
-    my $dbh  = $self->db_handler('postgres');
-    $dbh->{RaiseError} = 1;    # die if we cannot perform any of the operations below
-    $dbh->{PrintError} = 0;
-    my $template_name = $self->_db_name . '_template';
 
-    my ($template_date) = $dbh->selectrow_array(<<SQL);
-    SELECT (pg_stat_file('base/'||oid ||'/PG_VERSION')).modification
-    FROM pg_database where datname='$template_name'
+    my $dbh = $self->_postgres_dbh;
+
+    # Get the template age in epoch, 0 if there is no template
+    my ($template_date) = $dbh->selectrow_array(<<'SQL', undef, $self->_template_name);
+SELECT coalesce(max(extract(epoch from (pg_stat_file('base/'|| oid ||'/PG_VERSION')).modification)), 0)
+  FROM pg_database
+ WHERE datname = ?
 SQL
 
-    return $template_date ? Date::Utility->new($template_date =~ s/\+00$//gr) : Date::Utility->new(0);
+    $dbh->disconnect;
+
+    return $template_date;
 }
 
 sub _get_db_dir {
@@ -325,6 +323,15 @@ sub _get_db_dir {
 }
 
 sub _template_name { return shift->_db_name . '_template' }
+
+sub _postgres_dbh {
+    my $dbh = $self->db_handler('postgres');
+
+    $dbh->{RaiseError} = 1;    # die if we cannot perform any of the operations below
+    $dbh->{PrintError} = 0;
+
+    return $dbh;
+}
 
 sub BUILD {
     my $self = shift;
