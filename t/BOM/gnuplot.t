@@ -27,7 +27,6 @@ can_ok($object1, qw(set_data_properties set_graph_tmpfile set_image_properties))
 
 dies_ok { $object1->set_data_properties({graph_type => 'pie'}) } "invalid graph type passed to set_data_properties";
 dies_ok { $object1->set_data_properties } "should fail when undefined values are passed to set_data_properties";
-dies_ok { $object1->set_data_properties({graph_type => 'financebars'}) } 'should fail in the absence of "data" values';
 
 #is($object1->set_data_properties({graph_type=>'financebars', data=>'surplus',using=>3}), 'ok', 'not sure what should happen');
 

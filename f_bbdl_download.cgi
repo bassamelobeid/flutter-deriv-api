@@ -6,7 +6,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use CGI;
 use File::Copy;
-use File::Slurp;
+use Path::Tiny;
 use HTML::Entities;
 
 use f_brokerincludeall;
@@ -65,7 +65,7 @@ if ($sftp->error) {
     }
 
     if (-s $temp_dir . '/' . $filename . '.txt') {
-        my @file   = read_file($temp_dir . '/' . $filename . '.txt');
+        my @file   = path($temp_dir . '/' . $filename . '.txt')->lines_utf8;
         my $rand   = $$ . $^T;
         my $bo_url = request()->url_for($temp_dir . '/' . $filename . '.txt', {rand => $rand});
         $message .= "<p><a href=$bo_url>$encoded_filename.txt</a> (with " . scalar(@file) . " lines)</p>";
