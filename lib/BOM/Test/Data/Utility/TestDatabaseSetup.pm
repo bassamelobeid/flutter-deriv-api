@@ -77,15 +77,15 @@ sub _migrate_changesets {
             push @bouncer_dbs, $b_db;
 
             try {
-                $self->_do_quoted_query($pooler, 'DISABLE %s', $b_db);
-                #$self->_do_quoted_query($pooler, 'PAUSE  %s', $b_db);
+                $self->_do_quoted($pooler, 'DISABLE %s', $b_db);
+                #$self->_do_quoted($pooler, 'PAUSE  %s', $b_db);
             }
             catch {
                 print "[pgbouncer] DISABLE $b_db error [$_]";
             };
 
             try {
-                $self->_do_quoted_query($pooler, 'KILL %s', $b_db);
+                $self->_do_quoted($pooler, 'KILL %s', $b_db);
             }
             catch {
                 print "[pgbouncer] KILL $b_db error [$_]";
@@ -99,14 +99,14 @@ sub _migrate_changesets {
         $b_db = $_;
 
         try {
-            $self->_do_quoted_query($pooler, 'ENABLE %s', $b_db);
+            $self->_do_quoted($pooler, 'ENABLE %s', $b_db);
         }
         catch {
             print "[pgbouncer] ENABLE $b_db error [$_]";
         };
 
         try {
-            $self->_do_quoted_query($pooler, 'RESUME %s', $b_db);
+            $self->_do_quoted($pooler, 'RESUME %s', $b_db);
         }
         catch {
             print "[pgbouncer] RESUME $b_db error [$_]";
@@ -120,8 +120,8 @@ sub _create_dbs {
     my $self = shift;
 
     my $dbh = $self->_kill_all_pg_connections;
-    $self->_do_quoted_query($dbh, 'DROP DATABASE IF EXISTS %s', $self->_db_name);
-    $self->_do_quoted_query($dbh, 'CREATE DATABASE %s',         $self->_db_name);
+    $self->_do_quoted($dbh, 'DROP DATABASE IF EXISTS %s', $self->_db_name);
+    $self->_do_quoted($dbh, 'CREATE DATABASE %s',         $self->_db_name);
     $dbh->disconnect;
 
     my $m = DBIx::Migration->new({
@@ -232,8 +232,8 @@ sub _restore_dbs_from_template {
     try {
         my $dbh = $self->_kill_all_pg_connections;
 
-        $self->_do_quoted_query($dbh, 'DROP DATABASE IF EXISTS %s', $self->_db_name);
-        $self->_do_quoted_query($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $self->_db_name, $self->_template_name);
+        $self->_do_quoted($dbh, 'DROP DATABASE IF EXISTS %s', $self->_db_name);
+        $self->_do_quoted($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $self->_db_name, $self->_template_name);
         $dbh->disconnect;
         $is_successful = 1;
     }
@@ -253,9 +253,9 @@ sub _create_template {
         # suppress 'NOTICE:  database ".*template" does not exist, skipping'
         local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /database ".*_template" does not exist, skipping/; };
 
-        $self->_do_quoted_query($dbh, 'DROP DATABASE IF EXISTS %s',          $self->_template_name);
-        $self->_do_quoted_query($dbh, 'ALTER DATABASE %s RENAME TO %s',      $self->_db_name, $self->_template_name);
-        $self->_do_quoted_query($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $self->_db_name, $self->_template_name);
+        $self->_do_quoted($dbh, 'DROP DATABASE IF EXISTS %s',          $self->_template_name);
+        $self->_do_quoted($dbh, 'ALTER DATABASE %s RENAME TO %s',      $self->_db_name, $self->_template_name);
+        $self->_do_quoted($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $self->_db_name, $self->_template_name);
         $dbh->disconnect;
     }
     catch {
@@ -324,7 +324,7 @@ sub _get_db_dir {
 
 sub _template_name { return shift->_db_name . '_template' }
 
-sub _do_quoted_query {
+sub _do_quoted {
     my ($self, $dbh, $query, @args) = @_;
 
     return $dbh->do(sprintf $query, map { $dbh->quote_identifier($_) } @args);
