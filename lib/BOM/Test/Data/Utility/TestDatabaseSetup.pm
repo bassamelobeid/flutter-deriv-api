@@ -9,11 +9,13 @@ use DBIx::Migration;
 use BOM::Test;
 use Date::Utility;
 use Test::More;
-use File::Find::Rule;
+use List::Util qw( max );
+use File::stat;
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
-use constant COLLECTOR_DB_DIR => '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/';
+use constant DB_DIR_PREFIX    => '/home/git/regentmarkets/bom-postgres-';
+use constant COLLECTOR_DB_DIR => DB_DIR_PREFIX . 'collectordb/config/sql/';
 
 BEGIN {
     die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
@@ -288,7 +290,9 @@ sub _is_template_usable {
 
     my $template_date = $self->_get_template_age->epoch;
 
-    return not File::Find::Rule->file->mtime(">$template_date")->in($self->_get_db_dir);
+    my @timestamps = map { `cd $_; make -s timestamp`; stat("$_/timestamp")->mtime } $self->_get_db_dir;
+
+    return $template_date > max @timestamps;
 }
 
 sub _get_template_age {
@@ -311,7 +315,13 @@ sub _get_db_dir {
 
     my $migration_dir = $self->_db_migrations_dir;
 
-    return $migration_dir, $migration_dir =~ /bom-postgres-clientdb/ ? COLLECTOR_DB_DIR : ();
+    my @db_dirs = ($migration_dir);
+    push @db_dirs, COLLECTOR_DB_DIR if $migration_dir =~ /bom-postgres-clientdb/;
+
+    my $PREFIX = DB_DIR_PREFIX;
+
+    # Return the absolute path to repo folders e.g. /home/.../bom-postgres-clientdb/
+    return map { s{$PREFIX[^/]*\K.*}{}gr . '/' } @db_dirs;
 }
 
 sub _template_name { return shift->_db_name . '_template' }
