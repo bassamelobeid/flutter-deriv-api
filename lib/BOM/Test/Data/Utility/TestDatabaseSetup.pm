@@ -232,8 +232,8 @@ sub _restore_dbs_from_template {
     try {
         my $dbh = $self->_kill_all_pg_connections;
 
-        $dbh->do('DROP DATABASE IF EXISTS ' . $self->_db_name);
-        $dbh->do('CREATE DATABASE ' . $self->_db_name . ' WITH TEMPLATE ' . $self->_template_name);
+        $self->_do_quoted_query($dbh, 'DROP DATABASE IF EXISTS %s', $self->_db_name);
+        $self->_do_quoted_query($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $self->_db_name, $self->_template_name);
         $dbh->disconnect;
         $is_successful = 1;
     }
@@ -253,9 +253,9 @@ sub _create_template {
         # suppress 'NOTICE:  database ".*template" does not exist, skipping'
         local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /database ".*_template" does not exist, skipping/; };
 
-        $dbh->do('DROP DATABASE IF EXISTS ' . $self->_template_name);
-        $dbh->do('ALTER DATABASE ' . $self->_db_name . ' RENAME TO ' . $self->_template_name);
-        $dbh->do('CREATE DATABASE ' . $self->_db_name . ' WITH TEMPLATE ' . $self->_template_name);
+        $self->_do_quoted_query($dbh, 'DROP DATABASE IF EXISTS %s',          $self->_template_name);
+        $self->_do_quoted_query($dbh, 'ALTER DATABASE %s RENAME TO %s',      $self->_db_name, $self->_template_name);
+        $self->_do_quoted_query($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $self->_db_name, $self->_template_name);
         $dbh->disconnect;
     }
     catch {
@@ -323,6 +323,12 @@ sub _get_db_dir {
 }
 
 sub _template_name { return shift->_db_name . '_template' }
+
+sub _do_quoted_query {
+    my ($self, $dbh, $query, @args) = @_;
+
+    return $dbh->do(sprintf $query, map { $dbh->quote_identifier($_) } @args);
+}
 
 sub _postgres_dbh {
     my $self = shift;
