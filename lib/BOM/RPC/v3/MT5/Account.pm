@@ -393,7 +393,7 @@ async_rpc mt5_get_settings => sub {
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return Future->done(BOM::RPC::v3::Utility::permission_error()) unless _check_logins($client, ['MT' . $login]);
+    return permission_error_future() unless _check_logins($client, ['MT' . $login]);
 
     return BOM::MT5::User::Async::get_user($login)->then(sub {
         my ($settings) = @_;
@@ -513,7 +513,7 @@ async_rpc mt5_set_settings => sub {
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return Future->done(BOM::RPC::v3::Utility::permission_error()) unless _check_logins($client, ['MT' . $login]);
+    return permission_error_future() unless _check_logins($client, ['MT' . $login]);
 
     my $country_code = $args->{country};
     my $country_name = Locale::Country::Extra->new()->country_from_code($country_code);
@@ -611,7 +611,7 @@ async_rpc mt5_password_check => sub {
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return Future->done(BOM::RPC::v3::Utility::permission_error()) unless _check_logins($client, ['MT' . $login]);
+    return permission_error_future() unless _check_logins($client, ['MT' . $login]);
 
     return BOM::MT5::User::Async::password_check($args)->then(sub {
         my ($status) = @_;
@@ -712,7 +712,7 @@ async_rpc mt5_password_change => sub {
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return Future->done(BOM::RPC::v3::Utility::permission_error()) unless _check_logins($client, ['MT' . $login]);
+    return permission_error_future() unless _check_logins($client, ['MT' . $login]);
 
     return BOM::MT5::User::Async::password_check({
             login    => $login,
