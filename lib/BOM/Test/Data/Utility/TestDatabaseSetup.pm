@@ -7,7 +7,6 @@ use File::Slurp;
 use Try::Tiny;
 use DBIx::Migration;
 use BOM::Test;
-use Date::Utility;
 use Test::More;
 use List::Util qw( max );
 use File::stat;
