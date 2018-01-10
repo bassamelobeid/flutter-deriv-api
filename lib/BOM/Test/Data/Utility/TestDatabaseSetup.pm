@@ -340,7 +340,8 @@ sub _postgres_dbh {
 
     my $dbh = $self->db_handler('postgres');
 
-    $dbh->{RaiseError} = 1;    # die if we cannot perform any of the operations below
+    # die if any operation fails
+    $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
 
     return $dbh;
