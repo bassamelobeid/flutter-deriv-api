@@ -122,7 +122,7 @@ sub _create_dbs {
     my $dbh = $self->_kill_all_pg_connections;
     $dbh->do('drop database if exists ' . $self->_db_name);
     $dbh->do('create database ' . $self->_db_name);
-    $dbh->disconnect();
+    $dbh->disconnect;
 
     my $m = DBIx::Migration->new({
         'dsn'      => $self->dsn,
@@ -186,7 +186,7 @@ sub _migrate_file {
         $dbh->do($line);
     }
 
-    $dbh->disconnect();
+    $dbh->disconnect;
     return 1;
 }
 
@@ -234,7 +234,7 @@ sub _restore_dbs_from_template {
 
         $dbh->do('DROP DATABASE IF EXISTS ' . $self->_db_name);
         $dbh->do('CREATE DATABASE ' . $self->_db_name . ' WITH TEMPLATE ' . $self->_template_name);
-        $dbh->disconnect();
+        $dbh->disconnect;
         $is_successful = 1;
     }
     catch {
@@ -256,7 +256,7 @@ sub _create_template {
         $dbh->do('DROP DATABASE IF EXISTS ' . $self->_template_name);
         $dbh->do('ALTER DATABASE ' . $self->_db_name . ' RENAME TO ' . $self->_template_name);
         $dbh->do('CREATE DATABASE ' . $self->_db_name . ' WITH TEMPLATE ' . $self->_template_name);
-        $dbh->disconnect();
+        $dbh->disconnect;
     }
     catch {
         note 'Creating the db template failed for ' . $self->_db_name . ' with error: ' . $_;
