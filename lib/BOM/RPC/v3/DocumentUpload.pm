@@ -46,6 +46,7 @@ sub start_document_upload {
     my $error_occured;
     my $duplicate_doc_error;
     try {
+        local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /duplicate_document/; };
         ($id) = $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_array(
@@ -58,9 +59,7 @@ sub start_document_upload {
             });
     }
     catch {
-        my ($err_code, $err_msg) = @$_;
-
-        $duplicate_doc_error = 1 if $err_msg =~ /duplicate_document/;
+        $duplicate_doc_error = 1 if /duplicate_document/;
         $error_occured = 1;
     };
 
