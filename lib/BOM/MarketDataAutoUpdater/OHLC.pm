@@ -4,7 +4,7 @@ use Moose;
 extends 'BOM::MarketDataAutoUpdater';
 
 use Text::CSV::Slurp;
-use File::Slurp;
+use Path::Tiny;
 
 use BOM::Platform::Chronicle;
 use Date::Utility;
@@ -60,7 +60,7 @@ sub run {
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
 
     foreach my $file (@files) {
-        my @bloomberg_result_lines = read_file($file);
+        my @bloomberg_result_lines = path($file)->lines_utf8;
 
         if (not scalar @bloomberg_result_lines) {
             push @{$report->{error}}, "File[$file] is empty";
@@ -107,12 +107,12 @@ sub run {
                     my $last_line = `tail -1 $market_db_file_path`;
                     if ($last_line =~ /(\d\d?\-\w{3}\-\d{2})\s([\d\.]+)\s([\d\.]+)\s([\d\.]+)\s([\d\.]+)/) {
                         if ($1 ne $date) {
-                            append_file($market_db_file_path, $line_to_append);
+                            path($market_db_file_path)->append_utf8($line_to_append);
                             $report->{$bom_underlying_symbol}->{success} = 1;
                         }
                     }
                 } else {
-                    append_file($market_db_file_path, $line_to_append);
+                    path($market_db_file_path)->append_utf8($line_to_append);
                     $report->{$bom_underlying_symbol}->{success} = 1;
                 }
             }
@@ -221,7 +221,7 @@ sub verify_ohlc_update {
         my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
         next if $calendar->is_holiday_for($underlying->exchange, $now);
         next if ($underlying->submarket->is_OTC);
-        if (my @filelines = read_file($db_file)) {
+        if (my @filelines = path($db_file)->lines_utf8) {
             $self->_check_file($underlying, $calendar, @filelines);
         } else {
             die('Could not open file: ' . $db_file);
