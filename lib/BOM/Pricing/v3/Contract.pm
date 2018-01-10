@@ -187,9 +187,8 @@ sub _get_ask {
                 $response->{spot} = $contract->current_spot;
             }
 
-            unless ($contract->is_binary) {
-                $response->{multiplier} = $contract->multiplier;
-            }
+            $response->{multiplier} = $contract->multiplier unless $contract->is_binary;
+
         }
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
@@ -409,7 +408,7 @@ sub get_bid {
                 $response->{barrier} = $contract->barrier->as_absolute;
             }
 
-            #Note:
+            #TODO:
             #This is just a tactical/temporary solution for now for the UI to work.
             #For the strategic solution
             #we will need to refactor Finance-Contract and bom.
