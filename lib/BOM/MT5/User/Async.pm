@@ -54,15 +54,19 @@ sub _invoke_mt5 {
     # TODO(leonerd): This ought to be a method on IO::Async::Loop itself
     my $f = $loop->new_future;
     $loop->run_child(
-        command => [@MT5_WRAPPER_COMMAND, $cmd],
-        stdin => $in,
+        command   => [@MT5_WRAPPER_COMMAND, $cmd],
+        stdin     => $in,
         on_finish => sub {
             my (undef, $exitcode, $out, $err) = @_;
             warn "MT5 PHP call nonzero status: $exitcode\n" if $exitcode;
             warn "MT5 PHP call error: $err from $in\n" if defined($err) && length($err);
 
-            if($exitcode) {
-                return $f->fail("binary_mt5 exited non-zero status ($exitcode)", mt5 => $cmd, $err);
+            if ($exitcode) {
+                return $f->fail(
+                    "binary_mt5 exited non-zero status ($exitcode)",
+                    mt5 => $cmd,
+                    $err
+                );
             }
 
             $out =~ s/[\x0D\x0A]//g;
@@ -71,7 +75,8 @@ sub _invoke_mt5 {
                 $f->done($out);
             }
             catch {
-                my $e = $_; chomp $e;
+                my $e = $_;
+                chomp $e;
                 $f->fail($e, mt5 => $cmd);
             };
         },
@@ -87,35 +92,37 @@ sub create_user {
     my $param  = {};
     $param->{$_} = $args->{$_} for (@fields);
 
-    return _invoke_mt5('UserAdd', $param)->then(sub {
-        my ($hash) = @_;
+    return _invoke_mt5('UserAdd', $param)->then(
+        sub {
+            my ($hash) = @_;
 
-        if ($hash->{error}) {
-            return Future->done({error => $hash->{error}});
-        }
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
 
-        return Future->done({login => $hash->{login}});
-    });
+            return Future->done({login => $hash->{login}});
+        });
 }
 
 sub get_user {
     my $login = shift;
     my $param = {login => $login};
 
-    return _invoke_mt5('UserGet', $param)->then(sub {
-        my ($hash) = @_;
+    return _invoke_mt5('UserGet', $param)->then(
+        sub {
+            my ($hash) = @_;
 
-        if ($hash->{error}) {
-            return Future->done({error => $hash->{error}});
-        }
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
 
-        my $ret    = $hash->{user};
-        my @fields = __user_fields('get_user');
+            my $ret    = $hash->{user};
+            my @fields = __user_fields('get_user');
 
-        my $mt_user;
-        $mt_user->{$_} = $ret->{$_} for (@fields);
-        return Future->done($mt_user);
-    });
+            my $mt_user;
+            $mt_user->{$_} = $ret->{$_} for (@fields);
+            return Future->done($mt_user);
+        });
 }
 
 sub update_user {
@@ -125,20 +132,21 @@ sub update_user {
     my $param = {};
     $param->{$_} = $args->{$_} for (@fields);
 
-    return _invoke_mt5('UserUpdate', $param)->then(sub {
-        my ($hash) = @_;
+    return _invoke_mt5('UserUpdate', $param)->then(
+        sub {
+            my ($hash) = @_;
 
-        if ($hash->{error}) {
-            return Future->done({error => $hash->{error}});
-        }
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
 
-        my $ret = $hash->{user};
-        @fields = __user_fields('get_user');
+            my $ret = $hash->{user};
+            @fields = __user_fields('get_user');
 
-        my $mt_user;
-        $mt_user->{$_} = $ret->{$_} for (@fields);
-        return Future->done($mt_user);
-    });
+            my $mt_user;
+            $mt_user->{$_} = $ret->{$_} for (@fields);
+            return Future->done($mt_user);
+        });
 }
 
 sub password_check {
@@ -147,14 +155,15 @@ sub password_check {
         login    => $args->{login},
         password => $args->{password}};
 
-    return _invoke_mt5('UserPasswordCheck', $param)->then(sub {
-        my ($hash) = @_;
+    return _invoke_mt5('UserPasswordCheck', $param)->then(
+        sub {
+            my ($hash) = @_;
 
-        if ($hash->{error}) {
-            return Future->done({error => $hash->{error}});
-        }
-        return Future->done({status => 1});
-    });
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
+            return Future->done({status => 1});
+        });
 }
 
 sub password_change {
@@ -163,14 +172,15 @@ sub password_change {
         login        => $args->{login},
         new_password => $args->{new_password}};
 
-    return _invoke_mt5('UserPasswordChange', $param)->then(sub {
-        my ($hash) = @_;
+    return _invoke_mt5('UserPasswordChange', $param)->then(
+        sub {
+            my ($hash) = @_;
 
-        if ($hash->{error}) {
-            return Future->done({error => $hash->{error}});
-        }
-        return Future->done({status => 1});
-    });
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
+            return Future->done({status => 1});
+        });
 }
 
 sub deposit {
@@ -182,15 +192,16 @@ sub deposit {
         type        => '2'                 # enum DEAL_BALANCE = 2
     };
 
-    return _invoke_mt5('UserDepositChange', $param)->then(sub {
-        my ($hash) = @_;
+    return _invoke_mt5('UserDepositChange', $param)->then(
+        sub {
+            my ($hash) = @_;
 
-        if ($hash->{error}) {
-            return Future->done({error => $hash->{error}});
-        }
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
 
-        return Future->done({status => 1});
-    });
+            return Future->done({status => 1});
+        });
 }
 
 sub withdrawal {
@@ -205,15 +216,16 @@ sub withdrawal {
         type        => '2'                 # enum DEAL_BALANCE = 2
     };
 
-    return _invoke_mt5('UserDepositChange', $param)->then( sub {
-        my ($hash) = @_;
+    return _invoke_mt5('UserDepositChange', $param)->then(
+        sub {
+            my ($hash) = @_;
 
-        if ($hash->{error}) {
-            return Future->done({error => $hash->{error}});
-        }
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
 
-        return Future->done({status => 1});
-    });
+            return Future->done({status => 1});
+        });
 }
 
 1;
