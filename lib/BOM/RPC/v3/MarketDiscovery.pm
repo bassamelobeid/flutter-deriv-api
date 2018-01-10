@@ -19,7 +19,6 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
 use Quant::Framework;
 use LandingCompany::Registry;
-use Sort::Naturally;
 
 rpc active_symbols => sub {
     my $params = shift;
@@ -36,20 +35,14 @@ rpc active_symbols => sub {
             db_operation => 'replica'
         });
         $product_type //= $client->landing_company->default_offerings;
-        my $method =
-            $product_type eq 'basic'
-            ? 'basic_offerings_for_country'
-            : 'multi_barrier_offerings_for_country';
+        my $method = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
         $offerings_obj = $client->landing_company->$method($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
     }
 
     unless ($offerings_obj) {
         my $landing_company = LandingCompany::Registry::get($landing_company_name);
         $product_type //= $landing_company->default_offerings;
-        my $method =
-            $product_type eq 'basic'
-            ? 'basic_offerings'
-            : 'multi_barrier_offerings';
+        my $method = $product_type eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
         $offerings_obj = $landing_company->$method(BOM::Platform::Runtime->instance->get_offerings_config);
     }
     my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
@@ -61,23 +54,23 @@ rpc active_symbols => sub {
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
         $active_symbols = $cached_symbols;
     } else {
-# For multi_barrier product_type, we can only offer major forex pairs as of now.
+        # For multi_barrier product_type, we can only offer major forex pairs as of now.
         my @all_active =
               $product_type eq 'multi_barrier'
             ? $offerings_obj->query({submarket => 'major_pairs'}, ['underlying_symbol'])
             : $offerings_obj->values_for_key('underlying_symbol');
-
         # symbols would be active if we allow forward starting contracts on them.
-        my %forward_starting =
-            map { $_ => 1 } $offerings_obj->query({start_type => 'forward'}, ['underlying_symbol']);
+        my %forward_starting = map { $_ => 1 } $offerings_obj->query({start_type => 'forward'}, ['underlying_symbol']);
         foreach my $symbol (@all_active) {
-            my $desc =
-                _description($symbol, $params->{args}->{active_symbols});
+            my $desc = _description($symbol, $params->{args}->{active_symbols});
             $desc->{allow_forward_starting} = 1 if $forward_starting{$symbol};
             push @{$active_symbols}, $desc;
         }
+
         @{$active_symbols} =
-            sort { ncmp($a->{display_name}, $b->{display_name}) } @{$active_symbols};
+             sort { ncmp($a->{display_name}, $b->{display_name}) } @{$active_symbols};
+
+
         Cache::RedisDB->set($namespace, $key, $active_symbols, 30 - time % 30);
     }
 
@@ -88,14 +81,10 @@ sub _description {
     my $symbol           = shift;
     my $by               = shift || 'brief';
     my $ul               = create_underlying($symbol) || return;
-    my $trading_calendar = eval { Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader); };
+    my $trading_calendar = eval { Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader) };
     my $iim              = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
-
-# sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
-    my $exchange_is_open =
-          $trading_calendar
-        ? $trading_calendar->is_open_at($ul->exchange, Date::Utility->new)
-        : '';
+    # sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
+    my $exchange_is_open = $trading_calendar ? $trading_calendar->is_open_at($ul->exchange, Date::Utility->new) : '';
     my ($spot, $spot_time, $spot_age) = ('', '', '');
     if ($spot = eval { $ul->spot }) {
         $spot_time = $ul->spot_time;
