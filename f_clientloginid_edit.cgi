@@ -259,8 +259,8 @@ if ($input{whattodo} eq 'uploadID') {
             $client->set_db('write');
         }
 
-        $file_contents = do {local $/; <$filetoupload> };
-        $file_checksum = md5_hex($file_contents);
+        my $file_contents = do {local $/; <$filetoupload> };
+        my $file_checksum = md5_hex($file_contents);
 
         my $id;
         my $error_occured;
