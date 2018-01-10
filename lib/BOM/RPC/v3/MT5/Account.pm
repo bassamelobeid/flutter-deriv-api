@@ -764,11 +764,11 @@ sub _send_email {
     });
 }
 
-rpc mt5_deposit => sub {
+async_rpc mt5_deposit => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
-    return $mt5_suspended if $mt5_suspended;
+    return Future->done($mt5_suspended) if $mt5_suspended;
 
     my $client = $params->{client};
     my $args   = $params->{args};
@@ -780,7 +780,7 @@ rpc mt5_deposit => sub {
 
     my $error_sub = sub {
         my ($msg_client, $msg) = @_;
-        BOM::RPC::v3::Utility::create_error({
+        return create_error_future({
             code              => 'MT5DepositError',
             message_to_client => localize('There was an error processing the request.') . ' ' . $msg_client,
             ($msg) ? (message => $msg) : (),
@@ -803,16 +803,16 @@ rpc mt5_deposit => sub {
     }
 
     # MT5 login or binary loginid not belongs to user
-    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
+    return permission_error_future() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
 
     my $fm_client = Client::Account->new({loginid => $fm_loginid});
 
     # only for real money account
     if ($fm_client->is_virtual) {
-        return BOM::RPC::v3::Utility::permission_error();
+        return permission_error_future();
     }
     if (not _mt5_is_real_account($fm_client, $to_mt5)) {
-        return BOM::RPC::v3::Utility::permission_error();
+        return permission_error_future();
     }
 
     if ($fm_client->currency ne 'USD') {
@@ -898,17 +898,17 @@ rpc mt5_deposit => sub {
         return $error_sub->($status->{error});
     }
 
-    return {
+    return Future->done({
         status                => 1,
         binary_transaction_id => $txn->id
-    };
+    });
 };
 
-rpc mt5_withdrawal => sub {
+async_rpc mt5_withdrawal => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
-    return $mt5_suspended if $mt5_suspended;
+    return Future->done($mt5_suspended) if $mt5_suspended;
 
     my $client = $params->{client};
     my $args   = $params->{args};
@@ -920,7 +920,7 @@ rpc mt5_withdrawal => sub {
 
     my $error_sub = sub {
         my ($msg_client, $msg) = @_;
-        BOM::RPC::v3::Utility::create_error({
+        return create_error_future({
             code              => 'MT5WithdrawalError',
             message_to_client => localize('There was an error processing the request.') . ' ' . $msg_client,
             ($msg) ? (message => $msg) : (),
@@ -936,17 +936,17 @@ rpc mt5_withdrawal => sub {
     }
 
     # MT5 login or binary loginid not belongs to user
-    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $fm_mt5, $to_loginid]);
+    return permission_error_future() unless _check_logins($client, ['MT' . $fm_mt5, $to_loginid]);
 
     my $to_client = Client::Account->new({loginid => $to_loginid});
 
     # only for real money account
     if ($to_client->is_virtual) {
-        return BOM::RPC::v3::Utility::permission_error();
+        return permission_error_future();
     }
     my $settings;
     unless ($settings = _mt5_is_real_account($to_client, $fm_mt5)) {
-        return BOM::RPC::v3::Utility::permission_error();
+        return permission_error_future();
     }
 
     # check for fully authenticated only if it's not gaming account
@@ -989,6 +989,8 @@ rpc mt5_withdrawal => sub {
         return $error_sub->($status->{error});
     }
 
+    # TODO(leonerd): This Try::Tiny try block returns a Future in either case.
+    #   We might want to consider using Future->try somehow instead.
     return try {
         # deposit to Binary a/c
         my $account = $to_client->set_default_account('USD');
@@ -1012,10 +1014,10 @@ rpc mt5_withdrawal => sub {
         $account->save(cascade => 1);
         $payment->save(cascade => 1);
 
-        return {
+        return Future->done({
             status                => 1,
             binary_transaction_id => $txn->id
-        };
+        });
     }
     catch {
         my $error = BOM::Transaction->format_error(err => $_);
