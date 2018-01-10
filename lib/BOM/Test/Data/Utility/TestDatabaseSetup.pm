@@ -3,7 +3,7 @@ package BOM::Test::Data::Utility::TestDatabaseSetup;
 use Moose::Role;
 use Carp;
 use DBI;
-use File::Slurp;
+use Path::Tiny;
 use Try::Tiny;
 use DBIx::Migration;
 use BOM::Test;
@@ -175,7 +175,7 @@ sub _migrate_file {
     my $file = shift;
 
     my $dbh = $self->db_handler;
-    my @sql = read_file($file);
+    my @sql = path($file)->lines_utf8;
 
     # STUPID way but just to prevent from running it in transaction way
     LINE:
