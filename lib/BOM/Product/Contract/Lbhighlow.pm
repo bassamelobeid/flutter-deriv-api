@@ -20,6 +20,12 @@ sub check_expiry_conditions {
     return;
 }
 
+override two_barriers => sub {
+    my $self = shift;
+
+    return 1;
+};
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
