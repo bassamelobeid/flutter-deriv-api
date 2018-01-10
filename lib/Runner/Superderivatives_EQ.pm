@@ -4,7 +4,7 @@ use Moose;
 
 use lib ("/home/git/regentmarkets/bom/t/BOM/Product");
 use List::Util qw(max sum min);
-use File::Slurp;
+use Path::Tiny;
 use Text::CSV;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -22,8 +22,8 @@ has report_file => (
     isa     => 'HashRef',
     default => sub {
         {
-            all      => '/tmp/sdeq_all_result_file.csv',
-            analysis => '/tmp/sdeq_analysis_file.csv',
+            all      => path('/tmp/sdeq_all_result_file.csv'),
+            analysis => path('/tmp/sdeq_analysis_file.csv'),
         };
     },
 );
@@ -40,7 +40,7 @@ sub run_dataset {
 
     my @files = $file ? ($file) : ('DJI', 'FCHI', 'SPC', 'N225', 'SSECOMP', 'FTSE');
 
-    write_file($self->report_file->{all}, $self->csv_title . "\n");
+    $self->report_file->{all}->spew($self->csv_title . "\n");
     my $path = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/superderivatives';
     my $all_results;
     for my $symbol (@files) {
@@ -66,7 +66,7 @@ sub _calculate_and_saves_analysis_report {
     my ($self, $results) = @_;
 
     my $file = $self->report_file->{analysis};
-    write_file($file, "SD EQ BREAKDOWN ANALYSIS\n\nBET_TYPE,AVG_MID_DIFF,MAX_MID_DIFF\n");
+    $file->spew("SD EQ BREAKDOWN ANALYSIS\n\nBET_TYPE,AVG_MID_DIFF,MAX_MID_DIFF\n");
 
     my $analysis_results;
     foreach my $bet_type (keys %{$results}) {
@@ -77,7 +77,7 @@ sub _calculate_and_saves_analysis_report {
         $analysis_results->{$bet_type}->{avg} = $avg;
         $analysis_results->{$bet_type}->{max} = $max;
         my $output_string = $bet_type . "," . $avg . "," . $max . "\n";
-        append_file($file, $output_string);
+        $file->append($output_string);
     }
     return $analysis_results;
 }
@@ -139,7 +139,7 @@ sub price_superderivatives_bets_locally {
         );
 
         my $result = $csv->string;
-        append_file($self->report_file->{all}, $result . "\n");
+        $self->report_file->{all}->append($result . "\n");
         push @{$breakdown->{$record->{bet_type}}}, $mid_diff;
         $i++;
     }

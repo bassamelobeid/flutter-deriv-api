@@ -4,7 +4,6 @@ package DatasetRunner;
 use Moose;
 with 'App::Base::Script';
 
-use File::Slurp;
 use TAP::Harness;
 use YAML::XS qw(LoadFile);
 use Test::More qw(no_plan);

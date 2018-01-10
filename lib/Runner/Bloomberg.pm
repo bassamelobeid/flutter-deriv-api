@@ -3,7 +3,7 @@ package Runner::Bloomberg;
 use Moose;
 
 use lib ("/home/git/regentmarkets/bom/t/BOM/Product");
-use File::Slurp;
+use Path::Tiny;
 use List::Util qw(sum max);
 use BOM::Platform::Runtime;
 use CSVParser::Bloomberg;
@@ -24,9 +24,9 @@ has report_file => (
     isa     => 'HashRef',
     default => sub {
         {
-            all           => '/tmp/ovra_result_file.csv',
-            analysis_base => '/tmp/ovra_base_analysis_file.csv',
-            analysis_num  => '/tmp/ovra_num_analysis_file.csv'
+            all           => path('/tmp/ovra_result_file.csv'),
+            analysis_base => path('/tmp/ovra_base_analysis_file.csv'),
+            analysis_num  => path('/tmp/ovra_num_analysis_file.csv')
         };
     },
 );
@@ -43,7 +43,7 @@ sub run_dataset {
 
     foreach my $file (@files) {
         my $generator     = CSVParser::Bloomberg->new({output_format => 'Bloomberg'});
-        my @lines         = read_file($file_loc . "/$file.csv");
+        my @lines         = path($file_loc . "/$file.csv")->lines;
         my @result_output = $generator->price_list([@lines], $self->suite);
         $csv_header = $result_output[0];
         my $content = $result_output[1] || '';
@@ -52,7 +52,7 @@ sub run_dataset {
 
     my $output = $csv_header . $result_all;
     my $file   = $self->report_file->{all};
-    write_file($file, $output);
+    $file->spew($output);
 
     my $csv = Text::CSV::Slurp->load(file => $file);
     my @base_results      = grep { $_->{'base/numeraire'} eq 'base' } @$csv;
@@ -83,7 +83,7 @@ sub run_dataset {
 sub generate_and_save_analysis_report {
     my ($file, $analysis) = @_;
 
-    write_file($file, "BET_TYPE,AVG_MID,MAX_MID\n");
+    $file->spew("BET_TYPE,AVG_MID,MAX_MID\n");
     my $analysis_report;
 
     foreach my $bettype (keys %$analysis) {
@@ -93,7 +93,7 @@ sub generate_and_save_analysis_report {
         my $max    = max(@mids);
         $analysis_report->{$bettype}->{avg} = $avg;
         $analysis_report->{$bettype}->{max} = $max;
-        append_file($file, "$bettype,$avg,$max\n");
+        $file->append("$bettype,$avg,$max\n");
     }
 
     return $analysis_report;

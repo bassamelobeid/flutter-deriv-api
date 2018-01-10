@@ -4,7 +4,7 @@ use Moose;
 
 use lib ("/home/git/regentmarkets/bom/t/BOM/Product");
 
-use File::Slurp qw(append_file write_file);
+use Path::Tiny;
 use List::Util qw(sum max);
 use Text::CSV;
 use Carp;
@@ -23,10 +23,10 @@ has report_file => (
     isa     => 'HashRef',
     default => sub {
         {
-            all_base      => '/tmp/sdfx_base_result_file.csv',
-            all_num       => '/tmp/sdfx_num_result_file.csv',
-            analysis_num  => '/tmp/sdfx_num_analysis_file.csv',
-            analysis_base => '/tmp/sdfx_base_analysis_file.csv',
+            all_base      => path('/tmp/sdfx_base_result_file.csv'),
+            all_num       => path('/tmp/sdfx_num_result_file.csv'),
+            analysis_num  => path('/tmp/sdfx_num_analysis_file.csv'),
+            analysis_base => path('/tmp/sdfx_base_analysis_file.csv'),
         };
     },
 );
@@ -50,12 +50,12 @@ sub run_dataset {
 
     my $csv_title =
         "ID,underlying,bet_type,spot,barrier,barrier2,duration(days),date_start,date_expiry,BOM_pricing_args_iv,SD_mid,BOM_mid,mid_diff,arbitrage_check_base";
-    write_file($self->report_file->{all_base}, $csv_title . "\n");
-    write_file($self->report_file->{all_num},  $csv_title . "\n");
+    $self->report_file->{all_base}->spew($csv_title . "\n");
+    $self->report_file->{all_num}->spew($csv_title . "\n");
 
     my $analysis_title = "BET_TYPE,AVG_MID_DIFF,MAX_MID_DIFF\n";
-    write_file($self->report_file->{analysis_base}, $analysis_title);
-    write_file($self->report_file->{analysis_num},  $analysis_title);
+    $self->report_file->{analysis_base}->spew($analysis_title);
+    $self->report_file->{analysis_num}->spew($analysis_title);
 
     my $base_results;
     my $num_results;
@@ -100,7 +100,7 @@ sub calculates_and_saves_analysis_report {
         my $max       = max(@mid_diffs);
         $analysis_results->{$bet_type}->{avg} = $avg;
         $analysis_results->{$bet_type}->{max} = $max;
-        append_file($file, "$bet_type,$avg,$max\n");
+        $file->append("$bet_type,$avg,$max\n");
     }
 
     return $analysis_results;
@@ -186,11 +186,11 @@ sub get_bet_results {
         );
         my $result = $csv->string;
         if ($base_or_num eq 'base') {
-            append_file($self->report_file->{all_base}, "$result\n");
+            $self->report_file->{all_base}->append("$result\n");
             push @{$analysis_results->{$bet_type}}, $mid_diff;
         } else {
 
-            append_file($self->report_file->{all_num}, "$result\n");
+            $self->report_file->{all_num}->append("$result\n");
             push @{$analysis_results->{$bet_type}}, $mid_diff;
 
         }

@@ -8,7 +8,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use CSVParser::Merlin;
 
 use List::Util qw(max sum);
-use File::Slurp qw(append_file write_file);
+use Path::Tiny;
 use Text::CSV::Slurp;
 use Carp;
 
@@ -55,8 +55,8 @@ has _report_file => (
     isa     => 'HashRef',
     default => sub {
         {
-            all      => '/tmp/merlin_full_result.csv',
-            analysis => '/tmp/merlin_analysis_result.csv',
+            all      => path('/tmp/merlin_full_result.csv'),
+            analysis => path('/tmp/merlin_analysis_result.csv'),
         };
     },
 );
@@ -129,7 +129,7 @@ sub _calculate_results {
         my $string = join ',', @output_array;
         $string .= "\n";
 
-        append_file($full_report_file, $string);
+        $full_report_file->append($string);
         push @output, \@output_array;
         push @{$analysis_mid_diffs->{$base_or_num}->{$bet_type}}, $mid_diff;
     }
@@ -180,22 +180,22 @@ sub _skip {
 sub _generates_and_saves_analysis_report {
     my ($self, $mid_diffs) = @_;
     my $file = $self->_report_file->{'analysis'};
-    write_file($file, "\n");
+    $file->spew("\n");
 
     my $analysis_result;
     foreach my $price_type ($mid_diffs) {
         foreach my $base_or_num (keys %$price_type) {
             my $cap_base_or_num = uc $base_or_num;
-            append_file($file, $cap_base_or_num . ' ANALYSIS REPORT:' . "\n\n" . 'BET_TYPE,AVG_MID,MAX_MID' . "\n");
+            $file->append($cap_base_or_num . ' ANALYSIS REPORT:' . "\n\n" . 'BET_TYPE,AVG_MID,MAX_MID' . "\n");
             foreach my $bet_type (keys %{$price_type->{$base_or_num}}) {
                 my @diff = @{$price_type->{$base_or_num}->{$bet_type}};
                 my $avg  = sum(@diff) / scalar(@diff);
                 my $max  = max(@diff);
                 $analysis_result->{$base_or_num}->{$bet_type}->{avg} = $avg;
                 $analysis_result->{$base_or_num}->{$bet_type}->{max} = $max;
-                append_file($file, "$bet_type,$avg,$max\n");
+                $file->append("$bet_type,$avg,$max\n");
             }
-            append_file($file, "\n\n");
+            $file->append("\n\n");
         }
     }
 
@@ -210,7 +210,7 @@ sub _save_full_result_header {
         barrier         barrier2    merlin_tv bom_tv tv_diff merlin_mid bom_mid mid_diff merlin_atm_vol bom_atm_vol arb_avail base_or_num transformed_cut
     );
 
-    write_file($output_file, "$csv_title\n");
+    $output_file->spew("$csv_title\n");
 }
 
 no Moose;

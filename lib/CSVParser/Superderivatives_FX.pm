@@ -2,7 +2,7 @@ package CSVParser::Superderivatives_FX;
 
 use Moose;
 
-use File::Slurp qw(read_file);
+use Path::Tiny;
 use Text::CSV::Slurp;
 use List::Util qw(first);
 use Carp;
@@ -36,7 +36,7 @@ has records => (
 sub _build_records {
     my $self = shift;
 
-    my @lines      = read_file($self->file);
+    my @lines      = path($self->file)->lines;
     my $rate_lines = $self->_get_lines_between([@lines], 'START RATES', 'END RATES');
     my $rate       = $self->_get_rates($rate_lines);
     my $vol_lines  = $self->_get_lines_between([@lines], 'START VOL', 'END VOL');
