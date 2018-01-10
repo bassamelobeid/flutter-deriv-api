@@ -126,6 +126,7 @@ subtest 'normal contract', sub {
             tokens => \@token,
         },
     };
+    note explain $result;
     $result = $result->{result};
 
     is_deeply \@token, [map { $_->{token} } @$result], 'result is in order';
