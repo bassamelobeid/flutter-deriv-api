@@ -20,6 +20,15 @@ sub check_expiry_conditions {
     return;
 }
 
+sub _build_barrier {
+    my $self = shift;
+
+    my $barrier;
+    $barrier = $self->make_barrier($self->spot_min);
+
+    return $barrier;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
