@@ -425,12 +425,14 @@ async_rpc mt5_get_settings => sub {
 sub _mt5_is_real_account {
     my ($client, $mt_login) = @_;
 
-    my $settings = mt5_get_settings({
+    return mt5_get_settings({
             client => $client,
-            args   => {login => $mt_login}})->get;
+            args   => {login => $mt_login}})->then(sub {
+        my ($settings) = @_;
 
-    return $settings if ($settings->{group} // '') =~ /^real\\/;
-    return;
+        return Future->done($settings) if ($settings->{group} // '') =~ /^real\\/;
+        return Future->done();
+    });
 }
 
 =head2 mt5_set_settings
@@ -811,97 +813,100 @@ async_rpc mt5_deposit => sub {
     if ($fm_client->is_virtual) {
         return permission_error_future();
     }
-    if (not _mt5_is_real_account($fm_client, $to_mt5)) {
-        return permission_error_future();
-    }
 
-    if ($fm_client->currency ne 'USD') {
-        return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $fm_loginid, $fm_client->currency));
-    }
-    if ($fm_client->get_status('disabled')) {
-        return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid));
-    }
-    if ($fm_client->get_status('cashier_locked') || $fm_client->documents_expired) {
-        return $error_sub->(localize('Your account [_1] cashier section was locked.', $fm_loginid));
-    }
+    _mt5_is_real_account($fm_client, $to_mt5)->then(sub {
+        my ($settings) = @_;
 
-    # withdraw from Binary a/c
-    my $fm_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $fm_loginid,
-    });
-    if (not $fm_client_db->freeze) {
-        return $error_sub->(localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid");
-    }
-    scope_guard {
-        $fm_client_db->unfreeze;
-    };
+        return permission_error_future() if !$settings;
 
-    # From the point of view of our system, we're withdrawing
-    # money to deposit into MT5
-    my $withdraw_error;
-    try {
-        $fm_client->validate_payment(
-            currency => 'USD',
-            amount   => -$amount,
-        );
-    }
-    catch {
-        $withdraw_error = $_;
-    };
-
-    if ($withdraw_error) {
-        return $error_sub->(
-            BOM::RPC::v3::Cashier::__client_withdrawal_notes({
-                    client => $fm_client,
-                    amount => $amount,
-                    error  => $withdraw_error
-                }));
-    }
-
-    my $comment   = "Transfer from $fm_loginid to MT5 account $to_mt5.";
-    my $account   = $fm_client->set_default_account('USD');
-    my ($payment) = $account->add_payment({
-        amount               => -$amount,
-        payment_gateway_code => 'account_transfer',
-        payment_type_code    => 'internal_transfer',
-        status               => 'OK',
-        staff_loginid        => $fm_loginid,
-        remark               => $comment,
-    });
-    my ($txn) = $payment->add_transaction({
-        account_id    => $account->id,
-        amount        => -$amount,
-        staff_loginid => $fm_loginid,
-        referrer_type => 'payment',
-        action_type   => 'withdrawal',
-        quantity      => 1,
-        source        => $source,
-    });
-    $account->save(cascade => 1);
-    $payment->save(cascade => 1);
-
-    # deposit to MT5 a/c
-    return BOM::MT5::User::Async::deposit({
-        login   => $to_mt5,
-        amount  => $amount,
-        comment => $comment
-    })->then(sub {
-        my ($status) = @_;
-
-        if ($status->{error}) {
-            _send_email(
-                loginid => $fm_loginid,
-                mt5_id  => $to_mt5,
-                amount  => $amount,
-                action  => 'deposit',
-                error   => $status->{error},
-            );
-            return $error_sub->($status->{error});
+        if ($fm_client->currency ne 'USD') {
+            return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $fm_loginid, $fm_client->currency));
+        }
+        if ($fm_client->get_status('disabled')) {
+            return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid));
+        }
+        if ($fm_client->get_status('cashier_locked') || $fm_client->documents_expired) {
+            return $error_sub->(localize('Your account [_1] cashier section was locked.', $fm_loginid));
         }
 
-        return Future->done({
-            status                => 1,
-            binary_transaction_id => $txn->id
+        # withdraw from Binary a/c
+        my $fm_client_db = BOM::Database::ClientDB->new({
+            client_loginid => $fm_loginid,
+        });
+        if (not $fm_client_db->freeze) {
+            return $error_sub->(localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid");
+        }
+        scope_guard {
+            $fm_client_db->unfreeze;
+        };
+
+        # From the point of view of our system, we're withdrawing
+        # money to deposit into MT5
+        my $withdraw_error;
+        try {
+            $fm_client->validate_payment(
+                currency => 'USD',
+                amount   => -$amount,
+            );
+        }
+        catch {
+            $withdraw_error = $_;
+        };
+
+        if ($withdraw_error) {
+            return $error_sub->(
+                BOM::RPC::v3::Cashier::__client_withdrawal_notes({
+                        client => $fm_client,
+                        amount => $amount,
+                        error  => $withdraw_error
+                    }));
+        }
+
+        my $comment   = "Transfer from $fm_loginid to MT5 account $to_mt5.";
+        my $account   = $fm_client->set_default_account('USD');
+        my ($payment) = $account->add_payment({
+            amount               => -$amount,
+            payment_gateway_code => 'account_transfer',
+            payment_type_code    => 'internal_transfer',
+            status               => 'OK',
+            staff_loginid        => $fm_loginid,
+            remark               => $comment,
+        });
+        my ($txn) = $payment->add_transaction({
+            account_id    => $account->id,
+            amount        => -$amount,
+            staff_loginid => $fm_loginid,
+            referrer_type => 'payment',
+            action_type   => 'withdrawal',
+            quantity      => 1,
+            source        => $source,
+        });
+        $account->save(cascade => 1);
+        $payment->save(cascade => 1);
+
+        # deposit to MT5 a/c
+        return BOM::MT5::User::Async::deposit({
+            login   => $to_mt5,
+            amount  => $amount,
+            comment => $comment
+        })->then(sub {
+            my ($status) = @_;
+
+            if ($status->{error}) {
+                _send_email(
+                    loginid => $fm_loginid,
+                    mt5_id  => $to_mt5,
+                    amount  => $amount,
+                    action  => 'deposit',
+                    error   => $status->{error},
+                );
+                return $error_sub->($status->{error});
+            }
+
+            return Future->done({
+                status                => 1,
+                binary_transaction_id => $txn->id
+            });
         });
     });
 };
@@ -946,93 +951,95 @@ async_rpc mt5_withdrawal => sub {
     if ($to_client->is_virtual) {
         return permission_error_future();
     }
-    my $settings;
-    unless ($settings = _mt5_is_real_account($to_client, $fm_mt5)) {
-        return permission_error_future();
-    }
 
-    # check for fully authenticated only if it's not gaming account
-    # as of now we only support gaming for binary brand, in future if we
-    # support for champion please revisit this
-    if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated) {
-        return $error_sub->(localize('Please authenticate your account.'));
-    }
+    _mt5_is_real_account($to_client, $fm_mt5)->then(sub {
+        my ($settings) = @_;
 
-    if ($to_client->currency ne 'USD') {
-        return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $to_loginid, $to_client->currency));
-    }
+        return permission_error_future() unless $settings;
 
-    if ($to_client->get_status('disabled')) {
-        return $error_sub->(localize('Your account [_1] was disabled.', $to_loginid));
-    }
-    if ($to_client->get_status('cashier_locked') || $to_client->documents_expired) {
-        return $error_sub->(localize('Your account [_1] cashier section was locked.', $to_loginid));
-    }
-
-    my $to_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $to_loginid,
-    });
-    if (not $to_client_db->freeze) {
-        return $error_sub->(localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid");
-    }
-    scope_guard {
-        $to_client_db->unfreeze;
-    };
-
-    my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
-    # withdraw from MT5 a/c
-    return BOM::MT5::User::Async::withdrawal({
-        login   => $fm_mt5,
-        amount  => $amount,
-        comment => $comment
-    })->then(sub {
-        my ($status) = @_;
-
-        if ($status->{error}) {
-            return $error_sub->($status->{error});
+        # check for fully authenticated only if it's not gaming account
+        # as of now we only support gaming for binary brand, in future if we
+        # support for champion please revisit this
+        if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated) {
+            return $error_sub->(localize('Please authenticate your account.'));
         }
 
-        # TODO(leonerd): This Try::Tiny try block returns a Future in either case.
-        #   We might want to consider using Future->try somehow instead.
-        return try {
-            # deposit to Binary a/c
-            my $account = $to_client->set_default_account('USD');
-            my ($payment) = $account->add_payment({
-                amount               => $amount,
-                payment_gateway_code => 'account_transfer',
-                payment_type_code    => 'internal_transfer',
-                status               => 'OK',
-                staff_loginid        => $to_loginid,
-                remark               => $comment,
-            });
-            my ($txn) = $payment->add_transaction({
-                account_id    => $account->id,
-                amount        => $amount,
-                staff_loginid => $to_loginid,
-                referrer_type => 'payment',
-                action_type   => 'deposit',
-                quantity      => 1,
-                source        => $source,
-            });
-            $account->save(cascade => 1);
-            $payment->save(cascade => 1);
-
-            return Future->done({
-                status                => 1,
-                binary_transaction_id => $txn->id
-            });
+        if ($to_client->currency ne 'USD') {
+            return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $to_loginid, $to_client->currency));
         }
-        catch {
-            my $error = BOM::Transaction->format_error(err => $_);
-            _send_email(
-                loginid => $to_loginid,
-                mt5_id  => $fm_mt5,
-                amount  => $amount,
-                action  => 'withdraw',
-                error   => $error->get_mesg,
-            );
-            return $error_sub->($error->{-message_to_client});
+
+        if ($to_client->get_status('disabled')) {
+            return $error_sub->(localize('Your account [_1] was disabled.', $to_loginid));
+        }
+        if ($to_client->get_status('cashier_locked') || $to_client->documents_expired) {
+            return $error_sub->(localize('Your account [_1] cashier section was locked.', $to_loginid));
+        }
+
+        my $to_client_db = BOM::Database::ClientDB->new({
+            client_loginid => $to_loginid,
+        });
+        if (not $to_client_db->freeze) {
+            return $error_sub->(localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid");
+        }
+        scope_guard {
+            $to_client_db->unfreeze;
         };
+
+        my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
+        # withdraw from MT5 a/c
+        return BOM::MT5::User::Async::withdrawal({
+            login   => $fm_mt5,
+            amount  => $amount,
+            comment => $comment
+        })->then(sub {
+            my ($status) = @_;
+
+            if ($status->{error}) {
+                return $error_sub->($status->{error});
+            }
+
+            # TODO(leonerd): This Try::Tiny try block returns a Future in either case.
+            #   We might want to consider using Future->try somehow instead.
+            return try {
+                # deposit to Binary a/c
+                my $account = $to_client->set_default_account('USD');
+                my ($payment) = $account->add_payment({
+                    amount               => $amount,
+                    payment_gateway_code => 'account_transfer',
+                    payment_type_code    => 'internal_transfer',
+                    status               => 'OK',
+                    staff_loginid        => $to_loginid,
+                    remark               => $comment,
+                });
+                my ($txn) = $payment->add_transaction({
+                    account_id    => $account->id,
+                    amount        => $amount,
+                    staff_loginid => $to_loginid,
+                    referrer_type => 'payment',
+                    action_type   => 'deposit',
+                    quantity      => 1,
+                    source        => $source,
+                });
+                $account->save(cascade => 1);
+                $payment->save(cascade => 1);
+
+                return Future->done({
+                    status                => 1,
+                    binary_transaction_id => $txn->id
+                });
+            }
+            catch {
+                my $error = BOM::Transaction->format_error(err => $_);
+                _send_email(
+                    loginid => $to_loginid,
+                    mt5_id  => $fm_mt5,
+                    amount  => $amount,
+                    action  => 'withdraw',
+                    error   => $error->get_mesg,
+                );
+                return $error_sub->($error->{-message_to_client});
+            };
+        });
     });
 };
 
