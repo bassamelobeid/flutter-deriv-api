@@ -77,15 +77,15 @@ sub _migrate_changesets {
             push @bouncer_dbs, $b_db;
 
             try {
-                $pooler->do('DISABLE "' . $b_db . '"');
-                #$pooler->do('PAUSE "'.$b_db.'"');
+                $self->_do_quoted_query($pooler, 'DISABLE %s', $b_db);
+                #$self->_do_quoted_query($pooler, 'PAUSE  %s', $b_db);
             }
             catch {
                 print "[pgbouncer] DISABLE $b_db error [$_]";
             };
 
             try {
-                $pooler->do('KILL "' . $b_db . '"');
+                $self->_do_quoted_query($pooler, 'KILL %s', $b_db);
             }
             catch {
                 print "[pgbouncer] KILL $b_db error [$_]";
@@ -99,14 +99,14 @@ sub _migrate_changesets {
         $b_db = $_;
 
         try {
-            $pooler->do('ENABLE "' . $b_db . '"');
+            $self->_do_quoted_query($pooler, 'ENABLE %s', $b_db);
         }
         catch {
             print "[pgbouncer] ENABLE $b_db error [$_]";
         };
 
         try {
-            $pooler->do('RESUME "' . $b_db . '"');
+            $self->_do_quoted_query($pooler, 'RESUME %s', $b_db);
         }
         catch {
             print "[pgbouncer] RESUME $b_db error [$_]";
@@ -120,8 +120,8 @@ sub _create_dbs {
     my $self = shift;
 
     my $dbh = $self->_kill_all_pg_connections;
-    $dbh->do('drop database if exists ' . $self->_db_name);
-    $dbh->do('create database ' . $self->_db_name);
+    $self->_do_quoted_query($dbh, 'DROP DATABASE IF EXISTS %s', $self->_db_name);
+    $self->_do_quoted_query($dbh, 'CREATE DATABASE %s',         $self->_db_name);
     $dbh->disconnect;
 
     my $m = DBIx::Migration->new({
