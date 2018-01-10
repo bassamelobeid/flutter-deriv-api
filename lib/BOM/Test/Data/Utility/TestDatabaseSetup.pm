@@ -232,8 +232,10 @@ sub _restore_dbs_from_template {
     try {
         my $dbh = $self->_kill_all_pg_connections;
 
-        $self->_do_quoted($dbh, 'DROP DATABASE IF EXISTS %s', $self->_db_name);
-        $self->_do_quoted($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $self->_db_name, $self->_template_name);
+        my ($db_name, $tmpl_name) = ($self->_db_name, $self->_template_name);
+
+        $self->_do_quoted($dbh, 'DROP DATABASE IF EXISTS %s', $db_name);
+        $self->_do_quoted($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $db_name, $tmpl_name);
         $dbh->disconnect;
         $is_successful = 1;
     }
@@ -253,9 +255,11 @@ sub _create_template {
         # suppress 'NOTICE:  database ".*template" does not exist, skipping'
         local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /database ".*_template" does not exist, skipping/; };
 
-        $self->_do_quoted($dbh, 'DROP DATABASE IF EXISTS %s',          $self->_template_name);
-        $self->_do_quoted($dbh, 'ALTER DATABASE %s RENAME TO %s',      $self->_db_name, $self->_template_name);
-        $self->_do_quoted($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $self->_db_name, $self->_template_name);
+        my ($db_name, $tmpl_name) = ($self->_db_name, $self->_template_name);
+
+        $self->_do_quoted($dbh, 'DROP DATABASE IF EXISTS %s',          $tmpl_name);
+        $self->_do_quoted($dbh, 'ALTER DATABASE %s RENAME TO %s',      $db_name, $tmpl_name);
+        $self->_do_quoted($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $db_name, $tmpl_name);
         $dbh->disconnect;
     }
     catch {
@@ -298,7 +302,9 @@ sub _get_template_age {
 
     # Get the template age in epoch, 0 if there is no template
     my ($template_date) = $dbh->selectrow_array(<<'SQL', undef, $self->_template_name);
-SELECT coalesce(max(extract(epoch from (pg_stat_file('base/'|| oid ||'/PG_VERSION')).modification)), 0)
+SELECT coalesce(max(
+           extract(epoch from (pg_stat_file('base/'|| oid ||'/PG_VERSION')).modification)
+       ), 0)
   FROM pg_database
  WHERE datname = ?
 SQL
