@@ -301,7 +301,7 @@ sub _create_new_interface_engine {
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Lookback') {
         %pricing_parameters = (
-            strikes         => undef,
+            strikes         => [grep { $_ } values %{$self->barriers_for_pricing}],
             spot            => $self->pricing_spot,
             discount_rate   => $self->discount_rate,
             t               => $self->timeinyears->amount,
