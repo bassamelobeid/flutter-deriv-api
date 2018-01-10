@@ -113,8 +113,7 @@ subtest 'new account' => sub {
         # Throttle function limits requests to 1 per minute which may cause
         # consecutive tests to fail without a reset.
         BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-        $c->call_ok($method, $params)
-            ->has_no_error();
+        $c->call_ok($method, $params)->has_no_error();
         like($c->response->{rpc_response}->{result}->{login}, qr/[0-9]+/, 'Should return MT5 ID');
     }
 };

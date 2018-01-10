@@ -71,8 +71,7 @@ subtest 'new account' => sub {
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
-    $c->call_ok($method, $params)
-        ->has_error('error from duplicate mt5_new_account')
+    $c->call_ok($method, $params)->has_error('error from duplicate mt5_new_account')
         ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account');
 };
 
@@ -91,8 +90,7 @@ subtest 'get settings' => sub {
     is($c->result->{country}, "mt",              'result->{country}');
 
     $params->{args}{login} = "MTwrong";
-    $c->call_ok($method, $params)
-        ->has_error('error for mt5_get_settings wrong login')
+    $c->call_ok($method, $params)->has_error('error for mt5_get_settings wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_get_settings wrong login');
 };
 
@@ -103,11 +101,15 @@ subtest 'login list' => sub {
         token    => $token,
         args     => {},
     };
-    $c->call_ok($method, $params)
-        ->has_no_error('no error for mt5_login_list');
-    is_deeply($c->result,
-        [{login => $DETAILS{login}, group => $DETAILS{group}}],
-        'mt5_login_list result');
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_login_list');
+    is_deeply(
+        $c->result,
+        [{
+                login => $DETAILS{login},
+                group => $DETAILS{group}}
+        ],
+        'mt5_login_list result'
+    );
 };
 
 subtest 'set settings' => sub {
@@ -127,8 +129,7 @@ subtest 'set settings' => sub {
     is($c->result->{country}, "mt",            'result->{country}');
 
     $params->{args}{login} = "MTwrong";
-    $c->call_ok($method, $params)
-        ->has_error('error for mt5_set_settings wrong login')
+    $c->call_ok($method, $params)->has_error('error for mt5_set_settings wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_set_settings wrong login');
 };
 
@@ -145,13 +146,11 @@ subtest 'password check' => sub {
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_check');
 
     $params->{args}{password} = "wrong";
-    $c->call_ok($method, $params)
-        ->has_error('error for mt5_password_check wrong password')
+    $c->call_ok($method, $params)->has_error('error for mt5_password_check wrong password')
         ->error_code_is('MT5PasswordCheckError', 'error code for mt5_password_check wrong password');
 
     $params->{args}{login} = "MTwrong";
-    $c->call_ok($method, $params)
-        ->has_error('error for mt5_password_check wrong login')
+    $c->call_ok($method, $params)->has_error('error for mt5_password_check wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_password_check wrong login');
 };
 
@@ -171,8 +170,7 @@ subtest 'password change' => sub {
     is($c->result, 1, 'result');
 
     $params->{args}{login} = "MTwrong";
-    $c->call_ok($method, $params)
-        ->has_error('error for mt5_password_change wrong login')
+    $c->call_ok($method, $params)->has_error('error for mt5_password_change wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_password_change wrong login');
 };
 
@@ -196,8 +194,7 @@ subtest 'deposit' => sub {
     # TODO(leonerd): assert that account balance is now 1000-150 = 850
 
     $params->{args}{to_mt5} = "MTwrong";
-    $c->call_ok($method, $params)
-        ->has_error('error for mt5_deposit wrong login')
+    $c->call_ok($method, $params)->has_error('error for mt5_deposit wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_deposit wrong login');
 };
 
@@ -218,8 +215,7 @@ subtest 'withdrawal' => sub {
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
     $params->{args}{from_mt5} = "MTwrong";
-    $c->call_ok($method, $params)
-        ->has_error('error for mt5_withdrawal wrong login')
+    $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_withdrawal wrong login');
 };
 
