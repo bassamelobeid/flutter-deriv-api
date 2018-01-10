@@ -40,6 +40,11 @@ sub permission_error_future {
     return Future->done(BOM::RPC::v3::Utility::permission_error());
 }
 
+sub create_error_future {
+    my ($details) = @_;
+    return Future->done(BOM::RPC::v3::Utility::create_error($details));
+}
+
 =head2 mt5_login_list
 
     $mt5_logins = mt5_login_list({ client => $client })
@@ -153,23 +158,23 @@ async_rpc mt5_new_account => sub {
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $brand            = Brands->new(name => request()->brand);
 
-    return Future->done(BOM::RPC::v3::Utility::create_error({
+    return create_error_future({
             code              => 'InvalidAccountType',
-            message_to_client => localize('Invalid account type.')})) if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
+            message_to_client => localize('Invalid account type.')}) if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
     my $residence = $client->residence;
-    return Future->done(BOM::RPC::v3::Utility::create_error({
+    return create_error_future({
             code              => 'NoResidence',
-            message_to_client => localize('Please set your country of residence.')})) unless $residence;
+            message_to_client => localize('Please set your country of residence.')}) unless $residence;
 
     my $countries_list = $brand->countries_instance->countries_list;
     return permission_error_future()
         unless $countries_list->{$residence};
 
-    return Future->done(BOM::RPC::v3::Utility::create_error({
+    return create_error_future({
             code              => 'MT5SamePassword',
             message_to_client => localize('Investor password cannot be same as main password.')}
-    )) if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
+    ) if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
 
     my $invalid_sub_type_error = BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidSubAccountType',
@@ -209,9 +214,9 @@ async_rpc mt5_new_account => sub {
         if ($account_type eq 'financial') {
             return Future->done($invalid_sub_type_error) unless $mt5_account_type =~ /^cent|standard|stp$/;
 
-            return Future->done(BOM::RPC::v3::Utility::create_error({
+            return create_error_future({
                     code              => 'FinancialAssessmentMandatory',
-                    message_to_client => localize('Please complete financial assessment.')})) unless $client->financial_assessment();
+                    message_to_client => localize('Please complete financial assessment.')}) unless $client->financial_assessment();
         }
 
         # populate mt5 agent account associated with affiliate token
@@ -222,9 +227,9 @@ async_rpc mt5_new_account => sub {
         $group .= "_$residence" if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
     }
 
-    return Future->done(BOM::RPC::v3::Utility::create_error({
+    return create_error_future({
             code              => 'MT5CreateUserError',
-            message_to_client => localize('Request too frequent. Please try again later.')})) if _throttle($client->loginid);
+            message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
 
     # client can have only 1 MT demo & 1 MT real a/c
     my $user = BOM::Platform::User->new({email => $client->email});
@@ -236,9 +241,9 @@ async_rpc mt5_new_account => sub {
             if(($_->{group} // '') eq $group) {
                 my $login = $_->{login};
 
-                return Future->done(BOM::RPC::v3::Utility::create_error({
+                return create_error_future({
                         code              => 'MT5CreateUserError',
-                        message_to_client => localize('You already have a [_1] account [_2].', $account_type, $login)}));
+                        message_to_client => localize('You already have a [_1] account [_2].', $account_type, $login)});
             }
         }
 
@@ -256,9 +261,9 @@ async_rpc mt5_new_account => sub {
             my ($status) = @_;
 
             if ($status->{error}) {
-                return Future->done(BOM::RPC::v3::Utility::create_error({
+                return create_error_future({
                         code              => 'MT5CreateUserError',
-                        message_to_client => $status->{error}}));
+                        message_to_client => $status->{error}});
             }
             my $mt5_login = $status->{login};
 
@@ -399,9 +404,9 @@ async_rpc mt5_get_settings => sub {
         my ($settings) = @_;
 
         if (ref $settings eq 'HASH' and $settings->{error}) {
-            return Future->done(BOM::RPC::v3::Utility::create_error({
+            return create_error_future({
                     code              => 'MT5GetUserError',
-                    message_to_client => $settings->{error}}));
+                    message_to_client => $settings->{error}});
         }
 
         if (my $country = $settings->{country}) {
@@ -617,9 +622,9 @@ async_rpc mt5_password_check => sub {
         my ($status) = @_;
 
         if ($status->{error}) {
-            return Future->done(BOM::RPC::v3::Utility::create_error({
+            return create_error_future({
                 code              => 'MT5PasswordCheckError',
-                message_to_client => $status->{error}}));
+                message_to_client => $status->{error}});
         }
         return Future->done(1);
     });
@@ -720,9 +725,9 @@ async_rpc mt5_password_change => sub {
         my ($status) = @_;
 
         if ($status->{error}) {
-            return Future->done(BOM::RPC::v3::Utility::create_error({
+            return create_error_future({
                     code              => 'MT5PasswordChangeError',
-                    message_to_client => $status->{error}}));
+                    message_to_client => $status->{error}});
         }
 
         return BOM::MT5::User::Async::password_change({
@@ -732,9 +737,9 @@ async_rpc mt5_password_change => sub {
         my ($status) = @_;
 
         if ($status->{error}) {
-            return Future->done(BOM::RPC::v3::Utility::create_error({
+            return create_error_future({
                     code              => 'MT5PasswordChangeError',
-                    message_to_client => $status->{error}}));
+                    message_to_client => $status->{error}});
         }
         return Future->done(1);
     });
