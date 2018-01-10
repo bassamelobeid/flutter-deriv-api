@@ -69,8 +69,7 @@ rpc active_symbols => sub {
         }
 
         @{$active_symbols} =
-             sort { ncmp($a->{display_name}, $b->{display_name}) } @{$active_symbols};
-
+            sort { ncmp($a->{display_name}, $b->{display_name}) } @{$active_symbols};
 
         Cache::RedisDB->set($namespace, $key, $active_symbols, 30 - time % 30);
     }
