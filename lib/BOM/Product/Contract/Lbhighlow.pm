@@ -2,7 +2,7 @@ package BOM::Product::Contract::Lbhighlow;
 
 use Moose;
 extends 'BOM::Product::Contract';
-with 'BOM::Product::Role::Lookback', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
+with 'BOM::Product::Role::Lookback', 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 sub code { return 'LBHIGHLOW'; }
 
