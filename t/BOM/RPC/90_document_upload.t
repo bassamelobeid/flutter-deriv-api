@@ -144,7 +144,6 @@ subtest 'Attempt to upload same document again (checksum collision) with differe
     };
     $params->{args} = $args;
 
-    Test::Warnings::allow_warnings('duplicate_document');
     $c->call_ok($method, $params)->has_error->error_message_is('Document already uploaded.', 'error if same document is uploaded twice');
 };
 

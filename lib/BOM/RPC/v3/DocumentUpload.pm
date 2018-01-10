@@ -58,7 +58,9 @@ sub start_document_upload {
             });
     }
     catch {
-        $duplicate_doc_error = 1 if /duplicate_document/;
+        my ($err_code, $err_msg) = @$_;
+
+        $duplicate_doc_error = 1 if $err_msg =~ /duplicate_document/;
         $error_occured = 1;
     };
 
