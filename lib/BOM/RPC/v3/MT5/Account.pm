@@ -92,7 +92,7 @@ sub get_mt5_logins {
 
     $user ||= BOM::Platform::User->new({email => $client->email});
 
-    return fmap1 {
+    my $f = fmap1 {
         shift =~ /^MT(\d+)$/;
         my $login = $1;
 
@@ -113,6 +113,8 @@ sub get_mt5_logins {
     }
     foreach        => [$user->mt5_logins],
         concurrent => 4;
+    # purely to keep perlcritic+perltidy happy :(
+    return $f;
 }
 
 async_rpc mt5_login_list => sub {
