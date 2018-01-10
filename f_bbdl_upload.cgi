@@ -5,7 +5,7 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use CGI;
-use File::Slurp;
+use Path::Tiny;
 use HTML::Entities;
 
 use f_brokerincludeall;
@@ -38,7 +38,7 @@ if (length($filename) >= 25) {
     $message = "<font color=red>Error: filename length exceeds 25 characters.</font>";
 } else {
     my $temp_dir = '/tmp';
-    write_file($temp_dir . '/' . $filename, $content);
+    path($temp_dir . '/' . $filename)->spew_utf8($content);
 
     my $replyfile;
     if ($content =~ /REPLYFILENAME=(.+)/m) {
