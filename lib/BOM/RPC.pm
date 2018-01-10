@@ -91,9 +91,9 @@ sub _make_rpc_service_and_register {
 
     my $method         = $def->name;
     my $code           = $def->code;
-    my @before_actions = @{ $def->before_actions || [] };
+    my @before_actions = @{$def->before_actions || []};
 
-    if($def->is_async) {
+    if ($def->is_async) {
         my $async_code = $code;
         $code = sub {
             my $f = $async_code->(@_);

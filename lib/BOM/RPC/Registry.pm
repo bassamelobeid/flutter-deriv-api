@@ -9,7 +9,9 @@ use Carp;
 use Sub::Util qw(set_subname);
 use Struct::Dumb qw(readonly_struct);
 
-readonly_struct ServiceDef => [qw(name code before_actions is_async)], named_constructor => 1;
+readonly_struct
+    ServiceDef        => [qw(name code before_actions is_async)],
+    named_constructor => 1;
 
 =head1 DOMAIN-SPECIFIC-LANGUAGE
 
@@ -98,7 +100,11 @@ sub import_dsl_into {
 
         async_rpc => sub {
             my $code = pop;
-            $rpc_keyword->(@_, async => 1, $code);
+            $rpc_keyword->(
+                @_,
+                async => 1,
+                $code
+            );
         },
 
         common_before_actions => sub {
@@ -155,12 +161,13 @@ sub register {
 
     Carp::croak "Too late to BOM::RPC::Registry::register" if $done_startup;
 
-    push @service_defs, ServiceDef(
+    push @service_defs,
+        ServiceDef(
         name           => $name,
         code           => $code,
         before_actions => $args{before_actions},
         is_async       => !!$args{async},
-    );
+        );
     return;
 }
 
