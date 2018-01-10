@@ -246,7 +246,7 @@ sub _build_tree {
             };
             foreach my $ul (
                 sort { ncmp($a->display_name, $b->display_name) }
-                map  { create_underlying($_) } $offerings_obj->query({
+                map { create_underlying($_) } $offerings_obj->query({
                         market    => $market->name,
                         submarket => $submarket->name
                     },
