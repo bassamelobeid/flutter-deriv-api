@@ -1244,7 +1244,7 @@ expected_result:
       commission_markup: 0.025
       duration: 12d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
-      risk_markup: 0.0016
+      risk_markup: 0.0015
       spot: 9518.2
       theo_prob: 0.4588
       total_markup: 0.0245
@@ -1297,9 +1297,9 @@ expected_result:
       commission_markup: 0.035
       duration: 8d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
-      risk_markup: 0.0068
+      risk_markup: 0.0071
       spot: 1.3803
-      theo_prob: 0.4281
+      theo_prob: 0.4267
       total_markup: 0.0291
     EXPIRYRANGE:
       ask_prob: 0.8056
@@ -1329,9 +1329,9 @@ expected_result:
       commission_markup: 0.035
       duration: 222d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.0132
+      risk_markup: 0.0131
       spot: 1.3803
-      theo_prob: 0.2485
+      theo_prob: 0.2476
       total_markup: 0.0385
   frxUSDJPY:
     CALL:
@@ -1342,18 +1342,18 @@ expected_result:
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.0060816898639056
       spot: 102.471
-      theo_prob: 0.5051
+      theo_prob: 0.5053
       total_markup: 0.0288
     EXPIRYRANGE:
-      ask_prob: 0.577
+      ask_prob: 0.5772
       barrier: 103
       barrier2: 101.338
       commission_markup: 0.035
       duration: 8d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
-      risk_markup: 0.029
+      risk_markup: 0.0292
       spot: 102.454
-      theo_prob: 0.5751
+      theo_prob: 0.5772
       total_markup: 0.0489
     NOTOUCH:
       ask_prob: 0.3544
@@ -1361,9 +1361,9 @@ expected_result:
       commission_markup: 0.035
       duration: 12d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.0193
+      risk_markup: 0.0203
       spot: 102.454
-      theo_prob: 0.327
+      theo_prob: 0.339
       total_markup: 0.0425
     RANGE:
       ask_prob: 0.2724
@@ -1372,7 +1372,7 @@ expected_result:
       commission_markup: 0.035
       duration: 7d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.055
+      risk_markup: 0.0518
       spot: 102.454
-      theo_prob: 0.2898
+      theo_prob: 0.2698
       total_markup: 0.0784
