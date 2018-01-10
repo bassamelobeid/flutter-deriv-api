@@ -1091,7 +1091,6 @@ sub metadata {
     };
 
     return {
-        contract_type     => $contract->code,
         contract_category => $contract->category->code,
         underlying_symbol => $contract->underlying->symbol,
         barrier_category  => $contract->barrier_category,
