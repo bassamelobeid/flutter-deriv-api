@@ -97,7 +97,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
 
                     my $c = produce_contract($args);
                     my @codes = ($c->code, $c->underlying->symbol, $c->date_start->epoch, $c->date_expiry->epoch);
-                    if ($c->category->two_barriers) {
+                    if ($c->two_barriers) {
                         push @codes, ($c->high_barrier->as_absolute, $c->low_barrier->as_absolute);
                     } else {
                         push @codes, $c->barrier->as_absolute;
@@ -107,7 +107,6 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
 
                     is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$code}),
                         'theo price matches [' . $code . " - " . $c->shortcode . ']';
-
                 }
             }
         }
