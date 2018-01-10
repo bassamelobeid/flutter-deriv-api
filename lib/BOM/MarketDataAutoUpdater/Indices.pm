@@ -73,7 +73,7 @@ sub _build_symbols_to_update {
             contract_category => 'ANY',
         );
         # forcing it here since we don't have offerings for the index.
-        push @symbols_to_update, qw(FTSE IXIC BIST100 DJI);
+        push @symbols_to_update, qw(FTSE IXIC DJI OTC_NIFTY OTC_IBEX35 OTC_SPTSX60 OTC_SX5E);
 
     }
 
@@ -111,11 +111,7 @@ sub run {
             my $underlying     = create_underlying($symbol);
             my $raw_volsurface = $surfaces_from_file->{$symbol};
             if ($self->uses_binary_spot->{$symbol}) {
-                # We do not have feed of BIST100 cash index, hence it need to use the spot of OTC_BIST100
-                $raw_volsurface->{spot_reference} =
-                    $symbol eq 'BIST100'
-                    ? create_underlying('OTC_BIST100')->tick_at($raw_volsurface->{creation_date}->epoch, {allow_inconsistent => 1})->quote
-                    : $underlying->tick_at($raw_volsurface->{creation_date}->epoch, {allow_inconsistent => 1})->quote;
+                $raw_volsurface->{spot_reference} = $underlying->tick_at($raw_volsurface->{creation_date}->epoch, {allow_inconsistent => 1})->quote;
 
             }
             my $volsurface = Quant::Framework::VolSurface::Moneyness->new({
