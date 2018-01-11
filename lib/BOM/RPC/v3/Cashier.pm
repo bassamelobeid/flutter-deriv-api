@@ -612,14 +612,15 @@ rpc paymentagent_transfer => sub {
     my ($error, $response);
     try {
         $response = $client_fm->payment_account_transfer(
-            toClient => $client_to,
-            currency => $currency,
-            amount   => $amount,
-            fmStaff  => $loginid_fm,
-            toStaff  => $loginid_to,
-            remark   => $comment,
-            source   => $source,
-            fees     => 0,
+            toClient     => $client_to,
+            currency     => $currency,
+            amount       => $amount,
+            fmStaff      => $loginid_fm,
+            toStaff      => $loginid_to,
+            remark       => $comment,
+            source       => $source,
+            fees         => 0,
+            gateway_code => 'payment_agent_transfer',
         );
     }
     catch {
@@ -878,14 +879,15 @@ rpc paymentagent_withdraw => sub {
     try {
         # execute the transfer.
         $response = $client->payment_account_transfer(
-            currency => $currency,
-            amount   => $amount,
-            remark   => $comment,
-            fmStaff  => $client_loginid,
-            toStaff  => $paymentagent_loginid,
-            toClient => $pa_client,
-            source   => $source,
-            fees     => 0,
+            currency     => $currency,
+            amount       => $amount,
+            remark       => $comment,
+            fmStaff      => $client_loginid,
+            toStaff      => $paymentagent_loginid,
+            toClient     => $pa_client,
+            source       => $source,
+            fees         => 0,
+            gateway_code => 'payment_agent_transfer',
         );
     }
     catch {
@@ -1187,6 +1189,7 @@ rpc transfer_between_accounts => sub {
             inter_db_transfer => ($client_from->landing_company->short ne $client_to->landing_company->short),
             source            => $source,
             fees              => $fees,
+            gateway_code      => 'account_transfer',
         );
     }
     catch {
