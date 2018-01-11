@@ -207,13 +207,18 @@ my $to_client_db = do {
 };
 
 if ($ttype eq 'TRANSFER') {
-    my $guard_scope_to = Scope::Guard::guard {
-        $to_client_db->unfreeze;
-    };
-    $to_client_db->freeze || do {
-        print "ERROR: To-Account stuck in previous transaction $encoded_toLoginID";
+    if ($to_client_db) {
+        my $guard_scope_to = Scope::Guard::guard {
+            $to_client_db->unfreeze;
+        };
+        $to_client_db->freeze || do {
+            print "ERROR: To-Account stuck in previous transaction $encoded_toLoginID";
+            code_exit_BO();
+        };
+    } else {
+        print "ERROR: ClientDB for to_loginid $encoded_loginID could not be initialized";
         code_exit_BO();
-    };
+    }
 }
 
 # NEW PAYMENT HANDLERS ..
