@@ -46,7 +46,7 @@ test_sendrecv_params 'active_symbols/test_send.json', 'active_symbols/test_recei
 # test_sendrecv_params 'active_symbols/test_send.json', 'active_symbols/test_receive_full.json',
 #     'full';
 
-test_sendrecv_params 'active_symbols/test_send_lc.json', 'active_symbols/test_receive_lc.json', 'japan',       'forex',              'major_pairs';
+test_sendrecv_params 'active_symbols/test_product_type_send_lc.json', 'active_symbols/test_receive_lc.json', 'japan',       'forex',              'major_pairs', "multi_barrier";
 test_sendrecv_params 'active_symbols/test_send_lc.json', 'active_symbols/test_receive_lc.json', 'malta',       'volidx',             '.*';
 test_sendrecv_params 'active_symbols/test_send_lc.json', 'active_symbols/test_receive_lc.json', 'maltainvest', '(?!^volidx$)(^.*$)', '.*';
 
