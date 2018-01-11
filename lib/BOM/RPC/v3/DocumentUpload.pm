@@ -59,7 +59,9 @@ sub start_document_upload {
             });
     }
     catch {
-        $duplicate_doc_error = 1 if /duplicate_document/;
+        my $err_code = $_->[0];
+
+        $duplicate_doc_error = 1 if $err_code eq 'BI060';
         $error_occured = 1;
     };
 
