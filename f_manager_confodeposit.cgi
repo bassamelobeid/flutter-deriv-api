@@ -9,6 +9,7 @@ use Path::Tiny;
 use Try::Tiny;
 use Brands;
 use HTML::Entities;
+use Scope::Guard;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
@@ -187,20 +188,38 @@ my $client_db = BOM::Database::ClientDB->new({
     client_loginid => $loginID,
 });
 
-$client_db->freeze || do {
-    print "ERROR: Account stuck in previous transaction $encoded_loginID";
+if ($client_db) {
+    my $guard_scope = Scope::Guard::guard {
+        $client_db->unfreeze;
+    };
+
+    $client_db->freeze || do {
+        print "ERROR: Account stuck in previous transaction $encoded_loginID";
+        code_exit_BO();
+    };
+} else {
+    print "ERROR: ClientDB for loginid $encoded_loginID could not be initialized";
     code_exit_BO();
-};
+}
 
 my $to_client_db = do {
     BOM::Database::ClientDB->new({client_loginid => $toLoginID}) if $toLoginID;
 };
 
+if ($to_client_db) {
+    my $guard_scope_to = Scope::Guard::guard {
+        $to_client_db->unfreeze;
+    };
+} else {
+    print "ERROR: ClientDB for loginid $encoded_toLoginID could not be initialized";
+    code_exit_BO();
+}
+
 if ($ttype eq 'TRANSFER') {
     $to_client_db->freeze || do {
         print "ERROR: To-Account stuck in previous transaction $encoded_toLoginID";
         code_exit_BO();
-        }
+    };
 }
 
 # NEW PAYMENT HANDLERS ..
@@ -216,11 +235,12 @@ try {
         $client_pa_exp = $client;
     } elsif ($ttype eq 'TRANSFER') {
         $client->payment_account_transfer(
-            currency => $curr,
-            toClient => $toClient,
-            amount   => $amount,
-            staff    => $clerk,
-            fees     => 0,
+            currency     => $curr,
+            toClient     => $toClient,
+            amount       => $amount,
+            staff        => $clerk,
+            fees         => 0,
+            gateway_code => 'account_transfer',
         );
         $client_pa_exp = $toClient;
     }
@@ -228,11 +248,8 @@ try {
 catch {
     print "<p>TRANSACTION ERROR: This payment violated a fundamental database rule.  Details:<br/>$_</p>";
     $leave = 1;
-    printf STDERR "got here\n";
+    printf STDERR "Error: $_\n";
 };
-
-$client_db->unfreeze;
-$to_client_db->unfreeze if $toLoginID;
 
 code_exit_BO() if $leave;
 
