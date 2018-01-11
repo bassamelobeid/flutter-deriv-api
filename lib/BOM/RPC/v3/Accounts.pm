@@ -1375,15 +1375,18 @@ rpc set_self_exclusion => sub {
         my $name         = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
 
-        my $brand            = Brands->new(name => request()->brand);
-        my $marketing_email  = $brand->emails('marketing');
-        my $compliance_email = $brand->emails('compliance');
+        my $brand = Brands->new(name => request()->brand);
 
         my $message = "Client $client_title set the following self-exclusion limits:\n\n- Exclude from website until: $ret\n";
 
-        my $to_email = $compliance_email . ',' . $marketing_email;
+        my $to_email = $brand->emails('compliance') . ',' . $brand->emails('marketing');
+
+        # Include accounts team if client's brokercode is MLT/MX
+        # As per UKGC LCCP Audit Regulations
+        $to_email .= ',' . $brand->emails('accounting') if ($client->landing_company->short =~ /iom|malta$/);
+
         send_email({
-            from    => $compliance_email,
+            from    => $brand->emails('compliance'),
             to      => $to_email,
             subject => "Client " . $client->loginid . " set self-exclusion limits",
             message => [$message],
