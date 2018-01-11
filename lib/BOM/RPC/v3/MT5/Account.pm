@@ -787,6 +787,15 @@ sub _send_email {
     });
 }
 
+sub _make_deposit_error {
+    my ($msg_client, $msg) = @_;
+    return create_error_future({
+        code              => 'MT5DepositError',
+        message_to_client => localize('There was an error processing the request.') . ' ' . $msg_client,
+        ($msg) ? (message => $msg) : (),
+    });
+}
+
 async_rpc mt5_deposit => sub {
     my $params = shift;
 
@@ -801,28 +810,19 @@ async_rpc mt5_deposit => sub {
     my $to_mt5     = $args->{to_mt5};
     my $amount     = $args->{amount};
 
-    my $error_sub = sub {
-        my ($msg_client, $msg) = @_;
-        return create_error_future({
-            code              => 'MT5DepositError',
-            message_to_client => localize('There was an error processing the request.') . ' ' . $msg_client,
-            ($msg) ? (message => $msg) : (),
-        });
-    };
-
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
         or $app_config->system->suspend->system)
     {
-        return $error_sub->(localize('Payments are suspended.'));
+        return _make_deposit_error(localize('Payments are suspended.'));
     }
 
     if ($amount <= 0) {
-        return $error_sub->(localize("Deposit amount must be greater than zero."));
+        return _make_deposit_error(localize("Deposit amount must be greater than zero."));
     }
 
     if ($amount !~ /^\d+(?:\.\d{0,2})?$/) {
-        return $error_sub->(localize("Only a maximum of two decimal points are allowed for the deposit amount."));
+        return _make_deposit_error(localize("Only a maximum of two decimal points are allowed for the deposit amount."));
     }
 
     # MT5 login or binary loginid not belongs to user
@@ -842,13 +842,13 @@ async_rpc mt5_deposit => sub {
             return permission_error_future() if !$settings;
 
             if ($fm_client->currency ne 'USD') {
-                return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $fm_loginid, $fm_client->currency));
+                return _make_deposit_error(localize('Your account [_1] has a different currency [_2] than USD.', $fm_loginid, $fm_client->currency));
             }
             if ($fm_client->get_status('disabled')) {
-                return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid));
+                return _make_deposit_error(localize('Your account [_1] was disabled.', $fm_loginid));
             }
             if ($fm_client->get_status('cashier_locked') || $fm_client->documents_expired) {
-                return $error_sub->(localize('Your account [_1] cashier section was locked.', $fm_loginid));
+                return _make_deposit_error(localize('Your account [_1] cashier section was locked.', $fm_loginid));
             }
 
             # withdraw from Binary a/c
@@ -856,7 +856,7 @@ async_rpc mt5_deposit => sub {
                 client_loginid => $fm_loginid,
             });
             if (not $fm_client_db->freeze) {
-                return $error_sub->(localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid");
+                return _make_deposit_error(localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid");
             }
             scope_guard {
                 $fm_client_db->unfreeze;
@@ -876,7 +876,7 @@ async_rpc mt5_deposit => sub {
             };
 
             if ($withdraw_error) {
-                return $error_sub->(
+                return _make_deposit_error(
                     BOM::RPC::v3::Cashier::__client_withdrawal_notes({
                             client => $fm_client,
                             amount => $amount,
@@ -924,7 +924,7 @@ async_rpc mt5_deposit => sub {
                             action  => 'deposit',
                             error   => $status->{error},
                         );
-                        return $error_sub->($status->{error});
+                        return _make_deposit_error($status->{error});
                     }
 
                     return Future->done({
@@ -934,6 +934,15 @@ async_rpc mt5_deposit => sub {
                 });
         });
 };
+
+sub _make_withdrawal_error {
+    my ($msg_client, $msg) = @_;
+    return create_error_future({
+        code              => 'MT5WithdrawalError',
+        message_to_client => localize('There was an error processing the request.') . ' ' . $msg_client,
+        ($msg) ? (message => $msg) : (),
+    });
+}
 
 async_rpc mt5_withdrawal => sub {
     my $params = shift;
@@ -949,21 +958,12 @@ async_rpc mt5_withdrawal => sub {
     my $to_loginid = $args->{to_binary};
     my $amount     = $args->{amount};
 
-    my $error_sub = sub {
-        my ($msg_client, $msg) = @_;
-        return create_error_future({
-            code              => 'MT5WithdrawalError',
-            message_to_client => localize('There was an error processing the request.') . ' ' . $msg_client,
-            ($msg) ? (message => $msg) : (),
-        });
-    };
-
     if ($amount <= 0) {
-        return $error_sub->(localize("Withdrawal amount must be greater than zero."));
+        return _make_withdrawal_error(localize("Withdrawal amount must be greater than zero."));
     }
 
     if ($amount !~ /^\d+(?:\.\d{0,2})?$/) {
-        return $error_sub->(localize("Only a maximum of two decimal points are allowed for the withdrawal amount."));
+        return _make_withdrawal_error(localize("Only a maximum of two decimal points are allowed for the withdrawal amount."));
     }
 
     # MT5 login or binary loginid not belongs to user
@@ -986,25 +986,26 @@ async_rpc mt5_withdrawal => sub {
             # as of now we only support gaming for binary brand, in future if we
             # support for champion please revisit this
             if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated) {
-                return $error_sub->(localize('Please authenticate your account.'));
+                return _make_withdrawal_error(localize('Please authenticate your account.'));
             }
 
             if ($to_client->currency ne 'USD') {
-                return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $to_loginid, $to_client->currency));
+                return _make_withdrawal_error(
+                    localize('Your account [_1] has a different currency [_2] than USD.', $to_loginid, $to_client->currency));
             }
 
             if ($to_client->get_status('disabled')) {
-                return $error_sub->(localize('Your account [_1] was disabled.', $to_loginid));
+                return _make_withdrawal_error(localize('Your account [_1] was disabled.', $to_loginid));
             }
             if ($to_client->get_status('cashier_locked') || $to_client->documents_expired) {
-                return $error_sub->(localize('Your account [_1] cashier section was locked.', $to_loginid));
+                return _make_withdrawal_error(localize('Your account [_1] cashier section was locked.', $to_loginid));
             }
 
             my $to_client_db = BOM::Database::ClientDB->new({
                 client_loginid => $to_loginid,
             });
             if (not $to_client_db->freeze) {
-                return $error_sub->(localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid");
+                return _make_withdrawal_error(localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid");
             }
             scope_guard {
                 $to_client_db->unfreeze;
@@ -1022,7 +1023,7 @@ async_rpc mt5_withdrawal => sub {
                     my ($status) = @_;
 
                     if ($status->{error}) {
-                        return $error_sub->($status->{error});
+                        return _make_withdrawal_error($status->{error});
                     }
 
                     # TODO(leonerd): This Try::Tiny try block returns a Future in either case.
@@ -1064,7 +1065,7 @@ async_rpc mt5_withdrawal => sub {
                             action  => 'withdraw',
                             error   => $error->get_mesg,
                         );
-                        return $error_sub->($error->{-message_to_client});
+                        return _make_withdrawal_error($error->{-message_to_client});
                     };
                 });
         });
