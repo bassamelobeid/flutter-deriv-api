@@ -170,8 +170,10 @@ override shortcode => sub {
     my $contract_type = $self->bet_type // $self->code;
     my @shortcode_elements = ($contract_type, $self->underlying->symbol, $self->unit, $shortcode_date_start, $shortcode_date_expiry);
 
-    if (defined $self->supplied_barrier and $self->barrier_at_start) {
-        push @shortcode_elements, ($self->_barrier_for_shortcode_string($self->supplied_barrier), 0);
+    if ($self->two_barriers) {
+        push @shortcode_elements, map { $self->_barrier_for_shortcode_string($_) } ($self->high_barrier, $self->low_barrier);
+    } elsif (defined $self->barrier and $self->barrier_at_start) {
+        push @shortcode_elements, ($self->_barrier_for_shortcode_string($self->barrier), 0);
     }
 
     if (defined $self->multiplier) {
