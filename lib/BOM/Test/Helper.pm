@@ -13,8 +13,8 @@ use Test::Mojo;
 
 use Encode;
 use JSON::Schema;
+use Path::Tiny;
 use JSON::MaybeXS;
-use File::Slurp;
 use Data::Dumper;
 use Date::Utility;
 
