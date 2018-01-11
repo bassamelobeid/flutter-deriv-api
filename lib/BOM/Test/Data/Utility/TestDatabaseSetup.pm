@@ -94,9 +94,7 @@ sub _migrate_changesets {
 
     $self->_create_dbs unless $self->_restore_dbs_from_template;
 
-    foreach (@bouncer_dbs) {
-        $b_db = $_;
-
+    for my $b_db (@bouncer_dbs) {
         try {
             $self->_do_quoted($pooler, 'ENABLE %s', $b_db);
         }
