@@ -206,16 +206,10 @@ my $to_client_db = do {
     BOM::Database::ClientDB->new({client_loginid => $toLoginID}) if $toLoginID;
 };
 
-if ($to_client_db) {
+if ($ttype eq 'TRANSFER') {
     my $guard_scope_to = Scope::Guard::guard {
         $to_client_db->unfreeze;
     };
-} else {
-    print "ERROR: ClientDB for loginid $encoded_toLoginID could not be initialized";
-    code_exit_BO();
-}
-
-if ($ttype eq 'TRANSFER') {
     $to_client_db->freeze || do {
         print "ERROR: To-Account stuck in previous transaction $encoded_toLoginID";
         code_exit_BO();
