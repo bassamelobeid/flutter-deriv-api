@@ -171,7 +171,7 @@ subtest 'verify_with_shortcode_Slope' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundcommon(1, $ask_prob * 1000), 980, 'Ask price is matching');
+    is(roundcommon(1, $ask_prob * 1000), 981, 'Ask price is matching');
 
     check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
@@ -201,7 +201,7 @@ subtest 'verify_with_shortcode_VV' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundcommon(1, $ask_prob * 1000), 795, 'Ask price is matching');
+    is(roundcommon(1, $ask_prob * 1000), 793, 'Ask price is matching');
 
     check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
@@ -268,9 +268,9 @@ subtest '2017_with_extra_data' => sub {
         };
 
         my $output = BOM::Pricing::JapanContractDetails::verify_with_shortcode($input);
-        is $output->{ask_probability}->{risk_markup},               0.00932723065551093, 'matched risk markup';
+        is $output->{ask_probability}->{risk_markup},               0.00927593921360376, 'matched risk markup';
         is $output->{theoretical_probability}->{bs_probability},    0.212223673281774,   'matched bs probability';
-        is $output->{theoretical_probability}->{market_supplement}, 0.0488906534242088,  'matched market supplement';
+        is $output->{theoretical_probability}->{market_supplement}, 0.0488737471584598,  'matched market supplement';
         is $output->{bs_probability}->{vol},                        0.119638984890473,   'matched vol';
     };
 };
