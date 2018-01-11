@@ -6,7 +6,7 @@ use Data::Dumper;
 
 use BOM::Platform::RiskProfile;
 use BOM::Product::Static;
-use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
+use BOM::Product::Contract::PredefinedParameters qw(get_predefined_barriers_by_contract_category get_expired_barriers);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -43,20 +43,23 @@ has predefined_contracts => (
 sub _build_predefined_contracts {
     my $self = shift;
 
-    my @contracts =
-        grep { $_->{contract_type} eq $self->code } @{
-        available_contracts_for_symbol({
-                symbol          => $self->underlying->symbol,
-                date            => $self->underlying->for_date,
-                landing_company => $self->landing_company,
-            }
-        )->{available}};
+    my $predefined_barriers = get_predefined_barriers_by_contract_category($self->underlying->symbol, $self->underlying->for_date);
+    my $windows_for_category = $predefined_barriers->{$self->category->code};
 
-    # restructure contract information for easier processing
+    return {} unless $windows_for_category;
+
+    my $is_path_dependent = $self->category->is_path_dependent;
     my %info;
-    foreach my $d (@contracts) {
-        push @{$info{$d->{trading_period}{date_expiry}{epoch}}{available_barriers}}, @{$d->{available_barriers}};
-        push @{$info{$d->{trading_period}{date_expiry}{epoch}}{expired_barriers}},   @{$d->{expired_barriers}};
+    foreach my $key (keys %$windows_for_category) {
+        my $data = $windows_for_category->{$key};
+        my ($start_epoch, $expiry_epoch) = split '-', $key;
+        my $tp = {
+            date_start  => {epoch => $start_epoch},
+            date_expiry => {epoch => $expiry_epoch},
+        };
+        my $expired_barriers = $is_path_dependent ? get_expired_barriers($self->underlying, $data->{available_barriers}, $tp) : [];
+        push @{$info{$expiry_epoch}{available_barriers}}, @{$data->{available_barriers}};
+        push @{$info{$expiry_epoch}{expired_barriers}},   @$expired_barriers;
     }
 
     return \%info;
@@ -121,9 +124,7 @@ override _validate_barrier_type => sub {
     my $self = shift;
 
     foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-
         if (defined $self->$barrier and $self->$barrier->barrier_type ne 'absolute') {
-
             return {
                 message           => 'barrier should be absolute',
                 message_to_client => [$ERROR_MAPPING->{PredefinedNeedAbsoluteBarrier}],
