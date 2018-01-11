@@ -289,9 +289,18 @@ sub _kill_all_pg_connections {
 sub _is_template_usable {
     my $self = shift;
 
-    my @timestamps = map { `cd $_; make -s timestamp`; stat("$_/timestamp")->mtime } $self->_get_db_dir;
+    my @timestamps = map { $self->_pg_code_timestamp($_) } $self->_get_db_dir;
 
     return $self->_get_template_age > max @timestamps;
+}
+
+sub _pg_code_timestamp {
+    my ($self, $pg_dir) = @_;
+
+    my $error_occured = system("cd $pg_dir && make -s timestamp");
+
+    # If we fail to make the timestamp, return inf to make template unusable
+    return $error_occured ? 'inf' : stat("$pg_dir/timestamp")->mtime;
 }
 
 sub _get_template_age {
