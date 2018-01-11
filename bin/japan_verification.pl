@@ -18,7 +18,6 @@ use feature qw(say);
 use Mojo::JSON::MaybeXS;
 use BOM::Platform::Runtime;
 
-use BOM::Product::Contract::Finder::Japan;
 use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
 use BOM::Product::Contract::Batch;
 use BOM::Pricing::JapanContractDetails;

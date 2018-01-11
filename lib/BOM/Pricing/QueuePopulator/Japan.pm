@@ -18,7 +18,7 @@ requesting them.
 
 use BOM::Platform::Runtime;
 
-use BOM::Product::Contract::Finder::Japan;
+use BOM::Product::ContractFinder;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData qw(create_underlying);
 use Encode;
@@ -112,12 +112,13 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
         ->values_for_key('underlying_symbol');
     my $now = Time::HiRes::time;
     $log->debugf("Retrieved symbols - %.2fms", 1000 * ($now - $start));
+    my $finder = BOM::Product::ContractFinder->new;
 
     my @jobs;
     my $skipped = 0;
     for my $symbol (@symbols) {
         my $symbol_start = Time::HiRes::time;
-        my $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({symbol => $symbol});
+        my $contracts_for = $finder->multi_barrier_contracts_for({symbol => $symbol});
         $now = Time::HiRes::time;
         $log->debugf("Retrieved contracts for %s - %.2fms", $symbol, 1000 * ($now - $symbol_start));
 

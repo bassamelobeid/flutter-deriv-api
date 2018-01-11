@@ -22,11 +22,6 @@ $mock->mock('_get_predefined_highlow', sub { (100, 90) });
 $mock->mock('update_predefined_highlow', sub { 1 });
 
 set_absolute_time(Date::Utility->new('2017-11-20 00:00:00')->epoch);
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
-    epoch      => Date::Utility->new->minus_time_interval('100d')->epoch,
-});
-
 my ($t, $rpc_ct);
 my $method = 'contracts_for';
 
@@ -53,12 +48,6 @@ subtest "Request $method" => sub {
     ok @{$result->{available}}, 'It should return available contracts';
     ok !grep { $_->{contract_type} =~ /^(EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
 
-    BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', Date::Utility->new);
-
-    $params[1]{args}{product_type}  = 'multi_barrier';
-    $params[1]{args}{contracts_for} = 'frxUSDJPY';
-    $params[1]{args}{landing_company} = 'japan';
-
     # mock distributor quote
     my $redis = BOM::Platform::RedisReplicated::redis_write();
     $redis->set(
@@ -82,13 +71,18 @@ subtest "Request $method" => sub {
             });
         });
 
+    BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', Date::Utility->new);
+
+    $params[1]{args}{product_type}    = 'multi_barrier';
+    $params[1]{args}{contracts_for}   = 'frxUSDJPY';
+    $params[1]{args}{landing_company} = 'japan';
+
     $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
     is_deeply [sort keys %{$result}],
         [sort qw/ available close open hit_count spot feed_license /],
         'It should return contracts_for object for japan region';
     ok @{$result->{available}}, 'It should return available contracts only for japan region';
     ok !grep { $_->{contract_type} =~ /^(CALL|PUTE|EXPIRYMISSE|EXPIRYRANGE)$/ } @{$result->{available}};
-
     is $result->{available}->[0]->{available_barriers}->[2]->[0], '500.000';
 
     $params[1]{args}{contracts_for} = 'invalid symbol';
