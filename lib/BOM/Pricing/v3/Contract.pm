@@ -12,6 +12,7 @@ use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
 use Time::Duration::Concise::Localize;
+use Client::Account;
 
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util::Numeric qw(isint);
@@ -24,8 +25,7 @@ use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
 use Finance::Contract::Longcode qw( shortcode_to_parameters);
-use BOM::Product::Contract::Finder::Japan;
-use BOM::Product::Contract::Finder;
+use BOM::Product::ContractFinder;
 use LandingCompany::Registry;
 use Locale::Country::Extra;
 use BOM::Pricing::v3::Utility;
@@ -581,30 +581,32 @@ sub get_contract_details {
 sub contracts_for {
     my $params = shift;
 
-    my $args                 = $params->{args};
-    my $symbol               = $args->{contracts_for};
-    my $currency             = $args->{currency} || 'USD';
-    my $product_type         = $args->{product_type} // 'basic';
-    my $landing_company_name = $args->{landing_company};
-    my $country_code         = $params->{country_code} // '';
+    my $args            = $params->{args};
+    my $symbol          = $args->{contracts_for};
+    my $currency        = $args->{currency} || 'USD';
+    my $product_type    = $args->{product_type} // 'basic';
+    my $landing_company = $args->{landing_company};
+    my $country_code    = $params->{country_code} // '';
 
-    my $contracts_for;
-    my $query_args = {
-        symbol => $symbol,
-        ($country_code ? (country_code => $country_code) : ()),
-    };
+    my $token_details = $params->{token_details};
 
-    if ($product_type eq 'multi_barrier') {
-        $query_args->{landing_company} = $landing_company_name // 'japan';
-        $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol($query_args);
-    } else {
-        $query_args->{landing_company} = $landing_company_name // 'costarica';
-        $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($query_args);
-        # this is temporary solution till the time front apps are fixed
-        # filter CALLE|PUTE only for non japan
-        $contracts_for->{available} = [grep { $_->{contract_type} !~ /^(?:CALLE|PUTE)$/ } @{$contracts_for->{available}}]
-            if ($contracts_for and $contracts_for->{hit_count} > 0);
+    if ($token_details and exists $token_details->{loginid}) {
+        my $client = Client::Account->new({
+            loginid      => $token_details->{loginid},
+            db_operation => 'replica',
+        });
+        # override the details here since we already have a client.
+        $landing_company = $client->landing_company->short;
+        $country_code    = $client->residence;
     }
+
+    my $finder        = BOM::Product::ContractFinder->new;
+    my $method        = $product_type eq 'basic' ? 'basic_contracts_for' : 'multi_barrier_contracts_for';
+    my $contracts_for = $finder->$method({
+        symbol          => $symbol,
+        landing_company => $landing_company,
+        country_code    => $country_code,
+    });
 
     my $i = 0;
     foreach my $contract (@{$contracts_for->{available}}) {
