@@ -291,7 +291,7 @@ if ($input{whattodo} eq 'uploadID') {
         try {
             ($query_result) = $client->db->dbic->run(
                 ping => sub {
-                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)', undef, $id, $checksum, $comments);
+                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $id, $comments);
                 });
         }
         catch {
