@@ -502,6 +502,10 @@ sub _build_base_commission {
         $underlying_base = 0.023;
     }
 
+    if (not $self->for_sale and $self->market->name eq 'forex' and $self->is_atm_bet) {
+        $underlying_base = 0.05;
+    }
+
     return $underlying_base * $per_market_scaling / 100;
 }
 
