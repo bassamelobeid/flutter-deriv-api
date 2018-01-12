@@ -46,6 +46,8 @@ sub start_document_upload {
     my $error_occured;
     my $duplicate_doc_error;
     try {
+        my $STD_WARN_HANDLER = $SIG{__WARN__};
+        local $SIG{__WARN__} = sub { $STD_WARN_HANDLER->(@_) if $_[0] !~ /no_duplicate_uploads/; };
         ($id) = $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_array(
@@ -58,9 +60,7 @@ sub start_document_upload {
             });
     }
     catch {
-        my $err_code = $_->[0];
-
-        $duplicate_doc_error = 1 if $err_code eq 'BI060';
+        $duplicate_doc_error = 1 if /no_duplicate_uploads/;
         $error_occured = 1;
     };
 
@@ -92,7 +92,7 @@ sub successful_upload {
     try {
         ($result) = $client->db->dbic->run(
             ping => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)', undef, $args->{file_id}, $args->{checksum}, undef);
+                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $args->{file_id}, undef);
             });
     }
     catch {

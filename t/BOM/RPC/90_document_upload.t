@@ -34,7 +34,6 @@ use constant {
     DOC_TYPE        => 'passport',
     DOC_FORMAT      => 'jpg',
     CHECKSUM        => 'FileChecksum',
-    OTHER_CHECKSUM  => 'FileChecksum2',
     EXP_DATE_PAST   => '2017-08-09',
     EXP_DATE_FUTURE => '2117-08-11',
     DOC_ID_1        => 'ABCD1234',
@@ -84,6 +83,7 @@ subtest 'Unsuccessful finished upload' => sub {
 subtest 'Error for no document_id' => sub {
     $args->{document_type}   = DOC_TYPE;
     $args->{document_format} = DOC_FORMAT;
+    $args->{expected_checksum} = CHECKSUM;
     
     $c->call_ok($method, $params)->has_error->error_message_is('Document ID is required.', 'document_id is required');
     
@@ -122,9 +122,8 @@ subtest 'Status and checksum of newly uploaded document' => sub {
     is $doc->checksum, CHECKSUM, 'Checksum should be added correctly';
 };
 
-subtest 'Upload a (different) doc into the same record to ensure CS team is only sent 1 email' => sub {
+subtest 'Call finish again to ensure CS team is only sent 1 email' => sub {
     $mailbox->clear;
-    $args->{checksum} = OTHER_CHECKSUM;
     $result = $c->call_ok($method, $params)->result;
     ok(!get_notification_email(), 'CS notification email should only be sent once');
 };
@@ -140,7 +139,7 @@ subtest 'Attempt to upload same document again (checksum collision) with differe
         document_format   => DOC_FORMAT,
         expiration_date   => EXP_DATE_FUTURE,
         document_id       => DOC_ID_2,
-        expected_checksum => OTHER_CHECKSUM
+        expected_checksum => CHECKSUM
     };
     $params->{args} = $args;
 
