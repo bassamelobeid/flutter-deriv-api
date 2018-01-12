@@ -188,41 +188,38 @@ my $client_db = BOM::Database::ClientDB->new({
     client_loginid => $loginID,
 });
 
-my $guard_scope;
-
-if ($client_db) {
-    $guard_scope = Scope::Guard::guard {
-        $client_db->unfreeze;
-    };
-    $client_db->freeze || do {
-        print "ERROR: Account stuck in previous transaction $encoded_loginID";
-        code_exit_BO();
-    };
-} else {
+unless ($client_db) {
     print "ERROR: ClientDB for loginid $encoded_loginID could not be initialized";
     code_exit_BO();
 }
+
+my $guard_scope = Scope::Guard::guard {
+    $client_db->unfreeze;
+};
+
+unless ($client_db->freeze) {
+    print "ERROR: Account stuck in previous transaction $encoded_loginID";
+    code_exit_BO();
+};
 
 my $to_client_db = do {
     BOM::Database::ClientDB->new({client_loginid => $toLoginID}) if $toLoginID;
 };
 
-my $guard_scope_to;
+my $guard_scope_to = Scope::Guard::guard {
+    $to_client_db->unfreeze if ($to_client_db);
+};
 
 if ($ttype eq 'TRANSFER') {
-    if ($to_client_db) {
-        $guard_scope_to = Scope::Guard::guard {
-            $to_client_db->unfreeze;
-        };
-
-        $to_client_db->freeze || do {
-            print "ERROR: To-Account stuck in previous transaction $encoded_toLoginID";
-            code_exit_BO();
-        };
-    } else {
+    unless ($to_client_db) {
         print "ERROR: ClientDB for to_loginid $encoded_loginID could not be initialized";
         code_exit_BO();
     }
+
+    unless ($to_client_db->freeze) {
+        print "ERROR: To-Account stuck in previous transaction $encoded_toLoginID";
+        code_exit_BO();
+    };
 }
 
 # NEW PAYMENT HANDLERS ..
