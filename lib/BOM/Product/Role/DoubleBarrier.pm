@@ -22,7 +22,7 @@ sub BUILD {
             });
             $self->low_barrier($barrier1);
             $self->high_barrier($barrier2);
-        } elsif ($barrier1->as_absolute == $barrier2->as_absolute) {
+        } elsif ($self->category_code ne 'lookback' and $barrier1->as_absolute == $barrier2->as_absolute) {
             $self->_add_error({
                 severity          => 100,
                 message           => 'High and low barriers must be different',
