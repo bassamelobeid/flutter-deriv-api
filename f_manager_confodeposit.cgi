@@ -200,7 +200,7 @@ my $guard_scope = Scope::Guard::guard {
 unless ($client_db->freeze) {
     print "ERROR: Account stuck in previous transaction $encoded_loginID";
     code_exit_BO();
-};
+}
 
 my $to_client_db = do {
     BOM::Database::ClientDB->new({client_loginid => $toLoginID}) if $toLoginID;
@@ -219,7 +219,7 @@ if ($ttype eq 'TRANSFER') {
     unless ($to_client_db->freeze) {
         print "ERROR: To-Account stuck in previous transaction $encoded_toLoginID";
         code_exit_BO();
-    };
+    }
 }
 
 # NEW PAYMENT HANDLERS ..
