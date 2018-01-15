@@ -8,8 +8,10 @@ This repo contains:
 It provides `binary_myaffiliates` service, which setup Mojo App for serving request to pull client's daily registration & activities.
 API endpoints are:
 
-* <https://collector01.binary.com/myaffiliates/activity_report?date=2016-05-30>
-* <https://collector01.binary.com/myaffiliates/registration?date=2016-05-30>
+- Activity report: <https://collector01.binary.com/myaffiliates/activity_report?date=2016-05-30>
+- Registration: <https://collector01.binary.com/myaffiliates/registration?date=2016-05-30>
+- Turnover: <https://collector01.binary.com/myaffiliates/turnover_report?date=2016-05-30>
+- Currency specific activity report: <https://collector01.binary.com/myaffiliates/activity_report?date=2016-05-30&currency=JPY>
 
 # Main Dependencies
 CPAN module: WebService::MyAffiliates

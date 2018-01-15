@@ -24,7 +24,12 @@ sub turnover_report {
 sub __send_file {
     my ($c, $type) = @_;
 
-    my $date = $c->param('date');
+    my $date     = $c->param('date');
+    my $currency = $c->param('currency');
+
+    return $c->__bad_request("Invalid date format. Format should be YYYY-MM-DD.") unless $date =~ /^\d{4}-\d{2}-\d{2}$/;
+    return $c->__bad_request("Invalid currency.") if $currency and $currency !~ /^[A-Z]{3}$/;
+
     $date or return $c->__bad_request('the request was missing date');
 
     my $path = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
@@ -41,6 +46,7 @@ sub __send_file {
         return $c->__bad_request("Invalid request");
     }
 
+    $filename = $filename . lc($currency) . '_' if $currency;
     $filename = $filename . Date::Utility->new({datetime => $date})->date_yyyymmdd . '.csv';
 
     unless (-f -r $path . $filename) {
