@@ -196,7 +196,7 @@ rpc "verify_email",
     return {status => 1};
     };
 
-sub _update_new_account_details {
+sub _get_existing_real_account_details {
 
     my ($user, $landing_company) = @_;
 
@@ -204,14 +204,13 @@ sub _update_new_account_details {
     my @existing_clients = $user->clients_for_landing_company($landing_company);
 
     # My updated details
-    my %simple_updates = {};
+    my %simple_updates = ();
 
     # Get details of sibling
     if (@existing_clients) {
-        my $sibling_client = @existing_clients[0];
 
-        $simple_updates{citizen}        = $sibling_client->citizen;
-        $simple_updates{place_of_birth} = $sibling_client->place_of_birth;
+        $simple_updates{citizen}        = @existing_clients[0]->citizen;
+        $simple_updates{place_of_birth} = @existing_clients[0]->place_of_birth;
     }
 
     return \%simple_updates;
@@ -318,6 +317,10 @@ rpc new_account_real => sub {
     # else it will give false impression to client
     $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
 
+    # Get the details of existing clients
+    my $new_account_updates = _get_existing_real_account_details($user, 'costarica');
+    $new_client->$_($new_account_updates->{$_}) for keys %$new_account_updates;
+
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
     return $error if $error;
@@ -363,21 +366,6 @@ rpc new_account_real => sub {
         $args->{currency} ? (currency => $new_client->currency) : (),
     };
 };
-
-sub set_details {
-    my ($client, $args) = @_;
-
-    # don't update client's brokercode with wrong value
-    delete $args->{broker_code};
-    $client->$_($args->{$_}) for keys %$args;
-
-    # special cases.. force empty string if necessary in these not-nullable cols.  They oughta be nullable in the db!
-    for (qw(citizen address_2 state postcode salutation)) {
-        $client->$_('') unless defined $client->$_;
-    }
-
-    return $client;
-}
 
 rpc new_account_maltainvest => sub {
     my $params = shift;
@@ -431,6 +419,10 @@ rpc new_account_maltainvest => sub {
 
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
+
+    # Get the details of existing clients
+    my $new_account_updates = _get_existing_real_account_details($user, $client->landing_company->short);
+    $new_client->$_($new_account_updates->{$_}) for keys %$new_account_updates;
 
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
