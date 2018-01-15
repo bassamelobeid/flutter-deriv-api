@@ -196,6 +196,27 @@ rpc "verify_email",
     return {status => 1};
     };
 
+sub _update_new_account_details {
+
+    my ($user, $landing_company) = @_;
+
+    # Get sibling account, if any
+    my @existing_clients = $user->clients_for_landing_company($landing_company);
+
+    # My updated details
+    my %simple_updates = {};
+
+    # Get details of sibling
+    if (@existing_clients) {
+        my $sibling_client = @existing_clients[0];
+
+        $simple_updates{citizen}        = $sibling_client->citizen;
+        $simple_updates{place_of_birth} = $sibling_client->place_of_birth;
+    }
+
+    return \%simple_updates;
+}
+
 sub _update_professional_existing_clients {
 
     my ($clients, $professional_status, $professional_requested) = @_;
