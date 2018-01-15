@@ -1,4 +1,4 @@
-package BOM::Product::Script::MondayCommission;
+package BOM::Product::Script::UpdateCustomCommission;
 
 use strict;
 use warnings;
