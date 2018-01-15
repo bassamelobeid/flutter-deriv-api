@@ -318,7 +318,7 @@ rpc new_account_real => sub {
     $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
 
     # Get the details of existing clients
-    my $new_account_updates = _get_existing_real_account_details($user, $landing_company);
+    my $new_account_updates = _get_existing_real_account_details($user, $landing_company->short);
     $new_client->$_($new_account_updates->{$_}) for keys %$new_account_updates;
 
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
