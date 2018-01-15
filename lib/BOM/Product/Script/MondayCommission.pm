@@ -13,8 +13,11 @@ use BOM::Platform::Chronicle;
 use BOM::Platform::Runtime;
 
 sub run {
-    # a cron to sunday every Sunday at 00:30:00 to update commission on the next trading day.
-    my $now              = Date::Utility->new;
+    my $now = Date::Utility->new;
+
+    # skips on fridays and saturdays, no point adding commission on sunday as it is a non-trading day
+    return if $now->day_of_week == 6 or $now->day_of_week == 5;
+
     my $next_trading_day = _next_trading_day($now);
 
     return unless $next_trading_day;
@@ -57,15 +60,10 @@ sub _next_trading_day {
 
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
     my $exchange         = Finance::Exchange->create_exchange('FOREX');
-    for (1 .. 5) {
-        my $next_day = $date->plus_time_interval('1d');
-        if ($trading_calendar->trades_on($exchange, $next_day)) {
-            return $next_day;
-        }
-        $date = $next_day;
-    }
 
-    warn "Cannot find a trading day for " . $exchange->symbol . " from " . Date::Utility->new->date . " to " . $date->datetime;
+    if (not $trading_calendar->trades_on($exchange, $date) or $trading_calendar->closes_early_on($exchange, $date)) {
+        return $date->plus_time_interval('1d')->truncate_to_day;
+    }
 
     return;
 }
