@@ -36,7 +36,7 @@ sub run {
         $quants_config->save_config(
             'commission',
             +{
-                name              => "monday morning commission for $symbol",
+                name              => "monday morning commission for $symbol " . $now->epoch,
                 underlying_symbol => $symbol,
                 start_time        => $to_day->epoch,
                 end_time          => $twenty_minutes_later->epoch,
