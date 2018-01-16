@@ -126,15 +126,16 @@ subtest 'binary frame should be sent correctly' => sub {
 };
 
 subtest 'sending two files concurrently' => sub {
-    my $data   = 'Some text';
-    my $length = length $data;
+    my @data   = ('Some tex1', 'Some tex2');
+    # Note: this test is hardcoded to expect data of a certain length
+    #   so change the contents of these strings, but not the length
 
     my @requests;
     for my $i (0 .. 1) {
-        my $upload_info = {request_upload($data)};
-        receive_ok($data, %$upload_info);
+        my $upload_info = {request_upload($data[$i])};
+        receive_ok($data[$i], %$upload_info);
         $requests[$i]->{upload_info} = $upload_info;
-        $requests[$i]->{frames} = [gen_frames($data, %$upload_info)];
+        $requests[$i]->{frames} = [gen_frames($data[$i], %$upload_info)];
     }
 
     $t->send_ok({binary => $_->{frames}->[0]}) for @requests;
