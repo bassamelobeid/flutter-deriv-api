@@ -209,8 +209,8 @@ sub _get_existing_real_account_details {
     # Get details of sibling
     if (@existing_clients) {
 
-        $simple_updates{citizen}        = @existing_clients[0]->citizen;
-        $simple_updates{place_of_birth} = @existing_clients[0]->place_of_birth;
+        $simple_updates{citizen}        = $existing_clients[0]->citizen;
+        $simple_updates{place_of_birth} = $existing_clients[0]->place_of_birth;
     }
 
     return \%simple_updates;
