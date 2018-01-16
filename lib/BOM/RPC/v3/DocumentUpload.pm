@@ -187,8 +187,8 @@ sub create_upload_error {
 
     # Default values
     my $error_code = 'UploadDenied';
-    my $message = localize('Sorry, an error occurred while processing your request.');
-    
+    my $message    = localize('Sorry, an error occurred while processing your request.');
+
     if ($reason eq 'virtual') {
         $message = localize("Virtual accounts don't require document uploads.");
     } elsif ($reason eq 'already_expired') {
@@ -203,7 +203,7 @@ sub create_upload_error {
         $message = localize('Maximum file size reached. Maximum allowed is [_1]', MAX_FILE_SIZE);
     } elsif ($reason eq 'duplicate_document') {
         $error_code = 'DuplicateUpload';
-        $message = localize('Document already uploaded.');
+        $message    = localize('Document already uploaded.');
     }
 
     return BOM::RPC::v3::Utility::create_error({
