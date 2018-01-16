@@ -103,7 +103,6 @@ subtest 'Document with no expiration_date' => sub {
 subtest 'Upload doc and send CS notification email' => sub {
     $args = {
         status   => 'success',
-        checksum => CHECKSUM,
         file_id  => $result->{file_id}};
     $params->{args} = $args;
     
