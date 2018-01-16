@@ -265,6 +265,8 @@ if ($input{whattodo} eq 'uploadID') {
         my $id;
         my $error_occured;
         try {
+            my $STD_WARN_HANDLER = $SIG{__WARN__};
+            local $SIG{__WARN__} = sub { $STD_WARN_HANDLER->(@_) if $_[0] !~ /no_duplicate_uploads/; };
             ($id) = $client->db->dbic->run(
                 ping => sub {
                     $_->selectrow_array(
