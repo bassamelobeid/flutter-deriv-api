@@ -319,7 +319,7 @@ rpc new_account_real => sub {
 
     # Populate new CR account fields from existing CR
     if (!client->is_virtual) {
-        my $new_account_updates = _get_existing_real_account_details($user, 'CR');
+        my $new_account_updates = _get_existing_real_account_details($user, 'costarica');
         $new_client->$_($new_account_updates->{$_}) for keys %$new_account_updates;
     }
 
