@@ -318,7 +318,7 @@ rpc new_account_real => sub {
     $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
 
     # Populate new CR account fields from existing CR
-    if (!client->is_virtual) {
+    if (!$client->is_virtual) {
         my $new_account_updates = _get_existing_real_account_details($user, 'costarica');
         $new_client->$_($new_account_updates->{$_}) for keys %$new_account_updates;
     }
@@ -423,7 +423,7 @@ rpc new_account_maltainvest => sub {
     my $landing_company = $new_client->landing_company;
 
     # Populate MF fields from MX/MLT client
-    if (!client->is_virtual) {
+    if (!$client->is_virtual) {
         my $new_account_updates = _get_existing_real_account_details($user, $client->landing_company->short);
         $new_client->$_($new_account_updates->{$_}) for keys %$new_account_updates;
     }
