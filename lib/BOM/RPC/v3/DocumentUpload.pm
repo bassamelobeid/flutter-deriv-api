@@ -185,7 +185,10 @@ sub validate_expiration_date {
 sub create_upload_error {
     my $reason = shift || 'unkown';
 
-    my $message;
+    # Default values
+    my $error_code = 'UploadDenied';
+    my $message = localize('Sorry, an error occurred while processing your request.');
+    
     if ($reason eq 'virtual') {
         $message = localize("Virtual accounts don't require document uploads.");
     } elsif ($reason eq 'already_expired') {
@@ -199,13 +202,12 @@ sub create_upload_error {
     } elsif ($reason eq 'max_size') {
         $message = localize('Maximum file size reached. Maximum allowed is [_1]', MAX_FILE_SIZE);
     } elsif ($reason eq 'duplicate_document') {
+        $error_code = 'DuplicateUpload';
         $message = localize('Document already uploaded.');
-    } else {    # Default
-        $message = localize('Sorry, an error occurred while processing your request.');
     }
 
     return BOM::RPC::v3::Utility::create_error({
-        code              => 'UploadDenied',
+        code              => $error_code,
         message_to_client => $message
     });
 }
