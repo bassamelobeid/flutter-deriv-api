@@ -977,7 +977,7 @@ rpc set_settings => sub {
     my $addressState    = ($args->{'address_state'} // $client->state) // '';
     my $addressPostcode = $args->{'address_postcode'} // $client->postcode;
     my $phone           = ($args->{'phone'} // $client->phone) // '';
-    my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
+    my $birth_place     = $args->{place_of_birth};
 
     my $cil_message;
     if (   ($address1 and $address1 ne $client->address_1)
