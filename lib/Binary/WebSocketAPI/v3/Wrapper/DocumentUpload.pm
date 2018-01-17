@@ -116,6 +116,7 @@ sub send_upload_failure {
             args => {
                 req_id      => $upload_info->{req_id},
                 passthrough => $upload_info->{passthrough},
+                file_id     => $upload_info->{file_id},
                 reason      => $reason,
                 status      => 'failure',
             },
