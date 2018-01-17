@@ -196,6 +196,15 @@ rpc "verify_email",
     return {status => 1};
     };
 
+=head
+
+_get_existing_real_account_details takes in a user object and the landing company
+short code. If there are existing client(s), then the details of one of the clients
+are extracted. The details corresponds to the fields seen when a user creates a
+new account. 
+
+=cut
+
 sub _get_existing_real_account_details {
 
     my ($user, $landing_company) = @_;
