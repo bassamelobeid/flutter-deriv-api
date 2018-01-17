@@ -54,8 +54,12 @@ my %generic_req = (
     expiration_date => '2020-01-01',
 );
 
+use constant {
+    FAIL_TEST_DATA => 'Some text'
+};
+
 subtest 'Fail during upload' => sub {
-    my $data   = 'Some text';
+    my $data   = FAIL_TEST_DATA;
     my $length = length $data;
 
     my %upload_info = request_upload($data);
@@ -277,6 +281,13 @@ subtest 'Document with wrong checksum rejected' => sub {
         
     my $error = $res->{error};
     is $error->{code}, 'UploadDenied', "Upload should be denied for file that doesn't match expected checksum";
+};
+
+subtest 'Attempt to re-upload document after error uploading' => sub {
+    # Re-attempt the data that failed in the first subtest: 'Fail during upload'
+    my $data   = FAIL_TEST_DATA;
+    my $length = length $data;
+    document_upload_ok($data, file_size => $length);
 };
 
 
