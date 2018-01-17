@@ -1,5 +1,9 @@
 <select name="l">
     [% FOREACH language IN languages.keys.sort %]
-        <option value="[% language %]">[% languages.$language %]</option>
+        [% IF language == 'EN' %]
+            <option value="[% language %]" selected>[% languages.$language %]</option>
+        [% ELSE %]
+            <option value="[% language %]">[% languages.$language %]</option>
+        [% END %]
     [% END %]
 </select>

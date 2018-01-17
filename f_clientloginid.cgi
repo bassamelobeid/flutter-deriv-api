@@ -67,6 +67,9 @@ print '<hr><form class="bo_ajax_form" action="'
     . $encoded_broker . '>'
     . '<b>LoginID : </b>';
 print "<input type=text size=15 name='show' onChange='CheckLoginIDformat(this)' value=''>";
+print "&nbsp; Select language for email: ";
+BOM::Backoffice::Request::template->process('backoffice/container/language_select.html.tt', {languages => BOM::Backoffice::Utility::get_languages()})
+    || die BOM::Backoffice::Request::template->error();
 print '&nbsp;&nbsp;<input type="submit" value="Send Account recovery email to client\'s registered email address"></b>' . '</form>';
 print '</td></tr></table>';
 
