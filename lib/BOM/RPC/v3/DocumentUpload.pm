@@ -144,7 +144,7 @@ sub successful_upload {
 
 sub failed_upload {
     my $params = shift;
-    my $error = shift;
+    my $error  = shift;
 
     my $client = $params->{client};
     my $args   = $params->{args};
@@ -179,10 +179,9 @@ sub validate_input {
     my $args      = $params->{args};
     my $client    = $params->{client};
     my $file_size = $args->{file_size};
-    my $status    = $args->{status};
 
-    return 'max_size'      if $file_size and $file_size > MAX_FILE_SIZE;
-    return 'virtual'       if $client->is_virtual;
+    return 'max_size' if $file_size and $file_size > MAX_FILE_SIZE;
+    return 'virtual' if $client->is_virtual;
 
     my $invalid_date = validate_expiration_date($args->{expiration_date});
     return $invalid_date if $invalid_date;
@@ -235,7 +234,7 @@ sub create_upload_error {
     } elsif ($reason eq 'max_size') {
         $message = localize('Maximum file size reached. Maximum allowed is [_1]', MAX_FILE_SIZE);
     } elsif ($reason eq 'duplicate_document') {
-        $error_code = 'DuplicateUpload';
+        $error_code = 'DuplicateUpload';                        # Needs unique code for special front-end handling
         $message    = localize('Document already uploaded.');
     }
 
