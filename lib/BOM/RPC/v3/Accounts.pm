@@ -904,7 +904,10 @@ rpc set_settings => sub {
                 code              => 'PermissionDenied',
                 message_to_client => localize("Value of account_opening_reason cannot be changed."),
             });
-        } elsif ($client->place_of_birth and $args->{place_of_birth} and $args->{place_of_birth} ne $client->place_of_birth) {
+        } elsif ($client->place_of_birth
+            and $args->{place_of_birth}
+            and $args->{place_of_birth} ne $client->place_of_birth)
+        {
             $err = BOM::RPC::v3::Utility::create_error({
                     code              => 'PermissionDenied',
                     message_to_client => localize("Value of place of birth cannot be changed.")});
