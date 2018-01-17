@@ -1310,6 +1310,7 @@ subtest $method => sub {
         address_city   => 'address city',
         address_state  => 'BA',
         phone          => '2345678',
+        place_of_birth => 'au',
     );
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
@@ -1339,19 +1340,7 @@ subtest $method => sub {
 
     is($c->tcall($method, $params)->{status}, 1, 'can send account_opening_reason with same value');
 
-    $full_args{account_opening_reason} = 'Hedging';
-    $params->{args} = {%full_args};
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Value of account_opening_reason cannot be changed.',
-        'cannot send account_opening_reason with a different value'
-    );
-    delete $full_args{account_opening_reason};
-
-    $full_args{place_of_birth} = 'au';
-    $params->{args} = {%full_args};
-
-    is($c->tcall($method, $params)->{status}, 1, 'place_of_birth successfully set');
+    is($c->tcall($method, $params)->{status}, 1, 'can send place_of_birth with same value');
 
     $full_args{place_of_birth} = 'at';
     $params->{args} = {%full_args};
@@ -1362,6 +1351,15 @@ subtest $method => sub {
         'cannot send place_of_birth with a different value'
     );
     delete $full_args{place_of_birth};
+
+    $full_args{account_opening_reason} = 'Hedging';
+    $params->{args} = {%full_args};
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Value of account_opening_reason cannot be changed.',
+        'cannot send account_opening_reason with a different value'
+    );
+    delete $full_args{account_opening_reason};
 
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
