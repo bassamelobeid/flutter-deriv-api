@@ -328,7 +328,7 @@ rpc new_account_real => sub {
     # Populate new CR account fields from existing CR
     if (!$client->is_virtual) {
         my $new_account_updates = _get_existing_real_account_details($user, 'costarica');
-        $new_client->$_($new_account_updates->{$_}) for keys %$new_account_updates;
+        $new_client->$_($new_account_updates->{$_}) for qw/place_of_birth citizen/;
     }
 
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
@@ -433,7 +433,7 @@ rpc new_account_maltainvest => sub {
     # Populate MF fields from MX/MLT client
     if (!$client->is_virtual) {
         my $new_account_updates = _get_existing_real_account_details($user, $client->landing_company->short);
-        $new_client->$_($new_account_updates->{$_}) for keys %$new_account_updates;
+        $new_client->$_($new_account_updates->{$_}) for qw/place_of_birth citizen/;
     }
 
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
