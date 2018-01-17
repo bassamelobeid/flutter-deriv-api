@@ -1348,6 +1348,21 @@ subtest $method => sub {
     );
     delete $full_args{account_opening_reason};
 
+    $full_args{place_of_birth} = 'au';
+    $params->{args} = {%full_args};
+
+    is($c->tcall($method, $params)->{status}, 1, 'place_of_birth successfully set');
+
+    $full_args{place_of_birth} = 'at';
+    $params->{args} = {%full_args};
+
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Value of place_of_birth cannot be changed.',
+        'cannot send place_of_birth with a different value'
+    );
+    delete $full_args{place_of_birth};
+
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
     is(
@@ -1356,6 +1371,7 @@ subtest $method => sub {
         'return error if cannot save'
     );
     $mocked_client->unmock_all;
+
     # add_note should send an email to support address,
     # but it is disabled when the test is running on travis-ci
     # so I mocked this function to check it is called.
@@ -1366,12 +1382,16 @@ subtest $method => sub {
     $params->{args}->{email_consent} = 1;
 
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+
     my $res = $c->tcall('get_settings', {token => $token1});
     is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");
     is($res->{tax_residence},             $params->{args}{tax_residence},             "Check tax information");
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
+
     $test_client->load();
+
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
+
     my $subject = 'Change in account settings';
     my @msgs    = $mailbox->search(
         email   => $test_client->email,
