@@ -93,9 +93,7 @@ has 'available_currencies' => (
 sub _build_language {
     my $self = shift;
 
-    return $self->param('l') if $self->param('l');
-
-    return 'EN';
+    return $self->param('l') // 'EN';
 }
 
 sub _build_broker_code {

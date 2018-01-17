@@ -39,8 +39,8 @@
     <th>Currency</th>
     <th>Amount</th>
     <th>Amount Range</th>
-    <th>Control Code</th> 
-    <th>Transaction Date</th> 
+    <th>Control Code</th>
+    <th>Transaction Date</th>
 </tr>
 <tr>
     <td><input type="text" name="account" required placeholder="required"/></td>
@@ -71,13 +71,20 @@
 
 <table>
 <tr>
-    <th>Payment Type</th> 
-    <th>                   <label for="skip_validation1">Override Status Checks?</label></th> 
-    <th class="all_payment_types external_cashier"      >Trace ID</th> 
-    <th class="all_payment_types external_cashier"      >Payment Processor</th> 
-    <th class="all_payment_types bank_money_transfer"   >RMG Bank</th> 
-    <th class="all_payment_types cash_transfer"         >MTCN</th> 
-    <th class="all_payment_types bank_money_transfer cash_transfer"><label for="informclientbyemail" >Notify Client by Email?</label></th> 
+    <th>Payment Type</th>
+    <th>
+        <label for="skip_validation1">Override Status Checks?</label>
+    </th>
+    <th class="all_payment_types external_cashier"      >Trace ID</th>
+    <th class="all_payment_types external_cashier"      >Payment Processor</th>
+    <th class="all_payment_types bank_money_transfer"   >RMG Bank</th>
+    <th class="all_payment_types cash_transfer"         >MTCN</th>
+    <th class="all_payment_types bank_money_transfer cash_transfer">
+        <label for="informclientbyemail">Notify Client by Email?</label>
+    </th>
+    <th class="all_payment_types bank_money_transfer cash_transfer">
+        <label for="l">Select email language</label>
+    </th>
 </tr>
 <tr>
     <td>
@@ -98,9 +105,15 @@
             <option value="commission_paid"     >Commission Paid</option>
         </select>
     </td>
-    <td style="text-align:center">                 <input type="checkbox" name="skip_validation" value="on" id="skip_validation1" /></td>
-    <td class="all_payment_types external_cashier"><input type="number" name="trace_id" /></td>
-    <td class="all_payment_types external_cashier"><input type="text" name="payment_processor" insist/></td>
+    <td style="text-align:center">
+        <input type="checkbox" name="skip_validation" value="on" id="skip_validation1" />
+    </td>
+    <td class="all_payment_types external_cashier">
+        <input type="number" name="trace_id" />
+    </td>
+    <td class="all_payment_types external_cashier">
+        <input type="text" name="payment_processor" insist/>
+    </td>
     <td class="all_payment_types bank_money_transfer">
         <select name="bom_bank_info">
             <option value="RBSI 5880-58269864"      >RBSI 5880-58269864</option>
@@ -114,13 +127,18 @@
     </td>
     <td class="all_payment_types "><input type="text" name="payment_processor" insist/></td>
     <td class="all_payment_types cash_transfer"><input type="text" name="mtcn_number" insist/></td>
-    <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center"><input type="checkbox" name="informclientbyemail" value="on" id="informclientbyemail" /></td>
+    <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center">
+        <input type="checkbox" name="informclientbyemail" value="on" id="informclientbyemail" />
+    </td>
+    <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center">
+        [% INCLUDE 'backoffice/container/language_select.html.tt' languages = languages %]
+    </td>
 </tr>
 </table>
 
 <table>
 <tr>
-    <th>Remarks</th> 
+    <th>Remarks</th>
 </tr>
 <tr>
     <td>
