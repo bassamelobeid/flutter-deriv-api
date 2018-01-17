@@ -904,13 +904,6 @@ rpc set_settings => sub {
                 code              => 'PermissionDenied',
                 message_to_client => localize("Value of account_opening_reason cannot be changed."),
             });
-        } elsif ($client->place_of_birth
-            and $args->{place_of_birth}
-            and $args->{place_of_birth} ne $client->place_of_birth)
-        {
-            $err = BOM::RPC::v3::Utility::create_error({
-                    code              => 'PermissionDenied',
-                    message_to_client => localize("Value of place of birth cannot be changed.")});
         } elsif (not $client->account_opening_reason and not $args->{account_opening_reason}) {
             # required to set account_opening_reason if empty
             $err = BOM::RPC::v3::Utility::create_error({
@@ -921,6 +914,11 @@ rpc set_settings => sub {
                     },
                 });
         }
+
+        $err = BOM::RPC::v3::Utility::create_error({
+                code              => 'PermissionDenied',
+                message_to_client => localize("Value of place_of_birth cannot be changed.")}
+        ) if ($client->place_of_birth and $args->{place_of_birth} and $args->{place_of_birth} ne $client->place_of_birth);
 
         $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && ($client->broker_code ne 'CR' or $client->get_status('ico_only'));
 
@@ -977,7 +975,7 @@ rpc set_settings => sub {
     my $addressState    = ($args->{'address_state'} // $client->state) // '';
     my $addressPostcode = $args->{'address_postcode'} // $client->postcode;
     my $phone           = ($args->{'phone'} // $client->phone) // '';
-    my $birth_place     = $args->{place_of_birth};
+    my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
 
     my $cil_message;
     if (   ($address1 and $address1 ne $client->address_1)
