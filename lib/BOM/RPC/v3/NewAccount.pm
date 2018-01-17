@@ -215,20 +215,17 @@ sub _get_existing_real_account_details {
     # My updated details
     my %simple_updates = ();
 
+    # List of keys to extract information from
+    my @keys_details = qw/citizen place_of_birth tax_residence tax_identification_number
+        address_line_1 address_line_2 city state postcode phone/;
+
     # Get details of sibling
     if (@existing_clients) {
-
-        $simple_updates{citizen}                   = $existing_clients[0]->citizen;
-        $simple_updates{place_of_birth}            = $existing_clients[0]->place_of_birth;
-        $simple_updates{tax_residence}             = $existing_clients[0]->tax_residence;
-        $simple_updates{tax_identification_number} = $existing_clients[0]->tax_identification_number;
-        $simple_updates{address_line_1}            = $existing_clients[0]->address_line_1;
-        $simple_updates{address_line_2}            = $existing_clients[0]->address_line_2;
-        $simple_updates{city}                      = $existing_clients[0]->city;
-        $simple_updates{state}                     = $existing_clients[0]->state;
-        $simple_updates{postcode}                  = $existing_clients[0]->postcode;
-        $simple_updates{phone}                     = $existing_clients[0]->phone;
+        $simple_updates{$_} = $existing_clients[0]->$_ for @keys_details;
     }
+
+    # Remove undef values
+    delete @simple_updates{grep { not defined $simple_updates{$_} } keys %simple_updates};
 
     return \%simple_updates;
 }
