@@ -25,9 +25,9 @@ has 'http_handler' => (
 );
 
 has 'language' => (
-    is      => 'ro',
-    isa     => 'Str',
-    default => 'EN'
+    is         => 'ro',
+    isa        => 'Str',
+    lazy_build => 1
 );
 
 has 'http_method' => (
@@ -89,6 +89,14 @@ has 'available_currencies' => (
     is         => 'ro',
     lazy_build => 1,
 );
+
+sub _build_language {
+    my $self = shift;
+
+    return $self->param('l') if $self->param('l');
+
+    return 'EN';
+}
 
 sub _build_broker_code {
     my $self = shift;
