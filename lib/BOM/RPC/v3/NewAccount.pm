@@ -196,40 +196,6 @@ rpc "verify_email",
     return {status => 1};
     };
 
-=head _get_existing_real_account_details
-
-This subroutine takes in a user object and the landing company
-short code. If there are existing client(s), then the details of one of the clients
-are extracted. The details corresponds to the fields seen when a user creates a
-new account. 
-
-=cut
-
-sub _get_existing_real_account_details {
-
-    my ($user, $landing_company) = @_;
-
-    # Get sibling account, if any
-    my @existing_clients = $user->clients_for_landing_company($landing_company);
-
-    # My updated details
-    my %simple_updates = ();
-
-    # List of keys to extract information from
-    my @keys_details = qw/citizen place_of_birth tax_residence tax_identification_number
-        address_line_1 address_line_2 city state postcode phone/;
-
-    # Get details of sibling
-    if (@existing_clients) {
-        $simple_updates{$_} = $existing_clients[0]->$_ for @keys_details;
-    }
-
-    # Remove undef values
-    delete @simple_updates{grep { not defined $simple_updates{$_} } keys %simple_updates};
-
-    return \%simple_updates;
-}
-
 sub _update_professional_existing_clients {
 
     my ($clients, $professional_status, $professional_requested) = @_;
@@ -402,15 +368,12 @@ rpc new_account_maltainvest => sub {
                 message_to_client => $error_map->{$err}});
     }
 
-    # Populate MF fields from MX/MLT client
-    if (!$client->is_virtual) {
-        my $new_account_updates = _get_existing_real_account_details($user, $client->landing_company->short);
-        $client->$_($new_account_updates->{$_}) for qw/place_of_birth citizen/;
-    }
-
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     my $user = BOM::Platform::User->new({email => $client->email});
+
+    # Update MLT/MX client place of birth
+    $client->place_of_birth($args->{place_of_birth}) if ($args->{place_of_birth} && !$client->is_virtual);
 
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
 
@@ -436,6 +399,18 @@ rpc new_account_maltainvest => sub {
 
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
+
+    # Update citizenship of new client
+    $new_client->citizen($client->citizen) if ($client->citizen && !$client->is_virtual);
+
+    # Save both current and new account
+    if (not $new_client->save or not $client->save) {
+
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InternalServerError',
+                message_to_client => localize('Sorry, an error occurred while processing your account.')});
+
+    }
 
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
