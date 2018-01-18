@@ -215,6 +215,8 @@ sub _set_staff {
     };
 
     warn 'Unable to set staff for saving the upload information' if $error_occured;
+
+    return undef;
 }
 
 1;
