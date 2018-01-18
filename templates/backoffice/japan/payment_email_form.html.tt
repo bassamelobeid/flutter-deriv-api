@@ -1,0 +1,41 @@
+<script>
+    \$(document).ready(function() {
+        \$('.datepick').datepicker({dateFormat: "yy-mm-dd"}).datepicker('setDate', new Date());
+        \$('#ui-datepicker-div').hide();
+    })
+</script>
+
+<br/>
+<h3>Payment notification email</h3>
+Please provide following details:
+<br/>
+<br/>
+<form action="[% request.url_for('backoffice/send_emails.cgi') %]" method=post>
+    <input type="hidden" name="broker" value="[% request.broker_code %]" />
+    <input type="hidden" name="l" value="JA" />
+
+    <label for="loginid">Loginid</label>
+    <input type="text" size=15 name="loginid" id="loginid" onChange="CheckLoginIDformat(this)" required/>
+    <br/>
+
+    <label for="japan_email_deposit">Deposit</label>
+    <input type="radio" name="action_type" value="deposit" id="japan_email_deposit"/>
+    <label for="japan_email_withdrawal">Withdrawal</label>
+    <input type="radio" name="action_type" value="withdrawal" id="japan_email_withdrawal"/>
+    <br/>
+
+    <label for="payment_date">Payment date</label>
+    <input type="text" size=15 name="payment_date" id="payment_date" class="datepick" required placeholder="yyyy-mm-dd"/>
+    <br/>
+
+    <label for="amount">Amount</label>
+    <input type="number" size=15 name="amount" id="amount" required/>
+    <br/>
+
+    <label for="ref_id">Reference ID</label>
+    <input type="text" size=15 name="reference_id" id="reference_id" required/>
+    <br/>
+
+    <input type="submit" value="Send email"/>
+</form>
+<hr/>
