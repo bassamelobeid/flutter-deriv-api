@@ -79,6 +79,7 @@
     <th class="all_payment_types external_cashier"      >Payment Processor</th>
     <th class="all_payment_types bank_money_transfer"   >RMG Bank</th>
     <th class="all_payment_types cash_transfer"         >MTCN</th>
+    <th class="all_payment_types bank_money_transfer cash_transfer">Payment reference id</th>
     <th class="all_payment_types bank_money_transfer cash_transfer">
         <label for="informclientbyemail">Notify Client by Email?</label>
     </th>
@@ -127,6 +128,9 @@
     </td>
     <td class="all_payment_types "><input type="text" name="payment_processor" insist/></td>
     <td class="all_payment_types cash_transfer"><input type="text" name="mtcn_number" insist/></td>
+    <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center">
+        <input type="text" name="reference_id" placeholder="required for Japan"/>
+    </td>
     <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center">
         <input type="checkbox" name="informclientbyemail" value="on" id="informclientbyemail" />
     </td>
