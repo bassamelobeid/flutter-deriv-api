@@ -262,10 +262,10 @@ if ($input{whattodo} eq 'uploadID') {
             $client->_set_staff;
         }
         catch {
-            $error_occured;
+            $error_occured = $_;
         };
 
-        die 'Unable to set staff info' if $error_occured;
+        die "Unable to set staff info, with error: $error_occured" if $error_occured;
 
         my $id;
         try {
