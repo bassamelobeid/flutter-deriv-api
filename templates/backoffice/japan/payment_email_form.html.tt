@@ -15,7 +15,7 @@ Please provide following details:
     <input type="hidden" name="l" value="JA" />
 
     <label for="loginid">Loginid</label>
-    <input type="text" size=15 name="loginid" id="loginid" onChange="CheckLoginIDformat(this)" required/>
+    <input type="text" size=15 name="loginid" id="loginid" required/>
     <br/>
 
     <label for="japan_email_deposit">Deposit</label>
