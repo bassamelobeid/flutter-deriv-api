@@ -259,7 +259,7 @@ if ($input{whattodo} eq 'uploadID') {
 
         my $error_occured;
         try {
-            $client->_set_staff();
+            $client->_set_staff;
         }
         catch {
             $error_occured;
