@@ -294,16 +294,11 @@ rpc new_account_real => sub {
                 code              => $err,
                 message_to_client => $error_map->{$err}});
     }
+
     # call was done with currency flag
     if ($args->{currency}) {
         $error = BOM::RPC::v3::Utility::validate_set_currency($client, $args->{currency});
         return $error if $error;
-    }
-
-    # Populate new CR account fields from existing CR
-    if (!$client->is_virtual) {
-        my $new_account_updates = _get_existing_real_account_details($user, 'costarica');
-        $client->$_($new_account_updates->{$_}) for qw/place_of_birth citizen/;
     }
 
     my $user = BOM::Platform::User->new({email => $client->email});
