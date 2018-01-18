@@ -8,7 +8,6 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use Email::Folder::Search;
-use BOM::RPC::v3::DocumentUpload;
 use List::Util qw( all );
 
 my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
