@@ -83,8 +83,8 @@ intraday_historical:
 slope:
   ask_probability:
     commission_markup: 0.035
-    risk_markup: 0.0119589842669399
-    theoretical_probability: 0.932933039355516
+    risk_markup: 0.0119069003256586
+    theoretical_probability: 0.934234068621166
   bs_probability:
     call_K: 78.300
     call_S: 79.817
@@ -92,7 +92,7 @@ slope:
     call_mu: 0
     call_payout: 1000
     call_t: 0.0321427891933029
-    call_vol: 0.0726586181836466
+    call_vol: 0.0721415754540617
   commission_markup:
     base_commission: 0.035
     commission_multiplier: 1
@@ -122,27 +122,27 @@ slope:
     opposite_contract_put_discount_rate: 0.0266870816706373
     opposite_contract_put_mu: 0
     opposite_contract_put_payout: 1000
-    opposite_contract_put_slope: -0.00260796462713681
+    opposite_contract_put_slope: -0.0025799239872365
     opposite_contract_put_t: 0.0321427891933029
-    opposite_contract_put_vanilla_vega: 1.90900686456103
-    opposite_contract_put_vol: 0.0726586181836466
+    opposite_contract_put_vanilla_vega: 1.87944365241045
+    opposite_contract_put_vol: 0.0721415754540617
     opposite_contract_put_weight: 1
-    opposite_contract_risk_markup: 0.0119589842669399
-    opposite_contract_spot_spread_markup: 0.00308207820096861
-    opposite_contract_theoretical_probability: 0.0662095312070389
-    opposite_contract_vol_spread_markup: 0.0208358903329113
+    opposite_contract_risk_markup: 0.0119069003256586
+    opposite_contract_spot_spread_markup: 0.00304711660592641
+    opposite_contract_theoretical_probability: 0.0649085019413889
+    opposite_contract_vol_spread_markup: 0.0207666840453909
   risk_markup:
-    spot_spread_markup: 0.00308207820096861
-    vol_spread_markup: 0.0208358903329113
+    spot_spread_markup: 0.00304711660592641
+    vol_spread_markup: 0.0207666840453909
   slope_adjustment:
-    call_slope: -0.00260796462713681
-    call_vanilla_vega: 1.90900686456103
+    call_slope: -0.0025799239872365
+    call_vanilla_vega: 1.87944365241045
     call_weight: -1
 vana_volga:
   ask_probability:
     commission_markup: 0.035
-    risk_markup: 0.0183609856822929
-    theoretical_probability: 0.741966309707146
+    risk_markup: 0.0185689913937444
+    theoretical_probability: 0.739875144705706
   bs_probability:
     K: 79.500
     S: 79.817
@@ -150,7 +150,7 @@ vana_volga:
     mu: 0
     payout: 1000
     t: 0.0321427891933029
-    vol: 0.0693633099147311
+    vol: 0.0688005591685243
   commission_markup:
     base_commission: 0.035
     commission_multiplier: 1
@@ -172,62 +172,62 @@ vana_volga:
     trade_time: 2012-11-08 03:25:45
     trans_id: NA
   market_supplement:
-    Bet_vanna: 9.92290171554115
-    Bet_vega: 3.50527846465678
-    Bet_volga: -95.8757901387141
-    vanna_correction: 0.00503576719051247
-    vanna_market_price: 0.00358476631803373
-    vanna_survival_weight: 0.141568328322588
-    vega_correction: -3.30530722612495e-17
-    vega_market_price: -2.78477501225154e-17
-    vega_survival_weight: 0.338609544087979
-    volga_correction: -0.0133803255096465
-    volga_market_price: 0.000412153059184797
-    volga_survival_weight: 0.338609544087979
+    Bet_vanna: 10.0585107445883
+    Bet_vega: 3.55984913468171
+    Bet_volga: -98.0776588866008
+    vanna_correction: 0.00500733376810981
+    vanna_market_price: 0.00348810600265641
+    vanna_survival_weight: 0.14271945608421
+    vega_correction: 4.18026404589399e-17
+    vega_market_price: 3.46473843989565e-17
+    vega_survival_weight: 0.338923488022966
+    volga_correction: -0.0134551622822262
+    volga_market_price: 0.000404778262771501
+    volga_survival_weight: 0.338923488022966
   opposite_contract:
-    opposite_contract_Bet_vanna: -9.91592101142798
-    opposite_contract_Bet_vega: -3.50116898164038
-    opposite_contract_Bet_volga: 95.7846948981967
+    opposite_contract_Bet_vanna: -10.0514986464373
+    opposite_contract_Bet_vega: -3.5556879278898
+    opposite_contract_Bet_volga: 97.9849233052805
     opposite_contract_K: 79.500
     opposite_contract_S: 79.817
     opposite_contract_base_commission: 0.035
-    opposite_contract_bet_delta: 0.759897587428519
-    opposite_contract_bet_vega: 3.50116898164038
-    opposite_contract_bs_probability: 0.249332612006494
+    opposite_contract_bet_delta: 0.765515811782145
+    opposite_contract_bet_vega: 3.5556879278898
+    opposite_contract_bs_probability: 0.251318179687812
     opposite_contract_butterfly_greater_than_cutoff: 0
     opposite_contract_commission_markup: 0.035
     opposite_contract_commission_multiplier: 1
     opposite_contract_discount_rate: 0.0266870816706373
-    opposite_contract_market_supplement: 0.00832877051972069
+    opposite_contract_market_supplement: 0.00843215236812305
     opposite_contract_mu: 0
     opposite_contract_payout: 1000
-    opposite_contract_risk_markup: 0.0183453216646415
+    opposite_contract_risk_markup: 0.0185531302218208
     opposite_contract_spot_spread: 0.025
     opposite_contract_spot_spread_markup: 0.01
     opposite_contract_spread_to_markup: 2
     opposite_contract_t: 0.0321427891933029
-    opposite_contract_theoretical_probability: 0.257661382526215
-    opposite_contract_vanna_correction: -0.00504171703995943
-    opposite_contract_vanna_market_price: 0.00358476631803373
-    opposite_contract_vanna_survival_weight: 0.141835374214541
-    opposite_contract_vega_correction: 3.3021422803378e-17
-    opposite_contract_vega_market_price: -2.78477501225154e-17
-    opposite_contract_vega_survival_weight: 0.338682374785784
-    opposite_contract_vol: 0.0693633099147311
+    opposite_contract_theoretical_probability: 0.259750332055935
+    opposite_contract_vanna_correction: -0.00501316305678489
+    opposite_contract_vanna_market_price: 0.00348810600265641
+    opposite_contract_vanna_survival_weight: 0.142985282421034
+    opposite_contract_vega_correction: -4.17627076115372e-17
+    opposite_contract_vega_market_price: 3.46473843989565e-17
+    opposite_contract_vega_survival_weight: 0.338995986114827
+    opposite_contract_vol: 0.0688005591685243
     opposite_contract_vol_spread: 0.00762335193452381
-    opposite_contract_vol_spread_markup: 0.026690643329283
-    opposite_contract_volga_correction: 0.0133704875596801
-    opposite_contract_volga_market_price: 0.000412153059184797
-    opposite_contract_volga_survival_weight: 0.338682374785784
+    opposite_contract_vol_spread_markup: 0.0271062604436417
+    opposite_contract_volga_correction: 0.013445315424908
+    opposite_contract_volga_market_price: 0.000404778262771501
+    opposite_contract_volga_survival_weight: 0.338995986114827
   risk_markup:
-    bet_delta: 0.760791875211974
-    bet_vega: 3.50527846465678
+    bet_delta: 0.766414036836472
+    bet_vega: 3.55984913468171
     butterfly_greater_than_cutoff: 0
     spot_spread: 0.025
     spot_spread_markup: 0.01
     spread_to_markup: 2
     vol_spread: 0.00762335193452381
-    vol_spread_markup: 0.0267219713645859
+    vol_spread_markup: 0.0271379827874887
   theoretical_probability:
-    bs_probability: 0.75031086802628
-    market_supplement: -0.00834455831913405
+    bs_probability: 0.748322973219822
+    market_supplement: -0.00844782851411632

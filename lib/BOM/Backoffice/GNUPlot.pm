@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Time::HiRes ('gettimeofday');
 use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
-
+use Path::Tiny;
 use open qw[ :encoding(UTF-8) ];
 
 # constructor
@@ -181,7 +181,7 @@ sub set_data_properties {
         $data =~ s/\n$//g;
 
         unlink $self->{'graph_datafile'};    #fix tmpfs bug
-        File::Slurp::write_file($self->{'graph_datafile'}, {binmode => ':raw'}, $data);
+        path($self->{'graph_datafile'})->spew_raw($data);
 
         # [EXPERIMENTAL]
         # X-Axis string data are not supported on 4.2 yet,
