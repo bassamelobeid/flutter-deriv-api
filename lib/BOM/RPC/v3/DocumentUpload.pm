@@ -211,10 +211,10 @@ sub _set_staff {
         $client->_set_staff;
     }
     catch {
-        $error_occured = 1;
+        $error_occured = $_;
     };
 
-    warn 'Unable to set staff for saving the upload information' if $error_occured;
+    warn "Unable to set staff for saving the upload information, error: $error_occured" if $error_occured;
 
     return undef;
 }
