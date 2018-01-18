@@ -12,4 +12,4 @@ Currency: [_4]
 
 Amount: [_5]
 
-Ref ID: [_6]", last_name, action_type, payment_date, currency, amount, ref_id) %]
+Ref ID: [_6]", last_name, action_type, payment_date, currency, amount, reference_id) %]
