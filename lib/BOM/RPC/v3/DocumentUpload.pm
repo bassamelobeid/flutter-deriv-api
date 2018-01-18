@@ -41,6 +41,8 @@ sub start_document_upload {
         $client->set_db('write');
     }
 
+    _set_staff($client);
+
     my $id;
     my $error_occured;
     try {
@@ -77,6 +79,8 @@ sub successful_upload {
     unless ($client->get_db eq 'write') {
         $client->set_db('write');
     }
+
+    _set_staff($client);
 
     my $result;
     my $error_occured;
@@ -197,6 +201,20 @@ sub create_upload_error {
         code              => 'UploadDenied',
         message_to_client => $message
     });
+}
+
+sub _set_staff {
+    my ($client) = @_;
+
+    my $error_occured;
+    try {
+        $client->_set_staff;
+    }
+    catch {
+        $error_occured = 1;
+    };
+
+    warn 'Unable to set staff for saving the upload information' if $error_occured;
 }
 
 1;
