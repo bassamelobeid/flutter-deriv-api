@@ -59,20 +59,6 @@ print '<input type=text size=15 name="loginID" value="">'
 
 print '<tr><td>&nbsp;</td><td>' . '&nbsp;&nbsp;<input type="submit" value="EDIT CLIENT DETAILS"></td>' . '</tr>' . '</table>' . '</font>' . '</form>';
 
-# issued new password
-print '<hr><form class="bo_ajax_form" action="'
-    . request()->url_for('backoffice/f_clientloginid_newpassword.cgi')
-    . '" method=post>'
-    . '<input type=hidden name=broker value='
-    . $encoded_broker . '>'
-    . '<b>LoginID : </b>';
-print "<input type=text size=15 name='show' onChange='CheckLoginIDformat(this)' value=''>";
-print "&nbsp; Select language for email: ";
-BOM::Backoffice::Request::template->process('backoffice/container/language_select.html.tt', {languages => BOM::Backoffice::Utility::get_languages()})
-    || die BOM::Backoffice::Request::template->error();
-print '&nbsp;&nbsp;<input type="submit" value="Send Account recovery email to client\'s registered email address"></b>' . '</form>';
-print '</td></tr></table>';
-
 Bar("VIEW/EDIT CLIENT'S Email");
 print '<form action="' . request()->url_for('backoffice/client_email.cgi') . '" method="post">' . '<b>Client\'s Email : </b>';
 print '<input type=text size=30 name="email">';
