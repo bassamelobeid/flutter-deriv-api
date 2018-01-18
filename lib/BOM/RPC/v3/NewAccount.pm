@@ -300,6 +300,12 @@ rpc new_account_real => sub {
         return $error if $error;
     }
 
+    # Populate new CR account fields from existing CR
+    if (!$client->is_virtual) {
+        my $new_account_updates = _get_existing_real_account_details($user, 'costarica');
+        $client->$_($new_account_updates->{$_}) for qw/place_of_birth citizen/;
+    }
+
     my $user = BOM::Platform::User->new({email => $client->email});
 
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
@@ -330,12 +336,6 @@ rpc new_account_real => sub {
     # as account is already created so no need to die on status set
     # else it will give false impression to client
     $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
-
-    # Populate new CR account fields from existing CR
-    if (!$client->is_virtual) {
-        my $new_account_updates = _get_existing_real_account_details($user, 'costarica');
-        $new_client->$_($new_account_updates->{$_}) for qw/place_of_birth citizen/;
-    }
 
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
@@ -407,6 +407,12 @@ rpc new_account_maltainvest => sub {
                 message_to_client => $error_map->{$err}});
     }
 
+    # Populate MF fields from MX/MLT client
+    if (!$client->is_virtual) {
+        my $new_account_updates = _get_existing_real_account_details($user, $client->landing_company->short);
+        $client->$_($new_account_updates->{$_}) for qw/place_of_birth citizen/;
+    }
+
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     my $user = BOM::Platform::User->new({email => $client->email});
@@ -435,12 +441,6 @@ rpc new_account_maltainvest => sub {
 
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
-
-    # Populate MF fields from MX/MLT client
-    if (!$client->is_virtual) {
-        my $new_account_updates = _get_existing_real_account_details($user, $client->landing_company->short);
-        $new_client->$_($new_account_updates->{$_}) for qw/place_of_birth citizen/;
-    }
 
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
