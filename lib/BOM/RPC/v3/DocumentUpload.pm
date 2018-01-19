@@ -145,6 +145,7 @@ sub validate_input {
     my $args      = $params->{args};
     my $client    = $params->{client};
     my $file_size = $args->{file_size};
+    my $status    = $args->{status};
 
     return 'max_size' if $file_size and $file_size > MAX_FILE_SIZE;
     return $args->{reason} if $status    and $status eq 'failure';
