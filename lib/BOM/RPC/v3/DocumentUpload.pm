@@ -22,8 +22,6 @@ rpc document_upload => sub {
     my $error = validate_input($params);
     return create_upload_error($error) if $error;
 
-    return failed_upload($params, $args->{reason}) if $status and $status eq 'failure';
-
     return start_document_upload($params) if $args->{document_type} and $args->{document_format};
 
     return successful_upload($params) if $status and $status eq 'success';
@@ -140,38 +138,6 @@ sub successful_upload {
     });
 
     return $args;
-}
-
-sub failed_upload {
-    my $params = shift;
-    my $error  = shift;
-
-    my $client = $params->{client};
-    my $args   = $params->{args};
-
-    unless ($client->get_db eq 'write') {
-        $client->set_db('write');
-    }
-
-    my $result;
-    my $error_occured;
-    try {
-        ($result) = $client->db->dbic->run(
-            ping => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.fail_document_upload(?)', undef, $args->{file_id});
-            });
-    }
-    catch {
-        $error_occured = 1;
-    };
-
-    if ($error_occured) {
-        warn 'Failed to update the failed-to-upload document in the db';
-    }
-
-    return create_upload_error($error) if $error;
-    return create_upload_error('doc_not_found') if not $result;
-    return create_upload_error();
 }
 
 sub validate_input {
