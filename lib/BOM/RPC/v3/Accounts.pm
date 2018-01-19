@@ -915,6 +915,11 @@ rpc set_settings => sub {
                 });
         }
 
+        $err = BOM::RPC::v3::Utility::create_error({
+                code              => 'PermissionDenied',
+                message_to_client => localize("Value of place_of_birth cannot be changed.")}
+        ) if ($client->place_of_birth and $args->{place_of_birth} and $args->{place_of_birth} ne $client->place_of_birth);
+
         $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && ($client->broker_code ne 'CR' or $client->get_status('ico_only'));
 
         if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
@@ -1375,15 +1380,18 @@ rpc set_self_exclusion => sub {
         my $name         = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
 
-        my $brand            = Brands->new(name => request()->brand);
-        my $marketing_email  = $brand->emails('marketing');
-        my $compliance_email = $brand->emails('compliance');
+        my $brand = Brands->new(name => request()->brand);
 
         my $message = "Client $client_title set the following self-exclusion limits:\n\n- Exclude from website until: $ret\n";
 
-        my $to_email = $compliance_email . ',' . $marketing_email;
+        my $to_email = $brand->emails('compliance') . ',' . $brand->emails('marketing');
+
+        # Include accounts team if client's brokercode is MLT/MX
+        # As per UKGC LCCP Audit Regulations
+        $to_email .= ',' . $brand->emails('accounting') if ($client->landing_company->short =~ /iom|malta$/);
+
         send_email({
-            from    => $compliance_email,
+            from    => $brand->emails('compliance'),
             to      => $to_email,
             subject => "Client " . $client->loginid . " set self-exclusion limits",
             message => [$message],
