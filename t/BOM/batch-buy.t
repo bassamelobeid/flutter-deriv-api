@@ -39,11 +39,9 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $datadog_mock = Test::MockModule->new('DataDog::DogStatsd');
 my @datadog_actions;
-$datadog_mock->mock(increment => sub { shift; push @datadog_actions, +{increment => [@_]}; });
-$datadog_mock->mock(decrement => sub { shift; push @datadog_actions, +{decrement => [@_]}; });
-$datadog_mock->mock(timing    => sub { shift; push @datadog_actions, +{timing    => [@_]}; });
-$datadog_mock->mock(gauge     => sub { shift; push @datadog_actions, +{gauge     => [@_]}; });
-$datadog_mock->mock(count     => sub { shift; push @datadog_actions, +{count     => [@_]}; });
+for my $mock (qw(increment decrement timing gauge count)) {
+    $datadog_mock->mock($mock => sub { shift; push @datadog_actions => {action_name => $mock, data => \@_} });
+}
 
 {
     no warnings 'redefine';
@@ -55,16 +53,18 @@ sub reset_datadog {
 }
 
 sub check_datadog {
-    my $item = +{@_};
-    my $name = $_[0];
-    if ($name eq "timing") {
-        for my $action (grep { @{[%$_]}[0] eq "timing" } @datadog_actions) {
-            next if $action->{timing}[0] ne $item->{timing}[0];
-            cmp_deeply($item->{timing}[1], $action->{timing}[2], "found datadog action: timing");
+    my $item = {
+        action_name => shift,
+        data        => shift,
+    };
+    if ($item->{action_name} eq "timing") {
+        for my $action (grep { $_->{action_name} eq "timing" } @datadog_actions) {
+            next if $action->{data}[0] ne $item->{data}[0];
+            cmp_deeply($item->{data}[1], $action->{data}[2], "found datadog action: timing");
         }
         return;
     }
-    cmp_deeply($item, any(@datadog_actions), "found datadog action: $name");
+    cmp_deeply($item, any(@datadog_actions), "found datadog action: @{[$item->{action_name}]}");
 }
 
 my $now = Date::Utility->new;
