@@ -38,22 +38,25 @@ sub get_self_exclusion_form {
         $limit_30day_turnover   = $self_exclusion->max_30day_turnover;
         $limit_session_duration = $self_exclusion->session_duration_limit;
         $limit_exclude_until    = $self_exclusion->exclude_until;
+        $limit_timeout_until    = $self_exclusion->timeout_until;
 
         if ($limit_exclude_until) {
             $limit_exclude_until = Date::Utility->new($limit_exclude_until);
-            if (Date::Utility::today->days_between($limit_exclude_until) < 0) {
-                $limit_exclude_until = $limit_exclude_until->date;
-            } else {
+            # Don't show date if it is expired. Exception for clients from IOM / Malta
+            if (Date::Utility::today->days_between($limit_exclude_until) >= 0 && $client->landing_company->short !~ /^(?:iom|malta)$/) {
                 undef $limit_exclude_until;
+            } else {
+                $limit_exclude_until = $limit_exclude_until->date;
             }
         }
-        $limit_timeout_until = $self_exclusion->timeout_until;
+
         if ($limit_timeout_until) {
             $limit_timeout_until = Date::Utility->new($limit_timeout_until);
-            if ($limit_timeout_until->is_after(Date::Utility->new)) {
-                $limit_timeout_until = $limit_timeout_until->datetime_yyyymmdd_hhmmss;
-            } else {
+            # Don't show date if it is expired. Exception for clients from IOM / Malta
+            if ($limit_timeout_until->is_before(Date::Utility->new) && $client->landing_company->short !~ /^(?:iom|malta)$/) {
                 undef $limit_timeout_until;
+            } else {
+                $limit_timeout_until = $limit_timeout_until->datetime_yyyymmdd_hhmmss;
             }
         }
 
