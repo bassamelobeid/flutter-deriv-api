@@ -8,11 +8,13 @@ use open qw[ :encoding(UTF-8) ];
 use LWP::UserAgent;
 use Text::Trim;
 use File::Copy;
+use File::Slurp;
 use Locale::Country 'code2country';
 use Data::Dumper;
 use HTML::Entities;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use Try::Tiny;
+use Digest::MD5 qw/md5_hex/;
 
 use Brands;
 use LandingCompany::Registry;
@@ -257,16 +259,22 @@ if ($input{whattodo} eq 'uploadID') {
             $client->set_db('write');
         }
 
+        my $file_contents = do { local $/; <$filetoupload> };
+        my $file_checksum = md5_hex($file_contents);
+
         my $id;
         my $error_occured;
         try {
+            my $STD_WARN_HANDLER = $SIG{__WARN__};
+            local $SIG{__WARN__} = sub { $STD_WARN_HANDLER->(@_) if $_[0] !~ /no_duplicate_uploads/; };
             ($id) = $client->db->dbic->run(
                 ping => sub {
                     $_->selectrow_array(
-                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?)',
+                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
                         undef, $loginid, $doctype, $docformat,
                         $expiration_date || undef,
                         $document_id     || '',
+                        $file_checksum,
                     );
                 });
         }
@@ -278,13 +286,14 @@ if ($input{whattodo} eq 'uploadID') {
 
         my $new_file_name = "$loginid.$doctype.$id.$docformat";
 
-        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload) or die "Upload failed for $filetoupload";
+        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $file_contents, $file_checksum)
+            or die "Upload failed for $filetoupload";
 
         my $query_result;
         try {
             ($query_result) = $client->db->dbic->run(
                 ping => sub {
-                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)', undef, $id, $checksum, $comments);
+                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $id, $comments);
                 });
         }
         catch {
