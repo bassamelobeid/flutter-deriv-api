@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use utf8;
 use open ':std', ':encoding(utf8)';
+use Test::Deep;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More;
@@ -56,7 +57,14 @@ sub reset_datadog {
 sub check_datadog {
     my $item = +{@_};
     my $name = $_[0];
-    ok(scalar grep { $item ~~ $_ } @datadog_actions, "found datadog action: $name");
+    if ($name eq "timing") {
+        for my $action (grep { @{[%$_]}[0] eq "timing" } @datadog_actions) {
+            next if $action->{timing}[0] ne $item->{timing}[0];
+            cmp_deeply($item->{timing}[1], $action->{timing}[2], "found datadog action: timing");
+        }
+        return;
+    }
+    cmp_deeply($item, any(@datadog_actions), "found datadog action: $name");
 }
 
 my $now = Date::Utility->new;
