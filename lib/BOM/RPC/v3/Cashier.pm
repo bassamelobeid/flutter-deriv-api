@@ -53,9 +53,12 @@ common_before_actions qw(auth);
 my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 
 rpc "cashier",
-    before_actions => [qw(auth validate_tnc compliance_checks)],
+    before_actions => [qw(auth)],
     sub {
     my $params = shift;
+
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($params->{client});
+    return $validation_error if $validation_error;
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
