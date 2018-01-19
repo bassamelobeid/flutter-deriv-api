@@ -15,6 +15,8 @@ use BOM::RPC::Registry '-dsl';
 
 use Brands;
 
+use DataDog::DogStatsd::Helper qw(stats_inc);
+
 use Client::Account;
 
 use BOM::RPC::v3::Utility;
@@ -405,7 +407,7 @@ rpc new_account_maltainvest => sub {
 
     # Save both current and new account
     if (not $new_client->save or not $client->save) {
-
+        stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:new_account_maltainvest"]});
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InternalServerError',
                 message_to_client => localize('Sorry, an error occurred while processing your account.')});
