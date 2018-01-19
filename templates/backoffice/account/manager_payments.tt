@@ -83,9 +83,7 @@
     <th class="all_payment_types bank_money_transfer cash_transfer">
         <label for="informclientbyemail">Notify Client by Email?</label>
     </th>
-    <th class="all_payment_types bank_money_transfer cash_transfer">
-        <label for="l">Select language for email</label>
-    </th>
+    <th class="all_payment_types bank_money_transfer cash_transfer">Language</th>
 </tr>
 <tr>
     <td>
