@@ -51,6 +51,58 @@ use constant LONGCODE_REDIS_BATCH => 20;
 # However, it's a config file held outside the repo, so we also don't want to let it get too old.
 use constant RATES_FILE_CACHE_TIME => 120;
 
+=head2 transaction_validation_checks
+
+    my $error = transaction_validation_checks($client, qw(check_trade_status check_tax_information));
+
+Performs a list of given Transaction Validation checks in addtion to C<validate_tnc> and C<compliance_checks> for a given client.
+Returns an error if a check fails else undef.
+
+=cut
+
+sub transaction_validation_checks {
+    my ($client, @validations) = @_;
+    unshift @validations, qw(validate_tnc compliance_checks);
+    return validation_checks($client, @validations);
+}
+
+=head2 validation_checks
+
+    my $error = validation_checks($client, qw(validate_tnc check_trade_status check_tax_information));
+
+Performs a list of given Transaction Validation checks for a given client.
+Returns an error if a check fails else undef.
+
+=cut
+
+sub validation_checks {
+    my ($client, @validations) = @_;
+
+    for my $act (@validations) {
+        die "Error: no such hook $act" unless BOM::Transaction::Validation->can($act);
+
+        my $err;
+        try {
+            $err = BOM::Transaction::Validation->new({clients => $client})->$act($client);
+        }
+        catch {
+            warn "Error happened when call before_action $act";
+            $err = Error::Base->cuss({
+                -type              => 'Internal Error',
+                -mesg              => 'Internal Error',
+                -message_to_client => localize('Sorry, there is an internal error.'),
+            });
+        };
+
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err->get_type,
+                message_to_client => $err->{-message_to_client},
+            }) if defined $err and ref $err eq "Error::Base";
+    }
+
+    return undef;
+}
+
 sub get_token_details {
     my $token = shift;
 

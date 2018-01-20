@@ -59,6 +59,22 @@ is $test_client->default_account, undef, 'new client has no default account';
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
+my $email_mx       = 'dummy_mx@binary.com';
+my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MX',
+});
+$test_client_mx->email($email_mx);
+$test_client_mx->save;
+my $user_mx = BOM::Platform::User->create(
+    email    => $email_mx,
+    password => '1234',
+);
+$user_mx->add_loginid({loginid => $test_client_mx->loginid});
+$user_mx->save;
+$test_client_mx->load;
+
+my ($token_mx) = $oauth->store_access_token_only(1, $test_client_mx->loginid);
+
 my $method = 'authorize';
 subtest $method => sub {
     my $params = {
@@ -370,6 +386,30 @@ subtest 'self_exclusion' => sub {
 
     $c->call_ok($method, $params)
         ->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01.', 'check if authorize check self exclusion');
+};
+
+subtest 'self_exclusion_mx - exclude_until date set in future' => sub {
+    my $params = {
+        language => 'en',
+        token    => $token_mx
+    };
+    $test_client_mx->set_exclusion->exclude_until('2020-01-01');
+    $test_client_mx->save();
+
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01.', 'check if authorize fails for self exclusion for mx');
+};
+
+subtest 'self_exclusion_mx - exclude_until date set in past' => sub {
+    my $params = {
+        language => 'en',
+        token    => $token_mx
+    };
+    $test_client_mx->set_exclusion->exclude_until('2017-01-01');
+    $test_client_mx->save();
+
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('Sorry, you have excluded yourself until 2017-01-01.', 'check if authorize failure continues for self exclusion for mx');
 };
 
 $self_excluded_client->set_exclusion->timeout_until(Date::Utility->new->epoch - 2 * 86400);

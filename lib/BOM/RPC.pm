@@ -130,25 +130,6 @@ sub _make_rpc_service_and_register {
                     next;
                 }
                 (($err = _auth($params)) and return $err) or next if $act eq 'auth';
-
-                die "Error: no such hook $act" unless BOM::Transaction::Validation->can($act);
-
-                try {
-                    $err = BOM::Transaction::Validation->new({clients => [$params->{client}]})->$act($params->{client});
-                }
-                catch {
-                    warn "Error happened when call before_action $act at method $method: $_";
-                    $err = Error::Base->cuss({
-                        -type              => 'Internal Error',
-                        -mesg              => 'Internal Error',
-                        -message_to_client => localize('Sorry, there is an internal error.'),
-                    });
-                };
-                return BOM::RPC::v3::Utility::create_error({
-                        code              => $err->get_type,
-                        message_to_client => $err->{-message_to_client},
-                    }) if defined $err and ref $err eq "Error::Base";
-
             }
 
             my $verify_app_res;
