@@ -153,9 +153,9 @@ sub validate_input {
     my $file_size = $args->{file_size};
     my $status    = $args->{status};
 
-    return 'max_size' if $file_size and $file_size > MAX_FILE_SIZE;
+    return 'max_size'      if $file_size and $file_size > MAX_FILE_SIZE;
     return $args->{reason} if $status    and $status eq 'failure';
-    return 'virtual' if $client->is_virtual;
+    return 'virtual'       if $client->is_virtual;
 
     my $invalid_date = validate_expiration_date($args->{expiration_date});
     return $invalid_date if $invalid_date;
