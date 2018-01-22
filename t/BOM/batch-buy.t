@@ -53,12 +53,10 @@ sub reset_datadog {
 }
 
 sub check_datadog {
-    my $item = {
-        action_name => shift,
-        data        => shift,
-    };
+    my $item = +{@_};
     if ($item->{action_name} eq "timing") {
         for my $action (grep { $_->{action_name} eq "timing" } @datadog_actions) {
+            # skip exact timing, compare only event name and tags
             next if $action->{data}[0] ne $item->{data}[0];
             cmp_deeply($item->{data}[1], $action->{data}[2], "found datadog action: timing");
         }
@@ -575,7 +573,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
 
-        check_datadog increment => [
+        check_datadog
+            action_name => 'increment',
+            data        => [
             "transaction.batch_buy.attempt" => {
                 tags => [
                     qw/ broker:vrtc
@@ -585,7 +585,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog increment => [
+        check_datadog
+            action_name => 'increment',
+            data        => [
             "transaction.batch_buy.success" => {
                 tags => [
                     qw/ broker:vrtc
@@ -595,7 +597,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog count => [
+        check_datadog
+            action_name => 'count',
+            data        => [
             "transaction.buy.attempt" => 1,
             {
                 tags => [
@@ -606,7 +610,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog count => [
+        check_datadog
+            action_name => 'count',
+            data        => [
             "transaction.buy.success" => 1,
             {
                 tags => [
@@ -617,7 +623,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog count => [
+        check_datadog
+            action_name => 'count',
+            data        => [
             "transaction.buy.attempt" => 2,
             {
                 tags => [
@@ -628,7 +636,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog count => [
+        check_datadog
+            action_name => 'count',
+            data        => [
             "transaction.buy.success" => 2,
             {
                 tags => [
@@ -639,7 +649,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog count => [
+        check_datadog
+            action_name => 'count',
+            data        => [
             "transaction.buy.attempt" => 2,
             {
                 tags => [
@@ -650,7 +662,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog count => [
+        check_datadog
+            action_name => 'count',
+            data        => [
             "transaction.buy.success" => 2,
             {
                 tags => [
@@ -661,7 +675,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog timing => [
+        check_datadog
+            action_name => 'timing',
+            data        => [
             "transaction.batch_buy.elapsed_time" => {
                 tags => [
                     qw/ broker:vrtc
@@ -671,7 +687,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog timing => [
+        check_datadog
+            action_name => 'timing',
+            data        => [
             "transaction.batch_buy.db_time" => {
                 tags => [
                     qw/ broker:vrtc
