@@ -85,10 +85,11 @@ my $permissions = {
     'trusted_client_edit.cgi'                                  => ['CS'],
     'untrusted_client_edit.cgi'                                => ['CS'],
     'view_192_raw_response.cgi'                                => ['CS'],
-    #following files used to have no access check inside
     'download_document.cgi'       => ['CS', 'Compliance', 'Quants', 'IT'],
     'f_client_combined_audit.cgi' => ['CS', 'Compliance'],
     'f_client_deskcom.cgi'        => ['CS'],
+    'email_templates.cgi'         => ['CS'],
+    'send_emails.cgi'             => ['CS'],
 
     'f_bbdl_download.cgi'                                                     => ['Quants'],
     'f_bbdl_list_directory.cgi'                                               => ['Quants'],

@@ -37,7 +37,6 @@ my $last_year = Date::Utility->new($now->epoch - 365 * 24 * 60 * 60)->date_ddmmm
 
 # CLIENT DETAILS
 Bar('CLIENT ACCOUNT DETAILS');
-
 print '<table border=0 width=100% cellpadding=4><tr><td>';
 
 # client details
@@ -58,16 +57,6 @@ print '<input type=text size=15 name="loginID" value="">'
     . '</td></tr>';
 
 print '<tr><td>&nbsp;</td><td>' . '&nbsp;&nbsp;<input type="submit" value="EDIT CLIENT DETAILS"></td>' . '</tr>' . '</table>' . '</font>' . '</form>';
-
-# issued new password
-print '<hr><form class="bo_ajax_form" action="'
-    . request()->url_for('backoffice/f_clientloginid_newpassword.cgi')
-    . '" method=post>'
-    . '<input type=hidden name=broker value='
-    . $encoded_broker . '>'
-    . '<b>LoginID : </b>';
-print "<input type=text size=15 name='show' onChange='CheckLoginIDformat(this)' value=''>";
-print '&nbsp;&nbsp;<input type="submit" value="Send Account recovery email to client\'s registered email address"></b>' . '</form>';
 print '</td></tr></table>';
 
 Bar("VIEW/EDIT CLIENT'S Email");
@@ -81,6 +70,9 @@ print '<b>Enter client loginid: </b>';
 print '<input type=text size=30 name="impersonate_loginid"><br>';
 print "<input type='hidden' name='broker' value='$encoded_broker'>";
 print '<input type="submit" value="Impersonate"></b></form>';
+
+Bar("SEND CLIENT EMAILS");
+print '<a href="' . request()->url_for('backoffice/email_templates.cgi') . '">Go to send email page</a>';
 
 Bar("MAKE DUAL CONTROL CODE");
 print
