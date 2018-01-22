@@ -32,6 +32,8 @@ code_exit_BO("Invalid reference id.")                              if (not $refe
 
 my $client = Client::Account->new({loginid => $loginid}) or code_exit_BO("Error : wrong loginid ($loginid) could not get client instance");
 
+code_exit_BO("Please provide valid loginid.") unless $client->landing_company->short eq 'japan';
+
 $action_type = $action_type eq 'deposit' ? localize('Deposit') : localize('Withdrawal');
 
 my $email_content;
