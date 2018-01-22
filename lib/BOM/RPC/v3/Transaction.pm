@@ -23,7 +23,9 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
 
 my $json = JSON::MaybeXS->new;
-common_before_actions qw(auth validate_tnc check_trade_status compliance_checks check_tax_information);
+common_before_actions qw(auth);
+
+my @validation_checks = qw(check_trade_status check_tax_information);
 
 sub trade_copiers {
     my $params = shift;
@@ -103,6 +105,10 @@ rpc buy => sub {
     my $params = shift;
 
     my $client = $params->{client} // die "Client should have been authenticated at this stage.";
+
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
+
     my ($source, $contract_parameters, $args, $payout) = @{$params}{qw/source contract_parameters args payout/};
     my $trading_period_start = $contract_parameters->{trading_period_start};
     my $purchase_date        = time;                                           # Purchase is considered to have happened at the point of request.
@@ -204,6 +210,9 @@ rpc buy_contract_for_multiple_accounts => sub {
     my $params = shift;
 
     my $client = $params->{client} // die "Client should have been authenticated at this stage.";
+
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'IcoOnlyAccount',
@@ -354,6 +363,9 @@ rpc sell_contract_for_multiple_accounts => sub {
 
     my $client = $params->{client} // die "client should be authed when get here";
 
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
+
     return BOM::RPC::v3::Utility::create_error({
             code              => 'IcoOnlyAccount',
             message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
@@ -422,6 +434,9 @@ rpc sell => sub {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
+
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
 
     my ($source, $args) = ($params->{source}, $params->{args});
     my $id = $args->{sell};
