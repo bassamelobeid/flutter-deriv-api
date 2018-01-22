@@ -291,6 +291,8 @@ if ($input{whattodo} eq 'uploadID') {
 
         my $query_result;
         try {
+            my $STD_WARN_HANDLER = $SIG{__WARN__};
+            local $SIG{__WARN__} = sub { $STD_WARN_HANDLER->(@_) if $_[0] !~ /no_duplicate_uploads/; };
             ($query_result) = $client->db->dbic->run(
                 ping => sub {
                     $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $id, $comments);
