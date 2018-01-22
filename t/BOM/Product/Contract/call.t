@@ -16,6 +16,9 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::RedisReplicated;
 use Test::MockModule;
+use BOM::Platform::Runtime;
+
+BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}');
 
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked_decimate->mock(
