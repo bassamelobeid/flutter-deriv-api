@@ -18,10 +18,10 @@ Please provide following details:
     <input type="text" size=15 name="loginid" id="loginid" required/>
     <br/>
 
-    <label for="japan_email_deposit">Deposit</label>
     <input type="radio" name="action_type" value="deposit" id="japan_email_deposit"/>
-    <label for="japan_email_withdrawal">Withdrawal</label>
+    <label for="japan_email_deposit">Deposit</label>
     <input type="radio" name="action_type" value="withdrawal" id="japan_email_withdrawal"/>
+    <label for="japan_email_withdrawal">Withdrawal</label>
     <br/>
 
     <label for="payment_date">Payment date</label>
