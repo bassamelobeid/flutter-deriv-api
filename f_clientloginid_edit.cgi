@@ -259,11 +259,20 @@ if ($input{whattodo} eq 'uploadID') {
             $client->set_db('write');
         }
 
+        my $error_occured;
+        try {
+            $client->_set_staff;
+        }
+        catch {
+            $error_occured = $_;
+        };
+
+        die "Unable to set staff info, with error: $error_occured" if $error_occured;
+  
         my $file_contents = do { local $/; <$filetoupload> };
         my $file_checksum = md5_hex($file_contents);
-
+        
         my $id;
-        my $error_occured;
         try {
             my $STD_WARN_HANDLER = $SIG{__WARN__};
             local $SIG{__WARN__} = sub { $STD_WARN_HANDLER->(@_) if $_[0] !~ /no_duplicate_uploads/; };

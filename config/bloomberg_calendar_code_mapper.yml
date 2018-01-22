@@ -3,15 +3,17 @@ AM:
 - EEI_AM
 AX:
 - ASX
-- ASX_S
+- ASX_OTC
 B2:
 - BMF
 - BOVESPA
 BU:
 - EEI_BU
 - EEI_LI
+- EURONEXT_OTC
 - EURONEXT
 - STOXX
+- STOXX_OTC
 BX:
 - BSE
 CE:
@@ -22,6 +24,7 @@ DT:
 - EUREX
 FA:
 - FSE
+- FSE_OTC
 HO:
 - HKF
 HS:
@@ -34,10 +37,12 @@ JA:
 - JSC
 JH:
 - JSE
+- JSE_OTC
 LI:
 - ICE_LIFFE
 LS:
 - LSE
+- LSE_OTC
 - ODLS
 MD:
 - MEFF
@@ -46,6 +51,7 @@ MI:
 - IDM
 MS:
 - BM
+- BM_OTC
 N7:
 - NASDAQ
 - NASDAQ_INDEX
@@ -53,9 +59,12 @@ ND:
 - NZSE
 NT:
 - NSE
+- NSE_OTC
 NY:
 - NYSE
+- NYSE_OTC
 - NYSE_SPC
+- NYSE_SPC_OTC
 - SP_GSCI
 O2:
 - OMX
@@ -65,7 +74,6 @@ OS:
 - OSLO
 PA:
 - EEI_PA
-- SBF
 R7:
 - MOF
 - RTS
@@ -86,10 +94,12 @@ SX:
 - SES
 T4:
 - TRSE
+- TRSE_OTC
 TD:
 - SAS
 TK:
 - TSE
+- TSE_OTC
 - TSE_S
 AU:
 - AUD
