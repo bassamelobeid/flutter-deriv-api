@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use utf8;
 use open ':std', ':encoding(utf8)';
+use Test::Deep;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More;
@@ -36,15 +37,11 @@ $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platf
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
-use JSON::MaybeXS;
-my $json         = JSON::MaybeXS->new;
 my $datadog_mock = Test::MockModule->new('DataDog::DogStatsd');
 my @datadog_actions;
-$datadog_mock->mock(increment => sub { shift; push @datadog_actions, $json->encode({increment => [@_]}); return; });
-$datadog_mock->mock(decrement => sub { shift; push @datadog_actions, $json->encode({decrement => [@_]}); return; });
-$datadog_mock->mock(timing    => sub { shift; push @datadog_actions, $json->encode({timing    => [@_]}); return; });
-$datadog_mock->mock(gauge     => sub { shift; push @datadog_actions, $json->encode({gauge     => [@_]}); return; });
-$datadog_mock->mock(count     => sub { shift; push @datadog_actions, $json->encode({count     => [@_]}); return; });
+for my $mock (qw(increment decrement timing gauge count)) {
+    $datadog_mock->mock($mock => sub { shift; push @datadog_actions => {action_name => $mock, data => \@_} });
+}
 
 {
     no warnings 'redefine';
@@ -56,14 +53,16 @@ sub reset_datadog {
 }
 
 sub check_datadog {
-    my $item = $json->encode({@_});
-    if ($_[0] eq 'timing') {
-        my ($p1, $p2) = split /,/, $item, 2;
-        my $re = qr/\Q$p1\E,[\d.]+,\Q$p2\E/;
-        ok + (!!grep { /$re/ } @datadog_actions), "found datadog action: $item";
-    } else {
-        ok + (!!grep { $_ eq $item } @datadog_actions), "found datadog action: $item";
+    my $item = +{@_};
+    if ($item->{action_name} eq "timing") {
+        for my $action (grep { $_->{action_name} eq "timing" } @datadog_actions) {
+            # skip exact timing, compare only event name and tags
+            next if $action->{data}[0] ne $item->{data}[0];
+            cmp_deeply($item->{data}[1], $action->{data}[2], "found datadog action: timing");
+        }
+        return;
     }
+    cmp_deeply($item, any(@datadog_actions), "found datadog action: @{[$item->{action_name}]}");
 }
 
 my $now = Date::Utility->new;
@@ -574,7 +573,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
 
-        check_datadog increment => [
+        check_datadog
+            action_name => 'increment',
+            data        => [
             "transaction.batch_buy.attempt" => {
                 tags => [
                     qw/ broker:vrtc
@@ -584,7 +585,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog increment => [
+        check_datadog
+            action_name => 'increment',
+            data        => [
             "transaction.batch_buy.success" => {
                 tags => [
                     qw/ broker:vrtc
@@ -594,7 +597,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog count => [
+        check_datadog
+            action_name => 'count',
+            data        => [
             "transaction.buy.attempt" => 1,
             {
                 tags => [
@@ -605,7 +610,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog count => [
+        check_datadog
+            action_name => 'count',
+            data        => [
             "transaction.buy.success" => 1,
             {
                 tags => [
@@ -616,7 +623,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog count => [
+        check_datadog
+            action_name => 'count',
+            data        => [
             "transaction.buy.attempt" => 2,
             {
                 tags => [
@@ -627,7 +636,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog count => [
+        check_datadog
+            action_name => 'count',
+            data        => [
             "transaction.buy.success" => 2,
             {
                 tags => [
@@ -638,7 +649,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog count => [
+        check_datadog
+            action_name => 'count',
+            data        => [
             "transaction.buy.attempt" => 2,
             {
                 tags => [
@@ -649,7 +662,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog count => [
+        check_datadog
+            action_name => 'count',
+            data        => [
             "transaction.buy.success" => 2,
             {
                 tags => [
@@ -660,7 +675,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog timing => [
+        check_datadog
+            action_name => 'timing',
+            data        => [
             "transaction.batch_buy.elapsed_time" => {
                 tags => [
                     qw/ broker:vrtc
@@ -670,7 +687,9 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
-        check_datadog timing => [
+        check_datadog
+            action_name => 'timing',
+            data        => [
             "transaction.batch_buy.db_time" => {
                 tags => [
                     qw/ broker:vrtc
