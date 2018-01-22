@@ -89,15 +89,21 @@ sub successful_upload {
 
     my $result;
     my $error_occured;
+    my $duplicate_doc_error;
     try {
+        my $STD_WARN_HANDLER = $SIG{__WARN__};
+        local $SIG{__WARN__} = sub { $STD_WARN_HANDLER->(@_) if $_[0] !~ /no_duplicate_uploads/; };
         ($result) = $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $args->{file_id}, undef);
             });
     }
     catch {
+        $duplicate_doc_error = 1 if /no_duplicate_uploads/;
         $error_occured = 1;
     };
+
+    return create_upload_error('duplicate_document') if $duplicate_doc_error;
 
     return create_upload_error('doc_not_found') if not $result;
 

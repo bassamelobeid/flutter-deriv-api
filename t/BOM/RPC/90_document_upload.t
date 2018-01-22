@@ -141,7 +141,13 @@ subtest 'Attempt to upload same document again (checksum collision) with differe
         expected_checksum => CHECKSUM
     };
     $params->{args} = $args;
+    $result = $c->call_ok($method, $params)->result;
+    # Upload will commence and be blocked at finish
 
+    $args = {
+        status   => 'success',
+        file_id  => $result->{file_id}};
+    $params->{args} = $args;
     $c->call_ok($method, $params)->has_error->error_message_is('Document already uploaded.', 'error if same document is uploaded twice');
 };
 
