@@ -3,6 +3,7 @@ use warnings;
 
 use Test::Most;
 use Test::Warn;
+use Test::MockTime qw(:all);
 
 no warnings qw/redefine/;
 
@@ -247,18 +248,12 @@ subtest 'Duplicate upload rejected' => sub {
     my %upload_info = document_upload_ok($data, file_size => $length);
 
     # Request to upload the same file again
-    my $req = {
-        %generic_req,
-        req_id          => ++$req_id,
-        file_size       => $length,
-        document_format => 'JPEG',
-        expected_checksum => md5_hex($data),
-    };
+    %upload_info = request_upload($data);
+    my $res = send_chunks($data, %upload_info);
 
-    my $res = $t->await::document_upload($req);
-    ok $res->{error}, 'Error occured';
-    is $res->{error}->{code}, 'DuplicateUpload', 'Error code for duplicate document';
-    is $res->{error}->{message_to_client}, 'Document already uploaded.', 'Error msg for duplicate document';
+    my $error = $res->{error};
+    is $error->{code}, 'DuplicateUpload', 'Error code for duplicate document';
+    is $error->{message}, 'Document already uploaded.', 'Error msg for duplicate document';
 };
 
 subtest 'Document with wrong checksum rejected' => sub {
@@ -287,6 +282,24 @@ subtest 'Attempt to re-upload document after error uploading' => sub {
     # Re-attempt the data that failed in the first subtest: 'Fail during upload'
     my $data   = FAIL_TEST_DATA;
     my $length = length $data;
+    document_upload_ok($data, file_size => $length);
+};
+
+subtest 'Attempt to restart a timed out upload' => sub {
+    my $data   = 'Timeout data';
+    my $length = length $data;
+
+    my $request = {};
+    my $upload_info = {request_upload($data)};
+    receive_ok($data, %$upload_info);
+    $request->{upload_info} = $upload_info;
+    $request->{frames} = [gen_frames($data, %$upload_info)];
+
+    $t->send_ok({binary => $request->{frames}->[0]});
+
+    # Send a frame, then stop, let server timeout, try again
+    set_relative_time(120);
+
     document_upload_ok($data, file_size => $length);
 };
 
