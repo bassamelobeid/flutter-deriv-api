@@ -128,6 +128,18 @@ sub _build_live_open_ico {
 
 }
 
+sub historical_open_bets {
+    my ($self, $date) = @_;
+
+    return $self->_db->dbic->run(
+        fixup => sub {
+            $_->selectall_hashref(
+                qq{ SELECT id, loginid AS client_loginid, currency_code, short_code, buy_price, ref AS transaction_id
+FROM accounting.get_historical_open_bets_overview(?::TIMESTAMP)}, 'id', {}, $date
+            );
+        });
+}
+
 sub generate {
     return 1;
 }

@@ -33,6 +33,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::MarketData::Types;
 use BOM::Backoffice::Request;
+use Date::Utility;
 
 has 'min_contract_length' => (
     isa     => 'time_interval',
@@ -43,19 +44,17 @@ has 'min_contract_length' => (
 
 # This report will only be run on the MLS.
 sub generate {
-    my $self = shift;
+    my $self     = shift;
+    my $for_date = shift;
 
     my $start = time;
 
-    my $nowish         = $self->end;
+    my $nowish         = Date::Utility->new($for_date) || Date::Utility->new;
     my $pricing_date   = $nowish->minus_time_interval($nowish->epoch % $self->min_contract_length->seconds);
     my $expiry_minimum = $pricing_date->plus_time_interval($self->min_contract_length);
-
-    my $open_bets_ref = $self->live_open_bets;
-
-    my @keys = keys %{$open_bets_ref};
-
-    my $howmany = scalar @keys;
+    my $open_bets_ref  = $for_date ? $self->historical_open_bets($nowish->date) : $self->live_open_bets;
+    my @keys           = keys %{$open_bets_ref};
+    my $howmany        = scalar @keys;
 
     my $csv = Text::CSV_XS->new({eol => "\n"});
     my ($scenario_analysis, $sum_of_buyprice, $sum_of_payout);

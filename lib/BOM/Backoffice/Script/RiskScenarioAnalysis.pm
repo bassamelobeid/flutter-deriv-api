@@ -8,16 +8,23 @@ BOM::Backoffice::Script::RiskScenarioAnalysis
 
 Determine a value for our curent open positions at risk.
 
+=head1 SYNOPSIS
+
+To get the risk report for today open positions: perl bin/risk_scenario_analysis.pl 
+
+To get risk report for open positions at 00GMT of a historical date: perl bin/risk_scenario_analysis.pl '2018-01-16'
+
 =cut
 
 use Moose;
 use BOM::Platform::Runtime;
+use Date::Utility;
 use BOM::RiskReporting::ScenarioAnalysis;
 
 sub run {
     my $self = shift;
-
-    BOM::RiskReporting::ScenarioAnalysis->new->generate;
+    my $date = shift(@ARGV);
+    BOM::RiskReporting::ScenarioAnalysis->new->generate($date);
 
     return 0;
 }
