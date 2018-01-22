@@ -79,9 +79,17 @@ if ($r->param('update_limit')) {
         code_exit_BO('Name is required.');
     }
 
-    my $p = $r->param('risk_profile');
-    if ($p and $known_profiles{$p}) {
-        $ref{risk_profile} = $p;
+    my $profile    = $r->param('risk_profile');
+    my $commission = $r->param('commission');
+
+    if ($profile and $commission) {
+        code_exit_BO('You can only set risk_profile or commission in one entry');
+    }
+
+    if ($profile and $known_profiles{$profile}) {
+        $ref{risk_profile} = $profile;
+    } elsif ($commission) {
+        $ref{commission} = $commission;
     } elsif ($has_custom_conditions and $contract_category ne 'lookback') {
         code_exit_BO('Unrecognize risk profile.');
     }
@@ -195,8 +203,11 @@ foreach my $id (keys %$custom_limits) {
     $output_ref->{updated_by} = delete $copy{updated_by};
     $output_ref->{updated_on} = delete $copy{updated_on};
     my $profile = delete $copy{risk_profile};
-    $output_ref->{payout_limit}     = $limit_profile->{$profile}{payout}{USD};
-    $output_ref->{turnover_limit}   = $limit_profile->{$profile}{turnover}{USD};
+
+    if ($profile) {
+        $output_ref->{payout_limit}   = $limit_profile->{$profile}{payout}{USD};
+        $output_ref->{turnover_limit} = $limit_profile->{$profile}{turnover}{USD};
+    }
     $output_ref->{condition_string} = join "\n", map { $_ . "[$copy{$_}] " } keys %copy;
     push @output, $output_ref;
 }
