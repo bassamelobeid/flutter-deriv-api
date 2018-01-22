@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::Exception;
 use Test::Warnings;
 
@@ -276,6 +276,40 @@ subtest 'check for risk_profile consistency' => sub {
             is $rp->get_risk_profile, $expected{$bc}, 'same profile after iteration';
         }
     }
+};
+
+subtest 'commission profile' => sub {
+    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"yyy": {"market": "forex", "contract_category": "callput", "commission": "0.1", "barrier_category": "euro_non_atm", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
+    );
+    $ul = Quant::Framework::Underlying->new('frxUSDJPY');
+    my %args = (
+        contract_category              => 'callput',
+        start_type                     => 'spot',
+        expiry_type                    => 'tick',
+        currency                       => 'USD',
+        barrier_category               => 'euro_atm',
+        landing_company                => 'costarica',
+        symbol                         => $ul->symbol,
+        market_name                    => $ul->market->name,
+        submarket_name                 => $ul->submarket->name,
+        underlying_risk_profile        => $ul->risk_profile,
+        underlying_risk_profile_setter => $ul->risk_profile_setter,
+    );
+    my $rp = BOM::Platform::RiskProfile->new(%args);
+
+    ok !$rp->get_commission, 'no commission for euro_atm';
+    $args{barrier_category} = 'euro_non_atm';
+    $rp = BOM::Platform::RiskProfile->new(%args);
+    ok $rp->get_commission, 'has custom commission for euro_non_atm';
+    is $rp->get_commission, 0.1, 'commission is 0.1';
+
+    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"yyy": {"market": "forex", "contract_category": "callput", "commission": "0.1", "barrier_category": "euro_non_atm", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}, "zyy": {"contract_category": "callput", "commission": "0.2", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
+    );
+    $rp = BOM::Platform::RiskProfile->new(%args);
+    ok $rp->get_commission, 'has custom commission for euro_non_atm';
+    is $rp->get_commission, 0.2, 'got the higher commission, 0.2';
 };
 
 #cleanup
