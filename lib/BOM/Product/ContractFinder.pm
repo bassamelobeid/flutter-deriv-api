@@ -63,18 +63,19 @@ sub _get_contracts {
     if ($calendar->trades_on($exchange, $date)) {
         $open = $calendar->opening_on($exchange, $date)->epoch;
         $close = $calendar->closing_on($exchange, $date)->epoch;
-        my $deco_args = {
-            underlying => $underlying,
-            calendar   => $calendar,
-            date       => $date
-        };
-        if ($product_type eq 'basic') {
-            $deco_args->{offerings} = _get_basic_offerings($symbol, $landing_company_short, $country_code);
-            $offerings = BOM::Product::ContractFinder::Basic::decorate($deco_args);
-        } elsif ($product_type eq 'multi_barrier') {
-            $deco_args->{offerings} = _get_multi_barrier_offerings($symbol, $landing_company_short, $country_code);
-            $offerings = BOM::Product::ContractFinder::MultiBarrier::decorate($deco_args);
-        }
+    }
+
+    my $deco_args = {
+        underlying => $underlying,
+        calendar   => $calendar,
+        date       => $date
+    };
+    if ($product_type eq 'basic') {
+        $deco_args->{offerings} = _get_basic_offerings($symbol, $landing_company_short, $country_code);
+        $offerings = BOM::Product::ContractFinder::Basic::decorate($deco_args);
+    } elsif ($product_type eq 'multi_barrier') {
+        $deco_args->{offerings} = _get_multi_barrier_offerings($symbol, $landing_company_short, $country_code);
+        $offerings = BOM::Product::ContractFinder::MultiBarrier::decorate($deco_args);
     }
 
     return {

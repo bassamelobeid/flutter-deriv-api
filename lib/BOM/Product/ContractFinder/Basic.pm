@@ -30,26 +30,28 @@ sub decorate {
         my $barrier_category  = $o->{barrier_category};
         my $contract_type     = $o->{contract_type};
 
-        if ($o->{start_type} eq 'forward' and defined $forward_starting_options) {
-            $o->{forward_starting_options} = $forward_starting_options;
-        } else {
-            my @trade_dates;
-            for (my $date = $now; @trade_dates < 3; $date = $date->plus_time_interval('1d')) {
-                $date = $calendar->trade_date_after($exchange, $date) unless $calendar->trades_on($exchange, $date);
-                push @trade_dates, $date;
+        if ($o->{start_type} eq 'forward') {
+            if (defined $forward_starting_options) {
+                $o->{forward_starting_options} = $forward_starting_options;
+            } else {
+                my @trade_dates;
+                for (my $date = $now; @trade_dates < 3; $date = $date->plus_time_interval('1d')) {
+                    $date = $calendar->trade_date_after($exchange, $date) unless $calendar->trades_on($exchange, $date);
+                    push @trade_dates, $date;
+                }
+                $forward_starting_options = [
+                    map { {
+                            date  => Date::Utility->new($_->{open})->truncate_to_day->epoch,
+                            open  => $_->{open},
+                            close => $_->{close},
+                            @blackout_periods ? (blackouts => \@blackout_periods) : ()}
+                        }
+                        map {
+                        @{$calendar->trading_period($exchange, $_)}
+                        } @trade_dates
+                ];
+                $o->{forward_starting_options} = $forward_starting_options;
             }
-            $forward_starting_options = [
-                map { {
-                        date  => Date::Utility->new($_->{open})->truncate_to_day->epoch,
-                        open  => $_->{open},
-                        close => $_->{close},
-                        @blackout_periods ? (blackouts => \@blackout_periods) : ()}
-                    }
-                    map {
-                    @{$calendar->trading_period($exchange, $_)}
-                    } @trade_dates
-            ];
-            $o->{forward_starting_options} = $forward_starting_options;
         }
 
         # This key is being used to decide whether to show additional
