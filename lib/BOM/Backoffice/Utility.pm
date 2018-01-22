@@ -16,7 +16,7 @@ sub get_languages {
         TH    => 'Thai',
         VI    => 'Vietnamese',
         ZH_CN => 'Simplified Chinese',
-        ZH_TW => 'Tradition Chinese'
+        ZH_TW => 'Traditional Chinese'
     };
 }
 
