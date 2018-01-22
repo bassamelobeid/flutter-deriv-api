@@ -268,10 +268,10 @@ if ($input{whattodo} eq 'uploadID') {
         };
 
         die "Unable to set staff info, with error: $error_occured" if $error_occured;
-  
+
         my $file_contents = do { local $/; <$filetoupload> };
         my $file_checksum = md5_hex($file_contents);
-        
+
         my $id;
         try {
             my $STD_WARN_HANDLER = $SIG{__WARN__};
