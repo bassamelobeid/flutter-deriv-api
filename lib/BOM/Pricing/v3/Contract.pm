@@ -423,8 +423,10 @@ sub get_bid {
                     delete $response->{barrier} if exists $response->{barrier};
                 } elsif ($contract->code eq 'LBFLOATCALL') {
                     $response->{barrier} = $contract->spot_min;
-                } else {
+                } elsif ($contract->code eq 'LBFLOATPUT') {
                     $response->{barrier} = $contract->spot_max;
+                } else {
+                    #do nothing here
                 }
             }
         }
