@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 10;
+use Test::More;
 use Test::Exception;
 use Test::Warnings;
 
@@ -312,6 +312,32 @@ subtest 'commission profile' => sub {
     is $rp->get_commission, 0.2, 'got the higher commission, 0.2';
 };
 
+subtest 'precedence' => sub {
+    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"yyy": {"underlying_symbol": "frxUSDJPY", "market": "forex", "contract_category": "callput", "risk_profile": "high_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
+    );
+    $ul = Quant::Framework::Underlying->new('frxUSDJPY');
+    my $rp = BOM::Platform::RiskProfile->new(
+        contract_category              => 'callput',
+        start_type                     => 'spot',
+        expiry_type                    => 'tick',
+        currency                       => 'USD',
+        barrier_category               => 'euro_atm',
+        landing_company                => 'costarica',
+        symbol                         => $ul->symbol,
+        market_name                    => $ul->market->name,
+        submarket_name                 => $ul->submarket->name,
+        underlying_risk_profile        => $ul->risk_profile,
+        underlying_risk_profile_setter => $ul->risk_profile_setter,
+    );
+    my $params         = $rp->get_turnover_limit_parameters;
+    my $custom_profile = $params->[0];
+    is $custom_profile->{limit}, 50000, '50,000 turnover limit';
+    is scalar(@{$custom_profile->{symbols}}), 1, 'only only symbol';
+    is $custom_profile->{symbols}->[0], 'frxUSDJPY', 'symbol is frxUSDJPY even if market=forex is specified';
+};
+
+done_testing();
 #cleanup
 BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{}');
 BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles('{}');

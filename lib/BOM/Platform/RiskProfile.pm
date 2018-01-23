@@ -216,12 +216,12 @@ sub get_turnover_limit_parameters {
 
             my $offerings_obj = _offerings_obj();
 
-            if ($_->{market}) {
-                $params->{symbols} = [$offerings_obj->query({market => $_->{market}}, ['underlying_symbol'])];
+            if ($_->{underlying_symbol}) {
+                $params->{symbols} = [$_->{underlying_symbol}];
             } elsif ($_->{submarket}) {
                 $params->{symbols} = [$offerings_obj->query({submarket => $_->{submarket}}, ['underlying_symbol'])];
-            } elsif ($_->{underlying_symbol}) {
-                $params->{symbols} = [$_->{underlying_symbol}];
+            } elsif ($_->{market}) {
+                $params->{symbols} = [$offerings_obj->query({market => $_->{market}}, ['underlying_symbol'])];
             }
 
             if ($_->{contract_category}) {
