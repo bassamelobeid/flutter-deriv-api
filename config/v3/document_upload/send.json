@@ -46,6 +46,7 @@
     },
     "expected_checksum": {
       "type": "string",
+      "pattern":"^[[:xdigit:]]{32}",
       "description": "The checksum of the file to be uploaded",
       "required": 1
     }
