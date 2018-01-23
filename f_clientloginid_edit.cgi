@@ -8,7 +8,6 @@ use open qw[ :encoding(UTF-8) ];
 use LWP::UserAgent;
 use Text::Trim;
 use File::Copy;
-use File::Slurp;
 use Locale::Country 'code2country';
 use Data::Dumper;
 use HTML::Entities;
