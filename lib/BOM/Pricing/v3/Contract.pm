@@ -425,8 +425,6 @@ sub get_bid {
                     $response->{barrier} = $contract->spot_min;
                 } elsif ($contract->code eq 'LBFLOATPUT') {
                     $response->{barrier} = $contract->spot_max;
-                } else {
-                    #do nothing here
                 }
             }
         }
