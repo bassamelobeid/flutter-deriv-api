@@ -7,10 +7,12 @@ use warnings;
 use Carp;
 
 use Sub::Util qw(set_subname);
+use Scalar::Util qw(blessed);
+
 use Struct::Dumb qw(readonly_struct);
 
 readonly_struct
-    ServiceDef        => [qw(name code before_actions is_async)],
+    ServiceDef        => [qw(name code is_async)],
     named_constructor => 1;
 
 =head1 DOMAIN-SPECIFIC-LANGUAGE
@@ -48,15 +50,13 @@ places (such as unit tests) that expects to be able to invoke these directly.
 A shortcut for defining an RPC with the C<async> option set; i.e. one whose
 results are returned asynchronously via a L<Future>.
 
-=head2 common_before_actions
+=head2 requires_auth
 
-    common_before_actions $name, $name, ...
+    requires_auth();
 
-Sets a default list of action names, which will apply to subsequent uses of
+Sets a default requirement of auth check, which will apply to subsequent uses of
 the C<rpc> keyword in the same package. This list will be passed by default to
-any RPC registration that does not otherwise specify a C<before_actions>. If
-the C<rpc> keyword is passed a C<before_actions> then that list will entirely
-override the common one - in particular it does not get merged.
+any RPC registration that does not otherwise specify a C<auth>.
 
 =cut
 
@@ -78,14 +78,37 @@ sub import {
 sub import_dsl_into {
     my ($pkg, $caller) = @_;
 
-    my @common_before_actions;
+    my $auth_all;
 
     my $rpc_keyword = sub {
         my $code = pop;
         my $name = shift;
         my %opts = @_;
 
-        $opts{before_actions} //= \@common_before_actions if @common_before_actions;
+        $opts{auth} //= $auth_all if $auth_all;
+
+        $code = do {
+            my $original_code = $code;
+            sub {
+                my $params = $_[0] // {};
+                my $client = $params->{client};
+
+                if (!$client) {
+                    # If there is no $client, we continue with our auth check
+                    my $err = _auth($params);
+                    return $err if $err;
+                } else {
+                    # If there is a $client object but is not a Valid Client::Account we return an error
+                    unless (blessed $client && $client->isa('Client::Account')) {
+                        return BOM::RPC::v3::Utility::create_error({
+                                code              => 'InvalidRequest',
+                                message_to_client => localize("Invalid request.")});
+                    }
+                }
+
+                return $original_code->($params);
+                }
+        } if $opts{auth};
 
         register($name, set_subname("RPC[$name]" => $code), %opts);
 
@@ -107,8 +130,8 @@ sub import_dsl_into {
             );
         },
 
-        common_before_actions => sub {
-            @common_before_actions = @_;
+        requires_auth => sub {
+            $auth_all = 1;
         },
     );
 
@@ -130,15 +153,6 @@ Adds a new named RPC to the list of services handled by the server.
 
 This package method is intended to be called by modules C<use>d by the main
 application.
-
-Takes the following additional named arguments:
-
-=over 4
-
-=item before_actions => ARRAY
-
-Optional array reference containing prerequisite actions to be invoked before
-the main code.
 
 TODO(leonerd): discover this interface more and document it better
 
@@ -165,7 +179,6 @@ sub register {
         ServiceDef(
         name           => $name,
         code           => $code,
-        before_actions => $args{before_actions},
         is_async       => !!$args{async},
         );
     return;
@@ -186,6 +199,23 @@ sub get_service_defs {
     $done_startup = 1;
 
     return @service_defs;
+}
+
+sub _auth {
+    my $params = shift;
+
+    my $token_details = $params->{token_details};
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        unless $token_details and exists $token_details->{loginid};
+
+    my $client = Client::Account->new({loginid => $token_details->{loginid}});
+
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+    $params->{client} = $client;
+    $params->{app_id} = $token_details->{app_id};
+    return;
 }
 
 1;

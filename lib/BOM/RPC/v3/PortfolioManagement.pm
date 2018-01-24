@@ -17,7 +17,7 @@ use BOM::Platform::Context qw (request localize);
 use BOM::Platform::Runtime;
 use BOM::Transaction;
 
-common_before_actions qw(auth);
+requires_auth();
 
 rpc portfolio => sub {
     my $params = shift;

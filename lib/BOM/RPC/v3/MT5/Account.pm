@@ -26,7 +26,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Email;
 use BOM::Transaction;
 
-common_before_actions qw(auth);
+requires_auth();
 
 use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
 

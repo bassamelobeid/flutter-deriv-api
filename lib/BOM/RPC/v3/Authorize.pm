@@ -123,11 +123,10 @@ rpc authorize => sub {
     # check for not allowing cross brand tokens
     return BOM::RPC::v3::Utility::invalid_token_error() unless (grep { $brand_name eq $_ } @{$lc->allowed_for_brands});
 
-    if ($client->get_status('disabled')) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'AccountDisabled',
-                message_to_client => BOM::Platform::Context::localize("Account is disabled.")});
-    }
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'AccountDisabled',
+            message_to_client => BOM::Platform::Context::localize("Account is disabled.")}
+    ) unless BOM::RPC::v3::Utility::is_account_available($client);
 
     if (my $limit_excludeuntil = $client->get_self_exclusion_until_dt) {
         return BOM::RPC::v3::Utility::create_error({
