@@ -12,6 +12,7 @@ use JSON::MaybeXS;
 use LandingCompany::Registry;
 use List::Util qw(first);
 use f_brokerincludeall;
+use Try::Tiny;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
@@ -273,6 +274,38 @@ BOM::Backoffice::Request::template->process(
     {
         url             => request()->url_for('backoffice/quant/product_management.cgi'),
         existing_custom => $json->decode($quants_config->custom_otm_threshold),
+    }) || die BOM::Backoffice::Request::template->error;
+
+Bar("Japan KLFB");
+
+if ($r->param('update_klfb_limit')) {
+    my $config = BOM::Platform::QuantsConfig->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        recorded_date    => Date::Utility->new,
+    );
+    try {
+        $config->save_config(
+            'klfb',
+            {
+                limit      => $r->param('klfb_limit'),
+                date       => $r->param('klfb_date'),
+                updated_by => $staff
+            });
+        print "saved successful";
+    }
+    catch {
+        print $_;
+    };
+
+}
+
+BOM::Backoffice::Request::template->process(
+    'backoffice/japan_klfb.html.tt',
+    {
+        url => request()->url_for('backoffice/quant/product_management.cgi'),
+        existing_klfb =>
+            BOM::Platform::QuantsConfig->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader())->get_config('klfb')->[0],
     }) || die BOM::Backoffice::Request::template->error;
 
 code_exit_BO();
