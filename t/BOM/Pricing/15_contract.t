@@ -25,6 +25,9 @@ use BOM::Platform::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Quant::Framework;
 use BOM::Platform::Chronicle;
+use BOM::Platform::Runtime;
+
+BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}');
 
 initialize_realtime_ticks_db();
 my $now   = Date::Utility->new('2005-09-21 06:46:00');
