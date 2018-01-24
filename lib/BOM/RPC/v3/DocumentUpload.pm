@@ -30,13 +30,12 @@ rpc document_upload => sub {
 };
 
 sub start_document_upload {
-    my $params            = shift;
-    my $client            = $params->{client};
-    my $args              = $params->{args};
-    my $document_type     = $args->{document_type};
-    my $document_format   = $args->{document_format};
-    my $loginid           = $client->loginid;
-    my $expected_checksum = $args->{expected_checksum};
+    my $params  = shift;
+    my $client  = $params->{client};
+    my $args    = $params->{args};
+    my $loginid = $client->loginid;
+    my ($document_type, $document_format, $expected_checksum) =
+        @{$args}{qw/document_type document_format expected_checksum/};
 
     unless ($client->get_db eq 'write') {
         $client->set_db('write');
@@ -44,15 +43,20 @@ sub start_document_upload {
 
     _set_staff($client);
 
+    my $dbh;
     my $id;
     my $error_occured;
-    my $duplicate_doc_error;
     try {
         my $STD_WARN_HANDLER = $SIG{__WARN__};
-        local $SIG{__WARN__} = sub { $STD_WARN_HANDLER->(@_) if $_[0] !~ /no_duplicate_uploads/; };
+        local $SIG{__WARN__} = sub {
+            return if _is_duplicate_upload_error($dbh);
+            return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
+            warn @_;
+        };
         ($id) = $client->db->dbic->run(
             ping => sub {
-                $_->selectrow_array(
+                $dbh = $_;
+                $dbh->selectrow_array(
                     'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
                     undef, $loginid, $document_type, $document_format,
                     $args->{expiration_date},
@@ -62,11 +66,10 @@ sub start_document_upload {
             });
     }
     catch {
-        $duplicate_doc_error = 1 if /no_duplicate_uploads/;
         $error_occured = 1;
     };
 
-    return create_upload_error('duplicate_document') if $duplicate_doc_error;
+    return create_upload_error('duplicate_document') if $error_occured and _is_duplicate_upload_error($dbh);
 
     if ($error_occured or not $id) {
         warn 'start_document_upload in the db was not successful';
@@ -91,23 +94,27 @@ sub successful_upload {
 
     _set_staff($client);
 
+    my $dbh;
     my $result;
     my $error_occured;
-    my $duplicate_doc_error;
     try {
         my $STD_WARN_HANDLER = $SIG{__WARN__};
-        local $SIG{__WARN__} = sub { $STD_WARN_HANDLER->(@_) if $_[0] !~ /no_duplicate_uploads/; };
+        local $SIG{__WARN__} = sub {
+            return if _is_duplicate_upload_error($dbh);
+            return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
+            warn @_;
+        };
         ($result) = $client->db->dbic->run(
             ping => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $args->{file_id}, undef);
+                $dbh = $_;
+                $dbh->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $args->{file_id}, undef);
             });
     }
     catch {
-        $duplicate_doc_error = 1 if /no_duplicate_uploads/;
         $error_occured = 1;
     };
 
-    return create_upload_error('duplicate_document') if $duplicate_doc_error;
+    return create_upload_error('duplicate_document') if $error_occured and _is_duplicate_upload_error($dbh);
 
     return create_upload_error('doc_not_found') if not $result;
 
@@ -220,6 +227,13 @@ sub create_upload_error {
         code              => $error_code,
         message_to_client => $message
     });
+}
+
+sub _is_duplicate_upload_error {
+    my $dbh = shift;
+
+    return $dbh->state  =~ /^23505$/ and
+           $dbh->errstr =~ /duplicate_upload_error/;
 }
 
 sub _set_staff {
