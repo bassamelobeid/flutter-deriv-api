@@ -211,7 +211,7 @@ sub check_authorization {
 
     return create_error({
             code              => 'DisabledClient',
-            message_to_client => localize('This account is unavailable.')}) if $client->get_status('disabled');
+            message_to_client => localize('This account is unavailable.')}) unless is_account_available($client);
 
     if (my $lim = $client->get_self_exclusion_until_dt) {
         return create_error({
@@ -220,6 +220,15 @@ sub check_authorization {
     }
 
     return;
+}
+
+sub is_account_available {
+    my $client = shift;
+    my @unavailable_status = ('disabled', 'duplicate_account');
+    foreach my $status (@unavailable_status) {
+        return 0 if $client->get_status($status);
+    }
+    return 1;
 }
 
 sub is_verification_token_valid {
