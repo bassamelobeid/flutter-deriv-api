@@ -199,11 +199,16 @@ sub get_expired_barriers {
 
     my ($high, $low) = _get_predefined_highlow($underlying, $trading_period);
 
-    unless ($high and $low) {
+    # high/low cache is generated based on the availability of ticks for a particular underlying.
+    # we only warn if we have tick after the start of the trading window and the high/low cache is undefined.
+    # We must know used Distributor::QUOTE to decide if a barrier has expired or not since these ticks are
+    # not considered as official ticks in our system.
+    if (not($high and $low)) {
         warn "highlow is undefined for "
             . $underlying->symbol . " ["
             . Date::Utility->new($trading_period->{date_start}->{epoch})->datetime . ' - '
-            . Date::Utility->new($trading_period->{date_expiry}->{epoch})->datetime . "]";
+            . Date::Utility->new($trading_period->{date_expiry}->{epoch})->datetime . "]"
+            if ($underlying->spot_tick->epoch >= $trading_period->{date_start}->{epoch});
         return [];
     }
 
@@ -335,6 +340,10 @@ sub _get_spot {
     my $redis = BOM::Platform::RedisReplicated::redis_read();
     my $redis_tick_json;
     my $redis_tick_from_date_start;
+
+    # Distributor::QUOTE is only used as a relative reference to barrier calculation so that we will
+    # have valid predefined barriers if previous day is a non-trading day (e.g. on Monday morning).
+    # This is to avoid using ticks on the previous trading day's close as spot prices may differ by a lot.
     if ($redis_tick_json = $redis->get('Distributor::QUOTE::' . $underlying->symbol)) {
         $tick_from_distributor_redis = $json->decode(Encode::decode_utf8($redis_tick_json));
         $redis_tick_from_date_start  = $date_start->epoch - $tick_from_distributor_redis->{epoch};
