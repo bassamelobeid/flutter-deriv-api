@@ -62,8 +62,7 @@ Returns an error if a check fails else undef.
 
 sub transaction_validation_checks {
     my ($client, @validations) = @_;
-    unshift @validations, qw(validate_tnc compliance_checks);
-    return validation_checks($client, @validations);
+    return validation_checks($client, qw(validate_tnc compliance_checks), @validations);
 }
 
 =head2 validation_checks

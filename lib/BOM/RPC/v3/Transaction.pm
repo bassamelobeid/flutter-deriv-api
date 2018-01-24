@@ -23,7 +23,8 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
 
 my $json = JSON::MaybeXS->new;
-common_before_actions qw(auth);
+
+requires_auth();
 
 my @validation_checks = qw(check_trade_status check_tax_information);
 

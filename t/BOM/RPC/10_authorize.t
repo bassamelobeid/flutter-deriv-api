@@ -380,6 +380,30 @@ subtest 'self_exclusion' => sub {
         ->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01.', 'check if authorize check self exclusion');
 };
 
+subtest 'self_exclusion_mx - exclude_until date set in future' => sub {
+    my $params = {
+        language => 'en',
+        token    => $token_mx
+    };
+    $test_client_mx->set_exclusion->exclude_until('2020-01-01');
+    $test_client_mx->save();
+
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01.', 'check if authorize fails for self exclusion for mx');
+};
+
+subtest 'self_exclusion_mx - exclude_until date set in past' => sub {
+    my $params = {
+        language => 'en',
+        token    => $token_mx
+    };
+    $test_client_mx->set_exclusion->exclude_until('2017-01-01');
+    $test_client_mx->save();
+
+    $c->call_ok($method, $params)->has_error->error_message_is('Sorry, you have excluded yourself until 2017-01-01.',
+        'check if authorize failure continues for self exclusion for mx');
+};
+
 $self_excluded_client->set_exclusion->timeout_until(Date::Utility->new->epoch - 2 * 86400);
 $self_excluded_client->clr_status('disabled');
 $self_excluded_client->save;
