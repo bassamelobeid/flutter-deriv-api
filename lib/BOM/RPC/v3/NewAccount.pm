@@ -374,8 +374,17 @@ rpc new_account_maltainvest => sub {
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    # Update MLT/MX client place of birth
-    $client->place_of_birth($args->{place_of_birth}) if ($args->{place_of_birth} && !$client->is_virtual);
+    # Update MLT/MX client place of birth, only if their place of birth is not set
+    if (!$client->place_of_birth && $args->{place_of_birth} && !$client->is_virtual) {
+        $client->place_of_birth($args->{place_of_birth});
+
+        if (not $client->save) {
+            stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:new_account_maltainvest"]});
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize('Sorry, an error occurred while processing your account.')});
+        }
+    }
 
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
 
@@ -406,7 +415,7 @@ rpc new_account_maltainvest => sub {
     $new_client->citizen($client->citizen) if ($client->citizen && !$client->is_virtual);
 
     # Save both current and new account
-    if (not $new_client->save or not $client->save) {
+    if (not $new_client->save) {
         stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:new_account_maltainvest"]});
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InternalServerError',

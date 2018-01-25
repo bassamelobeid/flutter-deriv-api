@@ -408,8 +408,8 @@ subtest 'self_exclusion_mx - exclude_until date set in past' => sub {
     $test_client_mx->set_exclusion->exclude_until('2017-01-01');
     $test_client_mx->save();
 
-    $c->call_ok($method, $params)
-        ->has_error->error_message_is('Sorry, you have excluded yourself until 2017-01-01.', 'check if authorize failure continues for self exclusion for mx');
+    $c->call_ok($method, $params)->has_error->error_message_is('Sorry, you have excluded yourself until 2017-01-01.',
+        'check if authorize failure continues for self exclusion for mx');
 };
 
 $self_excluded_client->set_exclusion->timeout_until(Date::Utility->new->epoch - 2 * 86400);
