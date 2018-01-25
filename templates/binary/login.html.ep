@@ -19,6 +19,9 @@
             <% if ($use_social_login) { %>
                 <div class="center-text">
                     <div id="oa_social_login_container"></div>
+                    <% if ($is_oneall && stash('error')) { %>
+                        <p class='error-msg center-text'><%= stash('error') %></p>
+                    <% } %>
                 </div>
                 <div class="separators">
                     <div class="vertical-separator"></div>
@@ -28,7 +31,7 @@
             <% } %>
             <div id="wrapper">
                 <p class="center-text"><%= l('Log in using your email address') %></p>
-                <% if (stash('error')) { %>
+                <% if (!$is_oneall && stash('error')) { %>
                 <p class='error-msg center-text'><%= stash('error') %></p>
                 <% } %>
                 <form id="frmLogin" method="POST">

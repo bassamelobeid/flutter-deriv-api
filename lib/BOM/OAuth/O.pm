@@ -83,6 +83,7 @@ sub authorize {
         use_social_login => $c->_is_social_login_available(),
         login_method     => $c->stash('login_method'),
         login_providers  => $c->stash('login_providers'),
+        is_oneall        => $c->session('_oneall_user_id') ? 1 : 0,
     );
 
     # show error when no client found in session show login form
@@ -232,7 +233,7 @@ sub _login {
         }
 
         if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}
-            or ($oneall_user_id and $c->_is_social_login_suspended()))
+            or ($oneall_user_id and _is_social_login_suspended()))
         {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         } elsif ($client->get_status('disabled')) {
@@ -252,7 +253,9 @@ sub _login {
             csrf_token       => $c->csrf_token,
             use_social_login => $c->_is_social_login_available(),
             login_providers  => $c->stash('login_providers'),
-            login_method     => $c->stash('login_method'),
+            # auto login method for social login (Google, Facebook, etc.)
+            login_method => $c->stash('login_method'),
+            is_oneall    => $c->session('_oneall_user_id'),
         );
         return;
     }
@@ -335,8 +338,6 @@ sub _login {
 
 # fetch social login feature status from settings
 sub _is_social_login_suspended {
-    my $c = shift;
-
     return BOM::Platform::Runtime->instance->app_config->system->suspend->social_logins;
 }
 
