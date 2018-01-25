@@ -232,8 +232,8 @@ sub create_upload_error {
 sub _is_duplicate_upload_error {
     my $dbh = shift;
 
-    return $dbh->state  =~ /^23505$/ and
-           $dbh->errstr =~ /duplicate_upload_error/;
+    return $dbh->state =~ /^23505$/
+        and $dbh->errstr =~ /duplicate_upload_error/;
 }
 
 sub _set_staff {
