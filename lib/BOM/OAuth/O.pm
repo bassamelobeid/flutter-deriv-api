@@ -25,25 +25,6 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 use BOM::OAuth::Helper;
 
-# fetch social login feature status from settings
-sub _is_social_login_suspended {
-    return BOM::Platform::Runtime->instance->app_config->system->suspend->social_logins;
-}
-
-# determine availability status of social login feature
-sub _is_social_login_available {
-    my $self = shift;
-
-    return
-            !_is_social_login_suspended
-        and scalar @{$self->stash('login_providers')} > 0
-        and $self->stash('request')->country_code ne 'jp';
-}
-
-sub _oauth_model {
-    return BOM::Database::Model::OAuth->new;
-}
-
 sub authorize {
     my $c = shift;
 
@@ -99,7 +80,7 @@ sub authorize {
         app              => $app,
         r                => $c->stash('request'),
         csrf_token       => $c->csrf_token,
-        use_social_login => $c->_is_social_login_available,
+        use_social_login => $c->_is_social_login_available(),
         login_method     => $c->stash('login_method'),
         login_providers  => $c->stash('login_providers'),
     );
@@ -251,7 +232,7 @@ sub _login {
         }
 
         if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}
-            or ($oneall_user_id and _is_social_login_suspended))
+            or ($oneall_user_id and $c->_is_social_login_suspended()))
         {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         } elsif ($client->get_status('disabled')) {
@@ -269,7 +250,7 @@ sub _login {
             error            => $err,
             r                => $c->stash('request'),
             csrf_token       => $c->csrf_token,
-            use_social_login => $c->_is_social_login_available,
+            use_social_login => $c->_is_social_login_available(),
             login_providers  => $c->stash('login_providers'),
             login_method     => $c->stash('login_method'),
         );
@@ -350,6 +331,24 @@ sub _login {
     delete $c->session->{csrf_token};
 
     return $client;
+}
+
+# fetch social login feature status from settings
+sub _is_social_login_suspended {
+    my $c = shift;
+
+    return BOM::Platform::Runtime->instance->app_config->system->suspend->social_logins;
+}
+
+# determine availability status of social login feature
+sub _is_social_login_available {
+    my $c = shift;
+
+    return (not $c->_is_social_login_suspended() and scalar @{$c->stash('login_providers')} > 0 and $c->stash('request')->country_code ne 'jp');
+}
+
+sub _oauth_model {
+    return BOM::Database::Model::OAuth->new;
 }
 
 sub _set_reality_check_cookie {
