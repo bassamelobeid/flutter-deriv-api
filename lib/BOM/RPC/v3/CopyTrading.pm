@@ -13,7 +13,7 @@ use BOM::RPC::Registry '-dsl';
 
 use Finance::Contract::Category;
 
-common_before_actions qw(auth);
+requires_auth();
 
 rpc copy_start => sub {
     my $params = shift;

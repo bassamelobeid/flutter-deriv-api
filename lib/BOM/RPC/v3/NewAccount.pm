@@ -37,7 +37,7 @@ use BOM::Platform::Context qw (request);
 use BOM::Database::Model::OAuth;
 use BOM::Platform::PaymentNotificationQueue;
 
-common_before_actions qw(auth);
+requires_auth();
 
 sub _create_oauth_token {
     my $loginid = shift;
@@ -46,7 +46,7 @@ sub _create_oauth_token {
 }
 
 rpc "new_account_virtual",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
     my $args   = $params->{args};
@@ -136,7 +136,7 @@ sub get_verification_uri {
 }
 
 rpc "verify_email",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
 

@@ -43,10 +43,21 @@ lives_ok { $auth_result = BOM::RPC::v3::Utility::check_authorization($client) } 
 
 is $auth_result->{error}->{code}, 'DisabledClient', 'It should return error: DisabledClient';
 
+lives_ok {
+    $client->clr_status('disabled');
+    $client->set_status('duplicate_account', 'test', 'test');
+    $client->save;
+}
+'Duplicate client';
+
+lives_ok { $auth_result = BOM::RPC::v3::Utility::check_authorization($client) } 'Should return result of check';
+
+is $auth_result->{error}->{code}, 'DisabledClient', 'It should return error: DisabledClient';
+
 my $timeout_until      = Date::Utility->new->plus_time_interval('1d');
 my $timeout_until_date = $timeout_until->date;
 lives_ok {
-    $client->clr_status('disabled');
+    $client->clr_status('duplicate_account');
     $client->set_exclusion->timeout_until($timeout_until->epoch);
     $client->save;
 }

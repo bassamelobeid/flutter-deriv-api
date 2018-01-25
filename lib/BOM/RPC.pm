@@ -69,30 +69,12 @@ sub apply_usergroup {
     return;
 }
 
-sub _auth {
-    my $params = shift;
-
-    my $token_details = $params->{token_details};
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        unless $token_details and exists $token_details->{loginid};
-
-    my $client = Client::Account->new({loginid => $token_details->{loginid}});
-
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
-    $params->{client} = $client;
-    $params->{app_id} = $token_details->{app_id};
-    return;
-}
-
 sub _make_rpc_service_and_register {
-    my ($method, $code, $before_actions) = @_;
+    my ($method, $code) = @_;
 
     return MojoX::JSON::RPC::Service->new->register(
         $method,
         sub {
-            # let's have an copy, which will be dumped to log if something goes wrong
             my @original_args = @_;
             my $params = $original_args[0] // {};
 
@@ -113,35 +95,6 @@ sub _make_rpc_service_and_register {
 
             if (exists $params->{server_name}) {
                 $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
-            }
-
-            for my $act (@$before_actions) {
-                my $err;
-                if ($act eq 'auth') {
-                    $err = _auth($params);
-                    return $err if $err;
-                    next;
-                }
-                (($err = _auth($params)) and return $err) or next if $act eq 'auth';
-
-                die "Error: no such hook $act" unless BOM::Transaction::Validation->can($act);
-
-                try {
-                    $err = BOM::Transaction::Validation->new({clients => [$params->{client}]})->$act($params->{client});
-                }
-                catch {
-                    warn "Error happened when call before_action $act at method $method: $_";
-                    $err = Error::Base->cuss({
-                        -type              => 'Internal Error',
-                        -mesg              => 'Internal Error',
-                        -message_to_client => localize('Sorry, there is an internal error.'),
-                    });
-                };
-                return BOM::RPC::v3::Utility::create_error({
-                        code              => $err->get_type,
-                        message_to_client => $err->{-message_to_client},
-                    }) if defined $err and ref $err eq "Error::Base";
-
             }
 
             my $verify_app_res;
@@ -168,7 +121,7 @@ sub _make_rpc_service_and_register {
                         message_to_client => localize("Sorry, an error occurred while processing your account.")});
             };
 
-            if ($verify_app_res && ref $result eq 'HASH') {
+            if ($verify_app_res && ref $result eq 'HASH' && !$result->{error}) {
                 $result->{stash} = {%{$result->{stash} // {}}, %{$verify_app_res->{stash}}};
             }
             return $result;
@@ -208,9 +161,9 @@ sub startup {
     };
 
     my %services = map {
-        my ($method, $code, $before_actions) = @$_;
+        my ($method, $code) = @$_;
 
-        "/$method" => _make_rpc_service_and_register($method, $code, $before_actions);
+        "/$method" => _make_rpc_service_and_register($method, $code);
     } BOM::RPC::Registry::get_service_defs();
 
     $app->plugin(
