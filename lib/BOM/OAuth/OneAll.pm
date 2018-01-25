@@ -20,9 +20,7 @@ sub callback {
     # from the stash.
     # For optimization reason, the URI should be contructed afterwards
     # checking for presence of connection token in request parameters.
-    my $connection_token = $c->param('connection_token')
-        // URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0])->query_param('provider_connection_token')
-        // '';
+    my $connection_token = $c->param('connection_token') // $c->_get_provider_token() // '';
     my $redirect_uri = $c->req->url->path('/oauth2/authorize')->to_abs;
     # Redirect client to authorize subroutine if there is no connection token provided
     # or request came from Japan.
@@ -93,11 +91,17 @@ sub callback {
 sub redirect {
     my $c                = shift;
     my $dir              = $c->param('dir') // '';
-    my $connection_token = $c->param('connection_token')
-        // URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0])->query_param('provider_connection_token')
-        // '';
+    my $connection_token = $c->param('connection_token') // $c->_get_provider_token() // '';
 
     return $c->redirect_to($dir . '?connection_token=' . $connection_token);
+}
+
+sub _get_provider_token {
+    my $c = shift;
+
+    my $request = URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0]);
+
+    return $request->query_param('provider_connection_token');
 }
 
 sub _get_email {
