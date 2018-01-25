@@ -12,7 +12,7 @@ use BOM::RPC::Registry '-dsl';
 
 use constant MAX_FILE_SIZE => 3 * 2**20;
 
-common_before_actions qw(auth);
+requires_auth();
 
 rpc document_upload => sub {
     my $params = shift;

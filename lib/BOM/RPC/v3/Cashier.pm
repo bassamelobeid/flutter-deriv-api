@@ -48,13 +48,11 @@ use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
 use Quant::Framework;
 
-common_before_actions qw(auth);
+requires_auth();
 
 my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 
-rpc "cashier",
-    before_actions => [qw(auth)],
-    sub {
+rpc "cashier", sub {
     my $params = shift;
 
     my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($params->{client});
@@ -222,7 +220,7 @@ rpc "cashier",
         . $action;
     BOM::Platform::AuditLog::log('redirecting to doughflow', $df_client->loginid);
     return $url;
-    };
+};
 
 sub _get_handoff_token_key {
     my $loginid = shift;
@@ -370,7 +368,7 @@ rpc get_limits => sub {
 };
 
 rpc "paymentagent_list",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
 

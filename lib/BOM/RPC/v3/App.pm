@@ -15,7 +15,7 @@ use DataDog::DogStatsd::Helper;
 
 use BOM::RPC::Registry '-dsl';
 
-common_before_actions qw(auth);
+requires_auth();
 
 rpc app_register => sub {
     my $params = shift;
