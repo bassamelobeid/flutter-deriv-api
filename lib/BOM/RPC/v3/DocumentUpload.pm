@@ -12,7 +12,7 @@ use BOM::RPC::Registry '-dsl';
 
 use constant MAX_FILE_SIZE => 3 * 2**20;
 
-common_before_actions qw(auth);
+requires_auth();
 
 rpc document_upload => sub {
     my $params = shift;
@@ -40,6 +40,8 @@ sub start_document_upload {
     unless ($client->get_db eq 'write') {
         $client->set_db('write');
     }
+
+    _set_staff($client);
 
     my $id;
     my $error_occured;
@@ -77,6 +79,8 @@ sub successful_upload {
     unless ($client->get_db eq 'write') {
         $client->set_db('write');
     }
+
+    _set_staff($client);
 
     my $result;
     my $error_occured;
@@ -197,6 +201,22 @@ sub create_upload_error {
         code              => 'UploadDenied',
         message_to_client => $message
     });
+}
+
+sub _set_staff {
+    my ($client) = @_;
+
+    my $error_occured;
+    try {
+        $client->_set_staff;
+    }
+    catch {
+        $error_occured = $_;
+    };
+
+    warn "Unable to set staff for saving the upload information, error: $error_occured" if $error_occured;
+
+    return undef;
 }
 
 1;

@@ -50,7 +50,8 @@ use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
 my $json = JSON::MaybeXS->new;
-common_before_actions qw(auth);
+
+requires_auth();
 
 =head2 payout_currencies
 
@@ -90,7 +91,7 @@ Returns a sorted arrayref of valid payout currencies
 =cut
 
 rpc "payout_currencies",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
 
@@ -120,7 +121,7 @@ rpc "payout_currencies",
     };
 
 rpc "landing_company",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
 
@@ -179,7 +180,7 @@ Returns a hashref containing the keys from __build_landing_company($lc)
 =cut
 
 rpc "landing_company_details",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
 
@@ -719,7 +720,7 @@ rpc cashier_password => sub {
 };
 
 rpc "reset_password",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
     my $args   = $params->{args};
@@ -914,6 +915,11 @@ rpc set_settings => sub {
                     },
                 });
         }
+
+        $err = BOM::RPC::v3::Utility::create_error({
+                code              => 'PermissionDenied',
+                message_to_client => localize("Value of place_of_birth cannot be changed.")}
+        ) if ($client->place_of_birth and $args->{place_of_birth} and $args->{place_of_birth} ne $client->place_of_birth);
 
         $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && ($client->broker_code ne 'CR' or $client->get_status('ico_only'));
 
