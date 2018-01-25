@@ -183,6 +183,10 @@ sub _get_ask {
                 $response->{theo_probability} = $contract->theo_probability->amount;
             }
 
+            unless ($contract->is_binary) {
+                $response->{contract_parameters}->{skip_stream_results_adjustment} = 1;
+            }
+
             if ($contract->underlying->feed_license eq 'realtime') {
                 $response->{spot} = $contract->current_spot;
             }
@@ -518,6 +522,11 @@ sub send_ask {
                 code              => 'pricing error',
                 message_to_client => localize('Unable to price the contract.')});
     };
+
+    #price_stream_results_adjustment is based on theo_probability and is very binary-option specifics.
+    #We do no have the concept of probabilty for the non binary options.
+    $params->{args}->{skip_stream_results_adjustment} = $response->{contract_parameters}->{skip_stream_results_adjustment}
+        if exists $response->{contract_parameters}->{skip_stream_results_adjustment};
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
 
