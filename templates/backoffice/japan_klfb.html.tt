@@ -1,0 +1,24 @@
+[% IF existing_klfb.keys %]
+<p>Current limit is <b>JPY [% existing_klfb.limit %]</b> set for date (<b>[% existing_klfb.date %]</b>). Last update was done by [% existing_klfb.updated_by %] at [% existing_klfb.recorded_date %].</p>
+[% END %]
+
+<form action="[% url | none %]" method="POST">
+    <table>
+        <tr>
+            <td>Limit in JPY: </td>
+            <td><input type="text" name="klfb_limit"></input></td>
+        </tr>
+        <tr>
+            <td>Date: </td>
+            <td><input type="text" name="klfb_date" value=''></input></td>
+            <td> e.g. 2017-01-01</td>
+        </tr>
+        <tr>
+            <td><input type="hidden" name="update_klfb_limit" value='1'></input></td>
+        </tr>
+        <tr>
+            <td><input type="submit"></td>
+        </tr>
+    </table>
+</form>
+

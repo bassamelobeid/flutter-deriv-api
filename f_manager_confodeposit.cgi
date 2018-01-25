@@ -7,9 +7,11 @@ use warnings;
 use Scalar::Util qw(looks_like_number);
 use Path::Tiny;
 use Try::Tiny;
-use Brands;
 use HTML::Entities;
 use Scope::Guard;
+
+use Brands;
+use LandingCompany::Registry;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
@@ -23,7 +25,6 @@ use BOM::ContractInfo;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
-use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -55,6 +56,8 @@ my $informclient      = delete $params{informclientbyemail};
 my $ttype             = delete $params{ttype};
 my $DCcode            = delete $params{DCcode};
 my $range             = delete $params{range};
+my $transaction_date  = delete $params{date_received};
+my $reference_id      = delete $params{reference_id};
 my $encoded_loginID   = encode_entities($loginID);
 my $encoded_toLoginID = encode_entities($toLoginID);
 
@@ -123,7 +126,9 @@ unless ($client->landing_company->is_currency_legal($curr)) {
     code_exit_BO();
 }
 
-my $email      = $client->email;
+code_exit_BO("Payment reference id is required for Japan clients")
+    if ($informclient and $client->landing_company->short eq 'japan' and (not $reference_id or $reference_id !~ /^\w+$/));
+
 my $salutation = $client->salutation;
 my $first_name = $client->first_name;
 my $last_name  = $client->last_name;
@@ -320,35 +325,48 @@ print "<input type=hidden name=\"l\" value=\"EN\">";
 print "VIEW CLIENT UPDATED STATEMENT: <input type=\"submit\" value=\"View $encoded_loginID updated statement for Today\">";
 print "</form>";
 
-# Email staff who input payment
-my $staffemail = $staff->{'email'};
-
-my $brand            = Brands->new(name => request()->brand);
-my $email_accountant = $brand->emails('accounting');
-my $toemail          = ($staffemail eq $email_accountant) ? "$staffemail" : "$staffemail,$email_accountant";
-
-if ($toemail && $informclient) {
-
+if ($informclient) {
     my $subject = $ttype eq 'CREDIT' ? localize('Deposit') : localize('Withdrawal');
-    my $who = BOM::Platform::Locale::translate_salutation($salutation) . " $first_name $last_name";
-    my $email_body =
-          localize('Dear')
-        . " $who,\n\n"
-        . localize('We would like to inform you that your [_1] has been processed.', $subject) . "\n\n"
-        . localize('Kind Regards') . "\n\n"
-        . 'Binary.com';
 
-    my $support_email = $brand->emails('support');
+    my $email_body;
+    if ($client->landing_company->short eq 'japan') {
+        BOM::Backoffice::Request::template->process(
+            'email/japan/payment_notification.html.tt',
+            {
+                last_name    => $client->last_name,
+                action_type  => $subject,
+                payment_date => $transaction_date,
+                currency     => $client->default_account->currency_code,
+                amount       => $amount,
+                reference_id => $reference_id,
+            },
+            \$email_body
+        ) || die "payment notification email for $loginID " . BOM::Backoffice::Request::template->error;
+        $subject .= ' ' . localize('of funds');
+    } else {
+        $email_body =
+              localize('Dear') . " "
+            . BOM::Platform::Locale::translate_salutation($salutation)
+            . " $first_name $last_name,\n\n"
+            . localize('We would like to inform you that your [_1] has been processed.', $subject) . "\n\n"
+            . localize('Kind Regards') . "\n\n"
+            . 'Binary.com';
+    }
 
-    my $result = send_email({
-        from                  => $support_email,
-        to                    => $email,
-        subject               => $subject,
-        message               => [$email_body],
-        use_email_template    => 1,
-        template_loginid      => $loginID,
-        email_content_is_html => 1,
-    });
+    try {
+        send_email({
+            from                  => Brands->new(name => request()->brand)->emails('support'),
+            to                    => $client->email,
+            subject               => $subject,
+            message               => [$email_body],
+            use_email_template    => 1,
+            template_loginid      => $loginID,
+            email_content_is_html => 1,
+        });
+    }
+    catch {
+        code_exit_BO("Transaction was performed, please check client statement but an error occured while sending email. Error details $_");
+    };
 
     $client->add_note($subject, $email_body);
 }
