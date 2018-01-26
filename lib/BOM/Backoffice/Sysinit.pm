@@ -59,7 +59,6 @@ my $permissions = {
     'f_promotional_processing.cgi'                             => ['Marketing'],
     'f_rescind_freegift.cgi'                                   => ['Payments'],
     'f_rescind_listofaccounts.cgi'                             => ['Payments'],
-    'f_rtquoteslogin.cgi'                                      => ['Quants'],
     'f_save.cgi'                                               => ['Quants'],
     'f_setting_paymentagent.cgi'                               => ['CS'],
     'f_setting_selfexclusion.cgi'                              => ['CS'],
