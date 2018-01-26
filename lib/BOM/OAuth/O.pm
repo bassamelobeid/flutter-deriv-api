@@ -345,7 +345,10 @@ sub _is_social_login_suspended {
 sub _is_social_login_available {
     my $c = shift;
 
-    return (not $c->_is_social_login_suspended() and scalar @{$c->stash('login_providers')} > 0 and $c->stash('request')->country_code ne 'jp');
+    return (    not $c->_is_social_login_suspended()
+            and scalar @{$c->stash('login_providers')} > 0
+            and $c->stash('request')->country_code ne 'jp'
+            and $c->stash('request')->language ne 'JA');
 }
 
 sub _oauth_model {
