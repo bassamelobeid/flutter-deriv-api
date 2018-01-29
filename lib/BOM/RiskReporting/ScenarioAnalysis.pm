@@ -34,6 +34,10 @@ use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::MarketData::Types;
 use BOM::Backoffice::Request;
 use Date::Utility;
+use Volatility::EconomicEvents;
+use BOM::Platform::Chronicle;
+use Quant::Framework::EconomicEventCalendar;
+
 has 'min_contract_length' => (
     isa     => 'time_interval',
     is      => 'ro',
@@ -47,6 +51,25 @@ sub generate {
     my $for_date = shift;
 
     my $start = time;
+    my $events;
+    if ($for_date) {
+
+        my $seasonality_prefix = 'bo_' . time . '_';
+        Volatility::EconomicEvents::set_prefix($seasonality_prefix);
+        my $EEC = Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        });
+
+        my $for_date_obj = Date::Utility->new($for_date);
+
+        $events = $EEC->get_latest_events_for_period({
+                from => $for_date_obj,
+                to   => $for_date_obj->plus_time_interval('6d'),
+            },
+            $for_date_obj
+        );
+    }
 
     my $nowish         = Date::Utility->new($for_date) || Date::Utility->new;
     my $pricing_date   = $nowish->minus_time_interval($nowish->epoch % $self->min_contract_length->seconds);
@@ -83,8 +106,7 @@ sub generate {
         $bet_params->{date_pricing} = $pricing_date;
         my ($bet, $underlying);
 
-        try { $bet = produce_contract($bet_params); $underlying = $bet->underlying };
-
+        try { $bet = produce_contract($bet_params); $underlying = $bet->underlying; }
         catch {
 
             $ignored++;
@@ -93,7 +115,7 @@ sub generate {
 
             next FMB;
 
-        }
+        };
 
         my $underlying_symbol = $underlying->symbol;
 
@@ -114,7 +136,17 @@ sub generate {
 
             next FMB;
         }
+        if ($for_date) {
 
+            Volatility::EconomicEvents::generate_variance({
+
+                    underlying_symbols => [$underlying_symbol],
+                    economic_events    => $events,
+                    date               => $bet->date_start,
+                    chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+            });
+
+        }
         $csv->print(
             $raw_fh,
             [
