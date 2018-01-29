@@ -27,14 +27,14 @@ use List::Util qw(min sum);
 use Email::Stuffer;
 use Text::CSV_XS;
 use Time::Duration::Concise::Localize;
-
+use Try::Tiny;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::MarketData::Types;
 use BOM::Backoffice::Request;
 use Date::Utility;
-
+use Data::Dumper;
 has 'min_contract_length' => (
     isa     => 'time_interval',
     is      => 'ro',
@@ -66,8 +66,8 @@ sub generate {
         TEMPLATE => 'raw-scenario-' . $pricing_date->time_hhmm . '-XXXXX',
         suffix   => '.csv'
     );
-    $csv->print($raw_fh, ['Transaction ID', 'Client ID', 'Shortcode', 'Payout Currency', 'MtM Value']);
 
+    $csv->print($raw_fh, ['Transaction ID', 'Client ID', 'Shortcode', 'Payout Currency', 'MtM Value']);
     FMB:
     foreach my $open_fmb_id (@keys) {
         my $open_fmb = $open_bets_ref->{$open_fmb_id};
@@ -76,7 +76,20 @@ sub generate {
         my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
         next if $bet_params->{bet_type} eq 'BINARYICO';
         $bet_params->{date_pricing} = $pricing_date;
-        my $bet               = produce_contract($bet_params);
+        my $bet;
+
+         try {$bet =produce_contract($bet_params)};
+
+         catch {
+
+            warn " Skipping bet with short_code ". $open_fmb->{short_code} . " (FMB id : $open_fmb_id). The error is " . Dumper($_);
+            $ignored ++;
+
+           next FMB;
+
+        } 
+
+
         my $underlying_symbol = $bet->underlying->symbol;
 
         if (   not $bet->underlying->spot
