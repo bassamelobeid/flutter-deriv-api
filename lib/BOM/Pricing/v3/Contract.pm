@@ -702,7 +702,7 @@ sub _validate_offerings {
     my $response;
 
     try {
-        my $lc = $args_copy->{landing_company} // 'costarica';
+        my $lc = $args_copy->{landing_company} // 'virtual';
         my $method = $lc =~ /japan/ ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
         my $landing_company = LandingCompany::Registry::get($lc);
 
