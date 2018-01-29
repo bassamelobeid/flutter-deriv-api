@@ -71,8 +71,8 @@ sub generate {
         suffix   => '.csv'
     );
 
-    $csv->print($ignored_fh, ['Transaction ID', 'Client ID', 'Shortcode', 'Payout Currency', 'MtM Value', 'Reason']);
-    $csv->print($raw_fh, ['Transaction ID', 'Client ID', 'Shortcode', 'Payout Currency', 'MtM Value']);
+    $csv->print($ignored_fh, ['Transaction ID', 'Client ID', 'Shortcode', 'Payout Currency', 'Reason']);
+    $csv->print($raw_fh,     ['Transaction ID', 'Client ID', 'Shortcode', 'Payout Currency', 'MtM Value']);
     FMB:
     foreach my $open_fmb_id (@keys) {
         my $open_fmb = $open_bets_ref->{$open_fmb_id};
@@ -81,25 +81,21 @@ sub generate {
         my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
         next if $bet_params->{bet_type} eq 'BINARYICO';
         $bet_params->{date_pricing} = $pricing_date;
-        my $bet;
+        my ($bet, $underlying);
 
-        try { $bet = produce_contract($bet_params) };
+        try { $bet = produce_contract($bet_params); $underlying = $bet->underlying };
 
         catch {
 
             $ignored++;
-            $csv->print(
-                $ignored_fh,
-                [
-                    $open_fmb->{transaction_id}, $open_fmb->{client_loginid},
-                    $open_fmb->{short_code},     $open_fmb->{currency_code},
-                    $self->amount_in_usd($bet->bid_price, $bet->currency), $_->{error_code}]);
+            $csv->print($ignored_fh,
+                [$open_fmb->{transaction_id}, $open_fmb->{client_loginid}, $open_fmb->{short_code}, $open_fmb->{currency_code}, $_->{error_code}]);
 
             next FMB;
 
         }
 
-        my $underlying_symbol = $bet->underlying->symbol;
+        my $underlying_symbol = $underlying->symbol;
 
         if (   not $bet->underlying->spot
             or $bet->is_expired
