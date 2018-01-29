@@ -215,7 +215,7 @@ subtest $method => sub {
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol'       => 'R_50',
-            'longcode'     => "Receive 0.1 per point difference between Volatility 50 Index's exit spot and lowest value at 50 seconds after contract start time.",
+            'longcode'     => "Receive 0.1 per point difference per quantity between Volatility 50 Index's exit spot and lowest value at 50 seconds after contract start time.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
             'barrier'      => 'S20P',
@@ -234,13 +234,14 @@ subtest 'get_ask' => sub {
         "duration"         => "15",
         "duration_unit"    => "m",
         "symbol"           => "R_50",
+        "landing_company"  =>"virtual",
     };
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => time,
         underlying => 'R_50',
     });
-
+$DB::single=1;
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
 
     diag explain $result->{error} if exists $result->{error};
@@ -249,7 +250,7 @@ subtest 'get_ask' => sub {
     my $expected = {
         'display_value'       => '20.82',
         'ask_price'           => '20.82',
-        'longcode'            => "Receive 0.1 per point difference between Volatility 50 Index's exit spot and lowest value at 15 minutes after contract start time.",
+        'longcode'            => "Receive 0.1 per point difference per quantity between Volatility 50 Index's exit spot and lowest value at 15 minutes after contract start time.",
         'multiplier'          => '0.1',
         'spot'                => '963.3054',
         'payout'              => '0',
@@ -266,6 +267,7 @@ subtest 'get_ask' => sub {
             'proposal'              => 1,
             'date_start'            => ignore(),
             'skip_stream_results_adjustment' => 1,
+            'landing_company'       => 'virtual'
         }
     };
 
@@ -283,6 +285,7 @@ subtest 'send_ask' => sub {
             "duration"         => "15",
             "duration_unit"    => "m",
             "symbol"           => "R_50",
+            "landing_company"  => "virtual",
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
@@ -291,7 +294,7 @@ subtest 'send_ask' => sub {
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        'Receive 0.1 per point difference between Volatility 50 Index\'s exit spot and lowest value at 15 minutes after contract start time.',
+        'Receive 0.1 per point difference per quantity between Volatility 50 Index\'s exit spot and lowest value at 15 minutes after contract start time.',
         'long code  is correct'
     );
 };
