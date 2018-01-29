@@ -78,17 +78,16 @@ sub generate {
         $bet_params->{date_pricing} = $pricing_date;
         my $bet;
 
-         try {$bet =produce_contract($bet_params)};
+        try { $bet = produce_contract($bet_params) };
 
-         catch {
+        catch {
 
-            warn " Skipping bet with short_code ". $open_fmb->{short_code} . " (FMB id : $open_fmb_id). The error is " . Dumper($_);
-            $ignored ++;
+            warn " Skipping bet with short_code " . $open_fmb->{short_code} . " (FMB id : $open_fmb_id). The error is " . Dumper($_);
+            $ignored++;
 
-           next FMB;
+            next FMB;
 
-        } 
-
+        }
 
         my $underlying_symbol = $bet->underlying->symbol;
 
