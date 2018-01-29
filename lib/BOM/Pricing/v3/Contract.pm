@@ -422,8 +422,9 @@ sub get_bid {
             #2. It is a changing barrier(s) over the life of the options.
             unless ($contract->is_binary) {
                 if ($contract->code eq 'LBHIGHLOW') {
-                    $response->{high_barrier} = $contract->spot_max;
-                    $response->{low_barrier}  = $contract->spot_min;
+                    $response->{high_barrier}  = $contract->spot_max;
+                    $response->{low_barrier}   = $contract->spot_min;
+                    $response->{barrier_count} = 2;
                     delete $response->{barrier} if exists $response->{barrier};
                 } elsif ($contract->code eq 'LBFLOATCALL') {
                     $response->{barrier} = $contract->spot_min;
