@@ -65,6 +65,13 @@ sub generate {
         TEMPLATE => 'raw-scenario-' . $pricing_date->time_hhmm . '-XXXXX',
         suffix   => '.csv'
     );
+    my $ignored_fh = File::Temp->new(
+        dir      => '/tmp/',
+        TEMPLATE => 'ignored-scenario-' . $pricing_date->time_hhmm . '-XXXXX',
+        suffix   => '.csv'
+    );
+
+    $csv->print($ignored_fh, ['Transaction ID', 'Client ID', 'Shortcode', 'Payout Currency', 'MtM Value', 'Reason']);
     $csv->print($raw_fh, ['Transaction ID', 'Client ID', 'Shortcode', 'Payout Currency', 'MtM Value']);
     FMB:
     foreach my $open_fmb_id (@keys) {
@@ -80,8 +87,13 @@ sub generate {
 
         catch {
 
-            warn " Skipping bet with short_code " . $open_fmb->{short_code} . " (FMB id : $open_fmb_id). The error is " . Dumper($_);
             $ignored++;
+            $csv->print(
+                $ignored_fh,
+                [
+                    $open_fmb->{transaction_id}, $open_fmb->{client_loginid},
+                    $open_fmb->{short_code},     $open_fmb->{currency_code},
+                    $self->amount_in_usd($bet->bid_price, $bet->currency), $_->{error_code}]);
 
             next FMB;
 
@@ -96,6 +108,14 @@ sub generate {
         {
 # The above conditions make the risk more liekly to be wrong or out of date by reporting time.
             $ignored++;
+            $csv->print(
+                $ignored_fh,
+                [
+                    $open_fmb->{transaction_id}, $open_fmb->{client_loginid},
+                    $open_fmb->{short_code},     $open_fmb->{currency_code},
+                    $self->amount_in_usd($bet->bid_price, $bet->currency), 'Out_of_scope'
+                ]);
+
             next FMB;
         }
 
