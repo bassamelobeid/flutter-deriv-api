@@ -34,7 +34,6 @@ use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::MarketData::Types;
 use BOM::Backoffice::Request;
 use Date::Utility;
-use Data::Dumper;
 has 'min_contract_length' => (
     isa     => 'time_interval',
     is      => 'ro',
@@ -66,7 +65,6 @@ sub generate {
         TEMPLATE => 'raw-scenario-' . $pricing_date->time_hhmm . '-XXXXX',
         suffix   => '.csv'
     );
-
     $csv->print($raw_fh, ['Transaction ID', 'Client ID', 'Shortcode', 'Payout Currency', 'MtM Value']);
     FMB:
     foreach my $open_fmb_id (@keys) {
