@@ -318,6 +318,7 @@ sub _validate_sell_pricing_adjustment_non_binary {
         $final_value = $recomputed_price;
     } elsif (abs($move) > $allowed_move) {
         return $self->_write_to_rejected({
+            type              => 'slippage',
             action            => 'sell',
             amount            => $requested_price,
             recomputed_amount => $recomputed_price
@@ -452,6 +453,7 @@ sub _validate_trade_pricing_adjustment_non_binary {
         $final_value = $recomputed_amount;
     } elsif (abs($move) > $allowed_move) {
         return $self->_write_to_rejected({
+            type              => 'slippage',
             action            => 'buy',
             amount            => $amount,
             recomputed_amount => $recomputed_amount
