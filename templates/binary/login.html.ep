@@ -16,16 +16,6 @@
 
 <div class="container">
     <div id="inline">
-        <% if ($social_login) { %>
-            <div class="center-text">
-                <div id="oa_social_login_container"></div>
-            </div>
-            <div class="separators">
-                <div class="vertical-separator"></div>
-                <div class="circle-separator"><%= l('or') %></div>
-                <div class="vertical-separator"></div>
-            </div>
-        <% } %>
         <div id="wrapper">
             <p class="center-text"><%= l('Log in using your email address') %></p>
             <% if (stash('error')) { %>
@@ -37,6 +27,16 @@
                 <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
                 <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
             </form>
+
+            <% if ($social_login) { %>
+            <div class="section-divider">
+                <div class="align-self-center border-bottom-light-gray"></div>
+                <div class="circle">Or</div>
+                <div class="align-self-center border-bottom-light-gray"></div>
+            </div>
+
+            <div id="oa_social_login_container"></div>
+            <% } %>
         </div>
     </div>
     <% if ($app->{id} eq 1) { %>
