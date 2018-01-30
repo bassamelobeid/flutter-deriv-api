@@ -10,6 +10,8 @@ use BOM::Platform::User;
 use BOM::Platform::Account::Virtual;
 use Try::Tiny;
 use URI::QueryParam;
+use DataDog::DogStatsd::Helper qw(stats_inc);
+use BOM::OAuth::Helper;
 
 sub callback {
     my $c = shift;
@@ -28,10 +30,17 @@ sub callback {
         if $c->{stash}->{request}->{country_code} eq 'jp'
         or not $connection_token;
 
+    my $brand_name = BOM::OAuth::Helper->extract_brand_from_params($c->stash('request')->params) // $c->stash('brand')->name;
+
+    unless ($brand_name) {
+        $c->session(_oneall_error => 'Invalid brand name.');
+        return $c->redirect_to($redirect_uri);
+    }
+
     my $oneall = WWW::OneAll->new(
         subdomain   => 'binary',
-        public_key  => BOM::Platform::Config::third_party->{oneall}->{public_key},
-        private_key => BOM::Platform::Config::third_party->{oneall}->{private_key},
+        public_key  => BOM::Platform::Config::third_party->{"oneall"}->{public_key},
+        private_key => BOM::Platform::Config::third_party->{"oneall"}->{private_key},
     );
     my $data = $oneall->connection($connection_token) or die $oneall->errstr;
     # redirect client to auth page when recieving bad status code from oneall
@@ -39,6 +48,7 @@ sub callback {
     my $status_code = $data->{response}->{request}->{status}->{code};
     if ($status_code != 200) {
         $c->session(_oneall_error => localize('Failed to get user identity.'));
+        stats_inc('login.oneall.connection_failure', {tags => ["brand:$brand_name", "status_code:$status_code"]});
         return $c->redirect_to($redirect_uri);
     }
 
@@ -66,10 +76,12 @@ sub callback {
     # consequently initialize user_id and link account to social login.
     unless ($user_id) {
         # create user based on email by fly if account does not exist yet
-        $user = $c->__create_virtual_user($email) unless $user;
+        $user = $c->__create_virtual_user($email, $brand_name) unless $user;
         # connect oneall provider data to user identity
         $user_connect->insert_connect($user->id, $provider_data);
         $user_id = $user->id;
+        my $provider_name = $provider_data->{user}->{identity}->{provider};
+        stats_inc('login.oneall.new_user_created', {tags => ["brand:$brand_name", "provider:$provider_name"]});
     }
 
     # login client to the system
@@ -97,13 +109,14 @@ sub _get_email {
 }
 
 sub __create_virtual_user {
-    my ($c, $email) = @_;
+    my ($c, $email, $brand_name) = @_;
 
     my $acc = BOM::Platform::Account::Virtual::create_account({
             details => {
                 email             => $email,
                 client_password   => rand(999999),    # random password so you can't login without password
                 has_social_signup => 1,
+                brand_name        => $brand_name,
             },
         });
     die $acc->{error} if $acc->{error};

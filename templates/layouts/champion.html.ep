@@ -7,23 +7,27 @@
         <script type="text/javascript" src="https://style.champion-fx.com/oauth.js"></script>
         <link rel="icon" type="image/png" sizes="16x16" href="http://www.champion-fx.com/assets/images/favicons/CFX_favicon16.png">
         <link rel="icon" type="image/png" sizes="32x32" href="http://www.champion-fx.com/assets/images/favicons/CFX_favicon32.png">
+        <script type="text/javascript">
+            var oa = document.createElement('script');
+            oa.type = 'text/javascript';
+            oa.async = false;
+            oa.src = '//binary.api.oneall.com/socialize/library.js?lang=<%= ($r->language eq "ZH_CN" || $r->language eq "ZH_TW") ? "zh" : lc($r->language) %>';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(oa, s);
+        </script>
     </head>
     <body class="oauth">
         <div>
             <div id="topbar" class="primary-bg-color-dark"></div>
             <div id="header" class="primary-bg-color">
-                <div class="center-text">
-                    <div class="logo-wrapper">
-                        <a href="https://www.champion-fx.com" class="logo-parent">
-                            <div class="logo">
-                                <div></div>
-                            </div>
-                            <div class="mobile-hide binary-logo-text">
-                                <div></div>
-                            </div>
+                <nav class="navbar">
+                    <div class="container">
+                        <a class="navbar__brand fx-logo" href="https://champion-fx.com">
+                            <span class="fx-logo__icon--light"></span>
+                            <span class="fx-logo__wordmark--light"></span>
                         </a>
                     </div>
-                </div>
+                </nav>
             </div>
             <main class="page-content" aria-label="Content">
                 <div class="wrapper">

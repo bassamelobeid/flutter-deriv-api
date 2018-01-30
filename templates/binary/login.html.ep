@@ -14,46 +14,56 @@
     </div>
 </div>
 
-<div class="container">
-    <div id="inline">
-        <div id="wrapper">
-            <p class="center-text"><%= l('Log in using your email address') %></p>
-            <% if (stash('error')) { %>
-            <p class='error-msg center-text'><%= stash('error') %></p>
-            <% } %>
-            <form id="frmLogin" method="POST">
-                <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
-                <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
-                <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
-                <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
-            </form>
+<% unless ($login_method) { %>
+    <div class="container">
+        <div id="inline">
+            <div id="wrapper">
+                <p class="center-text"><%= l('Log in using your email address') %></p>
+                <% if (stash('error')) { %>
+                <p class='error-msg center-text'><%= stash('error') %></p>
+                <% } %>
+                <form id="frmLogin" method="POST">
+                    <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
+                    <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
+                    <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
+                    <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
+                </form>
 
-            <% if ($social_login) { %>
-            <div class="section-divider">
-                <div class="align-self-center border-bottom-light-gray"></div>
-                <div class="circle">Or</div>
-                <div class="align-self-center border-bottom-light-gray"></div>
+                <% if ($use_social_login) { %>
+                <div class="section-divider">
+                    <div class="align-self-center border-bottom-light-gray"></div>
+                    <div class="circle">Or</div>
+                    <div class="align-self-center border-bottom-light-gray"></div>
+                </div>
+                <div id="oa_social_login_container"></div>
+                <% } %>
             </div>
-
-            <div id="oa_social_login_container"></div>
-            <% } %>
         </div>
+        <% if ($app->{id} eq 1) { %>
+            <div class="center-text links">
+                <p><a id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a></p>
+                <p><%= l('Don\'t have a Binary.com account?') %> <a id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Create one') %></a> <%= l('now.') %></p>
+            </div>
+        <% } %>
     </div>
-    <% if ($app->{id} eq 1) { %>
-        <div class="center-text links">
-            <p><a id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a></p>
-            <p><%= l('Don\'t have a Binary.com account?') %> <a id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Create one') %></a> <%= l('now.') %></p>
-        </div>
-    <% } %>
-</div>
+<% } %>
 
 <script type="text/javascript">
-    var your_callback_script = '<%= $oneall_callback %>';
+    var use_social_login = '<%== $use_social_login %>';
+    if (use_social_login) {
+        var cb = '<%= $oneall_callback %>';
+        var login_method = '<%= $login_method %>';
+        var providers = <%== Mojo::JSON::encode_json($login_providers) %>;
 
-    /* Embeds the buttons into the container oa_social_login_container */
-    var _oneall = _oneall || [];
-    _oneall.push(['social_login', 'set_force_re_authentication', true]);
-    _oneall.push(['social_login', 'set_providers', ['google']]);
-    _oneall.push(['social_login', 'set_callback_uri', your_callback_script]);
-    _oneall.push(['social_login', 'do_render_ui', 'oa_social_login_container']);
+        /* Embeds the buttons into the container oa_social_login_container */
+        var _oneall = _oneall || [];
+        _oneall.push(['social_login', 'set_force_re_authentication', true]);
+        _oneall.push(['social_login', 'set_providers', providers]);
+        _oneall.push(['social_login', 'set_callback_uri', cb]);
+        _oneall.push(['social_login', 'do_render_ui', 'oa_social_login_container']);
+
+        if (login_method) {
+            _oneall.push(['social_login', 'do_login', login_method]);
+        }
+    }
 </script>

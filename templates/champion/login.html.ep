@@ -1,19 +1,44 @@
-<h1><%= l('Log in') %></h1>
-<fieldset>
-    <legend><%= l('Your Details') %></legend>
-    <% if (stash('error')) { %>
-        <p class='errorfield'><%= stash('error') %></p>
-    <% } %>
-    <div id="wrapper" class="login">
-        <form id="frmLogin" method="POST">
-            <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
-            <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
-            <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
-            <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
-        </form>
-    </div>
-    <p class="center-text">
-        <a id="lost-password" href="https://www.champion-fx.com/<%= lc($r->language) %>/lost-password.html"><%= l('Lost Password?') %></a> |
-        <a id="create-account" href="https://www.champion-fx.com/<%= lc($r->language) %>/home.html#signup"><%= l('Open an Account') %></a>
-    </p>
-</fieldset>
+<% unless ($login_method) { %>
+    <h1><%= l('Log in') %></h1>
+    <fieldset>
+        <legend><%= l('Your Details') %></legend>
+        <% if (stash('error')) { %>
+            <p class='errorfield'><%= stash('error') %></p>
+        <% } %>
+        <div id="wrapper" class="login">
+            <form id="frmLogin" method="POST">
+                <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
+                <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
+                <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
+                <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
+            </form>
+            <% if ($use_social_login) { %>
+                <div class="center-text">
+                    <div id="oa_social_login_container"></div>
+                </div>
+            <% } %>
+        </div>
+        <p class="center-text">
+            <a id="lost-password" href="https://www.champion-fx.com/<%= lc($r->language) %>/lost-password.html"><%= l('Lost Password?') %></a> |
+            <a id="create-account" href="https://www.champion-fx.com/<%= lc($r->language) %>/home.html#signup"><%= l('Open an Account') %></a>
+        </p>
+    </fieldset>
+<% } %>
+<script type="text/javascript">
+    var use_social_login = '<%== $use_social_login %>';
+    if (use_social_login) {
+        var cb = '<%= $oneall_callback %>';
+        var login_method = '<%= $login_method %>';
+        var providers = <%== Mojo::JSON::encode_json($login_providers) %>;
+
+        /* Embeds the buttons into the container oa_social_login_container */
+        var _oneall = _oneall || [];
+        _oneall.push(['social_login', 'set_force_re_authentication', true]);
+        _oneall.push(['social_login', 'set_providers', providers]);
+        _oneall.push(['social_login', 'set_callback_uri', cb]);
+        _oneall.push(['social_login', 'do_render_ui', 'oa_social_login_container']);
+        if (login_method) {
+            _oneall.push(['social_login', 'do_login', login_method]);
+        }
+    }
+</script>
