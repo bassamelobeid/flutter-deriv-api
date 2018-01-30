@@ -167,8 +167,12 @@ sub _build_payout {
 override shortcode => sub {
     my $self = shift;
 
-    my $shortcode_date_start  = $self->date_start->epoch;
-    my $shortcode_date_expiry = $self->date_expiry->epoch;
+    my $shortcode_date_start = $self->date_start->epoch;
+
+    my $shortcode_date_expiry =
+          ($self->tick_expiry)  ? $self->tick_count . 'T'
+        : ($self->fixed_expiry) ? $self->date_expiry->epoch . 'F'
+        :                         $self->date_expiry->epoch;
 
     # TODO We expect to have a valid bet_type, but there may be codepaths which don't set this correctly yet.
     my $contract_type = $self->bet_type // $self->code;
