@@ -12,6 +12,7 @@ use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
 use Time::Duration::Concise::Localize;
+use Client::Account;
 
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util::Numeric qw(isint);
@@ -25,6 +26,7 @@ use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
 use BOM::Product::ContractFinder;
 use Finance::Contract::Longcode qw( shortcode_to_parameters);
+use BOM::Product::ContractFinder;
 use LandingCompany::Registry;
 use BOM::Pricing::v3::Utility;
 
@@ -179,6 +181,10 @@ sub _get_ask {
 
             if ($streaming_params->{add_theo_probability} and $contract->is_binary) {
                 $response->{theo_probability} = $contract->theo_probability->amount;
+            }
+
+            unless ($contract->is_binary) {
+                $response->{contract_parameters}->{skip_stream_results_adjustment} = 1;
             }
 
             if ($contract->underlying->feed_license eq 'realtime') {
@@ -517,6 +523,11 @@ sub send_ask {
                 message_to_client => localize('Unable to price the contract.')});
     };
 
+    #price_stream_results_adjustment is based on theo_probability and is very binary-option specifics.
+    #We do no have the concept of probabilty for the non binary options.
+    $params->{args}->{skip_stream_results_adjustment} = $response->{contract_parameters}->{skip_stream_results_adjustment}
+        if exists $response->{contract_parameters}->{skip_stream_results_adjustment};
+
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
 
     # Stringify all returned numeric values
@@ -579,22 +590,35 @@ sub get_contract_details {
 sub contracts_for {
     my $params = shift;
 
-    my $args                 = $params->{args};
-    my $symbol               = $args->{contracts_for};
-    my $currency             = $args->{currency} || 'USD';
-    my $landing_company_name = $args->{landing_company} // 'costarica';
-    my $product_type         = $args->{product_type};
-    my $country_code         = $params->{country_code} // '';
+    my $args            = $params->{args};
+    my $symbol          = $args->{contracts_for};
+    my $currency        = $args->{currency} || 'USD';
+    my $landing_company = $args->{landing_company} // 'costarica';
+    my $product_type    = $args->{product_type};
+    my $country_code    = $params->{country_code} // '';
+
+    my $token_details = $params->{token_details};
+
+    if ($token_details and exists $token_details->{loginid}) {
+        my $client = Client::Account->new({
+            loginid      => $token_details->{loginid},
+            db_operation => 'replica',
+        });
+        # override the details here since we already have a client.
+        $landing_company = $client->landing_company->short;
+        $country_code    = $client->residence;
+        $product_type //= $client->landing_company->default_offerings;
+    }
 
     unless ($product_type) {
-        $product_type = LandingCompany::Registry::get($landing_company_name)->default_offerings;
+        $product_type = LandingCompany::Registry::get($landing_company)->default_offerings;
     }
 
     my $finder        = BOM::Product::ContractFinder->new;
     my $method        = $product_type eq 'basic' ? 'basic_contracts_for' : 'multi_barrier_contracts_for';
     my $contracts_for = $finder->$method({
         symbol          => $symbol,
-        landing_company => $landing_company_name,
+        landing_company => $landing_company,
         country_code    => $country_code,
     });
 

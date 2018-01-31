@@ -22,7 +22,6 @@ $mock->mock('_get_predefined_highlow', sub { (100, 90) });
 $mock->mock('update_predefined_highlow', sub { 1 });
 
 set_absolute_time(Date::Utility->new('2017-11-20 00:00:00')->epoch);
-
 my ($t, $rpc_ct);
 my $method = 'contracts_for';
 
@@ -73,8 +72,8 @@ subtest "Request $method" => sub {
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', Date::Utility->new);
 
-    $params[1]{args}{product_type}  = 'multi_barrier';
-    $params[1]{args}{contracts_for} = 'frxUSDJPY';
+    $params[1]{args}{product_type}    = 'multi_barrier';
+    $params[1]{args}{contracts_for}   = 'frxUSDJPY';
     $params[1]{args}{landing_company} = 'japan';
 
     $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
@@ -83,7 +82,6 @@ subtest "Request $method" => sub {
         'It should return contracts_for object for japan region';
     ok @{$result->{available}}, 'It should return available contracts only for japan region';
     ok !grep { $_->{contract_type} =~ /^(CALL|PUTE|EXPIRYMISSE|EXPIRYRANGE)$/ } @{$result->{available}};
-
     is $result->{available}->[0]->{available_barriers}->[2]->[0], '500.000';
 
     $params[1]{args}{contracts_for} = 'invalid symbol';

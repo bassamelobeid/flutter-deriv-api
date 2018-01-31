@@ -113,6 +113,7 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
         ->values_for_key('underlying_symbol');
     my $now = Time::HiRes::time;
     $log->debugf("Retrieved symbols - %.2fms", 1000 * ($now - $start));
+    my $finder = BOM::Product::ContractFinder->new;
 
     my $finder = BOM::Product::ContractFinder->new;
     my @jobs;

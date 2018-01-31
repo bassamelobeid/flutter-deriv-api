@@ -264,6 +264,7 @@ subtest 'get_ask' => sub {
             'app_markup_percentage' => 0,
             'proposal'              => 1,
             'date_start'            => ignore(),
+            'skip_stream_results_adjustment' => 1,
         }
     };
 
