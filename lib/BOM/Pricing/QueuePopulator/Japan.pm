@@ -115,7 +115,6 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
     $log->debugf("Retrieved symbols - %.2fms", 1000 * ($now - $start));
     my $finder = BOM::Product::ContractFinder->new;
 
-    my $finder = BOM::Product::ContractFinder->new;
     my @jobs;
     my $skipped = 0;
     for my $symbol (@symbols) {
