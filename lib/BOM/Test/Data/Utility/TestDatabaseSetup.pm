@@ -3,12 +3,18 @@ package BOM::Test::Data::Utility::TestDatabaseSetup;
 use Moose::Role;
 use Carp;
 use DBI;
-use File::Slurp;
+use Path::Tiny;
 use Try::Tiny;
 use DBIx::Migration;
 use BOM::Test;
+use Test::More;
+use List::Util qw( max );
+use File::stat;
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
+
+use constant DB_DIR_PREFIX    => '/home/git/regentmarkets/bom-postgres-';
+use constant COLLECTOR_DB_DIR => DB_DIR_PREFIX . 'collectordb/config/sql/';
 
 BEGIN {
     die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
@@ -53,10 +59,6 @@ sub db_handler {
 sub _migrate_changesets {
     my $self = shift;
 
-    my $dbh = $self->db_handler('postgres');
-    $dbh->{RaiseError} = 1;    # die if we cannot perform any of the operations below
-    $dbh->{PrintError} = 0;
-
     # first teminate all other connections
     my $pooler = $self->db_handler('pgbouncer');
     $pooler->{RaiseError}        = 1;
@@ -74,15 +76,15 @@ sub _migrate_changesets {
             push @bouncer_dbs, $b_db;
 
             try {
-                $pooler->do('DISABLE "' . $b_db . '"');
-                #$pooler->do('PAUSE "'.$b_db.'"');
+                $self->_do_quoted($pooler, 'DISABLE %s', $b_db);
+                #$self->_do_quoted($pooler, 'PAUSE  %s', $b_db);
             }
             catch {
                 print "[pgbouncer] DISABLE $b_db error [$_]";
             };
 
             try {
-                $pooler->do('KILL "' . $b_db . '"');
+                $self->_do_quoted($pooler, 'KILL %s', $b_db);
             }
             catch {
                 print "[pgbouncer] KILL $b_db error [$_]";
@@ -90,18 +92,34 @@ sub _migrate_changesets {
         }
     }
 
-    #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
-    {
-        local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /is not a PostgreSQL server process/; };
-        $dbh->do(
-            'select pid, pg_terminate_backend(pid) terminated
-           from pg_stat_get_activity(NULL::integer) s(datid, pid)
-          where pid<>pg_backend_pid()'
-        );
+    $self->_create_dbs unless $self->_restore_dbs_from_template;
+
+    for my $b_db (@bouncer_dbs) {
+        try {
+            $self->_do_quoted($pooler, 'ENABLE %s', $b_db);
+        }
+        catch {
+            print "[pgbouncer] ENABLE $b_db error [$_]";
+        };
+
+        try {
+            $self->_do_quoted($pooler, 'RESUME %s', $b_db);
+        }
+        catch {
+            print "[pgbouncer] RESUME $b_db error [$_]";
+        };
     }
-    $dbh->do('drop database if exists ' . $self->_db_name);
-    $dbh->do('create database ' . $self->_db_name);
-    $dbh->disconnect();
+
+    return 1;
+}
+
+sub _create_dbs {
+    my $self = shift;
+
+    my $dbh = $self->_kill_all_pg_connections;
+    $self->_do_quoted($dbh, 'DROP DATABASE IF EXISTS %s', $self->_db_name);
+    $self->_do_quoted($dbh, 'CREATE DATABASE %s',         $self->_db_name);
+    $dbh->disconnect;
 
     my $m = DBIx::Migration->new({
         'dsn'      => $self->dsn,
@@ -119,7 +137,7 @@ sub _migrate_changesets {
     if ($self->_db_migrations_dir =~ /bom-postgres-clientdb/) {
         $m = DBIx::Migration->new({
             dsn                 => $self->dsn,
-            dir                 => '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/',
+            dir                 => COLLECTOR_DB_DIR,
             tablename_extension => 'collector',
             username            => 'postgres',
             password            => $self->_connection_parameters->{'password'},
@@ -128,8 +146,7 @@ sub _migrate_changesets {
         $m->migrate();
 
         # apply DB functions
-        $m->psql(sort glob '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/functions/*.sql')
-            if -d '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/functions';
+        $m->psql(sort glob COLLECTOR_DB_DIR . '/functions/*.sql') if -d COLLECTOR_DB_DIR . '/functions';
     }
     if (-f $self->_db_migrations_dir . '/unit_test_dml.sql') {
         $m->psql({
@@ -149,25 +166,7 @@ sub _migrate_changesets {
         );
     }
 
-    foreach (@bouncer_dbs) {
-        $b_db = $_;
-
-        try {
-            $pooler->do('ENABLE "' . $b_db . '"');
-        }
-        catch {
-            print "[pgbouncer] ENABLE $b_db error [$_]";
-        };
-
-        try {
-            $pooler->do('RESUME "' . $b_db . '"');
-        }
-        catch {
-            print "[pgbouncer] RESUME $b_db error [$_]";
-        };
-    }
-
-    return 1;
+    return $self->_create_template;
 }
 
 sub _migrate_file {
@@ -175,7 +174,7 @@ sub _migrate_file {
     my $file = shift;
 
     my $dbh = $self->db_handler;
-    my @sql = read_file($file);
+    my @sql = path($file)->lines_utf8;
 
     # STUPID way but just to prevent from running it in transaction way
     LINE:
@@ -184,7 +183,7 @@ sub _migrate_file {
         $dbh->do($line);
     }
 
-    $dbh->disconnect();
+    $dbh->disconnect;
     return 1;
 }
 
@@ -220,6 +219,139 @@ sub _update_sequence_of {
     $dbh->disconnect;
 
     return $current_sequence_value;
+}
+
+sub _restore_dbs_from_template {
+    my $self = shift;
+    return 0 unless $self->_is_template_usable;
+
+    my $is_successful = 0;
+    try {
+        my $dbh = $self->_kill_all_pg_connections;
+
+        my ($db_name, $tmpl_name) = ($self->_db_name, $self->_template_name);
+
+        $self->_do_quoted($dbh, 'DROP DATABASE IF EXISTS %s', $db_name);
+        $self->_do_quoted($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $db_name, $tmpl_name);
+        $dbh->disconnect;
+        $is_successful = 1;
+    }
+    catch {
+        note 'Falling back to restoring schemas, because restoring the db template failed for ' . $self->_db_name . ' with error: ' . $_;
+    };
+
+    return $is_successful;
+}
+
+sub _create_template {
+    my $self = shift;
+
+    try {
+        my $dbh = $self->_kill_all_pg_connections;
+
+        # suppress 'NOTICE:  database ".*template" does not exist, skipping'
+        local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /database ".*_template" does not exist, skipping/; };
+
+        my ($db_name, $tmpl_name) = ($self->_db_name, $self->_template_name);
+
+        $self->_do_quoted($dbh, 'DROP DATABASE IF EXISTS %s',          $tmpl_name);
+        $self->_do_quoted($dbh, 'ALTER DATABASE %s RENAME TO %s',      $db_name, $tmpl_name);
+        $self->_do_quoted($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $db_name, $tmpl_name);
+        $dbh->disconnect;
+    }
+    catch {
+        note 'Creating the db template failed for ' . $self->_db_name . ' with error: ' . $_;
+    };
+
+    return;
+}
+
+sub _kill_all_pg_connections {
+    my $self = shift;
+
+    my $dbh = $self->_postgres_dbh;
+
+    #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
+    {
+        local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /is not a PostgreSQL server process/; };
+        $dbh->do(
+            'select pid, pg_terminate_backend(pid) terminated
+           from pg_stat_get_activity(NULL::integer) s(datid, pid)
+          where pid<>pg_backend_pid()'
+        );
+    }
+
+    return $dbh;
+}
+
+sub _is_template_usable {
+    my $self = shift;
+
+    my @timestamps = map { $self->_pg_code_timestamp($_) } $self->_get_db_dir;
+
+    return $self->_get_template_age > max @timestamps;
+}
+
+sub _pg_code_timestamp {
+    my ($self, $pg_dir) = @_;
+
+    my $error_occured = system("cd $pg_dir && make -s timestamp");
+
+    # If we fail to make the timestamp, return inf to make template unusable
+    return $error_occured ? 'inf' : stat("$pg_dir/timestamp")->mtime;
+}
+
+sub _get_template_age {
+    my $self = shift;
+
+    my $dbh = $self->_postgres_dbh;
+
+    # Get the template age in epoch, 0 if there is no template
+    my ($template_date) = $dbh->selectrow_array(<<'SQL', undef, $self->_template_name);
+SELECT coalesce(max(
+           extract(epoch from (pg_stat_file('base/'|| oid ||'/PG_VERSION')).modification)
+       ), 0)
+  FROM pg_database
+ WHERE datname = ?
+SQL
+
+    $dbh->disconnect;
+
+    return $template_date;
+}
+
+sub _get_db_dir {
+    my $self = shift;
+
+    my $migration_dir = $self->_db_migrations_dir;
+
+    my @db_dirs = ($migration_dir);
+    push @db_dirs, COLLECTOR_DB_DIR if $migration_dir =~ /bom-postgres-clientdb/;
+
+    my $PREFIX = DB_DIR_PREFIX;
+
+    # Return the absolute path to repo folders e.g. /home/.../bom-postgres-clientdb/
+    return map { s{$PREFIX[^/]*\K.*}{}gr . '/' } @db_dirs;
+}
+
+sub _template_name { return shift->_db_name . '_template' }
+
+sub _do_quoted {
+    my ($self, $dbh, $query, @args) = @_;
+
+    return $dbh->do(sprintf $query, map { $dbh->quote_identifier($_) } @args);
+}
+
+sub _postgres_dbh {
+    my $self = shift;
+
+    my $dbh = $self->db_handler('postgres');
+
+    # die if any operation fails
+    $dbh->{RaiseError} = 1;
+    $dbh->{PrintError} = 0;
+
+    return $dbh;
 }
 
 sub BUILD {
