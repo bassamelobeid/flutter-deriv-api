@@ -445,6 +445,15 @@ sub calculate_limits {
         $limits{lookback_open_position_limit} = $custom_limit if defined $custom_limit;
     }
 
+    if ($client->landing_company->short eq 'japan') {
+        my $qc = BOM::Platform::QuantsConfig->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader());
+        my $klfb_config = $qc->get_config('klfb')->[0];
+        $limits{klfb_risk_limit} = {
+            limit => $klfb_config->{limit},
+            tstmp => $klfb_config->{date},
+        } if $klfb_config;
+    }
+
     return \%limits;
 }
 
@@ -1279,6 +1288,11 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -message_to_client => BOM::Platform::Context::localize('No further trading is allowed for the current trading session.'),
         );
     },
+    BI052 => Error::Base->cuss(
+        -type              => 'KLFBLimitExceeded',
+        -mesg              => 'KLFB risk limit exceeded',
+        -message_to_client => BOM::Platform::Context::localize('No further trading is allowed at this moment.'),
+    ),
     BI103 => Error::Base->cuss(
         -type              => 'RoundingExceedPermittedEpsilon',
         -mesg              => 'Rounding exceed permitted epsilon',
