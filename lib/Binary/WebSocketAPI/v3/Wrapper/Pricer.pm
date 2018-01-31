@@ -839,6 +839,10 @@ sub _price_stream_results_adjustment {
 
     my $contract_parameters = $cache->{contract_parameters};
 
+    if ($contract_parameters->{skip_stream_results_adjustment}) {
+        return $results;
+    }
+
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
         warn 'missing theo probability from pricer. Contract parameter dump '
