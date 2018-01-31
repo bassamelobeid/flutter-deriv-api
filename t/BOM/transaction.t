@@ -283,6 +283,8 @@ subtest 'japan KLFB' => sub {
         duration     => '1d',
         current_tick => $tick,
         barrier      => 'S10P',
+        product_type => 'multi_barrier',
+        trading_period_start => $now->epoch,
     });
 
     my $error = do {
