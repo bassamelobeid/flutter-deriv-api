@@ -111,7 +111,6 @@ sub validate_barrier {
             # Compare with the number of decimal places from the pipsize
             # If barrier has 5 decimal places and pipsize has 4, this would be rejected due to excessive precision.
             if ($barrier_decimal_places > $pipsize_decimal_places) {
-
                 return BOM::RPC::v3::Utility::create_error({
                     code              => 'BarrierValidationError',
                     message_to_client => localize("Barrier can only be up to [_1] decimal places.", $pipsize_decimal_places),

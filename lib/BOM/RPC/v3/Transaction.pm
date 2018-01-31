@@ -8,7 +8,7 @@ use Encode;
 use JSON::MaybeXS;
 use Scalar::Util qw(blessed);
 
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber financialrounding/;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -23,7 +23,10 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
 
 my $json = JSON::MaybeXS->new;
-common_before_actions qw(auth validate_tnc check_trade_status compliance_checks check_tax_information);
+
+requires_auth();
+
+my @validation_checks = qw(check_trade_status check_tax_information);
 
 sub trade_copiers {
     my $params = shift;
@@ -58,42 +61,86 @@ sub trade_copiers {
     return 1;
 }
 
+sub _validate_price {
+    my ($price, $currency) = @_;
+
+    if (defined $price) {
+        my $num_of_decimals = Format::Util::Numbers::get_precision_config()->{price}->{$currency};
+        my ($precision) = $price =~ /\.(\d+)/;
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidPrice',
+                message_to_client => localize('Invalid price. Price provided can not have more than [_1] decimal places.', $num_of_decimals)}
+        ) if ($precision and length($precision) > $num_of_decimals);
+    }
+
+    return undef;
+}
+
+sub _validate_amount {
+    my ($amount, $currency) = @_;
+
+    if (defined $amount) {
+        my $num_of_decimals = Format::Util::Numbers::get_precision_config()->{amount}->{$currency};
+        my ($precision) = $amount =~ /\.(\d+)/;
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidAmount',
+                message_to_client => localize('Invalid amount. Amount provided can not have more than [_1] decimal places.', $num_of_decimals)}
+        ) if ($precision and length($precision) > $num_of_decimals);
+    }
+
+    return undef;
+}
+
+sub _validate_stake {
+    my ($price, $amount, $currency) = @_;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'ContractCreationFailure',
+            message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price.")}
+    ) if (financialrounding('price', $currency, $price) < financialrounding('amount', $currency, $amount));
+
+    return undef;
+}
+
 rpc buy => sub {
     my $params = shift;
 
-    my $client               = $params->{client} // die "client should be authed when get here";
-    my $source               = $params->{source};
-    my $contract_parameters  = $params->{contract_parameters};
-    my $args                 = $params->{args};
-    my $payout               = $params->{payout};
+    my $client = $params->{client} // die "Client should have been authenticated at this stage.";
+
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
+
+    my ($source, $contract_parameters, $args, $payout) = @{$params}{qw/source contract_parameters args payout/};
     my $trading_period_start = $contract_parameters->{trading_period_start};
-    my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
+    my $purchase_date        = time;                                           # Purchase is considered to have happened at the point of request.
 
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
-
     $contract_parameters->{landing_company} = $client->landing_company->short;
-    $contract_parameters->{binaryico_deposit_percentage} =
-        BOM::Platform::Runtime->instance->app_config->system->suspend->ico_initial_deposit_percentage
-        if $contract_parameters->{bet_type} eq 'BINARYICO';
-
-    my $amount_type = $contract_parameters->{amount_type};
-    my $response;
 
     #Here again, we are re using amount in the API for specifying
     #no of contracts. Internally for non-binary we will use unit.
     #If we use amount, this will create confusion with the amount use for
     #binary contract.
     $contract_parameters->{unit} //= $contract_parameters->{amount};
-    $response = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
-    return $response if $response;
 
-    my $price = $args->{price};
-    if (defined $price and defined $contract_parameters->{amount} and defined $amount_type and $amount_type eq 'stake') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price.")}
-        ) if ($price < $contract_parameters->{amount});
-        $price = $contract_parameters->{amount};
+    my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
+    return $error if $error->{error};
+
+    my $price    = $args->{price};
+    my $currency = $client->currency;
+    my ($amount, $amount_type) = @{$contract_parameters}{qw/amount amount_type/};
+
+    $error = _validate_price($price, $currency);
+    return $error if $error;
+
+    $error = _validate_amount($amount, $currency);
+    return $error if $error;
+
+    if (defined $price and defined $amount and defined $amount_type and $amount_type eq 'stake') {
+        $error = _validate_stake($price, $amount, $currency);
+        return $error if $error;
+
+        $price = $amount;
     }
 
     my $trx = BOM::Transaction->new({
@@ -111,7 +158,7 @@ rpc buy => sub {
 
     try {
         if (my $err = $trx->buy) {
-            $response = BOM::RPC::v3::Utility::create_error({
+            $error = BOM::RPC::v3::Utility::create_error({
                 code              => $err->get_type,
                 message_to_client => $err->{-message_to_client},
             });
@@ -125,11 +172,11 @@ rpc buy => sub {
             $message_to_client = ['Cannot create contract'];
             warn __PACKAGE__ . " buy failed: '$_', parameters: " . $json->encode($contract_parameters);
         }
-        $response = BOM::RPC::v3::Utility::create_error({
+        $error = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize(@$message_to_client)});
     };
-    return $response if $response;
+    return $error if $error;
 
     try {
         trade_copiers({
@@ -147,7 +194,7 @@ rpc buy => sub {
         warn "Copiers trade error: " . $_;
     };
 
-    $response = {
+    return {
         transaction_id => $trx->transaction_id,
         contract_id    => $trx->contract_id,
         balance_after  => formatnumber('amount', $client->currency, $trx->balance_after),
@@ -158,21 +205,23 @@ rpc buy => sub {
         shortcode      => $trx->contract->shortcode,
         payout         => $trx->payout
     };
-
-    return $response;
 };
 
 rpc buy_contract_for_multiple_accounts => sub {
     my $params = shift;
 
-    my $client = $params->{client} // die "client should be authed when get here";
+    my $client = $params->{client} // die "Client should have been authenticated at this stage.";
+
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'IcoOnlyAccount',
             message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
     ) if $client->get_status('ico_only');
 
-    my $tokens = $params->{args}{tokens} // [];
+    my $args = $params->{args};
+    my $tokens = $args->{tokens} // [];
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'TooManyTokens',
@@ -182,28 +231,30 @@ rpc buy_contract_for_multiple_accounts => sub {
 
     return +{result => $token_list_res->{result}} unless $token_list_res->{success};
 
-    my $response;
-    my $source              = $params->{source};
-    my $contract_parameters = $params->{contract_parameters};
-    my $args                = $params->{args};
-    my $payout              = $params->{payout};
+    my ($source, $contract_parameters, $payout) = @{$params}{qw/source contract_parameters payout/};
 
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
-    my $amount_type = $contract_parameters->{amount_type};
 
-    $response = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
-    return $response if $response;
+    my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
+    return $error if $error->{error};
 
-    my $price = $args->{price};
-    if (defined $amount_type and $amount_type eq 'stake') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price.")}
-        ) if ($price < $contract_parameters->{amount});
+    my $price    = $args->{price};
+    my $currency = $client->currency;
+    my ($amount, $amount_type) = @{$contract_parameters}{qw/amount amount_type/};
 
-        $price = $contract_parameters->{amount};
+    $error = _validate_price($price, $currency);
+    return $error if $error;
+
+    $error = _validate_amount($amount, $currency);
+    return $error if $error;
+
+    if (defined $price and defined $amount and defined $amount_type and $amount_type eq 'stake') {
+        $error = _validate_stake($price, $amount, $currency);
+        return $error if $error;
+
+        $price = $amount;
     }
 
     my $trx = BOM::Transaction->new({
@@ -219,7 +270,7 @@ rpc buy_contract_for_multiple_accounts => sub {
 
     try {
         if (my $err = $trx->batch_buy) {
-            $response = BOM::RPC::v3::Utility::create_error({
+            $error = BOM::RPC::v3::Utility::create_error({
                 code              => $err->get_type,
                 message_to_client => $err->{-message_to_client},
             });
@@ -229,11 +280,11 @@ rpc buy_contract_for_multiple_accounts => sub {
         warn __PACKAGE__
             . " buy_contract_for_multiple_accounts failed with error [$_], parameters: "
             . (eval { $json->encode($contract_parameters) } // 'could not encode, ' . $@);
-        $response = BOM::RPC::v3::Utility::create_error({
+        $error = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
-    return $response if $response;
+    return $error if $error;
 
     for my $el (@{$token_list_res->{result}}) {
         my $new = {};
@@ -313,6 +364,9 @@ rpc sell_contract_for_multiple_accounts => sub {
 
     my $client = $params->{client} // die "client should be authed when get here";
 
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
+
     return BOM::RPC::v3::Utility::create_error({
             code              => 'IcoOnlyAccount',
             message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
@@ -381,6 +435,9 @@ rpc sell => sub {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
+
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
 
     my ($source, $args) = ($params->{source}, $params->{args});
     my $id = $args->{sell};

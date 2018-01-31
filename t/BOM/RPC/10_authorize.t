@@ -34,6 +34,13 @@ my $exclude_until = Date::Utility->new->epoch + 2 * 86400;
 $self_excluded_client->set_exclusion->timeout_until($exclude_until);
 $self_excluded_client->save;
 
+my $test_client_duplicated = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$test_client_duplicated->email($email);
+$test_client_duplicated->set_status('duplicate_account', 'system', 'reason');
+$test_client_duplicated->save;
+
 my $user = BOM::Platform::User->create(
     email    => $email,
     password => '1234',
@@ -41,6 +48,7 @@ my $user = BOM::Platform::User->create(
 $user->add_loginid({loginid => $test_client->loginid});
 $user->add_loginid({loginid => $self_excluded_client->loginid});
 $user->add_loginid({loginid => $test_client_disabled->loginid});
+$user->add_loginid({loginid => $test_client_duplicated->loginid});
 $user->save;
 $test_client->load;
 
@@ -53,11 +61,28 @@ my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client_vr->email($email);
 $test_client_vr->save;
 
-my ($token_vr) = $oauth->store_access_token_only(1, $test_client_vr->loginid);
+my ($token_vr)         = $oauth->store_access_token_only(1, $test_client_vr->loginid);
+my ($token_duplicated) = $oauth->store_access_token_only(1, $test_client_duplicated->loginid);
 
 is $test_client->default_account, undef, 'new client has no default account';
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+
+my $email_mx = 'dummy_mx@binary.com';
+
+my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MX',
+});
+$test_client_mx->email($email_mx);
+$test_client_mx->save;
+my $user_mx = BOM::Platform::User->create(
+    email    => $email_mx,
+    password => '1234',
+);
+$user_mx->add_loginid({loginid => $test_client_mx->loginid});
+$user_mx->save;
+$test_client_mx->load;
+my ($token_mx) = $oauth->store_access_token_only(1, $test_client_mx->loginid);
 
 my $method = 'authorize';
 subtest $method => sub {
@@ -119,6 +144,7 @@ subtest $method => sub {
                 'landing_company_name' => 'costarica',
                 'loginid'              => $test_client_disabled->loginid,
             }
+            # Duplicated client must  not be returned
         ],
     };
 
@@ -127,32 +153,8 @@ subtest $method => sub {
     is $result->{account_list}[0]->{loginid}, $test_client->loginid;
     is $result->{account_list}[1]->{loginid}, $self_excluded_client->loginid;
     is $result->{account_list}[2]->{loginid}, $test_client_disabled->loginid;
+    is scalar(@{$result->{account_list}}), 3;
 
-    $expected_result->{account_list} = [{
-            'currency'             => '',
-            'is_ico_only'          => '0',
-            'is_disabled'          => '0',
-            'is_virtual'           => '0',
-            'landing_company_name' => 'costarica',
-            'loginid'              => $test_client->loginid
-        },
-        {
-            'currency'             => '',
-            'excluded_until'       => $exclude_until,
-            'is_ico_only'          => '0',
-            'is_disabled'          => '0',
-            'is_virtual'           => '0',
-            'landing_company_name' => 'costarica',
-            'loginid'              => $self_excluded_client->loginid,
-        },
-        {
-            'currency'             => '',
-            'is_ico_only'          => '0',
-            'is_disabled'          => '1',
-            'is_virtual'           => '0',
-            'landing_company_name' => 'costarica',
-            'loginid'              => $test_client_disabled->loginid,
-        }];
     cmp_deeply($c->call_ok($method, $params)->has_no_error->result, $expected_result, 'result is correct');
 
     $test_client->set_default_account('USD');
@@ -210,6 +212,12 @@ subtest $method => sub {
     ok($history_records->[0]{environment}, 'environment is present');
 
     delete $params->{args};
+
+    $params->{token} = $token_duplicated;
+    $c->call_ok($method, $params)->has_error->error_message_is("Account is disabled.", "duplicated account");
+
+    delete $params->{args};
+
 };
 
 subtest 'upgradeable_landing_companies' => sub {
@@ -370,6 +378,30 @@ subtest 'self_exclusion' => sub {
 
     $c->call_ok($method, $params)
         ->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01.', 'check if authorize check self exclusion');
+};
+
+subtest 'self_exclusion_mx - exclude_until date set in future' => sub {
+    my $params = {
+        language => 'en',
+        token    => $token_mx
+    };
+    $test_client_mx->set_exclusion->exclude_until('2020-01-01');
+    $test_client_mx->save();
+
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01.', 'check if authorize fails for self exclusion for mx');
+};
+
+subtest 'self_exclusion_mx - exclude_until date set in past' => sub {
+    my $params = {
+        language => 'en',
+        token    => $token_mx
+    };
+    $test_client_mx->set_exclusion->exclude_until('2017-01-01');
+    $test_client_mx->save();
+
+    $c->call_ok($method, $params)->has_error->error_message_is('Sorry, you have excluded yourself until 2017-01-01.',
+        'check if authorize failure continues for self exclusion for mx');
 };
 
 $self_excluded_client->set_exclusion->timeout_until(Date::Utility->new->epoch - 2 * 86400);

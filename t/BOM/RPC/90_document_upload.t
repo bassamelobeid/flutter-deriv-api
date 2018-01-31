@@ -1,13 +1,14 @@
 use strict;
 use warnings;
+
 use BOM::Test::RPC::Client;
-use Test::Most;
+use Test::More;
 use Test::Mojo;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use Email::Folder::Search;
-use utf8;
+use List::Util qw( all );
 
 my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
 $mailbox->init;
@@ -110,5 +111,14 @@ sub get_notification_email {
     );
     return $msg;
 }
+
+subtest 'Check audit information after all above upload requests' => sub {
+    my $result = $test_client->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT pg_userid, remote_addr FROM audit.client_authentication_document');
+        });
+
+    ok(all { $_->[0] eq 'system' and $_->[1] eq '127.0.0.1/32' } @$result), 'Check staff and staff IP for all audit info';
+};
 
 done_testing();
