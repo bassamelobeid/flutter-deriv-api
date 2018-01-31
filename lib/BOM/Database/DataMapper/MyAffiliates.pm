@@ -32,6 +32,30 @@ sub get_clients_activity {
         });
 }
 
+=item get_clients_activity_per_currency
+
+get different factors of clients activity needed for myaffiliates pl reports
+without being converted to USD as we do in get_clients_activity
+
+=cut
+
+sub get_clients_activity_per_currency {
+    my ($self, $args) = @_;
+    my $dbic = $self->db->dbic;
+
+    my $sql = q{
+        SELECT * FROM get_myaffiliate_clients_activity_per_currency($1, $2)
+    };
+
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ, $args->{currency});
+
+            return $sth->fetchall_hashref('loginid');
+        });
+}
+
 =item get_trading_activity
 
 get client trading activity for particular date for myaffiliates turnover reports.
