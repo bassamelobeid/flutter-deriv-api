@@ -342,13 +342,14 @@ sub _is_social_login_suspended {
 }
 
 # determine availability status of social login feature
+# disable feature for Japanese language and for Japan IP
 sub _is_social_login_available {
     my $c = shift;
 
     return (    not $c->_is_social_login_suspended()
             and scalar @{$c->stash('login_providers')} > 0
-            and $c->stash('request')->country_code ne 'jp'
-            and $c->stash('request')->language ne 'JA');
+            and ($c->stash('request')->country_code ne 'jp'
+            or $c->stash('request')->language ne 'JA'));
 }
 
 sub _oauth_model {
