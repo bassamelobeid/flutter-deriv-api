@@ -232,7 +232,6 @@ SKIP: {
         $proposal_array_req_tpl->{barriers} = [{barrier => 109}];
         $response = $t->await::proposal_array($proposal_array_req_tpl);
         test_schema('proposal_array', $response);
-        $DB::single=1;
         ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : This contract offers no return.";
     };
 

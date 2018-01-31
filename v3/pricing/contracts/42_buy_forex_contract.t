@@ -4,10 +4,15 @@ use Test::Most;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
+use await;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
 use Date::Utility;
+use Format::Util::Numbers qw/financialrounding/;
+
+use Quant::Framework;
+
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -17,9 +22,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::RedisReplicated;
 use BOM::Platform::Runtime;
 use BOM::MarketData qw(create_underlying);
-use Quant::Framework;
 use BOM::Platform::Chronicle;
-use await;
 
 initialize_realtime_ticks_db();
 my $t = build_wsapi_test();
@@ -186,13 +189,25 @@ SKIP: {
 
         like(
             $res->{error}{message},
+            qr/Invalid price. Price provided can not have more than 2 decimal places./,
+            'Invalid price precision'
+        );
+
+        $res = $t->await::buy({
+            buy        => 1,
+            price      => financialrounding('price', 'USD', $buy_price * 0.8),
+            parameters => {%contract},
+        });
+
+        like(
+            $res->{error}{message},
             qr/The underlying market has moved too much since you priced the contract. The contract price has changed/,
             'Buy contract with proposal id: price moved error'
         );
 
         $res = $t->await::buy({
             buy        => 1,
-            price      => $buy_price * 1.1,
+            price      => financialrounding('price', 'USD', $buy_price * 1.1),
             parameters => {%contract},
         });
 
@@ -315,7 +330,7 @@ SKIP: {
 
         $res = $t->await::buy({
             buy        => 1,
-            price      => $buy_price * 0.8,
+            price      => financialrounding('price', 'USD', $buy_price * 0.8),
             parameters => {%contract},
         });
 
@@ -327,7 +342,7 @@ SKIP: {
 
         $res = $t->await::buy({
             buy        => 1,
-            price      => $buy_price * 1.1,
+            price      => financialrounding('price', 'USD', $buy_price * 1.1),
             parameters => {%contract},
         });
         ok $res->{buy}->{payout} > 100,
