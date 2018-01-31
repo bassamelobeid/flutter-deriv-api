@@ -6,6 +6,8 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::Warnings;
+use Test::MockModule;
+use Test::Warn;
 
 use Cache::RedisDB;
 use List::Util qw(first);
@@ -15,10 +17,11 @@ use JSON::MaybeXS;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::ContractFinder;
-use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow);
+use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow get_expired_barriers);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use Postgres::FeedDB::Spot::Tick;
 
 my $supported_symbol = 'frxUSDJPY';
 my $monday           = Date::Utility->new('2016-11-14');    # monday
@@ -264,6 +267,57 @@ subtest 'update_predefined_highlow' => sub {
         $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
         ok scalar(@{$touch->{expired_barriers}}), 'expired barrier detected';
     }
+};
+
+subtest 'get_expired_barriers' => sub {
+    my $time      = time;
+    my $mocked_pp = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
+    $mocked_pp->mock('_get_predefined_highlow', sub { (100, 99) });
+    my $mocked_u = Test::MockModule->new('Quant::Framework::Underlying');
+    $mocked_u->mock(
+        'spot_tick',
+        sub {
+            Postgres::FeedDB::Spot::Tick->new({
+                symbol => 'frxUSDJPY',
+                quote  => 100,
+                epoch  => $time,
+            });
+        });
+
+    my $underlying = Quant::Framework::Underlying->new('frxUSDJPY');
+    my $tp         = {
+        date_start => {
+            epoch => $time,
+            date  => Date::Utility->new($time)->datetime
+        },
+        date_expiry => {
+            epoch => $time + 3600,
+            date  => Date::Utility->new($time + 3600)->datetime
+        }};
+
+    ok !@{get_expired_barriers($underlying, [101], $tp)}, 'not expired barrier';
+    is get_expired_barriers($underlying, [99.5], $tp)->[0], 99.5, 'has expired barrier[99.5]';
+    $mocked_pp->mock('_get_predefined_highlow', sub { () });
+    $mocked_u->mock(
+        'spot_tick',
+        sub {
+            Postgres::FeedDB::Spot::Tick->new({
+                symbol => 'frxUSDJPY',
+                quote  => 100,
+                epoch  => $time - 1,
+            });
+        });
+    ok get_expired_barriers($underlying, [99.5], $tp), 'no warnings if latest tick is before trading period start';
+    $mocked_u->mock(
+        'spot_tick',
+        sub {
+            Postgres::FeedDB::Spot::Tick->new({
+                symbol => 'frxUSDJPY',
+                quote  => 100,
+                epoch  => $time,
+            });
+        });
+    warning_like { get_expired_barriers($underlying, [99.5], $tp) } qr/highlow is undefined for frxUSDJPY/, 'warns';
 };
 
 sub setup_ticks {

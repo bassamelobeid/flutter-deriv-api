@@ -63,7 +63,7 @@ subtest 'endsinout' => sub {
     my $cat = Finance::Contract::Category->new('endsinout');
     is $cat->code,          'endsinout';
     is $cat->display_order, 3;
-    is $cat->display_name,  'Ends In/Out';
+    is $cat->display_name,  'Ends Between/Ends Outside';
     ok !$cat->is_path_dependent;
     ok $cat->barrier_at_start, 'barrier determined at start';
     is_deeply $cat->supported_expiries, ['intraday', 'daily'];
@@ -74,7 +74,7 @@ subtest 'staysinout' => sub {
     my $cat = Finance::Contract::Category->new('staysinout');
     is $cat->code,          'staysinout';
     is $cat->display_order, 4;
-    is $cat->display_name,  'Stays In/Goes Out';
+    is $cat->display_name,  'Stays Between/Goes Outside';
     ok $cat->is_path_dependent;
     ok $cat->barrier_at_start, 'barrier determined at start';
     is_deeply $cat->supported_expiries, ['intraday', 'daily'];

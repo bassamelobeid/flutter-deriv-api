@@ -27,12 +27,11 @@ sub multi_barrier_contracts_by_category_for {
 
     my $contracts = $self->multi_barrier_contracts_for($args)->{available};
     my %by_contract_category;
-    foreach my $o (@$contracts) {
-        my $contract_category = $o->{contract_category};
-        my $expiry_epoch      = $o->{trading_period}->{date_expiry}->{epoch};
-        next if $by_contract_category{$contract_category}{$expiry_epoch};
-        my $key = $o->{trading_period}{date_start}{epoch} . '-' . $o->{trading_period}{date_expiry}{epoch};
-        $by_contract_category{$contract_category}{$key}{available_barriers} = $o->{available_barriers};
+    foreach my $param (@$contracts) {
+        my $contract_category = $param->{contract_category};
+        my $key               = $param->{trading_period}{date_start}{epoch} . '-' . $param->{trading_period}{date_expiry}{epoch};
+        next if $by_contract_category{$contract_category}{$key};
+        $by_contract_category{$contract_category}{$key}{available_barriers} = $param->{available_barriers};
     }
 
     return \%by_contract_category;
@@ -50,10 +49,10 @@ sub basic_contracts_for {
 sub _get_contracts {
     my ($self, $args) = @_;
 
-    my $symbol                = $args->{symbol}          // die 'symbol is require';
-    my $landing_company_short = $args->{landing_company} // 'costarica';
-    my $country_code          = $args->{country_code}    // '';                               # might not be defined
-    my $product_type          = $args->{product_type}    // die 'product_type is required';
+    my $symbol                = $args->{symbol} // die 'symbol is require';
+    my $landing_company_short = $args->{landing_company};
+    my $country_code          = $args->{country_code} // '';                               # might not be defined
+    my $product_type          = $args->{product_type} // die 'product_type is required';
 
     my $date = $self->for_date // Date::Utility->new;
     my $underlying = create_underlying($args->{symbol}, $self->for_date);
@@ -64,18 +63,19 @@ sub _get_contracts {
     if ($calendar->trades_on($exchange, $date)) {
         $open = $calendar->opening_on($exchange, $date)->epoch;
         $close = $calendar->closing_on($exchange, $date)->epoch;
-        my $deco_args = {
-            underlying => $underlying,
-            calendar   => $calendar,
-            date       => $date
-        };
-        if ($product_type eq 'basic') {
-            $deco_args->{offerings} = _get_basic_offerings($symbol, $landing_company_short, $country_code);
-            $offerings = BOM::Product::ContractFinder::Basic::decorate($deco_args);
-        } elsif ($product_type eq 'multi_barrier') {
-            $deco_args->{offerings} = _get_multi_barrier_offerings($symbol, $landing_company_short, $country_code);
-            $offerings = BOM::Product::ContractFinder::MultiBarrier::decorate($deco_args);
-        }
+    }
+
+    my $deco_args = {
+        underlying => $underlying,
+        calendar   => $calendar,
+        date       => $date
+    };
+    if ($product_type eq 'basic') {
+        $deco_args->{offerings} = _get_basic_offerings($symbol, $landing_company_short, $country_code);
+        $offerings = BOM::Product::ContractFinder::Basic::decorate($deco_args);
+    } elsif ($product_type eq 'multi_barrier') {
+        $deco_args->{offerings} = _get_multi_barrier_offerings($symbol, $landing_company_short, $country_code);
+        $offerings = BOM::Product::ContractFinder::MultiBarrier::decorate($deco_args);
     }
 
     return {
@@ -90,6 +90,7 @@ sub _get_contracts {
 sub _get_multi_barrier_offerings {
     my ($symbol, $landing_company_short, $country_code) = @_;
 
+    $landing_company_short //= 'japan';
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
     my $offerings_obj = $landing_company->multi_barrier_offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
 
@@ -118,6 +119,7 @@ sub _get_multi_barrier_offerings {
 sub _get_basic_offerings {
     my ($symbol, $landing_company_short, $country_code) = @_;
 
+    $landing_company_short //= 'costarica';
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
     my $offerings_obj = $landing_company->basic_offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
 

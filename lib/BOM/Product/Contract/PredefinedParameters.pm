@@ -199,11 +199,16 @@ sub get_expired_barriers {
 
     my ($high, $low) = _get_predefined_highlow($underlying, $trading_period);
 
-    unless ($high and $low) {
+    # high/low cache is generated based on the availability of ticks for a particular underlying.
+    # we only warn if we have tick after the start of the trading window and the high/low cache is undefined.
+    # We must know used Distributor::QUOTE to decide if a barrier has expired or not since these ticks are
+    # not considered as official ticks in our system.
+    if (not($high and $low)) {
         warn "highlow is undefined for "
             . $underlying->symbol . " ["
             . Date::Utility->new($trading_period->{date_start}->{epoch})->datetime . ' - '
-            . Date::Utility->new($trading_period->{date_expiry}->{epoch})->datetime . "]";
+            . Date::Utility->new($trading_period->{date_expiry}->{epoch})->datetime . "]"
+            if ($underlying->spot_tick->epoch >= $trading_period->{date_start}->{epoch});
         return [];
     }
 
@@ -229,10 +234,10 @@ sub get_available_barriers {
     my ($underlying, $offering, $trading_period) = @_;
 
     my $date = $underlying->for_date // Date::Utility->new;
-    my $method             = $underlying->for_date ? 'get_for' : 'get';
+    my $method = $underlying->for_date ? 'get_for' : 'get';
     my $available_barriers = [];
-    my @key                = predefined_barriers_key($underlying->symbol, $trading_period);
-    my $barriers           = BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date)->$method(@key, $date);
+    my ($namespace, $key) = predefined_barriers_key($underlying->symbol, $trading_period);
+    my $barriers = BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date)->$method($namespace, $key, $date);
 
     return $available_barriers unless $barriers;
 
@@ -269,16 +274,20 @@ Returns a hash reference.
 sub generate_barriers_for_window {
     my ($symbol, $trading_period) = @_;
 
-    my $underlying = create_underlying($symbol);
-    my $key        = join '_', ('barriers', $underlying->symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
-    my $cache      = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
+    unless ($trading_period->{date_start}->{epoch} and $trading_period->{date_expiry}->{epoch}) {
+        die 'Trading period is not in the correct format. date_start and date_expiry epochs are required';
+    }
+
+    my $key = join '_', ('barriers', $symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
+    my $cache = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
 
     # return if barriers are generated already
     return if $cache;
 
     my $tiy = ($trading_period->{date_expiry}->{epoch} - $trading_period->{date_start}->{epoch}) / (365 * 86400);
 
-    my $spot_at_start = _get_spot($underlying, $trading_period);
+    my $underlying       = create_underlying($symbol);
+    my $spot_at_start    = _get_spot($underlying, $trading_period);
     my @initial_barriers = map { _get_strike_from_call_bs_price($_, $tiy, $spot_at_start, 0.1) } (0.05, 0.95);
 
     # Split the boundaries barriers into 9 barriers by divided the distance of boundaries by 95 (45 each side) - to be used as increment.
@@ -296,6 +305,10 @@ sub generate_barriers_for_window {
 sub predefined_barriers_key {
     my ($symbol, $trading_period) = @_;
 
+    unless ($trading_period->{date_start}->{epoch} and $trading_period->{date_expiry}->{epoch}) {
+        die 'Trading period is not in the correct format. date_start and date_expiry epochs are required';
+    }
+
     my $key = join '_', ('barriers', $symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
     return ($cache_namespace, $key);
 }
@@ -311,9 +324,9 @@ sub get_predefined_barriers_by_contract_category {
     my ($symbol, $date) = @_;
 
     my $method = $date ? 'get_for' : 'get';
-    my @key = barrier_by_category_key($symbol);
+    my ($namespace, $key) = barrier_by_category_key($symbol);
 
-    return BOM::Platform::Chronicle::get_chronicle_reader($date)->$method(@key, $date);
+    return BOM::Platform::Chronicle::get_chronicle_reader($date)->$method($namespace, $key, $date);
 }
 
 sub _get_spot {
@@ -327,6 +340,10 @@ sub _get_spot {
     my $redis = BOM::Platform::RedisReplicated::redis_read();
     my $redis_tick_json;
     my $redis_tick_from_date_start;
+
+    # Distributor::QUOTE is only used as a relative reference to barrier calculation so that we will
+    # have valid predefined barriers if previous day is a non-trading day (e.g. on Monday morning).
+    # This is to avoid using ticks on the previous trading day's close as spot prices may differ by a lot.
     if ($redis_tick_json = $redis->get('Distributor::QUOTE::' . $underlying->symbol)) {
         $tick_from_distributor_redis = $json->decode(Encode::decode_utf8($redis_tick_json));
         $redis_tick_from_date_start  = $date_start->epoch - $tick_from_distributor_redis->{epoch};

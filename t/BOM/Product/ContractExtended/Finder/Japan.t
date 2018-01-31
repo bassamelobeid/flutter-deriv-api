@@ -16,6 +16,7 @@ use BOM::Product::ContractFinder;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
+use Test::MockModule;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'partial_trading',

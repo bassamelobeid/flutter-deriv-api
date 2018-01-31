@@ -160,6 +160,10 @@ sub _build_pricing_engine_name {
     return 'Pricing::Engine::Lookback';
 }
 
+sub _build_payout {
+    return 0;
+}
+
 override shortcode => sub {
     my $self = shift;
 

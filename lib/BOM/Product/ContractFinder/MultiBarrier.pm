@@ -52,7 +52,7 @@ sub decorate {
             {
                 next;
             } else {
-                my $available_barriers = get_available_barriers($underlying, $offering, $trading_period) // [];
+                my $available_barriers = get_available_barriers($underlying, $offering, $trading_period);
                 my $expired_barriers =
                     ($offering->{barrier_category} eq 'american') ? get_expired_barriers($underlying, $available_barriers, $trading_period) : [];
 
