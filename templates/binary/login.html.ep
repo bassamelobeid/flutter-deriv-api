@@ -32,7 +32,7 @@
                 <% if ($use_social_login) { %>
                 <div class="section-divider">
                     <div class="align-self-center border-bottom-light-gray"></div>
-                    <div class="circle">Or</div>
+                    <div class="circle"><%= l('Or') %></div>
                     <div class="align-self-center border-bottom-light-gray"></div>
                 </div>
                 <div id="oa_social_login_container"></div>
