@@ -27,6 +27,7 @@ use LandingCompany::Registry;
 use List::Util qw(first);
 use Scalar::Util qw(looks_like_number);
 use Finance::Contract::Category;
+use Try::Tiny;
 
 use BOM::Platform::Runtime;
 
@@ -50,8 +51,38 @@ save config into quants_config namespace.
 sub save_config {
     my ($self, $config_type, $args) = @_;
 
+    my $method = '_' . $config_type;
+    my $config = $self->$method($args);
+
+    $self->chronicle_writer->set($namespace, $config_type, $config, $self->recorded_date);
+
+    return $args;
+}
+
+sub _klfb {
+    my ($self, $args) = @_;
+
+    die 'limit is not a number' unless (exists $args->{limit} and looks_like_number($args->{limit}));
+    die 'date is undefined' unless defined $args->{date};
+    try {
+        Date::Utility->new($args->{date});
+    }
+    catch {
+        die 'invalid date format, please use YYYY-MM-DD format in the example';
+    };
+
+    $args->{recorded_date} = $self->recorded_date->date_yyyymmdd;
+
+    return {
+        xxx => $args    # for format consistency (key => config).
+    };
+}
+
+sub _commission {
+    my ($self, $args) = @_;
+
     my %args = %$args;
-    my $existing_config = $self->chronicle_reader->get($namespace, $config_type) // {};
+    my $existing_config = $self->chronicle_reader->get($namespace, 'commission') // {};
 
     my $identifier = $args{name} || die 'name is required';
     die 'name should only contain words and integers' unless $identifier =~ /^([A-Za-z0-9]+ ?)*$/;
@@ -90,9 +121,7 @@ sub save_config {
     $existing_config->{$identifier} = \%args;
     $self->_cleanup($existing_config);
 
-    $self->chronicle_writer->set($namespace, $config_type, $existing_config, $self->recorded_date);
-
-    return \%args;
+    return $existing_config;
 }
 
 sub _cleanup {

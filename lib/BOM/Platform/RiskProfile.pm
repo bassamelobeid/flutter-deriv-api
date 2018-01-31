@@ -1,6 +1,10 @@
 package BOM::Platform::RiskProfile;
 
-=pod
+=head NAME
+
+BOM::Platform::RiskProfile - a class to get custom risk and/or commission profile.
+
+=head DESCRIPTION
 
 There are 5 risk profiles: no_business extreme_risk high_risk medium_risk low_risk
 
@@ -10,7 +14,7 @@ A risk profile defines the maximum payout per contract and/or daily turnover lim
 
 use Moose;
 
-use List::Util qw(first);
+use List::Util qw(first max);
 use JSON::MaybeXS;
 use Format::Util::Numbers qw/formatnumber/;
 
@@ -87,7 +91,7 @@ has custom_profiles => (
 sub _build_custom_profiles {
     my $self = shift;
 
-    my @profiles = grep { $self->_match_conditions($_) } values %{$self->raw_custom_profiles};
+    my @profiles = grep { $self->_match_conditions($_) } @{$self->raw_custom_risk_profiles};
 
     my $risk_profile = $self->underlying_risk_profile;
     my $setter       = $self->underlying_risk_profile_setter;
@@ -100,6 +104,23 @@ sub _build_custom_profiles {
         };
 
     return \@profiles;
+}
+
+has [qw(raw_custom_risk_profiles raw_custom_commission_profiles)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_raw_custom_risk_profiles {
+    my $self = shift;
+
+    return [grep { $_->{risk_profile} } values %{$self->raw_custom_profiles}];
+}
+
+sub _build_raw_custom_commission_profiles {
+    my $self = shift;
+
+    return [grep { $_->{commission} } values %{$self->raw_custom_profiles}];
 }
 
 has raw_custom_profiles => (
@@ -195,12 +216,12 @@ sub get_turnover_limit_parameters {
 
             my $offerings_obj = _offerings_obj();
 
-            if ($_->{market}) {
-                $params->{symbols} = [$offerings_obj->query({market => $_->{market}}, ['underlying_symbol'])];
+            if ($_->{underlying_symbol}) {
+                $params->{symbols} = [$_->{underlying_symbol}];
             } elsif ($_->{submarket}) {
                 $params->{symbols} = [$offerings_obj->query({submarket => $_->{submarket}}, ['underlying_symbol'])];
-            } elsif ($_->{underlying_symbol}) {
-                $params->{symbols} = [$_->{underlying_symbol}];
+            } elsif ($_->{market}) {
+                $params->{symbols} = [$offerings_obj->query({market => $_->{market}}, ['underlying_symbol'])];
             }
 
             if ($_->{contract_category}) {
@@ -235,7 +256,7 @@ sub get_client_profiles {
         };
 
         my @landing_company_limits = ();
-        foreach my $custom (values %{$self->raw_custom_profiles}) {
+        foreach my $custom (@{$self->raw_custom_risk_profiles}) {
             next unless exists $custom->{landing_company};
             next if $landing_company_short ne $custom->{landing_company};
             push @landing_company_limits, $custom if $self->_match_conditions($custom, {landing_company => $landing_company_short});
@@ -291,8 +312,23 @@ sub get_current_profile_definitions {
     return \%limits;
 }
 
+=head2 get_commission
+
+Get commission set by quants from product management tool.
+
+=cut
+
+sub get_commission {
+    my $self = shift;
+
+    my @matched_commissions = map { $_->{commission} } grep { $self->_match_conditions($_) } @{$self->raw_custom_commission_profiles};
+
+    return unless @matched_commissions;
+    return max(@matched_commissions);
+}
+
 my %_no_condition;
-@_no_condition{qw(name risk_profile updated_by updated_on non_binary_contract_limit)} = ();
+@_no_condition{qw(name risk_profile updated_by updated_on non_binary_contract_limit commission)} = ();
 
 sub _match_conditions {
     my ($self, $custom, $additional_info) = @_;

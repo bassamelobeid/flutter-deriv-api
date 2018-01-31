@@ -29,16 +29,19 @@ subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
     $client->set_default_account('USD');
     $pa_client->set_default_account('USD');
     $client->payment_account_transfer(
-        toClient => $pa_client,
-        currency => 'USD',
-        amount   => 1000,
-        fees     => 0,
+        toClient     => $pa_client,
+        currency     => 'USD',
+        amount       => 1000,
+        fees         => 0,
+        gateway_code => 'payment_agent_transfer'
     );
+
     $pa_client->payment_account_transfer(
-        toClient => $client,
-        currency => 'USD',
-        amount   => 1000,
-        fees     => 0,
+        toClient     => $client,
+        currency     => 'USD',
+        amount       => 1000,
+        fees         => 0,
+        gateway_code => 'payment_agent_transfer'
     );
     $pa_total_amount =
         $clientdb->getall_arrayref('select * from payment_v1.get_today_client_payment_agent_transfer_total_amount(?)', [$pa_client->loginid])->[0]
@@ -54,11 +57,12 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
 
         # note amount must differ from 1000 here to avoid BI102
         $client->payment_account_transfer(
-            toClient => $pa_client,
-            currency => 'USD',
-            amount   => 999,
-            remark   => $remark,
-            fees     => 0,
+            toClient     => $pa_client,
+            currency     => 'USD',
+            amount       => 999,
+            remark       => $remark,
+            fees         => 0,
+            gateway_code => 'payment_agent_transfer'
         );
     }
     "OK with remark length = 800";
@@ -69,11 +73,12 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
         $remark .= 'x' x 801;
 
         $client->payment_account_transfer(
-            toClient => $pa_client,
-            currency => 'USD',
-            amount   => 999,
-            remark   => $remark,
-            fees     => 0,
+            toClient     => $pa_client,
+            currency     => 'USD',
+            amount       => 999,
+            remark       => $remark,
+            fees         => 0,
+            gateway_code => 'payment_agent_transfer'
         );
     }
     qr/value too long for type character varying\(800\)/, 'remark length cannot > 800';
