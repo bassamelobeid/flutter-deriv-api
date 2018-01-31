@@ -34,6 +34,7 @@ my $config = {
         MissingRequiredStart        => 'Missing required contract parameters (date_start).',
         MissingRequiredBetType      => 'Missing required contract parameters (bet_type).',
         MissingRequiredCurrency     => 'Missing required contract parameters (currency).',
+        MissingRequiredQuantity     => 'Missing required contract parameters (quantity).',
         AlreadyExpired              => 'This contract has already expired.',
         BarrierNotInRange           => 'Barrier is not an integer in range of [_1] to [_2].',
         BarrierOutOfRange           => 'Barrier is out of acceptable range.',
