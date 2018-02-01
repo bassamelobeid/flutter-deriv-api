@@ -69,23 +69,6 @@ sub apply_usergroup {
     return;
 }
 
-sub _auth {
-    my $params = shift;
-
-    my $token_details = $params->{token_details};
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        unless $token_details and exists $token_details->{loginid};
-
-    my $client = Client::Account->new({loginid => $token_details->{loginid}});
-
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
-    $params->{client} = $client;
-    $params->{app_id} = $token_details->{app_id};
-    return;
-}
-
 sub _make_rpc_service_and_register {
     my ($def) = @_;
 
@@ -138,8 +121,18 @@ sub _make_rpc_service_and_register {
                     }
                 } else {
                     # If there is no $client, we continue with our auth check
-                    my $err = _auth($params);
-                    return $err if $err;
+                    my $token_details = $params->{token_details};
+                    return BOM::RPC::v3::Utility::invalid_token_error()
+                        unless $token_details and exists $token_details->{loginid};
+
+                    my $client = Client::Account->new({loginid => $token_details->{loginid}});
+
+                    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+                        return $auth_error;
+                    }
+
+                    $params->{client} = $client;
+                    $params->{app_id} = $token_details->{app_id};
                 }
             }
 
