@@ -69,6 +69,23 @@ sub apply_usergroup {
     return;
 }
 
+sub _auth {
+    my $params = shift;
+
+    my $token_details = $params->{token_details};
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        unless $token_details and exists $token_details->{loginid};
+
+    my $client = Client::Account->new({loginid => $token_details->{loginid}});
+
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+    $params->{client} = $client;
+    $params->{app_id} = $token_details->{app_id};
+    return;
+}
+
 sub _make_rpc_service_and_register {
     my ($def) = @_;
 
@@ -109,6 +126,21 @@ sub _make_rpc_service_and_register {
             } elsif ($params->{source}) {
                 $verify_app_res = BOM::RPC::v3::App::verify_app({app_id => $params->{source}});
                 return $verify_app_res if $verify_app_res->{error};
+            }
+
+            if($def->is_auth) {
+                if(my $client = $params->{client}) {
+                    # If there is a $client object but is not a Valid Client::Account we return an error
+                    unless (blessed $client && $client->isa('Client::Account')) {
+                        return BOM::RPC::v3::Utility::create_error({
+                                code              => 'InvalidRequest',
+                                message_to_client => localize("Invalid request.")});
+                    }
+                } else {
+                    # If there is no $client, we continue with our auth check
+                    my $err = _auth($params);
+                    return $err if $err;
+                }
             }
 
             my @args   = @original_args;

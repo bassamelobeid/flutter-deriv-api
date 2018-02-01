@@ -12,7 +12,7 @@ use Scalar::Util qw(blessed);
 use Struct::Dumb qw(readonly_struct);
 
 readonly_struct
-    ServiceDef        => [qw(name code is_async)],
+    ServiceDef        => [qw(name code is_auth is_async)],
     named_constructor => 1;
 
 =head1 DOMAIN-SPECIFIC-LANGUAGE
@@ -87,29 +87,6 @@ sub import_dsl_into {
 
         $opts{auth} //= $auth_all if $auth_all;
 
-        $code = do {
-            my $original_code = $code;
-            sub {
-                my $params = $_[0] // {};
-                my $client = $params->{client};
-
-                if (!$client) {
-                    # If there is no $client, we continue with our auth check
-                    my $err = _auth($params);
-                    return $err if $err;
-                } else {
-                    # If there is a $client object but is not a Valid Client::Account we return an error
-                    unless (blessed $client && $client->isa('Client::Account')) {
-                        return BOM::RPC::v3::Utility::create_error({
-                                code              => 'InvalidRequest',
-                                message_to_client => localize("Invalid request.")});
-                    }
-                }
-
-                return $original_code->($params);
-                }
-        } if $opts{auth};
-
         register($name, set_subname("RPC[$name]" => $code), %opts);
 
         no strict 'refs';
@@ -179,6 +156,7 @@ sub register {
         ServiceDef(
         name           => $name,
         code           => $code,
+        is_auth        => !!$args{auth},
         is_async       => !!$args{async},
         );
     return;
@@ -199,23 +177,6 @@ sub get_service_defs {
     $done_startup = 1;
 
     return @service_defs;
-}
-
-sub _auth {
-    my $params = shift;
-
-    my $token_details = $params->{token_details};
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        unless $token_details and exists $token_details->{loginid};
-
-    my $client = Client::Account->new({loginid => $token_details->{loginid}});
-
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
-    $params->{client} = $client;
-    $params->{app_id} = $token_details->{app_id};
-    return;
 }
 
 1;
