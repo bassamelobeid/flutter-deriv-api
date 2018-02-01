@@ -1,3 +1,7 @@
+#
+#Note:
+#multipliers by underlying are chosen as the smallest possible denomination {0.1,0.01,0.001,…} 
+#where a unit price of a lookback float call contract would be above {currency}0.5
 R_10 : 0.1
 R_25 : 0.1
 R_50 : 0.1
