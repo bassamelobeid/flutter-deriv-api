@@ -7,6 +7,8 @@ use Format::Util::Numbers qw/financialrounding/;
 use YAML::XS qw(LoadFile);
 use LandingCompany::Commission qw(get_underlying_base_commission);
 
+use POSIX;
+
 use BOM::Product::Static;
 
 my $multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_contract_multiplier.yml');
@@ -121,13 +123,14 @@ override _build_theo_price => sub {
 override _build_ask_price => sub {
     my $self = shift;
 
-    my $theo_price = financialrounding('price', $self->currency, $self->pricing_engine->theo_price) * $self->unit * $self->multiplier;
-    $theo_price = max(0.01, $theo_price);
+    my $theo_price = $self->pricing_engine->theo_price;
 
-    my $commission = financialrounding('price', $self->currency, $theo_price * $self->lookback_base_commission);
+    my $commission = $theo_price * $self->lookback_base_commission;
     $commission = max(0.01, $commission);
 
-    return financialrounding('price', $self->currency, $theo_price + $commission);
+    my $final_price = max(0.02, ($theo_price + $commission) * $self->multiplier);
+
+    return financialrounding('price', $self->currency, $final_price) * $self->unit;
 };
 
 override _build_bid_price => sub {
@@ -176,9 +179,9 @@ override shortcode => sub {
     my $shortcode_date_start = $self->date_start->epoch;
 
     my $shortcode_date_expiry =
-          ($self->tick_expiry)  ? $self->tick_count . 'T'
-        : ($self->fixed_expiry) ? $self->date_expiry->epoch . 'F'
-        :                         $self->date_expiry->epoch;
+        ($self->fixed_expiry)
+        ? $self->date_expiry->epoch . 'F'
+        : $self->date_expiry->epoch;
 
     # TODO We expect to have a valid bet_type, but there may be codepaths which don't set this correctly yet.
     my $contract_type = $self->bet_type // $self->code;
