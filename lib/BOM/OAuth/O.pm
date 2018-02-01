@@ -74,8 +74,8 @@ sub authorize {
         r                => $c->stash('request'),
         csrf_token       => $c->csrf_token,
         use_social_login => $c->_is_social_login_available(),
-        login_method     => $c->stash('login_method'),
         login_providers  => $c->stash('login_providers'),
+        login_method     => undef,
     );
 
     # detect and validate social_login param if provided
@@ -88,7 +88,8 @@ sub authorize {
             }
             return $c->_bad_request('the request was missing valid social login method')
                 unless grep { $method eq $_ } @{$c->stash('login_providers')};
-            $c->stash('login_method' => $method);
+            $template_params{login_method} = $method;
+            return $c->render(%template_params);
         }
     }
 
@@ -258,8 +259,6 @@ sub _login {
             csrf_token       => $c->csrf_token,
             use_social_login => $c->_is_social_login_available(),
             login_providers  => $c->stash('login_providers'),
-            # auto login method for social login (Google, Facebook, etc.)
-            login_method => $c->stash('login_method'),
         );
         return;
     }
