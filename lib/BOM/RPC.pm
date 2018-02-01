@@ -73,10 +73,6 @@ sub _make_rpc_service_and_register {
     my ($def) = @_;
 
     my $method = $def->name;
-    my $code =
-         !$def->is_async
-        ? $def->code
-        : sub { return $def->code->(@_)->get; };
 
     return MojoX::JSON::RPC::Service->new->register(
         $def->name,
@@ -138,7 +134,13 @@ sub _make_rpc_service_and_register {
 
             my @args   = @original_args;
             my $result = try {
-                $code->(@args);
+                my $code = $def->code;
+
+                if($def->is_async) {
+                    $code->(@args)->get;
+                } else {
+                    $code->(@args);
+                }
             }
             catch {
                 # replacing possible objects in $params with strings to avoid error in encode_json function
