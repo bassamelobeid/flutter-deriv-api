@@ -79,7 +79,6 @@ my $permissions = {
     'quant/pricing/f_dealer.cgi'                               => ['Quants'],
     'quant/product_management.cgi'                             => ['Quants'],
     'quant/settle_contracts.cgi'                               => ['Quants'],
-    'rtquotes_displayallgraphs.cgi'                            => ['Quants'],
     'show_audit_trail.cgi'                                     => ['CS'],
     'trusted_client_edit.cgi'                                  => ['CS'],
     'untrusted_client_edit.cgi'                                => ['CS'],
