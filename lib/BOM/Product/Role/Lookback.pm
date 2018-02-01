@@ -121,7 +121,13 @@ override _build_theo_price => sub {
 override _build_ask_price => sub {
     my $self = shift;
 
-    return financialrounding('amount', $self->currency, $self->theo_price * (1 + $self->lookback_base_commission));
+    my $theo_price = $self->pricing_engine->theo_price * $self->unit * $self->multiplier;
+    my $theo_price = max(0.01, $theo_price);
+
+    my $commission = $theo_price * $self->lookback_base_commission;
+    my $commission = max(0.01, $commission);
+
+    return financialrounding('price', $self->currency, $theo_price + $commission);
 };
 
 override _build_bid_price => sub {
@@ -129,10 +135,10 @@ override _build_bid_price => sub {
 
     if ($self->is_expired) {
         my $bid_price = $self->theo_price;
-        return financialrounding('amount', $self->currency, $bid_price);
+        return financialrounding('price', $self->currency, $bid_price);
     }
 
-    return financialrounding('amount', $self->currency, $self->theo_price * (1 - $self->lookback_base_commission));
+    return financialrounding('price', $self->currency, $self->theo_price * (1 - $self->lookback_base_commission));
 };
 
 override _validate_price => sub {
