@@ -124,7 +124,7 @@ override _build_ask_price => sub {
     my $theo_price = financialrounding('price', $self->currency, $self->pricing_engine->theo_price) * $self->unit * $self->multiplier;
     $theo_price = max(0.01, $theo_price);
 
-    my $commission = $theo_price * $self->lookback_base_commission;
+    my $commission = financialrounding('price', $self->currency, $theo_price * $self->lookback_base_commission);
     $commission = max(0.01, $commission);
 
     return financialrounding('price', $self->currency, $theo_price + $commission);
