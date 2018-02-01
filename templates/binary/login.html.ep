@@ -14,38 +14,36 @@
     </div>
 </div>
 
-<% unless ($login_method) { %>
-    <div class="container">
-        <div id="inline">
-            <div id="wrapper">
-                <p class="center-text"><%= l('Log in using your email address') %></p>
-                <% if (stash('error')) { %>
-                    <p class='error-msg center-text'><%= stash('error') %></p>
-                <% } %>
-                <form id="frmLogin" method="POST">
-                    <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
-                    <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" autocomplete="off" /></div>
-                    <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
-                    <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
-                </form>
-                <% if ($use_social_login) { %>
-                <div class="section-divider">
-                    <div class="align-self-center border-bottom-light-gray"></div>
-                    <div class="circle"><%= l('Or') %></div>
-                    <div class="align-self-center border-bottom-light-gray"></div>
-                </div>
-                <div id="oa_social_login_container"></div>
-                <% } %>
+<div class="container">
+    <div id="inline">
+        <div id="wrapper">
+            <p class="center-text"><%= l('Log in using your email address') %></p>
+            <% if (stash('error')) { %>
+                <p class='error-msg center-text'><%= stash('error') %></p>
+            <% } %>
+            <form id="frmLogin" method="POST">
+                <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
+                <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" autocomplete="off" /></div>
+                <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
+                <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
+            </form>
+            <% if ($use_social_login) { %>
+            <div class="section-divider">
+                <div class="align-self-center border-bottom-light-gray"></div>
+                <div class="circle"><%= l('Or') %></div>
+                <div class="align-self-center border-bottom-light-gray"></div>
             </div>
+            <div id="oa_social_login_container"></div>
+            <% } %>
         </div>
-        <% if ($app->{id} eq 1) { %>
-            <div class="center-text links">
-                <p><a id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a></p>
-                <p><%= l('Don\'t have a Binary.com account?') %> <a id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Create one') %></a> <%= l('now.') %></p>
-            </div>
-        <% } %>
     </div>
-<% } %>
+    <% if ($app->{id} eq 1) { %>
+        <div class="center-text links">
+            <p><a id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a></p>
+            <p><%= l('Don\'t have a Binary.com account?') %> <a id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Create one') %></a> <%= l('now.') %></p>
+        </div>
+    <% } %>
+</div>
 
 <script type="text/javascript">
     var use_social_login = '<%== $use_social_login %>';

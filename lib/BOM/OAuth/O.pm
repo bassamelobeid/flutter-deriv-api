@@ -67,13 +67,6 @@ sub authorize {
         }
     }
 
-    # detect and validate social_login param if provided
-    if (my $method = $c->param('social_signup')) {
-        return $c->_bad_request('the request was missing valid social login method')
-            unless grep { $method eq $_ } @{$c->stash('login_providers')};
-        $c->stash('login_method' => $method);
-    }
-
     my %template_params = (
         template         => _get_login_template_name($brand_name),
         layout           => $brand_name,
@@ -84,6 +77,18 @@ sub authorize {
         login_method     => $c->stash('login_method'),
         login_providers  => $c->stash('login_providers'),
     );
+
+    # detect and validate social_login param if provided
+    if (my $method = $c->param('social_signup')) {
+        if (_is_social_login_suspended()) {
+            $template_params{error} =
+                localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
+            return $c->render(%template_params);
+        }
+        return $c->_bad_request('the request was missing valid social login method')
+            unless grep { $method eq $_ } @{$c->stash('login_providers')};
+        $c->stash('login_method' => $method);
+    }
 
     # show error when no client found in session show login form
     if (!$client) {
@@ -231,9 +236,7 @@ sub _login {
             $client = firstval { !exists $result->{self_excluded}->{$_->loginid} } (@clients);
         }
 
-        if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}
-            or ($oneall_user_id and _is_social_login_suspended()))
-        {
+        if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}) {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         } elsif ($client->get_status('disabled')) {
             $err = localize('This account has been disabled.');
@@ -346,7 +349,7 @@ sub _is_social_login_available {
     my $c = shift;
 
     return (
-        not $c->_is_social_login_suspended() and scalar @{$c->stash('login_providers')} > 0 and ($c->stash('request')->country_code ne 'jp'
+        not _is_social_login_suspended() and scalar @{$c->stash('login_providers')} > 0 and ($c->stash('request')->country_code ne 'jp'
             and $c->stash('request')->language ne 'JA'));
 }
 
