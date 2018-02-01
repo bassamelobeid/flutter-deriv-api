@@ -80,14 +80,16 @@ sub authorize {
 
     # detect and validate social_login param if provided
     if (my $method = $c->param('social_signup')) {
-        if (_is_social_login_suspended()) {
-            $template_params{error} =
-                localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
-            return $c->render(%template_params);
+        if (!$c->param('email') and !$c->param('password')) {
+            if (_is_social_login_suspended()) {
+                $template_params{error} =
+                    localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
+                return $c->render(%template_params);
+            }
+            return $c->_bad_request('the request was missing valid social login method')
+                unless grep { $method eq $_ } @{$c->stash('login_providers')};
+            $c->stash('login_method' => $method);
         }
-        return $c->_bad_request('the request was missing valid social login method')
-            unless grep { $method eq $_ } @{$c->stash('login_providers')};
-        $c->stash('login_method' => $method);
     }
 
     # show error when no client found in session show login form
