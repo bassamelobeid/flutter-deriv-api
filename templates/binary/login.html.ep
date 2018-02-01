@@ -19,12 +19,12 @@
         <div id="inline">
             <div id="wrapper">
                 <p class="center-text"><%= l('Log in using your email address') %></p>
+                <% if (stash('error')) { %>
+                    <p class='error-msg center-text'><%= stash('error') %></p>
+                <% } %>
                 <form id="frmLogin" method="POST">
                     <div><input type="email" id="txtEmail" name="email" placeholder="<%= l('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
-                    <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
-                    <% if (!$is_oneall && stash('error')) { %>
-                    <p class='error-msg center-text'><%= stash('error') %></p>
-                    <% } %>
+                    <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" autocomplete="off" /></div>
                     <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
                     <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
                 </form>
@@ -35,9 +35,6 @@
                     <div class="align-self-center border-bottom-light-gray"></div>
                 </div>
                 <div id="oa_social_login_container"></div>
-                <% if ($is_oneall && stash('error')) { %>
-                <p class='error-msg center-text'><%= stash('error') %></p>
-                <% } %>
                 <% } %>
             </div>
         </div>
@@ -67,5 +64,6 @@
         if (login_method) {
             _oneall.push(['social_login', 'do_login', login_method]);
         }
+        document.getElementById('frmLogin').reset();
     }
 </script>

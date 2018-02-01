@@ -83,12 +83,11 @@ sub authorize {
         use_social_login => $c->_is_social_login_available(),
         login_method     => $c->stash('login_method'),
         login_providers  => $c->stash('login_providers'),
-        is_oneall        => $c->session('_oneall_user_id') ? 1 : 0,
     );
 
     # show error when no client found in session show login form
     if (!$client) {
-        $template_params{error} = delete $c->session->{_oneall_error} || '';
+        $template_params{error} = delete $c->session->{error} || '';
         return $c->render(%template_params);
     }
 
@@ -244,6 +243,7 @@ sub _login {
     }
 
     if ($err) {
+        $c->session(expires => 1);
         $c->render(
             template         => _get_login_template_name($brand_name),
             layout           => $brand_name,
@@ -255,7 +255,6 @@ sub _login {
             login_providers  => $c->stash('login_providers'),
             # auto login method for social login (Google, Facebook, etc.)
             login_method => $c->stash('login_method'),
-            is_oneall    => $c->session('_oneall_user_id'),
         );
         return;
     }
