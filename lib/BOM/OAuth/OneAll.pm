@@ -98,7 +98,7 @@ sub redirect {
 sub _get_provider_token {
     my $c = shift;
 
-    my $request = URI->new($c->headers->{referer}[0]);
+    my $request = URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0]);
 
     return $request->query_param('provider_connection_token');
 }
