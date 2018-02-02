@@ -98,7 +98,7 @@ subtest 'buy' => sub {
     like($result->{shortcode}, qr/LBFLOATCALL_R_50_5_\d{10}_\d{10}_S20P_0/, 'shortcode is correct');
     is(
         $result->{longcode},
-        'Win USD 1.0 times Volatility 50 Index\'s close-low over the next 2 minutes.',
+        'Win USD 5 times Volatility 50 Index\'s close-low over the next 2 minutes.',
         'longcode is correct'
     );
 
