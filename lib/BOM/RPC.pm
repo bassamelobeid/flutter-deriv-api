@@ -69,6 +69,24 @@ sub apply_usergroup {
     return;
 }
 
+sub set_current_context
+{
+    my ($params) = @_;
+
+    my $args = {};
+    $args->{country_code} = $params->{country}  if exists $params->{country};
+    $args->{language}     = $params->{language} if $params->{language};
+    $args->{brand}        = $params->{brand}    if $params->{brand};
+
+    my $token_details = $params->{token_details};
+    if ($token_details and exists $token_details->{loginid} and $token_details->{loginid} =~ /^(\D+)\d+$/) {
+        $args->{broker_code} = $1;
+    }
+
+    my $r = BOM::Platform::Context::Request->new($args);
+    BOM::Platform::Context::request($r);
+}
+
 sub _make_rpc_service_and_register {
     my ($def) = @_;
 
@@ -80,20 +98,11 @@ sub _make_rpc_service_and_register {
             my @original_args = @_;
             my $params = $original_args[0] // {};
 
-            my $args = {};
-            $args->{country_code} = $params->{country} if exists $params->{country};
             $params->{token} = $params->{args}->{authorize} if !$params->{token} && $params->{args}->{authorize};
-            my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
 
-            if ($token_details and exists $token_details->{loginid} and $token_details->{loginid} =~ /^(\D+)\d+$/) {
-                $args->{broker_code} = $1;
-            }
-            $params->{token_details} = $token_details;
-            $args->{language}        = $params->{language} if ($params->{language});
-            $args->{brand}           = $params->{brand} if ($params->{brand});
+            $params->{token_details} = BOM::RPC::v3::Utility::get_token_details($params->{token});
 
-            my $r = BOM::Platform::Context::Request->new($args);
-            BOM::Platform::Context::request($r);
+            set_current_context($params);
 
             if (exists $params->{server_name}) {
                 $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
