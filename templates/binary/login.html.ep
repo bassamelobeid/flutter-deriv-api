@@ -13,7 +13,7 @@
         </div>
     </div>
 </div>
-
+<% if (!$login_method || stash('error')) { %>
 <div class="container">
     <div id="inline">
         <div id="wrapper">
@@ -44,6 +44,7 @@
         </div>
     <% } %>
 </div>
+<% } %>
 
 <script type="text/javascript">
     var use_social_login = '<%== $use_social_login %>';
