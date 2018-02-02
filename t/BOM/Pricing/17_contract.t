@@ -215,7 +215,7 @@ subtest $method => sub {
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol'       => 'R_50',
-            'longcode'     => "Profit from each point difference between Volatility 50 Index's exit spot and lowest value at 50 seconds after contract start time.",
+            'longcode'     => "Win USD 1.0 times Volatility 50 Index's close-low over the next 50 seconds.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
             'barrier'      => 'S20P',
@@ -248,10 +248,10 @@ $DB::single=1;
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '20.82',
-        'ask_price'           => '20.82',
-        'longcode'            => "Profit from each point difference between Volatility 50 Index's exit spot and lowest value at 15 minutes after contract start time.",
-        'multiplier'          => '0.1',
+        'display_value'       => '208.00',
+        'ask_price'           => '208.00',
+        'longcode'            => "Win USD 1.0 times Volatility 50 Index's close-low over the next 15 minutes.",
+        'multiplier'          => '1.0',
         'spot'                => '963.3054',
         'payout'              => '0',
         'contract_parameters' => {
@@ -294,7 +294,7 @@ subtest 'send_ask' => sub {
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        'Profit from each point difference between Volatility 50 Index\'s exit spot and lowest value at 15 minutes after contract start time.',
+        'Win USD 1.0 times Volatility 50 Index\'s close-low over the next 15 minutes.',
         'long code  is correct'
     );
 };
