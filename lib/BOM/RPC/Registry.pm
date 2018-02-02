@@ -154,10 +154,10 @@ sub register {
 
     push @service_defs,
         ServiceDef(
-        name           => $name,
-        code           => $code,
-        is_auth        => !!$args{auth},
-        is_async       => !!$args{async},
+        name     => $name,
+        code     => $code,
+        is_auth  => !!$args{auth},
+        is_async => !!$args{async},
         );
     return;
 }

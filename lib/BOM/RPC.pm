@@ -69,8 +69,7 @@ sub apply_usergroup {
     return;
 }
 
-sub set_current_context
-{
+sub set_current_context {
     my ($params) = @_;
 
     my $args = {};
@@ -116,8 +115,8 @@ sub _make_rpc_service_and_register {
                 return $verify_app_res if $verify_app_res->{error};
             }
 
-            if($def->is_auth) {
-                if(my $client = $params->{client}) {
+            if ($def->is_auth) {
+                if (my $client = $params->{client}) {
                     # If there is a $client object but is not a Valid Client::Account we return an error
                     unless (blessed $client && $client->isa('Client::Account')) {
                         return BOM::RPC::v3::Utility::create_error({
@@ -145,7 +144,7 @@ sub _make_rpc_service_and_register {
             my $result = try {
                 my $code = $def->code;
 
-                if($def->is_async) {
+                if ($def->is_async) {
                     $code->(@args)->get;
                 } else {
                     $code->(@args);
