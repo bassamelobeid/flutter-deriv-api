@@ -31,16 +31,16 @@ get all authenticated payment agent
 =cut
 
 sub get_authenticated_payment_agents {
-    my $self           = shift;
-    my $args           = shift;
-    my $target_country = $args->{target_country};
+    my $self = shift;
+    my $args = shift;
+    my ($target_country, $currency_code) = @{$args}{qw/target_country currency_code/};
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
         fixup => sub {
-            my $authenticated_pa_sth = $_->prepare('SELECT * FROM betonmarkets.payment_agent WHERE is_authenticated = TRUE AND target_country = $1');
+            my $authenticated_pa_sth = $_->prepare('SELECT * FROM betonmarkets.get_payment_agents_by_country(?, ?, ?)');
+            $authenticated_pa_sth->execute($target_country, 't', $currency_code);
 
-            $authenticated_pa_sth->execute($target_country);
             return $authenticated_pa_sth->fetchall_hashref('client_loginid');
         });
 }
@@ -61,8 +61,9 @@ sub get_all_authenticated_payment_agent_countries {
     my $dbic = $self->db->dbic;
     return $dbic->run(
         fixup => sub {
-            my $authenticated_payment_agents_statement =
-                $_->prepare('SELECT DISTINCT target_country FROM betonmarkets.payment_agent WHERE is_authenticated');
+            my $authenticated_payment_agents_statement = $_->prepare('SELECT country FROM betonmarkets.get_payment_agents_countries(?)');
+
+            $authenticated_payment_agents_statement->execute('t');
 
             if ($authenticated_payment_agents_statement->execute()) {
                 return $authenticated_payment_agents_statement->fetchall_arrayref;
