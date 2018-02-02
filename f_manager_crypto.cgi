@@ -435,6 +435,11 @@ EOF
         my $rslt;
         if ($currency eq 'ETH' and $cmd eq 'getbalance') {
             $rslt += Math::BigFloat->from_hex($rpc_client->eth_getBalance($_, 'latest')) / 10**18 for @{$rpc_client->eth_accounts()};
+        } elsif ($cmd eq 'getbalance') {
+            foreach my $transaction (@{$rpc_client->listunspent(0)}) {
+                $rslt += $transaction->{amount}
+                    if ($transaction->{confirmations} >= 3 or grep { $transaction->{address} eq $_ } @{$rpc_client->getaddressesbyaccount('manual')});
+            }
         } else {
             $rslt = $rpc_client->$cmd(@param);
         }
