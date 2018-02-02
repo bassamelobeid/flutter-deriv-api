@@ -74,7 +74,8 @@ subtest 'buy' => sub {
 
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidPrice', 'Invalid precision for price');
 
-    $params->{args}{price} = financialrounding('price', 'USD', 7.59 * 0.5);
+    $params->{args}{price} = financialrounding('price', 'USD', 3.75);
+    $params->{contract_parameters}{unit} = 5;
 
     my $old_balance   = $client->default_account->load->balance;
     my $result        = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
@@ -94,10 +95,10 @@ subtest 'buy' => sub {
     my $new_balance = formatnumber('amount', 'USD', $client->default_account->load->balance);
     is($new_balance, $result->{balance_after}, 'balance is changed');
     ok($old_balance - $new_balance - $result->{buy_price} < 0.0001, 'balance reduced');
-    like($result->{shortcode}, qr/LBFLOATCALL_R_50_50_\d{10}_\d{10}_S20P_0/, 'shortcode is correct');
+    like($result->{shortcode}, qr/LBFLOATCALL_R_50_5_\d{10}_\d{10}_S20P_0/, 'shortcode is correct');
     is(
         $result->{longcode},
-        'Profit from each point difference between Volatility 50 Index\'s exit spot and lowest value at 2 minutes after contract start time.',
+        'Win USD 1.0 times Volatility 50 Index\'s close-low over the next 2 minutes.',
         'longcode is correct'
     );
 
