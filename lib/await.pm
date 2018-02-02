@@ -22,9 +22,6 @@ Working with Test::Mojo based tests
 
 our $req_id = 999999;    # desparately trying to avoid conflicts
 
-note "non-matched messages are silently dropped. Please, set BINARY_AWAIT_DEBUG=1 to see all messages (including skipped ones) in the test"
-    unless AWAIT_DEBUG;
-
 sub wsapi_wait_for {
     my ($t, $wait_for, $action_sub, $params, $messages_without_accidens) = @_;
     $params //= {};
@@ -66,9 +63,13 @@ sub wsapi_wait_for {
 }
 
 our $AUTOLOAD;
+our $used;
 
 sub AUTOLOAD {
     my ($self, $payload, $params) = @_;
+
+    note "non-matched messages are silently dropped. Please, set BINARY_AWAIT_DEBUG=1 to see all messages (including skipped ones) in the test"
+        unless AWAIT_DEBUG or $used++;
 
     return unless ref $self;
 
