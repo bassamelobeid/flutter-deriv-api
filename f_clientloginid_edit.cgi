@@ -398,7 +398,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         secret_question
         is_vip
         tax_identification_number
-        allow_omnibus
         citizen
         address_1
         address_2
