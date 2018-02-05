@@ -236,7 +236,7 @@ sub _sort_headers {
     my $counter_begin = -200;
     $h->{$_} = $counter_end++
         for (
-        qw/address_city address_line_1 address_line_2 address_postcode address_state allow_copiers allow_login allow_omnibus broker_code cashier_setting_password checked_affiliate_exposures citizen client_password/
+        qw/address_city address_line_1 address_line_2 address_postcode address_state allow_copiers allow_login broker_code cashier_setting_password checked_affiliate_exposures citizen client_password/
         );
     $h->{$_} = $counter_begin++
         for (qw/reason status_code document_type expiration_date comments payment_agent_withdrawal_expiration_date first_name last_name/);
