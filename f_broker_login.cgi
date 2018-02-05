@@ -251,27 +251,6 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 	</table>~;
 }
 
-# REALTIME QUOTES
-if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
-    print qq~
-	<table class="BlueLightCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
-		<tbody>
-			<tr class="BlueLabel">
-				<td class="whitelabel" colspan="2">REALTIME FEEDS</td>
-			</tr>
-			<tr>
-				<td align="center" width="50%">
-					<p><b>REALTIME QUOTES<br />(quotes & news feeds gateway)</b></p>
-					<form action="~ . request()->url_for('backoffice/f_rtquoteslogin.cgi') . qq~" method="get"><font size=2><b>
-						<b>$brokerselection</b>
-						&nbsp;<input type="submit" value="REALTIME QUOTES">
-					</font></form>
-				</td>
-			</tr>
-		</tbody>
-	</table>~;
-}
-
 # WEBSITE CUSTOMIZATION
 if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
     print qq~
