@@ -222,7 +222,7 @@ sub create_upload_error {
         $error_code = 'DuplicateUpload';                        # Unique code for front-end handling
         $message    = localize('Document already uploaded.');
     } elsif ($reason eq 'checksum_mismatch') {
-        $error_code = 'ChecksumMismatch';                       # Unique code for front-end handling
+        $error_code = 'ChecksumMismatch';                          # Unique code for front-end handling
         $message    = localize('Checksum verification failed.');
     }
 
