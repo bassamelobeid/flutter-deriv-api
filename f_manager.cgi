@@ -5,6 +5,7 @@ use warnings;
 use HTML::Entities;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Utility;
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
@@ -66,7 +67,7 @@ my $tt = BOM::Backoffice::Request::template;
 
 Bar("MANUAL PAYMENTS");
 
-$tt->process('backoffice/account/manager_payments.tt') || die $tt->error();
+$tt->process('backoffice/account/manager_payments.tt', {languages => BOM::Backoffice::Utility::get_languages()}) || die $tt->error();
 
 Bar("TRANSFER BETWEEN ACCOUNTS");
 

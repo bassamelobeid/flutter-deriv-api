@@ -1,0 +1,15 @@
+[% l("[_1] sama
+
+Please be advised we have processed the following [_2].
+
+Account Type: Real Money Account
+
+Date of [_2]: [_3]
+
+Asset Type: Cash
+
+Currency: [_4]
+
+Amount: [_5]
+
+Ref ID: [_6]", last_name, action_type, payment_date, currency, amount, reference_id) %]

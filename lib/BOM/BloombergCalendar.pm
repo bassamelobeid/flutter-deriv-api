@@ -58,7 +58,7 @@ sub parse_calendar {
     my $early_closes_data = _process(@early_closes);
     # don't have to include synthetics for country holidays
     if ($calendar_type ne 'country_holiday') {
-        _include_forex_holidays($data);
+        $data->{FOREX} = {_generate_common_holidays()};
         _include_metal_holidays_and_early_closes({
             holidays     => $data,
             early_closes => $early_closes_data
@@ -78,18 +78,20 @@ sub parse_calendar {
     return $calendar;
 }
 
-sub _include_forex_holidays {
-    my $data = shift;
+sub _generate_common_holidays {
 
-    my $year      = Date::Utility->new->year;
-    my $christmas = Date::Utility->new("$year-12-25")->epoch;
-    my $new_year  = Date::Utility->new(($year + 1) . "-01-01")->epoch;
-    $data->{FOREX} = {
-        $christmas => 'Christmas Day',
-        $new_year  => "New Year\'s Day",
-    };
+    my $year                = Date::Utility->new->year;
+    my $christmas           = Date::Utility->new("$year-12-25");
+    my $next_year_christmas = Date::Utility->new(($year + 1) . "-12-25");
+    my $new_year            = Date::Utility->new(($year + 1) . "-01-01");
+    my $next_year_new_year  = Date::Utility->new(($year + 2) . "-01-01");
+    return (
+        !$christmas->is_a_weekend           ? ($christmas->epoch           => 'Christmas Day')   : (),
+        !$new_year->is_a_weekend            ? ($new_year->epoch            => 'New Year\'s Day') : (),
+        !$next_year_christmas->is_a_weekend ? ($next_year_christmas->epoch => 'Christmas Day')   : (),
+        !$next_year_new_year->is_a_weekend  ? ($next_year_new_year->epoch  => 'New Year\'s Day') : (),
+    );
 
-    return;
 }
 
 sub _include_metal_holidays_and_early_closes {
@@ -97,17 +99,11 @@ sub _include_metal_holidays_and_early_closes {
     my $data              = $param->{holidays};
     my $early_closes_data = $param->{early_closes};
 
-    my $year        = Date::Utility->new->year;
-    my $christmas   = Date::Utility->new("$year-12-25")->epoch;
-    my $new_year    = Date::Utility->new(($year + 1) . "-01-01")->epoch;
     my $us_holidays = $data->{NYSE};
 
     # From the study we did, gold is illiquid after European market close on those US holiday, so we set early close on those day.
     # On Good Friday, since both US and European market are closed, the gold's feed tend to be very spare, so we decide to keep it as holiday. Other provider such as Panda and Idata also mark this day as holiday
-    $data->{METAL} = {
-        $christmas => 'Christmas Day',
-        $new_year  => "New Year\'s Day",
-        map { $_ => 'Good Friday' } grep { $us_holidays->{$_} =~ /Good Friday/ } keys %{$us_holidays}};
+    $data->{METAL} = {_generate_common_holidays(), map { $_ => 'Good Friday' } grep { $us_holidays->{$_} =~ /Good Friday/ } keys %{$us_holidays}};
     $early_closes_data->{METAL} = {map { $_ => $us_holidays->{$_} } grep { $us_holidays->{$_} !~ /Good Friday/ } keys %{$us_holidays}};
     return;
 }
