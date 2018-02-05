@@ -275,7 +275,8 @@ subtest 'Document with wrong checksum rejected' => sub {
     $res = get_response($t);
         
     my $error = $res->{error};
-    is $error->{code}, 'UploadDenied', "Upload should be denied for file that doesn't match expected checksum";
+    is $error->{code}, 'ChecksumMismatch', 'Error code for checksum fail';
+    is $error->{message}, 'Checksum verification failed.', 'Error msg for checksum fail';
 };
 
 subtest 'Attempt to re-upload document after error uploading' => sub {
