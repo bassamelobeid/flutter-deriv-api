@@ -40,6 +40,11 @@ sub quants {
     return $config;
 }
 
+sub payment_agent {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/paymentagent_config.yml');
+    return $config;
+}
+
 sub sanction_file {
     return "/var/lib/binary/sanctions.yml";
 }
