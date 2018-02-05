@@ -27,12 +27,16 @@ use List::Util qw(min sum);
 use Email::Stuffer;
 use Text::CSV_XS;
 use Time::Duration::Concise::Localize;
-
+use Try::Tiny;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::MarketData::Types;
 use BOM::Backoffice::Request;
+use Date::Utility;
+use Volatility::EconomicEvents;
+use BOM::Platform::Chronicle;
+use Quant::Framework::EconomicEventCalendar;
 
 has 'min_contract_length' => (
     isa     => 'time_interval',
@@ -43,19 +47,36 @@ has 'min_contract_length' => (
 
 # This report will only be run on the MLS.
 sub generate {
-    my $self = shift;
+    my $self     = shift;
+    my $for_date = shift;
 
     my $start = time;
+    my $events;
+    if ($for_date) {
 
-    my $nowish         = $self->end;
+        my $seasonality_prefix = 'bo_' . time . '_';
+        Volatility::EconomicEvents::set_prefix($seasonality_prefix);
+        my $EEC = Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        });
+
+        my $for_date_obj = Date::Utility->new($for_date);
+
+        $events = $EEC->get_latest_events_for_period({
+                from => $for_date_obj,
+                to   => $for_date_obj->plus_time_interval('6d'),
+            },
+            $for_date_obj
+        );
+    }
+
+    my $nowish         = Date::Utility->new($for_date) || Date::Utility->new;
     my $pricing_date   = $nowish->minus_time_interval($nowish->epoch % $self->min_contract_length->seconds);
     my $expiry_minimum = $pricing_date->plus_time_interval($self->min_contract_length);
-
-    my $open_bets_ref = $self->live_open_bets;
-
-    my @keys = keys %{$open_bets_ref};
-
-    my $howmany = scalar @keys;
+    my $open_bets_ref  = $for_date ? $self->historical_open_bets($nowish->date) : $self->live_open_bets;
+    my @keys           = keys %{$open_bets_ref};
+    my $howmany        = scalar @keys;
 
     my $csv = Text::CSV_XS->new({eol => "\n"});
     my ($scenario_analysis, $sum_of_buyprice, $sum_of_payout);
@@ -67,8 +88,14 @@ sub generate {
         TEMPLATE => 'raw-scenario-' . $pricing_date->time_hhmm . '-XXXXX',
         suffix   => '.csv'
     );
-    $csv->print($raw_fh, ['Transaction ID', 'Client ID', 'Shortcode', 'Payout Currency', 'MtM Value']);
+    my $ignored_fh = File::Temp->new(
+        dir      => '/tmp/',
+        TEMPLATE => 'ignored-scenario-' . $pricing_date->time_hhmm . '-XXXXX',
+        suffix   => '.csv'
+    );
 
+    $csv->print($ignored_fh, ['Transaction ID', 'Client ID', 'Shortcode', 'Payout Currency', 'Reason']);
+    $csv->print($raw_fh,     ['Transaction ID', 'Client ID', 'Shortcode', 'Payout Currency', 'MtM Value']);
     FMB:
     foreach my $open_fmb_id (@keys) {
         my $open_fmb = $open_bets_ref->{$open_fmb_id};
@@ -77,8 +104,20 @@ sub generate {
         my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
         next if $bet_params->{bet_type} eq 'BINARYICO';
         $bet_params->{date_pricing} = $pricing_date;
-        my $bet               = produce_contract($bet_params);
-        my $underlying_symbol = $bet->underlying->symbol;
+        my ($bet, $underlying);
+
+        try { $bet = produce_contract($bet_params); $underlying = $bet->underlying; }
+        catch {
+
+            $ignored++;
+            $csv->print($ignored_fh,
+                [$open_fmb->{transaction_id}, $open_fmb->{client_loginid}, $open_fmb->{short_code}, $open_fmb->{currency_code}, $_->{error_code}]);
+
+            next FMB;
+
+        };
+
+        my $underlying_symbol = $underlying->symbol;
 
         if (   not $bet->underlying->spot
             or $bet->is_expired
@@ -87,9 +126,27 @@ sub generate {
         {
 # The above conditions make the risk more liekly to be wrong or out of date by reporting time.
             $ignored++;
+            $csv->print(
+                $ignored_fh,
+                [
+                    $open_fmb->{transaction_id}, $open_fmb->{client_loginid},
+                    $open_fmb->{short_code},     $open_fmb->{currency_code},
+                    $self->amount_in_usd($bet->bid_price, $bet->currency), 'Out_of_scope'
+                ]);
+
             next FMB;
         }
+        if ($for_date) {
 
+            Volatility::EconomicEvents::generate_variance({
+
+                    underlying_symbols => [$underlying_symbol],
+                    economic_events    => $events,
+                    date               => $bet->date_start,
+                    chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+            });
+
+        }
         $csv->print(
             $raw_fh,
             [

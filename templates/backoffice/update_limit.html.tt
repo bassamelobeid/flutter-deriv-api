@@ -1,4 +1,4 @@
-<p>Update custom limits: </p>
+<p>Update custom limits (Please set either risk profile or commission for your entry): </p>
 <form action="[% url | none %]" method="POST">
     <table>
         <tr>
@@ -10,6 +10,11 @@
             <td>Risk Profile: </td>
             <td><input type="text" name="risk_profile"></input></td>
             <td> e.g. extreme_risk | no_business | high_risk | medium_risk | low_risk (required only for binary option)</td>
+        </tr>
+        <tr>
+            <td>Commission: </td>
+            <td><input type="text" name="commission"></input></td>
+            <td> e.g. 0.01 to set 1% commission to a specific contract. Commission does not work with client and landing company.</td>
         </tr>
         <tr>
             <td>Market: </td>

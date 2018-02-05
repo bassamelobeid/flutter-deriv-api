@@ -9,12 +9,16 @@ use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Database::ClientDB;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_XSendfile/;
 use BOM::Backoffice::Sysinit ();
+use Volatility::EconomicEvents;
+use BOM::Platform::Chronicle;
+use Quant::Framework::EconomicEventCalendar;
 
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
 my $broker = request()->broker_code;
 
+# Datettime is in JST
 my $datetime = request()->param('datetime');
 my $loginid  = request()->param('loginid');
 
@@ -108,8 +112,30 @@ my $open_contracts = $dbic->run(
 
 foreach my $ref (@$open_contracts) {
     my $bet_params = shortcode_to_parameters($ref->{short_code}, $ref->{currency_code});
-    $bet_params->{date_pricing} = $datetime;
+    my $hour = Date::Utility->today->timezone_offset('Asia/Tokyo')->hours;
+    $bet_params->{date_pricing}    = Date::Utility->new($datetime)->minus_time_interval($hour . 'h');
+    $bet_params->{landing_company} = 'japan';
     my $contract = produce_contract($bet_params);
+
+    my $seasonality_prefix = 'bo_' . time . '_';
+
+    Volatility::EconomicEvents::set_prefix($seasonality_prefix);
+    my $EEC = Quant::Framework::EconomicEventCalendar->new({
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
+        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
+    my $events = $EEC->get_latest_events_for_period({
+            from => $contract->date_start,
+            to   => $contract->date_start->plus_time_interval('6d'),
+        },
+        $contract->underlying->for_date
+    );
+    Volatility::EconomicEvents::generate_variance({
+        underlying_symbols => [$contract->underlying->symbol],
+        economic_events    => $events,
+        date               => $contract->date_start,
+        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+    });
 
     $ref->{mtm_price}     = $contract->bid_price;
     $ref->{entry_spot}    = $contract->entry_spot;

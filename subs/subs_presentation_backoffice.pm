@@ -253,18 +253,6 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
 								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
 									<a href="~
         . request()->url_for(
-        'backoffice/f_rtquoteslogin.cgi',
-        {
-            _r     => $rand,
-            broker => $broker
-        })
-        . qq~" class="Blue" style="margin-left: 10px;">Realtime Feeds</a>
-								</td>
-							</tr>
-							<tr>
-								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
-									<a href="~
-        . request()->url_for(
         'backoffice/login.cgi',
         {
             _r       => $rand,

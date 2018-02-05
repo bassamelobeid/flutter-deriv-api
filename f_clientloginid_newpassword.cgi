@@ -41,15 +41,14 @@ if (not $email) {
     code_exit_BO();
 }
 
-my $lang = lc request()->language;
-
 my $token = BOM::Platform::Token->new({
         email       => $email,
         expires_in  => 3600,
         created_for => 'reset_password'
     })->token;
 
-my $link = "https://www.binary.com/en/redirect.html?action=reset_password&lang=$lang&code=$token";
+my $lang = request()->language;
+my $link = "https://www.binary.com/" . lc($lang) . "/redirect.html?action=reset_password&lang=$lang&code=$token";
 
 my $lost_pass_email;
 my $brand = Brands->new(name => request()->brand);

@@ -38,22 +38,25 @@ sub get_self_exclusion_form {
         $limit_30day_turnover   = $self_exclusion->max_30day_turnover;
         $limit_session_duration = $self_exclusion->session_duration_limit;
         $limit_exclude_until    = $self_exclusion->exclude_until;
+        $limit_timeout_until    = $self_exclusion->timeout_until;
 
         if ($limit_exclude_until) {
             $limit_exclude_until = Date::Utility->new($limit_exclude_until);
-            if (Date::Utility::today->days_between($limit_exclude_until) < 0) {
-                $limit_exclude_until = $limit_exclude_until->date;
-            } else {
+            # Don't show date if it is expired. Exception for clients from IOM / Malta
+            if (Date::Utility::today->days_between($limit_exclude_until) >= 0 && $client->landing_company->short !~ /^(?:iom|malta)$/) {
                 undef $limit_exclude_until;
+            } else {
+                $limit_exclude_until = $limit_exclude_until->date;
             }
         }
-        $limit_timeout_until = $self_exclusion->timeout_until;
+
         if ($limit_timeout_until) {
             $limit_timeout_until = Date::Utility->new($limit_timeout_until);
-            if ($limit_timeout_until->is_after(Date::Utility->new)) {
-                $limit_timeout_until = $limit_timeout_until->datetime_yyyymmdd_hhmmss;
-            } else {
+            # Don't show date if it is expired. Exception for clients from IOM / Malta
+            if ($limit_timeout_until->is_before(Date::Utility->new) && $client->landing_company->short !~ /^(?:iom|malta)$/) {
                 undef $limit_timeout_until;
+            } else {
+                $limit_timeout_until = $limit_timeout_until->datetime_yyyymmdd_hhmmss;
             }
         }
 
@@ -513,37 +516,6 @@ sub get_payment_agent_registration_form {
             },
         ]};
 
-    # Input field for target country
-    my %world_country = Locale::SubCountry::World->new->full_name_code_hash;
-    my $target_country_option = [{value => ''}];
-    foreach my $country_name (sort keys %world_country) {
-        push @$target_country_option,
-            {
-            value => lc($world_country{$country_name}),
-            text  => $country_name
-            };
-    }
-
-    my $input_field_pa_target_country = {
-        label => {
-            text => localize('In what country do you want to offer your service'),
-            for  => 'pa_target_country',
-        },
-        input => HTML::FormBuilder::Select->new(
-            id      => 'pa_target_country',
-            name    => 'pa_target_country',
-            options => $target_country_option,
-        ),
-        error => {
-            id    => 'errorpa_target_country',
-            class => 'errorfield'
-        },
-        validation => [{
-                type    => 'regexp',
-                regexp  => '^\w{2}$',
-                err_msg => localize('Please enter the country where you want to offer your service'),
-            }]};
-
     # input field for pa_summary
     my $input_field_pa_summary = {
         'label' => {
@@ -807,14 +779,8 @@ sub get_payment_agent_registration_form {
         'type'  => 'hidden',
         'value' => 'apply'
     };
-    my $input_hidden_currency = {
-        'id'    => 'pa_curr_USD',
-        'name'  => 'pa_curr_USD',
-        'type'  => 'hidden',
-        'value' => 'USD',
-    };
 
-    my $hidden_fields = {'input' => [_input_hidden_field_language(), $input_hidden_field_whattodo, $input_hidden_currency]};
+    my $hidden_fields = {'input' => [_input_hidden_field_language(), $input_hidden_field_whattodo]};
 
     my $input_submit_button = {
         'label' => {},
@@ -861,7 +827,6 @@ sub get_payment_agent_registration_form {
     my $fieldset = $form_object->add_fieldset({});
 
     $fieldset->add_field($input_field_pa_name);
-    $fieldset->add_field($input_field_pa_target_country);
     $fieldset->add_field($input_field_pa_summary);
     $fieldset->add_field($input_field_pa_email);
     $fieldset->add_field($input_field_pa_tel);

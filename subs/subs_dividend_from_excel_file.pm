@@ -110,24 +110,28 @@ sub read_discrete_forecasted_dividend_from_excel_files {
             next SHEET;
         }
 
+        my $spot;
+        my $underlying;
         if ($source eq 'SD') {
             $symbol = SuperDerivatives::UnderlyingConfig::sd_to_binary($symbol);
+            next if not $symbol;
+            $underlying = create_underlying($symbol);
             # skipping these because SuperDerivatives doesn't provide dividend
             # information on these underlyings
             if (not $symbol or grep { $symbol eq $_ } qw(STI IXIC)) {
                 next SHEET;
             }
-        }
+            $spot = $sheet->Cell(6, 2)->{'Val'};
+        } else {
+            $underlying = create_underlying($symbol);
+            try {
+                $spot = $underlying->spot // create_underlying('OTC_' . $symbol)->spot;
+            }
+            catch {
+                print "<p style=\"color:red; font-weight:bold;\">$_</p>";
+            };
 
-        my $underlying = create_underlying($symbol);
-        # If there is no spot for the index, get the spot from the OTC
-        my $spot;
-        try {
-            $spot = $underlying->spot // create_underlying('OTC_' . $symbol)->spot;
         }
-        catch {
-            print "<p style=\"color:red; font-weight:bold;\">$_</p>";
-        };
         unless ($spot) {
             push @skipped, $underlying->symbol;
             next;

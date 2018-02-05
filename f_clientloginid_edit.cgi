@@ -257,8 +257,17 @@ if ($input{whattodo} eq 'uploadID') {
             $client->set_db('write');
         }
 
-        my $id;
         my $error_occured;
+        try {
+            $client->_set_staff;
+        }
+        catch {
+            $error_occured = $_;
+        };
+
+        die "Unable to set staff info, with error: $error_occured" if $error_occured;
+
+        my $id;
         try {
             ($id) = $client->db->dbic->run(
                 ping => sub {
@@ -362,7 +371,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         secret_question
         is_vip
         tax_identification_number
-        allow_omnibus
         citizen
         address_1
         address_2

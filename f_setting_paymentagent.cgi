@@ -6,9 +6,10 @@ use warnings;
 use Try::Tiny;
 use HTML::Entities;
 
+use Client::Account::PaymentAgent;
+
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Runtime;
-use Client::Account::PaymentAgent;
 use BOM::Backoffice::Form;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -25,27 +26,17 @@ my $encoded_loginid = encode_entities($loginid);
 
 Bar('Payment Agent Setting');
 
+print "<b>Please note that payment agent currency and country of service will be same as client account currency and residence respectively.</b>";
+
 if ($whattodo eq 'create') {
     my $client = Client::Account->new({loginid => $loginid});
 
-    if ($client->client_fully_authenticated) {
-        my ($pa, $error);
-        try {
-            $pa = $client->set_payment_agent;
-        }
-        catch {
-            $error = $_;
-        };
-        if ($error && $error =~ /currency can only be in USD/) {
-            print 'Payment Agent currency can only be in USD';
-        } else {
-            my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
-            my $page_content = '<p>' . $payment_agent_registration_form->build();
-            print $page_content;
-        }
-    } else {
-        print "Please note that to become payment agent client has to be fully authenticated.";
-    }
+    code_exit_BO("Error : wrong loginid ($loginid) could not get client instance")                 unless $client;
+    code_exit_BO("Client has not set account currency. Currency is mandatory for payment agent")   unless $client->default_account;
+    code_exit_BO("Please note that to become payment agent client has to be fully authenticated.") unless $client->client_fully_authenticated;
+
+    my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
+    print $payment_agent_registration_form->build();
 
     code_exit_BO();
 }
@@ -56,7 +47,6 @@ if ($whattodo eq 'show') {
 
     my $input_fields = {
         pa_name            => $pa->payment_agent_name,
-        pa_target_country  => $pa->target_country,
         pa_summary         => $pa->summary,
         pa_email           => $pa->email,
         pa_tel             => $pa->phone,
@@ -70,14 +60,6 @@ if ($whattodo eq 'show') {
         pa_supported_banks => $pa->supported_banks,
     };
 
-    foreach my $avail_curr (@{request()->available_currencies}) {
-        $avail_curr =~ /USD|GBP/ or next;
-        for my $pa_curr ($pa->currency_code, $pa->currency_code_2) {
-            next unless $pa_curr && $pa_curr eq $avail_curr;
-            $input_fields->{"pa_curr_$pa_curr"} = $pa_curr;
-        }
-    }
-
     $payment_agent_registration_form->set_input_fields($input_fields);
 
     my $page_content = '<p>' . $payment_agent_registration_form->build();
@@ -85,33 +67,41 @@ if ($whattodo eq 'show') {
 
     code_exit_BO();
 } elsif ($whattodo eq 'apply') {
+    my $client = Client::Account->new({loginid => $loginid});
+    code_exit_BO("Error : wrong loginid ($loginid) could not get client instance") unless $client;
+    code_exit_BO("Client has not set account currency. Currency is mandatory for payment agent") unless $client->default_account;
+
     my $pa = Client::Account::PaymentAgent->new({loginid => $loginid});
     unless ($pa) {
-        my $client = Client::Account->new({loginid => $loginid});
         # if its new so we need to set it
-        $pa = $client->set_payment_agent unless $pa;
+        $pa = $client->set_payment_agent;
     }
-    # curr-codes are hidden fields set at form-build time.
-    # set 1st curr-code if USD or GBP present.
-    # set 2nd curr-code if both are present.
-    # fallback to emptystring because db is (wrongly) not-null here.
-    $pa->currency_code(request()->param('pa_curr_USD') || request()->param('pa_curr_GBP') || '');
-    $pa->currency_code_2(request()->param('pa_curr_USD') && request()->param('pa_curr_GBP') || '');
+
+    my $currency = $pa->currency_code // $client->default_account->currency_code;
+
+    my $min_max = BOM::Platform::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
+
+    my ($max_withdrawal, $min_withdrawal) =
+        (request()->param('pa_max_withdrawal') || $min_max->{maximum}, request()->param('pa_min_withdrawal') || $min_max->{minimum});
+
+    code_exit_BO("Invalid amount, minimum amount needs to be equal or greater than " . $min_max->{minimum})
+        if ($min_withdrawal < $min_max->{minimum});
 
     # update payment agent file
     $pa->payment_agent_name(request()->param('pa_name'));
-    $pa->target_country(request()->param('pa_target_country'));
+    $pa->target_country($client->residence);
     $pa->summary(request()->param('pa_summary'));
     $pa->email(request()->param('pa_email'));
     $pa->phone(request->param('pa_tel'));
     $pa->url(request()->param('pa_url'));
     $pa->commission_deposit(request()->param('pa_comm_depo')    || 0);
     $pa->commission_withdrawal(request()->param('pa_comm_with') || 0);
-    $pa->max_withdrawal(request()->param('pa_max_withdrawal')   || 0);
-    $pa->min_withdrawal(request()->param('pa_min_withdrawal')   || 0);
+    $pa->max_withdrawal($max_withdrawal);
+    $pa->min_withdrawal($min_withdrawal);
     $pa->information(request()->param('pa_info'));
     $pa->supported_banks(request()->param('pa_supported_banks'));
     $pa->is_authenticated(request()->param('pa_auth') eq 'yes');
+    $pa->currency_code($currency);
 
     $pa->save || die "failed to save payment_agent!";
 

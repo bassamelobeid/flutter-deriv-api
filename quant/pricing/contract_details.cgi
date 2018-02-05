@@ -88,7 +88,7 @@ sub load_template {
     Bar("Tools");
 
     BOM::Backoffice::Request::template->process(
-        'backoffice/japan_contract_details.html.tt',
+        'backoffice/japan/japan_contract_details.html.tt',
         {
             broker             => $broker,
             pricing_parameters => $pricing_parameters,
