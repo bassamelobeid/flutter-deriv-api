@@ -187,11 +187,7 @@ SKIP: {
             parameters => {%contract},
         });
 
-        like(
-            $res->{error}{message},
-            qr/Invalid price. Price provided can not have more than 2 decimal places./,
-            'Invalid price precision'
-        );
+        like($res->{error}{message}, qr/Invalid price. Price provided can not have more than 2 decimal places./, 'Invalid price precision');
 
         $res = $t->await::buy({
             buy        => 1,

@@ -62,10 +62,6 @@
           },
           "required": "1"
         },
-        "allow_omnibus": {
-          "type": "integer",
-          "pattern": "^(1|0)$"
-        },
         "account_list": {
           "type": "array",
           "description": "List of accounts for current client",
@@ -99,9 +95,6 @@
               }
             }
           }
-        },
-        "sub_accounts": {
-          "type": "array"
         }
       },
       "required": "1"
