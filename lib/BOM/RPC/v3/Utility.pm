@@ -584,13 +584,6 @@ sub validate_set_currency {
     return undef;
 }
 
-sub paymentagent_default_min_max {
-    return {
-        minimum => 10,
-        maximum => 2000
-    };
-}
-
 sub validate_uri {
     my $original_url = shift;
     my $url          = URI->new($original_url);
