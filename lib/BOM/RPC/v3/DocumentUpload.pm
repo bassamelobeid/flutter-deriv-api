@@ -219,8 +219,11 @@ sub create_upload_error {
     } elsif ($reason eq 'max_size') {
         $message = localize('Maximum file size reached. Maximum allowed is [_1]', MAX_FILE_SIZE);
     } elsif ($reason eq 'duplicate_document') {
-        $error_code = 'DuplicateUpload';                        # Needs unique code for special front-end handling
+        $error_code = 'DuplicateUpload';                        # Unique code for front-end handling
         $message    = localize('Document already uploaded.');
+    } elsif ($reason eq 'checksum_mismatch') {
+        $error_code = 'ChecksumMismatch';                       # Unique code for front-end handling
+        $message    = localize('Checksum verification failed.');
     }
 
     return BOM::RPC::v3::Utility::create_error({
