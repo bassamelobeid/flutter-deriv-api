@@ -10,7 +10,6 @@ use VolSurface::Utils qw( get_1vol_butterfly );
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Backoffice::GNUPlot;
 use List::Util qw(uniq);
 use Try::Tiny;
 use Quant::Framework;
