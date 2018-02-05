@@ -531,7 +531,6 @@ subtest 'paymentagent transfer' => sub {
         commission_withdrawal => 0,
         is_authenticated      => 'f',
         currency_code         => 'BTC',
-        currency_code_2       => 'BTC',
         target_country        => 'id',
     });
     $client_cr->save;
@@ -594,7 +593,6 @@ subtest 'paymentagent transfer' => sub {
         commission_withdrawal => 0,
         is_authenticated      => 't',
         currency_code         => 'BTC',
-        currency_code_2       => 'BTC',
         target_country        => 'id',
     });
     $client_cr->save;
