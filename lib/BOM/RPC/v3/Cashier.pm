@@ -392,12 +392,16 @@ rpc "paymentagent_list",
         $_->[1] = Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($_->[0], $language);
     }
 
-    my $authenticated_paymentagent_agents =
-        $payment_agent_mapper->get_authenticated_payment_agents({target_country => $args->{paymentagent_list}});
+    my $query_args = {target_country => $args->{paymentagent_list}};
+    $query_args->{currency_code} = $args->{currency} if $args->{currency};
 
-    my ($payment_agent_table_row, $min_max) = ([], BOM::RPC::v3::Utility::paymentagent_default_min_max());
+    my $authenticated_paymentagent_agents = $payment_agent_mapper->get_authenticated_payment_agents($query_args);
+
+    my $payment_agent_table_row = [];
     foreach my $loginid (keys %{$authenticated_paymentagent_agents}) {
         my $payment_agent = $authenticated_paymentagent_agents->{$loginid};
+        my $min_max =
+            BOM::Platform::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($payment_agent->{currency_code})};
 
         push @{$payment_agent_table_row},
             {
@@ -412,8 +416,8 @@ rpc "paymentagent_list",
             'withdrawal_commission' => $payment_agent->{commission_withdrawal},
             'further_information'   => $payment_agent->{information},
             'supported_banks'       => $payment_agent->{supported_banks},
-            'max_withdrawal'        => $payment_agent->{max_withdrawal} // $min_max->{maximum},
-            'min_withdrawal'        => $payment_agent->{min_withdrawal} // $min_max->{minimum},
+            'max_withdrawal'        => $payment_agent->{max_withdrawal} || $min_max->{maximum},
+            'min_withdrawal'        => $payment_agent->{min_withdrawal} || $min_max->{minimum},
             };
     }
 
@@ -449,7 +453,8 @@ rpc paymentagent_transfer => sub {
         });
     };
 
-    return $error_sub->(localize('Invalid amount.')) if ($amount !~ /^\d*\.?\d*$/);
+    my $amount_validation_error = _validate_amount($amount, $currency);
+    return $error_sub->($amount_validation_error) if $amount_validation_error;
 
     my $error_msg;
     my $payment_agent = $client_fm->payment_agent;
@@ -471,8 +476,21 @@ rpc paymentagent_transfer => sub {
 
     return $error_sub->($error_msg) if $error_msg;
 
-    my ($max_withdrawal, $min_withdrawal, $min_max) =
-        ($payment_agent->max_withdrawal, $payment_agent->min_withdrawal, BOM::RPC::v3::Utility::paymentagent_default_min_max());
+    return $error_sub->(
+        localize('You cannot perform this action, as [_1] is not the default account currency for payment agent [_2].', $currency, $loginid_fm))
+        if ($client_fm->currency ne $currency or not $client_fm->default_account);
+
+    my $client_to = try { Client::Account->new({loginid => $loginid_to, db_operation => 'replica'}) }
+        or return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
+
+    return $error_sub->(
+        localize("You cannot perform this action, as [_1] is not the default account currency for client [_2].", $currency, $loginid_to))
+        if ($client_to->currency ne $currency or not $client_to->default_account);
+
+    my $max_withdrawal = $payment_agent->max_withdrawal;
+    my $min_withdrawal = $payment_agent->min_withdrawal;
+    my $min_max        = BOM::Platform::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
+
     if ($max_withdrawal) {
         return $error_sub->(localize("Invalid amount. Maximum withdrawal allowed is [_1].", $max_withdrawal)) if $amount > $max_withdrawal;
     } elsif ($amount > $min_max->{maximum}) {
@@ -495,23 +513,10 @@ rpc paymentagent_transfer => sub {
 
     return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client_fm->documents_expired;
 
-    my $client_to = try { Client::Account->new({loginid => $loginid_to, db_operation => 'replica'}) };
-    return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to)) unless $client_to;
-
     return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
         unless ($client_fm->landing_company->short eq $client_to->landing_company->short);
 
     return $error_sub->(localize('Payment agent transfers are not allowed within the same account.')) if $loginid_to eq $loginid_fm;
-
-    return $error_sub->(localize('Payment agent transfers are available for [_1] currency only.', 'USD')) if $currency ne 'USD';
-
-    return $error_sub->(
-        localize('You cannot perform this action, as [_1] is not the default account currency for payment agent [_2].', $currency, $loginid_fm))
-        if ($client_fm->currency ne $currency or not $client_fm->default_account);
-
-    return $error_sub->(
-        localize("You cannot perform this action, as [_1] is not the default account currency for client [_2].", $currency, $loginid_to))
-        if ($client_to->currency ne $currency or not $client_to->default_account);
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to))
         if $client_to->get_status('disabled');
@@ -716,8 +721,8 @@ rpc paymentagent_withdraw => sub {
         });
     };
 
-    # check that the amount is in correct format
-    return $error_sub->(localize('Invalid amount.')) if ($amount !~ /^\d*\.?\d*$/);
+    my $amount_validation_error = _validate_amount($amount, $currency);
+    return $error_sub->($amount_validation_error) if $amount_validation_error;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
@@ -745,10 +750,6 @@ rpc paymentagent_withdraw => sub {
 
     return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->get_status('disabled');
 
-    my $min_max = BOM::RPC::v3::Utility::paymentagent_default_min_max();
-    return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
-        if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum});
-
     my $paymentagent = Client::Account::PaymentAgent->new({
             'loginid'    => $paymentagent_loginid,
             db_operation => 'replica'
@@ -763,6 +764,10 @@ rpc paymentagent_withdraw => sub {
 
     return $error_sub->(localize("You cannot perform this action, as [_1] is not default currency for payment agent account [_2].", $currency))
         if ($pa_client->currency ne $currency or not $pa_client->default_account);
+
+    my $min_max = BOM::Platform::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
+    return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
+        if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum});
 
     # check that the additional information does not exceeded the allowed limits
     return $error_sub->(localize('Further instructions must not exceed [_1] characters.', 300)) if (length($further_instruction) > 300);
@@ -1353,6 +1358,20 @@ sub _validate_transfer_between_accounts {
     # we don't allow crypto to crypto transfer
     return _transfer_between_accounts_error(localize('Account transfers are not available within accounts with cryptocurrency as default currency.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
+
+    return undef;
+}
+
+sub _validate_amount {
+    my ($amount, $currency) = @_;
+
+    return localize('Invalid amount.') if ($amount !~ m/^(?:\d+\.?\d*|\.\d+)$/);
+
+    my $num_of_decimals = Format::Util::Numbers::get_precision_config()->{amount}->{$currency};
+    my ($precision) = $amount =~ /\.(\d+)/;
+
+    return localize('Invalid amount. Amount provided can not have more than [_1] decimal places.', $num_of_decimals)
+        if (defined $precision and length($precision) > $num_of_decimals);
 
     return undef;
 }
