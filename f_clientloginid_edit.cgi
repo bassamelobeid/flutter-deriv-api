@@ -270,6 +270,7 @@ if ($input{whattodo} eq 'uploadID') {
 
         my $file_contents = do { local $/; <$filetoupload> };
         my $file_checksum = md5_hex($file_contents);
+
         sub _is_duplicate_upload_error {
             my $dbh = shift;
 
