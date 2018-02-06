@@ -78,10 +78,6 @@
                 "type": "integer",
                 "pattern": "^(1|0)$"
               },
-              "is_ico_only": {
-                "type": "integer",
-                "pattern": "^(1|0)$"
-              },
               "is_virtual": {
                 "type": "integer",
                 "pattern": "^(1|0)$"
