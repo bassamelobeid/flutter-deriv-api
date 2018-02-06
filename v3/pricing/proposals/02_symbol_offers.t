@@ -22,10 +22,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 
 my $now = Date::Utility->new;
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
-    epoch      => $_,
-    quote      => 100,
-}) for ($now->minus_time_interval('366d')->epoch, $now->epoch);
+        underlying => 'frxUSDJPY',
+        epoch      => $_,
+        quote      => 100,
+    }) for ($now->minus_time_interval('366d')->epoch, $now->epoch);
 
 my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', $now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_barriers('frxUSDJPY', $_) for @$tp;

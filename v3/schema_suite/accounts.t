@@ -156,11 +156,6 @@ test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0\\
 test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP)', 3;
 fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|JPY)', 3;
 
-# SUB ACCOUNT OPENING
-$suite->set_allow_omnibus('new_account_real/new_account_real/client_id');
-test_sendrecv 'new_sub_account/test_send.json',         'new_sub_account/test_receive.json';
-test_sendrecv 'new_sub_account/test_send_details.json', 'new_sub_account/test_receive.json';
-
 # READ SCOPE CALLS (MLT) BEFORE CHANGE
 test_sendrecv_params 'reality_check/test_send.json', 'reality_check/test_receive.json', '';
 
