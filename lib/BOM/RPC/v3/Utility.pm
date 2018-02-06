@@ -364,7 +364,6 @@ sub get_real_account_siblings_information {
         $siblings->{$cl->loginid} = {
             loginid              => $cl->loginid,
             landing_company_name => $cl->landing_company->short,
-            sub_account_of       => ($cl->sub_account_of // ''),
             currency             => $acc ? $acc->currency_code : '',
             balance              => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
             ico_only => $cl->get_status('ico_only') ? 1 : 0,
@@ -616,29 +615,6 @@ sub validate_uri {
     }
 
     return undef;
-}
-
-# FIXME: remove this sub when move of client details to user db is done
-sub should_update_account_details {
-    my ($current_client, $sibling_loginid) = @_;
-
-    my $allow_omnibus = $current_client->{allow_omnibus};
-    if (!$allow_omnibus) {
-        my $sub_account_of = $current_client->sub_account_of;
-        if ($sub_account_of) {
-            my $client = Client::Account->new({
-                loginid      => $sub_account_of,
-                db_operation => 'replica'
-            });
-            $allow_omnibus = $client->allow_omnibus;
-        }
-    }
-
-    if ($allow_omnibus and $sibling_loginid ne $current_client->loginid) {
-        return 0;
-    }
-
-    return 1;
 }
 
 sub set_professional_status {
