@@ -508,9 +508,6 @@ rpc paymentagent_transfer => sub {
     return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.'))
         if $client_fm->get_status('cashier_locked');
 
-    return $error_sub->(localize('This is an ICO-only account which does not support payment agent transfers.'))
-        if $client_fm->get_status('ico_only');
-
     return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client_fm->documents_expired;
 
     return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
@@ -526,8 +523,6 @@ rpc paymentagent_transfer => sub {
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to))
         if ($client_to->get_status('cashier_locked') or $client_to->cashier_setting_password);
-    return $error_sub->(localize('This is an ICO-only account which does not support transfers.'))
-        if $client_to->get_status('ico_only');
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their verification documents have expired.', $loginid_to))
         if $client_to->documents_expired;
@@ -772,9 +767,6 @@ rpc paymentagent_withdraw => sub {
     # check that the additional information does not exceeded the allowed limits
     return $error_sub->(localize('Further instructions must not exceed [_1] characters.', 300)) if (length($further_instruction) > 300);
 
-    return $error_sub->(localize('This is an ICO-only account which does not support transfers.'))
-        if $client->get_status('ico_only');
-
     # check that both the client payment agent cashier is not locked
     return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.')) if $client->get_status('cashier_locked');
 
@@ -793,9 +785,6 @@ rpc paymentagent_withdraw => sub {
 
     return $error_sub->(localize("You cannot perform the withdrawal to account [_1], as the payment agent's cashier is locked.", $pa_client->loginid))
         if ($pa_client->get_status('cashier_locked') or $pa_client->cashier_setting_password);
-
-    return $error_sub->(localize('This is an ICO-only account which does not support transfers.'))
-        if $pa_client->get_status('ico_only');
 
     return $error_sub->(localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired."))
         if $pa_client->documents_expired;
@@ -1300,11 +1289,6 @@ sub _validate_transfer_between_accounts {
     return _transfer_between_accounts_error()
         if (($lc_from->short ne $lc_to->short)
         and ($lc_from->short !~ /^(?:malta|maltainvest)$/ or $lc_to->short !~ /^(?:malta|maltainvest)$/));
-
-    # block if client wants to transfer from ico to other or vice versa
-    # above check should block it but adding additional one
-    return _transfer_between_accounts_error()
-        if !!$client_from->get_status('ico_only') != !!$client_to->get_status('ico_only');
 
     # error if currency is not legal for landing company
     return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))

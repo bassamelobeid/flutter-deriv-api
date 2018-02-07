@@ -215,11 +215,6 @@ rpc buy_contract_for_multiple_accounts => sub {
     my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
     return $validation_error if $validation_error;
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'IcoOnlyAccount',
-            message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
-    ) if $client->get_status('ico_only');
-
     my $args = $params->{args};
     my $tokens = $args->{tokens} // [];
 
@@ -366,11 +361,6 @@ rpc sell_contract_for_multiple_accounts => sub {
 
     my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
     return $validation_error if $validation_error;
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'IcoOnlyAccount',
-            message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
-    ) if $client->get_status('ico_only');
 
     my ($source, $args) = ($params->{source}, $params->{args});
 

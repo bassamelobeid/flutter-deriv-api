@@ -228,16 +228,12 @@ rpc new_account_real => sub {
 
     my ($client, $args) = @{$params}{qw/client args/};
 
-    $args->{account_type} //= 'default';
     $args->{client_type}  //= 'retail';
-
-    my $ico_only = $args->{account_type} eq 'ico';
 
     # send error if maltainvest and japan client tried to make this call
     # as they have their own separate api call for account opening
     return BOM::RPC::v3::Utility::permission_error()
-        if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/)
-        and not $ico_only;
+        if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
 
     $client->residence($args->{residence}) unless $client->residence;
 
@@ -248,9 +244,6 @@ rpc new_account_real => sub {
     my $company = $countries_instance->gaming_company_for_country($client->residence)
         // $countries_instance->financial_company_for_country($client->residence);
     my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
-
-    # EU clients signing up for ICO get a CR account with trading disabled
-    $broker = 'CR' if $ico_only;
 
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
     my $error_map = BOM::RPC::v3::Utility::error_map();
@@ -294,7 +287,6 @@ rpc new_account_real => sub {
     # ideally should be handled in a single transaction
     # as account is already created so no need to die on status set
     # else it will give false impression to client
-    $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
 
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
@@ -314,7 +306,7 @@ rpc new_account_real => sub {
     });
     $user->save;
 
-    if ($new_client->residence eq 'gb' and not $ico_only) {    # RTS 12 - Financial Limits - UK Clients
+    if ($new_client->residence eq 'gb') {    # RTS 12 - Financial Limits - UK Clients
         $new_client->set_status('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit');
 
         if (not $new_client->save) {

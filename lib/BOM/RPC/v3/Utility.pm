@@ -366,7 +366,6 @@ sub get_real_account_siblings_information {
             landing_company_name => $cl->landing_company->short,
             currency             => $acc ? $acc->currency_code : '',
             balance              => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
-            ico_only => $cl->get_status('ico_only') ? 1 : 0,
         };
     }
 
@@ -374,9 +373,11 @@ sub get_real_account_siblings_information {
 }
 
 =head2 get_client_currency_information
+
     get_client_currency_information($siblings, $landing_company_name)
     
     Get the currency statuses (fiat and crypto) of the clients, based on the landing company.
+
 =cut
 
 sub get_client_currency_information {
@@ -430,8 +431,6 @@ sub validate_make_new_account {
     if (scalar(keys %$siblings) == 0) {
         if ($account_type eq 'real') {
             return undef if $gaming_company;
-            # for ico, &new_account_real will be called to get an ico_only CR account
-            return undef if (($request_data->{account_type} // '') eq 'ico');
             # send error as account opening for maltainvest and japan has separate call
             return create_error({
                     code              => 'InvalidAccount',
@@ -451,24 +450,9 @@ sub validate_make_new_account {
         return;
     }
 
-    if ($client->is_virtual) {
-        my @sibling_values = values %$siblings;
-        # if we have only ico_only account then we should allow to
-        # open other real accounts
-        if (scalar @sibling_values and ((scalar @sibling_values) == (grep { $_->{ico_only} } @sibling_values))) {
-            return undef;
-        } else {
-            return permission_error();
-        }
-    }
+    return permission_error() if $client->is_virtual;
 
     my $landing_company_name = $client->landing_company->short;
-
-    if (exists $request_data->{account_type} and $request_data->{account_type} eq 'ico') {
-        $landing_company_name = 'costarica';
-    } else {
-        $landing_company_name = $client->landing_company->short;
-    }
 
     # as maltainvest can be opened in few ways, upgrade from malta,
     # directly from virtual for Germany as residence, from iom
@@ -710,7 +694,7 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
 
     foreach my $shortcode (@short_codes) {
         try {
-            $longcodes{$shortcode} = $shortcode =~ /^BINARYICO/ ? localize('Binary ICO') : localize(shortcode_to_longcode($shortcode));
+            $longcodes{$shortcode} = localize(shortcode_to_longcode($shortcode));
         }
         catch {
             warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $_;

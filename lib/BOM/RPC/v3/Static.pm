@@ -156,14 +156,6 @@ sub _currencies_config {
 
 my $json = JSON::MaybeXS->new;
 
-sub live_open_ico_bids {
-    my ($currency) = @_;
-
-    $currency //= 'USD';
-    my $status = BOM::Platform::RedisReplicated::redis_read()->get('ico::status::' . $currency) or return {};
-    return $json->decode(decode_utf8($status));
-}
-
 rpc website_status => sub {
     my $params = shift;
 
@@ -176,31 +168,6 @@ rpc website_status => sub {
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
     };
-};
-
-rpc ico_status => sub {
-    my $params = shift;
-
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-    my $currency   = $params->{args}{currency} || 'USD';
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
-    my $ico_info   = live_open_ico_bids($currency);
-    $ico_info->{final_price_usd} = $app_config->system->suspend->ico_final_price;
-    $ico_info->{final_price}     = financialrounding('amount', $currency, amount_from_to_currency($ico_info->{final_price_usd}, USD => $currency));
-    $ico_info->{ico_status}      = (
-        $app_config->system->suspend->is_auction_ended
-            or not $app_config->system->suspend->is_auction_started
-    ) ? 'closed' : 'open';
-
-    $ico_info->{ico_countries_config} = {
-        restricted   => [$countries_instance->ico_countries_by_investor('none')],
-        professional => [$countries_instance->ico_countries_by_investor('professional')],
-    };
-
-    $ico_info->{initial_deposit_percentage} = $app_config->system->suspend->ico_initial_deposit_percentage;
-    $ico_info->{is_claim_allowed}           = $app_config->system->suspend->ico_claim_allowed;
-
-    return $ico_info;
 };
 
 1;

@@ -275,11 +275,10 @@ subtest 'all status are covered' => sub {
     # * social signup, jp_transaction_detail, duplicate_account, migrated_single_email
     # * document_under_review, document_needs_action - for document_upload state
     # * professional, professional_requested
-    # * ico_only
     my @temp_status =
         grep {
         $_ !~
-            /^(?:social_signup|jp_transaction_detail|duplicate_account|migrated_single_email|document_under_review|document_needs_action|professional|professional_requested|ico_only)$/
+            /^(?:social_signup|jp_transaction_detail|duplicate_account|migrated_single_email|document_under_review|document_needs_action|professional|professional_requested)$/
         }
         keys %$all_status;
     fail("missing status $_") for sort grep !exists $seen{$_}, @temp_status;
