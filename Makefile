@@ -6,22 +6,22 @@ P=/etc/rmg/bin/prove --timer -v -rl
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 accounts:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/accounts
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/accounts t/999_redis_keys.t
 
 security:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/security
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/security t/999_redis_keys.t
 
 pricing:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/pricing
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/pricing t/999_redis_keys.t
 
 misc:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/misc
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/misc t/999_redis_keys.t
 
 structure:
 	@$(PROVE) t
 
 schema:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite t/999_redis_keys.t
 
 test: structure schema accounts security pricing misc
 
