@@ -56,7 +56,7 @@
         },
         "multiplier": {
           "type": "number",
-          "description": "Multiplier applies when calculating the final payoff for each type of lookback option trade. (Exit spot – Lowest historical price) * Total units * multiplier = Payout"
+          "description": "Multiplier applies when calculating the final payoff for each type of lookback option trade. (Exit spot – Lowest historical price) * multiplier = Payout"
         }
       }
     },
