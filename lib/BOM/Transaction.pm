@@ -151,7 +151,7 @@ has unit => (
 
 sub _build_unit {
     my $self = shift;
-    return ($self->contract->is_binaryico or $self->contract->is_binary) ? 1 : $self->contract->unit;
+    return $self->contract->is_binary ? 1 : $self->contract->unit;
 }
 
 has amount_type => (
@@ -365,8 +365,6 @@ sub calculate_limits {
     my $contract = $self->contract;
     my $currency = $contract->currency;
 
-    return {} if $contract->is_binaryico;
-
     $limits{max_balance} = $client->get_limit_for_account_balance;
 
     try {
@@ -473,11 +471,6 @@ sub prepare_bet_data_for_buy {
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
 
-    if ($contract->is_binaryico) {
-
-        $self->price($contract->ask_price);
-    }
-
     $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
@@ -519,9 +512,6 @@ sub prepare_bet_data_for_buy {
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION) {
         $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
         $bet_params->{multiplier} = $contract->multiplier;
-    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
-        $bet_params->{binaryico_number_of_tokens}    = $contract->binaryico_number_of_tokens;
-        $bet_params->{binaryico_per_token_bid_price} = $contract->binaryico_per_token_bid_price;
     } else {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
@@ -625,13 +615,6 @@ sub buy {
         # otherwise the function re-throws the exception
         $error_status = $self->_recover($_);
     };
-    try {
-        my $contract = $self->contract;
-        BOM::Platform::RedisReplicated::redis_write()->publish('ico::bid' => $contract->shortcode) if $contract->is_binaryico;
-    }
-    catch {
-        warn "Failed to notify Redis about ICO bid (buy) - $_\n";
-    };
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     return $self->stats_stop(
@@ -648,7 +631,7 @@ sub buy {
     $self->transaction_id($txn->{id});
     $self->contract_id($fmb->{id});
 
-    enqueue_new_transaction(_get_params_for_expiryqueue($self)) unless $self->contract->is_binaryico;    # For soft realtime expiration notification.
+    enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
 
     return;
 }
@@ -695,12 +678,6 @@ sub batch_buy {
     # TODO: shall we allow this operation only if $self->client is real-money?
     #       Or allow virtual $self->client only if all other clients are also
     #       virtual?
-    return Error::Base->cuss(
-        -type              => 'DoNotSupportICO',
-        -mesg              => 'Client is not allow to place ICO via batch buy',
-        -message_to_client => BOM::Platform::Context::localize('Sorry, the ICO is not available for copy trading.'),
-    ) if $self->contract->is_binaryico;
-
     my $stats_data = $self->stats_start('batch_buy');
 
     my ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
@@ -780,11 +757,6 @@ sub batch_buy {
 sub prepare_bet_data_for_sell {
     my $self = shift;
     my $contract = shift || $self->contract;
-
-    if ($contract->is_binaryico) {
-
-        $self->price($contract->bid_price);
-    }
 
     $self->price(financialrounding('price', $contract->currency, $self->price));
 
@@ -894,13 +866,6 @@ sub sell {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         $error_status = $self->_recover($_);
-    };
-    try {
-        my $contract = $self->contract;
-        BOM::Platform::RedisReplicated::redis_write()->publish('ico::bid' => $contract->shortcode) if $contract->is_binaryico;
-    }
-    catch {
-        warn "Failed to notify Redis about ICO bid (sell) - $_\n";
     };
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
@@ -1075,12 +1040,9 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $self   = shift;
         my $client = shift;
 
-        my $currency = $self->contract->currency;
-        my $message_to_client =
-            $self->contract->is_binaryico
-            ? 'Your account balance ([_1][_2]) is insufficient to place this bid ([_1][_3]).'
-            : 'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).';
-        my $account = BOM::Database::DataMapper::Account->new({
+        my $currency          = $self->contract->currency;
+        my $message_to_client = 'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).';
+        my $account           = BOM::Database::DataMapper::Account->new({
             client_loginid => $client->loginid,
             currency_code  => $currency,
         });
@@ -1358,7 +1320,6 @@ sub _build_pricing_comment {
 
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
 
-    push @comment_fields, (binaryico_auction_status => $contract->binaryico_auction_status) if $contract->is_binaryico;
     push @comment_fields, map { defined $args->{$_} ? ($_ => $args->{$_}) : () } qw/trading_period_start/;
 
     return [$comment_str, {@comment_fields}];
@@ -1450,7 +1411,7 @@ sub sell_expired_contracts {
                     ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute
                     if $contract->category_code eq 'asian' and $contract->is_after_settlement;
-                $bet->{quantity} = ($contract->is_binaryico or $contract->is_binary) ? 1 : $contract->unit;
+                $bet->{quantity} = $contract->is_binary ? 1 : $contract->unit;
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
@@ -1460,15 +1421,13 @@ sub sell_expired_contracts {
 
                 # price_slippage will not happen to expired contract, hence not needed.
                 my $quants_bet_variables;
-                unless ($contract->is_binaryico) {
-                    $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-                            data_object_params => _build_pricing_comment({
-                                    contract => $contract,
-                                    action   => 'autosell_expired_contract',
-                                }
-                            )->[1],
-                        });
-                }
+                $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+                        data_object_params => _build_pricing_comment({
+                                contract => $contract,
+                                action   => 'autosell_expired_contract',
+                            }
+                        )->[1],
+                    });
                 push @quants_bet_variables, $quants_bet_variables;
 
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {

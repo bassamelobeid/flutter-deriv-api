@@ -495,8 +495,8 @@ subtest 'Validate Jurisdiction Restriction' => sub {
 
     # check if market name is allowed for landing company
     $new_underlying = create_underlying('R_50');
-    my $new_client  = create_client('JP');
-    $new_contract   = produce_contract({
+    my $new_client = create_client('JP');
+    $new_contract = produce_contract({
         underlying   => $new_underlying,
         bet_type     => 'CALLE',
         currency     => $currency,
