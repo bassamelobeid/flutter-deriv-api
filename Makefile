@@ -4,7 +4,7 @@ P=/etc/rmg/bin/prove -v --timer -rl
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test:
-	@$(PROVE) $$(ls -1d t/BOM)
+	@$(PROVE) $$(ls -1d t/BOM) t/999_redis_keys.t
 
 json_schemas:
 	@$(PROVE) /home/git/regentmarkets/bom-rpc/t/schema_suite/suite01.t /home/git/regentmarkets/bom-rpc/t/schema_suite/suite02.t
