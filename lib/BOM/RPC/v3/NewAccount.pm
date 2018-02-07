@@ -228,7 +228,7 @@ rpc new_account_real => sub {
 
     my ($client, $args) = @{$params}{qw/client args/};
 
-    $args->{client_type}  //= 'retail';
+    $args->{client_type} //= 'retail';
 
     # send error if maltainvest and japan client tried to make this call
     # as they have their own separate api call for account opening
