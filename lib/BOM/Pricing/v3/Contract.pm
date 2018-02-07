@@ -421,6 +421,7 @@ sub get_bid {
             #   and HIGHLOW with 2 barriers).
             #2. It is a changing barrier(s) over the life of the options.
             unless ($contract->is_binary) {
+                $response->{multiplier} = $contract->multiplier;
                 my $min_barrier = $contract->make_barrier($contract->spot_min);
                 my $max_barrier = $contract->make_barrier($contract->spot_max);
                 if ($contract->code eq 'LBHIGHLOW') {
@@ -535,7 +536,7 @@ sub send_ask {
 
     # Here we have to do something like this because we are re-using
     # amout in the API for specifiying no of contracts.
-    $params->{args}->{unit} //= $params->{args}->{amount};
+    $params->{args}->{multiplier} //= $params->{args}->{amount};
 
     # copy country_code when it is available.
     $params->{args}->{country_code} = $params->{country_code} if $params->{country_code};
