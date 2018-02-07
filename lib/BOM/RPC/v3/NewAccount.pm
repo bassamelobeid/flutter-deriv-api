@@ -413,7 +413,7 @@ rpc new_account_maltainvest => sub {
     # Update citizenship of new client
     $new_client->citizen($client->citizen) if ($client->citizen && !$client->is_virtual);
 
-    # Save both current and new account
+    # Save new account
     if (not $new_client->save) {
         stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:new_account_maltainvest"]});
         return BOM::RPC::v3::Utility::create_error({
