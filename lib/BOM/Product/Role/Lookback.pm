@@ -19,11 +19,17 @@ has [qw(spot_min spot_max)] => (
 );
 
 has unit => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+has multiplier => (
     is  => 'ro',
     isa => 'Num',
 );
 
-has multiplier => (
+has step_size => (
     is         => 'ro',
     isa        => 'Num',
     lazy_build => 1,
@@ -45,10 +51,15 @@ sub _build_lookback_base_commission {
     return $underlying_base;
 }
 
-sub _build_multiplier {
+sub _build_step_size {
     my $self   = shift;
     my $symbol = $self->underlying->symbol;
     return $multiplier_config->{$symbol} // 0;
+}
+
+sub _build_unit {
+    my $self = shift;
+    return 1;
 }
 
 has [qw(spot_min_max)] => (
@@ -123,14 +134,16 @@ override _build_theo_price => sub {
 override _build_ask_price => sub {
     my $self = shift;
 
+    BOM::Product::Exception->throw(error_code => 'MinimumMultiplier') if $self->multiplier < $self->step_size;
+
     my $theo_price = $self->pricing_engine->theo_price;
 
     my $commission = $theo_price * $self->lookback_base_commission;
     $commission = max(0.01, $commission);
 
-    my $final_price = max(0.50, ($theo_price + $commission) * $self->multiplier);
+    my $final_price = max(0.50, ($theo_price + $commission));
 
-    return financialrounding('price', $self->currency, $final_price) * $self->unit;
+    return financialrounding('price', $self->currency, $final_price) * $self->multiplier;
 };
 
 override _build_bid_price => sub {
@@ -185,15 +198,7 @@ override shortcode => sub {
 
     # TODO We expect to have a valid bet_type, but there may be codepaths which don't set this correctly yet.
     my $contract_type = $self->bet_type // $self->code;
-    my @shortcode_elements = ($contract_type, $self->underlying->symbol, $self->unit, $shortcode_date_start, $shortcode_date_expiry);
-
-    if (defined $self->supplied_barrier and $self->barrier_at_start) {
-        push @shortcode_elements, ($self->_barrier_for_shortcode_string($self->supplied_barrier), 0);
-    }
-
-    if (defined $self->multiplier) {
-        push @shortcode_elements, $self->multiplier;
-    }
+    my @shortcode_elements = ($contract_type, $self->underlying->symbol, $self->multiplier, $shortcode_date_start, $shortcode_date_expiry);
 
     return uc join '_', @shortcode_elements;
 };
