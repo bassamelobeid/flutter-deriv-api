@@ -1,10 +1,13 @@
 ## no critic (RequireExplicitPackage)
 use strict;
 use warnings;
-use Encode;
 
-use Format::Util::Strings qw( set_selected_item );
+use Encode;
 use Date::Utility;
+use Format::Util::Strings qw( set_selected_item );
+use Locale::Country 'code2country';
+use Finance::MIFIR::CONCAT qw(mifir_concat);
+
 use Brands;
 
 use BOM::Database::ClientDB;
@@ -15,7 +18,6 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::Backoffice::FormAccounts;
 use BOM::Backoffice::Script::DocumentUpload;
-use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 sub get_currency_options {
     my $currency_options;
@@ -117,15 +119,14 @@ sub print_client_details {
         $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>|;
     }
 
-    my $tnc_status = $client->get_status('tnc_approval');
+    my $tnc_status                     = $client->get_status('tnc_approval');
+    my $crs_tin_status                 = $client->get_status('crs_tin_information');
     my $show_allow_professional_client = $client->landing_company->short =~ /^(?:costarica|maltainvest)$/ ? 1 : 0;
 
-    my @crs_tin_array = ();
-    if (my $crs_tin_status = $client->get_status('crs_tin_information')) {
-        my @dates = sort { Date::Utility->new($a)->epoch <=> Date::Utility->new($b)->epoch } split ",", $crs_tin_status->reason;
-        for my $i (0 .. $#dates) {
-            push @crs_tin_array, "Client submitted the TIN information Version " . ($i + 1) . " on " . $dates[$i];
-        }
+    my @tax_residences = $client->tax_residence ? split ',', $client->tax_residence : ();
+    my $tax_residences_countries_name;
+    if (@tax_residences) {
+        $tax_residences_countries_name = join ',', map { code2country($_) } @tax_residences;
     }
 
     my $template_param = {
@@ -134,7 +135,7 @@ sub print_client_details {
         client_tnc_version    => $tnc_status ? $tnc_status->reason : '',
         countries             => \@countries,
         country_codes         => $country_codes,
-        csr_tin_information   => \@crs_tin_array,
+        crs_tin_information   => $crs_tin_status ? $crs_tin_status->last_modified_date : '',
         dob_day_options       => $dob_day_options,
         dob_month_options     => $dob_month_options,
         dob_year_options      => $dob_year_options,
@@ -155,12 +156,14 @@ sub print_client_details {
         show_funds_message             => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
-        show_uploaded_documents => $show_uploaded_documents,
-        state_options           => set_selected_item($client->state, $stateoptions),
-        client_state            => $state_name,
-        tnc_approval_status     => $tnc_status,
-        ukgc_funds_status       => $client->get_status('ukgc_funds_protection'),
-        vip_since               => $client->vip_since,
+        show_uploaded_documents       => $show_uploaded_documents,
+        state_options                 => set_selected_item($client->state, $stateoptions),
+        client_state                  => $state_name,
+        tnc_approval_status           => $tnc_status,
+        ukgc_funds_status             => $client->get_status('ukgc_funds_protection'),
+        vip_since                     => $client->vip_since,
+        tax_residence                 => \@tax_residences,
+        tax_residences_countries_name => $tax_residences_countries_name
     };
 
     return BOM::Backoffice::Request::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
