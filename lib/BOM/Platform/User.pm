@@ -160,10 +160,7 @@ sub clients {
 sub _get_client_cookie_string {
     my $client = shift;
 
-    my $str = join(':',
-        $client->loginid,
-        $client->is_virtual             ? 'V' : 'R',
-        $client->get_status('disabled') ? 'D' : 'E');
+    my $str = join(':', $client->loginid, $client->is_virtual ? 'V' : 'R', $client->get_status('disabled') ? 'D' : 'E');
 
     return $str;
 }
