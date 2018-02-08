@@ -399,6 +399,15 @@ sub get_bid {
         $response->{is_settleable} = $contract->is_settleable;
 
         $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
+        #TODO:
+        #This is just a tactical/temporary solution for now for the UI to work.
+        #For the strategic solution
+        #we will need to refactor Finance-Contract and bom.
+        #It is a bit complicated compared to our other existing products because:
+        #1. Lookback contract comes with 2 different number of barriers(FLOATCALL/PUT with 1 barrier
+        #   and HIGHLOW with 2 barriers).
+        #2. It is a changing barrier(s) over the life of the options.
+        $response->{barrier_count} = 2 if ($contract->code eq 'LBHIGHLOW');
         if ($contract->entry_spot) {
             my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
             $response->{entry_tick}      = $entry_spot;
@@ -412,22 +421,13 @@ sub get_bid {
                 $response->{barrier} = $contract->barrier->as_absolute;
             }
 
-            #TODO:
-            #This is just a tactical/temporary solution for now for the UI to work.
-            #For the strategic solution
-            #we will need to refactor Finance-Contract and bom.
-            #It is a bit complicated compared to our other existing products because:
-            #1. Lookback contract comes with 2 different number of barriers(FLOATCALL/PUT with 1 barrier
-            #   and HIGHLOW with 2 barriers).
-            #2. It is a changing barrier(s) over the life of the options.
             unless ($contract->is_binary) {
                 $response->{multiplier} = $contract->multiplier;
                 my $min_barrier = $contract->make_barrier($contract->spot_min);
                 my $max_barrier = $contract->make_barrier($contract->spot_max);
                 if ($contract->code eq 'LBHIGHLOW') {
-                    $response->{high_barrier}  = $max_barrier->as_absolute;
-                    $response->{low_barrier}   = $min_barrier->as_absolute;
-                    $response->{barrier_count} = 2;
+                    $response->{high_barrier} = $max_barrier->as_absolute;
+                    $response->{low_barrier}  = $min_barrier->as_absolute;
                     delete $response->{barrier} if exists $response->{barrier};
                 } elsif ($contract->code eq 'LBFLOATCALL') {
                     $response->{barrier} = $min_barrier->as_absolute;
