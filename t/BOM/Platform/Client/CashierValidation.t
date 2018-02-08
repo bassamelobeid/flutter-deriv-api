@@ -219,10 +219,27 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{message_to_client},
             'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
             'Correct error message';
-        $mf_client->set_status('crs_tin_information', 'system', '111-111-222');
-        $mf_client->save();
 
-        is BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit'), undef, 'Validation passed';
+        $mf_client->tax_residence($mf_client->residence);
+        $mf_client->save;
+
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        is $res->{error}->{code}, 'ASK_TIN_INFORMATION',
+            'Correct error code as tax identification number is also needed for database trigger to set status';
+
+        $mf_client->tax_identification_number('111-222-333');
+        $mf_client->save;
+
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        is $res, undef, 'Validation passed';
+
+        $mf_client->tax_residence(undef);
+        $mf_client->tax_identification_number(undef);
+        $mf_client->save;
+
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        is $res, undef, 'Validation passed, making tax residence undef will not delete status';
+
         $mock_client->unmock('client_fully_authenticated');
     };
 
