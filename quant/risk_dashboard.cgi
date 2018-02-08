@@ -22,8 +22,7 @@ my $report = BOM::RiskReporting::Dashboard->new->fetch;
 
 my $today = Date::Utility->today;
 
-$report->{dtr_link}  = request()->url_for('backoffice/f_dailyturnoverreport.cgi');
-$report->{dico_link} = request()->url_for('backoffice/f_dailyico.cgi');
+$report->{dtr_link} = request()->url_for('backoffice/f_dailyturnoverreport.cgi');
 
 $report->{link_to_pnl} = sub {
     my $loginid = shift;
