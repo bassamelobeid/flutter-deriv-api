@@ -284,35 +284,6 @@ system:
           isa: Bool
           default: 0
           global: 1
-        is_auction_started:
-          description: "Enable this when we want to start ICO"
-          isa: Bool
-          default: 0
-          global: 1
-        is_auction_ended:
-          description: "End the ICO auction"
-          isa: Bool
-          default: 0
-          global: 1
-        ico_claim_allowed:
-          description: "Flag to allow claim tokens functinality"
-          isa: Bool
-          default: 0
-          global: 1
-        ico_final_price:
-          description: "The final price of the  ICO auction"
-          isa: Num
-          default: 0
-          global: 1
-        ico_minimum_bid_in_usd:
-          description: 'Minimum ico bid amount in USD'
-          isa: Num
-          default: 1.35
-          global: 1
-        ico_initial_deposit_percentage:
-          description: 'Percentage of deposit required to place ico bid'
-          isa: Num
-          default: 5
         mt5:
           description: "Suspend MT5 API calls"
           isa: Bool

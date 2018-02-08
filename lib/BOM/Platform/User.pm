@@ -163,8 +163,7 @@ sub _get_client_cookie_string {
     my $str = join(':',
         $client->loginid,
         $client->is_virtual             ? 'V' : 'R',
-        $client->get_status('disabled') ? 'D' : 'E',
-        $client->get_status('ico_only') ? 'I' : 'N');
+        $client->get_status('disabled') ? 'D' : 'E');
 
     return $str;
 }
@@ -229,7 +228,6 @@ sub get_last_successful_login_history {
 Return list of client in following order
 
 - real enabled accounts
-- ico only accounts
 - virtual accounts
 - self excluded accounts
 - disabled accounts
@@ -239,7 +237,7 @@ Return list of client in following order
 sub get_clients_in_sorted_order {
     my ($self, $loginid_list, $include_disabled) = @_;
 
-    my (@enabled_accounts, @ico_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts);
+    my (@enabled_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts);
     foreach my $loginid (sort @$loginid_list) {
         my $cl = try {
             Client::Account->new({
@@ -271,12 +269,6 @@ sub get_clients_in_sorted_order {
             next;
         }
 
-        if ($cl->get_status('ico_only')) {
-            $self->{_real_client} = $cl unless $self->{_real_client};
-            push @ico_accounts, $cl;
-            next;
-        }
-
         if ($cl->is_virtual) {
             $self->{_virtual_client} = $cl unless $self->{_virtual_client};
             push @virtual_accounts, $cl;
@@ -287,7 +279,7 @@ sub get_clients_in_sorted_order {
         push @enabled_accounts, $cl;
     }
 
-    return [(@enabled_accounts, @ico_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts)];
+    return [(@enabled_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts)];
 }
 
 =head2 get_default_client

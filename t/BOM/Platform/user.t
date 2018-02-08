@@ -107,9 +107,6 @@ subtest 'default loginid & cookie' => sub {
         $user->add_loginid({loginid => $cr_2});
         $user->save;
 
-        $client_cr_new->set_status('ico_only', 'SYSTEM', 'mark as ico');
-        $client_cr_new->save;
-
         push @loginids, $cr_2;
         cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
 
