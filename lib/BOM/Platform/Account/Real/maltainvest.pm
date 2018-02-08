@@ -48,9 +48,9 @@ sub create_account {
     $client->financial_assessment({
         data => Encode::encode_utf8(JSON::MaybeXS->new->encode($financial_assessment->{user_data})),
     });
+    # after_register_client sub save client so no need to call it here
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
     $client->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure') if $accept_risk;
-    $client->save;
 
     my $status = BOM::Platform::Account::Real::default::after_register_client({
         client      => $client,
@@ -60,8 +60,6 @@ sub create_account {
         ip          => $args->{ip},
         country     => $args->{country},
     });
-
-    set_crs_tin_status($client, 1);
 
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
@@ -76,20 +74,6 @@ sub create_account {
         });
     }
     return $status;
-}
-
-# As per CRS/FATCA regulatory requirement we need to save this information as client status
-# All previous update dates can be obtained from audit logs.
-sub set_crs_tin_status {
-    my ($client, $is_save) = @_;
-
-    my $data = Date::Utility->new()->date;
-
-    # update status with new date
-    $client->set_status('crs_tin_information', 'system', $data);
-    $client->save if $is_save;
-
-    return;
 }
 
 1;
