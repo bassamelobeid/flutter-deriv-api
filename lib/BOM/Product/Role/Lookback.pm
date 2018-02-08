@@ -134,8 +134,6 @@ override _build_theo_price => sub {
 override _build_ask_price => sub {
     my $self = shift;
 
-    BOM::Product::Exception->throw(error_code => 'MinimumMultiplier') if $self->multiplier < $self->step_size;
-
     my $theo_price = $self->pricing_engine->theo_price;
 
     my $commission = $theo_price * $self->lookback_base_commission;

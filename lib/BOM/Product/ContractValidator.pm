@@ -391,6 +391,13 @@ sub _validate_input_parameters {
         }
     }
 
+    if ($self->category_code eq 'lookback' and $self->multiplier < $self->step_size) {
+        return {
+            message           => 'below minimum alloweed multiplier',
+            message_to_client => ['Below minimum allowed multiplier(' . $self->step_size . ').'],
+        };
+    }
+
     return;
 }
 
