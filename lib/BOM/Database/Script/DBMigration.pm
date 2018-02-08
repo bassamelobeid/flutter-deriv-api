@@ -19,7 +19,6 @@ sub documentation {
 This script will apply the SQL patched from a speicfied diretory to database.
 
 Patch files names must be like:
-schema_1_down.sql
 schema_1_up.sql
 
 Note: We dont support the downgrading.
