@@ -9,7 +9,7 @@ use Error::Base;
 use Path::Tiny;
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(tv_interval gettimeofday time);
-use JSON qw( from_json to_json );
+use JSON::MaybeXS;
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Try::Tiny;
@@ -20,6 +20,7 @@ use Client::Account;
 use Finance::Asset::Market::Types;
 use Finance::Contract::Category;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
+use List::Util qw(min);
 
 use BOM::Platform::Config;
 use BOM::Platform::Runtime;
@@ -46,6 +47,7 @@ use BOM::Transaction::Validation;
 
 =cut
 
+my $json = JSON::MaybeXS->new;
 has client => (
     is  => 'ro',
     isa => 'Client::Account',
@@ -141,6 +143,17 @@ sub _build_payout {
     return $self->contract->payout;
 }
 
+has unit => (
+    is         => 'rw',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+sub _build_unit {
+    my $self = shift;
+    return ($self->contract->is_binaryico or $self->contract->is_binary) ? 1 : $self->contract->unit;
+}
+
 has amount_type => (
     is         => 'rw',
     isa        => 'Str',
@@ -222,7 +235,7 @@ has general_open_position_payout_limit => (
 );
 
 sub _build_general_open_position_payout_limit {
-    return from_json(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
+    return $json->decode(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
 }
 
 sub BUILDARGS {
@@ -338,19 +351,7 @@ sub calculate_max_open_bets {
     my $self   = shift;
     my $client = shift;
 
-    # for tick trades only self-exclusion matters
-    return $client->get_limit_for_self_exclusion_open_positions
-        if $self->contract->tick_expiry;
-
-    my $se_lim     = $client->get_limit_for_self_exclusion_open_positions;
-    my $binary_lim = $client->get_limit_for_open_positions;
-
-    # if both are given the least is chosen
-    return $se_lim < $binary_lim ? $se_lim : $binary_lim
-        if (defined $se_lim and defined $binary_lim);
-
-    # otherwise use the one that's defined if any
-    return $binary_lim // $se_lim;
+    return $client->get_limit_for_open_positions;
 }
 
 sub calculate_limits {
@@ -432,7 +433,26 @@ sub calculate_limits {
 
     my $rp = $contract->risk_profile;
     my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
-    push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
+
+    if ($contract->is_binary) {
+        push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
+    } else {
+        $limits{lookback_open_position_limit} = $static_config->{lookback_limits}{open_position_limits}{$currency};
+        my @non_binary_custom_limits = $rp->get_non_binary_limit_parameters(\@cl_rp);
+
+        my @limits_arr = map { $_->{non_binary_contract_limit} } grep { exists $_->{non_binary_contract_limit}; } @{$non_binary_custom_limits[0]};
+        my $custom_limit = min(@limits_arr);
+        $limits{lookback_open_position_limit} = $custom_limit if defined $custom_limit;
+    }
+
+    if ($client->landing_company->short eq 'japan') {
+        my $qc = BOM::Platform::QuantsConfig->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader());
+        my $klfb_config = $qc->get_config('klfb')->[0];
+        $limits{klfb_risk_limit} = {
+            limit => $klfb_config->{limit},
+            tstmp => $klfb_config->{date},
+        } if $klfb_config;
+    }
 
     return \%limits;
 }
@@ -461,7 +481,7 @@ sub prepare_bet_data_for_buy {
     $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {
-        quantity          => 1,
+        quantity          => $self->unit,
         short_code        => scalar $contract->shortcode,
         buy_price         => $self->price,
         remark            => $self->comment->[0] || '',
@@ -496,6 +516,9 @@ sub prepare_bet_data_for_buy {
         $bet_params->{$contract->low_barrier->barrier_type . '_lower_barrier'}   = $contract->low_barrier->supplied_barrier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_TOUCH_BET) {
         $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION) {
+        $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
+        $bet_params->{multiplier} = $contract->multiplier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
         $bet_params->{binaryico_number_of_tokens}    = $contract->binaryico_number_of_tokens;
         $bet_params->{binaryico_per_token_bid_price} = $contract->binaryico_per_token_bid_price;
@@ -773,7 +796,7 @@ sub prepare_bet_data_for_sell {
         id         => scalar $self->contract_id,
         sell_price => scalar $self->price,
         sell_time  => scalar $contract->date_pricing->db_timestamp,
-        quantity   => 1,
+        quantity   => $self->unit,
         $contract->category_code eq 'asian' && $contract->is_after_settlement
         ? (absolute_barrier => scalar $contract->barrier->as_absolute)
         : (),
@@ -1269,10 +1292,20 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -message_to_client => BOM::Platform::Context::localize('No further trading is allowed for the current trading session.'),
         );
     },
+    BI052 => Error::Base->cuss(
+        -type              => 'KLFBLimitExceeded',
+        -mesg              => 'KLFB risk limit exceeded',
+        -message_to_client => BOM::Platform::Context::localize('No further trading is allowed at this moment.'),
+    ),
     BI103 => Error::Base->cuss(
         -type              => 'RoundingExceedPermittedEpsilon',
         -mesg              => 'Rounding exceed permitted epsilon',
         -message_to_client => BOM::Platform::Context::localize('Only a maximum of two decimal points are allowed for the amount.'),
+    ),
+    BI005 => Error::Base->cuss(
+        -type              => 'LookbackOpenPositionLimitExceeded',
+        -mesg              => 'Lookback open positions limit exceeded',
+        -message_to_client => BOM::Platform::Context::localize('Lookback open positions limit exceeded.'),
     ),
 );
 
@@ -1393,6 +1426,7 @@ sub sell_expired_contracts {
     my %stats_attempt;
     my %stats_failure;
     for my $bet (@$bets) {
+
         my $contract;
         my $error;
         my $failure = {fmb_id => $bet->{id}};
@@ -1416,10 +1450,11 @@ sub sell_expired_contracts {
 
         try {
             if ($contract->is_valid_to_sell) {
-                @{$bet}{qw/sell_price sell_time is_expired/} = ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
+                @{$bet}{qw/sell_price sell_time is_expired/} =
+                    ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute
                     if $contract->category_code eq 'asian' and $contract->is_after_settlement;
-                $bet->{quantity} = 1;
+                $bet->{quantity} = ($contract->is_binaryico or $contract->is_binary) ? 1 : $contract->unit;
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
@@ -1443,7 +1478,7 @@ sub sell_expired_contracts {
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
                 @{$bet}{qw/sell_price sell_time is_expired/} = ($bet->{buy_price}, $now->db_timestamp, $contract->is_expired);
-                $bet->{quantity} = 1;
+                $bet->{quantity} = $contract->is_binary ? 1 : $contract->unit;
                 push @bets_to_sell, $bet;
                 push @transdata,
                     {
@@ -1569,6 +1604,7 @@ sub report {
         . sprintf("%30s: %s\n", 'Contract',               $self->contract->code)
         . sprintf("%30s: %s\n", 'Price',                  $self->price)
         . sprintf("%30s: %s\n", 'Payout',                 $self->payout)
+        . sprintf("%30s: %s\n", 'Unit',                   $self->unit)
         . sprintf("%30s: %s\n", 'Amount Type',            $self->amount_type)
         . sprintf("%30s: %s\n", 'Comment',                $self->comment->[0] || '')
         . sprintf("%30s: %s\n", 'Staff',                  $self->staff)

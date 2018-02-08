@@ -3,7 +3,6 @@
 use strict;
 use warnings;
 
-use JSON qw(to_json);
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More;    # tests => 4;
