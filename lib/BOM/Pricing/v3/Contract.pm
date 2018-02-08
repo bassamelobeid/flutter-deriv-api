@@ -7,13 +7,15 @@ no indirect;
 use Scalar::Util qw(blessed);
 use Try::Tiny;
 use List::MoreUtils qw(none);
-use JSON::XS;
+use JSON::MaybeXS;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
 use Time::Duration::Concise::Localize;
+use Client::Account;
 
 use Format::Util::Numbers qw/formatnumber/;
+use Scalar::Util::Numeric qw(isint);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -23,13 +25,14 @@ use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
 use Finance::Contract::Longcode qw( shortcode_to_parameters);
-use BOM::Product::Contract::Finder::Japan;
-use BOM::Product::Contract::Finder;
+use BOM::Product::ContractFinder;
 use LandingCompany::Registry;
 use Locale::Country::Extra;
 use BOM::Pricing::v3::Utility;
 
 use feature "state";
+
+my $json = JSON::MaybeXS->new->allow_blessed;
 
 sub _create_error {
     my $args = shift;
@@ -92,9 +95,9 @@ sub contract_metadata {
     my ($contract) = @_;
     return +{
         app_markup_percentage => $contract->app_markup_percentage,
-        staking_limits        => $contract->staking_limits,
-        deep_otm_threshold    => $contract->otm_threshold,
-        base_commission       => $contract->base_commission,
+        ($contract->is_binary) ? (staking_limits => $contract->staking_limits) : (),    #staking limits only apply to binary
+        deep_otm_threshold => $contract->otm_threshold,
+        base_commission    => $contract->base_commission,
     };
 }
 
@@ -176,8 +179,12 @@ sub _get_ask {
                 contract_parameters => $contract_parameters,
             };
 
-            if ($streaming_params->{add_theo_probability}) {
+            if ($streaming_params->{add_theo_probability} and $contract->is_binary) {
                 $response->{theo_probability} = $contract->theo_probability->amount;
+            }
+
+            unless ($contract->is_binary) {
+                $response->{contract_parameters}->{skip_stream_results_adjustment} = 1;
             }
 
             if ($contract->underlying->feed_license eq 'realtime') {
@@ -307,7 +314,7 @@ sub get_bid {
         $contract                            = produce_contract($bet_params);
     }
     catch {
-        warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
+        warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . $json->encode($bet_params);
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'GetProposalFailure',
                 message_to_client => localize('Cannot create contract')});
@@ -362,10 +369,10 @@ sub get_bid {
             date_settlement     => $contract->date_settlement->epoch,
             currency            => $contract->currency,
             longcode            => localize($contract->longcode),
-            shortcode           => $short_code,
-            payout              => $contract->payout,
-            contract_type       => $contract->code,
-            bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
+            shortcode           => $contract->shortcode,
+            ($contract->is_binary) ? (payout => $contract->payout) : (),    # The concept of payout only applies to binary
+            contract_type => $contract->code,
+            bid_price     => formatnumber('price', $contract->currency, $contract->bid_price),
         };
 
         if ($is_sold and $is_expired) {
@@ -373,7 +380,7 @@ sub get_bid {
             $response->{status} = $sell_price == $contract->payout ? "won" : "lost";
         } elsif ($is_sold and not $is_expired) {
             $response->{status} = 'sold';
-        } else {    # not sold
+        } else {                                                            # not sold
             $response->{status} = 'open';
         }
 
@@ -499,6 +506,10 @@ sub send_ask {
     $params->{args}->{landing_company} = $params->{landing_company}
         if $params->{landing_company};
 
+    # Here we have to do something like this because we are re-using
+    # amout in the API for specifiying no of contracts.
+    $params->{args}->{unit} //= $params->{args}->{amount};
+
     # copy country_code when it is available.
     $params->{args}->{country_code} = $params->{country_code} if $params->{country_code};
 
@@ -511,6 +522,11 @@ sub send_ask {
                 code              => 'pricing error',
                 message_to_client => localize('Unable to price the contract.')});
     };
+
+    #price_stream_results_adjustment is based on theo_probability and is very binary-option specifics.
+    #We do no have the concept of probabilty for the non binary options.
+    $params->{args}->{skip_stream_results_adjustment} = $response->{contract_parameters}->{skip_stream_results_adjustment}
+        if exists $response->{contract_parameters}->{skip_stream_results_adjustment};
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
 
@@ -544,7 +560,7 @@ sub get_contract_details {
         $contract                            = produce_contract($bet_params);
     }
     catch {
-        warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . JSON::XS->new->allow_blessed->encode($bet_params);
+        warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . $json->encode($bet_params);
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'GetContractDetails',
                 message_to_client => localize('Cannot create contract')});
@@ -574,30 +590,32 @@ sub get_contract_details {
 sub contracts_for {
     my $params = shift;
 
-    my $args                 = $params->{args};
-    my $symbol               = $args->{contracts_for};
-    my $currency             = $args->{currency} || 'USD';
-    my $product_type         = $args->{product_type} // 'basic';
-    my $landing_company_name = $args->{landing_company};
-    my $country_code         = $params->{country_code} // '';
+    my $args            = $params->{args};
+    my $symbol          = $args->{contracts_for};
+    my $currency        = $args->{currency} || 'USD';
+    my $product_type    = $args->{product_type} // 'basic';
+    my $landing_company = $args->{landing_company};
+    my $country_code    = $params->{country_code} // '';
 
-    my $contracts_for;
-    my $query_args = {
-        symbol => $symbol,
-        ($country_code ? (country_code => $country_code) : ()),
-    };
+    my $token_details = $params->{token_details};
 
-    if ($product_type eq 'multi_barrier') {
-        $query_args->{landing_company} = $landing_company_name // 'japan';
-        $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol($query_args);
-    } else {
-        $query_args->{landing_company} = $landing_company_name // 'costarica';
-        $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($query_args);
-        # this is temporary solution till the time front apps are fixed
-        # filter CALLE|PUTE only for non japan
-        $contracts_for->{available} = [grep { $_->{contract_type} !~ /^(?:CALLE|PUTE)$/ } @{$contracts_for->{available}}]
-            if ($contracts_for and $contracts_for->{hit_count} > 0);
+    if ($token_details and exists $token_details->{loginid}) {
+        my $client = Client::Account->new({
+            loginid      => $token_details->{loginid},
+            db_operation => 'replica',
+        });
+        # override the details here since we already have a client.
+        $landing_company = $client->landing_company->short;
+        $country_code    = $client->residence;
     }
+
+    my $finder        = BOM::Product::ContractFinder->new;
+    my $method        = $product_type eq 'basic' ? 'basic_contracts_for' : 'multi_barrier_contracts_for';
+    my $contracts_for = $finder->$method({
+        symbol          => $symbol,
+        landing_company => $landing_company,
+        country_code    => $country_code,
+    });
 
     my $i = 0;
     foreach my $contract (@{$contracts_for->{available}}) {
@@ -639,7 +657,7 @@ sub _get_error_message {
     if ($log_exception) {
         _log_exception(_get_ask => $reason);
     } else {
-        warn __PACKAGE__ . " _get_ask produce_contract failed: $reason, parameters: " . JSON::XS->new->allow_blessed->encode($args_copy);
+        warn __PACKAGE__ . " _get_ask produce_contract failed: $reason, parameters: " . $json->encode($args_copy);
     }
 
     return ['Cannot create contract'];
@@ -660,7 +678,7 @@ sub _validate_offerings {
 
     try {
         my $lc = $args_copy->{landing_company} // 'costarica';
-        my $method = $lc =~ /japan/ ? 'multi_barrier_offerings_for_country' : 'offerings_for_country';
+        my $method = $lc =~ /japan/ ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
         my $landing_company = LandingCompany::Registry::get($lc);
 
         my $offerings_obj = $landing_company->$method($args_copy->{country_code} // '', BOM::Platform::Runtime->instance->get_offerings_config);

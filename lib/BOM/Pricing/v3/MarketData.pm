@@ -25,7 +25,7 @@ use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
 use BOM::Product::Offerings::DisplayHelper;
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 
 sub _get_cache {
     my ($name) = @_;
@@ -54,8 +54,20 @@ sub _set_cache {
 }
 
 sub _get_digest {
-    my $digest = _get_config_key(BOM::Platform::Runtime->instance->get_offerings_config);
-    return $digest;
+
+    my $offerings_config     = BOM::Platform::Runtime->instance->get_offerings_config();
+    my $trading_calendar_rev = 0;
+    my $reader               = BOM::Platform::Chronicle::get_chronicle_reader();
+    # information on 'Resources' are dependent on information of trading calendar. A hard cache of 1 day will
+    # make information on 'Resources' out of date. Though this doesn't happen very often but we need to get this right.
+    for (['holidays', 'holidays'], ['partial_trading', 'early_closes'], ['partial_trading', 'late_opens']) {
+        my $rev = $reader->get($_->[0], $_->[1] . '_revision');
+        $trading_calendar_rev += $rev->{epoch} if $rev;
+    }
+
+    $offerings_config->{trading_calendar_revision} = $trading_calendar_rev;
+
+    return _get_config_key($offerings_config);
 }
 
 =head2 trading_times
@@ -218,8 +230,8 @@ Returns a hashref containing the following:
 sub generate_trading_times {
     my $date = shift;
 
-    my $offerings = LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config);
-    my $tree = BOM::Product::Offerings::DisplayHelper->new(
+    my $offerings = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+    my $tree      = BOM::Product::Offerings::DisplayHelper->new(
         date      => $date,
         offerings => $offerings
         )->decorate_tree(
@@ -245,11 +257,10 @@ sub generate_trading_times {
             for my $ul (@{$sbm->{underlyings}}) {
                 push @{$submarket->{symbols}},
                     {
-                    name       => localize($ul->{name}),
-                    symbol     => $ul->{symbol},
-                    settlement => $ul->{settlement} || '',
-                    events     => $ul->{events},
-                    times      => $ul->{times},
+                    name   => localize($ul->{name}),
+                    symbol => $ul->{symbol},
+                    events => $ul->{events},
+                    times  => $ul->{times},
                     ($ul->{feed_license} ne 'realtime') ? (feed_license => $ul->{feed_license}) : (),
                     ($ul->{delay_amount} > 0)           ? (delay_amount => $ul->{delay_amount}) : (),
                     };
@@ -307,7 +318,7 @@ sub generate_asset_index {
     my ($country_code, $landing_company_name, $language) = @_;
 
     my $config = BOM::Platform::Runtime->instance->get_offerings_config;
-    my $offerings = LandingCompany::Offerings->get($country_code, $config) // LandingCompany::Offerings->get($landing_company_name, $config);
+    my $offerings = LandingCompany::Registry::get($landing_company_name)->basic_offerings_for_country($country_code, $config);
 
     my $asset_index = BOM::Product::Offerings::DisplayHelper->new(offerings => $offerings)->decorate_tree(
         markets => {

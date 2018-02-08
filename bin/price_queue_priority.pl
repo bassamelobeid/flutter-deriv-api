@@ -1,6 +1,8 @@
 #!/etc/rmg/bin/perl
 use strict;
 use warnings;
+# load this file to force MOJO::JSON to use JSON::MaybeXS
+use Mojo::JSON::MaybeXS;
 use Getopt::Long;
 use Mojo::IOLoop;
 use Mojo::Redis2;
