@@ -78,7 +78,7 @@ subtest 'default loginid & cookie' => sub {
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $vr_1, 'no real acc, VR as default';
 
-        my $cookie_str = "$vr_1:V:E:N";
+        my $cookie_str = "$vr_1:V:E";
         is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
     };
 
@@ -92,7 +92,7 @@ subtest 'default loginid & cookie' => sub {
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $cr_1, 'real acc as default';
 
-        my $cookie_str = "$cr_1:R:E:N+$vr_1:V:E:N";
+        my $cookie_str = "$cr_1:R:E:N+$vr_1:V:E";
         is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
     };
 
@@ -113,7 +113,7 @@ subtest 'default loginid & cookie' => sub {
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $cr_1, 'still first real acc as default';
 
-        my $cookie_str = "$cr_1:R:E:N+$cr_2:R:E:I+$vr_1:V:E:N";
+        my $cookie_str = "$cr_1:R:E:N+$cr_2:R:E:I+$vr_1:V:E";
         is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
     };
 
@@ -130,7 +130,7 @@ subtest 'default loginid & cookie' => sub {
             my $def_client = ($user->clients)[0];
             is $def_client->loginid, $cr_2, '2nd real acc as default';
 
-            my $cookie_str = "$cr_2:R:E:I+$vr_1:V:E:N+$cr_1:R:D:N";
+            my $cookie_str = "$cr_2:R:E:I+$vr_1:V:E:N+$cr_1:R:D";
             is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
         };
 
@@ -146,7 +146,7 @@ subtest 'default loginid & cookie' => sub {
             my $def_client = ($user->clients)[0];
             is $def_client->loginid, $vr_1, 'VR acc as default';
 
-            my $cookie_str = "$vr_1:V:E:N+$cr_1:R:D:N+$cr_2:R:D:I";
+            my $cookie_str = "$vr_1:V:E:N+$cr_1:R:D:N+$cr_2:R:D";
             is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
         };
 
@@ -162,7 +162,7 @@ subtest 'default loginid & cookie' => sub {
             my $def_client = ($user->clients)[0];
             is $def_client, undef, 'all acc disabled, no default';
 
-            my $cookie_str = "$cr_1:R:D:N+$cr_2:R:D:I+$vr_1:V:D:N";
+            my $cookie_str = "$cr_1:R:D:N+$cr_2:R:D:I+$vr_1:V:D";
             is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
         };
     };
