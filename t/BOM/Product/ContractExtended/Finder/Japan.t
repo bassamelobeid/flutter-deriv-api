@@ -80,22 +80,22 @@ subtest "predefined contracts for symbol" => sub {
         # costarica, canada
         'frxUSDJPY-costarica-ca' => {
             contract_count => {
-                callput      => 4,
-                touchnotouch => 4,
-                staysinout   => 4,
-                endsinout    => 4,
+                callput      => 0,
+                touchnotouch => 0,
+                staysinout   => 0,
+                endsinout    => 0,
             },
-            hit_count => 16,
+            hit_count => 0,
         },
         # costarica, china
         'frxUSDJPY-costarica-cn' => {
             contract_count => {
-                callput      => 14,
-                touchnotouch => 8,
-                staysinout   => 8,
-                endsinout    => 8,
+                callput      => 0,
+                touchnotouch => 0,
+                staysinout   => 0,
+                endsinout    => 0,
             },
-            hit_count => 38,
+            hit_count => 0,
         },
         # costarica, no country
         'frxUSDJPY-costarica' => {
