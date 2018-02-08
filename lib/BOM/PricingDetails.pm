@@ -113,14 +113,14 @@ sub debug_link {
     my $attr_content = $self->_get_overview();
 
     my $ask_price_content = $self->_get_price({
-        id   => 'buildask' . $bet->id,
-        prob => $bet->ask_probability,
-    });
+            id   => 'buildask' . $bet->id,
+            prob => $bet->ask_probability,
+        }) if $bet->is_binary;
 
     my $bid_price_content = $self->_get_price({
-        id   => 'buildbid' . $bet->id,
-        prob => $bet->bid_probability,
-    });
+            id   => 'buildbid' . $bet->id,
+            prob => $bet->bid_probability,
+        }) if $bet->is_binary;
 
     my $tabs_content = [{
             label   => 'Overview',
