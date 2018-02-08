@@ -12,6 +12,7 @@ __PACKAGE__->meta->setup(
         financial_market_bet_id => { type => 'bigint', not_null => 1 },
         relative_barrier        => { type => 'varchar', length => 20 },
         absolute_barrier        => { type => 'numeric' },
+        multiplier              => { type => 'numeric' },
     ],
 
     primary_key_columns => [ 'financial_market_bet_id' ],

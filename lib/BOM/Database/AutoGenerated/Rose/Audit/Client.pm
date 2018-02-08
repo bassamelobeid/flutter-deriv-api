@@ -53,8 +53,6 @@ __PACKAGE__->meta->setup(
         remote_addr                              => { type => 'scalar' },
         occupation                               => { type => 'varchar', length => 100 },
         aml_risk_classification                  => { type => 'enum', check_in => [ 'low', 'standard', 'high', 'manual override - low', 'manual override - standard', 'manual override - high' ], db_type => 'aml_risk_type', default => 'low' },
-        allow_omnibus                            => { type => 'boolean' },
-        sub_account_of                           => { type => 'varchar', length => 12 },
         allow_copiers                            => { type => 'boolean' },
         place_of_birth                           => { type => 'varchar', length => 100 },
         tax_residence                            => { type => 'varchar', length => 100 },
