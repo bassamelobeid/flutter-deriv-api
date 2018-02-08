@@ -3,7 +3,8 @@ package BOM::RPC::v3::Japan::NewAccount;
 use strict;
 use warnings;
 
-use JSON qw(from_json encode_json);
+use Encode;
+use JSON::MaybeXS;
 use DateTime;
 use Date::Utility;
 use HTML::Entities qw(encode_entities);
@@ -22,7 +23,9 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::AuditLog;
 use BOM::Database::Helper::QuestionsAnswered;
 
-common_before_actions qw(auth);
+my $json = JSON::MaybeXS->new;
+
+requires_auth();
 
 sub get_jp_account_status {
     my $client = shift;
@@ -48,7 +51,7 @@ sub get_jp_account_status {
                         my $next_dt = _knowledge_test_available_date();
                         $jp_account_status->{next_test_epoch} = $next_dt->epoch;
                     } elsif ($status eq 'jp_knowledge_test_fail') {
-                        my $tests      = JSON::from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
+                        my $tests      = $json->decode($jp_client->financial_assessment->data)->{jp_knowledge_test};
                         my $last_epoch = $tests->[-1]->{epoch};
                         my $next_dt    = _knowledge_test_available_date($last_epoch);
 
@@ -137,7 +140,7 @@ rpc jp_knowledge_test => sub {
     } elsif ($jp_client->get_status('jp_knowledge_test_fail')) {
         # can't take test > 1 within same business day
 
-        my $tests      = from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
+        my $tests      = $json->decode($jp_client->financial_assessment->data)->{jp_knowledge_test};
         my $last_epoch = $tests->[-1]->{epoch};
         $next_dt = _knowledge_test_available_date($last_epoch);
     } else {
@@ -167,7 +170,7 @@ rpc jp_knowledge_test => sub {
     }
 
     # append result in financial_assessment record
-    my $financial_data = from_json($jp_client->financial_assessment->data);
+    my $financial_data = $json->decode($jp_client->financial_assessment->data);
 
     my $results = $financial_data->{jp_knowledge_test} // [];
     push @{$results},
@@ -177,7 +180,7 @@ rpc jp_knowledge_test => sub {
         epoch  => $now->epoch,
         };
     $financial_data->{jp_knowledge_test} = $results;
-    $jp_client->financial_assessment({data => encode_json($financial_data)});
+    $jp_client->financial_assessment({data => Encode::encode_utf8($json->encode($financial_data))});
 
     #save the questions here.
     if ($questions) {
@@ -261,7 +264,7 @@ sub get_jp_settings {
             $jp_settings->{daily_loss_limit} = $client->get_self_exclusion->max_losses;
         }
 
-        my $assessment = from_json($client->financial_assessment->data);
+        my $assessment = $json->decode($client->financial_assessment->data);
         $jp_settings->{$_} = $assessment->{$_} for ('trading_purpose', 'hedge_asset', 'hedge_asset_amount');
 
         $jp_settings->{$_} = $assessment->{$_}->{answer} for qw(
@@ -316,7 +319,7 @@ sub set_jp_settings {
 
     my $fin_change = 0;
 
-    my $ori_fin = JSON::from_json($client->financial_assessment->data);
+    my $ori_fin = $json->decode($client->financial_assessment->data);
 
     if ($args) {
 
@@ -384,7 +387,7 @@ sub set_jp_settings {
                 $new_fin->{$_} = $ori_fin->{$_};
             }
         }
-        $client->financial_assessment({data => encode_json($new_fin)});
+        $client->financial_assessment({data => Encode::encode_utf8($json->encode($new_fin))});
     }
 
     $client->latest_environment(Date::Utility->new->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);

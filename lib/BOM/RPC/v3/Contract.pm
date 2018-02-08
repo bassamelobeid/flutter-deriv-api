@@ -6,13 +6,12 @@ no indirect;
 
 use Try::Tiny;
 use List::MoreUtils qw(none);
-use JSON::XS;
 use Date::Utility;
 use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 use Quant::Framework;
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 
 use BOM::Platform::Chronicle;
 use BOM::Platform::Config;
@@ -26,7 +25,8 @@ use BOM::Platform::Runtime;
 sub validate_symbol {
     my $symbol = shift;
     my @offerings =
-        LandingCompany::Offerings->get('costarica', BOM::Platform::Runtime->instance->get_offerings_config)->values_for_key('underlying_symbol');
+        LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config)
+        ->values_for_key('underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
 
         # There's going to be a few symbols that are disabled or otherwise not provided
@@ -111,7 +111,6 @@ sub validate_barrier {
             # Compare with the number of decimal places from the pipsize
             # If barrier has 5 decimal places and pipsize has 4, this would be rejected due to excessive precision.
             if ($barrier_decimal_places > $pipsize_decimal_places) {
-
                 return BOM::RPC::v3::Utility::create_error({
                     code              => 'BarrierValidationError',
                     message_to_client => localize("Barrier can only be up to [_1] decimal places.", $pipsize_decimal_places),

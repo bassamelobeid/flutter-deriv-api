@@ -11,7 +11,8 @@ use 5.014;
 use strict;
 use warnings;
 
-use JSON;
+use Encode;
+use JSON::MaybeXS;
 use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
@@ -48,7 +49,9 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
-common_before_actions qw(auth);
+my $json = JSON::MaybeXS->new;
+
+requires_auth();
 
 =head2 payout_currencies
 
@@ -88,7 +91,7 @@ Returns a sorted arrayref of valid payout currencies
 =cut
 
 rpc "payout_currencies",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
 
@@ -118,7 +121,7 @@ rpc "payout_currencies",
     };
 
 rpc "landing_company",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
 
@@ -177,7 +180,7 @@ Returns a hashref containing the keys from __build_landing_company($lc)
 =cut
 
 rpc "landing_company_details",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
 
@@ -489,7 +492,7 @@ rpc get_account_status => sub {
     push @status, 'social_signup' if $user->has_social_signup;
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();
-    $financial_assessment = ref($financial_assessment) ? from_json($financial_assessment->data || '{}') : {};
+    $financial_assessment = ref($financial_assessment) ? $json->decode($financial_assessment->data || '{}') : {};
     push @status,
         'financial_assessment_not_complete'
         if (
@@ -717,7 +720,7 @@ rpc cashier_password => sub {
 };
 
 rpc "reset_password",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
     my $args   = $params->{args};
@@ -913,6 +916,11 @@ rpc set_settings => sub {
                 });
         }
 
+        $err = BOM::RPC::v3::Utility::create_error({
+                code              => 'PermissionDenied',
+                message_to_client => localize("Value of place_of_birth cannot be changed.")}
+        ) if ($client->place_of_birth and $args->{place_of_birth} and $args->{place_of_birth} ne $client->place_of_birth);
+
         $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && ($client->broker_code ne 'CR' or $client->get_status('ico_only'));
 
         if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
@@ -1005,7 +1013,6 @@ rpc set_settings => sub {
     my $user = BOM::Platform::User->new({email => $client->email});
     foreach my $cli ($user->clients) {
         next if $cli->is_virtual;
-        next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
         $cli->address_1($address1);
         $cli->address_2($address2);
@@ -1373,15 +1380,18 @@ rpc set_self_exclusion => sub {
         my $name         = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
 
-        my $brand            = Brands->new(name => request()->brand);
-        my $marketing_email  = $brand->emails('marketing');
-        my $compliance_email = $brand->emails('compliance');
+        my $brand = Brands->new(name => request()->brand);
 
         my $message = "Client $client_title set the following self-exclusion limits:\n\n- Exclude from website until: $ret\n";
 
-        my $to_email = $compliance_email . ',' . $marketing_email;
+        my $to_email = $brand->emails('compliance') . ',' . $brand->emails('marketing');
+
+        # Include accounts team if client's brokercode is MLT/MX
+        # As per UKGC LCCP Audit Regulations
+        $to_email .= ',' . $brand->emails('accounting') if ($client->landing_company->short =~ /iom|malta$/);
+
         send_email({
-            from    => $compliance_email,
+            from    => $brand->emails('compliance'),
             to      => $to_email,
             subject => "Client " . $client->loginid . " set self-exclusion limits",
             message => [$message],
@@ -1398,25 +1408,8 @@ rpc api_token => sub {
 
     my ($client, $args, $client_ip) = @{$params}{qw/client args client_ip/};
 
-    # check if sub_account loginid is present then check if its valid
-    # and assign it to client object
-    my $sub_account_loginid = $params->{args}->{sub_account};
-    my ($rtn, $sub_account_client);
-    if ($sub_account_loginid) {
-        $sub_account_client = Client::Account->new({
-            loginid      => $sub_account_loginid,
-            db_operation => 'replica'
-        });
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidSubAccount',
-                message_to_client => localize('Please provide a valid sub account loginid.')}
-        ) if (not $sub_account_client or ($sub_account_client->sub_account_of ne $client->loginid));
-
-        $client = $sub_account_client;
-        $rtn->{sub_account} = $sub_account_loginid;
-    }
-
     my $m = BOM::Database::Model::AccessToken->new;
+    my $rtn;
     if ($args->{delete_token}) {
         $m->remove_by_token($args->{delete_token}, $client->loginid);
         $rtn->{delete_token} = 1;
@@ -1425,10 +1418,11 @@ rpc api_token => sub {
         if (defined $params->{account_id}) {
             BOM::Platform::RedisReplicated::redis_write()->publish(
                 'TXNUPDATE::transaction_' . $params->{account_id},
-                JSON::to_json({
-                        error => {
-                            code       => "TokenDeleted",
-                            account_id => $params->{account_id}}}));
+                Encode::encode_utf8(
+                    $json->encode({
+                            error => {
+                                code       => "TokenDeleted",
+                                account_id => $params->{account_id}}})));
         }
     }
     if (my $display_name = $args->{new_token}) {
@@ -1549,20 +1543,22 @@ rpc set_account_currency => sub {
     # bail out if default account is already set
     return {status => 0} if $client->default_account;
 
-    # for real client and not for omnibus or sub account
     # check if we are allowed to set currency
     # i.e if we have exhausted available options
     # - client can have single fiat currency
     # - client can have multiple crypto currency
     #   but only with single type of crypto currency
     #   for example BTC => ETH is allowed but BTC => BTC is not
-    if (not $client->is_virtual and not($client->allow_omnibus or $client->sub_account_of)) {
+    if (not $client->is_virtual) {
         my $error = BOM::RPC::v3::Utility::validate_set_currency($client, $currency);
         return $error if $error;
     }
 
+    # bail out if default account is already set
+    return {status => 0} if $client->default_account;
+
     # no change in default account currency if default account is already set
-    return {status => 1} if (not $client->default_account and $client->set_default_account($currency));
+    return {status => 1} if ($client->set_default_account($currency));
 
     return {status => 0};
 };
@@ -1582,10 +1578,8 @@ rpc set_financial_assessment => sub {
 
         my $user = BOM::Platform::User->new({email => $client->email});
         foreach my $cli ($user->clients) {
-            next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
-
             $cli->financial_assessment({
-                data => encode_json $financial_evaluation->{user_data},
+                data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),
             });
             $cli->save;
         }
@@ -1625,7 +1619,7 @@ rpc get_financial_assessment => sub {
     my $response             = {};
     my $financial_assessment = $client->financial_assessment();
     if ($financial_assessment) {
-        my $data = from_json $financial_assessment->data;
+        my $data = $json->decode($financial_assessment->data);
         if ($data) {
             foreach my $key (keys %$data) {
                 unless ($key =~ /total_score/) {

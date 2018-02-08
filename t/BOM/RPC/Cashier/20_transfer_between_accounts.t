@@ -40,16 +40,29 @@ my $params = {
 my ($method, $email, $client_vr, $client_cr, $client_cr1, $client_mlt, $client_mf, $user, $token) = ('transfer_between_accounts');
 
 my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+my $btc_usd_rate             = 4000;
 $mocked_CurrencyConverter->mock(
     'in_USD',
     sub {
         my $price         = shift;
         my $from_currency = shift;
 
-        $from_currency eq 'BTC' and return 4000 * $price;
+        $from_currency eq 'BTC' and return $btc_usd_rate * $price;
         $from_currency eq 'USD' and return 1 * $price;
 
         return 0;
+    });
+
+my $tmp_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+    email       => 'tmp@abcdfef.com'
+});
+
+$tmp_client->db->dbic->run(
+    ping => sub {
+        my $date = Date::Utility->new->db_timestamp;
+        $_->do(
+            "insert into data_collection.exchange_rate (source_currency, target_currency,date, rate) values('BTC','USD', '$date','$btc_usd_rate')");
     });
 
 subtest 'call params validation' => sub {
@@ -459,7 +472,7 @@ subtest 'transfer with fees' => sub {
     );
     cmp_ok $client_cr1->default_account->load->balance, '==', 1, 'correct balance';
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token omnibus');
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
     my $amount = 10;
     $params->{args} = {
         "account_from" => $client_cr->loginid,
@@ -477,7 +490,7 @@ subtest 'transfer with fees' => sub {
     cmp_ok $current_balance, '==', 1 + $transfer_amount, 'correct balance after transfer including fees';
     cmp_ok $client_cr->default_account->load->balance, '==', 1000 - $amount, 'correct balance, exact amount deducted';
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token omnibus');
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
     $amount          = 0.1;
     $params->{args}  = {
         "account_from" => $client_cr1->loginid,
@@ -518,7 +531,6 @@ subtest 'paymentagent transfer' => sub {
         commission_withdrawal => 0,
         is_authenticated      => 'f',
         currency_code         => 'BTC',
-        currency_code_2       => 'BTC',
         target_country        => 'id',
     });
     $client_cr->save;
@@ -549,7 +561,7 @@ subtest 'paymentagent transfer' => sub {
     cmp_ok $client_cr1->default_account->load->balance, '==', 1000, 'correct balance';
 
     my $amount = 0.1;
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token omnibus');
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
     $params->{args} = {
         "account_from" => $client_cr->loginid,
         "account_to"   => $client_cr1->loginid,
@@ -581,14 +593,13 @@ subtest 'paymentagent transfer' => sub {
         commission_withdrawal => 0,
         is_authenticated      => 't',
         currency_code         => 'BTC',
-        currency_code_2       => 'BTC',
         target_country        => 'id',
     });
     $client_cr->save;
 
     $params->{args}->{account_from} = $client_cr->loginid;
     $params->{args}->{account_to}   = $client_cr1->loginid;
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token omnibus');
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr1->loginid, 'Transaction successful';
@@ -597,82 +608,6 @@ subtest 'paymentagent transfer' => sub {
     cmp_ok $client_cr->default_account->load->balance, '==', 0.9 - $amount, 'correct balance after transfer including fees';
     cmp_ok $client_cr1->default_account->load->balance, '==', $current_balance + $transfer_amount,
         'correct balance after transfer excluding fees as payment agent is authenticated';
-};
-
-subtest 'Sub account transfer' => sub {
-    subtest 'validate sub transfer' => sub {
-        $email     = 'new_cr_email' . rand(999) . '@sample.com';
-        $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            email       => $email
-        });
-
-        $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            email       => $email
-        });
-
-        $client_cr->set_default_account('USD');
-        $client_cr1->set_default_account('USD');
-
-        $user = BOM::Platform::User->create(
-            email    => $email,
-            password => BOM::Platform::Password::hashpw('jskjd8292922'));
-        $user->email_verified(1);
-
-        $user->add_loginid({loginid => $client_cr->loginid});
-        $user->add_loginid({loginid => $client_cr1->loginid});
-        $user->save;
-
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token omnibus');
-        $params->{args} = {
-            "account_from" => $client_cr->loginid,
-            "account_to"   => $client_cr1->loginid,
-            "currency"     => "USD",
-            "amount"       => 10
-        };
-
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Sub account transfer error")
-            ->error_message_is('The maximum amount you may transfer is: USD 0.00.', 'Correct error message as no deposit done yet.');
-
-        $client_cr = Client::Account->new({loginid => $client_cr->loginid});
-        # set allow_omnibus (master account has this set)
-        $client_cr->allow_omnibus(1);
-        $client_cr->save();
-
-        $client_cr1 = Client::Account->new({loginid => $client_cr1->loginid});
-        # set cr1 client as sub account of cr
-        $client_cr1->sub_account_of($client_cr->loginid);
-        $client_cr1->save();
-    };
-
-    subtest 'Sub account transfer' => sub {
-        $client_cr->payment_free_gift(
-            currency => 'USD',
-            amount   => 100,
-            remark   => 'free gift',
-        );
-
-        $client_cr->clr_status('cashier_locked');    # clear locked
-        $client_cr->save();
-
-        $params->{args} = {
-            "account_from" => $client_cr->loginid,
-            "account_to"   => $client_cr1->loginid,
-            "currency"     => "USD",
-            "amount"       => 10
-        };
-
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-        is $result->{client_to_loginid}, $client_cr1->loginid, 'Client to loginid is correct';
-
-        # after withdraw, check both balance
-        $client_cr  = Client::Account->new({loginid => $client_cr->loginid});
-        $client_cr1 = Client::Account->new({loginid => $client_cr1->loginid});
-        ok $client_cr->default_account->balance == 90,  '-10';
-        ok $client_cr1->default_account->balance == 10, '+10';
-    };
 };
 
 done_testing();

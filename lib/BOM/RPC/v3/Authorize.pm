@@ -4,9 +4,11 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use List::MoreUtils qw(any);
 use Format::Util::Numbers qw/formatnumber/;
 
 use Client::Account;
+use Brands;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -16,6 +18,83 @@ use BOM::Platform::User;
 use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
 use BOM::Platform::User;
+
+use LandingCompany::Registry;
+
+sub _get_upgradeable_landing_companies {
+    my ($client_list, $client) = @_;
+
+    # List to store upgradeable companies
+    my @upgradeable_landing_companies;
+
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+
+    # Get the gaming and financial company from the client's residence
+    my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
+    my $financial_company = $countries_instance->financial_company_for_country($client->residence);
+
+    # Check if client is ICO or not
+    my $is_ico_client = $client->get_status('ico_only');
+
+    # Check if client has a gaming account or financial account
+    # Otherwise, add them to the list
+    # NOTE: Gaming has higher priority over financial
+    if (   $gaming_company
+        && $client->is_virtual
+        && !(any { $_->landing_company->short eq $gaming_company } @$client_list))
+    {
+        push @upgradeable_landing_companies, $gaming_company;
+    }
+
+    # Some countries have financial but not gaming account
+    if (  !$gaming_company
+        && $financial_company
+        && $client->is_virtual
+        && !(any { $_->landing_company->short eq $financial_company } @$client_list))
+    {
+        push @upgradeable_landing_companies, $financial_company;
+    }
+
+    # In some cases, client has VRTC, MX/MLT, MF account
+    # MX/MLT account might get duplicated, so MF should not have any companies
+    if (@upgradeable_landing_companies && !$client->is_virtual) {
+        @upgradeable_landing_companies = ();
+    }
+
+    # Some countries have both financial and gaming. Financial is added:
+    # - if the list is empty
+    # - two companies are not same
+    # - there is no ico client
+    # - current client is not virtual
+    if (   !@upgradeable_landing_companies
+        && ($gaming_company && $financial_company && $gaming_company ne $financial_company)
+        && !$is_ico_client
+        && !$client->is_virtual
+        && !(any { $_->landing_company->short eq $financial_company } @$client_list))
+    {
+        push @upgradeable_landing_companies, $financial_company;
+    }
+
+    # Multiple CR account scenario:
+    # - client's landing company is CR
+    # - there is no ico client
+    # - client can upgrade to other CR accounts, assuming no fiat currency OR other cryptocurrencies
+    if ($client->landing_company->short eq 'costarica' && !$is_ico_client) {
+
+        # Get siblings of the current client
+        my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid);
+
+        my ($fiat_check, $lc_num_crypto, $client_num_crypto) =
+            BOM::RPC::v3::Utility::get_client_currency_information($siblings, $client->landing_company->short);
+
+        my $cryptocheck = ($lc_num_crypto && $lc_num_crypto == $client_num_crypto);
+
+        # Push to upgradeable_landing_companies, if possible to open another CR account
+        push @upgradeable_landing_companies, 'costarica' if (!$fiat_check || !$cryptocheck);
+    }
+
+    return \@upgradeable_landing_companies;
+}
 
 rpc authorize => sub {
     my $params = shift;
@@ -44,11 +123,10 @@ rpc authorize => sub {
     # check for not allowing cross brand tokens
     return BOM::RPC::v3::Utility::invalid_token_error() unless (grep { $brand_name eq $_ } @{$lc->allowed_for_brands});
 
-    if ($client->get_status('disabled')) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'AccountDisabled',
-                message_to_client => BOM::Platform::Context::localize("Account is disabled.")});
-    }
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'AccountDisabled',
+            message_to_client => BOM::Platform::Context::localize("Account is disabled.")}
+    ) unless BOM::RPC::v3::Utility::is_account_available($client);
 
     if (my $limit_excludeuntil = $client->get_self_exclusion_until_dt) {
         return BOM::RPC::v3::Utility::create_error({
@@ -72,9 +150,6 @@ rpc authorize => sub {
         $token_type = 'oauth_token';
     }
 
-    my @sub_accounts;
-    my $is_omnibus = $client->allow_omnibus;
-
     my $_get_account_details = sub {
         my ($clnt, $curr) = @_;
 
@@ -97,14 +172,6 @@ rpc authorize => sub {
     foreach my $clnt (@$client_list) {
         $currency = $clnt->default_account ? $clnt->default_account->currency_code : '';
         push @account_list, $_get_account_details->($clnt, $currency);
-
-        if ($is_omnibus and $loginid eq ($clnt->sub_account_of // '')) {
-            push @sub_accounts,
-                {
-                loginid  => $clnt->loginid,
-                currency => $currency,
-                };
-        }
     }
 
     my $account = $client->default_account;
@@ -119,10 +186,9 @@ rpc authorize => sub {
         landing_company_fullname => $lc->name,
         scopes                   => $scopes,
         is_virtual               => $client->is_virtual ? 1 : 0,
-        allow_omnibus            => $client->allow_omnibus ? 1 : 0,
-        account_list             => \@account_list,
-        sub_accounts             => \@sub_accounts,
-        stash                    => {
+        upgradeable_landing_companies => _get_upgradeable_landing_companies($client_list, $client),
+        account_list                  => \@account_list,
+        stash                         => {
             loginid              => $client->loginid,
             email                => $client->email,
             token                => $token,

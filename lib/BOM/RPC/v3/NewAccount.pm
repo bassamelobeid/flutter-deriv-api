@@ -7,7 +7,6 @@ use DateTime;
 use Try::Tiny;
 use List::MoreUtils qw(any);
 use Format::Util::Numbers qw/formatnumber/;
-use JSON qw/encode_json/;
 use Email::Valid;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
@@ -26,7 +25,6 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::japan;
-use BOM::Platform::Account::Real::subaccount;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::Platform::Config;
@@ -36,7 +34,7 @@ use BOM::Platform::Context qw (request);
 use BOM::Database::Model::OAuth;
 use BOM::Platform::PaymentNotificationQueue;
 
-common_before_actions qw(auth);
+requires_auth();
 
 sub _create_oauth_token {
     my $loginid = shift;
@@ -45,7 +43,7 @@ sub _create_oauth_token {
 }
 
 rpc "new_account_virtual",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
     my $args   = $params->{args};
@@ -135,7 +133,7 @@ sub get_verification_uri {
 }
 
 rpc "verify_email",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
 
@@ -193,7 +191,8 @@ rpc "verify_email",
         $payment_sub->($type);
     }
 
-    return {status => 1};    # always return 1, so not to leak client's email
+    # always return 1, so not to leak client's email
+    return {status => 1};
     };
 
 sub _update_professional_existing_clients {
@@ -201,20 +200,16 @@ sub _update_professional_existing_clients {
     my ($clients, $professional_status, $professional_requested) = @_;
 
     if ($professional_requested && $clients) {
-
         foreach my $client (@{$clients}) {
             my $error = BOM::RPC::v3::Utility::set_professional_status($client, $professional_status, $professional_requested);
             return $error if $error;
         }
-
     }
 
     return undef;
-
 }
 
 sub _get_professional_details_clients {
-
     my ($user, $args) = @_;
 
     # Filter out MF/CR clients
@@ -244,13 +239,15 @@ rpc new_account_real => sub {
         if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/)
         and not $ico_only;
 
+    $client->residence($args->{residence}) unless $client->residence;
+
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'real', $args);
     return $error if $error;
 
-    my $residence = $client->residence;
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-    my $company = $countries_instance->gaming_company_for_country($residence) // $countries_instance->financial_company_for_country($residence);
-    my $broker  = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $company = $countries_instance->gaming_company_for_country($client->residence)
+        // $countries_instance->financial_company_for_country($client->residence);
+    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
     # EU clients signing up for ICO get a CR account with trading disabled
     $broker = 'CR' if $ico_only;
@@ -278,7 +275,7 @@ rpc new_account_real => sub {
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
         ip => $params->{client_ip} // '',
-        country => uc($params->{country_code} // ''),
+        country => uc($client->residence // ''),
         from_client => $client,
         user        => $user,
         details     => $details_ref->{details},
@@ -367,10 +364,10 @@ rpc new_account_maltainvest => sub {
 
     $args->{client_type} //= 'retail';
 
-    # send error if anyone other than maltainvest, virtual, malta
-    # tried to make this call
+    # send error if anyone other than maltainvest, virtual,
+    # malta, iom tried to make this call
     return BOM::RPC::v3::Utility::permission_error()
-        if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest)$/);
+        if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest|iom)$/);
 
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'maltainvest', $args);
     return $error if $error;
@@ -512,53 +509,6 @@ rpc new_account_japan => sub {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
         landing_company_shortcode => $landing_company->short,
-        oauth_token               => _create_oauth_token($new_client->loginid),
-    };
-};
-
-rpc new_sub_account => sub {
-    my $params = shift;
-
-    my $error_map = BOM::RPC::v3::Utility::error_map();
-
-    my $client = $params->{client};
-    if ($client->is_virtual or not $client->allow_omnibus) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
-
-    my $args = $params->{args};
-
-    # call populate fields as some omnibus merchant accounts may not provide their client details
-    $params->{args} = BOM::Platform::Account::Real::subaccount::populate_details($client, $args);
-
-    # we still need to call because some may provide details, some may not provide client details
-    # we pass broker code of omnibus master client as we don't care about residence or any other details
-    # of sub accounts as they are just for record keeping purpose
-    my $details_ref =
-        BOM::Platform::Account::Real::default::validate_account_details($params->{args}, $client, $client->broker_code, $params->{source});
-    if (my $err = $details_ref->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $err,
-                message_to_client => $error_map->{$err}});
-    }
-
-    my $acc = BOM::Platform::Account::Real::subaccount::create_sub_account({
-        from_client => $client,
-        user        => BOM::Platform::User->new({email => $client->email}),
-        details     => $details_ref->{details},
-    });
-
-    if (my $err_code = $acc->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $err_code,
-                message_to_client => $error_map->{$err_code}});
-    }
-
-    my $new_client = $acc->{client};
-    return {
-        client_id                 => $new_client->loginid,
-        landing_company           => $new_client->landing_company->name,
-        landing_company_shortcode => $new_client->landing_company->short,
         oauth_token               => _create_oauth_token($new_client->loginid),
     };
 };
