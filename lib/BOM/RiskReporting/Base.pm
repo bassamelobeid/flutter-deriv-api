@@ -109,25 +109,6 @@ sub _build_live_open_bets {
     return $self->_db->dbic->run(fixup => sub { $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id') });
 }
 
-has live_open_ico => (
-    isa        => 'HashRef',
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_live_open_ico {
-    my $self = shift;
-    my $live_open_ico = $self->_db->dbic->run(fixup => sub { $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_ico() }, 'id') });
-
-    foreach my $c (keys %$live_open_ico) {
-        $live_open_ico->{$c}->{per_token_bid_price_USD} =
-            financialrounding('price', 'USD', in_USD($live_open_ico->{$c}->{per_token_bid_price}, $live_open_ico->{$c}->{currency_code}));
-
-    }
-    return $live_open_ico;
-
-}
-
 sub historical_open_bets {
     my ($self, $date) = @_;
 
