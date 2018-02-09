@@ -112,12 +112,14 @@ sub debug_link {
 
     my $attr_content = $self->_get_overview();
 
-    my $ask_price_content = $self->_get_price({
+    my $ask_price_content, $bid_price_content;
+
+    $ask_price_content = $self->_get_price({
             id   => 'buildask' . $bet->id,
             prob => $bet->ask_probability,
         }) if $bet->is_binary;
 
-    my $bid_price_content = $self->_get_price({
+    $bid_price_content = $self->_get_price({
             id   => 'buildbid' . $bet->id,
             prob => $bet->bid_probability,
         }) if $bet->is_binary;
