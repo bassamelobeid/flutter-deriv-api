@@ -112,7 +112,7 @@ sub debug_link {
 
     my $attr_content = $self->_get_overview();
 
-    my $ask_price_content, $bid_price_content;
+    my ($ask_price_content, $bid_price_content);
 
     $ask_price_content = $self->_get_price({
             id   => 'buildask' . $bet->id,
