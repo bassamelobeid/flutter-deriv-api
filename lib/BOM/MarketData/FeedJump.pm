@@ -115,7 +115,6 @@ sub _perform_checks {
         if ($fraction <= 1 - $self->_jump_threshold || $fraction >= 1 + $self->_jump_threshold) {
             # If sudden jump is caused by economic event, the we will add commission to ITM and OTM contracts.
             # Else we will just add commission to ITM contracts.
-            my $partition_range = $self->_has_events_for_last_5_ticks($tick->{epoch}, $tick->{symbol}) ? '0-1' : '0.5-1';
             my $quants_config = BOM::Platform::QuantsConfig->new(
                 chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
                 chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
@@ -128,16 +127,11 @@ sub _perform_checks {
                     underlying_symbol => $tick->{symbol},
                     start_time        => $tick->{epoch},
                     # each jump triggers a commission for 10 minutes, also this is handled in historical volatility
-                    end_time   => $tick->{epoch} + 10 * 60,
-                    partitions => [{
-                            partition_range => $partition_range,
-                            flat            => 0,
-                            cap_rate        => 0.05,
-                            floor_rate      => 0,
-                            width           => 0.5,
-                            centre_offset   => 0,
-                        }
-                    ],
+                    end_time => $tick->{epoch} + 10 * 60,
+                    ITM_1    => 0.05,
+                    ITM_2    => 0.05,
+                    ITM_3    => 0.05,
+                    ITM_max  => 0.05,
                 });
             stats_inc('bom.marketdata.feedjump.commission.added', {tags => ['symbol:' . $tick->{symbol}]});
         }
