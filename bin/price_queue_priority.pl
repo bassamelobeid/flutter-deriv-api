@@ -8,6 +8,8 @@ use Mojo::IOLoop;
 use Mojo::Redis2;
 use Path::Tiny;
 use YAML qw/LoadFile/;
+use Log::Any qw($log);
+use Log::Any::Adapter ('Stdout');
 
 GetOptions("pid-file=s" => \my $pid_file);
 if ($pid_file) {
@@ -23,7 +25,9 @@ my $redis = Mojo::Redis2->new(url => $redis_url);
 $redis->on(
     message => sub {
         my ($redis, $v, $key) = @_;
+        $log->info('pricer_jobs_priority updating...');
         $redis->lpush('pricer_jobs_priority', $v);
+        $log->info('pricer_jobs_priority updated.');
     });
 $redis->subscribe(
     ['high_priority_prices'],
