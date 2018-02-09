@@ -575,7 +575,7 @@ sub get_contract_details {
     };
 
     # do not have any other information on legacy contract
-    return $response if ($contract->is_legacy or $contract->is_binaryico);
+    return $response if $contract->is_legacy;
 
     if ($contract->two_barriers) {
         $response->{high_barrier} = $contract->high_barrier->supplied_barrier;
