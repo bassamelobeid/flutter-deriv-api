@@ -10,8 +10,7 @@ use Time::HiRes;
 use LWP::Simple;
 use List::UtilsBy qw(extract_by);
 use JSON::MaybeXS;
-use Log::Any qw($log);
-use Log::Any::Adapter ('Stdout');
+use Log::Any '$log', default_adapter => 'Stdout';
 
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $redis       = BOM::Platform::RedisReplicated::redis_pricer;
@@ -52,7 +51,7 @@ while (1) {
     @keys;
 
     my $not_processed = $redis->llen('pricer_jobs');
-    $log->info("got pricer_jobs not processed: $not_processed");
+    $log->info("got pricer_jobs not processed: $not_processed") if $not_processed;
 
     $log->info('pricer_jobs queue updating...');
     $redis->del('pricer_jobs');

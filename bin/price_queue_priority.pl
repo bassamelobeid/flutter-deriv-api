@@ -8,8 +8,7 @@ use Mojo::IOLoop;
 use Mojo::Redis2;
 use Path::Tiny;
 use YAML qw/LoadFile/;
-use Log::Any qw($log);
-use Log::Any::Adapter ('Stdout');
+use Log::Any '$log', default_adapter => 'Stdout';
 
 GetOptions("pid-file=s" => \my $pid_file);
 if ($pid_file) {
