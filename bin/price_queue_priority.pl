@@ -32,6 +32,7 @@ $redis->subscribe(
     ['high_priority_prices'],
     sub {
         my ($self, $err) = @_;
+        $log->info('subscribing to high_priority_prices channel');
         warn "Had error when subscribing - $err" if $err;
     });
 Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
