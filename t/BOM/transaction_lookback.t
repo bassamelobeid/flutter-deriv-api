@@ -369,7 +369,7 @@ subtest 'buy a bet', sub {
             underlying   => $underlying_R50,
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
-            unit         => 5,
+            multiplier   => 5.0,
             duration     => '30m',
             current_tick => $tick,
             barrier      => 'S20P',
@@ -379,7 +379,7 @@ subtest 'buy a bet', sub {
             client        => $cl,
             contract      => $contract,
             price         => $contract->ask_price,
-            unit          => $contract->unit,
+            multiplier    => $contract->multiplier,
             amount_type   => 'unit',
             source        => 19,
             purchase_date => Date::Utility->new(),
@@ -410,7 +410,7 @@ subtest 'buy a bet', sub {
         # note explain $trx;
 
         subtest 'transaction row', sub {
-            plan tests => 13;
+            plan tests => 12;
             cmp_ok $trx->{id}, '>', 0, 'id';
             is $trx->{account_id}, $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'buy', 'action_type';
@@ -418,7 +418,6 @@ subtest 'buy a bet', sub {
             is $trx->{balance_after} + 0, 5000 - 2.5, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
-            is $trx->{quantity},      5,                     'quantity';
             is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
             is $trx->{remark},        undef,                  'remark';
             is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
@@ -454,11 +453,10 @@ subtest 'buy a bet', sub {
         # note explain $chld;
 
         subtest 'chld row', sub {
-            plan tests => 4;
+            plan tests => 3;
             is $chld->{absolute_barrier}, undef, 'absolute_barrier';
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{prediction},       undef,  'prediction';
-            is $chld->{relative_barrier}, 'S20P', 'relative_barrier';
         };
 
         # note explain $qv1;
@@ -487,7 +485,7 @@ subtest 'sell a bet', sub {
             underlying   => $underlying_R50,
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
-            unit         => 5,
+            multiplier   => 5,
             duration     => '30m',
             current_tick => $tick,
             entry_tick   => $tick,
@@ -495,7 +493,7 @@ subtest 'sell a bet', sub {
             barrier      => 'S20P',
         });
         my $txn;
-        #note 'bid price: ' . $contract->bid_price;
+        
         my $error = do {
             my $mocked           = Test::MockModule->new('BOM::Transaction');
             my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
@@ -531,7 +529,7 @@ subtest 'sell_expired_contracts', sub {
             underlying   => $underlying_R50,
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
-            unit         => 5,
+            multiplier   => 5,
             date_start   => ($now->epoch - 50) - (30 * 60),
             date_expiry  => $now->epoch - 50,
             current_tick => $tick,
