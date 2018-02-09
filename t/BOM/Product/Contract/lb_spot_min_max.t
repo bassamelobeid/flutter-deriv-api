@@ -53,8 +53,7 @@ my $bet_params = {
     date_pricing => $now,
     duration     => '1h',
     currency     => 'USD',
-    unit         => 1,
-    barrier      => 'S20P',
+    multiplier   => 1,
 };
 
 subtest 'spot min max' => sub {
