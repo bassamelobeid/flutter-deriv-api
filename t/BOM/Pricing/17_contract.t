@@ -76,7 +76,7 @@ subtest 'prepare_ask' => sub {
     my $params = {
         "proposal"      => 1,
         "subscribe"     => 1,
-        "unit"          => "2",
+        "multiplier"    => "5",
         "contract_type" => "LBFLOATCALL",
         "currency"      => "USD",
         "symbol"        => "R_50",
@@ -88,7 +88,7 @@ subtest 'prepare_ask' => sub {
         'barrier'     => 'S0P',
         'subscribe'   => 1,
         'duration'    => '15m',
-        'unit'        => '2',
+        'multiplier'  => '5',
         'bet_type'    => 'LBFLOATCALL',
         'underlying'  => 'R_50',
         'currency'    => 'USD',
@@ -176,6 +176,7 @@ subtest 'get_bid' => sub {
             barrier_count
             audit_details
             status
+            multiplier
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
@@ -218,7 +219,7 @@ subtest $method => sub {
             'longcode'     => "Win USD 100 times Volatility 50 Index's close-low over the next 50 seconds.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
-            'barrier'      => 'S20P',
+            'barrier'      => '0.0001',
         },
         'result is ok'
     );
@@ -228,7 +229,7 @@ subtest $method => sub {
 subtest 'get_ask' => sub {
     my $params = {
         "proposal"         => 1,
-        "unit"             => "100",
+        "multiplier"             => "100",
         "contract_type"    => "LBFLOATCALL",
         "currency"         => "USD",
         "duration"         => "15",
@@ -241,7 +242,7 @@ subtest 'get_ask' => sub {
         epoch      => time,
         underlying => 'R_50',
     });
-$DB::single=1;
+
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
 
     diag explain $result->{error} if exists $result->{error};
@@ -251,7 +252,7 @@ $DB::single=1;
         'display_value'       => '208.00',
         'ask_price'           => '208.00',
         'longcode'            => "Win USD 100 times Volatility 50 Index's close-low over the next 15 minutes.",
-        'multiplier'          => '1.0',
+        'multiplier'          => '100',
         'spot'                => '963.3054',
         'payout'              => '0',
         'contract_parameters' => {
@@ -262,7 +263,7 @@ $DB::single=1;
             'underlying'            => 'R_50',
             'currency'              => 'USD',
             base_commission         => '0.015',
-            'unit'                  => '100',
+            'multiplier'            => '100',
             'app_markup_percentage' => 0,
             'proposal'              => 1,
             'date_start'            => ignore(),
@@ -279,7 +280,7 @@ subtest 'send_ask' => sub {
         client_ip => '127.0.0.1',
         args      => {
             "proposal"         => 1,
-            "unit"             => "100",
+            "multiplier"             => "100",
             "contract_type"    => "LBFLOATCALL",
             "currency"         => "USD",
             "duration"         => "15",
@@ -345,7 +346,7 @@ sub _create_contract {
         bet_type              => $args{bet_type} // 'LBFLOATCALL',
         currency              => 'USD',
         current_tick          => $args{current_tick} // $tick,
-        unit                  => 100,
+        multiplier                  => 100,
         date_start            => $args{date_start} // $date_start,
         date_expiry           => $args{date_expiry} // $date_expiry,
         barrier               => $args{barrier} // 'S20P',
