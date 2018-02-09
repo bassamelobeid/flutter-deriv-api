@@ -422,7 +422,8 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     $bet = produce_contract($bet_params);
     try {
         $bet->is_valid_to_buy;
-    } catch {
+    }
+    catch {
         isa_ok $_, 'BOM::Product::Exception';
         is $_->message_to_client->[0], 'Invalid barrier ([_1]).';
         like $_->message_to_client->[1], qr/Barrier type must be the same for double-barrier contracts./, 'correct error args';

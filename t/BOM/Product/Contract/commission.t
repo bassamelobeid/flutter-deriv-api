@@ -480,8 +480,7 @@ subtest 'flexible commission check for different markets' => sub {
 
 subtest 'non ATM volatility indices variable commission structure' => sub {
     BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
-        '{"yyy": {"market": "volidx", "commission": "0.1", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
-    );
+        '{"yyy": {"market": "volidx", "commission": "0.1", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}');
     my $args = {
         bet_type   => "CALL",
         underlying => 'R_100',
