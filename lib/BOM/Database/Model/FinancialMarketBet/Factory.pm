@@ -7,7 +7,6 @@ use BOM::Database::Model::FinancialMarketBet::LegacyBet;
 use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Model::FinancialMarketBet::TouchBet;
 use BOM::Database::Model::FinancialMarketBet::DigitBet;
-use BOM::Database::Model::FinancialMarketBet::CoinauctionBet;
 use Carp;
 
 =head1 NAME
@@ -35,7 +34,6 @@ my %class_mapper = (
     range_bet        => 'BOM::Database::Model::FinancialMarketBet::RangeBet',
     touch_bet        => 'BOM::Database::Model::FinancialMarketBet::TouchBet',
     digit_bet        => 'BOM::Database::Model::FinancialMarketBet::DigitBet',
-    coinauction_bet  => 'BOM::Database::Model::FinancialMarketBet::CoinauctionBet',
 );
 
 =head2 $class->get(%params)
