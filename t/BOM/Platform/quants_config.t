@@ -25,19 +25,19 @@ subtest 'save_config' => sub {
         contract_type   => 'CALLE,PUT,ONETOUCH',
         start_time      => time,
         end_time        => time + 3600,
-        partitions      => [{cap_rate => 0.3}],
+        ITM_1           => 1,
     };
     throws_ok { $qc->save_config('commission', +{%$args, contract_type => 'UNKNOWN,CALL'}) } qr/invalid input for contract_type \[UNKNOWN\]/,
         'throws if unknown contract type';
     throws_ok { $qc->save_config('commission', +{%$args, underlying_symbol => 'frxUSDJPY,CALL'}) } qr/invalid input for underlying_symbol \[CALL\]/,
         'throws if unknown underlying symbol';
-    throws_ok { $qc->save_config('commission', +{%$args, partitions => [{floor_rate => 'frxUSDJPY'}]}) } qr/invalid input for floor_rate/,
+    throws_ok { $qc->save_config('commission', +{%$args, ITM_1 => 'frxUSDJPY'}) } qr/invalid input for ITM_1/,
         'throws if unknown floor rate is invalid';
     ok $qc->save_config('commission', $args), 'config saved';
     my $saved = $qc->chronicle_reader->get('quants_config', 'commission')->{test};
     is_deeply $saved->{contract_type},   [split ',', $args->{contract_type}],   'contract_type matches';
     is_deeply $saved->{currency_symbol}, [split ',', $args->{currency_symbol}], 'currency_symbol matches';
-    is_deeply $saved->{partitions}, $args->{partitions}, 'partitions matches';
+    is $saved->{ITM_1}, $args->{ITM_1}, 'ITM_1 matches';
 };
 
 subtest 'delete_config' => sub {
