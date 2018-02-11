@@ -17,7 +17,7 @@ use JSON::MaybeXS;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::ContractFinder;
-use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow get_expired_barriers);
+use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow get_expired_barriers next_generation_epoch);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -49,70 +49,70 @@ subtest 'intraday trading period' => sub {
     # 3 - expected offerings count
     # 4 - expected trading periods (order matters)
     my @test_inputs = (
-        # monday at 00:00GMT
+        # monday at 00:15GMT
         [
             'frxUSDJPY',
             'callput',
-            '2016-11-14 00:00:00',
+            '2016-11-14 00:15:00',
             4,
             [
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 02:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 02:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
             ]
         ],
-        # monday at 00:59GMT
+        # monday at 01:14GMT
         [
             'frxUSDJPY',
             'callput',
-            '2016-11-14 00:59:00',
+            '2016-11-14 01:14:00',
             4,
             [
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 02:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 02:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
             ]
         ],
-        # monday at 01:59GMT
+        # monday at 02:14GMT
         [
             'frxUSDJPY',
             'callput',
-            '2016-11-14 01:59:00',
+            '2016-11-14 02:14:00',
             4,
             [
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
-            ]
-        ],
-        [
-            'frxUSDJPY',
-            'callput',
-            '2016-11-14 05:59:00',
-            4,
-            [
-                ['2016-11-14 04:00:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 04:00:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 02:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 02:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
             ]
         ],
         [
             'frxUSDJPY',
             'callput',
-            '2016-11-14 17:59:00',
+            '2016-11-14 06:14:00',
             4,
             [
-                ['2016-11-14 16:00:00', '2016-11-14 18:00:00'],
-                ['2016-11-14 12:00:00', '2016-11-14 18:00:00'],
-                ['2016-11-14 16:00:00', '2016-11-14 18:00:00'],
-                ['2016-11-14 12:00:00', '2016-11-14 18:00:00'],
+                ['2016-11-14 04:15:00', '2016-11-14 06:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
+                ['2016-11-14 04:15:00', '2016-11-14 06:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
             ]
         ],
-        ['frxUSDJPY', 'callput', '2016-11-14 18:00:00', 0, []],
+        [
+            'frxUSDJPY',
+            'callput',
+            '2016-11-14 18:14:00',
+            4,
+            [
+                ['2016-11-14 16:15:00', '2016-11-14 18:15:00'],
+                ['2016-11-14 12:15:00', '2016-11-14 18:15:00'],
+                ['2016-11-14 16:15:00', '2016-11-14 18:15:00'],
+                ['2016-11-14 12:15:00', '2016-11-14 18:15:00'],
+            ]
+        ],
+        ['frxUSDJPY', 'callput', '2016-11-14 18:15:00', 0, []],
     );
 
     foreach my $input (@test_inputs) {
@@ -152,7 +152,7 @@ subtest 'predefined barriers' => sub {
                 expiry_type       => 'intraday'
             },
             ticks => [[$date->minus_time_interval('400d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]],
-            available_barriers => ['1.14940', '1.15000', '1.15060', '1.15138', '1.15210', '1.15282', '1.15360', '1.15420', '1.15480'],
+            available_barriers => [1.15441, 1.15491, 1.15541, 1.15591, 1.15641, 1.15691, 1.15741],
             expired_barriers   => [],
         },
         {
@@ -229,7 +229,8 @@ subtest 'predefined barriers' => sub {
         my $offerings = BOM::Product::ContractFinder->new(for_date => $generation_date)->multi_barrier_contracts_for({
                 symbol => $symbol,
             })->{available};
-        my $m        = $test->{match};
+        my $m = $test->{match};
+
         my $offering = first {
             $_->{expiry_type} eq $m->{expiry_type}
                 and $_->{contract_category} eq $m->{contract_category}
@@ -237,6 +238,7 @@ subtest 'predefined barriers' => sub {
         }
         @$offerings;
         my $testname = join '_', map { $m->{$_} } qw(contract_category expiry_type duration);
+        $DB::single = 1;
         cmp_bag($offering->{available_barriers}, $test->{available_barriers}, 'available barriers for ' . $testname);
         cmp_bag($offering->{expired_barriers},   $test->{expired_barriers},   'expired barriers for ' . $testname);
     }
@@ -318,6 +320,22 @@ subtest 'get_expired_barriers' => sub {
             });
         });
     warning_like { get_expired_barriers($underlying, [99.5], $tp) } qr/highlow is undefined for frxUSDJPY/, 'warns';
+};
+
+subtest 'next_generation_epoch' => sub {
+    my @tests = (
+        [Date::Utility->new('2018-01-01 23:59:00'), Date::Utility->new('2018-01-02 00:00:00')],
+        [Date::Utility->new('2018-01-02 00:14:00'), Date::Utility->new('2018-01-02 00:15:00')],
+        [Date::Utility->new('2018-01-02 01:00:00'), Date::Utility->new('2018-01-02 02:00:00')],
+        [Date::Utility->new('2018-01-02 01:14:00'), Date::Utility->new('2018-01-02 02:00:00')],
+        [Date::Utility->new('2018-01-02 02:00:00'), Date::Utility->new('2018-01-02 02:15:00')],
+        [Date::Utility->new('2018-01-02 02:16:00'), Date::Utility->new('2018-01-02 04:15:00')]);
+
+    foreach my $test (@tests) {
+        my $next = next_generation_epoch($test->[0]);
+        is $next, $test->[1]->epoch,
+            "next generation time for " . $test->[0]->datetime . " is " . Date::Utility->new($next)->datetime . ' expected ' . $test->[1]->datetime;
+    }
 };
 
 sub setup_ticks {

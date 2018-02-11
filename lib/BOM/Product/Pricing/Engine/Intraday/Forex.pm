@@ -326,22 +326,18 @@ sub event_markup {
                 contract_type     => $self->bet->code,
                 underlying_symbol => $self->bet->underlying->symbol
             });
-        my $delta = $self->intraday_vanilla_delta->amount;
-        $delta = 1 - $delta if $self->bet->pricing_code =~ /PUT/;
-        my $c_start = $self->bet->effective_start->epoch;
-        my $c_end   = $self->bet->date_expiry->epoch;
+
+        my $barrier_tier = $self->bet->barrier_tier;
+        my $c_start      = $self->bet->effective_start->epoch;
+        my $c_end        = $self->bet->date_expiry->epoch;
 
         foreach my $c (@$event_markup) {
             my $start_epoch     = Date::Utility->new($c->{start_time})->epoch;
             my $end_epoch       = Date::Utility->new($c->{end_time})->epoch;
             my $valid_timeframe = ($c_start >= $start_epoch && $c_start <= $end_epoch)
                 || ($c_end >= $start_epoch && $c_end <= $end_epoch || ($c_start < $start_epoch && $c_end > $end_epoch));
-            foreach my $partition (@{$c->{partitions}}) {
-                my @delta_range = split '-', $partition->{partition_range};
-                my $valid_delta = ($delta >= $delta_range[0] && $delta <= $delta_range[1]);
-                if ($valid_timeframe && $valid_delta) {
-                    push @markups, calculate_event_adjustment($delta, $partition);
-                }
+            if ($valid_timeframe and exists $c->{$barrier_tier}) {
+                push @markups, $c->{$barrier_tier};
             }
         }
     }
@@ -352,25 +348,6 @@ sub event_markup {
         set_by      => __PACKAGE__,
         base_amount => max(@markups),
     });
-}
-
-sub calculate_event_adjustment {
-    my ($delta, $c) = @_;
-
-    my $cap = $c->{cap_rate};
-
-    die 'max adjustment is not defined' unless defined $cap;
-    return $cap if $c->{flat};
-
-    if (my @missing = grep { not defined $c->{$_} or $c->{$_} eq '' } qw(width floor_rate centre_offset)) {
-        die 'missing required parameters[' . (join ',', @missing) . '] to calculate commission';
-    }
-
-    my $width         = max(0.01, $c->{width});
-    my $floor         = $c->{floor_rate};
-    my $centre_offset = $c->{centre_offset};
-
-    return min($cap, $cap - ($cap - $floor) * (1 - (2 / $width * abs($delta - 0.5 - $centre_offset))**3)**3);
 }
 
 sub economic_events_spot_risk_markup {
