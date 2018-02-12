@@ -38,7 +38,7 @@ sub _subscribe_priority_queue {
         high_priority_prices => sub {
             my (undef, $channel, $pattern, $message) = @_;
             $log->info('received message, updating pricer_jobs_priority: ', {message => $message});
-            $redis_sub->send_command('lpush', 'pricer_jobs_priority', $message, sub { 1 });
+            $redis_sub->lpush('pricer_jobs_priority', $message);
             $log->info('pricer_jobs_priority updated.');
         });
 
