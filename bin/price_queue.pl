@@ -1,11 +1,8 @@
 #!/etc/rmg/bin/perl
 use strict;
 use warnings;
-# load this file to force MOJO::JSON to use JSON::MaybeXS
-use Mojo::JSON::MaybeXS;
 use BOM::Platform::RedisReplicated;
 use DataDog::DogStatsd::Helper;
-use List::MoreUtils qw(uniq);
 use Time::HiRes;
 use LWP::Simple;
 use List::UtilsBy qw(extract_by);
@@ -53,7 +50,7 @@ sub _process_priority_queue {
         $redis->get_reply;
     }
     catch {
-        warn "Had error when subscribing - $_" if $_;
+        warn "Had error when subscribing - $_";
     };
 
     return undef;
