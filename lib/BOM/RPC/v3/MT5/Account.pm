@@ -815,11 +815,13 @@ async_rpc mt5_deposit => sub {
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
 
-    return _make_deposit_error(localize('Payments are suspended.')) if ($app_config->system->suspend->payments or $app_config->system->suspend->system);
+    return _make_deposit_error(localize('Payments are suspended.'))
+        if ($app_config->system->suspend->payments or $app_config->system->suspend->system);
 
     return _make_deposit_error(localize("Deposit amount must be greater than zero.")) if ($amount <= 0);
 
-    return _make_deposit_error(localize("Only a maximum of two decimal points are allowed for the deposit amount.")) if ($amount !~ /^\d+(?:\.\d{0,2})?$/);
+    return _make_deposit_error(localize("Only a maximum of two decimal points are allowed for the deposit amount."))
+        if ($amount !~ /^\d+(?:\.\d{0,2})?$/);
 
     # MT5 login or binary loginid not belongs to user
     return permission_error_future() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
@@ -977,7 +979,8 @@ async_rpc mt5_withdrawal => sub {
             return _make_withdrawal_error(localize('Please authenticate your account.'))
                 if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated);
 
-            return _make_withdrawal_error(localize('Your account [_1] has a different currency [_2] than USD/EUR.', $to_loginid, $to_client->currency))
+            return _make_withdrawal_error(
+                localize('Your account [_1] has a different currency [_2] than USD/EUR.', $to_loginid, $to_client->currency))
                 if ($to_client->currency !~ /^USD|EUR$/);
 
             return _make_withdrawal_error(localize('Your account [_1] was disabled.', $to_loginid))
