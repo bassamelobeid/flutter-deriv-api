@@ -1013,7 +1013,6 @@ rpc set_settings => sub {
     my $user = BOM::Platform::User->new({email => $client->email});
     foreach my $cli ($user->clients) {
         next if $cli->is_virtual;
-        next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
         $cli->address_1($address1);
         $cli->address_2($address2);
@@ -1409,25 +1408,8 @@ rpc api_token => sub {
 
     my ($client, $args, $client_ip) = @{$params}{qw/client args client_ip/};
 
-    # check if sub_account loginid is present then check if its valid
-    # and assign it to client object
-    my $sub_account_loginid = $params->{args}->{sub_account};
-    my ($rtn, $sub_account_client);
-    if ($sub_account_loginid) {
-        $sub_account_client = Client::Account->new({
-            loginid      => $sub_account_loginid,
-            db_operation => 'replica'
-        });
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidSubAccount',
-                message_to_client => localize('Please provide a valid sub account loginid.')}
-        ) if (not $sub_account_client or ($sub_account_client->sub_account_of ne $client->loginid));
-
-        $client = $sub_account_client;
-        $rtn->{sub_account} = $sub_account_loginid;
-    }
-
     my $m = BOM::Database::Model::AccessToken->new;
+    my $rtn;
     if ($args->{delete_token}) {
         $m->remove_by_token($args->{delete_token}, $client->loginid);
         $rtn->{delete_token} = 1;
@@ -1561,20 +1543,22 @@ rpc set_account_currency => sub {
     # bail out if default account is already set
     return {status => 0} if $client->default_account;
 
-    # for real client and not for omnibus or sub account
     # check if we are allowed to set currency
     # i.e if we have exhausted available options
     # - client can have single fiat currency
     # - client can have multiple crypto currency
     #   but only with single type of crypto currency
     #   for example BTC => ETH is allowed but BTC => BTC is not
-    if (not $client->is_virtual and not($client->allow_omnibus or $client->sub_account_of)) {
+    if (not $client->is_virtual) {
         my $error = BOM::RPC::v3::Utility::validate_set_currency($client, $currency);
         return $error if $error;
     }
 
+    # bail out if default account is already set
+    return {status => 0} if $client->default_account;
+
     # no change in default account currency if default account is already set
-    return {status => 1} if (not $client->default_account and $client->set_default_account($currency));
+    return {status => 1} if ($client->set_default_account($currency));
 
     return {status => 0};
 };
@@ -1594,8 +1578,6 @@ rpc set_financial_assessment => sub {
 
         my $user = BOM::Platform::User->new({email => $client->email});
         foreach my $cli ($user->clients) {
-            next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
-
             $cli->financial_assessment({
                 data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),
             });
