@@ -11,12 +11,12 @@ use LWP::Simple;
 use List::UtilsBy qw(extract_by);
 use JSON::MaybeXS;
 use Log::Any '$log', default_adapter => 'Stdout';
-use Mojo::Util 'getopt';
+use Getopt::Long;
 
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $redis       = BOM::Platform::RedisReplicated::redis_pricer;
 
-getopt
+GetOptions
     'Q|queue=s'    => \my $queue;
 
 sub _sleep_to_next_second {
