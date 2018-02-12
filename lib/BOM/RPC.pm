@@ -1,14 +1,23 @@
 package BOM::RPC;
 
+use strict;
+use warnings;
+no indirect;
+
 use Mojo::Base 'Mojolicious';
 use Mojo::IOLoop;
 use MojoX::JSON::RPC::Service;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use Proc::CPUUsage;
 use Time::HiRes;
+use Try::Tiny;
+use Path::Tiny;
+use JSON::MaybeXS;
+use Scalar::Util q(blessed);
 
-use BOM::Platform::Context;
+use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
+use BOM::RPC::Registry;
 use Client::Account;
 use BOM::Database::Rose::DB;
 use BOM::RPC::v3::Utility;
@@ -17,10 +26,8 @@ use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
 use BOM::RPC::v3::Transaction;
 use BOM::RPC::v3::MarketDiscovery;
-use BOM::RPC::v3::Offerings;
 use BOM::RPC::v3::Authorize;
 use BOM::RPC::v3::Cashier;
-use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
@@ -28,6 +35,16 @@ use BOM::RPC::v3::App;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::CopyTrading::Statistics;
+use BOM::RPC::v3::CopyTrading;
+use BOM::Transaction::Validation;
+use BOM::RPC::v3::DocumentUpload;
+use BOM::RPC::v3::Pricing;
+
+# TODO(leonerd): this one RPC is unusual, coming from Utility.pm which doesn't
+# contain any other RPCs
+BOM::RPC::Registry::register(longcode => \&BOM::RPC::v3::Utility::longcode);
+
+my $json = JSON::MaybeXS->new;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -36,28 +53,30 @@ sub apply_usergroup {
         my $group = $cf->{group};
         if ($group) {
             $group = (getgrnam $group)[2] unless $group =~ /^\d+$/;
-            $(     = $group;                                          ## no critic
-            $)     = "$group $group";                                 ## no critic
+            $(     = $group;                                          ## no critic (RequireLocalizedPunctuationVars)
+            $)     = "$group $group";                                 ## no critic (RequireLocalizedPunctuationVars)
             $log->("Switched group: RGID=$( EGID=$)");
         }
 
         my $user = $cf->{user} // 'nobody';
         if ($user) {
             $user = (getpwnam $user)[2] unless $user =~ /^\d+$/;
-            $<    = $user;                                            ## no critic
-            $>    = $user;                                            ## no critic
+            $<    = $user;                                            ## no critic (RequireLocalizedPunctuationVars)
+            $>    = $user;                                            ## no critic (RequireLocalizedPunctuationVars)
             $log->("Switched user: RUID=$< EUID=$>");
         }
     }
     return;
 }
 
-sub register {
-    my ($method, $code, $require_auth) = @_;
+sub _make_rpc_service_and_register {
+    my ($method, $code) = @_;
+
     return MojoX::JSON::RPC::Service->new->register(
         $method,
         sub {
-            my ($params) = @_;
+            my @original_args = @_;
+            my $params = $original_args[0] // {};
 
             my $args = {};
             $args->{country_code} = $params->{country} if exists $params->{country};
@@ -71,23 +90,11 @@ sub register {
             $args->{language}        = $params->{language} if ($params->{language});
             $args->{brand}           = $params->{brand} if ($params->{brand});
 
-            if (exists $params->{server_name}) {
-                $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
-            }
-
             my $r = BOM::Platform::Context::Request->new($args);
             BOM::Platform::Context::request($r);
 
-            if ($require_auth) {
-                return BOM::RPC::v3::Utility::invalid_token_error()
-                    unless $token_details and exists $token_details->{loginid};
-
-                my $client = Client::Account->new({loginid => $token_details->{loginid}});
-                if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-                    return $auth_error;
-                }
-                $params->{client} = $client;
-                $params->{app_id} = $token_details->{app_id};
+            if (exists $params->{server_name}) {
+                $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
             }
 
             my $verify_app_res;
@@ -98,9 +105,23 @@ sub register {
                 return $verify_app_res if $verify_app_res->{error};
             }
 
-            my $result = $code->(@_);
+            my @args   = @original_args;
+            my $result = try {
+                $code->(@args);
+            }
+            catch {
+                # replacing possible objects in $params with strings to avoid error in encode_json function
+                my $params = {$original_args[0] ? %{$original_args[0]} : ()};
+                $params->{client} = blessed($params->{client}) . ' object: ' . $params->{client}->loginid
+                    if eval { $params->{client}->can('loginid') };
+                defined blessed($_) and $_ = blessed($_) . ' object' for (values %$params);
+                warn "Exception when handling $method - $_ with parameters " . $json->encode($params);
+                BOM::RPC::v3::Utility::create_error({
+                        code              => 'InternalServerError',
+                        message_to_client => localize("Sorry, an error occurred while processing your account.")});
+            };
 
-            if ($verify_app_res && ref $result eq 'HASH') {
+            if ($verify_app_res && ref $result eq 'HASH' && !$result->{error}) {
                 $result->{stash} = {%{$result->{stash} // {}}, %{$verify_app_res->{stash}}};
             }
             return $result;
@@ -139,108 +160,15 @@ sub startup {
         $log->info(@_);
     };
 
-    my @services = (
-        ['residence_list', \&BOM::RPC::v3::Static::residence_list],
-        ['states_list',    \&BOM::RPC::v3::Static::states_list],
-        ['website_status', \&BOM::RPC::v3::Static::website_status],
+    my %services = map {
+        my ($method, $code) = @$_;
 
-        ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
-        ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
-
-        ['buy',                                \&BOM::RPC::v3::Transaction::buy],
-        ['buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts],
-        ['sell', \&BOM::RPC::v3::Transaction::sell, 1],
-
-        ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
-        ['asset_index',           \&BOM::RPC::v3::MarketDiscovery::asset_index],
-        ['active_symbols',        \&BOM::RPC::v3::MarketDiscovery::active_symbols],
-        ['get_corporate_actions', \&BOM::RPC::v3::MarketDiscovery::get_corporate_actions],
-
-        ['contracts_for', \&BOM::RPC::v3::Offerings::contracts_for],
-
-        ['authorize', \&BOM::RPC::v3::Authorize::authorize],
-        ['logout',    \&BOM::RPC::v3::Authorize::logout],
-
-        ['get_limits',                \&BOM::RPC::v3::Cashier::get_limits,                1],
-        ['paymentagent_list',         \&BOM::RPC::v3::Cashier::paymentagent_list],
-        ['paymentagent_withdraw',     \&BOM::RPC::v3::Cashier::paymentagent_withdraw,     1],
-        ['paymentagent_transfer',     \&BOM::RPC::v3::Cashier::paymentagent_transfer,     1],
-        ['transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts, 1],
-        ['cashier',                   \&BOM::RPC::v3::Cashier::cashier,                   1],
-        ['topup_virtual',             \&BOM::RPC::v3::Cashier::topup_virtual,             1],
-
-        ['payout_currencies',       \&BOM::RPC::v3::Accounts::payout_currencies],
-        ['landing_company',         \&BOM::RPC::v3::Accounts::landing_company],
-        ['landing_company_details', \&BOM::RPC::v3::Accounts::landing_company_details],
-
-        ['statement',                \&BOM::RPC::v3::Accounts::statement,                1],
-        ['profit_table',             \&BOM::RPC::v3::Accounts::profit_table,             1],
-        ['get_account_status',       \&BOM::RPC::v3::Accounts::get_account_status,       1],
-        ['change_password',          \&BOM::RPC::v3::Accounts::change_password,          1],
-        ['cashier_password',         \&BOM::RPC::v3::Accounts::cashier_password,         1],
-        ['reset_password',           \&BOM::RPC::v3::Accounts::reset_password],
-        ['get_settings',             \&BOM::RPC::v3::Accounts::get_settings,             1],
-        ['set_settings',             \&BOM::RPC::v3::Accounts::set_settings,             1],
-        ['get_self_exclusion',       \&BOM::RPC::v3::Accounts::get_self_exclusion,       1],
-        ['set_self_exclusion',       \&BOM::RPC::v3::Accounts::set_self_exclusion,       1],
-        ['balance',                  \&BOM::RPC::v3::Accounts::balance,                  1],
-        ['api_token',                \&BOM::RPC::v3::Accounts::api_token,                1],
-        ['login_history',            \&BOM::RPC::v3::Accounts::login_history,            1],
-        ['set_account_currency',     \&BOM::RPC::v3::Accounts::set_account_currency,     1],
-        ['tnc_approval',             \&BOM::RPC::v3::Accounts::tnc_approval,             1],
-        ['set_financial_assessment', \&BOM::RPC::v3::Accounts::set_financial_assessment, 1],
-        ['get_financial_assessment', \&BOM::RPC::v3::Accounts::get_financial_assessment, 1],
-        ['reality_check',            \&BOM::RPC::v3::Accounts::reality_check,            1],
-
-        ['verify_email', \&BOM::RPC::v3::NewAccount::verify_email],
-
-        ['send_ask',          \&BOM::RPC::v3::Contract::send_ask],
-        ['send_multiple_ask', \&BOM::RPC::v3::Contract::send_multiple_ask],
-        ['get_bid',           \&BOM::RPC::v3::Contract::get_bid],
-        ['get_contract_details', \&BOM::RPC::v3::Contract::get_contract_details, 1],
-
-        ['new_account_real',        \&BOM::RPC::v3::NewAccount::new_account_real,         1],
-        ['new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest,  1],
-        ['new_account_japan',       \&BOM::RPC::v3::NewAccount::new_account_japan,        1],
-        ['new_account_virtual',     \&BOM::RPC::v3::NewAccount::new_account_virtual],
-        ['new_sub_account',         \&BOM::RPC::v3::NewAccount::new_sub_account,          1],
-        ['jp_knowledge_test',       \&BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test, 1],
-
-        ['portfolio',              \&BOM::RPC::v3::PortfolioManagement::portfolio,              1],
-        ['sell_expired',           \&BOM::RPC::v3::PortfolioManagement::sell_expired,           1],
-        ['proposal_open_contract', \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract, 1],
-
-        ['app_register', \&BOM::RPC::v3::App::register,   1],
-        ['app_list',     \&BOM::RPC::v3::App::list,       1],
-        ['app_get',      \&BOM::RPC::v3::App::get,        1],
-        ['app_update',   \&BOM::RPC::v3::App::update,     1],
-        ['app_delete',   \&BOM::RPC::v3::App::delete,     1],
-        ['oauth_apps',   \&BOM::RPC::v3::App::oauth_apps, 1],
-
-        ['connect_add',  \&BOM::RPC::v3::Accounts::connect_add,  1],
-        ['connect_del',  \&BOM::RPC::v3::Accounts::connect_del,  1],
-        ['connect_list', \&BOM::RPC::v3::Accounts::connect_list, 1],
-
-        ['mt5_login_list',      \&BOM::RPC::v3::MT5::Account::mt5_login_list,      1],
-        ['mt5_new_account',     \&BOM::RPC::v3::MT5::Account::mt5_new_account,     1],
-        ['mt5_get_settings',    \&BOM::RPC::v3::MT5::Account::mt5_get_settings,    1],
-        ['mt5_set_settings',    \&BOM::RPC::v3::MT5::Account::mt5_set_settings,    1],
-        ['mt5_password_check',  \&BOM::RPC::v3::MT5::Account::mt5_password_check,  1],
-        ['mt5_password_change', \&BOM::RPC::v3::MT5::Account::mt5_password_change, 1],
-        ['mt5_password_reset',  \&BOM::RPC::v3::MT5::Account::mt5_password_reset,  1],
-        ['mt5_deposit',         \&BOM::RPC::v3::MT5::Account::mt5_deposit,         1],
-        ['mt5_withdrawal',      \&BOM::RPC::v3::MT5::Account::mt5_withdrawal,      1],
-
-        ['copytrading_statistics', \&BOM::RPC::v3::CopyTrading::Statistics::copytrading_statistics],
-    );
-    my $services = {};
-    foreach my $srv (@services) {
-        $services->{'/' . $srv->[0]} = register(@$srv);
-    }
+        "/$method" => _make_rpc_service_and_register($method, $code);
+    } BOM::RPC::Registry::get_service_defs();
 
     $app->plugin(
         'json_rpc_dispatcher' => {
-            services          => $services,
+            services          => \%services,
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
                 my $path = $dispatcher->req->url->path;
@@ -257,16 +185,20 @@ sub startup {
     my @recent;
     my $call;
     my $cpu;
+    my $vsz_start;
+    my $on_production = $ENV{TEST_DATABASE} ? 0 : 1;
 
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
             $cpu  = Proc::CPUUsage->new();
             $call = $c->req->url->path;
-            $0    = "bom-rpc: " . $call;     ## no critic
+            $0    = "bom-rpc: " . $call if $on_production;    ## no critic (RequireLocalizedPunctuationVars)
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});
+            $vsz_start = current_vsz();
+            BOM::Test::Time::set_date_from_file() if defined $INC{'BOM/Test/Time.pm'};    # check BOM::Test::Time for details
         });
 
     $app->hook(
@@ -283,6 +215,15 @@ sub startup {
                 $end->[0] + $request_end->[1] / 1_000_000
             );
 
+            # Track whether we have any change in memory usage
+            my $vsz_increase = current_vsz() - $vsz_start;
+            # Anything more than 100 MB is probably something we should know about,
+            # residence_list and ticks can take >64MB so we can't have this limit set
+            # too low.
+            warn sprintf "Large VSZ increase for %d - %d bytes, %s\n", $$, $vsz_increase, $call if $vsz_increase > (100 * 1024 * 1024);
+            # We use timing for the extra statistics (min/max/avg) it provides
+            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.vsz.increase', $vsz_increase, {tags => ["rpc:$call"]});
+
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_success.count', {tags => ["rpc:$call"]});
             DataDog::DogStatsd::Helper::stats_timing(
                 'bom_rpc.v_3.call.timing',
@@ -297,13 +238,27 @@ sub startup {
             $usage += $_->[1] for @recent;
             $usage = sprintf('%.2f', 100 * $usage / Time::HiRes::tv_interval($request_end, $recent[0]->[0]));
 
-            $0 = "bom-rpc: (idle since $end #req=$request_counter us=$usage%)";    ## no critic
+            $0 = "bom-rpc: (idle since $end #req=$request_counter us=$usage%)" if $on_production;    ## no critic (RequireLocalizedPunctuationVars)
         });
 
     # set $0 after forking children
-    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-rpc: (new)" });    ## no critic
+    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-rpc: (new)" })   ## no critic (RequireLocalizedPunctuationVars)
+        if $on_production;
 
     return;
+}
+
+=head2 current_vsz
+
+Returns the VSZ (virtual memory usage) for the current process, in bytes.
+
+=cut
+
+sub current_vsz {
+    my $stat = path("/proc/self/stat")->slurp_utf8;
+    # Process name is awkward and can contain (). We know that we're a running process.
+    $stat =~ s/^.*\) R [0-9]+ //;
+    return +(split " ", $stat)[18];
 }
 
 1;

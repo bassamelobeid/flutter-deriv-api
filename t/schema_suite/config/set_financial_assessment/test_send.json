@@ -17,7 +17,10 @@
       "employment_industry": "Health",
       "education_level": "Tertiary",
       "income_source": "Investments & Dividends",
-      "net_income": "Over $500,001",
-      "estimated_worth": "Less than $100,000"
+      "net_income": "Over $500,000",
+      "estimated_worth": "Less than $100,000",
+      "occupation": "Managers",
+      "employment_status": "Self-Employed",
+      "source_of_wealth": "Company Ownership"
     }
 }

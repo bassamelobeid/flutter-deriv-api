@@ -38,7 +38,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }]});
 
 subtest 'buy' => sub {
-    my $contract = Test::BOM::RPC::Contract::create_contract();
+    my (undef, $txn) = Test::BOM::RPC::Contract::prepare_contract(client => $client);
 
     my $result = $c->call_ok(
         'buy_contract_for_multiple_accounts',
@@ -57,7 +57,7 @@ subtest 'buy' => sub {
                 symbol        => "R_50",
             },
             args => {
-                price  => $contract->ask_price,
+                price  => $txn->contract->ask_price,
                 tokens => ['DUMMY1', 'DUMMY2'],
             },
         })->has_no_system_error->has_no_error->result;

@@ -1,41 +1,53 @@
+sudo: required
+dist: precise
+group: deprecated-2017Q1
 language: perl
 perl:
     - "5.14.2-thr"
 matrix:
     fast_finish: true
-addons:
-    postgresql: "9.4"
 services:
     - redis-server
 cache: apt
 env:
     - TEST_SUITE=test SH=bash
-    - TEST_SUITE=suite_schema SH=bash
+    - TEST_SUITE=json_schemas
+notifications:
+    slack:
+        rooms:
+            - binary-group:6t92829RicGEft1kCkpKLPj9#test-failures
+        on_success: never
+        on_failure: always
+        on_pull_requests: false
+
 before_install:
-    - git clone https://1994c85ce4f602fb682076e9a102261644fb3d19@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - git clone ssh://git@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
+    - /tmp/travis-scripts-init/clone_branch.sh regentmarkets/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
     - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/fixHostName.sh
-    - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
 
-    - /tmp/travis-scripts/setup_cpan.sh
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-feed
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-populator
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-websocket-tests
-    - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/php-mt5-webapi
+    - /tmp/travis-scripts/parallel_clone_branch.sh
+      regentmarkets/bom-test
+      regentmarkets/bom
+      regentmarkets/bom-platform
+      regentmarkets/bom-feed
+      regentmarkets/bom-populator
+      regentmarkets/bom-postgres
+      regentmarkets/bom-websocket-tests
+      binary-com/translations-websockets-api
+      regentmarkets/bom-market
+      regentmarkets/php-mt5-webapi
+      regentmarkets/bom-transaction
+      regentmarkets/bom-pricing
 
     - /tmp/travis-scripts/redis.sh
 
 install:
+    - source /tmp/travis-scripts/devbox_path.sh
     - sudo ln -s $PWD /home/git/regentmarkets/bom-rpc
     - export RPC_CONFIG=$PWD/rpc.conf.travis
     - /tmp/travis-scripts/devbox.sh
@@ -52,7 +64,7 @@ install:
     - /tmp/travis-scripts/setup_postfix.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
 script:
-    - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
+    - /etc/rmg/bin/perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
 
 after_script:

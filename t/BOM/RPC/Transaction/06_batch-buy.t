@@ -17,7 +17,7 @@ use Test::BOM::RPC::Contract;
     use BOM::Database::Model::AccessToken;
 
     # cleanup
-    BOM::Database::Model::AccessToken->new->dbh->do('DELETE FROM auth.access_token');
+    BOM::Database::Model::AccessToken->new->dbic->dbh->do('DELETE FROM auth.access_token');
 }
 
 my $clm = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -105,9 +105,10 @@ is 0 + @token, 4, 'got 4 tokens';
 
 subtest 'normal contract', sub {
     my @balances = balances @cl;
-    my $contract = Test::BOM::RPC::Contract::create_contract();
+    my (undef, $txn) = Test::BOM::RPC::Contract::prepare_contract(client => $clm);
 
     my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
+        client              => $clm,
         token_details       => $clm_token_details,
         source              => 1,
         contract_parameters => {
@@ -121,75 +122,17 @@ subtest 'normal contract', sub {
             symbol        => "R_50",
         },
         args => {
-            price  => $contract->ask_price,
+            price  => $txn->contract->ask_price,
             tokens => \@token,
         },
     };
+    note explain $result;
     $result = $result->{result};
 
     is_deeply \@token, [map { $_->{token} } @$result], 'result is in order';
 
     my @differing  = (qw/contract_id transaction_id/);
     my @equal      = (qw/purchase_time buy_price start_time longcode shortcode payout/);
-    my @error_keys = (qw/code message_to_client/);
-
-    for my $k (@differing) {
-        isnt $result->[0]->{$k}, undef, "got 1st $k";
-        isnt $result->[1]->{$k}, undef, "got 2nd $k";
-        isnt $result->[0]->{$k}, $result->[1]->{$k}, 'and they differ';
-    }
-
-    for my $k (@equal) {
-        isnt $result->[0]->{$k}, undef, "got 1st $k";
-        isnt $result->[1]->{$k}, undef, "got 2nd $k";
-        is $result->[0]->{$k}, $result->[1]->{$k}, 'and they equal';
-    }
-
-    is $result->[2]->{code}, 'InsufficientBalance', 'token[2]: InsufficientBalance';
-    is $result->[3]->{code}, 'PermissionDenied',    'token[3]: PermissionDenied';
-
-    $balances[0] -= $result->[0]->{buy_price};
-    $balances[1] -= $result->[1]->{buy_price};
-    is_deeply [balances @cl], \@balances, 'client balances as expected';
-
-    is_deeply [sort keys %{$result->[0]}], [sort 'token', @differing, @equal], 'got only expected keys for [0]';
-    is_deeply [sort keys %{$result->[1]}], [sort 'token', @differing, @equal], 'got only expected keys for [1]';
-    is_deeply [sort keys %{$result->[2]}], [sort 'token', @error_keys], 'got only expected keys for [2]';
-    is_deeply [sort keys %{$result->[3]}], [sort 'token', @error_keys], 'got only expected keys for [3]';
-
-    # note explain $result;
-};
-
-subtest 'spread bet', sub {
-    my @balances = balances @cl;
-    my $contract = Test::BOM::RPC::Contract::create_contract(is_spread => 1);
-
-    my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
-        token_details       => $clm_token_details,
-        source              => 1,
-        contract_parameters => {
-            proposal         => 1,
-            amount           => "100",
-            basis            => "payout",
-            contract_type    => "SPREADU",
-            currency         => "USD",
-            stop_profit      => "10",
-            stop_type        => "point",
-            amount_per_point => "1",
-            stop_loss        => "10",
-            symbol           => "R_50",
-        },
-        args => {
-            price  => $contract->ask_price,
-            tokens => \@token,
-        },
-    };
-    $result = $result->{result};
-
-    is_deeply \@token, [map { $_->{token} } @$result], 'result is in order';
-
-    my @differing  = (qw/contract_id transaction_id/);
-    my @equal      = (qw/purchase_time buy_price start_time longcode shortcode payout stop_loss_level stop_profit_level amount_per_point/);
     my @error_keys = (qw/code message_to_client/);
 
     for my $k (@differing) {

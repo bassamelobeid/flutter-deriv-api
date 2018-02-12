@@ -4,14 +4,14 @@ use warnings;
 
 use feature 'state';
 use Scalar::Util qw(blessed);
-use BOM::Product::Transaction;
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Transaction;
 use BOM::MarketData qw(create_underlying);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use Postgres::FeedDB;
+use BOM::Transaction;
 
-sub create_contract {
+sub prepare_contract {
     my %args              = @_;
     my $underlying_symbol = $args{underlying} // 'R_50';
     my $is_expired        = $args{is_expired} // 0;
@@ -25,8 +25,7 @@ sub create_contract {
     my $expire = $start->plus_time_interval($interval);
     prepare_contract_db($underlying_symbol);
 
-    my $dbh = Postgres::FeedDB::read_dbh;
-    $dbh->{RaiseError} = 1;
+    my $dbic = Postgres::FeedDB::read_dbic;
 
     my @ticks;
     my @epoches = ($start->epoch, $start->epoch + 1, $expire->epoch);
@@ -35,7 +34,7 @@ sub create_contract {
     for my $epoch (@epoches) {
         my $api = Postgres::FeedDB::Spot::DatabaseAPI->new(
             underlying => $underlying_symbol,
-            db_handle  => $dbh
+            dbic       => $dbic,
         );
         my $tick = $api->tick_at({end_time => $epoch});
 
@@ -67,15 +66,19 @@ sub create_contract {
         barrier               => 'S0P',
         app_markup_percentage => $args{app_markup_percentage} // 0
     };
-    if ($args{is_spread}) {
-        delete $contract_data->{date_expiry};
-        $contract_data->{bet_type}         = 'SPREADU';
-        $contract_data->{amount_per_point} = 1;
-        $contract_data->{stop_type}        = 'point';
-        $contract_data->{stop_profit}      = 10;
-        $contract_data->{stop_loss}        = 10;
+
+    my $txn;
+    if ($args{client}) {
+        $txn = BOM::Transaction->new({
+            client              => $args{client},
+            contract_parameters => $contract_data,
+            purchase_date       => $start_time,
+            amount_type         => 'payout',
+        });
+        return ($contract_data, $txn);
     }
-    return produce_contract($contract_data);
+
+    return $contract_data;
 }
 
 sub prepare_contract_db {

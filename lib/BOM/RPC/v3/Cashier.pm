@@ -11,154 +11,52 @@ use Path::Tiny;
 use DateTime;
 use Date::Utility;
 use Try::Tiny;
-use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
-use Format::Util::Numbers qw(roundnear);
 use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use YAML::XS qw(LoadFile);
+use Scope::Guard qw/guard/;
+use DataDog::DogStatsd::Helper qw(stats_inc);
+use Format::Util::Numbers qw/formatnumber financialrounding/;
 
 use Brands;
 use Client::Account;
 use LandingCompany::Registry;
 use Client::Account::PaymentAgent;
+use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
-use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency in_USD);
+use BOM::RPC::Registry '-dsl';
 
+use BOM::MarketData qw(create_underlying);
 use BOM::Platform::User;
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
-use BOM::System::Config;
-use BOM::System::AuditLog;
-use BOM::Product::RiskProfile;
+use BOM::Platform::Config;
+use BOM::Platform::AuditLog;
+use BOM::Platform::RiskProfile;
+use BOM::Platform::Client::CashierValidation;
+use BOM::Platform::PaymentNotificationQueue;
 use BOM::RPC::v3::Utility;
-
+use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
+use Quant::Framework;
+
+requires_auth();
 
 my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 
-sub cashier {
+rpc "cashier", sub {
     my $params = shift;
 
-    my $client         = $params->{client};
-    my $client_loginid = $client->loginid;
-
-    if ($client->is_virtual) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'CashierForwardError',
-            message_to_client => localize('This is a virtual-money account. Please switch to a real-money account to deposit funds.'),
-        });
-    }
-
-    my $args     = $params->{args};
-    my $action   = $args->{cashier} // 'deposit';
-    my $provider = $args->{provider} // 'doughflow';
-
-    my $currency;
-    if (my $account = $client->default_account) {
-        $currency = $account->currency_code;
-    }
-
-    # still no currency?  Try the first financial sibling with same landing co.
-    unless ($currency) {
-        my $user = BOM::Platform::User->new({email => $client->email});
-        unless ($user) {
-            warn __PACKAGE__ . "::cashier Error:  Unable to get user data for " . $client->loginid . "\n";
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'CashierForwardError',
-                message_to_client => localize('Internal server error'),
-            });
-        }
-        for (grep { $_->landing_company->short eq $client->landing_company->short } $user->clients) {
-            if (my $default_account = $_->default_account) {
-                $currency = $default_account->currency_code;
-                last;
-            }
-        }
-    }
-
-    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
-    my $client_tnc_status   = $client->get_status('tnc_approval');
-    if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version)) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_TNC_APPROVAL',
-            message_to_client => localize('Terms and conditions approval is required.'),
-        });
-    }
-
-    my $landing_company = $client->landing_company;
-    if ($landing_company->short eq 'maltainvest') {
-        # $c->authenticate()
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ASK_AUTHENTICATE',
-                message_to_client => localize('Client is not fully authenticated.'),
-            }) unless $client->client_fully_authenticated;
-
-        if (not $client->get_status('financial_risk_approval')) {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'ASK_FINANCIAL_RISK_APPROVAL',
-                message_to_client => localize('Financial Risk approval is required.'),
-            });
-        }
-    }
-
-    if ($client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_UK_FUNDS_PROTECTION',
-            message_to_client => localize('Please accept Funds Protection.'),
-        });
-    }
-
-    if ($client->residence eq 'jp' and ($client->get_status('jp_knowledge_test_pending') or $client->get_status('jp_knowledge_test_fail'))) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_JP_KNOWLEDGE_TEST',
-            message_to_client => localize('You must complete the knowledge test to activate this account.'),
-        });
-    }
-
-    if ($client->residence eq 'jp' and $client->get_status('jp_activation_pending')) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'JP_NOT_ACTIVATION',
-            message_to_client => localize('Account not activated.'),
-        });
-    }
-
-    if (   $client->landing_company->country ne 'Costa Rica'
-        && $client->landing_company->country ne 'Isle of Man'
-        && !$client->get_status('age_verification')
-        && !$client->has_valid_documents)
-    {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_AGE_VERIFICATION',
-            message_to_client => localize('Account needs age verification'),
-        });
-    }
-
-    my $error = '';
-    if ($action eq 'deposit' and $client->get_status('unwelcome')) {
-        $error = localize('Your account is restricted to withdrawals only.');
-    } elsif ($client->documents_expired) {
-        $error = localize(
-            'Your identity documents have passed their expiration date. Kindly send a scan of a valid ID to <a href="mailto:[_1]">[_1]</a> to unlock your cashier.',
-            Brands->new(name => request()->brand)->emails('support'));
-    } elsif ($client->get_status('cashier_locked')) {
-        $error = localize('Your cashier is locked');
-    } elsif ($client->get_status('disabled')) {
-        $error = localize('Your account is disabled');
-    } elsif ($client->cashier_setting_password) {
-        $error = localize('Your cashier is locked as per your request.');
-    } elsif ($action eq 'withdraw' and $client->get_status('withdrawal_locked')) {
-        $error = localize('Your account is locked for withdrawals. Please contact customer service.');
-    } elsif ($currency and not $landing_company->is_currency_legal($currency)) {
-        $error = localize('[_1] transactions may not be performed with this account.', $currency);
-    }
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($params->{client});
+    return $validation_error if $validation_error;
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -169,34 +67,20 @@ sub cashier {
         });
     };
 
-    if ($error) {
-        return $error_sub->($error);
-    }
+    my ($client, $args) = @{$params}{qw/client args/};
+    my $action   = $args->{cashier}  // 'deposit';
+    my $provider = $args->{provider} // 'doughflow';
 
-    my $df_client;
-    if ($provider eq 'doughflow') {
-        $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
-        # We ask the client which currency they wish to deposit/withdraw in
-        # if they've never deposited before
-        $currency = $currency || $df_client->doughflow_currency;
-    }
-
-    if (not $currency) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_CURRENCY',
-            message_to_client => 'Please set the currency.',
-        });
-    }
-
-    my $email = $client->email;
+    # this should come before all validation as verification
+    # token is mandatory for withdrawal.
     if ($action eq 'withdraw') {
-        my $is_not_verified = 1;
         my $token = $args->{verification_code} // '';
 
+        my $email = $client->email;
         if (not $email or $email =~ /\s+/) {
-            $error_sub->(localize("Client email not set."));
+            return $error_sub->(localize("Please provide a valid email address."));
         } elsif ($token) {
-            if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($token, $client->email, 'payment_withdraw')->{error}) {
+            if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($token, $email, 'payment_withdraw')->{error}) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => $err->{code},
                         message_to_client => $err->{message_to_client}});
@@ -209,11 +93,24 @@ sub cashier {
         }
     }
 
+    my $client_loginid = $client->loginid;
+    my $validation = BOM::Platform::Client::CashierValidation::validate($client_loginid, $action);
+    return BOM::RPC::v3::Utility::create_error({
+            code              => $validation->{error}->{code},
+            message_to_client => $validation->{error}->{message_to_client}}) if exists $validation->{error};
+
+    my ($brand, $currency) = (Brands->new(name => request()->brand), $client->default_account->currency_code);
     ## if cashier provider == 'epg', we'll return epg url
     if ($provider eq 'epg') {
-        return _get_epg_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language});
+        return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
+    ## if currency is a cryptocurrency, use cryptocurrency cashier
+    if (LandingCompany::Registry::get('costarica')->legal_allowed_currencies->{$currency} eq 'crypto') {
+        return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
+    }
+
+    my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
     # hit DF's CreateCustomer API
     my $ua = LWP::UserAgent->new(timeout => 20);
     $ua->ssl_opts(
@@ -221,8 +118,8 @@ sub cashier {
         SSL_verify_mode => SSL_VERIFY_NONE
     );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
 
-    my $doughflow_loc     = BOM::System::Config::third_party->{doughflow}->{location};
-    my $doughflow_pass    = BOM::System::Config::third_party->{doughflow}->{passcode};
+    my $doughflow_loc     = BOM::Platform::Config::third_party->{doughflow}->{$brand->name};
+    my $doughflow_pass    = BOM::Platform::Config::third_party->{doughflow}->{passcode};
     my $url               = $doughflow_loc . '/CreateCustomer.asp';
     my $sportsbook        = get_sportsbook($df_client->broker, $currency);
     my $handoff_token_key = _get_handoff_token_key($df_client->loginid);
@@ -244,11 +141,12 @@ sub cashier {
             $client->add_note('DOUGHFLOW_ADDRESS_MISMATCH',
                       "The Doughflow server rejected the client's name.\n"
                     . "If everything is correct with the client's name, notify the development team.\n"
+                    . "Loginid: $client_loginid\n"
                     . "Doughflow response: [$errortext]");
 
             return $error_sub->(
                 localize(
-                    'Sorry, there was a problem validating your personal information with our payment processor. Please contact our Customer Service.'
+                    'Sorry, there was a problem validating your personal information with our payment processor. Please check your details and try again.'
                 ),
                 'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']'
             );
@@ -275,20 +173,22 @@ sub cashier {
                     . "There is currently a hardcoded limit on their system which rejects anyone over 100 years old.\n"
                     . "If the client's details have been confirmed as valid, we will need to raise this issue with\n"
                     . "the Doughflow support team.\n"
+                    . "Loginid: $client_loginid\n"
                     . "Doughflow response: [$errortext]");
 
             return $error_sub->(
                 localize(
-                    'Sorry, there was a problem validating your personal information with our payment processor. Please contact our Customer Service team.'
+                    'Sorry, there was a problem validating your personal information with our payment processor. Please verify that your date of birth was input correctly in your account settings.'
                 ),
                 'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']'
             );
         }
 
         warn "Unknown Doughflow error: $errortext\n";
+        DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.doughflow_failure.count', {tags => ["action:$action"]});
 
         return $error_sub->(
-            localize('Sorry, an error has occurred, Please try accessing our Cashier again.'),
+            localize('Sorry, an error occurred. Please try accessing our cashier again.'),
             'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']'
         );
     }
@@ -318,9 +218,9 @@ sub cashier {
         . $secret
         . '&Action='
         . $action;
-    BOM::System::AuditLog::log('redirecting to doughflow', $df_client->loginid);
+    BOM::Platform::AuditLog::log('redirecting to doughflow', $df_client->loginid);
     return $url;
-}
+};
 
 sub _get_handoff_token_key {
     my $loginid = shift;
@@ -348,107 +248,138 @@ sub _get_handoff_token_key {
     return $handoff_token->key;
 }
 
-sub _get_epg_url {
-    my ($loginid, $website_name, $currency, $action, $language) = @_;
+sub _get_epg_cashier_url {
+    return _get_cashier_url('epg', @_);
+}
 
-    BOM::System::AuditLog::log('redirecting to epg');
+sub _get_cryptocurrency_cashier_url {
+    return _get_cashier_url('cryptocurrency', @_);
+}
+
+sub _get_cashier_url {
+    my ($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name) = @_;
+
+    $prefix = lc($currency) if $prefix eq 'cryptocurrency';
+
+    BOM::Platform::AuditLog::log("redirecting to $prefix");
 
     $language = uc($language // 'EN');
 
     my $url = 'https://';
     if (($website_name // '') =~ /qa/) {
-        $url .= 'www.' . lc($website_name) . '/epg';
+        if ($prefix eq 'epg') {
+            $url .= 'www.' . lc($website_name) . "/$prefix";
+        } else {
+            $url .= 'www.' . lc($website_name) . "/cryptocurrency/$prefix";
+        }
     } else {
-        $url .= 'epg.binary.com/epg';
+        if ($prefix eq 'epg') {
+            $url .= "$prefix.binary.com/$prefix";
+        } else {
+            $url .= "cryptocurrency.binary.com/cryptocurrency/$prefix";
+        }
     }
 
-    $url .= "/handshake?token=" . _get_handoff_token_key($loginid) . "&loginid=$loginid&currency=$currency&action=$action&l=$language";
+    $url .=
+        "/handshake?token=" . _get_handoff_token_key($loginid) . "&loginid=$loginid&currency=$currency&action=$action&l=$language&brand=$brand_name";
 
     return $url;
 }
 
-sub get_limits {
+rpc get_limits => sub {
     my $params = shift;
 
-    my $client         = $params->{client};
-    my $client_loginid = $client->loginid;
-
-    if ($client->get_status('cashier_locked') or $client->documents_expired or $client->is_virtual) {
+    my $client = $params->{client};
+    if ($client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'FeatureNotAvailable',
                 message_to_client => localize('Sorry, this feature is not available.')});
     }
 
-    my $landing_company = LandingCompany::Registry::get_by_broker($client->broker)->short;
-    my $wl_config       = $payment_limits->{withdrawal_limits}->{$landing_company};
+    my $landing_company = LandingCompany::Registry->get_by_broker($client->broker)->short;
+    my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency);
+
+    my $op_limits = BOM::Platform::Config::quants->{bet_limits}{open_positions_payout_per_symbol_limit};
+    my $open_positions_payout_per_symbol_limit;
+
+    # For malta landing company, we only allowed volatility indices. But this limit only applied to financial instruments,
+    # so skipping it here.
+    if ($landing_company ne 'malta') {
+        $open_positions_payout_per_symbol_limit = {
+            non_atm => {
+                less_than_seven_days => formatnumber('price', $currency, $op_limits->{non_atm}{less_than_seven_days}{$currency}),
+                more_than_seven_days => formatnumber('price', $currency, $op_limits->{non_atm}{more_than_seven_days}{$currency}),
+            },
+            ($landing_company =~ /japan/) ? () : (atm => formatnumber('price', $currency, $op_limits->{atm}{$currency})),
+        };
+    }
 
     my $limit = +{
-        account_balance => $client->get_limit_for_account_balance,
-        payout          => $client->get_limit_for_payout,
-        payout_per_symbol_and_contract_type =>
-            BOM::System::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$client->currency},
-        open_positions => $client->get_limit_for_open_positions,
+        account_balance => formatnumber('amount', $currency, $client->get_limit_for_account_balance),
+        payout          => formatnumber('price',  $currency, $client->get_limit_for_payout),
+        $open_positions_payout_per_symbol_limit ? (payout_per_symbol => $open_positions_payout_per_symbol_limit) : (),
+        open_positions                      => $client->get_limit_for_open_positions,
+        payout_per_symbol_and_contract_type => formatnumber(
+            'price', $currency, BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency}
+        ),
     };
 
-    $limit->{market_specific} = BOM::Product::RiskProfile::get_current_profile_definitions($client);
+    $limit->{market_specific} = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
 
-    my $numdays       = $wl_config->{for_days};
-    my $numdayslimit  = $wl_config->{limit_for_days};
-    my $lifetimelimit = $wl_config->{lifetime_limit};
+    my $numdays               = $wl_config->{for_days};
+    my $numdayslimit          = $wl_config->{limit_for_days};
+    my $lifetimelimit         = $wl_config->{lifetime_limit};
+    my $withdrawal_limit_curr = $wl_config->{currency};
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;
         $lifetimelimit = 99999999;
     }
 
-    my $withdrawal_limit_curr;
-    if (first { $client->landing_company->short eq $_ } ('costarica', 'japan')) {
-        $withdrawal_limit_curr = $client->currency;
-    } else {
-        # limit in EUR for: MX, MLT, MF
-        $withdrawal_limit_curr = 'EUR';
+    $limit->{num_of_days} = $numdays;
+
+    $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
+    $limit->{lifetime_limit}    = formatnumber('price', $currency, amount_from_to_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
+
+    # Withdrawal since $numdays
+    my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
+    my $withdrawal_for_x_days = $payment_mapper->get_total_withdrawal({
+        start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
+        exclude    => ['currency_conversion_transfer'],
+    });
+    $withdrawal_for_x_days = amount_from_to_currency($withdrawal_for_x_days, $currency, $withdrawal_limit_curr);
+
+    # withdrawal since inception
+    my $withdrawal_since_inception = amount_from_to_currency($payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']}),
+        $currency, $withdrawal_limit_curr);
+
+    my $remainder = min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception));
+    if ($remainder < 0) {
+        $remainder = 0;
     }
 
-    $limit->{num_of_days}       = $numdays;
-    $limit->{num_of_days_limit} = $numdayslimit;
-    $limit->{lifetime_limit}    = $lifetimelimit;
-
-    if (not $client->client_fully_authenticated) {
-        # withdrawal since $numdays
-        my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
-        my $withdrawal_for_x_days = $payment_mapper->get_total_withdrawal({
-            start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
-            exclude    => ['currency_conversion_transfer'],
-        });
-        $withdrawal_for_x_days = roundnear(0.01, amount_from_to_currency($withdrawal_for_x_days, $client->currency, $withdrawal_limit_curr));
-
-        # withdrawal since inception
-        my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']});
-        $withdrawal_since_inception =
-            roundnear(0.01, amount_from_to_currency($withdrawal_since_inception, $client->currency, $withdrawal_limit_curr));
-
-        $limit->{withdrawal_since_inception_monetary} = $withdrawal_since_inception;
-        $limit->{withdrawal_for_x_days_monetary}      = $withdrawal_for_x_days;
-
-        my $remainder = roundnear(0.01, min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception)));
-        if ($remainder < 0) {
-            $remainder = 0;
-        }
-
-        $limit->{remainder} = $remainder;
-    }
+    $limit->{withdrawal_since_inception_monetary} =
+        formatnumber('price', $currency, amount_from_to_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency));
+    $limit->{withdrawal_for_x_days_monetary} =
+        formatnumber('price', $currency, amount_from_to_currency($withdrawal_for_x_days, $withdrawal_limit_curr, $currency));
+    $limit->{remainder} = formatnumber('price', $currency, amount_from_to_currency($remainder, $withdrawal_limit_curr, $currency));
 
     return $limit;
-}
+};
 
-sub paymentagent_list {
+rpc "paymentagent_list",
+    auth => 0,    # unauthenticated
+    sub {
     my $params = shift;
-    my ($language, $args) = @{$params}{qw/language args/};
 
-    my $token_details = $params->{token_details};
+    my ($language, $args, $token_details) = @{$params}{qw/language args token_details/};
+
     my $client;
     if ($token_details and exists $token_details->{loginid}) {
-        $client = Client::Account->new({loginid => $token_details->{loginid}});
+        $client = Client::Account->new({
+            loginid      => $token_details->{loginid},
+            db_operation => 'replica'
+        });
     }
 
     my $broker_code = $client ? $client->broker_code : 'CR';
@@ -458,15 +389,19 @@ sub paymentagent_list {
 
     # add country name plus code
     foreach (@{$countries}) {
-        $_->[1] = Brands->new(name => request()->brand)->landing_company_countries->countries->localized_code2country($_->[0], $language);
+        $_->[1] = Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($_->[0], $language);
     }
 
-    my $authenticated_paymentagent_agents =
-        $payment_agent_mapper->get_authenticated_payment_agents({target_country => $args->{paymentagent_list}});
+    my $query_args = {target_country => $args->{paymentagent_list}};
+    $query_args->{currency_code} = $args->{currency} if $args->{currency};
+
+    my $authenticated_paymentagent_agents = $payment_agent_mapper->get_authenticated_payment_agents($query_args);
 
     my $payment_agent_table_row = [];
     foreach my $loginid (keys %{$authenticated_paymentagent_agents}) {
         my $payment_agent = $authenticated_paymentagent_agents->{$loginid};
+        my $min_max =
+            BOM::Platform::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($payment_agent->{currency_code})};
 
         push @{$payment_agent_table_row},
             {
@@ -481,6 +416,8 @@ sub paymentagent_list {
             'withdrawal_commission' => $payment_agent->{commission_withdrawal},
             'further_information'   => $payment_agent->{information},
             'supported_banks'       => $payment_agent->{supported_banks},
+            'max_withdrawal'        => $payment_agent->{max_withdrawal} || $min_max->{maximum},
+            'min_withdrawal'        => $payment_agent->{min_withdrawal} || $min_max->{minimum},
             };
     }
 
@@ -490,16 +427,18 @@ sub paymentagent_list {
         available_countries => $countries,
         list                => $payment_agent_table_row
     };
-}
+    };
 
-sub paymentagent_transfer {
+rpc paymentagent_transfer => sub {
     my $params = shift;
 
-    my $source     = $params->{source};
-    my $client_fm  = $params->{client};
+    my $source    = $params->{source};
+    my $client_fm = $params->{client};
+
+    return BOM::RPC::v3::Utility::permission_error() if $client_fm->is_virtual;
+
     my $loginid_fm = $client_fm->loginid;
 
-    my $payment_agent = $client_fm->payment_agent;
     my ($website_name, $args) = @{$params}{qw/website_name args/};
     my $currency   = $args->{currency};
     my $amount     = $args->{amount};
@@ -513,80 +452,85 @@ sub paymentagent_transfer {
             ($message) ? (message => $message) : (),
         });
     };
-    my $reject_error_sub = sub {
-        my $msg = shift;
-        return $error_sub->(
-            __output_payments_error_message({
-                    client       => $client_fm,
-                    action       => "transfer - from $loginid_fm to $loginid_to",
-                    error_msg    => $msg,
-                    payment_type => 'Payment Agent transfer',
-                    currency     => $currency,
-                    amount       => $amount,
-                }));
-    };
+
+    my $amount_validation_error = _validate_amount($amount, $currency);
+    return $error_sub->($amount_validation_error) if $amount_validation_error;
 
     my $error_msg;
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $payment_agent = $client_fm->payment_agent;
+    my $app_config    = BOM::Platform::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
         or $app_config->system->suspend->payment_agents
         or $app_config->system->suspend->system)
     {
-        $error_msg = localize('Sorry, Payment Agent Transfer is temporarily disabled due to system maintenance. Please try again in 30 minutes.');
+        $error_msg = localize('Sorry, this facility is temporarily disabled due to system maintenance.');
     } elsif (not $client_fm->landing_company->allows_payment_agents) {
-        $error_msg = localize('Payment Agents are not available on this site.');
+        $error_msg = localize('The payment agent facility is not available for this account.');
     } elsif (not $payment_agent) {
-        $error_msg = localize('You are not a Payment Agent');
+        $error_msg = localize('You are not authorized for transfers via payment agents.');
     } elsif (not $payment_agent->is_authenticated) {
-        $error_msg = localize('Payment Agent activity not currently authorized');
+        $error_msg = localize('Your account needs to be authenticated to perform payment agent transfers.');
     } elsif ($client_fm->cashier_setting_password) {
-        $error_msg = localize('Your cashier is locked as per your request');
+        $error_msg = localize('Your cashier is locked as per your request.');
     }
 
-    if ($error_msg) {
-        return $error_sub->($error_msg);
+    return $error_sub->($error_msg) if $error_msg;
+
+    return $error_sub->(
+        localize('You cannot perform this action, as [_1] is not the default account currency for payment agent [_2].', $currency, $loginid_fm))
+        if ($client_fm->currency ne $currency or not $client_fm->default_account);
+
+    my $client_to = try { Client::Account->new({loginid => $loginid_to, db_operation => 'replica'}) }
+        or return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
+
+    return $error_sub->(
+        localize("You cannot perform this action, as [_1] is not the default account currency for client [_2].", $currency, $loginid_to))
+        if ($client_to->currency ne $currency or not $client_to->default_account);
+
+    my $max_withdrawal = $payment_agent->max_withdrawal;
+    my $min_withdrawal = $payment_agent->min_withdrawal;
+    my $min_max        = BOM::Platform::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
+
+    if ($max_withdrawal) {
+        return $error_sub->(localize("Invalid amount. Maximum withdrawal allowed is [_1].", $max_withdrawal)) if $amount > $max_withdrawal;
+    } elsif ($amount > $min_max->{maximum}) {
+        return $error_sub->(localize("Invalid amount. Maximum is [_1].", $min_max->{maximum}));
     }
 
-    ## validate amount
-    if ($amount < 10 || $amount > 2000) {
-        return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
+    if ($min_withdrawal) {
+        return $error_sub->(localize("Invalid amount. Minimum withdrawal allowed is [_1].", $min_withdrawal)) if $amount < $min_withdrawal;
+    } elsif ($amount < $min_max->{minimum}) {
+        return $error_sub->(localize('Invalid amount. Minimum is [_1].', $min_max->{minimum}));
     }
 
-    my $client_to = try { Client::Account->new({loginid => $loginid_to}) };
-    unless ($client_to) {
-        return $reject_error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
-    }
+    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client_fm->get_status('disabled');
 
-    unless ($client_fm->landing_company->short eq $client_to->landing_company->short) {
-        return $reject_error_sub->(localize('Cross-company payment agent transfers are not allowed.'));
-    }
+    return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.'))
+        if $client_fm->get_status('cashier_locked');
 
-    if ($loginid_to eq $loginid_fm) {
-        return $reject_error_sub->(localize('Sorry, it is not allowed.'));
-    }
+    return $error_sub->(localize('This is an ICO-only account which does not support payment agent transfers.'))
+        if $client_fm->get_status('ico_only');
 
-    if ($currency ne 'USD') {
-        return $reject_error_sub->(localize('Sorry, only USD is allowed.'));
-    }
+    return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client_fm->documents_expired;
 
-    unless ($client_fm->currency eq $currency) {
-        return $reject_error_sub->(localize("Sorry, [_1] is not default currency for payment agent [_2]", $currency, $client_fm->loginid));
-    }
-    unless ($client_to->currency eq $currency) {
-        return $reject_error_sub->(localize("Sorry, [_1] is not default currency for client [_2]", $currency, $client_to->loginid));
-    }
+    return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
+        unless ($client_fm->landing_company->short eq $client_to->landing_company->short);
 
-    if ($client_to->get_status('disabled')) {
-        return $reject_error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to));
-    }
+    return $error_sub->(localize('Payment agent transfers are not allowed within the same account.')) if $loginid_to eq $loginid_fm;
 
-    if ($client_to->get_status('cashier_locked') || $client_to->documents_expired) {
-        return $reject_error_sub->(localize('There was an error processing the request.') . ' ' . localize('This client cashier section is locked.'));
-    }
+    return $error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to))
+        if $client_to->get_status('disabled');
 
-    if ($client_fm->get_status('cashier_locked') || $client_fm->documents_expired) {
-        return $reject_error_sub->(localize('There was an error processing the request.') . ' ' . localize('Your cashier section is locked.'));
-    }
+    return $error_sub->(localize('You cannot transfer to account [_1], as their account is marked as unwelcome.', $loginid_to))
+        if $client_to->get_status('unwelcome');
+
+    return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to))
+        if ($client_to->get_status('cashier_locked') or $client_to->cashier_setting_password);
+    return $error_sub->(localize('This is an ICO-only account which does not support transfers.'))
+        if $client_to->get_status('ico_only');
+
+    return $error_sub->(localize('You cannot transfer to account [_1], as their verification documents have expired.', $loginid_to))
+        if $client_to->documents_expired;
 
     if ($args->{dry_run}) {
         return {
@@ -600,21 +544,25 @@ sub paymentagent_transfer {
     my $fm_client_db = BOM::Database::ClientDB->new({
         client_loginid => $loginid_fm,
     });
-    if (not $fm_client_db->freeze) {
-        return $error_sub->(
-            localize('An error occurred while processing request. If this error persists, please contact customer support'),
-            "Account stuck in previous transaction $loginid_fm"
-        );
-    }
-
     my $to_client_db = BOM::Database::ClientDB->new({
         client_loginid => $loginid_to,
     });
 
-    if (not $to_client_db->freeze) {
+    my $guard_scope = guard {
         $fm_client_db->unfreeze;
+        $to_client_db->unfreeze;
+    };
+
+    if (not $fm_client_db->freeze) {
         return $error_sub->(
-            localize('An error occurred while processing request. If this error persists, please contact customer support'),
+            localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'),
+            "Account stuck in previous transaction $loginid_fm"
+        );
+    }
+
+    if (not $to_client_db->freeze) {
+        return $error_sub->(
+            localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'),
             "Account stuck in previous transaction $loginid_to"
         );
     }
@@ -623,7 +571,7 @@ sub paymentagent_transfer {
     try {
         $client_fm->validate_payment(
             currency => $currency,
-            amount   => -$amount,    #withdraw action use negtive amount
+            amount   => -$amount,    # withdraw action use negative amount
         );
     }
     catch {
@@ -644,24 +592,20 @@ sub paymentagent_transfer {
 
     # maximum amount USD 100000 per day
     if (($amount_transferred + $amount) >= 100000) {
-        $fm_client_db->unfreeze;
-        $to_client_db->unfreeze;
-
-        return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transfer amount for today.'));
+        return $error_sub->(
+            localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount for today.'));
     }
 
     # do not allow more than 1000 transactions per day
     if ($count > 1000) {
-        $fm_client_db->unfreeze;
-        $to_client_db->unfreeze;
-
-        return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
+        return $error_sub->(localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transactions for today.'));
     }
 
     if ($client_to->default_account and $amount + $client_to->default_account->balance > $client_to->get_limit_for_account_balance) {
-        $fm_client_db->unfreeze;
-        $to_client_db->unfreeze;
-        return $reject_error_sub->(localize('Sorry, client balance will exceed limits with this payment.'));
+        return $error_sub->(
+            localize(
+                'Payment agent transfer is not allowed with the specified amount, as account [_1] balance would exceed allowed limits.', $loginid_to
+            ));
     }
 
     # execute the transfer
@@ -674,52 +618,63 @@ sub paymentagent_transfer {
     my ($error, $response);
     try {
         $response = $client_fm->payment_account_transfer(
-            toClient => $client_to,
-            currency => $currency,
-            amount   => $amount,
-            fmStaff  => $loginid_fm,
-            toStaff  => $loginid_to,
-            remark   => $comment,
-            source   => $source,
+            toClient     => $client_to,
+            currency     => $currency,
+            amount       => $amount,
+            fmStaff      => $loginid_fm,
+            toStaff      => $loginid_to,
+            remark       => $comment,
+            source       => $source,
+            fees         => 0,
+            gateway_code => 'payment_agent_transfer',
         );
     }
     catch {
+        chomp;
         $error = "Paymentagent Transfer failed to $loginid_to [$_]";
     };
-
-    $fm_client_db->unfreeze;
-    $to_client_db->unfreeze;
 
     if ($error) {
         # too many attempts
         if ($error =~ /BI102/) {
             return $error_sub->(localize('Request too frequent. Please try again later.'), $error);
         } else {
-            return $error_sub->(localize('An error occurred while processing request. If this error persists, please contact customer support'),
-                $error);
+            warn "Error in paymentagent_transfer for transfer - $error\n";
+            return $error_sub->(localize('Sorry, an error occurred whilst processing your request.'), $error);
         }
     }
 
-    stats_count('business.usd_deposit.paymentagent', int(in_USD($amount, $currency) * 100));
-    stats_inc('business.paymentagent');
+    BOM::Platform::PaymentNotificationQueue->add(
+        source        => 'payment_agent',
+        currency      => $currency,
+        loginid       => $loginid_to,
+        type          => 'deposit',
+        amount        => $amount,
+        payment_agent => 0,
+    );
 
     # sent email notification to client
-    my $emailcontent = localize('Dear [_1] [_2] [_3],', $client_to->salutation, $client_to->first_name, $client_to->last_name,) . "\n\n" . localize(
+    my $emailcontent = localize(
+        'Dear [_1] [_2] [_3],',                  encode_entities($client_to->salutation),
+        encode_entities($client_to->first_name), encode_entities($client_to->last_name))
+        . "\n\n"
+        . localize(
         'We would like to inform you that the transfer of [_1] [_2] via [_3] has been processed.
 The funds have been credited into your account.
 
 Kind Regards,
 
-The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $website_name
-    );
+The [_4] team.', $currency, $amount, encode_entities($payment_agent->payment_agent_name), $website_name
+        );
 
     send_email({
-        'from'               => Brands->new(name => request()->brand)->emails('support'),
-        'to'                 => $client_to->email,
-        'subject'            => localize('Acknowledgement of Money Transfer'),
-        'message'            => [$emailcontent],
-        'use_email_template' => 1,
-        'template_loginid'   => $loginid_to
+        'from'                  => Brands->new(name => request()->brand)->emails('support'),
+        'to'                    => $client_to->email,
+        'subject'               => localize('Acknowledgement of Money Transfer'),
+        'message'               => [$emailcontent],
+        'use_email_template'    => 1,
+        'email_content_is_html' => 1,
+        'template_loginid'      => $loginid_to
     });
 
     return {
@@ -727,22 +682,23 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
         client_to_full_name => $client_to->full_name,
         client_to_loginid   => $loginid_to,
         transaction_id      => $response->{transaction_id}};
-}
+};
 
-sub paymentagent_withdraw {
+rpc paymentagent_withdraw => sub {
     my $params = shift;
 
-    my $source         = $params->{source};
-    my $client         = $params->{client};
-    my $client_loginid = $client->loginid;
+    my $source = $params->{source};
+    my $client = $params->{client};
+
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
     my ($website_name, $args) = @{$params}{qw/website_name args/};
 
     # expire token only when its not dry run
-    if (exists $args->{dry_run} and not $args->{dry_run}) {
-        if (my $err =
-            BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email, 'paymentagent_withdraw')->{error})
-        {
+    unless ($args->{dry_run}) {
+        my $err =
+            BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email, 'paymentagent_withdraw')->{error};
+        if ($err) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => $err->{code},
                     message_to_client => $err->{message_to_client}});
@@ -755,7 +711,8 @@ sub paymentagent_withdraw {
     my $paymentagent_loginid = $args->{paymentagent_loginid};
     my $reference            = Data::UUID->new()->create_str();
 
-    my $error_sub = sub {
+    my $client_loginid = $client->loginid;
+    my $error_sub      = sub {
         my ($message_to_client, $message) = @_;
         BOM::RPC::v3::Utility::create_error({
             code              => 'PaymentAgentWithdrawError',
@@ -763,31 +720,21 @@ sub paymentagent_withdraw {
             ($message) ? (message => $message) : (),
         });
     };
-    my $reject_error_sub = sub {
-        my $msg = shift;
-        return $error_sub->(
-            __output_payments_error_message({
-                    client       => $client,
-                    action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-                    error_msg    => $msg,
-                    payment_type => 'Payment Agent Withdrawal',
-                    currency     => $currency,
-                    amount       => $amount,
-                }));
-    };
+
+    my $amount_validation_error = _validate_amount($amount, $currency);
+    return $error_sub->($amount_validation_error) if $amount_validation_error;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
         or $app_config->system->suspend->payment_agents
         or $app_config->system->suspend->system)
     {
-        return $error_sub->(
-            localize('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
+        return $error_sub->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'));
     } elsif (not $client->landing_company->allows_payment_agents) {
-        return $error_sub->(localize('Payment Agents are not available on this site.'));
-    } elsif (not $client->allow_paymentagent_withdrawal()) {
+        return $error_sub->(localize('Payment agent facilities are not available for this account.'));
+    } elsif (not BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client)) {
         # check whether allow to withdraw via payment agent
-        return $reject_error_sub->(localize('You are not authorized for withdrawal via payment agent.'));
+        return $error_sub->(localize('You are not authorized for withdrawals via payment agents.'));
     } elsif ($client->cashier_setting_password) {
         return $error_sub->(localize('Your cashier is locked as per your request.'));
     }
@@ -798,50 +745,60 @@ sub paymentagent_withdraw {
         $authenticated_pa = $payment_agent_mapper->get_authenticated_payment_agents({target_country => $client->residence});
     }
 
-    if (not $client->residence or scalar keys %{$authenticated_pa} == 0) {
-        return $error_sub->(localize('The Payment Agent facility is currently not available in your country.'));
-    }
+    return $error_sub->(localize('The payment agent facility is currently not available in your country.'))
+        if (not $client->residence or scalar keys %{$authenticated_pa} == 0);
 
-    ## validate amount
-    if ($amount < 10 || $amount > 2000) {
-        return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
-    }
+    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->get_status('disabled');
 
-    my $paymentagent = Client::Account::PaymentAgent->new({'loginid' => $paymentagent_loginid})
-        or return $error_sub->(localize('Sorry, the Payment Agent does not exist.'));
+    my $paymentagent = Client::Account::PaymentAgent->new({
+            'loginid'    => $paymentagent_loginid,
+            db_operation => 'replica'
+        }) or return $error_sub->(localize('The payment agent account does not exist.'));
 
-    if ($client->broker ne $paymentagent->broker) {
-        return $error_sub->(localize('Sorry, the Payment Agent is unavailable for your region.'));
-    }
+    return $error_sub->(localize('Payment agent transfers are not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
 
     my $pa_client = $paymentagent->client;
+    return $error_sub->(
+        localize('You cannot perform this action, as [_1] is not default currency for your account [_2].', $currency, $client->loginid))
+        if ($client->currency ne $currency or not $client->default_account);
 
-    # check that the currency is in correct format
-    if ($client->currency ne $currency) {
-        return $error_sub->(localize('Sorry, your currency of [_1] is unavailable for Payment Agent Withdrawal', $currency));
-    }
+    return $error_sub->(localize("You cannot perform this action, as [_1] is not default currency for payment agent account [_2].", $currency))
+        if ($pa_client->currency ne $currency or not $pa_client->default_account);
 
-    if ($pa_client->currency ne $currency) {
-        return $error_sub->(localize("Sorry, the Payment Agent's currency [_1] is unavailable for Payment Agent Withdrawal", $currency));
-    }
-
-    # check that the amount is in correct format
-    if ($amount !~ /^\d*\.?\d*$/) {
-        return $reject_error_sub->(localize('There was an error processing the request.'));
-    }
+    my $min_max = BOM::Platform::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
+    return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
+        if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum});
 
     # check that the additional information does not exceeded the allowed limits
-    if (length($further_instruction) > 300) {
-        return $reject_error_sub->(localize('Further instructions must not exceed [_1] characters.', 300));
-    }
+    return $error_sub->(localize('Further instructions must not exceed [_1] characters.', 300)) if (length($further_instruction) > 300);
+
+    return $error_sub->(localize('This is an ICO-only account which does not support transfers.'))
+        if $client->get_status('ico_only');
 
     # check that both the client payment agent cashier is not locked
-    if ($client->get_status('cashier_locked') || $client->get_status('withdrawal_locked') || $client->documents_expired) {
-        return $reject_error_sub->(localize('There was an error processing the request.'));
-    }
-    if ($pa_client->get_status('cashier_locked') || $client->documents_expired) {
-        return $reject_error_sub->(localize('This Payment Agent cashier section is locked.'));
-    }
+    return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.')) if $client->get_status('cashier_locked');
+
+    return $error_sub->(localize('You cannot perform this action, as your account is withdrawal locked.'))
+        if $client->get_status('withdrawal_locked');
+
+    return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client->documents_expired;
+
+    return $error_sub->(
+        localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is disabled.", $pa_client->loginid))
+        if $pa_client->get_status('disabled');
+
+    return $error_sub->(
+        localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is marked as unwelcome.", $pa_client->loginid))
+        if $pa_client->get_status('unwelcome');
+
+    return $error_sub->(localize("You cannot perform the withdrawal to account [_1], as the payment agent's cashier is locked.", $pa_client->loginid))
+        if ($pa_client->get_status('cashier_locked') or $pa_client->cashier_setting_password);
+
+    return $error_sub->(localize('This is an ICO-only account which does not support transfers.'))
+        if $pa_client->get_status('ico_only');
+
+    return $error_sub->(localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired."))
+        if $pa_client->documents_expired;
 
     if ($args->{dry_run}) {
         return {
@@ -854,21 +811,25 @@ sub paymentagent_withdraw {
         client_loginid => $client_loginid,
     });
 
-    # freeze loginID to avoid a race condition
-    if (not $client_db->freeze) {
-        return $error_sub->(
-            localize('An error occurred while processing request. If this error persists, please contact customer support'),
-            "Account stuck in previous transaction $client_loginid"
-        );
-    }
     my $paymentagent_client_db = BOM::Database::ClientDB->new({
         client_loginid => $paymentagent_loginid,
     });
 
-    if (not $paymentagent_client_db->freeze) {
+    my $guard_scope = guard {
         $client_db->unfreeze;
+        $paymentagent_client_db->unfreeze;
+    };
+
+    # freeze loginID to avoid a race condition
+    if (not $client_db->freeze) {
         return $error_sub->(
-            localize('An error occurred while processing request. If this error persists, please contact customer support'),
+            localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'),
+            "Account stuck in previous transaction $client_loginid"
+        );
+    }
+    if (not $paymentagent_client_db->freeze) {
+        return $error_sub->(
+            localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'),
             "Account stuck in previous transaction $paymentagent_loginid"
         );
     }
@@ -900,30 +861,12 @@ sub paymentagent_withdraw {
     my $daily_limit = (DateTime->now->day_of_week() > 5) ? 1500 : 5000;
 
     if (($amount_transferred + $amount) > $daily_limit) {
-        $client_db->unfreeze;
-        $paymentagent_client_db->unfreeze;
-
-        return $reject_error_sub->(
-            localize('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit));
-    }
-
-    if ($amount_transferred > 1500) {
-        my $message = "Client $client_loginid transferred \$$amount_transferred to payment agent today";
-        my $brand = Brands->new(name => request()->brand);
-        send_email({
-            from    => $brand->emails('support'),
-            to      => $brand->emails('support'),
-            subject => $message,
-            message => [$message],
-        });
+        return $error_sub->(localize('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit));
     }
 
     # do not allowed more than 20 transactions per day
     if ($count > 20) {
-        $client_db->unfreeze;
-        $paymentagent_client_db->unfreeze;
-
-        return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
+        return $error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
 
     my $comment =
@@ -942,40 +885,56 @@ sub paymentagent_withdraw {
     try {
         # execute the transfer.
         $response = $client->payment_account_transfer(
-            currency => $currency,
-            amount   => $amount,
-            remark   => $comment,
-            fmStaff  => $client_loginid,
-            toStaff  => $paymentagent_loginid,
-            toClient => $pa_client,
-            source   => $source,
+            currency     => $currency,
+            amount       => $amount,
+            remark       => $comment,
+            fmStaff      => $client_loginid,
+            toStaff      => $paymentagent_loginid,
+            toClient     => $pa_client,
+            source       => $source,
+            fees         => 0,
+            gateway_code => 'payment_agent_transfer',
         );
     }
     catch {
         $error = "Paymentagent Withdraw failed to $paymentagent_loginid [$_]";
     };
 
-    $client_db->unfreeze;
-    $paymentagent_client_db->unfreeze;
-
     if ($error) {
         # too many attempts
         if ($error =~ /BI102/) {
             return $error_sub->(localize('Request too frequent. Please try again later.'), $error);
         } else {
-            return $error_sub->(localize('An error occurred while processing request. If this error persists, please contact customer support'),
-                $error);
+            warn "Error in paymentagent_transfer for withdrawal - $error\n";
+            return $error_sub->(localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'), $error);
         }
     }
+
+    BOM::Platform::PaymentNotificationQueue->add(
+        source        => 'payment_agent',
+        currency      => $currency,
+        loginid       => $pa_client->loginid,
+        type          => 'withdrawal',
+        amount        => $amount,
+        payment_agent => 0,
+    );
 
     my $client_name = $client->first_name . ' ' . $client->last_name;
     # sent email notification to Payment Agent
     my $emailcontent = [
-        localize('Dear [_1] [_2] [_3],', $pa_client->salutation, $pa_client->first_name, $pa_client->last_name),
+        localize(
+            'Dear [_1] [_2] [_3],',                  encode_entities($pa_client->salutation),
+            encode_entities($pa_client->first_name), encode_entities($pa_client->last_name)
+        ),
         '',
         localize(
             'We would like to inform you that the withdrawal request of [_1][_2] by [_3] [_4] has been processed. The funds have been credited into your account [_5] at [_6].',
-            $currency, $amount, $client_name, $client_loginid, $paymentagent_loginid, $website_name
+            $currency,
+            $amount,
+            encode_entities($client_name),
+            $client_loginid,
+            $paymentagent_loginid,
+            $website_name
         ),
         '',
         $further_instruction,
@@ -985,69 +944,28 @@ sub paymentagent_withdraw {
         localize('The [_1] team.', $website_name),
     ];
     send_email({
-        from               => Brands->new(name => request()->brand)->emails('support'),
-        to                 => $paymentagent->email,
-        subject            => localize('Acknowledgement of Withdrawal Request'),
-        message            => $emailcontent,
-        use_email_template => 1,
-        template_loginid   => $pa_client->loginid,
+        from                  => Brands->new(name => request()->brand)->emails('support'),
+        to                    => $paymentagent->email,
+        subject               => localize('Acknowledgement of Withdrawal Request'),
+        message               => $emailcontent,
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        template_loginid      => $pa_client->loginid,
     });
 
     return {
         status            => 1,
         paymentagent_name => $paymentagent->payment_agent_name,
         transaction_id    => $response->{transaction_id}};
-}
-
-sub __output_payments_error_message {
-    my $args          = shift;
-    my $client        = $args->{'client'};
-    my $action        = $args->{'action'};
-    my $payment_type  = $args->{'payment_type'} || 'n/a';    # used for reporting; if not given, not applicable
-    my $currency      = $args->{'currency'};
-    my $amount        = $args->{'amount'};
-    my $error_message = $args->{'error_msg'};
-
-    my $brand          = Brands->new(name => request()->brand);
-    my $payments_email = $brand->emails('payments');
-    my $cs_email       = $brand->emails('support');
-
-    # amount is not always exist because error may happen before client submit the form
-    # or when redirected from 3rd party site to failure script where no data is returned
-    my $email_amount = $amount ? "Amount : $currency $amount" : '';
-    my $now          = Date::Utility->new;
-    my $message      = [
-        "Details of the payment error :\n",
-        "Date/Time : " . $now->datetime,
-        "Action : " . ucfirst $action . " via $payment_type",
-        "Login ID : " . $client->loginid,
-        $email_amount,
-        "Error message : $error_message",
-    ];
-
-    send_email({
-        from    => $cs_email,
-        to      => $payments_email,
-        subject => 'Payment Error: ' . $payment_type . ' [' . $client->loginid . ']',
-        message => $message,
-    });
-
-    # write error to deposit-failure.log
-    if ($action eq 'deposit') {
-        Path::Tiny::path('/var/log/fixedodds/deposit-error.log')
-            ->append($now->datetime . ' LoginID:' . $client->loginid . " Method: $payment_type Amount: $currency $amount Error: $error_message");
-    }
-
-    return $error_message;
-}
+};
 
 sub __client_withdrawal_notes {
     my $arg_ref  = shift;
     my $client   = $arg_ref->{'client'};
-    my $amount   = roundnear(0.01, $arg_ref->{'amount'});
-    my $error    = $arg_ref->{'error'};
     my $currency = $client->currency;
-    my $balance  = $client->default_account ? roundnear(0.01, $client->default_account->balance) : 0;
+    my $amount   = formatnumber('amount', $currency, $arg_ref->{'amount'});
+    my $error    = $arg_ref->{'error'};
+    my $balance  = $client->default_account ? formatnumber('amount', $currency, $client->default_account->balance) : 0;
 
     if ($error =~ /exceeds client balance/) {
         return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
@@ -1077,171 +995,145 @@ sub __client_withdrawal_notes {
             $withdrawal_limits->{'free_gift_turnover_limit'});
     }
 
-    return ($error_message, "Client $client is not allowed to withdraw");
+    return ($error_message);
 }
 
-## This endpoint is only available for MLT/MF accounts
-sub transfer_between_accounts {
+rpc transfer_between_accounts => sub {
     my $params = shift;
 
-    my $client = $params->{client};
-    my $source = $params->{source};
-    my $user;
+    my ($client, $source) = @{$params}{qw/client source/};
 
-    my $error_sub = sub {
-        my ($message_to_client, $message) = @_;
-        BOM::RPC::v3::Utility::create_error({
-            code              => 'TransferBetweenAccountsError',
-            message_to_client => $message_to_client,
-            ($message) ? (message => $message) : (),
-        });
-    };
-
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
-    if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->system)
-    {
-        return $error_sub->(localize('Payments are suspended.'));
+    if (BOM::Platform::Client::CashierValidation::is_system_suspended() or BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
+        return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
-    unless ($user = BOM::Platform::User->new({email => $client->email})) {
+
+    {    # Reject all transfers when forex markets are closed
+        my $can_transfer = 0;
+        # Although this is hardcoded as BTC, the intention is that any risky transfer should be blocked at weekends.
+        # Currently, this implies crypto to fiat or vice versa, and BTC is our most volatile (and popular) crypto
+        # currency. If the exchange is updated to something other than forex, this check should start allowing
+        # transfers at weekends again - note that we expect https://trello.com/c/bvhH85GJ/5700-13-tom-centralredisexchangerates
+        # to block exchange when the quotes are too old.
+        if (my $ul = create_underlying('frxBTCUSD')) {
+            # This is protected by an `eval` call since the author is currently in Cambodia and likely to
+            # be making mistakes at this time on a Friday. Technically we should not need it - if we can't
+            # instantiate the trading calendar, we have bigger problems than a stray exception during rare
+            # RPC calls such as account transfer.
+            $can_transfer = 1
+                if eval {
+                Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader)
+                    ->is_open_at($ul->exchange, Date::Utility->new);
+                };
+        }
+        return _transfer_between_accounts_error(localize('Account transfers are currently suspended.')) unless $can_transfer;
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
+    return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is currently disabled.'))
+        if $client->get_status('disabled');
+    return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is cashier locked.'))
+        if $client->get_status('cashier_locked');
+
+    return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
+        if $client->get_status('withdrawal_locked');
+    return _transfer_between_accounts_error(localize('Your cashier is locked as per your request.')) if $client->cashier_setting_password;
+
+    my $args = $params->{args};
+    my ($currency, $amount) = @{$args}{qw/currency amount/};
+
+    my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid, 1);
+    unless (keys %$siblings) {
         warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
-        return $error_sub->(localize('Internal server error'));
-    }
-    if ($client->get_status('disabled') or $client->get_status('cashier_locked') or $client->get_status('withdrawal_locked')) {
-        return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
+        return _transfer_between_accounts_error(localize('Internal server error'));
     }
 
-    my $args         = $params->{args};
-    my $loginid_from = $args->{account_from};
-    my $loginid_to   = $args->{account_to};
-    my $currency     = $args->{currency};
-    my $amount       = $args->{amount};
-
-    my %siblings = map { $_->loginid => $_ } $user->clients;
+    my ($loginid_from, $loginid_to) = @{$args}{qw/account_from account_to/};
 
     my @accounts;
-    foreach my $account (values %siblings) {
-        # check if client has any sub_account_of as we allow omnibus transfers also
-        # for MLT MF transfer check landing company
-        my $sub_account = $account->sub_account_of // '';
-        if ($client->loginid eq $sub_account || (grep { $account->landing_company->short eq $_ } ('malta', 'maltainvest'))) {
-            push @accounts,
-                {
-                loginid => $account->loginid,
-                balance => $account->default_account ? sprintf('%.2f', $account->default_account->balance) : "0.00",
-                currency => $account->default_account ? $account->default_account->currency_code : '',
-                };
-        } else {
-            next;
-        }
-
+    foreach my $cl (values %$siblings) {
+        push @accounts,
+            {
+            loginid  => $cl->{loginid},
+            balance  => $cl->{balance},
+            currency => $cl->{currency},
+            };
     }
 
-    # get clients
-    unless ($loginid_from and $loginid_to and $currency and $amount) {
+    # get clients if loginid from or to is not provided
+    if (not $loginid_from or not $loginid_to) {
         return {
             status   => 0,
             accounts => \@accounts
         };
     }
 
-    if (not looks_like_number($amount) or $amount < 0.1 or $amount !~ /^\d+.?\d{0,2}$/) {
-        return $error_sub->(localize('Invalid amount. Minimum transfer amount is 0.10, and up to 2 decimal places.'));
+    return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $currency;
+    return _transfer_between_accounts_error(localize('Please provide valid amount.'))
+        if (not looks_like_number($amount) or $amount <= 0);
+
+    # create client from siblings so that we are sure that from and to loginid
+    # provided are for same user
+    my ($client_from, $client_to, $res);
+    try {
+        $client_from = Client::Account->new({loginid => $siblings->{$loginid_from}->{loginid}});
+        $client_to   = Client::Account->new({loginid => $siblings->{$loginid_to}->{loginid}});
     }
+    catch {
+        $res = _transfer_between_accounts_error();
+    };
+    return $res if $res;
 
-    my ($is_good, $client_from, $client_to) = (0, $siblings{$loginid_from}, $siblings{$loginid_to});
-
-    if ($client_from && $client_to) {
-        # for sub account we need to check if it fulfils sub_account_of criteria and allow_omnibus is set
-        if (
-            ($client_from->allow_omnibus || $client_to->allow_omnibus)
-            && (   ($client_from->sub_account_of && $client_from->sub_account_of eq $loginid_to)
-                || ($client_to->sub_account_of && $client_to->sub_account_of eq $loginid_from)))
+    my ($from_currency, $to_currency) =
+        ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
+    $res = _validate_transfer_between_accounts(
+        $client,
+        $client_from,
+        $client_to,
         {
-            $is_good = 1;
-        } else {
-            my %landing_companies = (
-                $client_from->landing_company->short => 1,
-                $client_to->landing_company->short   => 1,
-            );
+            currency      => $currency,
+            amount        => $amount,
+            from_currency => $from_currency,
+            to_currency   => $to_currency,
+        });
+    return $res if $res;
 
-            # check for transfer between malta & maltainvest
-            $is_good = $landing_companies{malta} && $landing_companies{maltainvest};
-        }
-    }
+    my ($to_amount, $fees, $fees_percent) =
+        BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($client_from->loginid, $amount, $from_currency, $to_currency);
 
-    unless ($is_good) {
-        $client->set_status('disabled', 'SYSTEM',
-            "Tried tampering with transfer input for account transfer, illegal from [$loginid_from], to [$loginid_to]");
-        $client->save;
+    BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
-        return $error_sub->(localize('The account transfer is unavailable for your account.'));
-    }
+    my $error_audit_sub = sub {
+        my ($err, $client_message) = @_;
 
-    my %deposited = (
-        $loginid_from => $client_from->default_account ? $client_from->default_account->currency_code : '',
-        $loginid_to   => $client_to->default_account   ? $client_to->default_account->currency_code   : ''
-    );
+        BOM::Platform::AuditLog::log("Account Transfer FAILED, $err");
 
-    if (not $deposited{$loginid_from} and not $deposited{$loginid_to}) {
-        return $error_sub->(localize('The account transfer is unavailable. Please deposit to your account.'));
-    }
-
-    foreach my $c ($loginid_from, $loginid_to) {
-        my $curr = $deposited{$c};
-        if ($curr and $curr ne $currency) {
-            return $error_sub->(localize('The account transfer is unavailable for accounts with different default currency.'));
-        }
-    }
-
-    BOM::System::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
-
-    # error subs
-    my $error_unfreeze_msg_sub = sub {
-        my ($err, $client_message, @unfreeze) = @_;
-        foreach my $loginid (@unfreeze) {
-            BOM::Database::ClientDB->new({
-                    client_loginid => $loginid,
-                })->unfreeze;
-        }
-
-        BOM::System::AuditLog::log("Account Transfer FAILED, $err");
-
-        $client_message ||= localize('An error occurred while processing request. If this error persists, please contact customer support');
-        return $error_sub->($client_message);
-    };
-    my $error_unfreeze_sub = sub {
-        my ($err, @unfreeze) = @_;
-        $error_unfreeze_msg_sub->($err, '', @unfreeze);
+        $client_message ||= localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.');
+        return _transfer_between_accounts_error($client_message);
     };
 
-    my $err_msg      = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
     my $fm_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $client_from->loginid,
+        client_loginid => $loginid_from,
     });
-
-    if (not $fm_client_db->freeze) {
-        return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $client_from->loginid . ']');
-    }
     my $to_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $client_to->loginid,
+        client_loginid => $loginid_to,
     });
 
+    # have added this as exception in unused var test
+    my $guard_scope = guard {
+        $fm_client_db->unfreeze;
+        $to_client_db->unfreeze;
+    };
+
+    my $err_msg = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
+    if (not $fm_client_db->freeze) {
+        return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_from . ']');
+    }
     if (not $to_client_db->freeze) {
-        return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $client_to->loginid . ']', $client_from->loginid);
+        return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_to . ']');
     }
 
     my $err;
-    try {
-        $client_from->set_default_account($currency) || die "NO curr[$currency] for[$loginid_from]";
-    }
-    catch {
-        $err = "$err_msg Wrong curr for $loginid_from [$_]";
-    };
-    if ($err) {
-        return $error_unfreeze_sub->($err, $client_from->loginid, $client_to->loginid);
-    }
-
     try {
         $client_from->validate_payment(
             currency => $currency,
@@ -1254,11 +1146,11 @@ sub transfer_between_accounts {
     if ($err) {
         my $limit;
         if ($err =~ /exceeds client balance/) {
-            $limit = $currency . ' ' . roundnear(0.01, $client_from->default_account->balance);
+            $limit = $currency . ' ' . formatnumber('amount', $currency, $client_from->default_account->balance);
         } elsif ($err =~ /includes frozen bonus \[(.+)\]/) {
             my $frozen_bonus = $1;
-            $limit = $currency . ' ' . roundnear(0.01, $client_from->default_account->balance - $frozen_bonus);
-        } elsif ($err =~ /exceeds withdrawal limit \[(.+)\]\s+\((.+)\)/) {
+            $limit = $currency . ' ' . formatnumber('amount', $currency, $client_from->default_account->balance - $frozen_bonus);
+        } elsif ($err =~ /exceeds withdrawal limit \[(.+)\](?:\s+\((.+)\))?/) {
             my $bal_1 = $1;
             my $bal_2 = $2;
             $limit = $bal_1;
@@ -1268,74 +1160,65 @@ sub transfer_between_accounts {
             }
         }
 
-        return $error_unfreeze_msg_sub->(
+        return $error_audit_sub->(
             "$err_msg validate_payment failed for $loginid_from [$err]",
-            (defined $limit) ? "The maximum amount you may transfer is: $limit." : '',
-            $client_from->loginid, $client_to->loginid
+            (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : ''
         );
     }
 
     try {
-        $client_to->set_default_account($currency) || die "NO curr[$currency] for[$loginid_to]";
-    }
-    catch {
-        $err = "$err_msg Wrong curr for $loginid_to [$_]";
-    };
-    if ($err) {
-        return $error_unfreeze_sub->($err, $client_from->loginid, $client_to->loginid);
-    }
-
-    try {
         $client_to->validate_payment(
-            currency => $currency,
-            amount   => $amount,
+            currency => $to_currency,
+            amount   => $to_amount,
         ) || die "validate_payment [$loginid_to]";
     }
     catch {
         $err = "$err_msg validate_payment failed for $loginid_to [$_]";
     };
     if ($err) {
-        return $error_unfreeze_sub->($err, $client_from->loginid, $client_to->loginid);
+        return $error_audit_sub->($err);
     }
 
     my $response;
     try {
+        my $remark = 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to . '.';
+        if ($fees) {
+            $remark .= " Includes $currency " . formatnumber('amount', $currency, $fees) . " ($fees_percent%) as fees.";
+        }
         $response = $client_from->payment_account_transfer(
             currency          => $currency,
             amount            => $amount,
             toClient          => $client_to,
-            fmStaff           => $client_from->loginid,
-            toStaff           => $client_to->loginid,
-            remark            => 'Account transfer from ' . $client_from->loginid . ' to ' . $client_to->loginid,
-            inter_db_transfer => 1,
+            fmStaff           => $loginid_from,
+            toStaff           => $loginid_to,
+            remark            => $remark,
+            inter_db_transfer => ($client_from->landing_company->short ne $client_to->landing_company->short),
             source            => $source,
+            fees              => $fees,
+            gateway_code      => 'account_transfer',
         );
     }
     catch {
         $err = "$err_msg Account Transfer failed [$_]";
     };
     if ($err) {
-        return $error_unfreeze_sub->($err);
+        return $error_audit_sub->($err);
     }
 
-    BOM::System::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
-
-    $fm_client_db->unfreeze;
-    $to_client_db->unfreeze;
+    BOM::Platform::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
     return {
         status              => 1,
         transaction_id      => $response->{transaction_id},
         client_to_full_name => $client_to->full_name,
-        client_to_loginid   => $client_to->loginid
+        client_to_loginid   => $loginid_to
     };
-}
+};
 
-sub topup_virtual {
+rpc topup_virtual => sub {
     my $params = shift;
 
-    my $client = $params->{client};
-    my $source = $params->{source};
+    my ($client, $source) = @{$params}{qw/client source/};
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -1362,13 +1245,13 @@ sub topup_virtual {
     }
 
     # CREDIT HIM WITH THE MONEY
-    my ($curr, $amount, $trx) = $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
+    my ($curr, $amount) = $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
 
     return {
         amount   => $amount,
         currency => $curr
     };
-}
+};
 
 sub _get_amount_and_count {
     my $loginid  = shift;
@@ -1378,6 +1261,119 @@ sub _get_amount_and_count {
     });
     my $amount_data = $clientdb->getall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$loginid]);
     return ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
+}
+
+sub _transfer_between_accounts_error {
+    my ($message_to_client, $message) = @_;
+    return BOM::RPC::v3::Utility::create_error({
+        code              => 'TransferBetweenAccountsError',
+        message_to_client => ($message_to_client // localize('Transfers between accounts are not available for your account.')),
+        ($message) ? (message => $message) : (),
+    });
+}
+
+sub _validate_transfer_between_accounts {
+    my ($current_client, $client_from, $client_to, $args) = @_;
+
+    # error out if one of the client is not defined, i.e.
+    # loginid provided is wrong or not in siblings
+    return _transfer_between_accounts_error() if (not $client_from or not $client_to);
+
+    return BOM::RPC::v3::Utility::permission_error() if ($client_from->is_virtual or $client_to->is_virtual);
+
+    # error out if from and to loginid are same
+    return _transfer_between_accounts_error(localize('Account transfers are not available within same account.'))
+        unless ($client_from->loginid ne $client_to->loginid);
+
+    # error out if current logged in client and loginid from passed are not same
+    return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
+        unless ($current_client->loginid eq $client_from->loginid);
+
+    my ($currency, $amount, $from_currency, $to_currency) = @{$args}{qw/currency amount from_currency to_currency/};
+
+    my $from_currency_type = LandingCompany::Registry::get_currency_type($currency);
+    return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $from_currency_type;
+
+    my ($lc_from, $lc_to) = ($client_from->landing_company, $client_to->landing_company);
+    # error if landing companies are different with exception
+    # of maltainvest and malta as we allow transfer between them
+    return _transfer_between_accounts_error()
+        if (($lc_from->short ne $lc_to->short)
+        and ($lc_from->short !~ /^(?:malta|maltainvest)$/ or $lc_to->short !~ /^(?:malta|maltainvest)$/));
+
+    # block if client wants to transfer from ico to other or vice versa
+    # above check should block it but adding additional one
+    return _transfer_between_accounts_error()
+        if !!$client_from->get_status('ico_only') != !!$client_to->get_status('ico_only');
+
+    # error if currency is not legal for landing company
+    return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
+        if (not $lc_from->is_currency_legal($currency) or not $lc_to->is_currency_legal($currency));
+
+    return _transfer_between_accounts_error(
+        localize('You cannot perform this action, as your account [_1] is currently disabled.', $client_to->loginid))
+        if $client_to->get_status('disabled');
+
+    return _transfer_between_accounts_error(
+        localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client_to->loginid))
+        if $client_to->get_status('unwelcome');
+
+    return _transfer_between_accounts_error(
+        localize('Your cannot perform this action, as your account [_1] cashier is locked as per request.', $client_to->loginid))
+        if $client_to->cashier_setting_password;
+
+    # error out if from account has no currency set
+    return _transfer_between_accounts_error(localize('Please deposit to your account.')) unless $from_currency;
+
+    # error if currency provided is not same as from account default currency
+    return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
+        if ($from_currency ne $currency);
+
+    # error out if to account has no currency set, we should
+    # not set it from currency else client will be able to
+    # set same crypto for multiple account
+    return _transfer_between_accounts_error(localize('Please set the currency for your existing account [_1].', $client_to->loginid))
+        unless $to_currency;
+
+    return _transfer_between_accounts_error(localize('Your [_1] cashier is locked as per your request.', $client_to->loginid))
+        if $client_to->cashier_setting_password;
+
+    my $min_allowed_amount = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->amount->$from_currency_type->min;
+    return _transfer_between_accounts_error(
+        localize(
+            'Provided amount is not within permissible limits. Minimum transfer amount for provided currency is [_1].',
+            formatnumber('amount', $currency, $min_allowed_amount))) if $amount < $min_allowed_amount;
+
+    return _transfer_between_accounts_error(
+        localize(
+            'Invalid amount. Amount provided can not have more than [_1] decimal places',
+            Format::Util::Numbers::get_precision_config()->{amount}->{$currency})) if ($amount != financialrounding('amount', $currency, $amount));
+
+    my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
+
+    # we don't allow fiat to fiat if they are different
+    return _transfer_between_accounts_error(localize('Account transfers are not available for accounts with different currencies.'))
+        if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'fiat') and ($currency ne $to_currency));
+
+    # we don't allow crypto to crypto transfer
+    return _transfer_between_accounts_error(localize('Account transfers are not available within accounts with cryptocurrency as default currency.'))
+        if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
+
+    return undef;
+}
+
+sub _validate_amount {
+    my ($amount, $currency) = @_;
+
+    return localize('Invalid amount.') if ($amount !~ m/^(?:\d+\.?\d*|\.\d+)$/);
+
+    my $num_of_decimals = Format::Util::Numbers::get_precision_config()->{amount}->{$currency};
+    my ($precision) = $amount =~ /\.(\d+)/;
+
+    return localize('Invalid amount. Amount provided can not have more than [_1] decimal places.', $num_of_decimals)
+        if (defined $precision and length($precision) > $num_of_decimals);
+
+    return undef;
 }
 
 1;

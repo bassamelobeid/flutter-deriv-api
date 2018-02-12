@@ -11,6 +11,8 @@ use Data::Dumper;
 use Date::Utility;
 use File::Temp;
 
+use BOM::Platform::Chronicle;
+use Quant::Framework;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::FeedTestDatabase qw/:init/;
 use BOM::Populator::TickFile;
@@ -88,12 +90,12 @@ subtest 'Initialization' => sub {
 subtest 'ticks_history' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is no symbol param')
-        ->error_message_is('Symbol  invalid', 'It should return error if there is no symbol param');
+        ->error_message_is('Symbol  invalid.', 'It should return error if there is no symbol param');
 
     $params->{args}->{ticks_history} = 'wrong';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is wrong symbol param')
-        ->error_message_is('Symbol wrong invalid', 'It should return error if there is wrong symbol param');
+        ->error_message_is('Symbol wrong invalid.', 'It should return error if there is wrong symbol param');
 
     $params->{args}->{ticks_history} = 'DFMGI';
     $rpc_ct->call_ok($method, $params)
@@ -105,7 +107,7 @@ subtest 'ticks_history' => sub {
     $params->{args}->{subscribe}     = '1';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('NoRealtimeQuotes', 'It should return error if realtime quotes not available for this symbol')
-        ->error_message_is('Realtime quotes not available for TOP40', 'It should return error if realtime quotes not available for this symbol');
+        ->error_message_is('Realtime quotes not available for TOP40.', 'It should return error if realtime quotes not available for this symbol');
 
     set_fixed_time(Date::Utility->new('2016-07-24')->epoch);
     $params->{args}->{ticks_history} = 'frxUSDJPY';
@@ -204,12 +206,13 @@ subtest '_validate_start_end' => sub {
         'If sent adjust_start_time param then it should return ticks with shifted start time';
 
     set_fixed_time($now->plus_time_interval('5h')->epoch);
-    my $ul = create_underlying('HSI');
-    $params->{args}->{end}   = $ul->calendar->closing_on($now)->plus_time_interval('1m')->epoch;
-    $params->{args}->{start} = $ul->calendar->closing_on($now)->minus_time_interval('39m')->epoch;
+    my $ul               = create_underlying('HSI');
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+    $params->{args}->{end}   = $trading_calendar->closing_on($ul->exchange, $now)->plus_time_interval('1m')->epoch;
+    $params->{args}->{start} = $trading_calendar->closing_on($ul->exchange, $now)->minus_time_interval('39m')->epoch;
     delete $params->{args}->{count};
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $result->{data}->{history}->{times}->[0], $ul->calendar->closing_on($now)->minus_time_interval('40m')->epoch,
+    is $result->{data}->{history}->{times}->[0], $trading_calendar->closing_on($ul->exchange, $now)->minus_time_interval('40m')->epoch,
         'If exchange close at end time and sent adjust_start_time then it should shift back start time';
 };
 

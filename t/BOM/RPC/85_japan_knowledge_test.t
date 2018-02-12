@@ -1,8 +1,10 @@
 use strict;
 use warnings;
-use Test::More tests => 8;
+use Encode;
+use Test::More tests => 9;
+use Test::Warnings;
 use Test::Exception;
-use JSON;
+use JSON::MaybeXS;
 
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -14,10 +16,7 @@ use BOM::RPC::v3::Accounts;
 ## do not send email
 my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
-
-my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
-$email_mocked->mock('send_email', sub { return 1 });
-
+my $json              = JSON::MaybeXS->new;
 my %jp_client_details = (
     gender                                      => 'f',
     first_name                                  => 'first\'name',
@@ -90,14 +89,26 @@ subtest 'no test taken yet' => sub {
 my $test_epoch;
 subtest 'First Test taken: fail test' => sub {
 
-    my @knowledge_test_questions = ( {answer=>1, category=>1, id=>5, pass=>1, question=>'Question 5',},
-                                {answer=>1, category=>1, id=>6, pass=>1, question=>'Question 6',} );
+    my @knowledge_test_questions = ({
+            answer   => 1,
+            category => 1,
+            id       => 5,
+            pass     => 1,
+            question => 'Question 5',
+        },
+        {
+            answer   => 1,
+            category => 1,
+            id       => 6,
+            pass     => 1,
+            question => 'Question 6',
+        });
 
     $res = BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test({
             client => $vr_client,
             args   => {
-                score  => 10,
-                status => 'fail',
+                score     => 10,
+                status    => 'fail',
                 questions => \@knowledge_test_questions,
             }});
 
@@ -114,7 +125,7 @@ subtest 'First Test taken: fail test' => sub {
 
     subtest 'Test result exists in financial assessment' => sub {
         $jp_client = Client::Account->new({loginid => $jp_loginid});
-        my $financial_data = from_json($jp_client->financial_assessment->data);
+        my $financial_data = $json->decode($jp_client->financial_assessment->data);
 
         my $tests = $financial_data->{jp_knowledge_test};
         is @{$tests}, 1, '1 test record';
@@ -138,7 +149,7 @@ subtest 'No test allow within same day' => sub {
 
 subtest 'Test is allowed after 1 day' => sub {
     lives_ok {
-        my $financial_data = from_json($jp_client->financial_assessment->data);
+        my $financial_data = $json->decode($jp_client->financial_assessment->data);
 
         my $results   = $financial_data->{jp_knowledge_test};
         my $last_test = pop @$results;
@@ -147,7 +158,7 @@ subtest 'Test is allowed after 1 day' => sub {
         push @{$results}, $last_test;
 
         $financial_data->{jp_knowledge_test} = $results;
-        $jp_client->financial_assessment({data => encode_json($financial_data)});
+        $jp_client->financial_assessment({data => Encode::encode_utf8($json->encode($financial_data))});
 
         $jp_client->save();
     }
@@ -172,7 +183,7 @@ subtest 'Test is allowed after 1 day' => sub {
 
     subtest '2 Tests result in financial assessment' => sub {
         $jp_client = Client::Account->new({loginid => $jp_loginid});
-        my $financial_data = from_json($jp_client->financial_assessment->data);
+        my $financial_data = $json->decode($jp_client->financial_assessment->data);
 
         my $tests = $financial_data->{jp_knowledge_test};
         is @{$tests}, 2, '2 test records';
@@ -204,19 +215,20 @@ subtest 'Test not allowed for non Japanese Client' => sub {
 
         # new CR client
         my %cr_client_details = (
-            salutation       => 'Ms',
-            last_name        => 'last-name',
-            first_name       => 'first\'name',
-            date_of_birth    => '1990-12-30',
-            residence        => 'au',
-            address_line_1   => 'Jalan Usahawan',
-            address_line_2   => 'Enterpreneur Center',
-            address_city     => 'Cyberjaya',
-            address_state    => 'Selangor',
-            address_postcode => '47120',
-            phone            => '+603 34567890',
-            secret_question  => 'Favourite dish',
-            secret_answer    => 'nasi lemak,teh tarik',
+            salutation             => 'Ms',
+            last_name              => 'last-name',
+            first_name             => 'first\'name',
+            date_of_birth          => '1990-12-30',
+            residence              => 'au',
+            address_line_1         => 'Jalan Usahawan',
+            address_line_2         => 'Enterpreneur Center',
+            address_city           => 'Cyberjaya',
+            address_state          => 'Selangor',
+            address_postcode       => '47120',
+            phone                  => '+603 34567890',
+            secret_question        => 'Favourite dish',
+            secret_answer          => 'nasi lemak,teh tarik',
+            account_opening_reason => 'Hedging',
         );
 
         $res = BOM::RPC::v3::NewAccount::new_account_real({
@@ -270,7 +282,6 @@ subtest 'No test allowed for VRTJ, unless JP exists' => sub {
 };
 
 $client_mocked->unmock_all;
-$email_mocked->unmock_all;
 $dt_mocked->unmock_all;
 
 sub create_vr_account {

@@ -14,6 +14,9 @@
         "phone": "+48 58 881 00 02",
         "secret_question": "Memorable date",
         "secret_answer": "11 November, 2016",
+        "place_of_birth": "[_3]",
+        "tax_residence": "[_3]",
+        "tax_identification_number": "111222",
         "forex_trading_experience": "1-2 years",
         "forex_trading_frequency": "40 transactions or more in the past 12 months",
         "indices_trading_experience": "Over 3 years",
@@ -31,6 +34,9 @@
         "income_source": "Salaried Employee",
         "net_income": "Less than $25,000",
         "estimated_worth": "$250,001 - $500,000",
+        "occupation": "Managers",
+        "employment_status": "Self-Employed",
+        "source_of_wealth": "Company Ownership",
         "accept_risk": "[_4]"
     }
 }

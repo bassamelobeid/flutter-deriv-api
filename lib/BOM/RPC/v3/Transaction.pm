@@ -4,254 +4,440 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use Data::Dumper;
+use Encode;
+use JSON::MaybeXS;
+use Scalar::Util qw(blessed);
+
+use Format::Util::Numbers qw/formatnumber financialrounding/;
+
+use BOM::RPC::Registry '-dsl';
+
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
-use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
-use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
-use BOM::Product::Transaction;
+use BOM::Transaction;
 use BOM::Platform::Context qw (localize request);
-use Client::Account;
+use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
+use BOM::Database::DataMapper::Copier;
 
-sub buy {
+my $json = JSON::MaybeXS->new;
+
+requires_auth();
+
+my @validation_checks = qw(check_trade_status check_tax_information);
+
+sub trade_copiers {
     my $params = shift;
 
-    my $token_details = $params->{token_details};
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
+    my $copiers = BOM::Database::DataMapper::Copier->new(
+        broker_code => $params->{client}->broker_code,
+        operation   => 'replica',
+        )->get_trade_copiers({
+            trader_id  => $params->{client}->loginid,
+            trade_type => $params->{contract}{bet_type},
+            asset      => $params->{contract}->underlying->symbol,
+            price      => ($params->{price} || undef),
+        });
 
-    my $client = Client::Account->new({loginid => $token_details->{loginid}});
+    return unless $copiers && ref $copiers eq 'ARRAY' && scalar @$copiers;
 
-    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization. All checks
-    #       are done again in BOM::Product::Transaction
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'AuthorizationRequired',
-            message_to_client => localize('Please log in.')}) unless $client;
-    my $source               = $params->{source};
-    my $contract_parameters  = $params->{contract_parameters};
-    my $args                 = $params->{args};
-    my $payout               = $params->{payout};
-    my $trading_period_start = $contract_parameters->{trading_period_start};
-    my $purchase_date        = time;                                           # Purchase is considered to have happened at the point of request.
-    $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
-    $contract_parameters->{landing_company} = $client->landing_company->short;
-    my $amount_type = $contract_parameters->{amount_type};
-
-    my ($contract, $response);
-
-    try {
-        die unless BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters);
-    }
-    catch {
-        warn __PACKAGE__ . " buy pre_validate_start_expire_dates failed, parameters: " . Dumper($contract_parameters);
-        $response = BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-    };
-    return $response if $response;
-    try {
-        $contract = produce_contract($contract_parameters);
-    }
-    catch {
-        warn __PACKAGE__ . " buy produce_contract failed, parameters: " . Dumper($contract_parameters);
-        $response = BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-    };
-    return $response if $response;
-    my $trx = BOM::Product::Transaction->new({
-        client   => $client,
-        contract => $contract,
-        price    => ($args->{price} || 0),
-        (defined $payout)      ? (payout      => $payout)      : (),
-        (defined $amount_type) ? (amount_type => $amount_type) : (),
-        purchase_date => $purchase_date,
-        source        => $source,
-        (defined $trading_period_start) ? (trading_period_start => $trading_period_start) : (),
+    ### Note: this array of hashes will be modified by BOM::Transaction with the results per each client
+    my @multiple = map { +{loginid => $_} } @$copiers;
+    my $trx = BOM::Transaction->new({
+        client   => $params->{client},
+        multiple => \@multiple,
+        contract => $params->{contract},
+        price    => ($params->{price} || 0),
+        source   => $params->{source},
+        (defined $params->{payout})      ? (payout      => $params->{payout})      : (),
+        (defined $params->{amount_type}) ? (amount_type => $params->{amount_type}) : (),
+        purchase_date => $params->{purchase_date},
     });
 
-    if (my $err = $trx->buy) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => $err->get_type,
-            message_to_client => $err->{-message_to_client},
-        });
-    }
+    $params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode;
 
-    $response = {
-        transaction_id => $trx->transaction_id,
-        contract_id    => $trx->contract_id,
-        balance_after  => sprintf('%.2f', $trx->balance_after),
-        purchase_time  => $trx->purchase_date->epoch,
-        buy_price      => $trx->price,
-        start_time     => $contract->date_start->epoch,
-        longcode       => $contract->longcode,
-        shortcode      => $contract->shortcode,
-        payout         => $contract->payout
-    };
-
-    if ($contract->is_spread) {
-        $response->{stop_loss_level}   = $contract->stop_loss_level;
-        $response->{stop_profit_level} = $contract->stop_profit_level;
-        $response->{amount_per_point}  = $contract->amount_per_point;
-    }
-
-    return $response;
+    return 1;
 }
 
-sub buy_contract_for_multiple_accounts {
-    my $params = shift;
+sub _validate_price {
+    my ($price, $currency) = @_;
 
-    my $token_details = $params->{token_details};
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = Client::Account->new({loginid => $token_details->{loginid}});
-
-    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization. All checks
-    #       are done again in BOM::Product::Transaction
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'AuthorizationRequired',
-            message_to_client => localize('Please log in.')}) unless $client;
-
-    my @result;
-    my $found_at_least_one;
-
-    my $msg1 = BOM::Platform::Context::localize('Invalid token');
-
-    # $msg2 should match the message generated by BOM : : WebSocketAPI : : Websocket_v3
-    # for the same case. Hence, 'trade' is passed as parameter.
-    my $msg2 = BOM::Platform::Context::localize('Permission denied, requires [_1] scope.', 'trade');
-
-    $params->{args}->{tokens} //= [];
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'TooManyTokens',
-            message_to_client => localize('Up to 100 tokens are allowed.')}) if @{$params->{args}->{tokens}} > 100;
-
-    for my $t (@{$params->{args}->{tokens}}) {
-        my $token_details = BOM::RPC::v3::Utility::get_token_details($t);
-        my $loginid;
-
-        if ($token_details and $loginid = $token_details->{loginid} and grep({ /^trade$/ } @{$token_details->{scopes}})) {
-            push @result,
-                +{
-                token   => $t,
-                loginid => $loginid,
-                };
-            $found_at_least_one = 1;
-            next;
-        }
-
-        if ($loginid) {
-            # here we got a valid token but with insufficient privileges
-            push @result,
-                +{
-                token => $t,
-                code  => 'PermissionDenied',
-                error => $msg2,
-                };
-            next;
-
-        }
-
-        push @result,
-            +{
-            token => $t,
-            code  => 'InvalidToken',
-            error => $msg1,
-            };
+    if (defined $price) {
+        my $num_of_decimals = Format::Util::Numbers::get_precision_config()->{price}->{$currency};
+        my ($precision) = $price =~ /\.(\d+)/;
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidPrice',
+                message_to_client => localize('Invalid price. Price provided can not have more than [_1] decimal places.', $num_of_decimals)}
+        ) if ($precision and length($precision) > $num_of_decimals);
     }
 
-    my ($contract, $response);
-    if ($found_at_least_one) {
-        # NOTE: we rely here on BOM::Product::Transaction to perform all the
-        #       client validations like client_status and self_exclusion.
+    return undef;
+}
 
-        my $source              = $params->{source};
-        my $contract_parameters = $params->{contract_parameters};
-        my $args                = $params->{args};
-        my $payout              = $params->{payout};
+sub _validate_amount {
+    my ($amount, $currency) = @_;
 
-        my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
-        $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
-        $contract_parameters->{landing_company} = $client->landing_company->short;
-        my $amount_type = $contract_parameters->{amount_type};
+    if (defined $amount) {
+        my $num_of_decimals = Format::Util::Numbers::get_precision_config()->{amount}->{$currency};
+        my ($precision) = $amount =~ /\.(\d+)/;
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidAmount',
+                message_to_client => localize('Invalid amount. Amount provided can not have more than [_1] decimal places.', $num_of_decimals)}
+        ) if ($precision and length($precision) > $num_of_decimals);
+    }
 
-        try {
-            die unless BOM::RPC::v3::Contract::pre_validate_start_expire_dates($contract_parameters);
-        }
-        catch {
-            warn __PACKAGE__
-                . " buy_contract_for_multiple_accounts pre_validate_start_expire_dates failed, parameters: "
-                . Dumper($contract_parameters);
-            $response = BOM::RPC::v3::Utility::create_error({
-                    code              => 'ContractCreationFailure',
-                    message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-        };
-        return $response if $response;
+    return undef;
+}
 
-        try {
-            $contract = produce_contract($contract_parameters);
-        }
-        catch {
-            warn __PACKAGE__ . " buy_contract_for_multiple_accounts produce_contract failed, parameters: " . Dumper($contract_parameters);
-            $response = BOM::RPC::v3::Utility::create_error({
-                    code              => 'ContractCreationFailure',
-                    message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-        };
-        return $response if $response;
+sub _validate_stake {
+    my ($price, $amount, $currency) = @_;
 
-        my $trx = BOM::Product::Transaction->new({
-            client   => $client,
-            multiple => \@result,
-            contract => $contract,
-            price    => ($args->{price} || 0),
-            (defined $payout)      ? (payout      => $payout)      : (),
-            (defined $amount_type) ? (amount_type => $amount_type) : (),
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'ContractCreationFailure',
+            message_to_client => BOM::Platform::Context::localize("Contract's stake amount is more than the maximum purchase price.")}
+    ) if (financialrounding('price', $currency, $price) < financialrounding('amount', $currency, $amount));
+
+    return undef;
+}
+
+rpc buy => sub {
+    my $params = shift;
+
+    my $client = $params->{client} // die "Client should have been authenticated at this stage.";
+
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
+
+    my ($source, $contract_parameters, $args, $payout) = @{$params}{qw/source contract_parameters args payout/};
+    my $trading_period_start = $contract_parameters->{trading_period_start};
+    my $purchase_date        = time;                                           # Purchase is considered to have happened at the point of request.
+
+    $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
+    $contract_parameters->{landing_company} = $client->landing_company->short;
+
+    #Here again, we are re using amount in the API for specifying
+    #no of contracts. Internally for non-binary we will use unit.
+    #If we use amount, this will create confusion with the amount use for
+    #binary contract.
+    $contract_parameters->{unit} //= $contract_parameters->{amount};
+
+    my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
+    return $error if $error->{error};
+
+    my $price    = $args->{price};
+    my $currency = $client->currency;
+    my ($amount, $amount_type) = @{$contract_parameters}{qw/amount amount_type/};
+
+    $error = _validate_price($price, $currency);
+    return $error if $error;
+
+    $error = _validate_amount($amount, $currency);
+    return $error if $error;
+
+    if (defined $price and defined $amount and defined $amount_type and $amount_type eq 'stake') {
+        $error = _validate_stake($price, $amount, $currency);
+        return $error if $error;
+
+        $price = $amount;
+    }
+
+    my $trx = BOM::Transaction->new({
+            client              => $client,
+            contract_parameters => $contract_parameters,
+            price               => ($price || 0),
+            (defined $payout) ? (payout => $payout) : (),
+            (defined $amount_type) ? (amount_type => $amount_type) : (amount_type => 'unit'),
             purchase_date => $purchase_date,
             source        => $source,
+            (defined $trading_period_start)
+            ? (trading_period_start => $trading_period_start)
+            : (),
         });
 
-        if (my $err = $trx->batch_buy) {
-            return BOM::RPC::v3::Utility::create_error({
+    try {
+        if (my $err = $trx->buy) {
+            $error = BOM::RPC::v3::Utility::create_error({
                 code              => $err->get_type,
                 message_to_client => $err->{-message_to_client},
             });
         }
     }
+    catch {
+        my $message_to_client;
+        if (blessed($_) && $_->isa('BOM::Product::Exception')) {
+            $message_to_client = $_->message_to_client;
+        } else {
+            $message_to_client = ['Cannot create contract'];
+            warn __PACKAGE__ . " buy failed: '$_', parameters: " . $json->encode($contract_parameters);
+        }
+        $error = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize(@$message_to_client)});
+    };
+    return $error if $error;
 
-    for my $el (@result) {
+    try {
+        trade_copiers({
+                action        => 'buy',
+                client        => $client,
+                contract      => $trx->contract,
+                price         => $price,
+                payout        => $payout,
+                amount_type   => $amount_type,
+                purchase_date => $purchase_date,
+                source        => $source
+            }) if $client->allow_copiers;
+    }
+    catch {
+        warn "Copiers trade error: " . $_;
+    };
+
+    return {
+        transaction_id => $trx->transaction_id,
+        contract_id    => $trx->contract_id,
+        balance_after  => formatnumber('amount', $client->currency, $trx->balance_after),
+        purchase_time  => $trx->purchase_date->epoch,
+        buy_price      => formatnumber('amount', $client->currency, $trx->price),
+        start_time     => $trx->contract->date_start->epoch,
+        longcode       => localize($trx->contract->longcode),
+        shortcode      => $trx->contract->shortcode,
+        payout         => $trx->payout
+    };
+};
+
+rpc buy_contract_for_multiple_accounts => sub {
+    my $params = shift;
+
+    my $client = $params->{client} // die "Client should have been authenticated at this stage.";
+
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'IcoOnlyAccount',
+            message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
+    ) if $client->get_status('ico_only');
+
+    my $args = $params->{args};
+    my $tokens = $args->{tokens} // [];
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'TooManyTokens',
+            message_to_client => localize('Up to 100 tokens are allowed.')}) if scalar @$tokens > 100;
+
+    my $token_list_res = _check_token_list($tokens);
+
+    return +{result => $token_list_res->{result}} unless $token_list_res->{success};
+
+    my ($source, $contract_parameters, $payout) = @{$params}{qw/source contract_parameters payout/};
+
+    my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
+    $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
+    $contract_parameters->{landing_company} = $client->landing_company->short;
+
+    my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
+    return $error if $error->{error};
+
+    my $price    = $args->{price};
+    my $currency = $client->currency;
+    my ($amount, $amount_type) = @{$contract_parameters}{qw/amount amount_type/};
+
+    $error = _validate_price($price, $currency);
+    return $error if $error;
+
+    $error = _validate_amount($amount, $currency);
+    return $error if $error;
+
+    if (defined $price and defined $amount and defined $amount_type and $amount_type eq 'stake') {
+        $error = _validate_stake($price, $amount, $currency);
+        return $error if $error;
+
+        $price = $amount;
+    }
+
+    my $trx = BOM::Transaction->new({
+        client              => $client,
+        multiple            => $token_list_res->{result},
+        contract_parameters => $contract_parameters,
+        price               => ($price || 0),
+        (defined $payout)      ? (payout      => $payout)      : (),
+        (defined $amount_type) ? (amount_type => $amount_type) : (),
+        purchase_date => $purchase_date,
+        source        => $source,
+    });
+
+    try {
+        if (my $err = $trx->batch_buy) {
+            $error = BOM::RPC::v3::Utility::create_error({
+                code              => $err->get_type,
+                message_to_client => $err->{-message_to_client},
+            });
+        }
+    }
+    catch {
+        warn __PACKAGE__
+            . " buy_contract_for_multiple_accounts failed with error [$_], parameters: "
+            . (eval { $json->encode($contract_parameters) } // 'could not encode, ' . $@);
+        $error = BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    };
+    return $error if $error;
+
+    for my $el (@{$token_list_res->{result}}) {
         my $new = {};
         if (exists $el->{code}) {
-            @{$new}{qw/token code message_to_client/} = @{$el}{qw/token code error/};
+            @{$new}{qw/token code message_to_client/} =
+                @{$el}{qw/token code error/};
         } else {
             $new->{token}          = $el->{token};
             $new->{transaction_id} = $el->{txn}->{id};
             $new->{contract_id}    = $el->{fmb}->{id};
-            $new->{purchase_time}  = Date::Utility->new($el->{fmb}->{purchase_time})->epoch;
-            $new->{buy_price}      = $el->{fmb}->{buy_price};
-            $new->{start_time}     = Date::Utility->new($el->{fmb}->{start_time})->epoch;
-            $new->{longcode}       = $contract->longcode;
-            $new->{shortcode}      = $el->{fmb}->{short_code};
-            $new->{payout}         = $el->{fmb}->{payout_price};
-
-            if ($contract->is_spread) {
-                $new->{stop_loss_level}   = $contract->stop_loss_level;
-                $new->{stop_profit_level} = $contract->stop_profit_level;
-                $new->{amount_per_point}  = $contract->amount_per_point;
-            }
+            $new->{purchase_time} =
+                Date::Utility->new($el->{fmb}->{purchase_time})->epoch;
+            $new->{buy_price} = $el->{fmb}->{buy_price};
+            $new->{start_time} =
+                Date::Utility->new($el->{fmb}->{start_time})->epoch;
+            $new->{longcode}  = localize($trx->contract->longcode);
+            $new->{shortcode} = $el->{fmb}->{short_code};
+            $new->{payout}    = $el->{fmb}->{payout_price};
         }
         $el = $new;
     }
 
-    return +{result => \@result};
+    return +{result => $token_list_res->{result}};
+};
+
+sub _check_token_list {
+    my $tokens = shift;
+
+    my ($err, $result, $success, $m1, $m2) = (undef, [], 0, undef, undef);
+
+    for my $t (@$tokens) {
+        my $token_details = BOM::RPC::v3::Utility::get_token_details($t);
+        my $loginid;
+
+        if (    $token_details
+            and $loginid = $token_details->{loginid}
+            and grep({ /^trade$/ } @{$token_details->{scopes}}))
+        {
+            push @$result,
+                +{
+                token   => $t,
+                loginid => $loginid,
+                };
+            $success = 1;
+            next;
+        }
+
+        if ($loginid) {
+
+            # here we got a valid token but with insufficient privileges
+            push @$result,
+                +{
+                token             => $t,
+                code              => 'PermissionDenied',
+                message_to_client => ($m1 //= BOM::Platform::Context::localize('Permission denied, requires [_1] scope.', 'trade')),
+                };
+            next;
+
+        }
+
+        push @$result,
+            +{
+            token             => $t,
+            code              => 'InvalidToken',
+            message_to_client => ($m2 //= BOM::Platform::Context::localize('Invalid token')),
+            };
+    }
+
+    return {
+        success => $success,
+        result  => $result
+    };
 }
 
-sub sell {
+rpc sell_contract_for_multiple_accounts => sub {
     my $params = shift;
 
-    my $client = $params->{client};
+    my $client = $params->{client} // die "client should be authed when get here";
+
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'IcoOnlyAccount',
+            message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
+    ) if $client->get_status('ico_only');
+
+    my ($source, $args) = ($params->{source}, $params->{args});
+
+    my $shortcode = $args->{shortcode};
+
+    my $tokens = $args->{tokens} // [];
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'TooManyTokens',
+            message_to_client => localize('Up to 100 tokens are allowed.')}) if scalar @$tokens > 100;
+
+    my $token_list_res = _check_token_list($tokens);
+
+    return +{result => $token_list_res->{result}} unless $token_list_res->{success};
+
+    my $contract_parameters = {
+        shortcode => $shortcode,
+        currency  => $client->currency
+    };
+    $contract_parameters->{landing_company} = $client->landing_company->short;
+
+    my $trx = BOM::Transaction->new({
+        purchase_date       => Date::Utility->new(),
+        client              => $client,
+        multiple            => $token_list_res->{result},
+        contract_parameters => $contract_parameters,
+        price               => ($args->{price} // 0),
+        source              => $source,
+    });
+
+    if (my $err = $trx->sell_by_shortcode) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => $err->get_type,
+            message_to_client => $err->{-message_to_client},
+            message           => "Contract-Multi-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}"
+        });
+    }
+
+    my $data_to_return = [];
+    foreach my $row (@{$token_list_res->{result}}) {
+        my $new = {};
+        if (exists $row->{code}) {
+            @{$new}{qw/token code message_to_client/} =
+                @{$row}{qw/token code error/};
+        } else {
+            $new = +{
+                transaction_id => $row->{tnx}{id},
+                reference_id   => $row->{buy_tr_id},
+                balance_after  => formatnumber('amount', $client->currency, $row->{tnx}{balance_after}),
+                sell_price     => formatnumber('price', $client->currency, $row->{fmb}{sell_price}),
+                contract_id    => $row->{tnx}{financial_market_bet_id},
+                sell_time      => $row->{fmb}{sell_time},
+            };
+        }
+        push @{$data_to_return}, $new;
+    }
+
+    return +{result => $data_to_return};
+};
+
+rpc sell => sub {
+    my $params = shift;
+
+    my $client = $params->{client} // die "client should be authed when get here";
+
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
 
     my ($source, $args) = ($params->{source}, $params->{args});
     my $id = $args->{sell};
@@ -267,17 +453,19 @@ sub sell {
             code              => 'InvalidSellContractProposal',
             message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless @fmbs;
 
-    my $contract_parameters = shortcode_to_parameters($fmbs[0]->{short_code}, $client->currency);
+    my $contract_parameters = {
+        shortcode => $fmbs[0]->{short_code},
+        currency  => $client->currency
+    };
     $contract_parameters->{landing_company} = $client->landing_company->short;
-    my $amount_type = $contract_parameters->{amount_type};
-    my $contract    = produce_contract($contract_parameters);
-    my $trx         = BOM::Product::Transaction->new({
-        client   => $client,
-        contract => $contract,
-        (defined $amount_type) ? (amount_type => $amount_type) : (),
-        contract_id => $id,
-        price       => ($args->{price} || 0),
-        source      => $source,
+    my $purchase_date = time;
+    my $trx           = BOM::Transaction->new({
+        purchase_date       => $purchase_date,
+        client              => $client,
+        contract_parameters => $contract_parameters,
+        contract_id         => $id,
+        price               => ($args->{price} || 0),
+        source              => $source,
     });
 
     if (my $err = $trx->sell) {
@@ -288,14 +476,29 @@ sub sell {
         });
     }
 
-    $trx = $trx->transaction_record;
+    try {
+        trade_copiers({
+                action        => 'sell',
+                client        => $client,
+                contract      => $trx->contract,
+                price         => $args->{price},
+                source        => $source,
+                purchase_date => $purchase_date,
+            }) if $client->allow_copiers;
+    }
+    catch {
+        warn "Copiers trade error: " . $_;
+    };
+
+    my $trx_rec = $trx->transaction_record;
 
     return {
-        transaction_id => $trx->id,
+        transaction_id => $trx->transaction_id,
+        reference_id   => $trx->reference_id,                                                   ### buy transaction ID
         contract_id    => $id,
-        balance_after  => sprintf('%.2f', $trx->balance_after),
-        sold_for       => abs($trx->amount),
+        balance_after  => formatnumber('amount', $client->currency, $trx_rec->balance_after),
+        sold_for       => formatnumber('price', $client->currency, $trx_rec->amount),
     };
-}
+};
 
 1;

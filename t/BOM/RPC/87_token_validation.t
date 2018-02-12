@@ -24,7 +24,7 @@ $client_cr->save;
 
 my $user_cr = BOM::Platform::User->create(
     email    => $email_cr,
-    password => BOM::System::Password::hashpw('jskjd8292922'));
+    password => BOM::Platform::Password::hashpw('jskjd8292922'));
 $user_cr->save;
 $user_cr->add_loginid({loginid => $client_cr->loginid});
 $user_cr->save;

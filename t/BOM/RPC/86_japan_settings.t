@@ -1,8 +1,8 @@
 use strict;
 use warnings;
-use Test::More tests => 4;
+use Test::More tests => 5;
+use Test::Warnings;
 use Test::Exception;
-use JSON;
 
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -17,9 +17,6 @@ use BOM::MarketData::Types;
 ## do not send email
 my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
-
-my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
-$email_mocked->mock('send_email', sub { return 1 });
 
 my %jp_client_details = (
     gender                                      => 'f',
@@ -77,11 +74,10 @@ subtest 'create VRTJ & JP client' => sub {
         client => $vr_client,
         args   => \%jp_client_details
     });
-    $jp_loginid = $res->{client_id};
-    like $jp_loginid, qr/^JP\d+$/, "JP client created";
+    like $res->{client_id}, qr/^JP\d+$/, "JP client created";
 
     # activate JP real money a/c
-    $jp_client = Client::Account->new({loginid => $jp_loginid});
+    $jp_client = Client::Account->new({loginid => $res->{client_id}});
     $jp_client->clr_status('disabled');
     $jp_client->set_status('jp_activation_pending', 'test', 'for test');
     $jp_client->save;
@@ -117,7 +113,16 @@ subtest 'JP set_settings' => sub {
         client_ip    => '127.0.0.1',
         user_agent   => 'sdssasd',
         language     => 'ja',
-        args         => {jp_settings => {occupation => 'Financial Director'}}};
+        args         => {
+            jp_settings            => {occupation => 'Financial Director'},
+            address_line_1         => 'address line 1',
+            address_line_2         => 'address line 2',
+            address_city           => 'address city',
+            address_state          => 'address state',
+            address_postcode       => '12345',
+            phone                  => '2345678',
+            account_opening_reason => 'Hedging',
+        }};
     $res = BOM::RPC::v3::Accounts::set_settings($params);
     ok $res->{status}, 'Settings updated accordingly';
 };
@@ -132,19 +137,20 @@ subtest 'non-JP client get_settings' => sub {
 
         # new CR client
         my %cr_client_details = (
-            salutation       => 'Ms',
-            last_name        => 'last-name',
-            first_name       => 'first-name',
-            date_of_birth    => '1990-12-30',
-            residence        => 'au',
-            address_line_1   => 'Jalan Usahawan',
-            address_line_2   => 'Enterpreneur Center',
-            address_city     => 'Cyberjaya',
-            address_state    => 'Selangor',
-            address_postcode => '47120',
-            phone            => '+603 34567890',
-            secret_question  => 'Favourite dish',
-            secret_answer    => 'nasi lemak,teh tarik',
+            salutation             => 'Ms',
+            last_name              => 'last-name',
+            first_name             => 'first-name',
+            date_of_birth          => '1990-12-30',
+            residence              => 'au',
+            address_line_1         => 'Jalan Usahawan',
+            address_line_2         => 'Enterpreneur Center',
+            address_city           => 'Cyberjaya',
+            address_state          => 'Selangor',
+            address_postcode       => '47120',
+            phone                  => '+603 34567890',
+            secret_question        => 'Favourite dish',
+            secret_answer          => 'nasi lemak,teh tarik',
+            account_opening_reason => 'Hedging',
         );
 
         $res = BOM::RPC::v3::NewAccount::new_account_real({

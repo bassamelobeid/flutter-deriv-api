@@ -3,9 +3,13 @@ package BOM::RPC::v3::Japan::NewAccount;
 use strict;
 use warnings;
 
-use JSON qw(from_json encode_json);
+use Encode;
+use JSON::MaybeXS;
 use DateTime;
 use Date::Utility;
+use HTML::Entities qw(encode_entities);
+
+use BOM::RPC::Registry '-dsl';
 
 use Brands;
 use LandingCompany::Registry;
@@ -14,23 +18,27 @@ use BOM::Platform::Locale;
 use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
-use BOM::System::Config;
+use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
-use BOM::System::AuditLog;
+use BOM::Platform::AuditLog;
 use BOM::Database::Helper::QuestionsAnswered;
+
+my $json = JSON::MaybeXS->new;
+
+requires_auth();
 
 sub get_jp_account_status {
     my $client = shift;
 
     my $user = BOM::Platform::User->new({email => $client->email});
     my @siblings = $user->clients(disabled_ok => 1);
-    my $jp_client = $siblings[0];
+    my $jp_client = $user->get_default_client();
 
     my $jp_account_status;
 
     if (    @siblings > 1
-        and LandingCompany::Registry::get_by_broker($client->broker)->short eq 'japan-virtual'
-        and LandingCompany::Registry::get_by_broker($jp_client->broker)->short eq 'japan')
+        and LandingCompany::Registry->get_by_broker($client->broker)->short eq 'japan-virtual'
+        and LandingCompany::Registry->get_by_broker($jp_client->broker)->short eq 'japan')
     {
         if ($jp_client->get_status('disabled')) {
             $jp_account_status->{status} = 'disabled';
@@ -43,7 +51,7 @@ sub get_jp_account_status {
                         my $next_dt = _knowledge_test_available_date();
                         $jp_account_status->{next_test_epoch} = $next_dt->epoch;
                     } elsif ($status eq 'jp_knowledge_test_fail') {
-                        my $tests      = JSON::from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
+                        my $tests      = $json->decode($jp_client->financial_assessment->data)->{jp_knowledge_test};
                         my $last_epoch = $tests->[-1]->{epoch};
                         my $next_dt    = _knowledge_test_available_date($last_epoch);
 
@@ -106,19 +114,19 @@ sub _knowledge_test_available_date {
     return $dt;
 }
 
-sub jp_knowledge_test {
+rpc jp_knowledge_test => sub {
     my $params = shift;
 
     my $client = $params->{client};
 
     my $user = BOM::Platform::User->new({email => $client->email});
     my @siblings = $user->clients(disabled_ok => 1);
-    my $jp_client = $siblings[0];
+    my $jp_client = $user->get_default_client();
 
     # only allowed for VRTJ client, upgrading to JP
     unless (@siblings > 1
-        and LandingCompany::Registry::get_by_broker($client->broker)->short eq 'japan-virtual'
-        and LandingCompany::Registry::get_by_broker($jp_client->broker)->short eq 'japan')
+        and LandingCompany::Registry->get_by_broker($client->broker)->short eq 'japan-virtual'
+        and LandingCompany::Registry->get_by_broker($jp_client->broker)->short eq 'japan')
     {
         return BOM::RPC::v3::Utility::permission_error();
     }
@@ -132,7 +140,7 @@ sub jp_knowledge_test {
     } elsif ($jp_client->get_status('jp_knowledge_test_fail')) {
         # can't take test > 1 within same business day
 
-        my $tests      = from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
+        my $tests      = $json->decode($jp_client->financial_assessment->data)->{jp_knowledge_test};
         my $last_epoch = $tests->[-1]->{epoch};
         $next_dt = _knowledge_test_available_date($last_epoch);
     } else {
@@ -162,7 +170,7 @@ sub jp_knowledge_test {
     }
 
     # append result in financial_assessment record
-    my $financial_data = from_json($jp_client->financial_assessment->data);
+    my $financial_data = $json->decode($jp_client->financial_assessment->data);
 
     my $results = $financial_data->{jp_knowledge_test} // [];
     push @{$results},
@@ -172,7 +180,7 @@ sub jp_knowledge_test {
         epoch  => $now->epoch,
         };
     $financial_data->{jp_knowledge_test} = $results;
-    $jp_client->financial_assessment({data => encode_json($financial_data)});
+    $jp_client->financial_assessment({data => Encode::encode_utf8($json->encode($financial_data))});
 
     #save the questions here.
     if ($questions) {
@@ -230,19 +238,20 @@ support@binary.com',
         );
 
         send_email({
-            from               => Brands->new(name => request()->brand)->emails('support'),
-            to                 => $client->email,
-            subject            => localize('Kindly send us your documents for verification.'),
-            message            => [$email_content],
-            use_email_template => 1,
-            template_loginid   => $client->loginid,
+            from                  => Brands->new(name => request()->brand)->emails('support'),
+            to                    => $client->email,
+            subject               => localize('Kindly send us your documents for verification.'),
+            message               => [$email_content],
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            template_loginid      => $client->loginid,
         });
-        BOM::System::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to request for docs',
+        BOM::Platform::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to request for docs',
             $client->loginid);
     }
 
     return {test_taken_epoch => $now->epoch};
-}
+};
 
 sub get_jp_settings {
     my $client = shift;
@@ -255,7 +264,7 @@ sub get_jp_settings {
             $jp_settings->{daily_loss_limit} = $client->get_self_exclusion->max_losses;
         }
 
-        my $assessment = from_json($client->financial_assessment->data);
+        my $assessment = $json->decode($client->financial_assessment->data);
         $jp_settings->{$_} = $assessment->{$_} for ('trading_purpose', 'hedge_asset', 'hedge_asset_amount');
 
         $jp_settings->{$_} = $assessment->{$_}->{answer} for qw(
@@ -310,7 +319,7 @@ sub set_jp_settings {
 
     my $fin_change = 0;
 
-    my $ori_fin = JSON::from_json($client->financial_assessment->data);
+    my $ori_fin = $json->decode($client->financial_assessment->data);
 
     if ($args) {
 
@@ -378,7 +387,7 @@ sub set_jp_settings {
                 $new_fin->{$_} = $ori_fin->{$_};
             }
         }
-        $client->financial_assessment({data => encode_json($new_fin)});
+        $client->financial_assessment({data => Encode::encode_utf8($json->encode($new_fin))});
     }
 
     $client->latest_environment(Date::Utility->new->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
@@ -388,9 +397,11 @@ sub set_jp_settings {
                 message_to_client => localize('Sorry, an error occurred while processing your account.')});
     }
 
-    my $message =
-        localize('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
-        . "\n\n";
+    my $message = localize(
+        'Dear [_1] [_2] [_3],',
+        map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($client->salutation),
+        $client->first_name, $client->last_name
+    ) . "\n\n";
 
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
@@ -398,23 +409,24 @@ sub set_jp_settings {
     foreach my $field (@updated) {
         $message .=
               "<tr><td style='text-align:left'><strong>"
-            . $field->[0]
+            . encode_entities($field->[0])
             . "</strong></td><td> : </td><td style='text-align:left'>"
-            . $field->[2]
+            . encode_entities($field->[2])
             . "</td></tr>";
     }
     $message .= "</table>";
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => Brands->new(name => request()->brand)->emails('support'),
-        to                 => $client->email,
-        subject            => $client->loginid . ' ' . localize('Change in account settings'),
-        message            => [$message],
-        use_email_template => 1,
-        template_loginid   => $client->loginid,
+        from                  => Brands->new(name => request()->brand)->emails('support'),
+        to                    => $client->email,
+        subject               => $client->loginid . ' ' . localize('Change in account settings'),
+        message               => [$message],
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        template_loginid      => $client->loginid,
     });
-    BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
+    BOM::Platform::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
     my $cs_msg = localize('Please note that client [_1] settings has been updated as below:', $client->loginid) . "\n\n";
     foreach my $field (@updated) {

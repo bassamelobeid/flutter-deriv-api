@@ -1,21 +1,26 @@
 use strict;
 use warnings;
+use utf8;
 use Test::Most;
+use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
-use utf8;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
+use Encode;
+use JSON::MaybeXS;
 use Encode qw(encode);
 use Email::Folder::Search;
-use BOM::Product::ContractFactory qw( produce_contract );
+
+use Format::Util::Numbers qw/formatnumber/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::FinancialAssessment;
 use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
-use BOM::System::Password;
+use BOM::Platform::Password;
 use BOM::Platform::User;
 
 use BOM::MarketData qw(create_underlying_db);
@@ -25,17 +30,6 @@ use BOM::MarketData::Types;
 package MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Test::Most;
-
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'economic_events',
-    {
-        events => [{
-                symbol       => 'USD',
-                release_date => 1,
-                source       => 'forexfactory',
-                impact       => 1,
-                event_name   => 'FOMC',
-            }]});
 
 sub tcall {
     my $self   = shift;
@@ -69,7 +63,7 @@ package main;
 # init db
 my $email       = 'abc@binary.com';
 my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::System::Password::hashpw($password);
+my $hash_pwd    = BOM::Platform::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
@@ -101,12 +95,19 @@ $test_client_cr->email('sample@binary.com');
 $test_client_cr->set_default_account('USD');
 $test_client_cr->save;
 
+my $test_client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$test_client_cr_2->email('sample@binary.com');
+$test_client_cr_2->save;
+
 my $user_cr = BOM::Platform::User->create(
     email    => 'sample@binary.com',
     password => $hash_pwd
 );
 $user_cr->save;
 $user_cr->add_loginid({loginid => $test_client_cr->loginid});
+$user_cr->add_loginid({loginid => $test_client_cr_2->loginid});
 $user_cr->save;
 
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -120,12 +121,56 @@ my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client_disabled->set_status('disabled', 1, 'test disabled');
 $test_client_disabled->save();
 
+my $japan_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'JP',
+});
+
+my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MX',
+    residence   => 'gb',
+});
+$test_client_mx->email($email);
+
+my $test_client_vr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+});
+$test_client_vr_2->email($email);
+$test_client_vr_2->save;
+
+my $email_mlt_mf    = 'mltmf@binary.com';
+my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MLT',
+});
+$test_client_mlt->email($email_mlt_mf);
+$test_client_mlt->save;
+
+my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+$test_client_mf->email($email_mlt_mf);
+$test_client_mf->save;
+
+my $user_mlt_mf = BOM::Platform::User->create(
+    email    => $email_mlt_mf,
+    password => $hash_pwd
+);
+$user_mlt_mf->save;
+$user_mlt_mf->add_loginid({loginid => $test_client_vr_2->loginid});
+$user_mlt_mf->add_loginid({loginid => $test_client_mlt->loginid});
+$user_mlt_mf->add_loginid({loginid => $test_client_mf->loginid});
+$user_mlt_mf->save;
+
 my $m              = BOM::Database::Model::AccessToken->new;
 my $token1         = $m->create_token($test_loginid, 'test token');
 my $token_21       = $m->create_token($test_client_cr->loginid, 'test token');
+my $token_cr_2     = $m->create_token($test_client_cr_2->loginid, 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
+my $token_japan    = $m->create_token($japan_client->loginid, 'test token');
+my $token_mx       = $m->create_token($test_client_mx->loginid, 'test token');
+my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
+my $token_mf       = $m->create_token($test_client_mf->loginid, 'test token');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -170,58 +215,29 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
-my $SPGSWT_start = Date::Utility->new('1413892500');
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'index',
-    {
-        symbol        => 'SPGSWT',
-        recorded_date => $SPGSWT_start,
-        rates         => {
-            1   => 0.2,
-            2   => 0.15,
-            7   => 0.18,
-            32  => 0.25,
-            62  => 0.2,
-            92  => 0.18,
-            186 => 0.1,
-            365 => 0.13,
-        },
+my $R_100_start = Date::Utility->new('1413892500');
 
-    });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'correlation_matrix',
-    {
-        recorded_date => $SPGSWT_start,
-    });
-
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_moneyness',
-    {
-        symbol         => 'SPGSWT',
-        spot_reference => 100,
-        recorded_date  => $SPGSWT_start,
-    });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => 'USD',
-        recorded_date => $SPGSWT_start,
+        recorded_date => $R_100_start,
     });
 
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'SPGSWT',
-    epoch      => $SPGSWT_start->epoch,
+    underlying => 'R_100',
+    epoch      => $R_100_start->epoch,
     quote      => 100
 });
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'SPGSWT',
-    epoch      => $SPGSWT_start->epoch + 30,
+    underlying => 'R_100',
+    epoch      => $R_100_start->epoch + 30,
     quote      => 111
 });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'SPGSWT',
-    epoch      => $SPGSWT_start->epoch + 14400,
+    underlying => 'R_100',
+    epoch      => $R_100_start->epoch + 14400,
     quote      => 80
 });
 
@@ -231,20 +247,22 @@ my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
 my $method = 'payout_currencies';
 subtest $method => sub {
-    is_deeply($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD)], 'invalid token will get all currencies');
-    is_deeply(
+    # we shouldn't care about order of currencies
+    # we just need to send array back
+    cmp_bag($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD BTC BCH LTC ETH)], 'invalid token will get all currencies');
+    cmp_bag(
         $c->tcall(
             $method,
             {
                 token => undef,
             }
         ),
-        [qw(USD EUR GBP AUD)],
+        [qw(USD EUR GBP AUD BTC BCH LTC ETH)],
         'undefined token will get all currencies'
     );
 
-    is_deeply($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
-    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)], "will return legal currencies if no token");
+    cmp_bag($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
+    cmp_bag($c->tcall($method, {}), [qw(USD EUR GBP AUD BTC BCH LTC ETH)], "will return legal currencies if no token");
 };
 
 $method = 'landing_company';
@@ -322,9 +340,9 @@ subtest $method => sub {
     );
     is($c->tcall($method, {token => $token1})->{count}, 0, 'have 0 statements if no default account');
 
-    my $contract_expired = produce_contract({
+    my $contract_expired = {
         underlying   => $underlying,
-        bet_type     => 'FLASHU',
+        bet_type     => 'CALL',
         currency     => 'USD',
         stake        => 100,
         date_start   => $now->epoch - 100,
@@ -333,15 +351,14 @@ subtest $method => sub {
         entry_tick   => $old_tick1,
         exit_tick    => $old_tick2,
         barrier      => 'S0P',
-    });
+    };
 
-    my $txn = BOM::Product::Transaction->new({
-        client        => $test_client2,
-        contract      => $contract_expired,
-        price         => 100,
-        payout        => $contract_expired->payout,
-        amount_type   => 'stake',
-        purchase_date => $now->epoch - 101,
+    my $txn = BOM::Transaction->new({
+        client              => $test_client2,
+        contract_parameters => $contract_expired,
+        price               => 100,
+        amount_type         => 'stake',
+        purchase_date       => $now->epoch - 101,
     });
 
     $txn->buy(skip_validation => 1);
@@ -357,7 +374,7 @@ subtest $method => sub {
     is(
         $result->{transactions}[0]{longcode},
         'Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.',
-        "if have short code, then simple_contract_info is called"
+        "if have short code, we get more details"
     );
     is($result->{transactions}[2]{longcode}, 'free gift', "if no short code, then longcode is the remark");
 
@@ -368,28 +385,32 @@ subtest $method => sub {
     is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
+    {
+        my $sell_tr = [grep { $_->{action_type} && $_->{action_type} eq 'sell' } @{$result->{transactions}}]->[0];
+        my $buy_tr  = [grep { $_->{action_type} && $_->{action_type} eq 'buy' } @{$result->{transactions}}]->[0];
+        is($sell_tr->{reference_id}, $buy_tr->{transaction_id}, 'transaction id is same for buy and sell ');
+    }
 
-    $contract_expired = produce_contract({
-        underlying   => create_underlying('SPGSWT'),
-        bet_type     => 'INTRADU',
+    $contract_expired = {
+        underlying   => create_underlying('R_100'),
+        bet_type     => 'CALL',
         currency     => 'USD',
         stake        => 100,
-        date_start   => $SPGSWT_start->epoch,
-        date_pricing => $SPGSWT_start->epoch,
+        date_start   => $R_100_start->epoch,
+        date_pricing => $R_100_start->epoch,
         date_expiry  => 1413906900,
         current_tick => $entry_tick,
         entry_tick   => $entry_tick,
         barrier      => 'S0P',
-    });
-    $contract_expired->{shortcode} = 'INTRADU_SPGSWT_20_1413892500_1413906900_S0P_0';
-    $txn = BOM::Product::Transaction->new({
-            client        => $test_client2,
-            contract      => $contract_expired,
-            price         => 100,
-            payout        => 200,
-            app_markup    => 0,
-            amount_type   => 'stake',
-            purchase_date => $SPGSWT_start->epoch - 101,
+    };
+
+    $txn = BOM::Transaction->new({
+            client              => $test_client2,
+            contract_parameters => $contract_expired,
+            price               => 100,
+            payout              => 200,
+            amount_type         => 'stake',
+            purchase_date       => $R_100_start->epoch - 101,
 
     });
     $txn->buy(skip_validation => 1);
@@ -403,8 +424,8 @@ subtest $method => sub {
             args  => {description => 1}});
     is(
         $result->{transactions}[0]{longcode},
-        'Win payout if SPGSWT is strictly higher than entry spot at 4 hours after 2014-10-21 11:55:00 GMT.',
-        "if have short code, then simple_contract_info is called"
+        'Win payout if Volatility 100 Index is strictly higher than entry spot at 4 hours after contract start time.',
+        "if have short code, then we get more details"
     );
 
     # here the expired contract is sold, so we can get the txns as test value
@@ -417,6 +438,11 @@ subtest $method => sub {
         '<=', 2, 'transaction time correct for buy ');
     cmp_ok(abs($result->{transactions}[2]{transaction_time} - Date::Utility->new($txns->[2]{payment_time})->epoch),
         '<=', 2, 'transaction time correct for payment');
+    {
+        my $sell_tr = [grep { $_->{action_type} && $_->{action_type} eq 'sell' } @{$result->{transactions}}]->[0];
+        my $buy_tr  = [grep { $_->{action_type} && $_->{action_type} eq 'buy' } @{$result->{transactions}}]->[0];
+        is($sell_tr->{reference_id}, $buy_tr->{transaction_id}, 'transaction id is same for buy and sell ');
+    }
 
 };
 
@@ -457,9 +483,9 @@ subtest $method => sub {
     );
 
     #create a new transaction for test
-    my $contract_expired = produce_contract({
+    my $contract_expired = {
         underlying   => $underlying,
-        bet_type     => 'FLASHU',
+        bet_type     => 'CALL',
         currency     => 'USD',
         stake        => 100,
         date_start   => $now->epoch - 100,
@@ -468,15 +494,14 @@ subtest $method => sub {
         entry_tick   => $old_tick1,
         exit_tick    => $old_tick2,
         barrier      => 'S0P',
-    });
+    };
 
-    my $txn = BOM::Product::Transaction->new({
-        client        => $test_client2,
-        contract      => $contract_expired,
-        price         => 100,
-        payout        => $contract_expired->payout,
-        amount_type   => 'stake',
-        purchase_date => $now->epoch - 101,
+    my $txn = BOM::Transaction->new({
+        client              => $test_client2,
+        contract_parameters => $contract_expired,
+        price               => 100,
+        amount_type         => 'stake',
+        purchase_date       => $now->epoch - 101,
     });
 
     $txn->buy(skip_validation => 1);
@@ -496,13 +521,13 @@ subtest $method => sub {
     my $args    = {};
     my $data    = $fmb_dm->get_sold_bets_of_account($args);
     my $expect0 = {
-        'sell_price'     => '100',
+        'sell_price'     => '100.00',
         'contract_id'    => $txn->contract_id,
         'transaction_id' => $txn->transaction_id,
         'sell_time'      => Date::Utility->new($data->[1]{sell_time})->epoch,
-        'buy_price'      => '100',
+        'buy_price'      => '100.00',
         'purchase_time'  => Date::Utility->new($data->[1]{purchase_time})->epoch,
-        'payout'         => $contract_expired->payout,
+        'payout'         => formatnumber('price', $test_client2->currency, $txn->contract->payout),
         'app_id'         => undef
     };
     is_deeply($result->{transactions}[1], $expect0, 'result is correct');
@@ -586,6 +611,36 @@ subtest $method => sub {
     );
 };
 
+# placing this test here as need to test the calling of financial_assessment
+# before a financial assessment record has been created
+$method = 'get_financial_assessment';
+subtest $method => sub {
+    my $args = {"get_financial_assessment" => 1};
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token_vr,
+            args  => $args
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token_japan
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for japan account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token1
+        });
+    is_deeply($res, {}, 'empty assessment details');
+};
+
 $method = 'get_account_status';
 subtest $method => sub {
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
@@ -620,34 +675,105 @@ subtest $method => sub {
         'check authorization'
     );
 
-    is_deeply(
-        $c->tcall($method, {token => $token1}),
-        {
-            status              => [],
-            risk_classification => 'low'
-        },
-        'status empty'
-    );
-    $test_client->set_status('tnc_approval', 'test staff', 1);
+    # test 'financial_assessment_not_complete'
+    my $temp = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+    my $data = {map { $_ => {answer => $temp->{$_}} } keys %$temp};
+
+    # function to repeatedly test financial assessment
+    sub test_financial_assessment {
+        my ($data, $is_present, $msg) = @_;
+        $test_client->financial_assessment({
+            data => Encode::encode_utf8(JSON::MaybeXS->new->encode($data)),
+        });
+        $test_client->save();
+        my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
+        ok($res, $msg);
+    }
+    # test 1: when some answers are empty
+    $data->{account_turnover}->{answer} = "";
+    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when some answers are empty');
+    # test 2: when some questions are not answered
+    delete $data->{account_turnover};
+    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when questions are answered properly');
+    # test 3: when the client's risk classification is different
+    $test_client->aml_risk_classification('high');
     $test_client->save();
-    is_deeply(
-        $c->tcall($method, {token => $token1}),
+    test_financial_assessment($data, 1, "financial_assessment_not_complete should present regardless of the client's risk classification");
+    # test 4: when answer is '0', 'financial_assessment_not_complete' should not present
+    #         as '0' may be one of the acceptable answers for options in the future
+    $data->{account_turnover}->{answer} = '0';
+    test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
+    # test 5: 'financial_assessment_not_complete' should not present when everything is complete
+    $data->{account_turnover}->{answer} = 'Less than $25,000';
+    test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
+
+    # $test_client->set_status('tnc_approval', 'test staff', 1);
+
+    # reset the risk classification for the following test
+    $test_client->aml_risk_classification('low');
+    $test_client->save();
+
+    $test_client_cr->set_status('document_needs_action');
+    $test_client_cr->save;
+    cmp_deeply(
+        $c->tcall($method, {token => $token_21}),
         {
-            status              => [],
-            risk_classification => 'low'
+            status                        => bag(qw(financial_assessment_not_complete document_needs_action)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '1',
         },
-        'tnc_approval is excluded, still status is empty'
+        'authentication page should be shown if needs action is set regardless of balance'
+    );
+
+    $test_client_cr->clr_status('document_needs_action');
+    $test_client_cr->set_status('document_under_review');
+    $test_client_cr->save;
+    cmp_deeply(
+        $c->tcall($method, {token => $token_21}),
+        {
+            status                        => bag(qw(financial_assessment_not_complete document_under_review)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '1',
+        },
+        'authentication page should be shown if under review is set regardless of balance'
+    );
+
+    # Revert under review state
+    $test_client_cr->clr_status('document_under_review');
+    $test_client_cr->save;
+
+    cmp_deeply(
+        $c->tcall($method, {token => $token_21}),
+        {
+            status                        => bag(qw(financial_assessment_not_complete)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '0',
+        },
+        'authentication should not be shown if neither needs action nor under review is set if balance is < 4k'
     );
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;
-    is_deeply(
+    # We are authenticated, but MF still has flag set until age_verification has been completed
+    cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => ['authenticated'],
-            risk_classification => 'low'
+            status                        => bag(qw(authenticated)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '1',
         },
         'ok, authenticated'
+    );
+    $test_client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+    $test_client->save;
+    cmp_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status                        => bag(qw(age_verification authenticated)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '0',
+        },
+        'ok, authenticated and age verified'
     );
 };
 
@@ -681,8 +807,8 @@ subtest $method => sub {
                 user_pass    => $oldpass
             }
             )->{error}->{message_to_client},
-        'Password is not strong enough.',
-        'Password is not strong enough.',
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
     );
     is(
         BOM::RPC::v3::Utility::_check_password({
@@ -782,7 +908,8 @@ subtest $method => sub {
     $params->{args}{new_password} = $password;
     is($c->tcall($method, $params)->{error}{message_to_client}, 'New password is same as old password.');
     $params->{args}{new_password} = '111111111';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.');
+    is($c->tcall($method, $params)->{error}{message_to_client},
+        'Password should be at least six characters, including lower and uppercase letters with numbers.');
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
     $mailbox->clear;
@@ -857,7 +984,11 @@ subtest $method => sub {
         'return error if lock password same with user password'
     );
     $params->{args}{lock_password} = '1111111';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.', 'check strong');
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'check strong'
+    );
     $params->{args}{lock_password} = $tmp_new_password;
 
     $mailbox->clear;
@@ -887,7 +1018,7 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
 
     $mailbox->clear;
-    $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
+    $test_client->cashier_setting_password(BOM::Platform::Password::hashpw($tmp_password));
     $test_client->save;
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
@@ -983,6 +1114,12 @@ subtest $method => sub {
             'first_name'                     => 'bRaD',
             'email_consent'                  => '0',
             'allow_copiers'                  => '0',
+            'client_tnc_status'              => '',
+            'place_of_birth'                 => undef,
+            'tax_residence'                  => undef,
+            'tax_identification_number'      => undef,
+            'account_opening_reason'         => undef,
+            'request_professional_status'    => 0
         });
 
     $params->{token} = $token1;
@@ -1000,26 +1137,6 @@ subtest $method => sub {
         },
         'vr client return less messages'
     );
-};
-
-$method = 'get_financial_assessment';
-subtest $method => sub {
-    my $args = {"get_financial_assessment" => 1};
-    my $res = $c->tcall(
-        $method,
-        {
-            token => $token_vr,
-            args  => $args
-        });
-    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
-
-    $res = $c->tcall(
-        $method,
-        {
-            args  => $args,
-            token => $token1
-        });
-    is_deeply($res, {}, 'empty assessment details');
 };
 
 $method = 'set_financial_assessment';
@@ -1042,7 +1159,10 @@ subtest $method => sub {
         "education_level"                      => "Secondary",
         "income_source"                        => "Self-Employed",
         "net_income"                           => '$25,000 - $50,000',
-        "estimated_worth"                      => '$100,000 - $250,000'
+        "estimated_worth"                      => '$100,000 - $250,000',
+        "occupation"                           => 'Managers',
+        "employment_status"                    => "Self-Employed",
+        "source_of_wealth"                     => "Company Ownership",
     };
 
     my $res = $c->tcall(
@@ -1057,10 +1177,52 @@ subtest $method => sub {
         $method,
         {
             args  => $args,
+            token => $token_japan
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for japan account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
             token => $token1
         });
     cmp_ok($res->{score}, "<", 60, "Got correct score");
-    is($res->{is_professional}, 0, "As score is less than 60 so its marked as not professional");
+
+    # test that setting this for one client also sets it for client with different landing company
+    is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
+    is($c->tcall('get_financial_assessment', {token => $token_mf})->{source_of_wealth},  undef, "Financial assessment not set for MF clinet");
+    $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token_mf
+        });
+    is($c->tcall('get_financial_assessment', {token => $token_mf})->{source_of_wealth}, "Company Ownership",
+        "Financial assessment set for MF client");
+    is(
+        $c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth},
+        "Company Ownership",
+        "Financial assessment set for MLT client"
+    );
+
+    # test that setting this for one client sets it for clients with same landing company
+    is($c->tcall('get_financial_assessment', {token => $token_21})->{source_of_wealth},   undef, "Financial assessment not set for CR client");
+    is($c->tcall('get_financial_assessment', {token => $token_cr_2})->{source_of_wealth}, undef, "Financial assessment not set for second CR clinet");
+    $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token_cr_2
+        });
+    is($c->tcall('get_financial_assessment', {token => $token_21})->{source_of_wealth}, "Company Ownership",
+        "Financial assessment set for CR client");
+    is(
+        $c->tcall('get_financial_assessment', {token => $token_cr_2})->{source_of_wealth},
+        "Company Ownership",
+        "Financial assessment set for second CR client"
+    );
+
 };
 
 $method = 'get_financial_assessment';
@@ -1126,35 +1288,78 @@ subtest $method => sub {
     $params->{args}{residence} = 'zh';
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, an error occurred while processing your account.',
+        'Sorry, our service is not available for your country of residence.',
         'return error if cannot save'
     );
     $mocked_client->unmock('save');
+    # testing invalid residence, expecting save to fail
     my $result = $c->tcall($method, $params);
+    is($result->{status}, undef, 'invalid residence should not be able to save');
+    # testing valid residence, expecting save to pass
+    $params->{args}{residence} = 'kr';
+    $result = $c->tcall($method, $params);
     is($result->{status}, 1, 'vr account update residence successfully');
     $test_client_vr->load;
     isnt($test_client->address_1, 'Address 1', 'But vr account only update residence');
 
     # test real account
     $params->{token} = $token1;
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
     my %full_args = (
-        address_line_1   => 'address line 1',
-        address_line_2   => 'address line 2',
-        address_city     => 'address city',
-        address_state    => 'address state',
-        address_postcode => '12345',
-        phone            => '2345678',
+        address_line_1 => 'address line 1',
+        address_line_2 => 'address line 2',
+        address_city   => 'address city',
+        address_state  => 'BA',
+        phone          => '2345678',
+        place_of_birth => 'au',
     );
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Input validation failed: account_opening_reason',
+        'real account without account opening reason has to set it'
+    );
+
+    $full_args{account_opening_reason} = 'Income Earning';
+
+    $params->{args} = {%{$params->{args}}, %full_args};
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
+
+    $params->{args} = {%full_args};
+
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
+        'Correct tax error message'
+    );
+
+    $full_args{tax_residence}             = 'de';
+    $full_args{tax_identification_number} = '111-222-333';
+
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
+    is($c->tcall($method, $params)->{status}, 1, 'can update without sending all required fields');
 
-    {
-        my $warn_string;
-        local $SIG{'__WARN__'} = sub { $warn_string = shift; };
-        ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
-        like($warn_string, qr/ERROR:  null value in column "address_line_1" violates not-null/, 'address line 1 cannot be null');
-    }
+    is($c->tcall($method, $params)->{status}, 1, 'can send account_opening_reason with same value');
+
+    is($c->tcall($method, $params)->{status}, 1, 'can send place_of_birth with same value');
+
+    $full_args{place_of_birth} = 'at';
+    $params->{args} = {%full_args};
+
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Value of place_of_birth cannot be changed.',
+        'cannot send place_of_birth with a different value'
+    );
+    delete $full_args{place_of_birth};
+
+    $full_args{account_opening_reason} = 'Hedging';
+    $params->{args} = {%full_args};
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Value of account_opening_reason cannot be changed.',
+        'cannot send account_opening_reason with a different value'
+    );
+    delete $full_args{account_opening_reason};
 
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
@@ -1164,6 +1369,7 @@ subtest $method => sub {
         'return error if cannot save'
     );
     $mocked_client->unmock_all;
+
     # add_note should send an email to support address,
     # but it is disabled when the test is running on travis-ci
     # so I mocked this function to check it is called.
@@ -1172,19 +1378,69 @@ subtest $method => sub {
     my $old_latest_environment = $test_client->latest_environment;
     $mailbox->clear;
     $params->{args}->{email_consent} = 1;
+
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+
+    my $res = $c->tcall('get_settings', {token => $token1});
+    is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");
+    is($res->{tax_residence},             $params->{args}{tax_residence},             "Check tax information");
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
+
     $test_client->load();
+
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
+
     my $subject = 'Change in account settings';
     my @msgs    = $mailbox->search(
         email   => $test_client->email,
         subject => qr/\Q$subject\E/
     );
     ok(@msgs, 'send a email to client');
-    like($msgs[0]{body}, qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
+    like($msgs[0]{body}, qr/>address line 1, address line 2, address city, Bali/s, 'email content correct');
+    $mailbox->clear;
 
-    is($c->tcall('get_settings', {token => $token1})->{email_consent}, 1, "Was able to set email consent correctly");
+    $params->{args}->{request_professional_status} = 1;
+    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    $subject = $test_loginid . ' requested for professional status';
+    @msgs    = $mailbox->search(
+        email   => 'compliance@binary.com,support@binary.com',
+        subject => qr/\Q$subject\E/
+    );
+    ok(@msgs, 'send a email to client');
+    $mailbox->clear;
+
+    $res = $c->tcall('get_settings', {token => $token1});
+    is($res->{request_professional_status}, 1, "Was able to request professional status");
+
+    # test that postcode is optional for non-MX clients and required for MX clients
+    $full_args{address_postcode} = '';
+
+    $params->{args} = {%full_args};
+    is($c->tcall($method, $params)->{status}, 1, 'postcode is optional for non-MX clients and can be set to null');
+
+    $params->{token} = $token_mx;
+    $params->{args}{account_opening_reason} = 'Income Earning';
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Input validation failed: address_postcode',
+        'postcode is required for MX clients and cannot be set to null'
+    );
+
+    # setting account settings for one client also updates for clients that have a different landing company
+    $params->{token} = $token_mlt;
+    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    is($c->tcall('get_settings', {token => $token_mlt})->{address_line_1}, "address line 1", "Was able to set settings for MLT client");
+    is($c->tcall('get_settings', {token => $token_mf})->{address_line_1},  "address line 1", "Was able to set settings for MF client");
+
+    # setting account settings for one client updates for all clients with the same landing company
+    $params->{token} = $token_cr_2;
+    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    is($c->tcall('get_settings', {token => $token_21})->{address_line_1}, "address line 1", "Was able to set settings correctly for CR client");
+    is(
+        $c->tcall('get_settings', {token => $token_cr_2})->{address_line_1},
+        "address line 1",
+        "Was able to set settings correctly for second CR client"
+    );
 };
 
 # set_self_exclusion && get_self_exclusion
@@ -1218,50 +1474,77 @@ subtest 'get and set self_exclusion' => sub {
         token => $token_vr,
         args  => {}};
     is($c->tcall($method, $params)->{error}{message_to_client}, "Permission denied.", 'vr client cannot set exclusion');
+
     $params->{token} = $token1;
+
     is($c->tcall($method, $params)->{error}{message_to_client}, "Please provide at least one self-exclusion setting.", "need one exclusion");
+
     $params->{args} = {
         set_self_exclusion => 1,
         max_balance        => 10000,
-        max_open_bets      => 100,
+        max_open_bets      => 50,
         max_turnover       => undef,    # null should be OK to pass
         max_7day_losses    => 0,        # 0 is ok to pass but not saved
     };
-    $mailbox->clear;
+
+    # Test for Maximum bets
+    $params->{args}->{max_open_bets} = 75;
+
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "Please enter a number between 1 and 60.",
+            'details'           => 'max_open_bets',
+            'code'              => 'SetSelfExclusionError'
+        });
+
+    $params->{args}->{max_open_bets} = 50;
+
+    # Test for Maximum balance
+    $params->{args}->{max_balance} = 399999;
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "Please enter a number between 0 and 300000.",
+            'details'           => 'max_balance',
+            'code'              => 'SetSelfExclusionError'
+        });
+
+    $params->{args}->{max_balance} = 10000;
+
     is($c->tcall($method, $params)->{status}, 1, "update self_exclusion ok");
+
+    $params->{args}{max_balance} = 9999.999;
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Input validation failed: max_balance',
+        'don\'t allow more than two decimals in max balance for this client'
+    );
+    $params->{args}{max_balance} = 9999.99;
+    is($c->tcall($method, $params)->{status}, 1, 'allow two decimals in max balance');
+
     delete $params->{args};
     is_deeply(
         $c->tcall('get_self_exclusion', $params),
         {
-            'max_open_bets' => '100',
-            'max_balance'   => '10000'
+            'max_open_bets' => '50',
+            'max_balance'   => '9999.99'
         },
         'get self_exclusion ok'
     );
-    my @msgs = $mailbox->search(
-        email   => 'compliance@binary.com,support@binary.com',
-        subject => qr/Client set self-exclusion limits/
-    );
-    ok(@msgs, "msg sent to support email");
-    like($msgs[0]{body}, qr/Maximum number of open positions: 100.*Maximum account balance: 10000/s, 'email content is ok');
+
+    # don't send previous required fields, should be okay
     $params->{args} = {
         set_self_exclusion => 1,
-        max_balance        => 10001,
-        max_turnover       => 1000,
-        max_open_bets      => 100,
+        max_30day_turnover => 100000
     };
-    is_deeply(
-        $c->tcall($method, $params)->{error},
-        {
-            'message_to_client' => "Please enter a number between 0 and 10000.",
-            'details'           => 'max_balance',
-            'code'              => 'SetSelfExclusionError'
-        });
+    is($c->tcall($method, $params)->{status}, 1, "update self_exclusion ok");
+
     $params->{args} = {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440 * 42 + 1,
     };
     is_deeply(
@@ -1275,7 +1558,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         exclude_until          => '2010-01-01'
     };
@@ -1290,7 +1573,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         exclude_until          => DateTime->now()->add(months => 3)->ymd
     };
@@ -1306,7 +1589,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         exclude_until          => DateTime->now()->add(years => 6)->ymd
     };
@@ -1323,7 +1606,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         timeout_until          => time() - 86400,
     };
@@ -1339,7 +1622,7 @@ subtest 'get and set self_exclusion' => sub {
         set_self_exclusion     => 1,
         max_balance            => 9999,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         timeout_until          => time() + 86400 * 7 * 10,    # max is 6 weeks
     };
@@ -1351,18 +1634,25 @@ subtest 'get and set self_exclusion' => sub {
             'code'              => 'SetSelfExclusionError'
         });
 
+    $mailbox->clear;
     my $exclude_until = DateTime->now()->add(months => 7)->ymd;
     my $timeout_until = DateTime->now()->add(days   => 1);
     $params->{args} = {
         set_self_exclusion     => 1,
         max_balance            => 9998,
         max_turnover           => 1000,
-        max_open_bets          => 100,
+        max_open_bets          => 50,
         session_duration_limit => 1440,
         exclude_until          => $exclude_until,
         timeout_until          => $timeout_until->epoch,
     };
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
+    my @msgs = $mailbox->search(
+        email   => 'compliance@binary.com,marketing@binary.com',
+        subject => qr/Client $test_loginid set self-exclusion limits/
+    );
+    ok(@msgs, "msg sent to marketing and compliance email");
+    like($msgs[0]{body}, qr/.*Exclude from website until/s, 'email content is ok');
 
     delete $params->{args};
     like(

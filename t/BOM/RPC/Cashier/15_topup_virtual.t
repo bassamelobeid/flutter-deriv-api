@@ -11,7 +11,6 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -175,7 +174,7 @@ is($balance, $limit, 'balance is equal to limit');
 my $price         = 100;
 my $contract_data = {
     underlying   => $underlying,
-    bet_type     => 'FLASHD',
+    bet_type     => 'PUT',
     currency     => 'USD',
     stake        => $price,
     date_start   => $now->epoch,
@@ -185,16 +184,14 @@ my $contract_data = {
     exit_tick    => $tick2,
     barrier      => 'S0P',
 };
-my $contract = produce_contract($contract_data);
 my $txn_data = {
-    client        => $test_client_vr,
-    contract      => $contract,
-    price         => $price,
-    payout        => $contract->payout,
-    amount_type   => 'stake',
-    purchase_date => $now->epoch,
+    client              => $test_client_vr,
+    contract_parameters => $contract_data,
+    price               => $price,
+    amount_type         => 'stake',
+    purchase_date       => $now->epoch,
 };
-my $txn = BOM::Product::Transaction->new($txn_data);
+my $txn = BOM::Transaction->new($txn_data);
 is($txn->buy(skip_validation => 1), undef, 'buy contract without error');
 $account->load;
 $balance = $account->balance + 0;

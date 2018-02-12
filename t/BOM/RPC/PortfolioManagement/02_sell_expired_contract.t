@@ -127,7 +127,7 @@ subtest 'Sell expired contract' => sub {
 };
 
 subtest 'Emergency error while sell contract' => sub {
-    my $module = Test::MockModule->new('BOM::Product::Transaction');
+    my $module = Test::MockModule->new('BOM::Transaction');
     $module->mock('sell_expired_contracts', sub { die });
 
     $rpc_ct->call_ok(@params)->has_error->error_code_is('SellExpiredError');

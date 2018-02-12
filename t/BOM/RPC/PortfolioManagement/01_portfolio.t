@@ -16,7 +16,6 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
 use BOM::Database::ClientDB;
-use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::Model::OAuth;
 
 use utf8;
@@ -102,6 +101,10 @@ subtest 'Auth client' => sub {
     $params[1]->{token} = $oauth_token;
 
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using oauth token');
+    BOM::Platform::Runtime->instance->app_config->system->suspend->expensive_api_calls(1);
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('SuspendedDueToLoad', 'error when expensive calls are disabled');
+    BOM::Platform::Runtime->instance->app_config->system->suspend->expensive_api_calls(0);
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('No error when unsuspended again');
 };
 
 subtest 'Return empty client portfolio' => sub {
@@ -145,13 +148,13 @@ subtest 'Return not expired client contracts' => sub {
             contract_type  => $fmb->{bet_type},
             currency       => $client->currency,
             shortcode      => $fmb->{short_code},
-            longcode       => (simple_contract_info($fmb->{short_code}, $client->currency))[0] // '',
             app_id         => undef
         };
     }
     'Create not expired contract and expected data';
 
     my $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
+    delete $result->{contracts}->[0]->{longcode};
     is_deeply($result->{contracts}, [$expected_contract_data], 'Should return contract data',);
 };
 

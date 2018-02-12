@@ -7,6 +7,7 @@ use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warn;
 
+use Date::Utility;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use POSIX qw/ ceil /;
@@ -24,18 +25,19 @@ my ($t, $rpc_ct);
 my ($method, $params, $client_details);
 
 $client_details = {
-    salutation       => 'hello',
-    last_name        => 'Vostrov' . rand(999),
-    first_name       => 'Evgeniy' . rand(999),
-    date_of_birth    => '1987-09-04',
-    address_line_1   => 'Sovetskaya street',
-    address_line_2   => 'home 1',
-    address_city     => 'Samara',
-    address_state    => 'Samara',
-    address_postcode => '112233',
-    phone            => '+79272075932',
-    secret_question  => 'test',
-    secret_answer    => 'test',
+    salutation             => 'hello',
+    last_name              => 'Vostrov' . rand(999),
+    first_name             => 'Evgeniy' . rand(999),
+    date_of_birth          => '1987-09-04',
+    address_line_1         => 'Sovetskaya street',
+    address_line_2         => 'home 1',
+    address_city           => 'Samara',
+    address_state          => 'Samara',
+    address_postcode       => '112233',
+    phone                  => '+79272075932',
+    secret_question        => 'test',
+    secret_answer          => 'test',
+    account_opening_reason => 'Speculative',
 };
 
 $params = {
@@ -59,24 +61,13 @@ subtest $method => sub {
     $params->{args}->{verification_code} = 'wrong token';
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PasswordError', 'If password is weak it should return error')
-        ->error_message_is('Password is not strong enough.', 'If password is weak it should return error_message');
+        ->error_message_is('Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'If password is weak it should return error_message');
 
     $params->{args}->{client_password} = 'verylongandhardpasswordDDD1!';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidToken', 'If email verification_code is wrong it should return error')
         ->error_message_is('Your token has expired or is invalid.', 'If email verification_code is wrong it should return error_message');
-
-    $params->{args}->{verification_code} = BOM::Platform::Token->new(
-        email       => $email,
-        created_for => 'account_opening'
-    )->token;
-
-    warnings_like {
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('invalid', 'If could not be created account it should return error')
-            ->error_message_is('Sorry, account opening is unavailable.', 'If could not be created account it should return error_message');
-    }
-    [qr/^Virtual: register_and_return_new_client err/], "Expected warn about error virtual account opening";
 
     $params->{args}->{verification_code} = BOM::Platform::Token->new(
         email       => $email,
@@ -98,7 +89,8 @@ subtest $method => sub {
     ok $user->gclid_url =~ '^FQdb3wodOkkGBgCMrlnPq42q8C$', 'gclid value returned as expected';
     is $user->email_consent, undef, 'email consent not passed during account creation so its undef';
 
-    my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
+    my ($resp_loginid, $t, $uaf) =
+        @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
     is $resp_loginid, $new_loginid, 'correct oauth token';
 
     my $vr_email = 'new_email' . rand(999) . '@binary.com';
@@ -138,7 +130,7 @@ subtest $method => sub {
 
             # Make virtual client with user
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::System::Password::hashpw($password);
+            my $hash_pwd = BOM::Platform::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::Platform::User->create(
                 email    => $email,
@@ -177,17 +169,10 @@ subtest $method => sub {
     };
 
     subtest 'Create new account' => sub {
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidAccount',
-            'It should return error when try to create new client using exists real client')
-            ->error_message_is('Sorry, account opening is unavailable.',
-            'It should return error when try to create new client using exists real client');
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        isnt $result->{error}->{code}, 'InvalidAccount', 'No error with duplicate details but residence not provided so it errors out';
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vclient->loginid, 'test token');
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('NoLandingCompany',
-            'It should return error when try to create account without residence');
-
         $params->{args}->{residence} = 'id';
         @{$params->{args}}{keys %$client_details} = values %$client_details;
         delete $params->{args}->{first_name};
@@ -212,7 +197,8 @@ subtest $method => sub {
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
 
-        my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
+        my ($resp_loginid, $t, $uaf) =
+            @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
         is $resp_loginid, $new_loginid, 'correct oauth token';
     };
 
@@ -232,7 +218,7 @@ subtest $method => sub {
     subtest 'Initialization' => sub {
         lives_ok {
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::System::Password::hashpw($password);
+            my $hash_pwd = BOM::Platform::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::Platform::User->create(
                 email    => $email,
@@ -274,10 +260,8 @@ subtest $method => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token} = $auth_token;
 
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidAccount',
-            'It should return error if client residense does not fit for maltainvest')
-            ->error_message_is('Sorry, account opening is unavailable.', 'It should return error if client residense does not fit for maltainvest');
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        is $result->{error}->{code}, 'InsufficientAccountDetails', 'It should return error if client residense does not fit for maltainvest';
 
         $client->residence('de');
         $client->save;
@@ -298,6 +282,15 @@ subtest $method => sub {
         $params->{args}->{first_name}  = $client_details->{first_name};
         $params->{args}->{residence}   = 'de';
         $params->{args}->{accept_risk} = 1;
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
+            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
+
+        $params->{args}->{place_of_birth}            = "de";
+        $params->{args}->{tax_residence}             = "de,nl";
+        $params->{args}->{tax_identification_number} = "111222";
+
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
             ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
@@ -327,11 +320,142 @@ subtest $method => sub {
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
 
-        ok(Client::Account->new({loginid => $new_loginid})->get_status('financial_risk_approval'),
-            'For mf accounts we will set financial risk approval status');
+        my $cl = Client::Account->new({loginid => $new_loginid});
+        ok($cl->get_status('financial_risk_approval'), 'For mf accounts we will set financial risk approval status');
 
-        my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
+        is $cl->get_status('crs_tin_information')->reason, 'Client confirmed tax information', "CRS status is set";
+
+        my ($resp_loginid, $t, $uaf) =
+            @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
         is $resp_loginid, $new_loginid, 'correct oauth token';
+    };
+
+    my $client_mlt;
+    subtest 'Init MLT MF' => sub {
+        lives_ok {
+            my $password = 'jskjd8292922';
+            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            $email = 'new_email' . rand(999) . '@binary.com';
+            $user  = BOM::Platform::User->create(
+                email    => $email,
+                password => $hash_pwd
+            );
+            $user->save;
+            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'VRTC',
+                email       => $email,
+                residence   => 'cz',
+            });
+            $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'MLT',
+                email       => $email,
+                residence   => 'cz',
+            });
+            $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
+
+            $user->add_loginid({loginid => $client->loginid});
+            $user->add_loginid({loginid => $client_mlt->loginid});
+            $user->email_verified(1);
+            $user->save;
+        }
+        'Initial users and clients';
+    };
+
+    subtest 'Create new account maltainvest from MLT' => sub {
+        $params->{args}->{accept_risk} = 1;
+        $params->{token}               = $auth_token;
+        $params->{args}->{residence}   = 'gb';
+
+        # call with totally random values - our client still should have correct one
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
+        $params->{args}->{phone}         = '1234567890';
+        $params->{args}->{date_of_birth} = '1990-09-09';
+
+        my $result        = $rpc_ct->call_ok($method, $params)->result;
+        my $new_loginid   = $result->{client_id};
+        my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
+
+        # make sure data is same, as in first account, regardless of what we have provided
+        my $cl = Client::Account->new({loginid => $new_loginid});
+        is $client_mlt->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
+
+        $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
+        is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
+        $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
+        isnt(keys $result, 0, 'MF client has financial assessment set');
+    };
+
+    my $client_mx;
+    subtest 'Init MX MF' => sub {
+        lives_ok {
+            my $password = 'jskjd8292922';
+            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            $email = 'mx_email' . rand(999) . '@binary.com';
+            $user  = BOM::Platform::User->create(
+                email    => $email,
+                password => $hash_pwd
+            );
+            $user->save;
+            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'VRTC',
+                email       => $email,
+                residence   => 'gb',
+            });
+            $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'MX',
+                email       => $email,
+                residence   => 'gb',
+            });
+            $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
+
+            $user->add_loginid({loginid => $client->loginid});
+            $user->add_loginid({loginid => $client_mx->loginid});
+            $user->email_verified(1);
+            $user->save;
+        }
+        'Initial users and clients';
+    };
+
+    subtest 'Create new account maltainvest from MX' => sub {
+        $params->{args}->{accept_risk} = 1;
+        $params->{token}               = $auth_token;
+        $params->{args}->{residence}   = 'gb';
+
+        # call with totally random values - our client still should have correct one
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
+        $params->{args}->{phone}         = '1234567890';
+        $params->{args}->{date_of_birth} = '1990-09-09';
+
+        $client_mx->set_status('unwelcome', 'system', 'test');
+        $client_mx->save;
+
+        my $result = $rpc_ct->call_ok($method, $params)->result;
+        is $result->{error}->{code}, 'UnwelcomeAccount', 'Client marked as unwelcome';
+
+        $client_mx->clr_status('unwelcome');
+        $client_mx->save;
+
+        $result = $rpc_ct->call_ok($method, $params)->result;
+        is $result->{error}->{code}, 'KYCRequired', 'Client KYC is pending';
+
+        my $mock_client = Test::MockModule->new('Client::Account');
+        $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
+
+        $result = $rpc_ct->call_ok($method, $params)->result;
+
+        $mock_client->unmock_all();
+
+        my $new_loginid = $result->{client_id};
+        my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
+
+        # make sure data is same, as in first account, regardless of what we have provided
+        my $cl = Client::Account->new({loginid => $new_loginid});
+        is $client_mx->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
+
+        $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
+        is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
+        $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
+        isnt(keys $result, 0, 'MF client has financial assessment set');
     };
 };
 
@@ -344,12 +468,12 @@ $params = {
 };
 
 subtest $method => sub {
-    my ($user, $client, $auth_token);
+    my ($user, $client, $auth_token, $normal_vr, $normal_user, $normal_auth_token, $normal_params);
 
     subtest 'Initialization' => sub {
         lives_ok {
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::System::Password::hashpw($password);
+            my $hash_pwd = BOM::Platform::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::Platform::User->create(
                 email    => $email,
@@ -357,13 +481,28 @@ subtest $method => sub {
             );
             $user->save;
             $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
+                broker_code => 'VRTJ',
                 email       => $email,
             });
             $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
 
             $user->add_loginid({loginid => $client->loginid});
             $user->save;
+
+            $email       = 'new_email' . rand(999) . '@binary.com';
+            $normal_user = BOM::Platform::User->create(
+                email    => $email,
+                password => $hash_pwd
+            );
+            $normal_user->save;
+            $normal_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'VRTC',
+                email       => $email,
+            });
+            $normal_auth_token = BOM::Database::Model::AccessToken->new->create_token($normal_vr->loginid, 'test token');
+
+            $normal_user->add_loginid({loginid => $normal_vr->loginid});
+            $normal_user->save;
         }
         'Initial users and clients';
     };
@@ -387,12 +526,18 @@ subtest $method => sub {
         }
     };
 
-    subtest 'Create new account maltainvest' => sub {
+    subtest 'Create new account japan' => sub {
+        $normal_params = $params;
+        $normal_params->{token} = $normal_auth_token;
+
+        my $result = $rpc_ct->call_ok($method, $normal_params)->has_no_system_error->has_error->result;
+        is $result->{error}->{code}, 'PermissionDenied',
+            'It should return an error if normal virtual client tried to make japan real account call, only japan-virtual is allowed';
+
         $params->{token} = $auth_token;
 
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidAccount', 'It should return error if client residense does not fit for japan')
-            ->error_message_is('Sorry, account opening is unavailable.', 'It should return error if client residense does not fit for japan');
+        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        is $result->{error}->{code}, 'InvalidAccount', 'It should return error if client residense does not fit for japan';
 
         $client->residence('jp');
         $client->save;
@@ -414,6 +559,7 @@ subtest $method => sub {
         $user->save;
 
         $params->{args}->{annual_income}                  = '1-3 million JPY';
+        $params->{args}->{financial_asset}                = '1-3 million JPY';
         $params->{args}->{trading_experience_public_bond} = 'Less than 6 months';
         $params->{args}->{trading_experience_margin_fx}   = '6 months to 1 year';
 
@@ -447,7 +593,8 @@ subtest $method => sub {
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^JP\d+/, 'new JP loginid';
 
-        my ($resp_loginid, $t, $uaf) = BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token});
+        my ($resp_loginid, $t, $uaf) =
+            @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
         is $resp_loginid, $new_loginid, 'correct oauth token';
     };
 };

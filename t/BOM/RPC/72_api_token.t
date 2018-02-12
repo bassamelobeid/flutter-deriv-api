@@ -4,17 +4,19 @@ use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use TestHelper qw/create_test_user/;
 use Test::More;
+use Test::Mojo;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Test::RPC::Client;
+
 use BOM::Platform::User;
 use Client::Account;
-
 use BOM::RPC::v3::Accounts;
 use BOM::Database::Model::AccessToken;
 
 # cleanup
-BOM::Database::Model::AccessToken->new->dbh->do("
+BOM::Database::Model::AccessToken->new->dbic->dbh->do("
     DELETE FROM $_
 ") foreach ('auth.access_token');
 
@@ -83,5 +85,31 @@ ok !$test_token->{last_used}, 'last_used is null';
 ## check scopes
 my @scopes = BOM::Database::Model::AccessToken->new->get_scopes_by_access_token($test_token->{token});
 is_deeply([sort @scopes], ['read', 'trade'], 'right scopes');
+
+## check for valid ip
+$res = BOM::RPC::v3::Accounts::api_token({
+        client => $client,
+        args   => {
+            new_token                 => 'Test1',
+            new_token_scopes          => ['read', 'trade'],
+            valid_for_current_ip_only => 1,
+        },
+        client_ip => '1.1.1.1',
+    });
+is scalar(@{$res->{tokens}}), 2, '2nd token created';
+$test_token = $res->{tokens}->[1]->{token};
+
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $params = {
+    language   => 'EN',
+    token      => $test_token,
+    token_type => 'api_token',
+    client_ip  => '1.1.1.1'
+};
+$c->call_ok('authorize', $params)->has_no_error;
+
+$params->{client_ip} = '1.2.1.1';
+$c->call_ok('authorize', $params)
+    ->has_error->error_message_is('Token is not valid for current ip address.', 'check invalid token as ip is different from registered one');
 
 done_testing();

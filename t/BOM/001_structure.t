@@ -1,9 +1,10 @@
-use Test::More tests => 1;
+use Test::More tests => 2;
 use strict;
 use warnings;
+use Test::Warnings;
 
 if (my $r =
-    `git grep BOM:: | grep -v -e BOM::Test -e BOM::Platform -e BOM::System -e BOM::Feed -e BOM::Market -e BOM::Database -e BOM::Product -e BOM::RPC -e BOM::Populator -e BOM::MT5`
+    `git grep -E '^(use|require) BOM::' | grep -v -e BOM::Test -e BOM::Platform -e BOM::Feed -e BOM::Market -e BOM::Database -e BOM::RPC -e BOM::Populator -e BOM::MT5 -e BOM::Transaction -e BOM::Product::ContractFactory -e BOM::Pricing`
     )
 {
     print $r;

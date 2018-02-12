@@ -4,11 +4,20 @@ use 5.014;
 use strict;
 use warnings;
 
+use Try::Tiny;
+
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
 use BOM::Database::Model::OAuth;
+use BOM::Database::ClientDB;
+use Date::Utility;
+use DataDog::DogStatsd::Helper;
 
-sub register {
+use BOM::RPC::Registry '-dsl';
+
+requires_auth();
+
+rpc app_register => sub {
     my $params = shift;
 
     my $client  = $params->{client};
@@ -23,6 +32,7 @@ sub register {
     my $appstore              = $args->{appstore} // '';
     my $googleplay            = $args->{googleplay} // '';
     my $redirect_uri          = $args->{redirect_uri} // '';
+    my $verification_uri      = $args->{verification_uri} // '';
     my $app_markup_percentage = $args->{app_markup_percentage} // 0;
 
     my $error_sub = sub {
@@ -33,7 +43,7 @@ sub register {
         });
     };
 
-    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay)) {
+    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay, $redirect_uri, $verification_uri)) {
         return $error_sub->($err);
     }
 
@@ -50,13 +60,14 @@ sub register {
         appstore              => $appstore,
         googleplay            => $googleplay,
         redirect_uri          => $redirect_uri,
+        verification_uri      => $verification_uri,
         app_markup_percentage => $app_markup_percentage
     });
 
     return $app;
-}
+};
 
-sub update {
+rpc app_update => sub {
     my $params = shift;
 
     my $client  = $params->{client};
@@ -72,6 +83,7 @@ sub update {
     my $appstore              = $args->{appstore} // '';
     my $googleplay            = $args->{googleplay} // '';
     my $redirect_uri          = $args->{redirect_uri} // '';
+    my $verification_uri      = $args->{verification_uri} // '';
     my $app_markup_percentage = $args->{app_markup_percentage} // 0;
 
     ## do some validation
@@ -88,7 +100,7 @@ sub update {
     my $app = $oauth->get_app($user_id, $app_id);
     return $error_sub->(localize('Not Found')) unless $app;
 
-    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay)) {
+    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay, $redirect_uri, $verification_uri)) {
         return $error_sub->($err);
     }
 
@@ -107,32 +119,27 @@ sub update {
             appstore              => $appstore,
             googleplay            => $googleplay,
             redirect_uri          => $redirect_uri,
+            verification_uri      => $verification_uri,
             app_markup_percentage => $app_markup_percentage
         });
 
     return $app;
-}
+};
 
 sub __validate_app_links {
-    my ($homepage, $github, $appstore, $googleplay) = @_;
+    my @sites = @_;
+    my $validation_error;
 
-    return localize('Invalid URI for homepage.')
-        if length($homepage)
-        and $homepage !~ m{^https?://};
-    return localize('Invalid URI for github.')
-        if length($github)
-        and $github !~ m{^https?://(www\.)?github\.com/\S+$};
-    return localize('Invalid URI for appstore.')
-        if length($appstore)
-        and $appstore !~ m{^https?://itunes\.apple\.com/\S+$};
-    return localize('Invalid URI for googleplay.')
-        if length($googleplay)
-        and $googleplay !~ m{^https?://play\.google\.com/\S+$};
+    for (grep { length($_) } @sites) {
+        next if $_ =~ m{^https?://play\.google\.com/store/apps/details\?id=[\w.]+$};
+        $validation_error = BOM::RPC::v3::Utility::validate_uri($_);
+        return $validation_error if $validation_error;
+    }
 
     return;
 }
 
-sub list {
+rpc app_list => sub {
     my $params = shift;
 
     my $client  = $params->{client};
@@ -141,9 +148,9 @@ sub list {
 
     my $oauth = BOM::Database::Model::OAuth->new;
     return $oauth->get_apps_by_user_id($user_id);
-}
+};
 
-sub get {
+rpc app_get => sub {
     my $params = shift;
 
     my $client  = $params->{client};
@@ -160,9 +167,9 @@ sub get {
         }) unless $app;
 
     return $app;
-}
+};
 
-sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
+rpc app_delete => sub {
     my $params = shift;
 
     my $client  = $params->{client};
@@ -174,24 +181,33 @@ sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     my $status = $oauth->delete_app($user_id, $app_id);
 
     return $status ? 1 : 0;
-}
+};
 
-sub oauth_apps {
+rpc oauth_apps => sub {
     my $params = shift;
 
     my $client = $params->{client};
 
     my $oauth = BOM::Database::Model::OAuth->new;
-    if ($params->{args} and $params->{args}->{revoke_app}) {
-        my $user = BOM::Platform::User->new({email => $client->email});
-        foreach my $c1 ($user->clients) {
-            $oauth->revoke_app($params->{args}->{revoke_app}, $c1->loginid);
-        }
-    }
 
     return $oauth->get_used_apps_by_loginid($client->loginid);
-}
+};
 
+rpc revoke_oauth_app => sub {
+    my $params = shift;
+
+    my $client = $params->{client};
+    my $oauth  = BOM::Database::Model::OAuth->new;
+    my $user   = BOM::Platform::User->new({email => $client->email});
+    my $status = 1;
+    foreach my $c1 ($user->clients) {
+        $status &&= $oauth->revoke_app($params->{args}{revoke_oauth_app}, $c1->loginid);
+    }
+
+    return $status;
+};
+
+# Not an RPC
 sub verify_app {
     my $params = shift;
 
@@ -201,7 +217,7 @@ sub verify_app {
     my $oauth = BOM::Database::Model::OAuth->new;
 
     # app id field = Postgres BIGINT, range: -9223372036854775808 to 9223372036854775807  (19 digits)
-    if ($app_id !~ /^\d{1,19}$/ or not($app = $oauth->verify_app($app_id))) {
+    if ($app_id !~ /^(?!0)[0-9]{1,19}$/ or not($app = $oauth->verify_app($app_id))) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidAppID',
             message_to_client => localize('Your app_id is invalid.'),
@@ -214,5 +230,61 @@ sub verify_app {
             app_markup_percentage => $app->{app_markup_percentage} // 0
         }};
 }
+
+rpc app_markup_details => sub {
+    my $params  = shift;
+    my $args    = $params->{args};
+    my $client  = $params->{client};
+    my $oauth   = BOM::Database::Model::OAuth->new;
+    my $user    = BOM::Platform::User->new({email => $client->email});
+    my $app_ids = ();
+
+    # If the app_id they have submitted is not in the list we have associated with them, then...
+    if ($args->{app_id}) {
+        unless ($oauth->user_has_app_id($user->id, $args->{app_id})) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidAppID',
+                message_to_client => localize('Your app_id is invalid.'),
+            });
+        } else {
+            $app_ids = [$args->{app_id}];
+        }
+    } else {
+        $app_ids = $oauth->get_app_ids_by_user_id($user->id);
+    }
+
+    my ($time_from, $time_to, $date_format_error);
+    try {
+        $time_from = Date::Utility->new($args->{date_from})->datetime_yyyymmdd_hhmmss;
+        $time_to   = Date::Utility->new($args->{date_to})->datetime_yyyymmdd_hhmmss;
+    }
+    catch {
+        $date_format_error = 1;
+    };
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidDateFormat',
+            message_to_client => localize('Invalid date format.'),
+        }) if $date_format_error;
+
+    my $clientdb = BOM::Database::ClientDB->new({
+            client_loginid => $client->loginid,
+            operation      => 'replica',
+        })->db;
+
+    return {
+        transactions => $clientdb->dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref(
+                    'SELECT * FROM reporting.get_app_markup_details(?,?,?,?,?,?,?,?)',
+                    {Slice => {}},
+                    $app_ids, $time_from, $time_to,
+                    $args->{offset}         || undef,
+                    $args->{limit}          || 1000,
+                    $args->{client_loginid} || undef,
+                    $args->{sort_fields}    || undef,
+                    $args->{sort}           || undef
+                );
+            })};
+};
 
 1;

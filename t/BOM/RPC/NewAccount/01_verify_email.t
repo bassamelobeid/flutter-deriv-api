@@ -7,7 +7,7 @@ use Test::MockModule;
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
-use BOM::System::Password;
+use BOM::Platform::Password;
 
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
@@ -31,7 +31,7 @@ my @params = (
 
 {
     # cleanup
-    BOM::Database::Model::AccessToken->new->dbh->do('DELETE FROM auth.access_token');
+    BOM::Database::Model::AccessToken->new->dbic->dbh->do('DELETE FROM auth.access_token');
 }
 
 my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
@@ -40,7 +40,7 @@ $mailbox->init;
 subtest 'Initialization' => sub {
     lives_ok {
         my $password = 'jskjd8292922';
-        my $hash_pwd = BOM::System::Password::hashpw($password);
+        my $hash_pwd = BOM::Platform::Password::hashpw($password);
 
         $email = 'exists_email' . rand(999) . '@binary.com';
 
@@ -64,6 +64,17 @@ subtest 'Initialization' => sub {
         $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
     }
     'Initial RPC server and client connection';
+};
+
+subtest 'Account opening request with an invalid email address' => sub {
+    $mailbox->clear;
+    $params[1]->{args}->{verify_email} = 'test' . rand(999) . '.@binary.com';
+    $params[1]->{args}->{type}         = 'account_opening';
+    $params[1]->{server_name}          = 'binary.com';
+    $params[1]->{link}                 = 'binary.com/some_url';
+
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidEmail', 'If email address is invalid it should return error')
+        ->error_message_is('This email address is invalid.', 'If email address is invalid it should return error_message');
 };
 
 subtest 'Account opening request with email does not exist' => sub {
@@ -95,7 +106,7 @@ subtest 'Account opening request with email exists' => sub {
 
     my @msgs = $mailbox->search(
         email   => $params[1]->{args}->{verify_email},
-        subject => qr/A Duplicate Email Address Has Been Submitted/
+        subject => qr/Duplicate email address submitted/
     );
     ok @msgs, 'Email sent successfully';
 };

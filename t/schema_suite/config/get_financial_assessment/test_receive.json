@@ -84,13 +84,28 @@
     },
     "net_income": {
       "type": "string",
-      "pattern": "^Over \\$500\\,001$",
+      "pattern": "^Over \\$500\\,000$",
       "required": "1"
     },
     "estimated_worth": {
       "type": "string",
       "pattern": "^Less than \\$100\\,000$",
       "required": "1"
+    },
+    "occupation": {
+      "type": "string",
+      "pattern": "^Managers$",
+      "required": 1
+    },
+    "employment_status": {
+      "type": "string",
+      "pattern": "^Self-Employed$",
+      "required": 0
+    },
+    "source_of_wealth": {
+      "type": "string",
+      "pattern": "^Company Ownership$",
+      "required": 0
     }
   }
 }

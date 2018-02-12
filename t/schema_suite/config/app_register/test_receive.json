@@ -25,6 +25,11 @@
       "pattern": "^https:\/\/test\\.example\\.com\/redirect$",
       "required": "1"
     },
+    "verification_uri": {
+      "type": "string",
+      "pattern": "^https:\/\/test\\.example\\.com\/verify",
+      "required": "1"
+    },
     "homepage": {
       "type": "string",
       "pattern": "^https:\/\/test\\.example\\.com\/$",
@@ -42,7 +47,7 @@
     },
     "googleplay": {
       "type": "string",
-      "pattern": "^https:\/\/play\\.google\\.com\/test_app$",
+      "pattern": "^https:\/\/play\\.google\\.com\/store\/apps\/details\\?id=x\\.y\\.z$",
       "required": "1"
     },
     "app_markup_percentage": {

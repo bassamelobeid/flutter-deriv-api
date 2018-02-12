@@ -1,13 +1,13 @@
 M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
-export PERL5OPT=-MTest::FailWarnings=-allow_deps,1
-P=/etc/rmg/bin/prove --timer -rl
+export PERL5OPT=-MTest::Warnings
+P=/etc/rmg/bin/prove -v --timer -rl
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test:
-	@$(PROVE) $$(ls -1d t/BOM)
+	@$(PROVE) $$(ls -1d t/BOM) t/999_redis_keys.t
 
-suite_schema:
-	@$(PROVE) $$(ls -1d t/schema_suite)
+json_schemas:
+	@$(PROVE) /home/git/regentmarkets/bom-rpc/t/schema_suite/suite01.t /home/git/regentmarkets/bom-rpc/t/schema_suite/suite02.t
 
 tidy:
 	find . -name '*.p?.bak' -delete

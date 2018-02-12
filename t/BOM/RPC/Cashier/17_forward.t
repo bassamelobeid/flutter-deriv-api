@@ -13,7 +13,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
-use BOM::System::Password;
+use BOM::Platform::Password;
 use BOM::Platform::Token;
 use BOM::Platform::User;
 use Client::Account;
@@ -64,6 +64,7 @@ my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
     email       => $email
 });
+$client_mx->set_status('ukrts_max_turnover_limit_not_set', 'tests', 'Newly created GB clients have this status until they set 30Day turnover');
 my $client_jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'JP',
     email       => $email
@@ -76,7 +77,7 @@ subtest 'common' => sub {
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier forward error as client is virtual')
-        ->error_message_is('This is a virtual-money account. Please switch to a real-money account to deposit funds.',
+        ->error_message_is('This is a virtual-money account. Please switch to a real-money account to access cashier.',
         'Correct error message for virtual account');
 
     my $user_mocked = Test::MockModule->new('BOM::Platform::User');
@@ -106,11 +107,17 @@ subtest 'common' => sub {
     $client_cr->save;
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_CURRENCY', 'Client has no default currency')
+        ->error_message_is('Please set the currency.', 'Correct error message when currency is not set');
+
+    $client_cr->set_default_account('USD');
+    $client_cr->save;
+
     $client_mocked->mock('documents_expired', sub { return 1 });
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client documents have expired')
         ->error_message_is(
-        'Your identity documents have passed their expiration date. Kindly send a scan of a valid ID to <a href="mailto:support@binary.com">support@binary.com</a> to unlock your cashier.',
+        'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to support@binary.com to unlock your cashier.',
         'Correct error message for documents expired'
         );
 
@@ -119,7 +126,7 @@ subtest 'common' => sub {
     $client_cr->save;
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has cashier lock')
-        ->error_message_is('Your cashier is locked', 'Correct error message for locked cashier');
+        ->error_message_is('Your cashier is locked.', 'Correct error message for locked cashier');
 
     $client_cr->clr_status('cashier_locked');
     $client_cr->set_status('disabled', 'system');
@@ -138,12 +145,6 @@ subtest 'common' => sub {
 
     $client_cr->cashier_setting_password('');
     $client_cr->save;
-
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_CURRENCY', 'Client has no default currency')
-        ->error_message_is('Please set the currency.', 'Correct error message when currency is not set');
-
-    $client_cr->set_default_account('USD');
-    $client_cr->save;
 };
 
 subtest 'deposit' => sub {
@@ -155,7 +156,6 @@ subtest 'deposit' => sub {
 
     $client_cr->clr_status('unwelcome');
     $client_cr->save;
-
 };
 
 subtest 'withdraw' => sub {
@@ -164,15 +164,19 @@ subtest 'withdraw' => sub {
     $client_cr->set_status('withdrawal_locked', 'system', 'locked for security reason');
     $client_cr->save;
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has withdrawal lock')
-        ->error_message_is('Your account is locked for withdrawals. Please contact customer service.', 'Client is withdrawal locked');
-
-    $client_cr->clr_status('withdrawal_locked');
-    $client_cr->save;
-
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_EMAIL_VERIFY', 'Withdrawal needs verification token')
         ->error_message_is('Verify your withdraw request.', 'Withdrawal needs verification token');
 
+    $params->{args}->{verification_code} = BOM::Platform::Token->new({
+            email       => $client_cr->email,
+            expires_in  => 3600,
+            created_for => 'payment_withdraw',
+        })->token;
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has withdrawal lock')
+        ->error_message_is('Your account is locked for withdrawals.', 'Client is withdrawal locked');
+
+    $client_cr->clr_status('withdrawal_locked');
+    $client_cr->save;
 };
 
 subtest 'landing_companies_specific' => sub {
@@ -184,9 +188,22 @@ subtest 'landing_companies_specific' => sub {
     $client_mf->set_default_account('EUR');
     $client_mf->save;
 
+    my $assessment = $client_mf->financial_assessment();
+    $client_mf->aml_risk_classification('high');
+    $client_mf->save;
+
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
+        'MF client with High risk should have completed financial assessment')
+        ->error_message_is('Please complete the financial assessment form to lift your withdrawal and trading limits.',
+        'MF client with High risk should have completed financial assessment');
+
+    $client_mf->aml_risk_classification('low');
+    $client_mf->save;
+
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_AUTHENTICATE', 'MF client needs to be fully authenticated')
-        ->error_message_is('Client is not fully authenticated.', 'MF client needs to be fully authenticated');
+        ->error_message_is('Please authenticate your account.', 'MF client needs to be fully authenticated');
 
     $client_mf->set_authentication('ID_DOCUMENT')->status('pass');
     $client_mf->save;
@@ -194,6 +211,14 @@ subtest 'landing_companies_specific' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_FINANCIAL_RISK_APPROVAL', 'financial risk approval is required')
         ->error_message_is('Financial Risk approval is required.', 'financial risk approval is required');
+
+    $client_mf->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
+    $client_mf->save;
+
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_TIN_INFORMATION', 'tax information is required for malatainvest')
+        ->error_message_is('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
+        'tax information is required for malatainvest');
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
 
@@ -204,15 +229,20 @@ subtest 'landing_companies_specific' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
         ->error_message_is('Please accept Funds Protection.', 'GB residence needs to accept fund protection');
+    $client_mx->set_status('ukgc_funds_protection', 'system', 'testing');
+    $client_mx->save;
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'GB residence needs to set 30-Day turnover')
+        ->error_message_is('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
+        'GB residence needs to set 30-Day turnover');
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
     $client_jp->set_default_account('JPY');
     $client_jp->residence('jp');
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
-    $client_jp->set_status('tnc_approval', 'system', $current_tnc_version);
+    $client_jp->set_status('tnc_approval',              'system', $current_tnc_version);
     $client_jp->set_status('jp_knowledge_test_pending', 'system', 'set for test');
     $client_jp->save;
-
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test')
@@ -234,15 +264,25 @@ subtest 'landing_companies_specific' => sub {
 
     $client_jp->clr_status('jp_activation_pending');
     $client_jp->save;
-    $rpc_ct->call_ok($method, $params)
-      ->has_no_system_error->has_error->error_code_is('ASK_AGE_VERIFICATION', 'need age verification')
-      ->error_message_is('Account needs age verification', 'need verification');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_AGE_VERIFICATION', 'need age verification')
+        ->error_message_is('Account needs age verification.', 'need verification');
 
 };
 
 subtest 'all status are covered' => sub {
-    my $all_status     = Client::Account::client_status_types;
-    fail("missing status $_") for sort grep !exists $seen{$_}, keys %$all_status;
+    my $all_status = Client::Account::client_status_types;
+    # Flags to represent state, rather than status for preventing cashier access:
+    # * social signup, jp_transaction_detail, duplicate_account, migrated_single_email
+    # * document_under_review, document_needs_action - for document_upload state
+    # * professional, professional_requested
+    # * ico_only
+    my @temp_status =
+        grep {
+        $_ !~
+            /^(?:social_signup|jp_transaction_detail|duplicate_account|migrated_single_email|document_under_review|document_needs_action|professional|professional_requested|ico_only)$/
+        }
+        keys %$all_status;
+    fail("missing status $_") for sort grep !exists $seen{$_}, @temp_status;
     pass("ok to prevent warning 'no tests run");
     done_testing();
 };

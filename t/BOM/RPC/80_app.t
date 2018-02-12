@@ -1,6 +1,11 @@
 use strict;
 use warnings;
+
+no indirect;
+
 use Test::More;
+use Test::Deep;
+use Test::Warnings qw(warnings);
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use TestHelper qw/create_test_user/;
@@ -16,7 +21,7 @@ my $test_loginid = $test_client->loginid;
 
 # cleanup
 my $oauth = BOM::Database::Model::OAuth->new;
-my $dbh   = $oauth->dbh;
+my $dbh   = $oauth->dbic->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 1");
@@ -49,31 +54,35 @@ my $app1 = $c->call_ok(
     {
         token => $token,
         args  => {
-            name         => 'App 1',
-            scopes       => ['read', 'trade'],
-            redirect_uri => 'https://www.example.com/',
-            homepage     => 'https://www.homepage.com/'
+            name             => 'App 1',
+            scopes           => ['read', 'trade'],
+            redirect_uri     => 'https://www.example.com/',
+            verification_uri => 'https://www.example.com/verify',
+            homepage         => 'https://www.homepage.com/',
         },
     })->has_no_system_error->has_no_error->result;
 is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
-is $app1->{redirect_uri}, 'https://www.example.com/',  'redirect_uri is right';
-is $app1->{homepage},     'https://www.homepage.com/', 'homepage is right';
+is $app1->{redirect_uri},     'https://www.example.com/',       'redirect_uri is right';
+is $app1->{verification_uri}, 'https://www.example.com/verify', 'verification_uri is right';
+is $app1->{homepage},         'https://www.homepage.com/',      'homepage is right';
 
 $app1 = $c->call_ok(
     'app_update',
     {
         token => $token,
         args  => {
-            app_update   => $app1->{app_id},
-            name         => 'App 1',
-            scopes       => ['read', 'trade', 'admin'],
-            redirect_uri => 'https://www.example.com/callback',
-            homepage     => 'https://www.homepage2.com/'
+            app_update       => $app1->{app_id},
+            name             => 'App 1',
+            scopes           => ['read', 'trade', 'admin'],
+            redirect_uri     => 'https://www.example.com/callback',
+            verification_uri => 'https://www.example.com/verify_updated',
+            homepage         => 'https://www.homepage2.com/'
         },
     })->has_no_system_error->has_no_error->result;
 is_deeply([sort @{$app1->{scopes}}], ['admin', 'read', 'trade'], 'scopes are updated');
-is $app1->{redirect_uri}, 'https://www.example.com/callback', 'redirect_uri is updated';
-is $app1->{homepage},     'https://www.homepage2.com/',       'homepage is updated';
+is $app1->{redirect_uri},     'https://www.example.com/callback',       'redirect_uri is updated';
+is $app1->{verification_uri}, 'https://www.example.com/verify_updated', 'redirect_uri is updated';
+is $app1->{homepage},         'https://www.homepage2.com/',             'homepage is updated';
 
 my $get_app = $c->call_ok(
     'app_get',
@@ -187,13 +196,27 @@ ok $used_apps->[0]->{last_used}, 'last_used ok';
 $oauth = BOM::Database::Model::OAuth->new;    # re-connect db
 my $is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 1, 'was confirmed';
+
+# revoke app
 $c->call_ok(
     'oauth_apps',
     {
         token => $access_token,
         args  => {
             oauth_apps => 1,
-            revoke_app => $test_appid,
+        },
+    })->has_no_system_error;
+
+$oauth = BOM::Database::Model::OAuth->new;                                # re-connect db
+$is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
+is $is_confirmed, 1, 'still confirmed';
+
+$c->call_ok(
+    'revoke_oauth_app',
+    {
+        token => $access_token,
+        args  => {
+            revoke_oauth_app => $test_appid,
         },
     })->has_no_system_error;
 

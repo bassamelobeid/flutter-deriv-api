@@ -4,34 +4,129 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use List::MoreUtils qw(any);
+use Format::Util::Numbers qw/formatnumber/;
 
-use BOM::System::AuditLog;
-use BOM::RPC::v3::Utility;
 use Client::Account;
+use Brands;
+
+use BOM::RPC::Registry '-dsl';
+
+use BOM::Platform::AuditLog;
+use BOM::RPC::v3::Utility;
 use BOM::Platform::User;
 use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
+use BOM::Platform::User;
 
-sub authorize {
-    my $params        = shift;
-    my $token         = $params->{token};
-    my $token_details = $params->{token_details};
+use LandingCompany::Registry;
+
+sub _get_upgradeable_landing_companies {
+    my ($client_list, $client) = @_;
+
+    # List to store upgradeable companies
+    my @upgradeable_landing_companies;
+
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+
+    # Get the gaming and financial company from the client's residence
+    my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
+    my $financial_company = $countries_instance->financial_company_for_country($client->residence);
+
+    # Check if client is ICO or not
+    my $is_ico_client = $client->get_status('ico_only');
+
+    # Check if client has a gaming account or financial account
+    # Otherwise, add them to the list
+    # NOTE: Gaming has higher priority over financial
+    if (   $gaming_company
+        && $client->is_virtual
+        && !(any { $_->landing_company->short eq $gaming_company } @$client_list))
+    {
+        push @upgradeable_landing_companies, $gaming_company;
+    }
+
+    # Some countries have financial but not gaming account
+    if (  !$gaming_company
+        && $financial_company
+        && $client->is_virtual
+        && !(any { $_->landing_company->short eq $financial_company } @$client_list))
+    {
+        push @upgradeable_landing_companies, $financial_company;
+    }
+
+    # In some cases, client has VRTC, MX/MLT, MF account
+    # MX/MLT account might get duplicated, so MF should not have any companies
+    if (@upgradeable_landing_companies && !$client->is_virtual) {
+        @upgradeable_landing_companies = ();
+    }
+
+    # Some countries have both financial and gaming. Financial is added:
+    # - if the list is empty
+    # - two companies are not same
+    # - there is no ico client
+    # - current client is not virtual
+    if (   !@upgradeable_landing_companies
+        && ($gaming_company && $financial_company && $gaming_company ne $financial_company)
+        && !$is_ico_client
+        && !$client->is_virtual
+        && !(any { $_->landing_company->short eq $financial_company } @$client_list))
+    {
+        push @upgradeable_landing_companies, $financial_company;
+    }
+
+    # Multiple CR account scenario:
+    # - client's landing company is CR
+    # - there is no ico client
+    # - client can upgrade to other CR accounts, assuming no fiat currency OR other cryptocurrencies
+    if ($client->landing_company->short eq 'costarica' && !$is_ico_client) {
+
+        # Get siblings of the current client
+        my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid);
+
+        my ($fiat_check, $lc_num_crypto, $client_num_crypto) =
+            BOM::RPC::v3::Utility::get_client_currency_information($siblings, $client->landing_company->short);
+
+        my $cryptocheck = ($lc_num_crypto && $lc_num_crypto == $client_num_crypto);
+
+        # Push to upgradeable_landing_companies, if possible to open another CR account
+        push @upgradeable_landing_companies, 'costarica' if (!$fiat_check || !$cryptocheck);
+    }
+
+    return \@upgradeable_landing_companies;
+}
+
+rpc authorize => sub {
+    my $params = shift;
+    my ($token, $token_details, $client_ip) = @{$params}{qw/token token_details client_ip/};
+
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
     # temorary remove ua_fingerptint check
     #if ($token_details->{ua_fingerprint} && $token_details->{ua_fingerprint} ne $params->{ua_fingerprint}) {
     #    return BOM::RPC::v3::Utility::invalid_token_error();
     #}
 
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidToken',
+            message_to_client => BOM::Platform::Context::localize("Token is not valid for current ip address.")}
+    ) if (exists $token_details->{valid_for_ip} and $token_details->{valid_for_ip} ne $client_ip);
+
     my ($loginid, $scopes) = @{$token_details}{qw/loginid scopes/};
 
-    my $client = Client::Account->new({loginid => $loginid});
+    my $client = Client::Account->new({
+        loginid      => $loginid,
+        db_operation => 'replica'
+    });
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
-    if ($client->get_status('disabled')) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'AccountDisabled',
-                message_to_client => BOM::Platform::Context::localize("Account is disabled.")});
-    }
+    my ($lc, $brand_name) = ($client->landing_company, request()->brand);
+    # check for not allowing cross brand tokens
+    return BOM::RPC::v3::Utility::invalid_token_error() unless (grep { $brand_name eq $_ } @{$lc->allowed_for_brands});
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'AccountDisabled',
+            message_to_client => BOM::Platform::Context::localize("Account is disabled.")}
+    ) unless BOM::RPC::v3::Utility::is_account_available($client);
 
     if (my $limit_excludeuntil = $client->get_self_exclusion_until_dt) {
         return BOM::RPC::v3::Utility::create_error({
@@ -39,14 +134,11 @@ sub authorize {
                 message_to_client => BOM::Platform::Context::localize("Sorry, you have excluded yourself until [_1].", $limit_excludeuntil)});
     }
 
-    my $account = $client->default_account;
-
-    my $token_type;
+    my ($user, $token_type) = (BOM::Platform::User->new({email => $client->email}));
     if (length $token == 15) {
         $token_type = 'api_token';
         # add to login history for api token only as oauth login already creates an entry
-        my $user;
-        if ($params->{args}->{add_to_login_history} && ($user = BOM::Platform::User->new({email => $client->email}))) {
+        if ($params->{args}->{add_to_login_history} && $user) {
             $user->add_login_history({
                 environment => BOM::RPC::v3::Utility::login_env($params),
                 successful  => 't',
@@ -58,18 +150,45 @@ sub authorize {
         $token_type = 'oauth_token';
     }
 
+    my $_get_account_details = sub {
+        my ($clnt, $curr) = @_;
+
+        my $exclude_until = $clnt->get_self_exclusion_until_dt;
+
+        return {
+            loginid              => $clnt->loginid,
+            currency             => $curr,
+            landing_company_name => $clnt->landing_company->short,
+            is_disabled          => $clnt->get_status('disabled') ? 1 : 0,
+            is_ico_only          => $clnt->get_status('ico_only') ? 1 : 0,
+            is_virtual           => $clnt->is_virtual ? 1 : 0,
+            $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
+    };
+
+    my $client_list = $user->get_clients_in_sorted_order([keys %{$user->loginid_details}]);
+
+    my @account_list;
+    my $currency;
+    foreach my $clnt (@$client_list) {
+        $currency = $clnt->default_account ? $clnt->default_account->currency_code : '';
+        push @account_list, $_get_account_details->($clnt, $currency);
+    }
+
+    my $account = $client->default_account;
     return {
         fullname => $client->full_name,
         loginid  => $client->loginid,
-        balance  => ($account ? sprintf('%.2f', $account->balance) : "0.00"),
+        balance  => $account ? formatnumber('amount', $account->currency_code, $account->balance) : '0.00',
         currency => ($account ? $account->currency_code : ''),
         email    => $client->email,
         country  => $client->residence,
-        landing_company_name     => $client->landing_company->short,
-        landing_company_fullname => $client->landing_company->name,
+        landing_company_name     => $lc->short,
+        landing_company_fullname => $lc->name,
         scopes                   => $scopes,
-        is_virtual               => ($client->is_virtual ? 1 : 0),
-        stash                    => {
+        is_virtual               => $client->is_virtual ? 1 : 0,
+        upgradeable_landing_companies => _get_upgradeable_landing_companies($client_list, $client),
+        account_list                  => \@account_list,
+        stash                         => {
             loginid              => $client->loginid,
             email                => $client->email,
             token                => $token,
@@ -78,13 +197,13 @@ sub authorize {
             account_id           => ($account ? $account->id : ''),
             country              => $client->residence,
             currency             => ($account ? $account->currency_code : ''),
-            landing_company_name => $client->landing_company->short,
+            landing_company_name => $lc->short,
             is_virtual           => ($client->is_virtual ? 1 : 0),
         },
     };
-}
+};
 
-sub logout {
+rpc logout => sub {
     my $params = shift;
 
     if (my $email = $params->{email}) {
@@ -105,20 +224,20 @@ sub logout {
                 foreach my $c1 ($user->clients) {
                     $oauth->revoke_tokens_by_loginid_app($c1->loginid, $app_id);
                 }
-            }
 
-            unless ($skip_login_history) {
-                $user->add_login_history({
-                    environment => BOM::RPC::v3::Utility::login_env($params),
-                    successful  => 't',
-                    action      => 'logout',
-                });
-                $user->save;
-                BOM::System::AuditLog::log("user logout", join(',', $email, $loginid // ''));
+                unless ($skip_login_history) {
+                    $user->add_login_history({
+                        environment => BOM::RPC::v3::Utility::login_env($params),
+                        successful  => 't',
+                        action      => 'logout',
+                    });
+                    $user->save;
+                    BOM::Platform::AuditLog::log("user logout", join(',', $email, $loginid // ''));
+                }
             }
         }
     }
     return {status => 1};
-}
+};
 
 1;

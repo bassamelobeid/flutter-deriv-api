@@ -3,21 +3,76 @@ package BOM::RPC::v3::MT5::Account;
 use strict;
 use warnings;
 
+use Guard;
 use YAML::XS;
-use List::Util qw(any);
+use List::Util qw(any first);
 use Try::Tiny;
 use File::ShareDir;
 use Locale::Country::Extra;
 use Brands;
+use WebService::MyAffiliates;
+
+use BOM::RPC::Registry '-dsl';
+
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
+use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::User;
 use BOM::MT5::User;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime;
+use BOM::Platform::Email;
+use BOM::Transaction;
 
-sub mt5_login_list {
+requires_auth();
+
+use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
+
+=head2 mt5_login_list
+
+    $mt5_logins = mt5_login_list({ client => $client })
+
+Takes a client object and returns all possible MT5 login IDs 
+associated with that client. Otherwise, returns an error message indicating
+that MT5 is suspended.
+
+Takes the following (named) parameters:
+
+=over 4
+
+=item * C<params> hashref that contains a Client::Account object under the key C<client>.
+
+=back
+
+Returns any of the following:
+
+=over 4
+
+=item * A hashref that contains the following keys:
+
+=over 4
+
+=item * C<code> stating C<MT5APISuspendedError>.
+
+=item * C<message_to_client> that says C<MT5 API calls are suspended.>.
+
+=back
+
+=item * An arrayref that contains hashrefs. Each hashref contains:
+
+=over 4
+
+=item * C<login> - The MT5 loginID of the client.
+
+=item * C<group> - (optional) The group the loginID belongs to.
+
+=back
+
+=cut
+
+rpc mt5_login_list => sub {
+
     my $params = shift;
     my $client = $params->{client};
 
@@ -42,53 +97,115 @@ sub mt5_login_list {
         push @array, $acc;
     }
     return \@array;
+};
+
+# limit number of requests to once per minute
+sub _throttle {
+    my $loginid = shift;
+    my $key     = MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
+
+    return 1 if BOM::Platform::RedisReplicated::redis_read()->get($key);
+
+    BOM::Platform::RedisReplicated::redis_write()->set($key, 1, 'EX', 60);
+
+    return 0;
 }
 
-sub mt5_new_account {
+# removes the database entry that limit requests to 1/minute
+# returns 1 if entry was present, 0 otherwise
+sub reset_throttler {
+    my $loginid = shift;
+    my $key     = MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
+
+    return BOM::Platform::RedisReplicated::redis_write->del($key);
+}
+
+rpc mt5_new_account => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
     return $mt5_suspended if $mt5_suspended;
 
-    my $client       = $params->{client};
-    my $args         = $params->{args};
-    my $account_type = delete $args->{account_type};
+    my ($client, $args) = @{$params}{qw/client args/};
+    my $account_type     = delete $args->{account_type};
+    my $mt5_account_type = delete $args->{mt5_account_type} // '';
+    my $brand            = Brands->new(name => request()->brand);
 
-    my $group;
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidAccountType',
+            message_to_client => localize('Invalid account type.')}) if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
+
+    my $residence = $client->residence;
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'NoResidence',
+            message_to_client => localize('Please set your country of residence.')}) unless $residence;
+
+    my $countries_list = $brand->countries_instance->countries_list;
+    return BOM::RPC::v3::Utility::permission_error()
+        unless $countries_list->{$residence};
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'MT5SamePassword',
+            message_to_client => localize('Investor password cannot be same as main password.')}
+    ) if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
+
+    my $invalid_sub_type_error = BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidSubAccountType',
+            message_to_client => localize('Invalid sub account type.')});
+
+    return $invalid_sub_type_error if ($mt5_account_type and $mt5_account_type !~ /^standard|advanced$/);
+
+    my $get_company_name = sub {
+        my $type = shift;
+
+        $type = 'mt_' . $type . '_company';
+        if (defined $countries_list->{$residence}->{$type}) {
+            # get MT company from countries.yml
+            return $countries_list->{$residence}->{$type};
+        }
+
+        return 'none';
+    };
+
+    my ($mt_company, $group);
     if ($account_type eq 'demo') {
-        if ($client and $client->residence eq 'jp') {
-            $group = 'demo\japan-virtual';
+        # demo will have demo for financial and demo for gaming
+        if ($mt5_account_type) {
+
+            return BOM::RPC::v3::Utility::permission_error() if (($mt_company = $get_company_name->('financial')) eq 'none');
+
+            $group = 'demo\\' . $mt_company . '_' . $mt5_account_type;
         } else {
-            $group = 'demo\virtual';
+            return BOM::RPC::v3::Utility::permission_error() if (($mt_company = $get_company_name->('gaming')) eq 'none');
+            $group = 'demo\\' . $mt_company;
         }
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
-        # 5 Sept 2016: only CR fully authenticated client can open MT real a/c
-        unless ($client->landing_company->short eq 'costarica') {
-            return BOM::RPC::v3::Utility::permission_error();
+
+        # 4 Jan 2018: only CR, MLT, and Champion can open MT real a/c
+        return BOM::RPC::v3::Utility::permission_error() unless ($client->landing_company->short =~ /^costarica|champion|malta$/);
+
+        return BOM::RPC::v3::Utility::permission_error() if (($mt_company = $get_company_name->($account_type)) eq 'none');
+
+        if ($account_type eq 'financial') {
+
+            return $invalid_sub_type_error unless $mt5_account_type;
+
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'FinancialAssessmentMandatory',
+                    message_to_client => localize('Please complete financial assessment.')}) unless $client->financial_assessment();
         }
 
-        if ($account_type eq 'financial' && !$client->client_fully_authenticated) {
-            return BOM::RPC::v3::Utility::permission_error();
-        }
-
-        # get MT company from countries.yml
-        my $mt_key         = 'mt_' . $account_type . '_company';
-        my $mt_company     = 'none';
-        my $countries_list = Brands->new(name => request()->brand)->landing_company_countries->countries_list;
-        if (defined $countries_list->{$client->residence} && defined $countries_list->{$client->residence}->{$mt_key}) {
-            $mt_company = $countries_list->{$client->residence}->{$mt_key};
-        }
-
-        if ($mt_company eq 'none') {
-            return BOM::RPC::v3::Utility::permission_error();
-        }
+        # populate mt5 agent account associated with affiliate token
+        $args->{agent} = _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
 
         $group = 'real\\' . $mt_company;
-    } else {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidAccountType',
-                message_to_client => localize('Invalid account type.')});
+        $group .= "_$mt5_account_type" if $account_type eq 'financial';
+        $group .= "_$residence" if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
     }
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'MT5CreateUserError',
+            message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
 
     # client can have only 1 MT demo & 1 MT real a/c
     my $user = BOM::Platform::User->new({email => $client->email});
@@ -104,7 +221,7 @@ sub mt5_new_account {
         if (ref $setting eq 'HASH' and ($setting->{group} // '') eq $group) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'MT5CreateUserError',
-                    message_to_client => localize('You already have a [_1] account [_2]', $account_type, $login)});
+                    message_to_client => localize('You already have a [_1] account [_2].', $account_type, $login)});
         }
     }
 
@@ -130,7 +247,7 @@ sub mt5_new_account {
     my $balance = 0;
     # funds in Virtual money
     if ($account_type eq 'demo') {
-        $balance = 5000;
+        $balance = 10000;
         $status  = BOM::MT5::User::deposit({
             login   => $mt5_login,
             amount  => $balance,
@@ -146,10 +263,11 @@ sub mt5_new_account {
 
     return {
         login        => $mt5_login,
+        balance      => $balance,
+        currency     => ($mt_company =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR'),
         account_type => $account_type,
-        balance      => $balance
-    };
-}
+        ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()};
+};
 
 sub _check_logins {
     my ($client, $logins) = @_;
@@ -161,7 +279,74 @@ sub _check_logins {
     return 1;
 }
 
-sub mt5_get_settings {
+=head2 mt5_get_settings
+
+    $user_mt5_settings = mt5_get_settings({
+        client  => $client,
+        args    => $args
+    })
+
+Takes a client object and a hash reference as inputs and returns the details of 
+the MT5 user, based on the MT5 login id passed.
+
+Takes the following (named) parameters as inputs:
+    
+=over 4
+
+=item * C<params> hashref that contains:
+
+=over 4
+
+=item * A Client::Account object under the key C<client>.
+
+=item * A hash reference under the key C<args> that contains the MT5 login id 
+under C<login> key.
+
+=back
+
+=back
+
+Returns any of the following:
+
+=over 4
+
+=item * A hashref error message that contains the following keys, based on the given error:
+
+=over 4
+
+=item * MT5 suspended
+
+=over 4
+
+=item * C<code> stating C<MT5APISuspendedError>.
+
+=back
+
+=item * Permission denied
+
+=over 4
+
+=item * C<code> stating C<PermissionDenied>.
+
+=back
+
+=item * Retrieval Error
+
+=over 4
+
+=item * C<code> stating C<MT5GetUserError>.
+
+=back
+
+=back
+
+=item * A hashref that contains the details of the user's MT5 account.
+
+=back
+
+=cut
+
+rpc mt5_get_settings => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -190,21 +375,97 @@ sub mt5_get_settings {
         }
     }
 
+    $settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
+
     return $settings;
-}
+};
 
 sub _mt5_is_real_account {
     my ($client, $mt_login) = @_;
 
     my $settings = mt5_get_settings({
-        client => $client,
-        args   => {login => $mt_login},
-    });
+            client => $client,
+            args   => {login => $mt_login}});
 
-    return ($settings->{group} // '') =~ /^real\\/;
+    return $settings if ($settings->{group} // '') =~ /^real\\/;
+    return;
 }
 
-sub mt5_set_settings {
+=head2 mt5_set_settings
+
+$user_mt5_settings = mt5_set_settings({
+        client  => $client,
+        args    => $args
+    })
+    
+Takes a client object and a hash reference as inputs and returns the updated details of 
+the MT5 user, based on the MT5 login id passed, upon success.
+
+Takes the following (named) parameters as inputs:
+
+=over 4
+
+=item * C<params> hashref that contains:
+
+=over 4
+
+=item * A Client::Account object under the key C<client>.
+
+=item * A hash reference under the key C<args> that contains some of the following keys:
+
+=over 4
+
+=item * C<login> that contains the MT5 login id.
+
+=item * C<country> that contains the country code.
+
+=back
+
+=back
+
+=back
+
+Returns any of the following:
+
+=over 4
+
+=item * A hashref error message that contains the following keys, based on the given error:
+
+=over 4
+
+=item * MT5 suspended
+
+=over 4
+
+=item * C<code> stating C<MT5APISuspendedError>.
+
+=back
+
+=item * Permission denied
+
+=over 4
+
+=item * C<code> stating C<PermissionDenied>.
+
+=back
+
+=item * Update Error
+
+=over 4
+
+=item * C<code> stating C<MT5UpdateUserError>.
+
+=back
+
+=back
+
+=item * A hashref that contains the updated details of the user's MT5 account.
+
+=back
+    
+=cut
+
+rpc mt5_set_settings => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -230,9 +491,76 @@ sub mt5_set_settings {
 
     $settings->{country} = $country_code;
     return $settings;
-}
+};
 
-sub mt5_password_check {
+=head2 mt5_password_check
+
+    $mt5_pass_check = mt5_password_check({
+        client  => $client,
+        args    => $args
+    })
+    
+Takes a client object and a hash reference as inputs and returns 1 upon successful
+validation of the user's password.
+    
+Takes the following (named) parameters as inputs:
+    
+=over 4
+
+=item * C<params> hashref that contains:
+
+=over 4
+
+=item * A Client::Account object under the key C<client>.
+
+=item * A hash reference under the key C<args> that contains the MT5 login id 
+under C<login> key.
+
+=back
+
+=back
+
+Returns any of the following:
+
+=over 4
+
+=item * A hashref error message that contains the following keys, based on the given error:
+
+=over 4
+
+=item * MT5 suspended
+
+=over 4
+
+=item * C<code> stating C<MT5APISuspendedError>.
+
+=back
+
+=item * Permission denied
+
+=over 4
+
+=item * C<code> stating C<PermissionDenied>.
+
+=back
+
+=item * Retrieval Error
+
+=over 4
+
+=item * C<code> stating C<MT5PasswordCheckError>.
+
+=back
+
+=back
+
+=item * Returns 1, indicating successful validation.
+
+=back
+
+=cut
+
+rpc mt5_password_check => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -251,10 +579,86 @@ sub mt5_password_check {
                 code              => 'MT5PasswordCheckError',
                 message_to_client => $status->{error}});
     }
-    return {status => 1};
-}
+    return 1;
+};
 
-sub mt5_password_change {
+=head2 mt5_password_change
+
+    $mt5_pass_change = mt5_password_change({
+        client  => $client,
+        args    => $args
+    })
+    
+Takes a client object and a hash reference as inputs and returns 1 upon successful
+change of the user's MT5 account password.
+    
+Takes the following (named) parameters as inputs:
+    
+=over 4
+
+=item * C<params> hashref that contains:
+
+=over 4
+
+=item * A Client::Account object under the key C<client>.
+
+=item * A hash reference under the key C<args> that contains:
+
+=over 4
+
+=item * C<login> that contains the MT5 login id.
+
+=item * C<old_password> that contains the user's current password.
+
+=item * C<new_password> that contains the user's new password. 
+
+=back
+
+=back
+
+=back
+
+Returns any of the following:
+
+=over 4
+
+=item * A hashref error message that contains the following keys, based on the given error:
+
+=over 4
+
+=item * MT5 suspended
+
+=over 4
+
+=item * C<code> stating C<MT5APISuspendedError>.
+
+=back
+
+=item * Permission denied
+
+=over 4
+
+=item * C<code> stating C<PermissionDenied>.
+
+=back
+
+=item * Retrieval Error
+
+=over 4
+
+=item * C<code> stating C<MT5PasswordChangeError>.
+
+=back
+
+=back
+
+=item * Returns 1, indicating successful change.
+
+=back
+
+=cut
+
+rpc mt5_password_change => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -268,7 +672,7 @@ sub mt5_password_change {
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
     my $status = BOM::MT5::User::password_check({
-            login    => $args->{login},
+            login    => $login,
             password => $args->{old_password}});
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -276,40 +680,37 @@ sub mt5_password_change {
                 message_to_client => $status->{error}});
     }
 
-    return _mt5_set_password($args->{login}, $args->{new_password}, $args->{password_type});
-}
-
-sub mt5_password_reset {
-    my $params = shift;
-    my $client = $params->{client};
-    my $args   = $params->{args};
-    my $login  = $args->{login};
-
-    # MT5 login not belongs to user
-    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
-
-    return _mt5_set_password($args->{login}, $args->{new_password}, $args->{password_type});
-}
-
-sub _mt5_set_password {
-    my $login        = shift;
-    my $new_password = shift;
-    my $pwd_type     = shift;
-
-    my $status = BOM::MT5::User::password_change({
-        login         => $login,
-        new_password  => $new_password,
-        password_type => $pwd_type,
-    });
+    $status = BOM::MT5::User::password_change({
+            login        => $login,
+            new_password => $args->{new_password}});
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5PasswordChangeError',
                 message_to_client => $status->{error}});
     }
-    return {status => 1};
+    return 1;
+};
+
+sub _send_email {
+    my %args = @_;
+    my ($loginid, $mt5_id, $amount, $action, $error) = @args{qw(loginid mt5_id amount action error)};
+    my $brand = Brands->new(name => request()->brand);
+    my $message =
+        $action eq 'deposit'
+        ? "Error happened when doing MT5 deposit after withdrawal from client account:"
+        : "Error happened when doing deposit to client account after withdrawal from MT5 account:";
+    return BOM::Platform::Email::send_email({
+        from                  => $brand->emails('system'),
+        to                    => $brand->emails('payments'),
+        subject               => "MT5 $action error",
+        message               => [$message, "Client login id: $loginid", "MT5 login: $mt5_id", "Amount: $amount", "error: $error"],
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        template_loginid      => $loginid,
+    });
 }
 
-sub mt5_deposit {
+rpc mt5_deposit => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -333,15 +734,12 @@ sub mt5_deposit {
     };
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
-    if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->system)
-    {
-        return $error_sub->(localize('Payments are suspended.'));
-    }
 
-    if ($amount <= 0) {
-        return $error_sub->(localize("Deposit amount must be greater than zero."));
-    }
+    return $error_sub->(localize('Payments are suspended.')) if ($app_config->system->suspend->payments or $app_config->system->suspend->system);
+
+    return $error_sub->(localize("Deposit amount must be greater than zero.")) if ($amount <= 0);
+
+    return $error_sub->(localize("Only a maximum of two decimal points are allowed for the deposit amount.")) if ($amount !~ /^\d+(?:\.\d{0,2})?$/);
 
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
@@ -349,38 +747,36 @@ sub mt5_deposit {
     my $fm_client = Client::Account->new({loginid => $fm_loginid});
 
     # only for real money account
-    if ($fm_client->is_virtual) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
-    if (not _mt5_is_real_account($fm_client, $to_mt5)) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
+    return BOM::RPC::v3::Utility::permission_error() if ($fm_client->is_virtual);
 
-    if ($fm_client->currency ne 'USD') {
-        return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $fm_loginid, $fm_client->currency));
-    }
-    if ($fm_client->get_status('disabled')) {
-        return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid));
-    }
-    if ($fm_client->get_status('cashier_locked') || $fm_client->documents_expired) {
-        return $error_sub->(localize('Your account [_1] cashier section was locked.', $fm_loginid));
-    }
+    return BOM::RPC::v3::Utility::permission_error() if (not _mt5_is_real_account($fm_client, $to_mt5));
+
+    return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD/EUR.', $fm_loginid, $fm_client->currency))
+        if (($fm_client->currency !~ /^USD|EUR$/));
+
+    return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid)) if ($fm_client->get_status('disabled'));
+
+    return $error_sub->(localize('Your account [_1] cashier section was locked.', $fm_loginid))
+        if ($fm_client->get_status('cashier_locked') || $fm_client->documents_expired);
 
     # withdraw from Binary a/c
     my $fm_client_db = BOM::Database::ClientDB->new({
         client_loginid => $fm_loginid,
     });
-    if (not $fm_client_db->freeze) {
-        return $error_sub->(localize('If this error persists, please contact customer support.'),
-            "Account stuck in previous transaction $fm_loginid");
-    }
+
+    return $error_sub->(localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid")
+        if (not $fm_client_db->freeze);
+
+    scope_guard {
+        $fm_client_db->unfreeze;
+    };
 
     # From the point of view of our system, we're withdrawing
     # money to deposit into MT5
     my $withdraw_error;
     try {
         $fm_client->validate_payment(
-            currency => 'USD',
+            currency => $fm_client->currency,
             amount   => -$amount,
         );
     }
@@ -389,9 +785,6 @@ sub mt5_deposit {
     };
 
     if ($withdraw_error) {
-        # should be save to unlock account
-        $fm_client_db->unfreeze;
-
         return $error_sub->(
             BOM::RPC::v3::Cashier::__client_withdrawal_notes({
                     client => $fm_client,
@@ -401,7 +794,7 @@ sub mt5_deposit {
     }
 
     my $comment   = "Transfer from $fm_loginid to MT5 account $to_mt5.";
-    my $account   = $fm_client->set_default_account('USD');
+    my $account   = $fm_client->set_default_account($fm_client->currency);
     my ($payment) = $account->add_payment({
         amount               => -$amount,
         payment_gateway_code => 'account_transfer',
@@ -430,17 +823,23 @@ sub mt5_deposit {
     });
 
     if ($status->{error}) {
+        _send_email(
+            loginid => $fm_loginid,
+            mt5_id  => $to_mt5,
+            amount  => $amount,
+            action  => 'deposit',
+            error   => $status->{error},
+        );
         return $error_sub->($status->{error});
     }
 
-    $fm_client_db->unfreeze;
     return {
         status                => 1,
         binary_transaction_id => $txn->id
     };
-}
+};
 
-sub mt5_withdrawal {
+rpc mt5_withdrawal => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
@@ -463,9 +862,10 @@ sub mt5_withdrawal {
         });
     };
 
-    if ($amount <= 0) {
-        return $error_sub->(localize("Withdrawal amount must be greater than zero."));
-    }
+    return $error_sub->(localize("Withdrawal amount must be greater than zero.")) if ($amount <= 0);
+
+    return $error_sub->(localize("Only a maximum of two decimal points are allowed for the withdrawal amount."))
+        if ($amount !~ /^\d+(?:\.\d{0,2})?$/);
 
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $fm_mt5, $to_loginid]);
@@ -473,34 +873,39 @@ sub mt5_withdrawal {
     my $to_client = Client::Account->new({loginid => $to_loginid});
 
     # only for real money account
-    if ($to_client->is_virtual) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
-    if (not _mt5_is_real_account($to_client, $fm_mt5)) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
+    return BOM::RPC::v3::Utility::permission_error() if ($to_client->is_virtual);
 
-    if ($to_client->currency ne 'USD') {
-        return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $to_loginid, $to_client->currency));
-    }
+    my $settings;
 
-    if ($to_client->get_status('disabled')) {
-        return $error_sub->(localize('Your account [_1] was disabled.', $to_loginid));
-    }
-    if ($to_client->get_status('cashier_locked') || $to_client->documents_expired) {
-        return $error_sub->(localize('Your account [_1] cashier section was locked.', $to_loginid));
-    }
+    return BOM::RPC::v3::Utility::permission_error() unless ($settings = _mt5_is_real_account($to_client, $fm_mt5));
+
+    # check for fully authenticated only if it's not gaming account
+    # as of now we only support gaming for binary brand, in future if we
+    # support for champion please revisit this
+
+    return $error_sub->(localize('Please authenticate your account.'))
+        if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated);
+
+    return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD/EUR.', $to_loginid, $to_client->currency))
+        if ($to_client->currency !~ /^USD|EUR$/);
+
+    return $error_sub->(localize('Your account [_1] was disabled.', $to_loginid)) if ($to_client->get_status('disabled'));
+
+    return $error_sub->(localize('Your account [_1] cashier section was locked.', $to_loginid))
+        if ($to_client->get_status('cashier_locked') || $to_client->documents_expired);
 
     my $to_client_db = BOM::Database::ClientDB->new({
         client_loginid => $to_loginid,
     });
-    if (not $to_client_db->freeze) {
-        return $error_sub->(localize('If this error persists, please contact customer support.'),
-            "Account stuck in previous transaction $to_loginid");
-    }
+
+    return $error_sub->(localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid")
+        if (not $to_client_db->freeze);
+
+    scope_guard {
+        $to_client_db->unfreeze;
+    };
 
     my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
-
     # withdraw from MT5 a/c
     my $status = BOM::MT5::User::withdrawal({
         login   => $fm_mt5,
@@ -512,34 +917,46 @@ sub mt5_withdrawal {
         return $error_sub->($status->{error});
     }
 
-    # deposit to Binary a/c
-    my $account = $to_client->set_default_account('USD');
-    my ($payment) = $account->add_payment({
-        amount               => $amount,
-        payment_gateway_code => 'account_transfer',
-        payment_type_code    => 'internal_transfer',
-        status               => 'OK',
-        staff_loginid        => $to_loginid,
-        remark               => $comment,
-    });
-    my ($txn) = $payment->add_transaction({
-        account_id    => $account->id,
-        amount        => $amount,
-        staff_loginid => $to_loginid,
-        referrer_type => 'payment',
-        action_type   => 'deposit',
-        quantity      => 1,
-        source        => $source,
-    });
-    $account->save(cascade => 1);
-    $payment->save(cascade => 1);
+    return try {
+        # deposit to Binary a/c
+        my $account = $to_client->set_default_account($to_client->currency);
+        my ($payment) = $account->add_payment({
+            amount               => $amount,
+            payment_gateway_code => 'account_transfer',
+            payment_type_code    => 'internal_transfer',
+            status               => 'OK',
+            staff_loginid        => $to_loginid,
+            remark               => $comment,
+        });
+        my ($txn) = $payment->add_transaction({
+            account_id    => $account->id,
+            amount        => $amount,
+            staff_loginid => $to_loginid,
+            referrer_type => 'payment',
+            action_type   => 'deposit',
+            quantity      => 1,
+            source        => $source,
+        });
+        $account->save(cascade => 1);
+        $payment->save(cascade => 1);
 
-    $to_client_db->unfreeze;
-    return {
-        status                => 1,
-        binary_transaction_id => $txn->id
+        return {
+            status                => 1,
+            binary_transaction_id => $txn->id
+        };
+    }
+    catch {
+        my $error = BOM::Transaction->format_error(err => $_);
+        _send_email(
+            loginid => $to_loginid,
+            mt5_id  => $fm_mt5,
+            amount  => $amount,
+            action  => 'withdraw',
+            error   => $error->get_mesg,
+        );
+        return $error_sub->($error->{-message_to_client});
     };
-}
+};
 
 sub _is_mt5_suspended {
     my $app_config = BOM::Platform::Runtime->instance->app_config;
@@ -550,6 +967,30 @@ sub _is_mt5_suspended {
                 message_to_client => localize('MT5 API calls are suspended.')});
     }
     return undef;
+}
+
+sub _get_mt5_account_from_affiliate_token {
+    my $token = shift;
+
+    if ($token) {
+        my $aff = WebService::MyAffiliates->new(
+            user    => BOM::Platform::Config::third_party->{myaffiliates}->{user},
+            pass    => BOM::Platform::Config::third_party->{myaffiliates}->{pass},
+            host    => BOM::Platform::Config::third_party->{myaffiliates}->{host},
+            timeout => 10
+        ) or return;
+
+        my $user_id = $aff->get_affiliate_id_from_token($token) or return;
+        my $user = $aff->get_user($user_id) or return;
+
+        my $affiliate_variables = $user->{USER_VARIABLES}->{VARIABLE} or return;
+        $affiliate_variables = [$affiliate_variables] unless ref($affiliate_variables) eq 'ARRAY';
+
+        my ($mt5_account) = grep { $_->{NAME} eq 'mt5_account' } @$affiliate_variables;
+        return $mt5_account->{VALUE} if $mt5_account;
+    }
+
+    return;
 }
 
 1;

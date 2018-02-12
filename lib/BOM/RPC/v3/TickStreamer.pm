@@ -6,30 +6,29 @@ use warnings;
 use Finance::Asset;
 use Date::Utility;
 
+use BOM::RPC::Registry '-dsl';
+
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Contract;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
-use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 
-sub ticks {
+rpc ticks => sub {
     my $params = shift;
 
     my $symbol   = $params->{symbol};
     my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
     if ($response and exists $response->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $response->{error}->{code},
-                message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
+        return $response;
     }
 
-    my $display_decimals = create_underlying($symbol)->display_decimals;
+    return {stash => {"${symbol}_display_decimals" => $response->display_decimals}};
+};
 
-    return {stash => {"${symbol}_display_decimals" => $display_decimals}};
-}
-
-sub ticks_history {
+rpc ticks_history => sub {
     my $params = shift;
 
     my $args   = $params->{args};
@@ -37,13 +36,10 @@ sub ticks_history {
 
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $response->{error}->{code},
-                message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
+        return $response;
     }
 
     my $ul = create_underlying($symbol);
-
     unless ($ul->feed_license =~ /^(realtime|delayed|daily)$/) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'StreamingNotAllowed',
@@ -51,18 +47,15 @@ sub ticks_history {
     }
 
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-        my $status = BOM::RPC::v3::Contract::validate_license($symbol);
-        if ($status and exists $status->{error}) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => $status->{error}->{code},
-                    message_to_client => BOM::Platform::Context::localize($status->{error}->{message}, $symbol)});
+        $response = BOM::RPC::v3::Contract::validate_license($ul);
+
+        if ($response and exists $response->{error}) {
+            return $response;
         }
 
-        $status = BOM::RPC::v3::Contract::validate_is_open($symbol);
-        if ($status and exists $status->{error}) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => $status->{error}->{code},
-                    message_to_client => BOM::Platform::Context::localize($status->{error}->{message}, $symbol)});
+        $response = BOM::RPC::v3::Contract::validate_is_open($ul);
+        if ($response and exists $response->{error}) {
+            return $response;
         }
     }
 
@@ -71,7 +64,7 @@ sub ticks_history {
     # default to 60 if not defined or send as 0 for candles
     $args->{granularity} = $args->{granularity} || 60 if $style eq 'candles';
 
-    $response = _validate_start_end({%$args, ul => $ul});    ## no critic
+    $response = _validate_start_end({%$args, ul => $ul});    ## no critic (ProhibitCommaSeparatedStatements)
     if ($response and exists $response->{error}) {
         return $response;
     } else {
@@ -107,7 +100,7 @@ sub ticks_history {
         data    => $result,
         publish => $publish,
         ($args->{granularity}) ? (granularity => $args->{granularity}) : ()};
-}
+};
 
 sub _ticks {
     my $args = shift;
@@ -215,10 +208,12 @@ sub _validate_start_end {
             code              => 'NoSymbolProvided',
             message_to_client => BOM::Platform::Context::localize("Please provide an underlying symbol.")});
 
-    my $start       = $args->{start};
-    my $end         = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
-    my $count       = $args->{count};
-    my $granularity = $args->{granularity};
+    my $start            = $args->{start};
+    my $end              = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
+    my $count            = $args->{count};
+    my $granularity      = $args->{granularity};
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+    my $exchange         = $ul->exchange;
 
     # special case to send explicit error when
     # both are timestamp & start > end time
@@ -232,12 +227,12 @@ sub _validate_start_end {
     if (not $start and $count and $granularity) {
         my $expected_start = Date::Utility->new($end - ($count * $granularity));
         # handle for non trading day as well
-        unless ($ul->calendar->trades_on($expected_start)) {
+        unless ($trading_calendar->trades_on($exchange, $expected_start)) {
             my $count = 0;
             do {
                 $expected_start = $expected_start->minus_time_interval('1d');
                 $count++;
-            } while ($count < 5 and not $ul->calendar->trades_on($expected_start));
+            } while ($count < 5 and not $trading_calendar->trades_on($exchange, $expected_start));
         }
         $start = $expected_start->epoch;
     }
@@ -278,12 +273,12 @@ sub _validate_start_end {
         }
     }
     if ($args->{adjust_start_time}) {
-        unless ($ul->calendar->is_open_at($end)) {
-            my $shift_back = $ul->calendar->seconds_since_close_at($end);
+        unless ($trading_calendar->is_open_at($exchange, Date::Utility->new($end))) {
+            my $shift_back = $trading_calendar->seconds_since_close_at($exchange, Date::Utility->new($end));
             unless (defined $shift_back) {
-                my $last_day = $ul->calendar->trade_date_before(Date::Utility->new($end));
+                my $last_day = $trading_calendar->trade_date_before($exchange, Date::Utility->new($end));
                 if ($last_day) {
-                    my $closes = $ul->calendar->closing_on($last_day)->epoch;
+                    my $closes = $trading_calendar->closing_on($exchange, $last_day)->epoch;
                     $shift_back = $end - $closes;
                 }
             }
