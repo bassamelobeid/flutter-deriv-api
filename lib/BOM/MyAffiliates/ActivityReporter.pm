@@ -24,6 +24,7 @@ use Text::CSV;
 use Date::Utility;
 use File::SortedSeek qw(numeric get_between);
 use Format::Util::Numbers qw(formatnumber);
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
 use BOM::Database::DataMapper::MyAffiliates;
 
@@ -31,12 +32,11 @@ use BOM::Database::DataMapper::MyAffiliates;
 
     $reporter->activity_for_date_as_csv('8-Sep-10');
 
-    # currency specific
-    $reporter->activity_for_date_as_csv('8-Sep-10', 'USD');
+    Produce a nicely formatted CSV output adjusted to USD
+    for all other landing companies except Japan.
+    (For Japan we need to send back in YEN only)
 
-    Produce a nicely formatted CSV output adjusted into passed currency
-    (if no currency is passed it defaults to USD)
-    for the requested date formatted as follows:
+    Result is formatted to this form:
 
     Date, Client Loginid, company profit/loss from client, deposits, turnover_runbets,
     intraday turnover, other turnover, first funded date, withdrawals
@@ -44,13 +44,13 @@ use BOM::Database::DataMapper::MyAffiliates;
 =cut
 
 sub activity_for_date_as_csv {
-    my ($self, $date_selection, $currency) = @_;
+    my ($self, $date_selection) = @_;
 
-    return _generate_csv_output($date_selection, $currency);
+    return _generate_csv_output($date_selection);
 }
 
 sub _generate_csv_output {
-    my ($date_selected, $currency) = @_;
+    my $date_selected = shift;
 
     my $when = Date::Utility->new($date_selected);
 
@@ -61,42 +61,44 @@ sub _generate_csv_output {
 
     $myaffiliates_data_mapper->db->dbic->run(ping => sub { $_->do("SET statement_timeout TO " . 900_000) });
 
-    my $activity;
-    if ($currency) {
-        $currency = uc $currency;
-        $activity = $myaffiliates_data_mapper->get_clients_activity_per_currency({
-            date     => $when,
-            currency => $currency
-        });
-    } else {
-        $activity = $myaffiliates_data_mapper->get_clients_activity({'date' => $when});
-    }
-
-    # default to USD if currency is not defined for rounding
-    # as myaffiliates expect everything in USD if specific
-    # currency is not passed
-    $currency = 'USD' unless $currency;
+    my $activity = $myaffiliates_data_mapper->get_clients_activity({'date' => $when});
 
     my @output;
-    # Sometimes we might pull an empty set.
+    my %conversion_hash = ();
+
     foreach my $loginid (sort keys %{$activity}) {
+        my $currency = $activity->{$loginid}->{currency};
+
+        # this is for optimization else we would need to call in_USD for each record
+        # this only calls if currency is not in hash
+        $conversion_hash{$currency} = in_USD(1, $currency) unless exists $conversion_hash{$currency};
+
         my $csv = Text::CSV->new;
 
-        my $first_funded_date = '';
-        if ($activity->{$loginid}->{'first_funded_date'}) {
-            $first_funded_date = Date::Utility->new($activity->{$loginid}->{'first_funded_date'})->date_yyyymmdd;
+        my $first_funded_date =
+            $activity->{$loginid}->{'first_funded_date'} ? Date::Utility->new($activity->{$loginid}->{'first_funded_date'})->date_yyyymmdd : '';
+        my @output_fields = ($when->date_yyyymmdd, $loginid);
+
+        if ($currency =~ /^(JPY|USD)$/) {
+            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{pnl});
+            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{deposits});
+            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{turnover_runbets});
+            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{turnover_intradays});
+            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{turnover_others});
+            push @output_fields, $first_funded_date;
+            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{'withdrawals'});
+        } else {
+            # we need to convert other currencies to USD as required
+            # by myaffiliates system
+            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{pnl});
+            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{deposits});
+            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_runbets});
+            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_intradays});
+            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_others});
+            push @output_fields, $first_funded_date;
+            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{'withdrawals'});
         }
-        my @output_fields = (
-            $when->date_yyyymmdd,
-            $loginid,
-            formatnumber('amount', $currency, $activity->{$loginid}->{'pnl'}),
-            formatnumber('amount', $currency, $activity->{$loginid}->{'deposits'}),
-            formatnumber('amount', $currency, $activity->{$loginid}->{'turnover_runbets'}),
-            formatnumber('amount', $currency, $activity->{$loginid}->{'turnover_intradays'}),
-            formatnumber('amount', $currency, $activity->{$loginid}->{'turnover_others'}),
-            $first_funded_date,
-            formatnumber('amount', $currency, $activity->{$loginid}->{'withdrawals'}),
-        );
+
         $csv->combine(@output_fields);
         push @output, $csv->string;
     }

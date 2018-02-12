@@ -19,8 +19,6 @@ my $to_date = Date::Utility->new(time - 86400);
 #Alway start to regenerate the files from start of the month.
 my $from_date = Date::Utility->new('01-' . $to_date->month_as_string . '-' . $to_date->year);
 
-my $currency = $ARGV[0] // undef;
-
 my $reporter        = BOM::MyAffiliates::ActivityReporter->new();
 my $processing_date = Date::Utility->new($from_date->epoch);
 my @csv_filenames;
@@ -29,10 +27,7 @@ my $output_dir = BOM::Platform::Runtime->instance->app_config->system->directory
 path($output_dir)->mkpath if (not -d $output_dir);
 
 while ($to_date->days_between($processing_date) >= 0) {
-    my $output_filename = $output_dir . 'pl_';
-
-    $output_filename .= lc($currency) . '_' if $currency;
-    $output_filename .= $processing_date->date_yyyymmdd . '.csv';
+    my $output_filename = $output_dir . 'pl_' . $processing_date->date_yyyymmdd . '.csv';
 
     # check if file exist and is not of size 0
     if (-e $output_filename and stat($output_filename)->size > 0) {
@@ -40,7 +35,7 @@ while ($to_date->days_between($processing_date) >= 0) {
         next;
     }
 
-    my @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy, $currency);
+    my @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy);
 
     # Date, Player, P&L, Deposits, Runbet Turnover, Intraday Turnover, Other Turnover
     my @lines;

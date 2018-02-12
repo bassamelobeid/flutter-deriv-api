@@ -11,7 +11,6 @@ API endpoints are:
 - Activity report: <https://collector01.binary.com/myaffiliates/activity_report?date=2016-05-30>
 - Registration: <https://collector01.binary.com/myaffiliates/registration?date=2016-05-30>
 - Turnover: <https://collector01.binary.com/myaffiliates/turnover_report?date=2016-05-30>
-- Currency specific activity report: <https://collector01.binary.com/myaffiliates/activity_report?date=2016-05-30&currency=JPY>
 
 # Main Dependencies
 CPAN module: WebService::MyAffiliates
