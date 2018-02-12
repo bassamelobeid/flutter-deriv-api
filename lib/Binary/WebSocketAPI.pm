@@ -10,30 +10,39 @@ use Mojo::Redis2;
 use Mojo::IOLoop;
 
 use Binary::WebSocketAPI::Hooks;
-use Binary::WebSocketAPI::Plugins::Introspection;
+
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Transaction;
 use Binary::WebSocketAPI::v3::Wrapper::Authorize;
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Accounts;
-use Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections |;
+use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master |;
 
-use File::Slurp;
-use JSON::Schema;
-use JSON::XS;
-use Try::Tiny;
-use Format::Util::Strings qw( defang );
+use Encode;
+use DataDog::DogStatsd::Helper;
 use Digest::MD5 qw(md5_hex);
+use Format::Util::Strings qw( defang );
+use JSON::MaybeXS;
+use JSON::Schema;
+use Mojolicious::Plugin::ClientIP::Pluggable;
+use Path::Tiny;
 use RateLimitations::Pluggable;
-use Time::Duration::Concise;
 use Scalar::Util qw(weaken);
+use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 
-# FIXME This needs to come from config, requires chef changes
-use constant INTROSPECTION_PORT => 8801;
+# These are the apps that are hardcoded to point to a different server pool.
+# This list is overwritten by Redis.
+our %DIVERT_APP_IDS;
+
+# These apps are blocked entirely.
+# This list is also overwritten by Redis.
+our %BLOCK_APP_IDS;
+
+my $json = JSON::MaybeXS->new;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -88,10 +97,13 @@ sub startup {
     push @{$app->plugins->namespaces}, 'Binary::WebSocketAPI::Plugins';
     $app->plugin('Introspection' => {port => 0});
     $app->plugin('RateLimits');
+    $app->plugin('Longcode');
 
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
+
+            return unless $c->tx;
 
             my $lang = defang($c->param('l'));
             if ($lang =~ /^\D{2}(_\D{2})?$/) {
@@ -107,12 +119,16 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
-            return unless $c->tx;
             my $app_id = $c->app_id;
             return $c->render(
                 json   => {error => 'InvalidAppID'},
                 status => 401
             ) unless $app_id;
+
+            return $c->render(
+                json   => {error => 'SystemMaintenance'},
+                status => 500
+            ) if exists $BLOCK_APP_IDS{$app_id};
 
             my $client_ip = $c->client_ip;
             my $brand     = defang($c->req->param('brand'));
@@ -131,10 +147,15 @@ sub startup {
                 ua_fingerprint       => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
                 ($app_id) ? (source => $app_id) : (),
                 brand => (($brand =~ /^\w{1,10}$/) ? $brand : 'binary'),
+                logged_requests => 0,
             );
         });
 
-    $app->plugin('ClientIP');
+    $app->plugin(
+        'Mojolicious::Plugin::ClientIP::Pluggable',
+        analyze_headers => [qw/cf-pseudo-ipv4 cf-connecting-ip true-client-ip/],
+        restrict_family => 'ipv4',
+        fallbacks       => [qw/rfc-7239 x-forwarded-for remote_address/]);
     $app->plugin('Binary::WebSocketAPI::Plugins::Helpers');
 
     my $actions = [[
@@ -151,18 +172,12 @@ sub startup {
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
             },
         ],
+        ['trading_times'],
+        ['asset_index'],
         [
-            'trading_times',
+            'contracts_for',
             {
-                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times,
-            },
-        ],
-        [
-            'asset_index',
-            {
-                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,
-                before_forward     => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
-                success            => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
+                stash_params => [qw/ token /],
             }
         ],
         ['active_symbols', {stash_params => [qw/ token /]}],
@@ -176,13 +191,7 @@ sub startup {
         ['ping',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
         ['time',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
         ['website_status', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::website_status}],
-        [
-            'contracts_for',
-            {
-                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::MarketDiscovery::contracts_for,
-                stash_params       => [qw/ token /],
-            }
-        ],
+        ['ico_status'],
         ['residence_list'],
         ['states_list'],
         ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
@@ -396,12 +405,6 @@ sub startup {
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
-            'new_sub_account',
-            {
-                require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /]}
-        ],
-        [
             'mt5_login_list',
             {
                 require_auth => 'admin',
@@ -435,14 +438,22 @@ sub startup {
         ],
 
         ['copytrading_statistics'],
-        ['copy_start', {require_auth => 'trade'}],
-        ['copy_stop',  {require_auth => 'trade'}],
-    ];
+        [
+            'document_upload',
+            {
+                stash_params    => [qw/ token /],
+                require_auth    => 'admin',
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::add_upload_info,
+            }
+        ],
+        ['copy_start',         {require_auth => 'trade'}],
+        ['copy_stop',          {require_auth => 'trade'}],
+        ['app_markup_details', {require_auth => 'admin'}]];
 
     for my $action (@$actions) {
         my $f             = '/home/git/regentmarkets/binary-websocket-api/config/v3/' . $action->[0];
-        my $in_validator  = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")), format => \%JSON::Schema::FORMATS);
-        my $out_validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")), format => \%JSON::Schema::FORMATS);
+        my $in_validator  = JSON::Schema->new($json->decode(path("$f/send.json")->slurp_utf8), format => \%JSON::Schema::FORMATS);
+        my $out_validator = JSON::Schema->new($json->decode(path("$f/receive.json")->slurp_utf8), format => \%JSON::Schema::FORMATS);
 
         my $action_options = $action->[1] ||= {};
         $action_options->{in_validator}  = $in_validator;
@@ -456,7 +467,8 @@ sub startup {
 
     $app->helper(
         'app_id' => sub {
-            my $c               = shift;
+            my $c = shift;
+            return undef unless $c->tx;
             my $possible_app_id = $c->req->param('app_id');
             if (defined($possible_app_id) && $possible_app_id =~ /^(?!0)[0-9]{1,19}$/) {
                 return $possible_app_id;
@@ -466,31 +478,37 @@ sub startup {
 
     $app->helper(
         'rate_limitations_key' => sub {
-            my $c                  = shift;
-            my $login_id           = $c->stash('loginid');
-            my $app_id             = $c->app_id;
-            my $authorised_key     = $login_id ? "rate_limits::authorised::$app_id/$login_id" : undef;
-            my $non_authorised_key = do {
-                my $ip = $c->client_ip;
-                if (!defined $ip) {
-                    $app->log->warn("cannot determine client IP-address");
-                    $ip = 'unknown-IP';
-                }
-                my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
-                my $client_id = md5_hex($ip . ":" . $user_agent);
-                "rate_limits::non-authorised::$app_id/$client_id";
-            };
-            return $authorised_key // $non_authorised_key;
+            my $c = shift;
+            return "rate_limits::closed" unless $c && $c->tx;
+
+            my $app_id   = $c->app_id;
+            my $login_id = $c->stash('loginid');
+            return "rate_limits::authorised::$app_id/$login_id" if $login_id;
+
+            my $ip = $c->client_ip;
+            if ($ip) {
+                # Basic sanitisation: we expect IPv4/IPv6 addresses only, reject anything else
+                $ip =~ s{[^[:xdigit:]:.]+}{_}g;
+            } else {
+                DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.unknown_ip.count');
+                $ip = 'UNKNOWN';
+            }
+
+            # We use empty string for the default UA since we'll be hashing anyway
+            # and our highly-trained devops team can spot an md5('') from orbit
+            my $user_agent = $c->req->headers->header('User-Agent') // '';
+            my $client_id = $ip . ':' . md5_hex($user_agent);
+            return "rate_limits::unauthorised::$app_id/$client_id";
         });
 
     $app->plugin(
         'web_socket_proxy' => {
-            actions => $actions,
-
+            actions      => $actions,
+            binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
-                \&Binary::WebSocketAPI::Hooks::check_app_id, \&Binary::WebSocketAPI::Hooks::before_forward,
-                \&Binary::WebSocketAPI::Hooks::get_rpc_url,  \&Binary::WebSocketAPI::Hooks::introspection_before_forward
+                \&Binary::WebSocketAPI::Hooks::before_forward,               \&Binary::WebSocketAPI::Hooks::assign_rpc_url,
+                \&Binary::WebSocketAPI::Hooks::introspection_before_forward, \&Binary::WebSocketAPI::Hooks::check_useragent,
             ],
             before_call => [
                 \&Binary::WebSocketAPI::Hooks::add_app_id,   \&Binary::WebSocketAPI::Hooks::add_brand,
@@ -514,13 +532,41 @@ sub startup {
             finish_connection => \&Binary::WebSocketAPI::Hooks::on_client_disconnect,
 
             # helper config
-            url => \&Binary::WebSocketAPI::Hooks::get_rpc_url,                          # make url for manually called actions
+            url => \&Binary::WebSocketAPI::Hooks::assign_rpc_url,                       # make url for manually called actions
 
             # Skip check sanity to password fields
             skip_check_sanity => qr/password/,
         });
 
+    my $redis = ws_redis_master();
+    $redis->get(
+        'app_id::diverted',
+        sub {
+            my ($redis, $err, $ids) = @_;
+            if ($err) {
+                warn "Error reading diverted app IDs from Redis: $err\n";
+                return;
+            }
+            return unless $ids;
+            warn "Have diverted app_ids, applying: $ids\n";
+            # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
+            # No value => no update.
+            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
+        });
+    $redis->get(
+        'app_id::blocked',
+        sub {
+            my ($redis, $err, $ids) = @_;
+            if ($err) {
+                warn "Error reading blocked app IDs from Redis: $err\n";
+                return;
+            }
+            return unless $ids;
+            warn "Have blocked app_ids, applying: $ids\n";
+            %BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
+        });
     return;
+
 }
 
 1;

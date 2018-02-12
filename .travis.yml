@@ -10,17 +10,22 @@ services:
     - redis-server
 cache: apt
 
+notifications:
+    slack:
+        rooms:
+            - binary-group:6t92829RicGEft1kCkpKLPj9#test-failures
+        on_success: never
+        on_failure: always
+        on_pull_requests: false
+
 env:
     matrix:
-        - TEST_SUITE=v3_1
-        - TEST_SUITE=v3_2
-        - TEST_SUITE=v3_3
+        - TEST_SUITE=accounts
+        - TEST_SUITE=security
+        - TEST_SUITE=pricing
+        - TEST_SUITE=misc
         - TEST_SUITE=structure
-        - TEST_SUITE=leaktest
-        - TEST_SUITE=json_schema_1
-        - TEST_SUITE=json_schema_2
-        - TEST_SUITE=json_schema_3
-        - TEST_SUITE=json_schema_4
+        - TEST_SUITE=schema
     global:
         - SH=bash
         - secure: "PVLFC2gYVgnJT45GYcg1fvaCuij9P85sr0h+NZ/CCO9eCqpscBx1NQIGnUa5LgeFIKTr2xJGQ8f/Q4ydkrq1bNkGWvvhtNXBZiK15R7qX3XnyCSOrhmpHsNC/zYmRvl/7tpkR0LAscDGCckUjXjVy6rl1ihgI6QvQTMigS+fNWJaW8zkW10ZV7KAYodOLRRlrFYURZ6FNwNzI3kSXacUhNITs/WsYTMYsOVmagXfRExdUaL8PWMfqXssHGEvsT2IHwk2tWhHujDNdqBPIoyUEQZSIRhq39qJKERukpc1UQEmhCx+P1biYl1ShOY5KHWoFluPdwlAfN1WqeeYQF4jxKpVh5d71paE6K5oBKMsjkcLG3gusJs8y827Iyn3XVaG4WF/3yX63HnpwyIqmUeZvtU28n996zkMYMRSMYLqWnO+5LMIBRxLTDZrNwFHoUZnrRY0GOgba4ERLTk8iblcrW3dYqKkPzFAwMFJfrst12+sLSwa3TvO7IFjnqaCoEuP4l21SrWgzUlf55x+lPsT1JsCV1u1ufZu6uuIBahgiBQrk/c1xKlM019Bc3+TBTP90wEafHr6pKNb4rOQpdyTddFubNFnpQV2WhHxoeuG/Hv32Aiwz/PlsOlr2t9B4a3g1a8UexF8gnHGLCSxVJdiFvbR1RdlkJtbdo3Pf/3Ud+8="
@@ -40,6 +45,7 @@ before_install:
     - /tmp/travis-scripts/fixHostName.sh
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
 
+    - export API_TOKEN=cd1bec02529c7f8780ef5fbb41dc48cacc4d4942
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom-test
       regentmarkets/bom-websocket-tests
@@ -54,12 +60,13 @@ before_install:
       regentmarkets/bom-transaction
       regentmarkets/php-mt5-webapi
       binary-com/translations-websockets-api
+    - /tmp/travis-scripts/check-libs.sh
     - /tmp/travis-scripts/redis.sh
 
 install:
     - source /tmp/travis-scripts/devbox_path.sh
     - sudo ln -s $PWD /home/git/regentmarkets/binary-websocket-api
-    - export WEBSOCKET_CONFIG=$PWD/websocket.conf.travis
+    - export WEBSOCKET_CONFIG=$PWD/websocket.conf.example
     - /tmp/travis-scripts/devbox.sh
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
@@ -74,7 +81,8 @@ install:
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
     - perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1 | grep -Ev '(connection has been closed unexpectedly)|(terminating connection due to administrator)' &
     - perl /home/git/regentmarkets/bom-pricing/bin/price_queue.pl   daemon > /dev/null 2>&1 &
-    - perl /home/git/regentmarkets/bom-pricing/bin/price_daemon.pl  daemon > /dev/null 2>&1 &
+    - perl /home/git/regentmarkets/bom-pricing/bin/price_queue_priority.pl   daemon > /dev/null 2>&1 &
+    - perl /home/git/regentmarkets/bom-pricing/bin/price_daemon.pl --no-warmup=1 daemon > /dev/null 2>&1 &
 
 before_script:
     - perl -le 'print $^V'; which perl; ls -l /etc/rmg/bin

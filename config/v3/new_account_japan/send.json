@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title":"Create Japan account Send",
-  "description": "This call opens a new real-money account with the 'Japan' Landing Company. Note: you must be authenticated to Japan virtual-money account to call this function.",
+  "description": "This call opens a new real-money account with the 'Japan' Landing Company. This call can be made from Japan virtual-money account or real-money account. In latter case client information fields in this call will be ignored, and existing data will be used",
   "properties": {
     "new_account_japan": {
       "type": "integer",
@@ -51,13 +51,13 @@
     },
     "address_line_1": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\p{Nd}\\s'.,@\/-]{1,70}$",
+      "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#\/-]{1,70}$",
       "description": "Within 70 characters.",
       "required": 1
     },
     "address_line_2": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\p{Nd}\\s'.,@\/-]{0,70}$",
+      "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#\/-]{0,70}$",
       "description": "Optional field, within 70 characters."
     },
     "address_city": {
@@ -86,15 +86,12 @@
     },
     "secret_question": {
       "enum": [ "Mother's maiden name", "Name of your pet", "Name of first love", "Memorable town/city", "Memorable date", "Favourite dish", "Brand of first car", "Favourite artist" ],
-      "description": "Accept any value in enum list.",
-      "required": 1
+      "description": "Accept any value in enum list. Required for new account and existing client details will be used if client open another account."
     },
     "secret_answer": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 50,
-      "description": "Answer to secret question, within 1-50 characters.",
-      "required": 1
+      "pattern": "^[^<>&()]{1,100}$",
+      "description": "Answer to secret question, within 1-100 characters. All characters are allowed except <,>,&,),(. Required for new account and existing client details will be used if client open another account"
     },
     "tax_residence": {
       "type": "string",

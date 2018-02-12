@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title":"Create real account Send",
-  "description": "This call opens a new real-money account. Note: you must be authenticated to a virtual-money account to call this function.",
+  "description": "This call opens a new real-money account. This call can be made from a virtual-money or a real-money account. If it’s the latter, client information fields in this call will be ignored and data from your existing real-money account will be used.",
   "properties": {
     "new_account_real": {
       "type": "integer",
@@ -46,12 +46,12 @@
     },
     "address_line_1": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\p{Nd}\\s'.,@\/-]{1,70}$",
+      "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#\/-]{1,70}$",
       "required": "1"
     },
     "address_line_2": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\p{Nd}\\s'.,@\/-]{0,70}$",
+      "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#\/-]{0,70}$",
       "description": "Optional field, within 70 characters."
     },
     "address_city": {
@@ -78,16 +78,14 @@
     },
     "secret_question": {
       "enum": [ "Mother's maiden name", "Name of your pet", "Name of first love", "Memorable town/city", "Memorable date", "Favourite dish", "Brand of first car", "Favourite artist" ],
-      "description": "Accept any value in enum list.",
-      "required": "1"
+      "description": "Accept any value in enum list. Required for new account and existing client details will be used if client open another account."
     },
     "secret_answer": {
       "type": "string",
       "minLength": 4,
       "maxLength": 50,
       "pattern": "^[\\w\\-\\,\\.\\' ]+",
-      "description": "Answer to secret question, within 4-50 characters.",
-      "required": "1"
+      "description": "Answer to secret question, within 4-50 characters. Required for new account and existing client details will be used if client open another account."
     },
     "affiliate_token": {
       "type": "string",
@@ -110,13 +108,27 @@
       "enum": [
         "Speculative",
         "Income Earning",
-        "Assets Saving",
         "Hedging"
       ]
     },
     "account_turnover": {
       "enum": [ "Less than $25,000", "$25,000 - $50,000", "$50,001 - $100,000", "$100,001 - $500,000", "Over $500,000" ],
       "description": "The anticipated account turnover"
+    },
+    "currency": {
+      "pattern": "^[A-Z]{3}$",
+      "required": "0",
+      "description": "Optional field to set currency of the account. List of supported currencies can be acquired with 'payout_currencies' call"
+    },
+    "account_type": {
+      "pattern": "^ico|default$",
+      "required": "0",
+      "description": "Optional field to restrict the account type. Currently used only for ICO token accounts."
+    },
+    "client_type": {
+      "pattern": "^retail|professional$",
+      "required": "0",
+      "description": "Optional field, indicates whether this is for a client requesting an account with professional status. Defaults to retail."
     },
     "passthrough": {
       "type": "object",

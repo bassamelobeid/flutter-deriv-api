@@ -40,7 +40,7 @@ sub register {
 
     $app->{_binary}{rates_config} = \%rates_config;
 
-    # returns future, which will be 'done' if services usage limit wasn't hit,
+    # Returns a Future which will resolve as 'done' if services usage limit wasn't hit,
     # and 'fail' otherwise
     $app->helper(check_limits => \&_check_limits);
 
@@ -87,7 +87,7 @@ sub _update_redis {
                             $c->app->log->warn("Redis error: $error");
                             return $f->fail($error);
                         }
-                        # if ttl == -2 the key has just expired and we dont need a warning here.
+                        # If ttl == -2 the key has just expired and we don't need a warning here.
                         _set_key_expiry($c, $redis_key, $ttl) if $redis_ttl == -1;
                     });
                 $f->done;
@@ -145,7 +145,7 @@ sub _check_limits {
         $speculative_result &&= $atomic_result;
         push @future_checks, $atomic_future;
     }
-    # do updates in paralell (in background)
+    # do updates in parallel (in background)
     retain_future(Future->wait_all(@future_checks));
     return $speculative_result ? Future->done : Future->fail('limit hit');
 }

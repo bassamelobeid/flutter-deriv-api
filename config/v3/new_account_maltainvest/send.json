@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title":"Create maltainvest account Send",
-  "description": "This call opens a new real-money account with the 'maltainvest' Landing Company. Note: you must be authenticated to Binary (Europe) Ltd or virtual-money account to call this function.",
+  "title": "Create maltainvest account Send",
+  "description": "This call opens a new real-money account with the 'maltainvest' Landing Company. This call can be made from a virtual-money account or real-money account at Binary (Europe) Ltd. If it’s the latter, client information fields in this call will be ignored and data from your existing real-money account will be used.",
   "properties": {
     "new_account_maltainvest": {
       "type": "integer",
@@ -47,13 +47,13 @@
     },
     "address_line_1": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\p{Nd}\\s'.,@\/-]{1,70}$",
+      "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#\/-]{1,70}$",
       "description": "Within 70 characters.",
       "required": "1"
     },
     "address_line_2": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\p{Nd}\\s'.,@\/-]{0,70}$",
+      "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#\/-]{0,70}$",
       "description": "Optional field, within 70 characters."
     },
     "address_city": {
@@ -172,7 +172,6 @@
       "enum": [
         "Speculative",
         "Income Earning",
-        "Assets Saving",
         "Hedging"
       ]
     },
@@ -224,6 +223,11 @@
       "type": "integer",
       "description": "Show whether client has accepted risk disclaimer, boolean value 1 or 0",
       "required": 1
+    },
+    "client_type": {
+      "pattern": "^retail|professional$",
+      "required": "0",
+      "description": "Optional field, indicates whether this is for a client requesting an account with professional status. Defaults to retail."
     },
     "passthrough": {
       "type": "object",

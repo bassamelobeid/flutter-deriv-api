@@ -1,7 +1,10 @@
 -Ilib
---exec '/etc/rmg/bin/perl -It/lib -MTest::Warnings'
+--exec '/etc/rmg/bin/perl -It/lib -MTest::Warnings -MMojo::JSON::MaybeXS'
 -MBOM::Test
--MBOM::Test::RPC::PricingRpc
+-MBOM::Test::Initializations
+-MBOM::Test::Suite
 -MBOM::Test::RPC::BomRpc
 -MBOM::Test::Script::NotifyPub
+-MBOM::Test::Script::PricerDaemon
+-MBOM::Test::Script::PricerQueuePriority
 

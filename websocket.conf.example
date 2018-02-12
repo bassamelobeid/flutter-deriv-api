@@ -19,5 +19,4 @@ app->renderer->default_format('json');
         accepts => 3600,          # Maximum number of connections a worker is allowed to accept before stopping gracefully, 0 - indefinitely
     },
     rpc_url => "http://127.0.0.1:5005/",
-    pricing_rpc_url => "http://127.0.0.1:5006/",
 };

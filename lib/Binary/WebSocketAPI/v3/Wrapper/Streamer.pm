@@ -3,21 +3,23 @@ package Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use strict;
 use warnings;
 
-use JSON;
 use Date::Utility;
+use Encode;
 use Mojo::Redis::Processor;
 use Time::HiRes qw(gettimeofday);
 use List::MoreUtils qw(last_index);
-use JSON::XS qw(encode_json decode_json);
+use JSON::MaybeXS;
 use Scalar::Util qw (looks_like_number refaddr weaken);
 use Format::Util::Numbers qw/formatnumber/;
 
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::System;
-use Binary::WebSocketAPI::v3::Instance::Redis qw( ws_redis_slave ws_redis_master shared_redis );
+use Binary::WebSocketAPI::v3::Instance::Redis qw( ws_redis_master shared_redis );
 
 use utf8;
 use Try::Tiny;
+
+my $json = JSON::MaybeXS->new;
 
 sub website_status {
     my ($c, $req_storage) = @_;
@@ -41,7 +43,7 @@ sub website_status {
                     my $website_status = {};
                     $rpc_response->{clients_country} //= '';
                     $website_status->{$_} = $rpc_response->{$_}
-                        for qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config ico_status|;
+                        for qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config|;
 
                     $shared_info->{broadcast_notifications}{$c + 0}{'c'}            = $c;
                     $shared_info->{broadcast_notifications}{$c + 0}{echo}           = $args;
@@ -50,9 +52,9 @@ sub website_status {
                     Scalar::Util::weaken($shared_info->{broadcast_notifications}{$c + 0}{'c'});
 
                     ### to config
-                    my $current_state = ws_redis_slave->get("NOTIFY::broadcast::state");
+                    my $current_state = ws_redis_master()->get("NOTIFY::broadcast::state");
 
-                    $current_state = eval { decode_json($current_state) }
+                    $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
                     $website_status->{site_status} = $current_state->{site_status} // 'up';
                     $website_status->{message}     = $current_state->{message}     // ''
@@ -101,10 +103,10 @@ sub send_notification {
 
         unless ($is_on_key) {
             $is_on_key = "NOTIFY::broadcast::is_on";    ### TODO: to config
-            return unless ws_redis_slave->get($is_on_key);    ### Need 1 for continuing
+            return unless ws_redis_master()->get($is_on_key);    ### Need 1 for continuing
         }
 
-        $message = eval { decode_json $message } unless ref $message eq 'HASH';
+        $message = eval { $json->decode(Encode::decode_utf8($message)) } unless ref $message eq 'HASH';
         delete $message->{message} if $message->{site_status} ne 'down';
 
         $client_shared->{c}->send({
@@ -271,7 +273,7 @@ sub ticks_history {
 
 sub process_realtime_events {
     my ($shared_info, $msg, $chan) = @_;
-    my $payload = decode_json($msg);
+    my $payload = $json->decode(Encode::decode_utf8($msg));
 
     # pick the per-user controller to send-back notifications to
     # related users only
@@ -439,10 +441,12 @@ sub _feed_channel_unsubscribe {
     # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
     transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
 
-    delete $shared_info->{$c + 0};
-    if (!keys %{$shared_info // {}}) {
-        $shared_info->{symbols}->{$symbol} = 0;
-        shared_redis->unsubscribe(["FEED::$symbol"], sub { });
+    unless (keys %$feed_channel_type) {    # one connection could have several subscriptions (ticks/candles)
+        delete $shared_info->{$c + 0};
+        if (!keys %$shared_info) {
+            $shared_info->{symbols}->{$symbol} = 0;
+            shared_redis->unsubscribe(["FEED::$symbol"], sub { });
+        }
     }
 
     return $uuid;
@@ -450,6 +454,7 @@ sub _feed_channel_unsubscribe {
 
 sub transaction_channel {
     my ($c, $action, $account_id, $type, $args, $contract_id) = @_;
+    $contract_id = $args->{contract_id} // $contract_id;
     my $uuid;
 
     my $redis = shared_redis;
@@ -468,16 +473,16 @@ sub transaction_channel {
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
             $channel->{$type}->{account_id}  = $account_id;
-            $channel->{$type}->{contract_id} = $args->{contract_id} || $contract_id
-                if $args->{contract_id} || $contract_id;
+            $channel->{$type}->{contract_id} = $contract_id if $contract_id;
             $c->stash('transaction_channel', $channel);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
             delete $channel->{$type};
-            unless (keys %$channel) {
+            unless (%$channel) {
                 delete $redis->{shared_info}{$channel_name}{$c + 0};
-                $redis->unsubscribe([$channel_name], sub { });
                 delete $c->stash->{transaction_channel};
             }
+            # Unsubscribe from redis if there's no listener across connections for the channel
+            $redis->unsubscribe([$channel_name], sub { }) if not %{$redis->{shared_info}{$channel_name}};
         }
     }
 
@@ -492,7 +497,7 @@ sub process_transaction_updates {
 
     return unless $channel;
 
-    my $payload = JSON::from_json($message);
+    my $payload = $json->decode($message);
 
     return unless $payload && ref $payload eq 'HASH';
 
@@ -504,24 +509,28 @@ sub process_transaction_updates {
     ### new proposal_open_contract stream after buy
     ### we have to do it here. we have not longcode in payout.
     ### we'll start new bid stream if we have proposal_open_contract subscription and have bought a new contract
-    _create_poc_stream($c, $payload) if $payload->{action_type} eq 'buy';
+    ($payload->{action_type} eq 'buy' ? _create_poc_stream($c, $payload) : Future->done)->then(
+        sub {
+            my $args = {};
+            foreach my $type (keys %{$channel}) {
+                $args = (exists $channel->{$type}->{args}) ? $channel->{$type}->{args} : {};
 
-    my $args = {};
-    foreach my $type (keys %{$channel}) {
-        $args = (exists $channel->{$type}->{args}) ? $channel->{$type}->{args} : {};
+                _update_balance($c, $args, $payload, $channel->{$type}->{uuid})
+                    if $type eq 'balance';
 
-        _update_balance($c, $args, $payload, $channel->{$type}->{uuid})
-            if $type eq 'balance';
+                _update_transaction($c, $args, $payload, $channel->{$type}->{uuid})
+                    if $type eq 'transaction';
 
-        _update_transaction($c, $args, $payload, $channel->{$type}->{uuid})
-            if $type eq 'transaction';
+                ### proposal_open_contract stream. Type is UUID
+                _close_proposal_open_contract_stream($c, $args, $payload, $channel->{$type}->{contract_id}, $type)
+                    if $type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/;
 
-        ### proposal_open_contract stream. Type is UUID
-        _close_proposal_open_contract_stream($c, $args, $payload, $channel->{$type}->{contract_id}, $type)
-            if $type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/;
-
-    }
-
+            }
+            Future->done;
+        },
+        sub {
+            warn "ERROR - @_";
+        })->retain;
     return;
 }
 
@@ -567,52 +576,50 @@ sub _create_poc_stream {
 
     my $poc_args = $c->stash('proposal_open_contracts_subscribed');
 
-    if ($poc_args && $payload->{financial_market_bet_id}) {
+    return Future->done unless $poc_args && $payload->{financial_market_bet_id};
 
-        $c->call_rpc({
-                url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
-                args        => $poc_args,
-                msg_type    => '',
-                method      => 'longcode',
-                call_params => {
-                    token       => $c->stash('token'),
-                    short_codes => [$payload->{short_code}],
+    return $c->longcode($payload->{short_code}, $payload->{currency_code})->then(
+        sub {
+            my ($longcode) = @_;
+            $payload->{longcode} = $longcode
+                or warn "Had no longcode for "
+                . $payload->{short_code}
+                . " currency "
+                . $payload->{currency_code}
+                . " language "
+                . $c->stash('language');
+            Future->done;
+        },
+        sub {
+            my ($error, $category, @details) = @_;
+            warn "Longcode failure, falling back to placeholder text - $error ($category: @details)\n";
+            $payload->{longcode} = $c->l('Could not retrieve contract details');
+            Future->done;
+        }
+        )->then(
+        sub {
+            my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::_pricing_channel_for_bid(
+                $c,
+                $poc_args,
+                {
+                    shortcode   => $payload->{short_code},
                     currency    => $payload->{currency_code},
-                    language    => $c->stash('language'),
-                },
-                response => sub {
-                    my $rpc_response = shift;
+                    is_sold     => $payload->{sell_time} ? 1 : 0,
+                    contract_id => $payload->{financial_market_bet_id},
+                    buy_price   => $payload->{purchase_price},
+                    account_id  => $payload->{account_id},
+                    longcode => $payload->{longcode} || $payload->{payment_remark},
+                    transaction_ids => {buy => $payload->{id}},
+                    purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
+                    sell_price      => undef,
+                    sell_time       => undef,
+                });
 
-                    $payload->{longcode} = $rpc_response->{longcodes}{$payload->{short_code}};
-                    warn "Wrong longcode response: " . decode_json($rpc_response) unless $payload->{longcode};
-
-                    my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::_pricing_channel_for_bid(
-                        $c,
-                        $poc_args,
-                        {
-                            shortcode   => $payload->{short_code},
-                            currency    => $payload->{currency_code},
-                            is_sold     => $payload->{sell_time} ? 1 : 0,
-                            contract_id => $payload->{financial_market_bet_id},
-                            buy_price   => $payload->{purchase_price},
-                            account_id  => $payload->{account_id},
-                            longcode => $payload->{longcode} || $payload->{payment_remark},
-                            transaction_ids => {buy => $payload->{id}},
-                            purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
-                            sell_price      => undef,
-                            sell_time       => undef,
-                        });
-
-                    # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                    transaction_channel($c, 'subscribe', $payload->{account_id}, $uuid, $poc_args, $payload->{financial_market_bet_id})
-                        if $uuid;
-                    return;
-                },
-            });
-
-        return 1;
-    }
-    return 0;
+            # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+            transaction_channel($c, 'subscribe', $payload->{account_id}, $uuid, $poc_args, $payload->{financial_market_bet_id})
+                if $uuid;
+            return Future->done;
+        });
 }
 
 sub _update_balance {
@@ -665,7 +672,6 @@ sub _update_transaction {
     $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{sell_time} || $payload->{purchase_time})->epoch;
 
     $c->call_rpc({
-            url         => Binary::WebSocketAPI::Hooks::get_pricing_rpc_url($c),
             args        => $args,
             msg_type    => 'transaction',
             method      => 'get_contract_details',
