@@ -84,6 +84,8 @@ sub set_current_context {
 
     my $r = BOM::Platform::Context::Request->new($args);
     BOM::Platform::Context::request($r);
+
+    return;
 }
 
 sub _make_rpc_service_and_register {
