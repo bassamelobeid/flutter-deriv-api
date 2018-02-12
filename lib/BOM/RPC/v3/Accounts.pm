@@ -50,7 +50,8 @@ use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
 my $json = JSON::MaybeXS->new;
-common_before_actions qw(auth);
+
+requires_auth();
 
 =head2 payout_currencies
 
@@ -90,7 +91,7 @@ Returns a sorted arrayref of valid payout currencies
 =cut
 
 rpc "payout_currencies",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
 
@@ -120,7 +121,7 @@ rpc "payout_currencies",
     };
 
 rpc "landing_company",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
 
@@ -179,7 +180,7 @@ Returns a hashref containing the keys from __build_landing_company($lc)
 =cut
 
 rpc "landing_company_details",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
 
@@ -719,7 +720,7 @@ rpc cashier_password => sub {
 };
 
 rpc "reset_password",
-    before_actions => [],    # unauthenticated
+    auth => 0,    # unauthenticated
     sub {
     my $params = shift;
     my $args   = $params->{args};
@@ -1012,7 +1013,6 @@ rpc set_settings => sub {
     my $user = BOM::Platform::User->new({email => $client->email});
     foreach my $cli ($user->clients) {
         next if $cli->is_virtual;
-        next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
 
         $cli->address_1($address1);
         $cli->address_2($address2);
@@ -1025,8 +1025,10 @@ rpc set_settings => sub {
 
         $cli->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 
-        # As per CRS/FATCA regulatory requirement we need to save this information as client status
-        # maintaining previous updates as well
+        # As per CRS/FATCA regulatory requirement we need to
+        # save this information as client status, so updating
+        # tax residence and tax number will create client status
+        # as we have database trigger for that now
         if ((
                    $tax_residence
                 or $tax_identification_number
@@ -1036,13 +1038,6 @@ rpc set_settings => sub {
         {
             $cli->tax_residence($tax_residence)                         if $tax_residence;
             $cli->tax_identification_number($tax_identification_number) if $tax_identification_number;
-
-            BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($cli);
-        }
-        if ((!$tax_residence || !$tax_identification_number) && $cli->landing_company->short ne 'maltainvest') {
-            ### Allow to clean tax info for Non-MF
-            $cli->tax_residence('')             unless $tax_residence;
-            $cli->tax_identification_number('') unless $tax_identification_number;
         }
 
         my $set_status = $update_professional_status->($cli);
@@ -1408,25 +1403,8 @@ rpc api_token => sub {
 
     my ($client, $args, $client_ip) = @{$params}{qw/client args client_ip/};
 
-    # check if sub_account loginid is present then check if its valid
-    # and assign it to client object
-    my $sub_account_loginid = $params->{args}->{sub_account};
-    my ($rtn, $sub_account_client);
-    if ($sub_account_loginid) {
-        $sub_account_client = Client::Account->new({
-            loginid      => $sub_account_loginid,
-            db_operation => 'replica'
-        });
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidSubAccount',
-                message_to_client => localize('Please provide a valid sub account loginid.')}
-        ) if (not $sub_account_client or ($sub_account_client->sub_account_of ne $client->loginid));
-
-        $client = $sub_account_client;
-        $rtn->{sub_account} = $sub_account_loginid;
-    }
-
     my $m = BOM::Database::Model::AccessToken->new;
+    my $rtn;
     if ($args->{delete_token}) {
         $m->remove_by_token($args->{delete_token}, $client->loginid);
         $rtn->{delete_token} = 1;
@@ -1560,20 +1538,22 @@ rpc set_account_currency => sub {
     # bail out if default account is already set
     return {status => 0} if $client->default_account;
 
-    # for real client and not for omnibus or sub account
     # check if we are allowed to set currency
     # i.e if we have exhausted available options
     # - client can have single fiat currency
     # - client can have multiple crypto currency
     #   but only with single type of crypto currency
     #   for example BTC => ETH is allowed but BTC => BTC is not
-    if (not $client->is_virtual and not($client->allow_omnibus or $client->sub_account_of)) {
+    if (not $client->is_virtual) {
         my $error = BOM::RPC::v3::Utility::validate_set_currency($client, $currency);
         return $error if $error;
     }
 
+    # bail out if default account is already set
+    return {status => 0} if $client->default_account;
+
     # no change in default account currency if default account is already set
-    return {status => 1} if (not $client->default_account and $client->set_default_account($currency));
+    return {status => 1} if ($client->set_default_account($currency));
 
     return {status => 0};
 };
@@ -1593,8 +1573,6 @@ rpc set_financial_assessment => sub {
 
         my $user = BOM::Platform::User->new({email => $client->email});
         foreach my $cli ($user->clients) {
-            next unless (BOM::RPC::v3::Utility::should_update_account_details($client, $cli->loginid));
-
             $cli->financial_assessment({
                 data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),
             });

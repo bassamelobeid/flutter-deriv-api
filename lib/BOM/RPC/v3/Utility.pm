@@ -51,6 +51,57 @@ use constant LONGCODE_REDIS_BATCH => 20;
 # However, it's a config file held outside the repo, so we also don't want to let it get too old.
 use constant RATES_FILE_CACHE_TIME => 120;
 
+=head2 transaction_validation_checks
+
+    my $error = transaction_validation_checks($client, qw(check_trade_status check_tax_information));
+
+Performs a list of given Transaction Validation checks in addtion to C<validate_tnc> and C<compliance_checks> for a given client.
+Returns an error if a check fails else undef.
+
+=cut
+
+sub transaction_validation_checks {
+    my ($client, @validations) = @_;
+    return validation_checks($client, qw(validate_tnc compliance_checks), @validations);
+}
+
+=head2 validation_checks
+
+    my $error = validation_checks($client, qw(validate_tnc check_trade_status check_tax_information));
+
+Performs a list of given Transaction Validation checks for a given client.
+Returns an error if a check fails else undef.
+
+=cut
+
+sub validation_checks {
+    my ($client, @validations) = @_;
+
+    for my $act (@validations) {
+        die "Error: no such hook $act" unless BOM::Transaction::Validation->can($act);
+
+        my $err;
+        try {
+            $err = BOM::Transaction::Validation->new({clients => $client})->$act($client);
+        }
+        catch {
+            warn "Error happened when call before_action $act";
+            $err = Error::Base->cuss({
+                -type              => 'Internal Error',
+                -mesg              => 'Internal Error',
+                -message_to_client => localize('Sorry, there is an internal error.'),
+            });
+        };
+
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err->get_type,
+                message_to_client => $err->{-message_to_client},
+            }) if defined $err and ref $err eq "Error::Base";
+    }
+
+    return undef;
+}
+
 sub get_token_details {
     my $token = shift;
 
@@ -159,7 +210,7 @@ sub check_authorization {
 
     return create_error({
             code              => 'DisabledClient',
-            message_to_client => localize('This account is unavailable.')}) if $client->get_status('disabled');
+            message_to_client => localize('This account is unavailable.')}) unless is_account_available($client);
 
     if (my $lim = $client->get_self_exclusion_until_dt) {
         return create_error({
@@ -168,6 +219,15 @@ sub check_authorization {
     }
 
     return;
+}
+
+sub is_account_available {
+    my $client = shift;
+    my @unavailable_status = ('disabled', 'duplicate_account');
+    foreach my $status (@unavailable_status) {
+        return 0 if $client->get_status($status);
+    }
+    return 1;
 }
 
 sub is_verification_token_valid {
@@ -304,7 +364,6 @@ sub get_real_account_siblings_information {
         $siblings->{$cl->loginid} = {
             loginid              => $cl->loginid,
             landing_company_name => $cl->landing_company->short,
-            sub_account_of       => ($cl->sub_account_of // ''),
             currency             => $acc ? $acc->currency_code : '',
             balance              => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
             ico_only => $cl->get_status('ico_only') ? 1 : 0,
@@ -524,13 +583,6 @@ sub validate_set_currency {
     return undef;
 }
 
-sub paymentagent_default_min_max {
-    return {
-        minimum => 10,
-        maximum => 2000
-    };
-}
-
 sub validate_uri {
     my $original_url = shift;
     my $url          = URI->new($original_url);
@@ -563,29 +615,6 @@ sub validate_uri {
     }
 
     return undef;
-}
-
-# FIXME: remove this sub when move of client details to user db is done
-sub should_update_account_details {
-    my ($current_client, $sibling_loginid) = @_;
-
-    my $allow_omnibus = $current_client->{allow_omnibus};
-    if (!$allow_omnibus) {
-        my $sub_account_of = $current_client->sub_account_of;
-        if ($sub_account_of) {
-            my $client = Client::Account->new({
-                loginid      => $sub_account_of,
-                db_operation => 'replica'
-            });
-            $allow_omnibus = $client->allow_omnibus;
-        }
-    }
-
-    if ($allow_omnibus and $sibling_loginid ne $current_client->loginid) {
-        return 0;
-    }
-
-    return 1;
 }
 
 sub set_professional_status {

@@ -123,11 +123,10 @@ rpc authorize => sub {
     # check for not allowing cross brand tokens
     return BOM::RPC::v3::Utility::invalid_token_error() unless (grep { $brand_name eq $_ } @{$lc->allowed_for_brands});
 
-    if ($client->get_status('disabled')) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'AccountDisabled',
-                message_to_client => BOM::Platform::Context::localize("Account is disabled.")});
-    }
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'AccountDisabled',
+            message_to_client => BOM::Platform::Context::localize("Account is disabled.")}
+    ) unless BOM::RPC::v3::Utility::is_account_available($client);
 
     if (my $limit_excludeuntil = $client->get_self_exclusion_until_dt) {
         return BOM::RPC::v3::Utility::create_error({
@@ -151,10 +150,6 @@ rpc authorize => sub {
         $token_type = 'oauth_token';
     }
 
-    my @sub_accounts;
-
-    my $is_omnibus = $client->allow_omnibus;
-
     my $_get_account_details = sub {
         my ($clnt, $curr) = @_;
 
@@ -177,14 +172,6 @@ rpc authorize => sub {
     foreach my $clnt (@$client_list) {
         $currency = $clnt->default_account ? $clnt->default_account->currency_code : '';
         push @account_list, $_get_account_details->($clnt, $currency);
-
-        if ($is_omnibus and $loginid eq ($clnt->sub_account_of // '')) {
-            push @sub_accounts,
-                {
-                loginid  => $clnt->loginid,
-                currency => $currency,
-                };
-        }
     }
 
     my $account = $client->default_account;
@@ -199,10 +186,8 @@ rpc authorize => sub {
         landing_company_fullname => $lc->name,
         scopes                   => $scopes,
         is_virtual               => $client->is_virtual ? 1 : 0,
-        allow_omnibus            => $client->allow_omnibus ? 1 : 0,
         upgradeable_landing_companies => _get_upgradeable_landing_companies($client_list, $client),
         account_list                  => \@account_list,
-        sub_accounts                  => \@sub_accounts,
         stash                         => {
             loginid              => $client->loginid,
             email                => $client->email,
