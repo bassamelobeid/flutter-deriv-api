@@ -31,7 +31,7 @@ my $connections = {};
 # for subsequent requests, if hash has a key, it checks existing connection, and reconnect, if needed.
 # Should avoid 'Server unexpectedly closed connection. Some data might have been lost.' error from RedisDB.pm
 
-sub _redis {
+sub get_redis {
     my ($redis_type, $access_type, $timeout) = @_;
     $timeout //= 10;
     my $key = join '_', ($redis_type, $access_type, $timeout);
@@ -41,7 +41,7 @@ sub _redis {
             $connections->{$key}->ping();
         }
         catch {
-            warn "RedisReplicated::_redis $key died: $_, reconnecting";
+            warn "RedisReplicated::get_redis $key died: $_, reconnecting";
             $connections->{$key} = undef;
         };
     }
@@ -55,15 +55,15 @@ sub _redis {
 }
 
 sub redis_write {
-    return _redis('replicated', 'write');
+    return get_redis('replicated', 'write');
 }
 
 sub redis_read {
-    return _redis('replicated', 'read');
+    return get_redis('replicated', 'read');
 }
 
 sub redis_pricer {
-    return _redis('pricer', 'write', 3600);
+    return get_redis('pricer', 'write', 3600);
 }
 
 1;
