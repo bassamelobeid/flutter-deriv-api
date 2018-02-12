@@ -963,7 +963,6 @@ async_rpc mt5_withdrawal => sub {
     my $to_client = Client::Account->new({loginid => $to_loginid});
 
     # only for real money account
-<<<<<<< HEAD
     return permission_error_future() if ($to_client->is_virtual);
 
     _mt5_is_real_account($to_client, $fm_mt5)->then(
