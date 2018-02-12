@@ -64,20 +64,20 @@ subtest 'new account' => sub {
     delete $params->{args}->{mt5_account_type};
     $c->call_ok($method, $params)->has_error->error_message_is('Invalid sub account type.', 'Sub account mandatory for financial');
 
-    $params->{args}->{mt5_account_type} = 'cent';
+    $params->{args}->{mt5_account_type} = 'advanced';
     $c->call_ok($method, $params)
         ->has_error->error_message_is('Please complete financial assessment.', 'Financial assessment mandatory for financial account');
 
-    # MLT client
+    # Non-MLT/CR client
     $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
+        broker_code => 'MX',
     });
 
     $m               = BOM::Database::Model::AccessToken->new;
     $token           = $m->create_token($test_client->loginid, 'test token');
     $params->{token} = $token;
 
-    $c->call_ok($method, $params)->has_error->error_message_is('Permission denied.', 'Only costarica and champion fx clients allowed.');
+    $c->call_ok($method, $params)->has_error->error_message_is('Permission denied.', 'Only costarica, malta and champion fx clients allowed.');
 
     SKIP: {
         skip "Unable to Retrieve files from PHP MT5 Server Yet";

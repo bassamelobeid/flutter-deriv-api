@@ -186,6 +186,8 @@ async_rpc mt5_new_account => sub {
             code              => 'InvalidSubAccountType',
             message_to_client => localize('Invalid sub account type.')});
 
+    return Future->done($invalid_sub_type_error) if ($mt5_account_type and $mt5_account_type !~ /^standard|advanced$/);
+
     my $get_company_name = sub {
         my $type = shift;
 
@@ -202,8 +204,6 @@ async_rpc mt5_new_account => sub {
     if ($account_type eq 'demo') {
         # demo will have demo for financial and demo for gaming
         if ($mt5_account_type) {
-            return Future->done($invalid_sub_type_error) unless ($mt5_account_type =~ /^cent|standard|stp$/);
-
             return permission_error_future() if (($mt_company = $get_company_name->('financial')) eq 'none');
 
             $group = 'demo\\' . $mt_company . '_' . $mt5_account_type;
@@ -212,13 +212,13 @@ async_rpc mt5_new_account => sub {
             $group = 'demo\\' . $mt_company;
         }
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
-        # 5 Sept 2016: only CR and Champion fully authenticated client can open MT real a/c
-        return permission_error_future() if ($client->landing_company->short !~ /^costarica|champion$/);
+        # 4 Jan 2018: only CR, MLT, and Champion can open MT real a/c
+        return permission_error_future() unless ($client->landing_company->short =~ /^costarica|champion|malta$/);
 
         return permission_error_future() if (($mt_company = $get_company_name->($account_type)) eq 'none');
 
         if ($account_type eq 'financial') {
-            return Future->done($invalid_sub_type_error) unless $mt5_account_type =~ /^cent|standard|stp$/;
+            return Future->done($invalid_sub_type_error) unless $mt5_account_type;
 
             return create_error_future({
                     code              => 'FinancialAssessmentMandatory',
@@ -315,6 +315,7 @@ async_rpc mt5_new_account => sub {
                             return Future->done({
                                     login        => $mt5_login,
                                     balance      => $balance,
+                                    currency     => ($mt_company =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR'),
                                     account_type => $account_type,
                                     ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
                         });
@@ -430,6 +431,8 @@ async_rpc mt5_get_settings => sub {
                     warn "Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra";
                 }
             }
+
+            $settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
 
             return Future->done($settings);
         });
@@ -811,19 +814,12 @@ async_rpc mt5_deposit => sub {
     my $amount     = $args->{amount};
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
-    if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->system)
-    {
-        return _make_deposit_error(localize('Payments are suspended.'));
-    }
 
-    if ($amount <= 0) {
-        return _make_deposit_error(localize("Deposit amount must be greater than zero."));
-    }
+    return _make_deposit_error(localize('Payments are suspended.')) if ($app_config->system->suspend->payments or $app_config->system->suspend->system);
 
-    if ($amount !~ /^\d+(?:\.\d{0,2})?$/) {
-        return _make_deposit_error(localize("Only a maximum of two decimal points are allowed for the deposit amount."));
-    }
+    return _make_deposit_error(localize("Deposit amount must be greater than zero.")) if ($amount <= 0);
+
+    return _make_deposit_error(localize("Only a maximum of two decimal points are allowed for the deposit amount.")) if ($amount !~ /^\d+(?:\.\d{0,2})?$/);
 
     # MT5 login or binary loginid not belongs to user
     return permission_error_future() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
@@ -831,9 +827,7 @@ async_rpc mt5_deposit => sub {
     my $fm_client = Client::Account->new({loginid => $fm_loginid});
 
     # only for real money account
-    if ($fm_client->is_virtual) {
-        return permission_error_future();
-    }
+    return permission_error_future() if ($fm_client->is_virtual);
 
     _mt5_is_real_account($fm_client, $to_mt5)->then(
         sub {
@@ -841,23 +835,23 @@ async_rpc mt5_deposit => sub {
 
             return permission_error_future() if !$settings;
 
-            if ($fm_client->currency ne 'USD') {
-                return _make_deposit_error(localize('Your account [_1] has a different currency [_2] than USD.', $fm_loginid, $fm_client->currency));
-            }
-            if ($fm_client->get_status('disabled')) {
-                return _make_deposit_error(localize('Your account [_1] was disabled.', $fm_loginid));
-            }
-            if ($fm_client->get_status('cashier_locked') || $fm_client->documents_expired) {
-                return _make_deposit_error(localize('Your account [_1] cashier section was locked.', $fm_loginid));
-            }
+            return _make_deposit_error(localize('Your account [_1] has a different currency [_2] than USD.', $fm_loginid, $fm_client->currency))
+                if ($fm_client->currency ne 'USD');
+
+            return _make_deposit_error(localize('Your account [_1] was disabled.', $fm_loginid))
+                if ($fm_client->get_status('disabled'));
+
+            return _make_deposit_error(localize('Your account [_1] cashier section was locked.', $fm_loginid))
+                if ($fm_client->get_status('cashier_locked') || $fm_client->documents_expired);
 
             # withdraw from Binary a/c
             my $fm_client_db = BOM::Database::ClientDB->new({
                 client_loginid => $fm_loginid,
             });
-            if (not $fm_client_db->freeze) {
-                return _make_deposit_error(localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid");
-            }
+
+            return _make_deposit_error(localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid")
+                if (not $fm_client_db->freeze);
+
             scope_guard {
                 $fm_client_db->unfreeze;
             };
@@ -867,7 +861,7 @@ async_rpc mt5_deposit => sub {
             my $withdraw_error;
             try {
                 $fm_client->validate_payment(
-                    currency => 'USD',
+                    currency => $fm_client->currency,
                     amount   => -$amount,
                 );
             }
@@ -885,7 +879,7 @@ async_rpc mt5_deposit => sub {
             }
 
             my $comment   = "Transfer from $fm_loginid to MT5 account $to_mt5.";
-            my $account   = $fm_client->set_default_account('USD');
+            my $account   = $fm_client->set_default_account($fm_client->currency);
             my ($payment) = $account->add_payment({
                 amount               => -$amount,
                 payment_gateway_code => 'account_transfer',
@@ -958,13 +952,10 @@ async_rpc mt5_withdrawal => sub {
     my $to_loginid = $args->{to_binary};
     my $amount     = $args->{amount};
 
-    if ($amount <= 0) {
-        return _make_withdrawal_error(localize("Withdrawal amount must be greater than zero."));
-    }
+    return _make_withdrawal_error(localize("Withdrawal amount must be greater than zero.")) if ($amount <= 0);
 
-    if ($amount !~ /^\d+(?:\.\d{0,2})?$/) {
-        return _make_withdrawal_error(localize("Only a maximum of two decimal points are allowed for the withdrawal amount."));
-    }
+    return _make_withdrawal_error(localize("Only a maximum of two decimal points are allowed for the withdrawal amount."))
+        if ($amount !~ /^\d+(?:\.\d{0,2})?$/);
 
     # MT5 login or binary loginid not belongs to user
     return permission_error_future() unless _check_logins($client, ['MT' . $fm_mt5, $to_loginid]);
@@ -972,9 +963,8 @@ async_rpc mt5_withdrawal => sub {
     my $to_client = Client::Account->new({loginid => $to_loginid});
 
     # only for real money account
-    if ($to_client->is_virtual) {
-        return permission_error_future();
-    }
+<<<<<<< HEAD
+    return permission_error_future() if ($to_client->is_virtual);
 
     _mt5_is_real_account($to_client, $fm_mt5)->then(
         sub {
@@ -985,28 +975,25 @@ async_rpc mt5_withdrawal => sub {
             # check for fully authenticated only if it's not gaming account
             # as of now we only support gaming for binary brand, in future if we
             # support for champion please revisit this
-            if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated) {
-                return _make_withdrawal_error(localize('Please authenticate your account.'));
-            }
+            return _make_withdrawal_error(localize('Please authenticate your account.'))
+                if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated);
 
-            if ($to_client->currency ne 'USD') {
-                return _make_withdrawal_error(
-                    localize('Your account [_1] has a different currency [_2] than USD.', $to_loginid, $to_client->currency));
-            }
+            return _make_withdrawal_error(localize('Your account [_1] has a different currency [_2] than USD/EUR.', $to_loginid, $to_client->currency))
+                if ($to_client->currency !~ /^USD|EUR$/);
 
-            if ($to_client->get_status('disabled')) {
-                return _make_withdrawal_error(localize('Your account [_1] was disabled.', $to_loginid));
-            }
-            if ($to_client->get_status('cashier_locked') || $to_client->documents_expired) {
-                return _make_withdrawal_error(localize('Your account [_1] cashier section was locked.', $to_loginid));
-            }
+            return _make_withdrawal_error(localize('Your account [_1] was disabled.', $to_loginid))
+                if ($to_client->get_status('disabled'));
+
+            return _make_withdrawal_error(localize('Your account [_1] cashier section was locked.', $to_loginid))
+                if ($to_client->get_status('cashier_locked') || $to_client->documents_expired);
 
             my $to_client_db = BOM::Database::ClientDB->new({
                 client_loginid => $to_loginid,
             });
-            if (not $to_client_db->freeze) {
-                return _make_withdrawal_error(localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid");
-            }
+
+            return _make_withdrawal_error(localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid")
+                if (not $to_client_db->freeze);
+
             scope_guard {
                 $to_client_db->unfreeze;
             };
@@ -1030,7 +1017,7 @@ async_rpc mt5_withdrawal => sub {
                     #   We might want to consider using Future->try somehow instead.
                     return try {
                         # deposit to Binary a/c
-                        my $account = $to_client->set_default_account('USD');
+                        my $account = $to_client->set_default_account($to_client->currency);
                         my ($payment) = $account->add_payment({
                             amount               => $amount,
                             payment_gateway_code => 'account_transfer',
