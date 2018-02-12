@@ -12,12 +12,52 @@ use List::UtilsBy qw(extract_by);
 use JSON::MaybeXS;
 use Log::Any '$log', default_adapter => 'Stdout';
 use Getopt::Long;
+use Try::Tiny;
 
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $redis       = BOM::Platform::RedisReplicated::redis_pricer;
+my $redis_sub   = BOM::Platform::RedisReplicated::_redis('pricer', 'write', 60);
+my $iteration   = 0;
 
-GetOptions
-    'Q|queue=s'    => \my $queue;
+my $queue = 'regular';
+GetOptions 'Q|queue=s' => \$queue;
+
+_subscribe_priority_queue() if $queue eq 'priority';
+
+while (1) {
+    if ($queue eq 'priority') {
+        _process_priority_queue();
+    } else {
+        _process_price_queue();
+    }
+}
+
+exit;
+
+sub _subscribe_priority_queue {
+    $log->info('processing priority price_queue...');
+    $log->info('subscribing to high_priority_prices channel...');
+    $redis->subscribe(
+        high_priority_prices => sub {
+            my (undef, $channel, $pattern, $message) = @_;
+            $log->info('received message, updating pricer_jobs_priority: ', {message => $message});
+            $redis_sub->send_command('lpush', 'pricer_jobs_priority', $message, sub { 1 });
+            $log->info('pricer_jobs_priority updated.');
+        });
+
+    return undef;
+}
+
+sub _process_priority_queue {
+    try {
+        $redis->get_reply;
+    }
+    catch {
+        warn "Had error when subscribing - $_" if $_;
+    };
+
+    return undef;
+}
 
 sub _sleep_to_next_second {
     my $t = Time::HiRes::time();
@@ -27,8 +67,8 @@ sub _sleep_to_next_second {
     Time::HiRes::usleep($sleep * 1_000_000);
 }
 
-my $iteration = 0;
-while (1) {
+sub _process_price_queue {
+    $log->info('processing regular price_queue...');
     _sleep_to_next_second();
     my $overflow = $redis->llen('pricer_jobs');
 
