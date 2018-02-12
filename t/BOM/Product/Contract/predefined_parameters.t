@@ -6,6 +6,8 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::Warnings;
+use Test::MockModule;
+use Test::Warn;
 
 use Cache::RedisDB;
 use List::Util qw(first);
@@ -14,10 +16,12 @@ use Encode;
 use JSON::MaybeXS;
 
 use BOM::MarketData qw(create_underlying);
-use BOM::Product::Contract::PredefinedParameters qw(get_predefined_offerings update_predefined_highlow);
+use BOM::Product::ContractFinder;
+use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow get_expired_barriers next_generation_epoch);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use Postgres::FeedDB::Spot::Tick;
 
 my $supported_symbol = 'frxUSDJPY';
 my $monday           = Date::Utility->new('2016-11-14');    # monday
@@ -25,19 +29,16 @@ my $monday           = Date::Utility->new('2016-11-14');    # monday
 subtest 'non trading day' => sub {
     my $saturday = Date::Utility->new('2016-11-19');        # saturday
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($supported_symbol, $saturday);
-    my $offerings = get_predefined_offerings({
-        landing_company => 'japan',
-        symbol          => $supported_symbol,
-        date            => $saturday
-    });
+    my $offerings = BOM::Product::ContractFinder->new(for_date => $saturday)->multi_barrier_contracts_for({
+            symbol => $supported_symbol,
+        })->{available};
     ok !@$offerings, 'no offerings were generated on non trading day';
     setup_ticks($supported_symbol, [[$monday->minus_time_interval('400d')], [$monday]]);
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($supported_symbol, $monday);
-    $offerings = get_predefined_offerings({
-        landing_company => 'japan',
-        symbol          => $supported_symbol,
-        date            => $monday
-    });
+    $offerings = BOM::Product::ContractFinder->new(for_date => $monday)->multi_barrier_contracts_for({
+            symbol => $supported_symbol,
+            date   => $monday
+        })->{available};
     ok @$offerings, 'generates predefined offerings on a trading day';
 };
 
@@ -48,70 +49,70 @@ subtest 'intraday trading period' => sub {
     # 3 - expected offerings count
     # 4 - expected trading periods (order matters)
     my @test_inputs = (
-        # monday at 00:00GMT
+        # monday at 00:15GMT
         [
             'frxUSDJPY',
             'callput',
-            '2016-11-14 00:00:00',
+            '2016-11-14 00:15:00',
             4,
             [
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 02:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 02:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
             ]
         ],
-        # monday at 00:59GMT
+        # monday at 01:14GMT
         [
             'frxUSDJPY',
             'callput',
-            '2016-11-14 00:59:00',
+            '2016-11-14 01:14:00',
             4,
             [
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 02:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 02:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
             ]
         ],
-        # monday at 01:59GMT
+        # monday at 02:14GMT
         [
             'frxUSDJPY',
             'callput',
-            '2016-11-14 01:59:00',
+            '2016-11-14 02:14:00',
             4,
             [
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 02:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
-            ]
-        ],
-        [
-            'frxUSDJPY',
-            'callput',
-            '2016-11-14 05:59:00',
-            4,
-            [
-                ['2016-11-14 04:00:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 04:00:00', '2016-11-14 06:00:00'],
-                ['2016-11-14 00:00:00', '2016-11-14 06:00:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 02:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 02:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
             ]
         ],
         [
             'frxUSDJPY',
             'callput',
-            '2016-11-14 17:59:00',
+            '2016-11-14 06:14:00',
             4,
             [
-                ['2016-11-14 16:00:00', '2016-11-14 18:00:00'],
-                ['2016-11-14 12:00:00', '2016-11-14 18:00:00'],
-                ['2016-11-14 16:00:00', '2016-11-14 18:00:00'],
-                ['2016-11-14 12:00:00', '2016-11-14 18:00:00'],
+                ['2016-11-14 04:15:00', '2016-11-14 06:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
+                ['2016-11-14 04:15:00', '2016-11-14 06:15:00'],
+                ['2016-11-14 00:15:00', '2016-11-14 06:15:00'],
             ]
         ],
-        ['frxUSDJPY', 'callput', '2016-11-14 18:00:00', 0, []],
+        [
+            'frxUSDJPY',
+            'callput',
+            '2016-11-14 18:14:00',
+            4,
+            [
+                ['2016-11-14 16:15:00', '2016-11-14 18:15:00'],
+                ['2016-11-14 12:15:00', '2016-11-14 18:15:00'],
+                ['2016-11-14 16:15:00', '2016-11-14 18:15:00'],
+                ['2016-11-14 12:15:00', '2016-11-14 18:15:00'],
+            ]
+        ],
+        ['frxUSDJPY', 'callput', '2016-11-14 18:15:00', 0, []],
     );
 
     foreach my $input (@test_inputs) {
@@ -120,11 +121,9 @@ subtest 'intraday trading period' => sub {
         setup_ticks($symbol, [[$date->minus_time_interval('400d')], [$date]]);
         note('generating for ' . $symbol . '. Time set to ' . $date->day_as_string . ' at ' . $date->time);
         BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $date);
-        my $offerings = get_predefined_offerings({
-            landing_company => 'japan',
-            symbol          => $symbol,
-            date            => $date
-        });
+        my $offerings = BOM::Product::ContractFinder->new(for_date => $date)->multi_barrier_contracts_for({
+                symbol => $symbol,
+            })->{available};
         my @intraday = grep { $_->{expiry_type} eq 'intraday' } @$offerings;
         is scalar(@intraday), $count, 'expected ' . $count . ' offerings on intraday at 00:00GMT';
 
@@ -153,7 +152,7 @@ subtest 'predefined barriers' => sub {
                 expiry_type       => 'intraday'
             },
             ticks => [[$date->minus_time_interval('400d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]],
-            available_barriers => ['1.14940', '1.15000', '1.15060', '1.15138', '1.15210', '1.15282', '1.15360', '1.15420', '1.15480'],
+            available_barriers => [1.15441, 1.15491, 1.15541, 1.15591, 1.15641, 1.15691, 1.15741],
             expired_barriers   => [],
         },
         {
@@ -222,16 +221,16 @@ subtest 'predefined barriers' => sub {
         });
 
     my $generation_date = $date->plus_time_interval('1h');
-    BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $generation_date);
+    my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $generation_date);
 
     foreach my $test (@inputs) {
         setup_ticks($symbol, $test->{ticks});
-        my $offerings = get_predefined_offerings({
-            landing_company => 'japan',
-            symbol          => $symbol,
-            date            => $generation_date
-        });
-        my $m        = $test->{match};
+        BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_barriers($symbol, $_, $generation_date) for @$tp;
+        my $offerings = BOM::Product::ContractFinder->new(for_date => $generation_date)->multi_barrier_contracts_for({
+                symbol => $symbol,
+            })->{available};
+        my $m = $test->{match};
+
         my $offering = first {
             $_->{expiry_type} eq $m->{expiry_type}
                 and $_->{contract_category} eq $m->{contract_category}
@@ -239,6 +238,7 @@ subtest 'predefined barriers' => sub {
         }
         @$offerings;
         my $testname = join '_', map { $m->{$_} } qw(contract_category expiry_type duration);
+        $DB::single = 1;
         cmp_bag($offering->{available_barriers}, $test->{available_barriers}, 'available barriers for ' . $testname);
         cmp_bag($offering->{expired_barriers},   $test->{expired_barriers},   'expired barriers for ' . $testname);
     }
@@ -257,22 +257,84 @@ subtest 'update_predefined_highlow' => sub {
             quote  => 69.2
         };
         my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $now);
+        BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_barriers($symbol, $_, $now) for @$tp;
         ok update_predefined_highlow($new_tick), 'updated highlow';
-        my $offering = get_predefined_offerings({
-            symbol          => $symbol,
-            landing_company => 'japan'
-        });
+        my $offering = BOM::Product::ContractFinder->new->multi_barrier_contracts_for({symbol => $symbol})->{available};
         my $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
         ok !scalar(@{$touch->{expired_barriers}}), 'no expired barrier detected';
         $new_tick->{epoch} += 1;
         $new_tick->{quote} = 125;
         ok update_predefined_highlow($new_tick), 'next update';
-        $offering = get_predefined_offerings({
-            symbol          => $symbol,
-            landing_company => 'japan'
-        });
+        $offering = BOM::Product::ContractFinder->new->multi_barrier_contracts_for({symbol => $symbol})->{available};
         $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
         ok scalar(@{$touch->{expired_barriers}}), 'expired barrier detected';
+    }
+};
+
+subtest 'get_expired_barriers' => sub {
+    my $time      = time;
+    my $mocked_pp = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
+    $mocked_pp->mock('_get_predefined_highlow', sub { (100, 99) });
+    my $mocked_u = Test::MockModule->new('Quant::Framework::Underlying');
+    $mocked_u->mock(
+        'spot_tick',
+        sub {
+            Postgres::FeedDB::Spot::Tick->new({
+                symbol => 'frxUSDJPY',
+                quote  => 100,
+                epoch  => $time,
+            });
+        });
+
+    my $underlying = Quant::Framework::Underlying->new('frxUSDJPY');
+    my $tp         = {
+        date_start => {
+            epoch => $time,
+            date  => Date::Utility->new($time)->datetime
+        },
+        date_expiry => {
+            epoch => $time + 3600,
+            date  => Date::Utility->new($time + 3600)->datetime
+        }};
+
+    ok !@{get_expired_barriers($underlying, [101], $tp)}, 'not expired barrier';
+    is get_expired_barriers($underlying, [99.5], $tp)->[0], 99.5, 'has expired barrier[99.5]';
+    $mocked_pp->mock('_get_predefined_highlow', sub { () });
+    $mocked_u->mock(
+        'spot_tick',
+        sub {
+            Postgres::FeedDB::Spot::Tick->new({
+                symbol => 'frxUSDJPY',
+                quote  => 100,
+                epoch  => $time - 1,
+            });
+        });
+    ok get_expired_barriers($underlying, [99.5], $tp), 'no warnings if latest tick is before trading period start';
+    $mocked_u->mock(
+        'spot_tick',
+        sub {
+            Postgres::FeedDB::Spot::Tick->new({
+                symbol => 'frxUSDJPY',
+                quote  => 100,
+                epoch  => $time,
+            });
+        });
+    warning_like { get_expired_barriers($underlying, [99.5], $tp) } qr/highlow is undefined for frxUSDJPY/, 'warns';
+};
+
+subtest 'next_generation_epoch' => sub {
+    my @tests = (
+        [Date::Utility->new('2018-01-01 23:59:00'), Date::Utility->new('2018-01-02 00:00:00')],
+        [Date::Utility->new('2018-01-02 00:14:00'), Date::Utility->new('2018-01-02 00:15:00')],
+        [Date::Utility->new('2018-01-02 01:00:00'), Date::Utility->new('2018-01-02 02:00:00')],
+        [Date::Utility->new('2018-01-02 01:14:00'), Date::Utility->new('2018-01-02 02:00:00')],
+        [Date::Utility->new('2018-01-02 02:00:00'), Date::Utility->new('2018-01-02 02:15:00')],
+        [Date::Utility->new('2018-01-02 02:16:00'), Date::Utility->new('2018-01-02 04:15:00')]);
+
+    foreach my $test (@tests) {
+        my $next = next_generation_epoch($test->[0]);
+        is $next, $test->[1]->epoch,
+            "next generation time for " . $test->[0]->datetime . " is " . Date::Utility->new($next)->datetime . ' expected ' . $test->[1]->datetime;
     }
 };
 

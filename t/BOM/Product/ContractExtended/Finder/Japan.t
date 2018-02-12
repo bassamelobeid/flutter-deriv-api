@@ -10,10 +10,11 @@ use Test::Deep;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
+use BOM::Product::ContractFinder;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
+use Test::MockModule;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'partial_trading',
@@ -66,20 +67,19 @@ subtest "predefined contracts for symbol" => sub {
     my %expected = (
         frxUSDJPY => {
             contract_count => {
-                callput      => 14,
+                callput      => 12,
                 touchnotouch => 8,
                 staysinout   => 8,
                 endsinout    => 8,
             },
-            hit_count => 38,
+            hit_count => 36,
         },
         frxAUDCAD => {hit_count => 0},
     );
     foreach my $u (keys %expected) {
-        my $f = available_contracts_for_symbol({
+        my $f = BOM::Product::ContractFinder->new(for_date => $now)->multi_barrier_contracts_for({
             landing_company => 'japan',
             symbol          => $u,
-            date            => $now,
         });
         my %got;
         $got{$_->{contract_category}}++ for (@{$f->{available}});
@@ -91,19 +91,18 @@ subtest "predefined contracts for symbol" => sub {
 
 subtest "predefined trading_period" => sub {
     my %expected_count = (
-        offering                                => 10,
-        offering_with_predefined_trading_period => 38,
+        offering_with_predefined_trading_period => 36,
         trading_period                          => {
             call_intraday => 2,
-            call_daily    => 5,
+            call_daily    => 4,
             range_daily   => 4,
         });
 
     my %expected_trading_period = (
         call_intraday => {
             duration => ['2h', '6h'],
-            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 18:00:00', '2015-09-04 18:00:00',)],
-            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 16:00:00', '2015-09-04 12:00:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 18:15:00', '2015-09-04 18:15:00',)],
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 16:15:00', '2015-09-04 12:15:00',)],
         },
         range_daily => {
             duration => ['1W', '1M', '3M', '1Y'],
@@ -114,12 +113,10 @@ subtest "predefined trading_period" => sub {
         },
     );
 
-    my @offerings = BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY', 'japan');
-    is(scalar(@offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
     my $now = Date::Utility->new('2015-09-04 17:00:00');
     my $underlying = create_underlying('frxUSDJPY', $now);
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($underlying->symbol, $now);
-    my @new = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $underlying, \@offerings)};
+    my @new = @{BOM::Product::ContractFinder->new(for_date => $now)->multi_barrier_contracts_for({symbol => $underlying->symbol})->{available}};
 
     my %got;
     foreach my $d (@new) {
@@ -148,55 +145,56 @@ subtest "predefined trading_period" => sub {
     }
 };
 
+my $mock = Test::MockModule->new('Quant::Framework::Underlying');
+$mock->mock('get_high_low_for_period', sub { return {high => 100.01, low => 99.01} });
+
 subtest "check_intraday trading_period_JPY" => sub {
     my %expected_intraday_trading_period = (
         # sunday
         '2015-11-22 23:59:00' => {combination => 0},
         # monday
-        '2015-11-23 00:00:00' => {
+        '2015-11-23 00:15:00' => {
             combination => 2,                                                                                                   # one call and one put
-            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch, Date::Utility->new('2015-11-23 00:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch, Date::Utility->new('2015-11-23 06:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-23 00:15:00')->epoch, Date::Utility->new('2015-11-23 00:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 02:15:00')->epoch, Date::Utility->new('2015-11-23 06:15:00')->epoch],
         },
-        '2015-11-23 01:00:00' => {
+        '2015-11-23 01:15:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch, Date::Utility->new('2015-11-23 00:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch, Date::Utility->new('2015-11-23 06:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-23 00:15:00')->epoch, Date::Utility->new('2015-11-23 00:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 02:15:00')->epoch, Date::Utility->new('2015-11-23 06:15:00')->epoch],
 
         },
-        '2015-11-23 13:00:00' => {
+        '2015-11-23 13:15:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 12:00:00')->epoch, Date::Utility->new('2015-11-23 12:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 14:00:00')->epoch, Date::Utility->new('2015-11-23 18:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-23 12:15:00')->epoch, Date::Utility->new('2015-11-23 12:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 14:15:00')->epoch, Date::Utility->new('2015-11-23 18:15:00')->epoch],
 
         },
-        '2015-11-23 14:00:00' => {
+        '2015-11-23 14:15:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 14:00:00')->epoch, Date::Utility->new('2015-11-23 12:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 16:00:00')->epoch, Date::Utility->new('2015-11-23 18:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-23 14:15:00')->epoch, Date::Utility->new('2015-11-23 12:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 16:15:00')->epoch, Date::Utility->new('2015-11-23 18:15:00')->epoch],
         },
 
-        '2015-11-23 17:00:00' => {
+        '2015-11-23 17:15:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 16:00:00')->epoch, Date::Utility->new('2015-11-23 12:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 18:00:00')->epoch, Date::Utility->new('2015-11-23 18:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-23 16:15:00')->epoch, Date::Utility->new('2015-11-23 12:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 18:15:00')->epoch, Date::Utility->new('2015-11-23 18:15:00')->epoch],
 
         },
 
-        '2015-11-23 18:00:00' => {combination => 0},
+        '2015-11-23 18:15:00' => {combination => 0},
         '2015-11-23 19:00:00' => {combination => 0},
         '2015-11-23 20:00:00' => {combination => 0},
         '2015-11-23 21:00:00' => {combination => 0},
         '2015-11-23 22:00:00' => {combination => 0},
     );
 
-    my @i_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
-        BOM::Product::Contract::PredefinedParameters::_get_offerings('frxUSDJPY', 'japan');
     foreach my $date (sort keys %expected_intraday_trading_period) {
         my $now = Date::Utility->new($date);
-        my $ex = create_underlying('frxUSDJPY', $now);
-        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($ex->symbol, $now);
-        my @intraday_offerings = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $ex, \@i_offerings) // []};
+        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', $now);
+        my @intraday_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
+            @{BOM::Product::ContractFinder->new(for_date => $now)->multi_barrier_contracts_for({symbol => 'frxUSDJPY'})->{available}};
         my @got_date_start  = map { $intraday_offerings[$_]{trading_period}{date_start}{epoch} } keys @intraday_offerings;
         my @got_date_expiry = map { $intraday_offerings[$_]{trading_period}{date_expiry}{epoch} } keys @intraday_offerings;
 
@@ -220,35 +218,32 @@ subtest "check_intraday trading_period_non_JPY" => sub {
         #sunday
         '2015-11-22 23:59:00' => {combination => 0},
         # monday
-        '2015-11-23 00:00:00' => {
+        '2015-11-23 00:15:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch, Date::Utility->new('2015-11-23 00:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch, Date::Utility->new('2015-11-23 06:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-23 00:15:00')->epoch, Date::Utility->new('2015-11-23 00:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 02:15:00')->epoch, Date::Utility->new('2015-11-23 06:15:00')->epoch],
         },
-        '2015-11-23 18:00:00' => {combination => 0},
-        '2015-11-23 22:00:00' => {combination => 0},
+        '2015-11-23 18:15:00' => {combination => 0},
+        '2015-11-23 22:15:00' => {combination => 0},
 
         # tues
-        '2015-11-24 00:00:00' => {
+        '2015-11-24 00:15:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-24 00:00:00')->epoch, Date::Utility->new('2015-11-24 00:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-24 02:00:00')->epoch, Date::Utility->new('2015-11-24 06:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-24 00:15:00')->epoch, Date::Utility->new('2015-11-24 00:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-24 02:15:00')->epoch, Date::Utility->new('2015-11-24 06:15:00')->epoch],
         },
         '2015-11-24 21:00:00' => {combination => 0},
         '2015-11-24 23:00:00' => {combination => 0},
         # Friday
-        '2015-11-27 18:00:00' => {combination => 0},
+        '2015-11-27 18:15:00' => {combination => 0},
         '2015-11-27 19:00:00' => {combination => 0},
     );
 
-    my @e_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
-        BOM::Product::Contract::PredefinedParameters::_get_offerings('frxEURUSD', 'japan');
     foreach my $date (keys %expected_eur_intraday_trading_period) {
         my $now = Date::Utility->new($date);
-        my $ex = create_underlying('frxEURUSD', $now);
-
-        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($ex->symbol, $now);
-        my @eurusd_offerings = @{BOM::Product::Contract::PredefinedParameters::_apply_predefined_parameters($now, $ex, \@e_offerings) // []};
+        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxEURUSD', $now);
+        my @eurusd_offerings = grep { $_->{expiry_type} eq 'intraday' and $_->{contract_type} eq 'CALLE' }
+            @{BOM::Product::ContractFinder->new(for_date => $now)->multi_barrier_contracts_for({symbol => 'frxEURUSD'})->{available}};
         my @got_date_start  = map { $eurusd_offerings[$_]{trading_period}{date_start}{epoch} } keys @eurusd_offerings;
         my @got_date_expiry = map { $eurusd_offerings[$_]{trading_period}{date_expiry}{epoch} } keys @eurusd_offerings;
 
