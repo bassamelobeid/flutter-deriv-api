@@ -7,11 +7,9 @@ use Format::Util::Numbers qw/financialrounding/;
 use YAML::XS qw(LoadFile);
 use LandingCompany::Commission qw(get_underlying_base_commission);
 
-use POSIX;
-
 use BOM::Product::Static;
 
-my $multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_contract_multiplier.yml');
+my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
 
 has [qw(spot_min spot_max)] => (
     is         => 'ro',
@@ -29,7 +27,7 @@ has multiplier => (
     isa => 'Num',
 );
 
-has step_size => (
+has minimum_multiplier => (
     is         => 'ro',
     isa        => 'Num',
     lazy_build => 1,
@@ -51,10 +49,10 @@ sub _build_lookback_base_commission {
     return $underlying_base;
 }
 
-sub _build_step_size {
+sub _build_minimum_multiplier {
     my $self   = shift;
     my $symbol = $self->underlying->symbol;
-    return $multiplier_config->{$symbol} // 0;
+    return $minimum_multiplier_config->{$symbol} // 0;
 }
 
 sub _build_unit {
