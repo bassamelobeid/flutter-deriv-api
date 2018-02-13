@@ -7,6 +7,8 @@ use Test::More tests => 5;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
+use Test::MockModule;
+
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -65,7 +67,8 @@ subtest "predefined contracts for symbol" => sub {
         }) for qw(frxUSDJPY frxAUDCAD frxUSDCAD frxAUDUSD);
 
     my %expected = (
-        frxUSDJPY => {
+        # japan, japan
+        'frxUSDJPY-japan-jp' => {
             contract_count => {
                 callput      => 12,
                 touchnotouch => 8,
@@ -74,18 +77,40 @@ subtest "predefined contracts for symbol" => sub {
             },
             hit_count => 36,
         },
-        frxAUDCAD => {hit_count => 0},
+        # costarica, canada
+        'frxUSDJPY-costarica-ca' => {
+            hit_count => 0,
+        },
+        # costarica, china
+        'frxUSDJPY-costarica-cn' => {
+            hit_count => 0,
+        },
+        # costarica, no country
+        'frxUSDJPY-costarica' => {
+            contract_count => {
+                callput      => 12,
+                touchnotouch => 8,
+                staysinout   => 8,
+                endsinout    => 8,
+            },
+            hit_count => 36,
+        },
+        # malta, austria
+        'frxUSDJPY-malta-at'     => {hit_count => 0},
+        'frxAUDCAD-costarica-id' => {hit_count => 0},
     );
-    foreach my $u (keys %expected) {
+    foreach my $key (keys %expected) {
+        my ($u, $landing_company, $country_code) = split '-', $key;
         my $f = BOM::Product::ContractFinder->new(for_date => $now)->multi_barrier_contracts_for({
-            landing_company => 'japan',
             symbol          => $u,
+            landing_company => $landing_company,
+            country_code    => $country_code,
         });
         my %got;
         $got{$_->{contract_category}}++ for (@{$f->{available}});
-        is($f->{hit_count}, $expected{$u}{hit_count}, "Expected total contract for $u");
-        cmp_ok $got{$_}, '==', $expected{$u}{contract_count}{$_}, "Expected total contract  for $u on this $_ type"
-            for (keys %{$expected{$u}{contract_count}});
+        is($f->{hit_count}, $expected{$key}{hit_count}, "Expected total contract for $key");
+        cmp_ok $got{$_}, '==', $expected{$key}{contract_count}{$_}, "Expected total contract  for $key on this $_ type"
+            for (keys %{$expected{$key}{contract_count}});
     }
 };
 

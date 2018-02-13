@@ -29,7 +29,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => $_,
         recorded_date => $now
     }) for qw(AEX FPCS);
-subtest "available contracts for symbol" => sub {
+
+my $finder = BOM::Product::ContractFinder->new;
+
+subtest "basic_contracts_for" => sub {
     my %input = (
         random  => ['R_100',     'RDBEAR'],
         forex   => ['frxUSDJPY', 'frxAUDCAD', 'frxEURUSD', 'WLDUSD'],
@@ -54,7 +57,7 @@ subtest "available contracts for symbol" => sub {
             digits       => 6,
         },
         frxUSDJPY => {
-            callput      => 12,
+            callput      => 10,
             touchnotouch => 2,    # only daily
             staysinout   => 2,
             endsinout    => 2,
@@ -94,7 +97,7 @@ subtest "available contracts for symbol" => sub {
                 epoch      => time,
                 quote      => 100
             });
-            my $f = BOM::Product::ContractFinder->new->basic_contracts_for({symbol => $u});
+            my $f = $finder->basic_contracts_for({symbol => $u});
 
             if ($u eq 'frxEURUSD') {
                 foreach my $contract (@{$f->{'available'}}) {
@@ -114,7 +117,7 @@ subtest "available contracts for symbol" => sub {
 
 subtest 'default barrier(s)' => sub {
     note("barriers for AEX");
-    my $aex_contracts = BOM::Product::ContractFinder->new->basic_contracts_for({symbol => 'AEX'});
+    my $aex_contracts = $finder->basic_contracts_for({symbol => 'AEX'});
     my @daily_contracts = grep { $_->{expiry_type} eq 'daily' } @{$aex_contracts->{available}};
     foreach my $data (@daily_contracts) {
         ok isint($data->{barrier}),      'barrier is integer'      if $data->{barrier};
@@ -123,7 +126,7 @@ subtest 'default barrier(s)' => sub {
     }
 
     note("barriers for frxUSDJPY");
-    my $usdjpy_contracts = BOM::Product::ContractFinder->new->basic_contracts_for({symbol => 'frxUSDJPY'});
+    my $usdjpy_contracts = $finder->basic_contracts_for({symbol => 'frxUSDJPY'});
     @daily_contracts = grep { $_->{barriers} > 0 } @{$usdjpy_contracts->{available}};
     foreach my $data (@daily_contracts) {
         ok !isint($data->{barrier}),      'barrier is non integer'      if $data->{barrier};
