@@ -17,9 +17,9 @@ has [qw(spot_min spot_max)] => (
 );
 
 has unit => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
+    is      => 'ro',
+    isa     => 'Num',
+    default => 1,
 );
 
 has multiplier => (
@@ -53,11 +53,6 @@ sub _build_minimum_multiplier {
     my $self   = shift;
     my $symbol = $self->underlying->symbol;
     return $minimum_multiplier_config->{$symbol} // 0;
-}
-
-sub _build_unit {
-    my $self = shift;
-    return 1;
 }
 
 has [qw(spot_min_max)] => (
