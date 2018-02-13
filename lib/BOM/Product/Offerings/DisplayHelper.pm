@@ -23,7 +23,7 @@ use Finance::Asset::SubMarket;
 use Finance::Contract::Category;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use Sort::Naturally;
+use List::UtilsBy qw(sort_by);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Chronicle;
@@ -245,7 +245,7 @@ sub _build_tree {
                 parent      => $market_info,
             };
             foreach my $ul (
-                sort { ncmp($a->display_name, $b->display_name) }
+                sort_by { $_->display_name =~ s{([0-9]+)}{sprintf "%-09.09d", $1}ger }
                 map { create_underlying($_) } $offerings_obj->query({
                         market    => $market->name,
                         submarket => $submarket->name
