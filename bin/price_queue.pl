@@ -64,6 +64,8 @@ sub _sleep_to_next_second {
     my $sleep = 1 - ($t - int($t));
     $log->info("sleeping at $t for $sleep secs...");
     Time::HiRes::usleep($sleep * 1_000_000);
+
+    return undef;
 }
 
 sub _process_price_queue {
@@ -129,5 +131,7 @@ sub _process_price_queue {
                 updated       => time,
             }));
     $log->info('pricer_daemon_queue_stats updated.');
+
+    return undef;
 }
 
