@@ -78,9 +78,9 @@ Each trading period a hash reference with the following keys:
 Generation algorithm are based on the Japan regulators' requirements:
 Intraday trading period is from 00 GMT to 18 GMT. We offer two intraday windows at any given time:
 1) 2-hour window:
-- 00:00-02:00, 02:00-04:00, 04:00-06:00, 06:00-08:00, 08:00-10:00 ... 16:00-18:00
+- 00:15-02:15, 02:15-04:15, 04:15-06:15, 06:15-08:15, 08:15-10:15 ... 16:15-18:15
 2) 6-hour window:
-- 00:00-06:00, 06:00-12:00, 12:00-18:00
+- 00:15-06:15, 06:15-12:15, 12:15-18:15
 Daily contract:
 1) Daily contract: Start at 00:00GMT and end at 23:59:59GMT of the day
 2) Weekly contract: Start at 00:00GMT first trading day of the week and end at the close of last trading day of the week
@@ -175,15 +175,20 @@ sub _get_predefined_highlow {
 }
 
 =head2 next_generation_interval
-Always the next hour.
+Always the even hour and 15 minutes, e.g. 00:15::00, 02:15:00.
 =cut
 
 sub next_generation_epoch {
     my $from_date = shift;
 
-    my $hour = $from_date->hour;
+    my $hour         = $from_date->hour;
+    my $odd_hour     = ($hour % 2);
+    my $current_hour = $from_date->truncate_to_day->plus_time_interval($hour . 'h');
+    return $current_hour->plus_time_interval('1h')->epoch if $odd_hour;
 
-    return $from_date->truncate_to_day->plus_time_interval($hour + 1 . 'h')->epoch;
+    my $minute = $from_date->minute;
+    return $current_hour->plus_time_interval('15m')->epoch if $minute < 15;
+    return $current_hour->plus_time_interval('2h15m')->epoch;
 }
 
 =head2 get_expired_barriers
@@ -242,8 +247,28 @@ sub get_available_barriers {
     return $available_barriers unless $barriers;
 
     if ($offering->{barriers} == 1) {
-        delete $barriers->{50} if $offering->{barrier_category} eq 'american';
-        $available_barriers = [map { $underlying->pipsized_value($_) } sort { $a <=> $b } values %$barriers];
+        # only 2h and 6h uses shortterm barriers
+        if ($trading_period->{duration} =~ /^(2|6)h$/) {
+            my $atm_barrier = $barriers->{50};
+            # JPY pairs has pip size defined at the 2nd digit after decimal.
+            # Non-JPY pairs has pip size defined at the 4th digit after decimal.
+            my $pip_size_at   = $underlying->symbol =~ /JPY/ ? 0.01 : 0.0001;
+            my $minimum_step  = $pip_size_at * 5;                                    # 5 pips interval for barriers
+            my $barrier_count = barrier_count_for_underlying($underlying->symbol);
+            die 'barrier count is undefined for ' . $underlying->symbol unless defined $barrier_count;
+            my @barriers;
+            for (1 .. $barrier_count) {
+                my $high_barrier = $atm_barrier + $_ * $minimum_step;
+                my $low_barrier  = $atm_barrier - $_ * $minimum_step;
+                push @barriers, $high_barrier, $low_barrier;
+            }
+            push @barriers, $atm_barrier if $offering->{barrier_category} ne 'american';
+            $available_barriers = [map { $underlying->pipsized_value($_) } sort { $a <=> $b } @barriers];
+        } else {
+            my @deltas = (5, 15, 25, 38, 62, 75, 85, 95);
+            push @deltas, 50 if $offering->{barrier_category} ne 'american';
+            $available_barriers = [map { $underlying->pipsized_value($barriers->{$_}) } sort { $a <=> $b } @deltas];
+        }
     } elsif ($offering->{barriers} == 2) {
         # For staysinout contract, we need to pair the barriers symmetry, ie (25,75), (15,85), (5,95)
         # For endsinout contract, we need to pair barriers as follow: (75,95), (62,85),(50,75),(38,62),(25,50),(15,38),(5,25)
@@ -253,7 +278,6 @@ sub get_available_barriers {
             $offering->{contract_category} eq 'staysinout'
             ? ([25, 75], [15, 85], [5, 95])
             : ([75, 95], [62, 85], [50, 75], [38, 62], [25, 50], [15, 38], [5, 25]);
-
         $available_barriers =
             [map { [$underlying->pipsized_value($barriers->{$_->[0]}), $underlying->pipsized_value($barriers->{$_->[1]})] } @barrier_pairs];
     }
@@ -261,16 +285,33 @@ sub get_available_barriers {
     return $available_barriers;
 }
 
+my %count = (
+    frxAUDJPY => 2,
+    frxAUDUSD => 2,
+    frxEURGBP => 2,
+    frxUSDJPY => 3,
+    frxEURUSD => 3,
+    frxEURJPY => 3,
+    frxGBPJPY => 3,
+    frxUSDCAD => 3,
+    frxGBPUSD => 3,
+);
+
+sub barrier_count_for_underlying {
+    my $symbol = shift;
+    return $count{$symbol} // 2;
+}
+
 =head2 generate_barriers_for_window
 
 Generates a set of predefined contract barriers for a specific underlying and trading window.
+
+Barriers are generated from 0.25 delta to 0.75 delta with a 0.05 increment.
 
 Returns a hash reference.
 
 =cut
 
-#We do a binary search to find out the boundaries barriers associated with theo_prob [0.05,0.95] of a digital call,
-#then split into 20 barriers that within this boundaries. The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
 sub generate_barriers_for_window {
     my ($symbol, $trading_period) = @_;
 
@@ -408,20 +449,42 @@ sub _get_strike_from_call_bs_price {
 # - 00:00-06:00, 06:00-12:00, 12:00-18:00
 #
 
+sub _fixed_windows {
+    my $date = shift;
+
+    my $start_of_trading = $date->truncate_to_day->plus_time_interval('15m');
+    my $end_of_trading   = $date->truncate_to_day->plus_time_interval('18h15m');
+
+    my %windows;
+    foreach my $interval (2, 6) {
+        my $window_start = $start_of_trading;
+        while ($window_start->is_before($end_of_trading)) {
+            my $window_end = $window_start->plus_time_interval($interval . 'h');
+            if ($date->epoch >= $window_start->epoch and $date->epoch < $window_end->epoch) {
+                $windows{$interval} = [$window_start, $window_end];
+                last;
+            }
+            $window_start = $window_end;
+        }
+    }
+
+    return \%windows;
+}
+
 sub _get_intraday_trading_window {
     my ($underlying, $date) = @_;
 
-    my $tc           = _trading_calendar($underlying->for_date);
-    my $start_of_day = $date->truncate_to_day;
-    my $hour         = $date->hour;
-    my @windows      = ();
+    my $tc            = _trading_calendar($underlying->for_date);
+    my $fixed_windows = _fixed_windows($date);
 
-    # intraday trading period from 00 GMT to 18 GMT
-    return @windows if $hour >= 18;
+    return () unless %$fixed_windows;
+
+    my @windows = ();
     # 2-hour window & 6-hour window
     foreach my $interval (2, 6) {
-        my $start_of_interval = $start_of_day->plus_time_interval($hour - ($hour % $interval) . 'h');
-        my $end_of_interval = $start_of_interval->plus_time_interval($interval . 'h');
+        my $window = $fixed_windows->{$interval};
+        next unless $window;
+        my ($start_of_interval, $end_of_interval) = map { $window->[$_] } (0, 1);
 
         if ($tc->is_open_at($underlying->exchange, $end_of_interval) && $date->is_before($end_of_interval)) {
             push @windows,
@@ -449,9 +512,8 @@ To get the end of day, weekly, monthly , quarterly, and yearly trading window.
 sub _get_daily_trading_window {
     my ($underlying, $date) = @_;
 
-    my $trading_calendar = _trading_calendar($underlying->for_date);
-    my $now_dow          = $date->day_of_week;
-    my $now_year         = $date->year;
+    my $now_dow  = $date->day_of_week;
+    my $now_year = $date->year;
     my @daily_duration;
 
     # weekly contract
@@ -499,21 +561,6 @@ sub _get_daily_trading_window {
             underlying         => $underlying,
         });
 
-    # This is for 0 day contract
-    my $start_of_day = $date->truncate_to_day;
-    my $close_of_day = $trading_calendar->closing_on($underlying->exchange, $date);
-    push @daily_duration,
-        {
-        date_start => {
-            date  => $start_of_day->datetime,
-            epoch => $start_of_day->epoch,
-        },
-        date_expiry => {
-            date  => $close_of_day->datetime,
-            epoch => $close_of_day->epoch,
-        },
-        duration => '0d'
-        };
     return @daily_duration;
 }
 
