@@ -323,7 +323,7 @@ subtest $method => sub {
         my $cl = Client::Account->new({loginid => $new_loginid});
         ok($cl->get_status('financial_risk_approval'), 'For mf accounts we will set financial risk approval status');
 
-        is $cl->get_status('crs_tin_information')->reason, Date::Utility->new()->date, "CRS date is set for account opening date";
+        is $cl->get_status('crs_tin_information')->reason, 'Client confirmed tax information', "CRS status is set";
 
         my ($resp_loginid, $t, $uaf) =
             @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
