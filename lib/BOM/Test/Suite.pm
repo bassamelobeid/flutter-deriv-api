@@ -28,7 +28,6 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::App;
 use Time::HiRes qw(tv_interval gettimeofday);
 
-# Needs to be at top-level scope since _set_allow_omnibus and _get_stashed need access,
 # populated in the main run() loop
 my $response;
 
@@ -195,13 +194,6 @@ sub get_stashed {
     return _get_stashed($path) // "";
 }
 
-# Some side-effecting methods that test scripts might call
-sub set_allow_omnibus {
-    my ($self, $path) = @_;
-    _set_allow_omnibus($path);
-    return;
-}
-
 sub change_status {
     my ($self, $loginid, $action, $status) = @_;
     _change_status($loginid, $action, $status);
@@ -340,17 +332,6 @@ sub _free_gift {
         remark   => 'free gift',
     );
     return;
-}
-
-# set allow omnibus flag, as it is required for creating new sub account
-sub _set_allow_omnibus {
-    my $r = walk_hierarchy(shift, $response);
-
-    my $client = Client::Account->new({loginid => $r});
-    $client->allow_omnibus(1);
-    $client->save();
-
-    return $r;
 }
 
 sub _change_status {
