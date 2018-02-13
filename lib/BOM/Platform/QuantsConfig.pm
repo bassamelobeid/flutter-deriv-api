@@ -56,7 +56,7 @@ sub save_config {
 
     $self->chronicle_writer->set($namespace, $config_type, $config, $self->recorded_date);
 
-    return $args;
+    return $config->{$args->{name}};
 }
 
 sub _klfb {
@@ -104,17 +104,15 @@ sub _commission {
         }
 
         if ($key eq 'contract_type' or $key eq 'currency_symbol' or $key eq 'underlying_symbol') {
-            my @values = split ',', $args{$key};
+            my @values = map { my $v = $_; $v =~ s/\s+//g; $v } split ',', $args{$key};
             if ($key ne 'currency_symbol') {
                 _validate($key, $_) or die "invalid input for $key [$_]" foreach @values;
+            } else {
+                @values = map { uc } @values;
             }
             $args{$key} = \@values;
-        } elsif ($key eq 'partitions') {
-            foreach my $partition (@{$args{$key}}) {
-                if (my $partition_key = first { !looks_like_number($partition->{$_}) } grep { $_ ne 'partition_range' } keys %$partition) {
-                    die "invalid input for $partition_key";
-                }
-            }
+        } elsif ($key =~ /(ITM|OTM)/) {
+            die "invalid input for $key" unless looks_like_number($args{$key});
         }
     }
 
