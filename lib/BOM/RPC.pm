@@ -88,87 +88,85 @@ sub set_current_context {
     return;
 }
 
-sub _make_rpc_service_and_register {
+sub _make_rpc_sub {
     my ($def) = @_;
 
     my $method = $def->name;
 
-    return MojoX::JSON::RPC::Service->new->register(
-        $def->name,
-        sub {
-            my @original_args = @_;
-            my $params = $original_args[0] // {};
+    return sub {
+        my @original_args = @_;
+        my $params = $original_args[0] // {};
 
-            $params->{token} = $params->{args}->{authorize} if !$params->{token} && $params->{args}->{authorize};
+        $params->{token} = $params->{args}->{authorize} if !$params->{token} && $params->{args}->{authorize};
 
-            $params->{token_details} = BOM::RPC::v3::Utility::get_token_details($params->{token});
+        $params->{token_details} = BOM::RPC::v3::Utility::get_token_details($params->{token});
 
-            set_current_context($params);
+        set_current_context($params);
 
-            if (exists $params->{server_name}) {
-                $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
-            }
+        if (exists $params->{server_name}) {
+            $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
+        }
 
-            my $verify_app_res;
-            if ($params->{valid_source}) {
-                $params->{source} = $params->{valid_source};
-            } elsif ($params->{source}) {
-                $verify_app_res = BOM::RPC::v3::App::verify_app({app_id => $params->{source}});
-                return $verify_app_res if $verify_app_res->{error};
-            }
+        my $verify_app_res;
+        if ($params->{valid_source}) {
+            $params->{source} = $params->{valid_source};
+        } elsif ($params->{source}) {
+            $verify_app_res = BOM::RPC::v3::App::verify_app({app_id => $params->{source}});
+            return $verify_app_res if $verify_app_res->{error};
+        }
 
-            if ($def->is_auth) {
-                if (my $client = $params->{client}) {
-                    # If there is a $client object but is not a Valid Client::Account we return an error
-                    unless (blessed $client && $client->isa('Client::Account')) {
-                        return BOM::RPC::v3::Utility::create_error({
-                                code              => 'InvalidRequest',
-                                message_to_client => localize("Invalid request.")});
-                    }
-                } else {
-                    # If there is no $client, we continue with our auth check
-                    my $token_details = $params->{token_details};
-                    return BOM::RPC::v3::Utility::invalid_token_error()
-                        unless $token_details and exists $token_details->{loginid};
-
-                    my $client = Client::Account->new({loginid => $token_details->{loginid}});
-
-                    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-                        return $auth_error;
-                    }
-
-                    $params->{client} = $client;
-                    $params->{app_id} = $token_details->{app_id};
+        if ($def->is_auth) {
+            if (my $client = $params->{client}) {
+                # If there is a $client object but is not a Valid Client::Account we return an error
+                unless (blessed $client && $client->isa('Client::Account')) {
+                    return BOM::RPC::v3::Utility::create_error({
+                            code              => 'InvalidRequest',
+                            message_to_client => localize("Invalid request.")});
                 }
-            }
+            } else {
+                # If there is no $client, we continue with our auth check
+                my $token_details = $params->{token_details};
+                return BOM::RPC::v3::Utility::invalid_token_error()
+                    unless $token_details and exists $token_details->{loginid};
 
-            my @args   = @original_args;
-            my $result = try {
-                my $code = $def->code;
+                my $client = Client::Account->new({loginid => $token_details->{loginid}});
 
-                if ($def->is_async) {
-                    $code->(@args)->get;
-                } else {
-                    $code->(@args);
+                if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+                    return $auth_error;
                 }
-            }
-            catch {
-                # replacing possible objects in $params with strings to avoid error in encode_json function
-                my $params = {$original_args[0] ? %{$original_args[0]} : ()};
-                $params->{client} = blessed($params->{client}) . ' object: ' . $params->{client}->loginid
-                    if eval { $params->{client}->can('loginid') };
-                defined blessed($_) and $_ = blessed($_) . ' object' for (values %$params);
-                warn "Exception when handling $method - $_ with parameters " . $json->encode($params);
-                BOM::RPC::v3::Utility::create_error({
-                        code              => 'InternalServerError',
-                        message_to_client => localize("Sorry, an error occurred while processing your account.")});
-            };
 
-            if ($verify_app_res && ref $result eq 'HASH' && !$result->{error}) {
-                $result->{stash} = {%{$result->{stash} // {}}, %{$verify_app_res->{stash}}};
+                $params->{client} = $client;
+                $params->{app_id} = $token_details->{app_id};
             }
-            return $result;
-        });
+        }
+
+        my @args   = @original_args;
+        my $result = try {
+            my $code = $def->code;
+
+            if ($def->is_async) {
+                $code->(@args)->get;
+            } else {
+                $code->(@args);
+            }
+        }
+        catch {
+            # replacing possible objects in $params with strings to avoid error in encode_json function
+            my $params = {$original_args[0] ? %{$original_args[0]} : ()};
+            $params->{client} = blessed($params->{client}) . ' object: ' . $params->{client}->loginid
+                if eval { $params->{client}->can('loginid') };
+            defined blessed($_) and $_ = blessed($_) . ' object' for (values %$params);
+            warn "Exception when handling $method - $_ with parameters " . $json->encode($params);
+            BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize("Sorry, an error occurred while processing your account.")});
+        };
+
+        if ($verify_app_res && ref $result eq 'HASH' && !$result->{error}) {
+            $result->{stash} = {%{$result->{stash} // {}}, %{$verify_app_res->{stash}}};
+        }
+        return $result;
+    };
 }
 
 sub startup {
@@ -205,7 +203,7 @@ sub startup {
 
     my %services = map {
         my $method = $_->name;
-        "/$method" => _make_rpc_service_and_register($_);
+        "/$method" => MojoX::JSON::RPC::Service->new->register($method, _make_rpc_sub($_));
     } BOM::RPC::Registry::get_service_defs();
 
     $app->plugin(
