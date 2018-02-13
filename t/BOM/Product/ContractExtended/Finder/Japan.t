@@ -70,12 +70,12 @@ subtest "predefined contracts for symbol" => sub {
         # japan, japan
         'frxUSDJPY-japan-jp' => {
             contract_count => {
-                callput      => 14,
+                callput      => 12,
                 touchnotouch => 8,
                 staysinout   => 8,
                 endsinout    => 8,
             },
-            hit_count => 38,
+            hit_count => 36,
         },
         # costarica, canada
         'frxUSDJPY-costarica-ca' => {
