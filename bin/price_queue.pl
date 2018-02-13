@@ -11,6 +11,30 @@ use Log::Any '$log', default_adapter => 'Stdout';
 use Getopt::Long;
 use Try::Tiny;
 
+=encoding utf-8
+
+=head1 NAME
+
+price_queue.pl - Process queue for the BOM pricer daemon
+
+=head1 SYNOPSIS
+
+    price_queue.pl [--queue=priority|--help]
+
+=head1 DESCRIPTION
+
+This script runs as a daemon to process the BOM pricer daemon's Redis queues.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--queue=priority>
+
+Process the priority queue instead of the regular queue.
+
+=cut
+
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $redis       = BOM::Platform::RedisReplicated::redis_pricer;
 my $redis_sub   = BOM::Platform::RedisReplicated::get_redis('pricer', 'write', 60);
