@@ -42,16 +42,17 @@ my $fake_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $bet_params = {
-    underlying      => 'frxUSDJPY',
-    bet_type        => 'CALL',
-    duration        => '15m',
-    barrier         => 'S10P',
-    current_tick    => $fake_tick,
-    currency        => 'USD',
-    payout          => 10,
-    landing_company => 'japan',
-    date_start      => $now,
-    date_pricing    => $now,
+    underlying           => 'frxUSDJPY',
+    bet_type             => 'CALL',
+    duration             => '15m',
+    barrier              => 'S10P',
+    current_tick         => $fake_tick,
+    currency             => 'USD',
+    payout               => 10,
+    product_type         => 'multi_barrier',
+    trading_period_start => time,
+    date_start           => $now,
+    date_pricing         => $now,
 };
 
 subtest 'non atm short term kurtosis markup' => sub {
@@ -76,7 +77,7 @@ subtest 'non atm short term kurtosis markup' => sub {
 subtest 'atm short term kurtosis markup' => sub {
     $bet_params->{barrier}  = 'S0P';
     $bet_params->{duration} = '15m';
-    delete $bet_params->{landing_company};
+    delete $bet_params->{product_type};
     my $c = produce_contract($bet_params);
     is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'intraday forex engine.';
     ok !$c->pricing_engine->risk_markup->peek_amount('short_term_kurtosis_risk_markup'), 'no kurtosis risk markup for a 15m1s contract.';
