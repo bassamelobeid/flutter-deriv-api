@@ -400,7 +400,7 @@ sub _validate_input_parameters {
         } elsif (int($self->multiplier * 10) != ($self->multiplier * 10)) {
             return {
                 message           => 'multiplier cannot be more than one decimal place',
-                message_to_client => ['Multiplier cannot be more than one decimal place.'],
+                message_to_client => ['Only one decimal place allowed.'],
             };
         }
     }
