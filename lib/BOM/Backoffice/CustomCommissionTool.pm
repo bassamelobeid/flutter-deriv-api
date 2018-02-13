@@ -9,31 +9,6 @@ use BOM::Platform::Chronicle;
 use JSON::MaybeXS;
 use Try::Tiny;
 use List::Util qw(max);
-use BOM::Product::Pricing::Engine::Intraday::Forex;
-
-my $static_config = {
-    high => {
-        cap_rate      => 0.3,
-        floor_rate    => 0.1,
-        centre_offset => 0,
-        width         => 0.5,
-        flat          => 0,
-    },
-    medium => {
-        cap_rate      => 0.25,
-        floor_rate    => 0.05,
-        centre_offset => 0,
-        width         => 0.5,
-        flat          => 0,
-    },
-    none => {
-        cap_rate      => '',
-        floor_rate    => '',
-        centre_offset => '',
-        width         => '',
-        flat          => '',
-    },
-};
 
 my $json = JSON::MaybeXS->new;
 
@@ -44,18 +19,40 @@ sub generate_commission_form {
     return BOM::Backoffice::Request::template->process(
         'backoffice/custom_commission_form.html.tt',
         {
-            upload_url    => $url,
-            static_config => $json->encode($static_config),
-            config        => $json->encode(\@config),
+            upload_url => $url,
+            config     => $json->encode(\@config),
         },
     ) || die BOM::Backoffice::Request::template->error;
+}
+
+sub _check_value {
+    my ($what, $args) = @_;
+
+    return _err($what . '_max is not defined') unless exists $args->{$what . '_max'};
+
+    my @to_compare = map { $args->{$what . $_} } grep { exists $args->{$what . $_} } qw(_max _3 _2 _1);
+
+    return if scalar(@to_compare) < 2;
+
+    for (my $i = 0; $i < $#to_compare; $i++) {
+        if ($to_compare[$i] < $to_compare[$i + 1]) {
+            return _err("$to_compare[$i] cannot be lower than $to_compare[$i+1]");
+        }
+    }
+
+    return;
 }
 
 sub save_commission {
     my $args = shift;
 
+    for (qw(ITM OTM)) {
+        if (my $err = _check_value($_, $args)) {
+            return $err;
+        }
+    }
+
     my $result = try {
-        _break($args);
         my $config = _get_info(_qc()->save_config('commission', $args));
         $config;
     }
@@ -79,48 +76,6 @@ sub delete_commission {
     return $result;
 }
 
-sub get_chart_params {
-    my $args = shift;
-
-    my $result = try {
-        my %data;
-        _break($args);
-        foreach my $partition (@{$args->{partitions}}) {
-            my ($start, $end) = split '-', $partition->{partition_range};
-            for (my $delta = $start; $delta <= $end; $delta += 0.05) {
-                $data{$delta} =
-                    max($data{$delta} // 0, BOM::Product::Pricing::Engine::Intraday::Forex::calculate_event_adjustment($delta, $partition));
-            }
-        }
-
-        my @delta = sort { $a <=> $b } keys %data;
-        +{
-            data  => [map { $data{$_} } @delta],
-            delta => \@delta,
-        };
-    }
-    catch {
-        _err($_);
-    };
-
-    return $result;
-}
-
-sub _break {
-    my $args = shift;
-
-    my @to_break = qw(partition_range flat cap_rate floor_rate width centre_offset);
-    my %hash = map { $_ => [split ',', delete $args->{$_}] } @to_break;
-    my @partitions;
-    my $number_of_partitions = scalar(@{$hash{partition_range}});
-    for (1 .. $number_of_partitions) {
-        push @partitions, +{map { $_ => (shift @{$hash{$_}} // die 'unmatched partition ' . $_) } @to_break};
-    }
-
-    $args->{partitions} = \@partitions;
-    return $args;
-}
-
 sub _err {
     return {error => 'ERR: ' . shift};
 }
@@ -136,6 +91,8 @@ sub _qc {
 sub _get_info {
     my $config = shift;
 
+    my %combined_commission = map { $_ => $config->{$_} } qw(ITM_1 ITM_2 ITM_3 atm OTM_1 OTM_2 OTM_3 OTM_max ITM_max);
+
     return {
         name       => $config->{name},
         start_time => Date::Utility->new($config->{start_time})->datetime,
@@ -143,7 +100,7 @@ sub _get_info {
         (bias => $config->{bias} ? $config->{bias} : 'none'),
         (underlying_symbol => ($config->{underlying_symbol}) ? join(',', @{$config->{underlying_symbol}}) : 'none'),
         (currency_symbol   => ($config->{currency_symbol})   ? join(',', @{$config->{currency_symbol}})   : 'none'),
-        config => $config->{partitions},
+        config => \%combined_commission,
     };
 }
 

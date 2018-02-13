@@ -659,17 +659,15 @@ BOM::Backoffice::Request::template->process(
         actions  => get_untrusted_types(),
     }) || die BOM::Backoffice::Request::template->error();
 
-# Show Self-Exclusion link if this client has self-exclusion settings.
-if ($client->self_exclusion) {
-    Bar("$loginid SELF-EXCLUSION SETTINGS");
-    print "$encoded_loginid has enabled <a id='self-exclusion' href=\""
-        . request()->url_for(
-        'backoffice/f_setting_selfexclusion.cgi',
-        {
-            broker  => $broker,
-            loginid => $loginid
-        }) . "\">self-exclusion</a> settings.";
-}
+# Show Self-Exclusion link
+Bar("$loginid SELF-EXCLUSION SETTINGS");
+print "Configure <a id='self-exclusion' href=\""
+    . request()->url_for(
+    'backoffice/f_setting_selfexclusion.cgi',
+    {
+        broker  => $broker,
+        loginid => $loginid
+    }) . "\">self-exclusion</a> settings for $encoded_loginid.";
 
 Bar("$loginid PAYMENT AGENT DETAILS");
 
