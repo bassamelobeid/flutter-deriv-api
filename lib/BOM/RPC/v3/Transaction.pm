@@ -118,7 +118,7 @@ rpc buy => sub {
     $contract_parameters->{landing_company} = $client->landing_company->short;
 
     #Here again, we are re using amount in the API for specifying
-    #no of contracts. Internally for non-binary we will use unit.
+    #no of contracts. Internally for non-binary we will use multiplier.
     #If we use amount, this will create confusion with the amount use for
     #binary contract.
     $contract_parameters->{multiplier} //= $contract_parameters->{amount};
