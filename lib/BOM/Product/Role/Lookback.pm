@@ -16,12 +16,6 @@ has [qw(spot_min spot_max)] => (
     lazy_build => 1,
 );
 
-has unit => (
-    is      => 'ro',
-    isa     => 'Num',
-    default => 1,
-);
-
 has multiplier => (
     is  => 'ro',
     isa => 'Num',
@@ -118,10 +112,10 @@ override _build_theo_price => sub {
 
     if ($self->is_expired) {
         my $final_price = $self->value;
-        return $final_price > 0 ? $final_price * $self->unit * $self->multiplier : 0;
+        return $final_price > 0 ? $final_price * $self->multiplier : 0;
     }
 
-    return $self->pricing_engine->theo_price * $self->unit * $self->multiplier;
+    return $self->pricing_engine->theo_price * $self->multiplier;
 };
 
 override _build_ask_price => sub {
