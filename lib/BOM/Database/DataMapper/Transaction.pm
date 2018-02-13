@@ -656,7 +656,8 @@ sub get_details_by_transaction_ref {
         d.pricing_spot as pricing_spot,
         d.news_adjusted_pricing_vol as news_adjusted_pricing_vol,
         d.long_term_prediction as long_term_prediction,
-        d.volatility_scaling_factor as volatility_scaling_factor
+        d.volatility_scaling_factor as volatility_scaling_factor,
+        d.trading_period_start as trading_period_start
       FROM
         transaction.transaction t
         JOIN bet.financial_market_bet b ON t.financial_market_bet_id=b.id
