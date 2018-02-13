@@ -88,7 +88,21 @@ sub set_current_context {
     return;
 }
 
-sub _make_rpc_sub {
+=head2 wrap_rpc_sub
+
+    $code = wrap_rpc_sub($def)
+
+    $result = $code->(@args)
+
+Given a single service definition for one RPC method, returns a C<CODE>
+reference for invoking it. The returned function executes synchronously,
+eventually returning the result of the RPC, even for asynchronous methods.
+
+=cut
+
+# TODO(leonerd): Allow this to be async-returning for Futures
+
+sub wrap_rpc_sub {
     my ($def) = @_;
 
     my $method = $def->name;
@@ -203,7 +217,7 @@ sub startup {
 
     my %services = map {
         my $method = $_->name;
-        "/$method" => MojoX::JSON::RPC::Service->new->register($method, _make_rpc_sub($_));
+        "/$method" => MojoX::JSON::RPC::Service->new->register($method, wrap_rpc_sub($_));
     } BOM::RPC::Registry::get_service_defs();
 
     $app->plugin(
