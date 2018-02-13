@@ -32,20 +32,22 @@ while (1) {
 exit;
 
 sub _subscribe_priority_queue {
-    $log->info('processing priority price_queue...');
     $log->info('subscribing to high_priority_prices channel...');
     $redis->subscribe(
         high_priority_prices => sub {
             my (undef, $channel, $pattern, $message) = @_;
+            DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.priority_queue.recv', {tags => ['tag:' . $internal_ip]});
             $log->info('received message, updating pricer_jobs_priority: ', {message => $message});
             $redis_sub->lpush('pricer_jobs_priority', $message);
             $log->info('pricer_jobs_priority updated.');
+            DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.priority_queue.send', {tags => ['tag:' . $internal_ip]});
         });
 
     return undef;
 }
 
 sub _process_priority_queue {
+    $log->info('processing priority price_queue...');
     try {
         $redis->get_reply;
     }
