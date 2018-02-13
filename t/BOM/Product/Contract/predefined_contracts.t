@@ -24,7 +24,7 @@ $mocked_decimate->mock(
     sub {
         [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
     });
-my $now = Date::Utility->new('2016-09-28 10:00:00');
+my $now = Date::Utility->new('2016-09-28 10:15:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', $now);

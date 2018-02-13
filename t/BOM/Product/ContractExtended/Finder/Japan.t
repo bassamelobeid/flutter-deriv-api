@@ -88,12 +88,12 @@ subtest "predefined contracts for symbol" => sub {
         # costarica, no country
         'frxUSDJPY-costarica' => {
             contract_count => {
-                callput      => 14,
+                callput      => 12,
                 touchnotouch => 8,
                 staysinout   => 8,
                 endsinout    => 8,
             },
-            hit_count => 38,
+            hit_count => 36,
         },
         # malta, austria
         'frxUSDJPY-malta-at'     => {hit_count => 0},
@@ -116,18 +116,18 @@ subtest "predefined contracts for symbol" => sub {
 
 subtest "predefined trading_period" => sub {
     my %expected_count = (
-        offering_with_predefined_trading_period => 38,
+        offering_with_predefined_trading_period => 36,
         trading_period                          => {
             call_intraday => 2,
-            call_daily    => 5,
+            call_daily    => 4,
             range_daily   => 4,
         });
 
     my %expected_trading_period = (
         call_intraday => {
             duration => ['2h', '6h'],
-            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 18:00:00', '2015-09-04 18:00:00',)],
-            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 16:00:00', '2015-09-04 12:00:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 18:15:00', '2015-09-04 18:15:00',)],
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 16:15:00', '2015-09-04 12:15:00',)],
         },
         range_daily => {
             duration => ['1W', '1M', '3M', '1Y'],
@@ -178,37 +178,37 @@ subtest "check_intraday trading_period_JPY" => sub {
         # sunday
         '2015-11-22 23:59:00' => {combination => 0},
         # monday
-        '2015-11-23 00:00:00' => {
+        '2015-11-23 00:15:00' => {
             combination => 2,                                                                                                   # one call and one put
-            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch, Date::Utility->new('2015-11-23 00:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch, Date::Utility->new('2015-11-23 06:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-23 00:15:00')->epoch, Date::Utility->new('2015-11-23 00:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 02:15:00')->epoch, Date::Utility->new('2015-11-23 06:15:00')->epoch],
         },
-        '2015-11-23 01:00:00' => {
+        '2015-11-23 01:15:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch, Date::Utility->new('2015-11-23 00:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch, Date::Utility->new('2015-11-23 06:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-23 00:15:00')->epoch, Date::Utility->new('2015-11-23 00:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 02:15:00')->epoch, Date::Utility->new('2015-11-23 06:15:00')->epoch],
 
         },
-        '2015-11-23 13:00:00' => {
+        '2015-11-23 13:15:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 12:00:00')->epoch, Date::Utility->new('2015-11-23 12:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 14:00:00')->epoch, Date::Utility->new('2015-11-23 18:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-23 12:15:00')->epoch, Date::Utility->new('2015-11-23 12:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 14:15:00')->epoch, Date::Utility->new('2015-11-23 18:15:00')->epoch],
 
         },
-        '2015-11-23 14:00:00' => {
+        '2015-11-23 14:15:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 14:00:00')->epoch, Date::Utility->new('2015-11-23 12:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 16:00:00')->epoch, Date::Utility->new('2015-11-23 18:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-23 14:15:00')->epoch, Date::Utility->new('2015-11-23 12:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 16:15:00')->epoch, Date::Utility->new('2015-11-23 18:15:00')->epoch],
         },
 
-        '2015-11-23 17:00:00' => {
+        '2015-11-23 17:15:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 16:00:00')->epoch, Date::Utility->new('2015-11-23 12:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 18:00:00')->epoch, Date::Utility->new('2015-11-23 18:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-23 16:15:00')->epoch, Date::Utility->new('2015-11-23 12:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 18:15:00')->epoch, Date::Utility->new('2015-11-23 18:15:00')->epoch],
 
         },
 
-        '2015-11-23 18:00:00' => {combination => 0},
+        '2015-11-23 18:15:00' => {combination => 0},
         '2015-11-23 19:00:00' => {combination => 0},
         '2015-11-23 20:00:00' => {combination => 0},
         '2015-11-23 21:00:00' => {combination => 0},
@@ -243,24 +243,24 @@ subtest "check_intraday trading_period_non_JPY" => sub {
         #sunday
         '2015-11-22 23:59:00' => {combination => 0},
         # monday
-        '2015-11-23 00:00:00' => {
+        '2015-11-23 00:15:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch, Date::Utility->new('2015-11-23 00:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch, Date::Utility->new('2015-11-23 06:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-23 00:15:00')->epoch, Date::Utility->new('2015-11-23 00:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 02:15:00')->epoch, Date::Utility->new('2015-11-23 06:15:00')->epoch],
         },
-        '2015-11-23 18:00:00' => {combination => 0},
-        '2015-11-23 22:00:00' => {combination => 0},
+        '2015-11-23 18:15:00' => {combination => 0},
+        '2015-11-23 22:15:00' => {combination => 0},
 
         # tues
-        '2015-11-24 00:00:00' => {
+        '2015-11-24 00:15:00' => {
             combination => 2,
-            date_start  => [Date::Utility->new('2015-11-24 00:00:00')->epoch, Date::Utility->new('2015-11-24 00:00:00')->epoch],
-            date_expiry => [Date::Utility->new('2015-11-24 02:00:00')->epoch, Date::Utility->new('2015-11-24 06:00:00')->epoch],
+            date_start  => [Date::Utility->new('2015-11-24 00:15:00')->epoch, Date::Utility->new('2015-11-24 00:15:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-24 02:15:00')->epoch, Date::Utility->new('2015-11-24 06:15:00')->epoch],
         },
         '2015-11-24 21:00:00' => {combination => 0},
         '2015-11-24 23:00:00' => {combination => 0},
         # Friday
-        '2015-11-27 18:00:00' => {combination => 0},
+        '2015-11-27 18:15:00' => {combination => 0},
         '2015-11-27 19:00:00' => {combination => 0},
     );
 
