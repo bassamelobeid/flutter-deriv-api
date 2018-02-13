@@ -128,7 +128,7 @@ override _build_ask_price => sub {
 
     my $final_price = max(0.50, ($theo_price + $commission));
 
-    return financialrounding('price', $self->currency, $final_price) * $self->multiplier;
+    return financialrounding('price', $self->currency, $final_price * $self->multiplier);
 };
 
 override _build_bid_price => sub {
