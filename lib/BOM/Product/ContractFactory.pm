@@ -25,12 +25,7 @@ require UNIVERSAL::require;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-
-# List of landing company roles that implement specific rules.
-# So far, we only have one of these (real+virtual), and where possible
-# we should discourage custom logic - better to support it directly if we can.
-use BOM::Product::Role::Japan;
-use BOM::Product::Role::Japanvirtual;
+use BOM::Product::Role::Multibarrier;
 
 use Exporter qw(import export_to_level);
 
@@ -85,12 +80,12 @@ sub produce_contract {
 
     _validate_input_parameters($params_ref);
 
+    my $product_type = $params_ref->{product_type} // 'basic';
+    $product_type =~ s/_//;
+
     my $landing_company = $params_ref->{landing_company};
-    # We have 'japan-virtual' as one of the landing companies: remap this to a valid Perl class name
-    # Can't change the name to 'japanvirtual' because we have db functions tie to the original name.
-    $landing_company =~ s/-//;
-    my $role        = 'BOM::Product::Role::' . ucfirst lc $landing_company;
-    my $role_exists = $role->can('meta');
+    my $role            = 'BOM::Product::Role::' . ucfirst lc $product_type;
+    my $role_exists     = $role->can('meta');
 
     # This occurs after to hopefully make it more annoying to bypass the Factory.
     $params_ref->{'_produce_contract_ref'} = \&produce_contract;
