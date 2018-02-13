@@ -56,7 +56,6 @@ subtest "Request $method" => sub {
                 quote => 500,
                 epoch => 1340871449
             }));
-
     my $mock_feeddb = Test::MockModule->new('Postgres::FeedDB::Spot');
     $mock_feeddb->mock(
         'tick_at',

@@ -24,10 +24,10 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
+use BOM::Product::ContractFinder;
 use Finance::Contract::Longcode qw( shortcode_to_parameters);
 use BOM::Product::ContractFinder;
 use LandingCompany::Registry;
-use Locale::Country::Extra;
 use BOM::Pricing::v3::Utility;
 
 use feature "state";
@@ -621,8 +621,8 @@ sub contracts_for {
     my $args            = $params->{args};
     my $symbol          = $args->{contracts_for};
     my $currency        = $args->{currency} || 'USD';
-    my $product_type    = $args->{product_type} // 'basic';
-    my $landing_company = $args->{landing_company};
+    my $landing_company = $args->{landing_company} // 'costarica';
+    my $product_type    = $args->{product_type};
     my $country_code    = $params->{country_code} // '';
 
     my $token_details = $params->{token_details};
@@ -635,6 +635,11 @@ sub contracts_for {
         # override the details here since we already have a client.
         $landing_company = $client->landing_company->short;
         $country_code    = $client->residence;
+        $product_type //= $client->landing_company->default_offerings;
+    }
+
+    unless ($product_type) {
+        $product_type = LandingCompany::Registry::get($landing_company)->default_offerings;
     }
 
     my $finder        = BOM::Product::ContractFinder->new;
@@ -705,10 +710,8 @@ sub _validate_offerings {
     my $response;
 
     try {
-        my $lc = $args_copy->{landing_company} // 'costarica';
-        my $method = $lc =~ /japan/ ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
-        my $landing_company = LandingCompany::Registry::get($lc);
-
+        my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company} // 'costarica');
+        my $method = $contract->is_parameters_predefined ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
         my $offerings_obj = $landing_company->$method($args_copy->{country_code} // '', BOM::Platform::Runtime->instance->get_offerings_config);
 
         die 'Could not find offerings for ' . $args_copy->{country_code} unless $offerings_obj;
