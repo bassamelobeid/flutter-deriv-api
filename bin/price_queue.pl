@@ -77,6 +77,8 @@ sub _process_priority_queue {
     }
     catch {
         warn "Had error when subscribing - $_";
+        # resubscribe if our $redis handle timed out
+        _subscribe_priority_queue() if /not waiting for reply/;
     };
 
     return undef;
