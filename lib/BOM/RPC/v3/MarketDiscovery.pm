@@ -24,7 +24,7 @@ use List::UtilsBy qw(sort_by);
 rpc active_symbols => sub {
     my $params = shift;
 
-    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
+    my $landing_company_name = $params->{args}->{landing_company} // 'costarica';
     my $product_type         = $params->{args}->{product_type};
     my $language             = $params->{language} || 'EN';
     my $token_details        = $params->{token_details};
@@ -46,6 +46,9 @@ rpc active_symbols => sub {
         my $method = $product_type eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
         $offerings_obj = $landing_company->$method(BOM::Platform::Runtime->instance->get_offerings_config);
     }
+
+    die 'Could not retrieve offerings for landing_company[' . $landing_company_name . '] product_type[' . $product_type . ']' unless ($offerings_obj);
+
     my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
     my ($namespace, $key) = (
         'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
