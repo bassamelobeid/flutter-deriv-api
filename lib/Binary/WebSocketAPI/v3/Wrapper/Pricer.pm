@@ -870,7 +870,7 @@ sub _price_stream_results_adjustment {
     $cache->{payout} = $price_calculator->payout;
     if (my $error = $price_calculator->validate_price) {
         my $error_map = {
-            zero_stake             => sub { "Invalid stake." },
+            zero_stake             => sub { "Invalid stake/payout." },
             payout_too_many_places => sub {
                 my ($details) = @_;
                 return ('Payout can not have more than [_1] decimal places.', $details->[0]);
