@@ -394,13 +394,13 @@ sub _validate_input_parameters {
     if ($self->category_code eq 'lookback') {
         if ($self->multiplier < $self->minimum_multiplier) {
             return {
-                message           => 'below minimum alloweed multiplier',
-                message_to_client => ['Below minimum allowed multiplier(' . $self->minimum_multiplier . ').'],
+                message           => 'below minimum allowed multiplier',
+                message_to_client => [$ERROR_MAPPING->{MinimumMultiplier} . '(' . $self->minimum_multiplier . ').'],
             };
         } elsif (int($self->multiplier * 10) != ($self->multiplier * 10)) {
             return {
                 message           => 'multiplier cannot be more than one decimal place',
-                message_to_client => ['Only one decimal place allowed.'],
+                message_to_client => [$ERROR_MAPPING->{MultiplierDecimalPlace}],
             };
         }
     }
