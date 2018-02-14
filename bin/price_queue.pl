@@ -115,7 +115,6 @@ sub _process_price_queue {
             MATCH => 'PRICER_KEYS::*',
             COUNT => 20000
         )};
-    $log->debug('got keys', {keys => \@keys}) if @keys;
 
     # Separate out JP prices, they're handled by different servers and we expect a near-constant load for them
     my @jp_keys = extract_by {
