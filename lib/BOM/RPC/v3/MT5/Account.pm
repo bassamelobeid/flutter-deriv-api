@@ -756,9 +756,9 @@ rpc mt5_deposit => sub {
     # Make sure MT5 currency is either USD or EUR - refuse to proceed if not
     my $setting = mt5_get_settings({
         client => $client,
-        args   => {login => $login}});
+        args   => {login => $to_mt5}});
     if (ref $setting eq 'HASH' && $setting->{error}) {
-        return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid)) if ($fm_client->get_status('disabled'));
+        return $error_sub->(localize('Unable to get account details for your MT5 account [_1].', $to_mt5));
     }
     my $mt5_currency = $setting->{currency};
     if ($mt5_currency !~ /^USD|EUR$/) {
