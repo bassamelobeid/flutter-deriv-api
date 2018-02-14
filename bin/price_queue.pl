@@ -7,7 +7,7 @@ use Time::HiRes;
 use LWP::Simple;
 use List::UtilsBy qw(extract_by);
 use JSON::MaybeXS;
-use Log::Any '$log', default_adapter => 'Stdout';
+use Log::Any '$log', default_adapter => ['Stdout', log_level => 'warn'];
 use Getopt::Long;
 use Try::Tiny;
 
