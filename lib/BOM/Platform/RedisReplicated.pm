@@ -63,7 +63,8 @@ sub redis_read {
 }
 
 sub redis_pricer {
-    return get_redis('pricer', 'write', 3600);
+    my $timeout = shift;
+    return get_redis('pricer', 'write', $timeout // 3600);
 }
 
 1;
