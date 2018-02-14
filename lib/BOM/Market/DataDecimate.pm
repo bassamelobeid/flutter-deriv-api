@@ -146,7 +146,7 @@ has sampling_frequency => (
 # size is the number of ticks
 has data_cache_size => (
     is      => 'ro',
-    default => 1860,
+    default => 18000,
 );
 
 has decimate_cache_size => (
