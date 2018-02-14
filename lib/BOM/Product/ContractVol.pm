@@ -150,7 +150,6 @@ sub _build_pricing_vol {
     }
 
     if ($volatility_error) {
-        warn "Volatility error: $volatility_error " . $self->underlying->symbol;
         $self->_add_error({
             message           => $volatility_error,
             message_to_client => [$ERROR_MAPPING->{MissingVolatilityMarketData}],
