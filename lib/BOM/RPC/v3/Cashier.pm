@@ -1007,7 +1007,7 @@ rpc transfer_between_accounts => sub {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 
-    {   # Reject all transfers when forex markets are closed
+    {    # Reject all transfers when forex markets are closed
         my $can_transfer = 0;
         # Although this is hardcoded as BTC, the intention is that any risky transfer should be blocked at weekends.
         # Currently, this implies crypto to fiat or vice versa, and BTC is our most volatile (and popular) crypto
@@ -1016,7 +1016,7 @@ rpc transfer_between_accounts => sub {
         if (my $ul = create_underlying('frxBTCUSD')) {
             $can_transfer = 1
                 if Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader)
-                    ->is_open_at($ul->exchange, Date::Utility->new);
+                ->is_open_at($ul->exchange, Date::Utility->new);
         }
         return _transfer_between_accounts_error(localize('Account transfers are currently suspended.')) unless $can_transfer;
     }

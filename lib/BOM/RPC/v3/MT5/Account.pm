@@ -761,34 +761,30 @@ rpc mt5_deposit => sub {
 
     # Make sure MT5 currency is either USD or EUR - refuse to proceed if not
     my $setting = mt5_get_settings({
-        client => $client,
-        args   => {login => $to_mt5}});
+            client => $client,
+            args   => {login => $to_mt5}});
     if (ref $setting eq 'HASH' && $setting->{error}) {
         return $error_sub->(localize('Unable to get account details for your MT5 account [_1].', $to_mt5));
     }
     my $mt5_currency = $setting->{currency};
     if ($mt5_currency !~ /^USD|EUR$/) {
-        die 'Invalid MT5 currency - had '. $setting->{currency} . ' and should be USD or EUR';
+        die 'Invalid MT5 currency - had ' . $setting->{currency} . ' and should be USD or EUR';
     }
 
     # Actual USD or EUR amount that will be deposited into the MT5 account. We have
     # a fixed 1% fee on all conversions, but this is only ever applied when converting
     # between currencies - we do not apply for USD -> USD transfers for example.
     my $mt5_amount = try {
-        return ($fm_client->currency ne $mt5_currency) ? financialrounding(
-            amount => amount_from_to_currency(
-                $fm_client->currency,
-                $mt5_currency,
-                $amount,
-                CURRENCY_CONVERSION_MAX_AGE
-            ) * 0.99
-        ) : $amount;
-    } catch {
+        return ($fm_client->currency ne $mt5_currency)
+            ? financialrounding(amount => amount_from_to_currency($fm_client->currency, $mt5_currency, $amount, CURRENCY_CONVERSION_MAX_AGE) * 0.99)
+            : $amount;
+    }
+    catch {
         warn "Conversion failed for mt5_deposit: $_";
         return undef
     };
 
-    return $error_sub->(localize("Deposit amount must be greater than 1 [_1].", $mt5_currency)) if $mt5_amount < 1;
+    return $error_sub->(localize("Deposit amount must be greater than 1 [_1].",  $mt5_currency)) if $mt5_amount < 1;
     return $error_sub->(localize("Deposit amount must be less than 20000 [_1].", $mt5_currency)) if $mt5_amount > 20000;
 
     return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid)) if ($fm_client->get_status('disabled'));
@@ -931,33 +927,29 @@ rpc mt5_withdrawal => sub {
 
     # Make sure MT5 currency is either USD or EUR - refuse to proceed if not
     my $setting = mt5_get_settings({
-        client => $client,
-        args   => {login => $fm_mt5}});
+            client => $client,
+            args   => {login => $fm_mt5}});
     if (ref $setting eq 'HASH' && $setting->{error}) {
         return $error_sub->(localize('Unable to get account details for your MT5 account [_1].', $fm_mt5));
     }
     my $mt5_currency = $setting->{currency};
     if ($mt5_currency !~ /^USD|EUR$/) {
-        die 'Invalid MT5 currency - had '. $setting->{currency} . ' and should be USD or EUR';
+        die 'Invalid MT5 currency - had ' . $setting->{currency} . ' and should be USD or EUR';
     }
 
     # The MT5 account may be in a different currency, we allow this with a 1% conversion fee.
     my $mt5_amount = try {
-        return ($to_client->currency ne $mt5_currency) ? financialrounding(
-            amount => amount_from_to_currency(
-                $mt5_currency,
-                $to_client->currency,
-                $amount,
-                CURRENCY_CONVERSION_MAX_AGE
-            ) * 0.99
-        ) : $amount;
-    } catch {
+        return ($to_client->currency ne $mt5_currency)
+            ? financialrounding(amount => amount_from_to_currency($mt5_currency, $to_client->currency, $amount, CURRENCY_CONVERSION_MAX_AGE) * 0.99)
+            : $amount;
+    }
+    catch {
         warn "Conversion failed for mt5_withdrawal: $_";
         return undef
     };
     return $error_sub->(localize("Conversion rate not available for this currency.")) unless defined $mt5_amount;
 
-    return $error_sub->(localize("Withdrawal amount must be greater than 1 [_1].", $mt5_currency)) if $mt5_amount < 1;
+    return $error_sub->(localize("Withdrawal amount must be greater than 1 [_1].",  $mt5_currency)) if $mt5_amount < 1;
     return $error_sub->(localize("Withdrawal amount must be less than 20000 [_1].", $mt5_currency)) if $mt5_amount > 20000;
 
     my $to_client_db = BOM::Database::ClientDB->new({
