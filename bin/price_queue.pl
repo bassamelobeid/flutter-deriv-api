@@ -21,7 +21,7 @@ price_queue.pl - Process queue for the BOM pricer daemon
 
 =head1 SYNOPSIS
 
-    price_queue.pl [--queue=priority|--help]
+    price_queue.pl [--priority]
 
 =head1 DESCRIPTION
 
@@ -31,7 +31,7 @@ This script runs as a daemon to process the BOM pricer daemon's Redis queues.
 
 =over 8
 
-=item B<--queue=priority>
+=item B<--priority>
 
 Process the priority queue instead of the regular queue.
 
@@ -42,13 +42,12 @@ my $redis       = BOM::Platform::RedisReplicated::redis_pricer;
 my $redis_sub   = BOM::Platform::RedisReplicated::redis_pricer(timeout => 60);
 my $iteration   = 0;
 
-my $queue = 'regular';
-GetOptions 'Q|queue=s' => \$queue;
+GetOptions 'priority' => \my $priority;
 
-_subscribe_priority_queue() if $queue eq 'priority';
+_subscribe_priority_queue() if $priority;
 
 while (1) {
-    if ($queue eq 'priority') {
+    if ($priority) {
         _process_priority_queue();
     } else {
         _process_price_queue();
