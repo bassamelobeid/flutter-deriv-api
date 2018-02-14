@@ -920,7 +920,7 @@ rpc mt5_withdrawal => sub {
         client => $client,
         args   => {login => $fm_mt5}});
     if (ref $setting eq 'HASH' && $setting->{error}) {
-        return $error_sub->(localize('Unable to get account details for your MT5 account [_1].', $to_mt5));
+        return $error_sub->(localize('Unable to get account details for your MT5 account [_1].', $fm_mt5));
     }
     my $mt5_currency = $setting->{currency};
     if ($mt5_currency !~ /^USD|EUR$/) {
