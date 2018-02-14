@@ -271,15 +271,15 @@ sub get_client_profiles {
 sub get_current_profile_definitions {
     my $client = shift;
 
-    my ($currency, $landing_company);
+    my ($currency, $landing_company, $country_code);
     if ($client) {
-        ($currency, $landing_company) = ($client->currency, $client->landing_company->short);
+        ($currency, $landing_company, $country_code) = ($client->currency, $client->landing_company->short, $client->residence);
     } else {
         # set some defaults here
         ($currency, $landing_company) = ('USD', 'costarica');
     }
 
-    my $offerings_obj = _offerings_obj($landing_company);
+    my $offerings_obj = _offerings_obj($landing_company, $country_code);
     my @markets =
         map { Finance::Asset::Market::Registry->get($_) } $offerings_obj->values_for_key('market');
     my $limit_ref = BOM::Platform::Config::quants->{risk_profile};
