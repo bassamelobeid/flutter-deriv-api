@@ -9,7 +9,6 @@ use curry;
 use Try::Tiny;
 use Data::Dumper;
 use Encode;
-use Mojo::Redis::Processor;
 use JSON::MaybeXS;
 use Time::HiRes qw(gettimeofday tv_interval);
 use Math::Util::CalculatedValue::Validatable;
