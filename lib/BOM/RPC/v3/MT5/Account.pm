@@ -741,6 +741,8 @@ rpc mt5_deposit => sub {
 
     return $error_sub->(localize("Only a maximum of two decimal points are allowed for the deposit amount.")) if ($amount !~ /^\d+(?:\.\d{0,2})?$/);
 
+    return $error_sub->(localize("Only a maximum of two decimal points are allowed for the deposit amount.")) if financialrounding(amount => $amount) != $amount;
+
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
 
@@ -751,8 +753,26 @@ rpc mt5_deposit => sub {
 
     return BOM::RPC::v3::Utility::permission_error() if (not _mt5_is_real_account($fm_client, $to_mt5));
 
-    return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD/EUR.', $fm_loginid, $fm_client->currency))
-        if (($fm_client->currency !~ /^USD|EUR$/));
+    # Make sure MT5 currency is either USD or EUR - refuse to proceed if not
+    my $setting = mt5_get_settings({
+        client => $client,
+        args   => {login => $login}});
+    if (ref $setting eq 'HASH' && $setting->{error}) {
+        return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid)) if ($fm_client->get_status('disabled'));
+    }
+    my $mt5_currency = $setting->{currency};
+    if ($mt5_currency !~ /^USD|EUR$/) {
+        die 'Invalid MT5 currency - had '. $setting->{currency} . ' and should be USD or EUR';
+    }
+
+    # Actual USD or EUR amount that will be deposited into the MT5 account. We have
+    # a fixed 0.5% fee on all conversions, but this is only ever applied when converting
+    # between currencies - we do not apply for USD -> USD transfers for example.
+    my $mt5_amount = ($fm_client->currency ne $mt5_currency) ? financialrounding(amount => amount_from_to_currency(
+        $fm_client->currency,
+        $mt5_currency,
+        $amount 
+    ) * 0.995) : $amount;
 
     return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid)) if ($fm_client->get_status('disabled'));
 
@@ -818,7 +838,7 @@ rpc mt5_deposit => sub {
     # deposit to MT5 a/c
     my $status = BOM::MT5::User::deposit({
         login   => $to_mt5,
-        amount  => $amount,
+        amount  => $mt5_amount,
         comment => $comment
     });
 
