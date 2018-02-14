@@ -889,6 +889,7 @@ rpc mt5_withdrawal => sub {
 
     return $error_sub->(localize("Only a maximum of two decimal points are allowed for the withdrawal amount."))
         if ($amount !~ /^\d+(?:\.\d{0,2})?$/);
+    return $error_sub->(localize("Invalid amount provided.")) if financialrounding(amount => $amount) != $amount;
 
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $fm_mt5, $to_loginid]);
@@ -909,13 +910,32 @@ rpc mt5_withdrawal => sub {
     return $error_sub->(localize('Please authenticate your account.'))
         if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated);
 
-    return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD/EUR.', $to_loginid, $to_client->currency))
-        if ($to_client->currency !~ /^USD|EUR$/);
-
     return $error_sub->(localize('Your account [_1] was disabled.', $to_loginid)) if ($to_client->get_status('disabled'));
 
     return $error_sub->(localize('Your account [_1] cashier section was locked.', $to_loginid))
         if ($to_client->get_status('cashier_locked') || $to_client->documents_expired);
+
+    # Make sure MT5 currency is either USD or EUR - refuse to proceed if not
+    my $setting = mt5_get_settings({
+        client => $client,
+        args   => {login => $fm_mt5}});
+    if (ref $setting eq 'HASH' && $setting->{error}) {
+        return $error_sub->(localize('Unable to get account details for your MT5 account [_1].', $to_mt5));
+    }
+    my $mt5_currency = $setting->{currency};
+    if ($mt5_currency !~ /^USD|EUR$/) {
+        die 'Invalid MT5 currency - had '. $setting->{currency} . ' and should be USD or EUR';
+    }
+
+    # The MT5 account may be in a different currency, we allow this with a 1% conversion fee.
+    my $mt5_amount = ($to_client->currency ne $mt5_currency) ? financialrounding(amount => amount_from_to_currency(
+        $mt5_currency,
+        $to_client->currency,
+        $amount 
+    ) * 0.99) : $amount;
+
+    return $error_sub->(localize("Withdrawal amount must be greater than 1 [_1].", $mt5_currency)) if $mt5_amount < 1;
+    return $error_sub->(localize("Withdrawal amount must be less than 20000 [_1].", $mt5_currency)) if $mt5_amount > 20000;
 
     my $to_client_db = BOM::Database::ClientDB->new({
         client_loginid => $to_loginid,
