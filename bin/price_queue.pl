@@ -58,14 +58,14 @@ while (1) {
 exit;
 
 sub _subscribe_priority_queue {
-    $log->info('subscribing to high_priority_prices channel...');
+    $log->trace('subscribing to high_priority_prices channel...');
     $redis->subscribe(
         high_priority_prices => sub {
             my (undef, $channel, $pattern, $message) = @_;
             DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.priority_queue.recv', {tags => ['tag:' . $internal_ip]});
-            $log->info('received message, updating pricer_jobs_priority: ', {message => $message});
+            $log->debug('received message, updating pricer_jobs_priority: ', {message => $message});
             $redis_sub->lpush('pricer_jobs_priority', $message);
-            $log->info('pricer_jobs_priority updated.');
+            $log->debug('pricer_jobs_priority updated.');
             DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.priority_queue.send', {tags => ['tag:' . $internal_ip]});
         });
 
@@ -73,12 +73,12 @@ sub _subscribe_priority_queue {
 }
 
 sub _process_priority_queue {
-    $log->info('processing priority price_queue...');
+    $log->trace('processing priority price_queue...');
     try {
         $redis->get_reply;
     }
     catch {
-        warn "Caught error on priority queue subscription: $_";
+        $log->warnf("Caught error on priority queue subscription: %s", $_);
         # resubscribe if our $redis handle timed out
         _subscribe_priority_queue() if /not waiting for reply/;
     };
@@ -90,21 +90,21 @@ sub _sleep_to_next_second {
     my $t = Time::HiRes::time();
 
     my $sleep = 1 - ($t - int($t));
-    $log->info("sleeping at $t for $sleep secs...");
+    $log->debugf('sleeping at %s for %s secs...', $t, $sleep);
     Time::HiRes::usleep($sleep * 1_000_000);
 
     return undef;
 }
 
 sub _process_price_queue {
-    $log->info('processing regular price_queue...');
+    $log->trace('processing regular price_queue...');
     _sleep_to_next_second();
     my $overflow = $redis->llen('pricer_jobs');
 
     # If we didn't manage to process everything within 1s, we'll allow 1s extra - this will cause price update rates to
     # be halved on the UI.
     if ($overflow) {
-        $log->info("got pricer_jobs overflow: $overflow");
+        $log->debugf('got pricer_jobs overflow: %s', $overflow);
         _sleep_to_next_second();
     }
 
@@ -123,18 +123,18 @@ sub _process_price_queue {
     @keys;
 
     my $not_processed = $redis->llen('pricer_jobs');
-    $log->info("got pricer_jobs not processed: $not_processed") if $not_processed;
+    $log->debugf('got pricer_jobs not processed: %s', $not_processed) if $not_processed;
 
-    $log->info('pricer_jobs queue updating...');
+    $log->trace('pricer_jobs queue updating...');
     $redis->del('pricer_jobs');
     $redis->lpush('pricer_jobs', @keys) if @keys;
-    $log->info('pricer_jobs queue updated.');
+    $log->debug('pricer_jobs queue updated.');
 
     # For JP pricing we're using a 3-second interval by default: we refresh the queue once for every 3 cycles on the main
     # queue. Note that this means the actual time we start the JP pricing could be on odd seconds, even seconds, or we may even
     # update once every 4 seconds when the system is under particularly heavy load.
     unless ($iteration++ % 2) {
-        $log->info('pricer_jobs_jp queue updating...');
+        $log->trace('pricer_jobs_jp queue updating...');
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue_jp.size', 0 + @jp_keys, {tags => ['tag:' . $internal_ip]});
         DataDog::DogStatsd::Helper::stats_gauge(
             'pricer_daemon.queue_jp.not_processed',
@@ -142,13 +142,13 @@ sub _process_price_queue {
             {tags => ['tag:' . $internal_ip]});
         $redis->del('pricer_jobs_jp');
         $redis->lpush('pricer_jobs_jp', @jp_keys) if @jp_keys;
-        $log->info('pricer_jobs_jp queue updated.');
+        $log->debug('pricer_jobs_jp queue updated.');
     }
     DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.overflow',      $overflow,      {tags => ['tag:' . $internal_ip]});
     DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.size',          0 + @keys,      {tags => ['tag:' . $internal_ip]});
     DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.not_processed', $not_processed, {tags => ['tag:' . $internal_ip]});
 
-    $log->info('pricer_daemon_queue_stats updating...');
+    $log->trace('pricer_daemon_queue_stats updating...');
     $redis->set(
         'pricer_daemon_queue_stats',
         JSON::MaybeXS->new->encode({
@@ -157,7 +157,7 @@ sub _process_price_queue {
                 size          => 0 + @keys,
                 updated       => time,
             }));
-    $log->info('pricer_daemon_queue_stats updated.');
+    $log->debug('pricer_daemon_queue_stats updated.');
 
     return undef;
 }
