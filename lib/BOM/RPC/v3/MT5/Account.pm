@@ -3,6 +3,8 @@ package BOM::RPC::v3::MT5::Account;
 use strict;
 use warnings;
 
+no indirect;
+
 use Guard;
 use YAML::XS;
 use List::Util qw(any first);
