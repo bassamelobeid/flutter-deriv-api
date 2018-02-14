@@ -741,7 +741,7 @@ rpc mt5_deposit => sub {
 
     return $error_sub->(localize("Only a maximum of two decimal points are allowed for the deposit amount.")) if ($amount !~ /^\d+(?:\.\d{0,2})?$/);
 
-    return $error_sub->(localize("Only a maximum of two decimal points are allowed for the deposit amount.")) if financialrounding(amount => $amount) != $amount;
+    return $error_sub->(localize("Invalid amount provided.")) if financialrounding(amount => $amount) != $amount;
 
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
