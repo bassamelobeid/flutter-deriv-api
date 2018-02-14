@@ -45,6 +45,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }]});
 
 my $now = Date::Utility->new;
+BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', $now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -135,25 +136,27 @@ subtest 'payout' => sub {
     }
 
     $c = produce_contract({
-        bet_type        => 'CALL',
-        underlying      => 'frxUSDJPY',
-        barrier         => 'S50000P',
-        duration        => '1h',
-        currency        => 'JPY',
-        payout          => 1000,
-        landing_company => 'japan'
+        bet_type             => 'CALL',
+        underlying           => 'frxUSDJPY',
+        barrier              => 'S50000P',
+        duration             => '1h',
+        currency             => 'JPY',
+        payout               => 1000,
+        product_type         => 'multi_barrier',
+        trading_period_start => time,
     });
 
     cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex intraday non atm contract for japan is floored to 5%';
 
     $c = produce_contract({
-        bet_type        => 'CALL',
-        underlying      => 'frxUSDJPY',
-        barrier         => 'S5000000P',
-        duration        => '2d',
-        currency        => 'JPY',
-        payout          => 1000,
-        landing_company => 'japan'
+        bet_type             => 'CALL',
+        underlying           => 'frxUSDJPY',
+        barrier              => 'S5000000P',
+        duration             => '2d',
+        currency             => 'JPY',
+        payout               => 1000,
+        product_type         => 'multi_barrier',
+        trading_period_start => time,
     });
     cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex daily non atm contract for japan is floored to 5%';
 
