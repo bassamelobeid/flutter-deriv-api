@@ -766,13 +766,13 @@ rpc mt5_deposit => sub {
     }
 
     # Actual USD or EUR amount that will be deposited into the MT5 account. We have
-    # a fixed 0.5% fee on all conversions, but this is only ever applied when converting
+    # a fixed 1% fee on all conversions, but this is only ever applied when converting
     # between currencies - we do not apply for USD -> USD transfers for example.
     my $mt5_amount = ($fm_client->currency ne $mt5_currency) ? financialrounding(amount => amount_from_to_currency(
         $fm_client->currency,
         $mt5_currency,
         $amount 
-    ) * 0.995) : $amount;
+    ) * 0.99) : $amount;
 
     return $error_sub->(localize("Deposit amount must be greater than 1 [_1].", $mt5_currency)) if $mt5_amount < 1;
     return $error_sub->(localize("Deposit amount must be less than 20000 [_1].", $mt5_currency)) if $mt5_amount > 20000;
