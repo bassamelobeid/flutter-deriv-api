@@ -774,6 +774,9 @@ rpc mt5_deposit => sub {
         $amount 
     ) * 0.995) : $amount;
 
+    return $error_sub->(localize("Deposit amount must be greater than 1 [_1].", $mt5_currency)) if $mt5_amount < 1;
+    return $error_sub->(localize("Deposit amount must be less than 20000 [_1].", $mt5_currency)) if $mt5_amount > 20000;
+
     return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid)) if ($fm_client->get_status('disabled'));
 
     return $error_sub->(localize('Your account [_1] cashier section was locked.', $fm_loginid))
