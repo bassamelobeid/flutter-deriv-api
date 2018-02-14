@@ -29,6 +29,10 @@ requires_auth();
 
 use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
 
+# Defines the oldest data we'll allow for conversion rates, anything past this
+# (including when markets are closed) will be rejected.
+use constant CURRENCY_CONVERSION_MAX_AGE => 3600;
+
 =head2 mt5_login_list
 
     $mt5_logins = mt5_login_list({ client => $client })
@@ -768,11 +772,19 @@ rpc mt5_deposit => sub {
     # Actual USD or EUR amount that will be deposited into the MT5 account. We have
     # a fixed 1% fee on all conversions, but this is only ever applied when converting
     # between currencies - we do not apply for USD -> USD transfers for example.
-    my $mt5_amount = ($fm_client->currency ne $mt5_currency) ? financialrounding(amount => amount_from_to_currency(
-        $fm_client->currency,
-        $mt5_currency,
-        $amount 
-    ) * 0.99) : $amount;
+    my $mt5_amount = try {
+        return ($fm_client->currency ne $mt5_currency) ? financialrounding(
+            amount => amount_from_to_currency(
+                $fm_client->currency,
+                $mt5_currency,
+                $amount,
+                CURRENCY_CONVERSION_MAX_AGE
+            ) * 0.99
+        ) : $amount;
+    } catch {
+        warn "Conversion failed for mt5_deposit: $_";
+        return undef
+    };
 
     return $error_sub->(localize("Deposit amount must be greater than 1 [_1].", $mt5_currency)) if $mt5_amount < 1;
     return $error_sub->(localize("Deposit amount must be less than 20000 [_1].", $mt5_currency)) if $mt5_amount > 20000;
@@ -928,11 +940,20 @@ rpc mt5_withdrawal => sub {
     }
 
     # The MT5 account may be in a different currency, we allow this with a 1% conversion fee.
-    my $mt5_amount = ($to_client->currency ne $mt5_currency) ? financialrounding(amount => amount_from_to_currency(
-        $mt5_currency,
-        $to_client->currency,
-        $amount 
-    ) * 0.99) : $amount;
+    my $mt5_amount = try {
+        return ($to_client->currency ne $mt5_currency) ? financialrounding(
+            amount => amount_from_to_currency(
+                $mt5_currency,
+                $to_client->currency,
+                $amount,
+                CURRENCY_CONVERSION_MAX_AGE
+            ) * 0.99
+        ) : $amount;
+    } catch {
+        warn "Conversion failed for mt5_withdrawal: $_";
+        return undef
+    };
+    return $error_sub->(localize("Conversion rate not available for this currency.")) unless defined $mt5_amount;
 
     return $error_sub->(localize("Withdrawal amount must be greater than 1 [_1].", $mt5_currency)) if $mt5_amount < 1;
     return $error_sub->(localize("Withdrawal amount must be less than 20000 [_1].", $mt5_currency)) if $mt5_amount > 20000;
