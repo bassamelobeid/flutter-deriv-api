@@ -39,7 +39,7 @@ Process the priority queue instead of the regular queue.
 
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $redis       = BOM::Platform::RedisReplicated::redis_pricer;
-my $redis_sub   = BOM::Platform::RedisReplicated::redis_pricer(60);
+my $redis_sub   = BOM::Platform::RedisReplicated::redis_pricer(timeout => 60);
 my $iteration   = 0;
 
 my $queue = 'regular';
