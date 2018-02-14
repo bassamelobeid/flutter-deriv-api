@@ -11,6 +11,8 @@ use Log::Any '$log', default_adapter => 'Stdout';
 use Getopt::Long;
 use Try::Tiny;
 
+no indirect;
+
 =encoding utf-8
 
 =head1 NAME
