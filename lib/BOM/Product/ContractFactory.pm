@@ -82,8 +82,8 @@ sub produce_contract {
     my $product_type = $params_ref->{product_type} // 'basic';
     $product_type =~ s/_//;
 
-    my $role            = 'BOM::Product::Role::' . ucfirst lc $product_type;
-    my $role_exists     = $role->can('meta');
+    my $role        = 'BOM::Product::Role::' . ucfirst lc $product_type;
+    my $role_exists = $role->can('meta');
 
     # This occurs after to hopefully make it more annoying to bypass the Factory.
     $params_ref->{'_produce_contract_ref'} = \&produce_contract;
