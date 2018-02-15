@@ -270,7 +270,7 @@ if ($input{whattodo} eq 'uploadID') {
         my $file_contents = do { local $/; <$filetoupload> };
         my $file_checksum = md5_hex($file_contents);
 
-        sub _is_duplicate_upload_error {
+        sub _is_duplicate_upload_error = sub {
             my $dbh = shift;
 
             return $dbh->state =~ /^23505$/
@@ -282,7 +282,7 @@ if ($input{whattodo} eq 'uploadID') {
         try {
             my $STD_WARN_HANDLER = $SIG{__WARN__};
             local $SIG{__WARN__} = sub {
-                return if _is_duplicate_upload_error($dbh);
+                return if _is_duplicate_upload_error->($dbh);
                 return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
                 warn @_;
             };
@@ -313,7 +313,7 @@ if ($input{whattodo} eq 'uploadID') {
         try {
             my $STD_WARN_HANDLER = $SIG{__WARN__};
             local $SIG{__WARN__} = sub {
-                return if _is_duplicate_upload_error($dbh);
+                return if _is_duplicate_upload_error->($dbh);
                 return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
                 warn @_;
             };
