@@ -1,94 +1,41 @@
 <p>README:</p>
 <ul>
-    <li><b>partition range</b> : holds value from 0 to 1 in delta space. Multiple partitions could be specified with 0-0.25,0.25-1. On overlapping point, we take the maximum of the values. Partition range could be use to introduce bias in the commission structure. E.g. we could set 0-0.5 & and 0.5-1 partition range to different max & min adjustment levels.</li>
     <li><b>bias</b> : could be introduced to currency symbol or/and underlying symbol. Accepts value of long or short. If we are <i>long</i> on <i>USD</i>, all USD currency pairs will be affected. For frxUSDXXX pairs, we will apply the commission structure on CALL/CALLE. For frxXXXUSD pairs, we will apply the commission structure to PUT/PUTE. If you are <i>long</i> on <i>frxAUDJPY</i>, the commission structure will be applied to CALL/CALLE on frxAUDJPY.</li>
-    <li><b>max adjustment</b> : maximum adjustment to markup</li>
-    <li><b>min adjustment</b> : minimum adjustment to markup</li>
-    <li><b>width</b> : width between the deltas having max adjustment (0.6 means delats of 0.2 and 0.8 will get max adjustment)</li>
-    <li><b>centre offset</b> : offset the point of min adjustment from centre (0 means 0.5 delta point will be the min adjustment point)</li>
+    <li><b>OTM_max</b> : Barriers over spot + 15 pips for 7 barriers and spot + 10 pips for  5 barriers</li>
+    <li><b>OTM_3</b> : Barriers between spot + 10 pips and spot + 15 pips (for 7 barriers only) </li>
+    <li><b>OTM_2</b> : Barriers between spot + 5 pips and spot + 10 pips </li>
+    <li><b>OTM_1</b> : Barriers between spot and spot + 5 pips</li>
+    <li><b>ITM_1</b> : Barriers between spot and spot - 5 pips</li>
+    <li><b>ITM_2</b> : Barriers between spot - 5 pips and spot - 10 pips</li>
+    <li><b>ITM_3</b> : Barriers between spot - 10 pips and spot - 15 pips (for 7 barriers only)</li>
+    <li><b>ITM_max</b> : Barriers over spot - 15 pips for 7 barriers and spot - 10 pips for  5 barriers</li>
 </ul>
 <p><b>Add new custom commission with the tool below: </b></p>
 
 <table id='custom_commission_form'>
-    <tr><td>Mode</td><td> : <select onchange="fillForm(this.value, '[% static_config %]')"><option value="none">None</option><option value="medium">Medium</option><option value="high">High</option></select></td></tr>
     <tr><td>Name</td><td> : <input type="text" name="name"></td><td>Accepts only words and integers (required)</td></tr>
     <tr><td>Start Time</td><td> : <input type="text" name="start_time"></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
     <tr><td>End Time</td><td> : <input type="text" name="end_time"></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
     <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol"></td></tr>
     <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol"></td></tr>
     <tr><td>Bias</td><td> : <input type="text" name="bias"></td><td>Leave it empty if bias is not intended. Accepts values long or short</td></tr>
-    <tr><td>Partition Range</td><td> : <input type="text" name="partition_range"></td><td>Partitions in delta space. E.g. 0-1 or 0-0.5,0.5-1 (required)</td></tr>
-    <tr><td>Flat</td><td> : <input type="text" name="flat"></td><td>Boolean flag. If set to 1, the partition will be set to max adjustment. Set to 0 if we want to have variable commission structure across delta (required)</td></tr>
-    <tr><td>Max adjustment</td><td> : <input type="text" name="cap_rate"></td><td>(required)</td></tr>
-    <tr><td>Min adjustment</td><td> : <input type="text" name="floor_rate"></td></tr>
-    <tr><td>Width</td><td> : <input type="text" name="width"></td></tr>
-    <tr><td>Centre Offset</td><td> : <input type="text" name="centre_offset"></td></tr>
-    <tr><td></td><td><button onclick="drawChart()">Chart it</button><button onclick="saveCustom()" style="margin-left: 20px;">Save</button></td><td class="result"></td></tr>
+    <tr><td>Barriers</td></tr>
+    <tr><td>OTM_max </td><td> : <input type="text" name="OTM_max"></td></tr>
+    <tr><td>OTM_3 </td><td> : <input type="text" name="OTM_3"></td></tr>
+    <tr><td>OTM_2 </td><td> : <input type="text" name="OTM_2"></td></tr>
+    <tr><td>OTM_1 </td><td> : <input type="text" name="OTM_1"></td></tr>
+    <tr><td>ATM </td><td> : <input type="text" name="atm"></td></tr>
+    <tr><td>ITM_1 </td><td> : <input type="text" name="ITM_1"></td></tr>
+    <tr><td>ITM_2 </td><td> : <input type="text" name="ITM_2"></td></tr>
+    <tr><td>ITM_3 </td><td> : <input type="text" name="ITM_3"></td></tr>
+    <tr><td>ITM_max </td><td> : <input type="text" name="ITM_max"></td><td> The commission to be charged if barriers goes out of the tiered commission as spot moves.</td></tr>
+    <tr><td></td><button onclick="saveCustom()" style="margin-left: 20px;">Save</button></td><td class="result"></td></tr>
 </table>
-
-<div id='highchart'>
-</div>
 
 <div id='custom_commission_table'>
 </div>
 
 <script>
-    function drawChart() {
-        var el = \$('table#custom_commission_form');
-        var result = el.find('.result');
-        result.text('');
-        \$.ajax({
-                url: "[% upload_url | none %]",
-                data: {
-                    draw_chart: "1",
-                    cap_rate: el.find('input[name="cap_rate"]').val(),
-                    floor_rate: el.find('input[name="floor_rate"]').val(),
-                    width: el.find('input[name="width"]').val(),
-                    centre_offset: el.find('input[name="centre_offset"]').val(),
-                    flat: el.find('input[name="flat"]').val(),
-                    partition_range: el.find('input[name="partition_range"]').val()
-                },
-                success: function(data){
-                    var config = \$.parseJSON(data);
-                    if (config.error) {
-                        result.text('Failed: '+ config.error).css('color', 'red');
-                    } else {
-                        var numbers = [];
-                        for (i=0;i<config.data.length;i++) {
-                            numbers[i] = parseFloat(config.data[i]);
-                        }
-                        \$('div#highchart').highcharts({
-                            chart: {
-                                height: 300,
-                                width: 500
-                            },
-                            title: {
-                                text: 'commission across delta'
-                            },
-                            xAxis: {
-                                title: {text: 'delta'},
-                                categories: config.delta
-                            },
-                            yAxis: {
-                                title: {text: 'commission'},
-                                min: 0,
-                                max: 0.5
-                            },
-                            series: [{name: 'commission', data: numbers}]
-                        });
-                    }
-                }
-        });
-    }
-    function fillForm(value, static) {
-        var static_obj = \$.parseJSON(static);
-        var to_fill = static_obj[value];
-        var el = \$('table#custom_commission_form');
-
-        \$.each(to_fill, function(k,v) {
-            el.find('input[name="'+k+'"]').val(v);
-        });
-    }
     function saveCustom() {
         var el = \$('table#custom_commission_form');
         var result = el.find('.result');
@@ -101,14 +48,16 @@
                     underlying_symbol: el.find('input[name="underlying_symbol"]').val(),
                     currency_symbol: el.find('input[name="currency_symbol"]').val(),
                     bias: el.find('input[name="bias"]').val(),
-                    cap_rate: el.find('input[name="cap_rate"]').val(),
-                    floor_rate: el.find('input[name="floor_rate"]').val(),
-                    width: el.find('input[name="width"]').val(),
-                    centre_offset: el.find('input[name="centre_offset"]').val(),
-                    flat: el.find('input[name="flat"]').val(),
-                    partition_range: el.find('input[name="partition_range"]').val(),
                     start_time: el.find('input[name="start_time"]').val(),
-                    end_time: el.find('input[name="end_time"]').val()
+                    end_time: el.find('input[name="end_time"]').val(),
+                    ITM_3: el.find('input[name="ITM_3"]').val(),
+                    ITM_2: el.find('input[name="ITM_2"]').val(),
+                    ITM_1: el.find('input[name="ITM_1"]').val(),
+                    OTM_1: el.find('input[name="OTM_1"]').val(),
+                    OTM_2: el.find('input[name="OTM_2"]').val(),
+                    OTM_3: el.find('input[name="OTM_3"]').val(),
+                    OTM_max: el.find('input[name="OTM_max"]').val(),
+                    ITM_max: el.find('input[name="ITM_max"]').val()
                 },
                 success: function(data){
                     var config = \$.parseJSON(data);

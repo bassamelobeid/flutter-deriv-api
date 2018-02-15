@@ -90,8 +90,6 @@ sub generate {
                     try {
                         my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
 
-                        return if $bet_params->{bet_type} eq 'BINARYICO';
-
                         $bet_params->{date_pricing} = $pricing_date;
                         my $symbol = $bet_params->{underlying};
                         $bet_params->{underlying} = $cached_underlyings{$symbol}

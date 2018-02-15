@@ -25,9 +25,6 @@ sub bo_js_files_for {
         push @js_files, 'external/jstree/jquery.jstree.js', 'pricing_details.js',
             'external/highcharts/highstock.js', 'external/highcharts/export-csv.js', 'external/highcharts/highstock-exporting.js',
             if /(bpot|f_bet_iv)/;
-        push @js_files, 'external/jstree/jquery.jstree.js',
-            'external/highcharts/highstock.js', 'external/highcharts/export-csv.js', 'external/highcharts/highstock-exporting.js',
-            if /dailyico/;
         push @js_files, 'external/syntaxhighlighter/shCore.js',
             'external/syntaxhighlighter/shAutoloader.js', 'external/syntaxhighlighter/shBrushYaml.js'
             if /view_192_raw_response/;

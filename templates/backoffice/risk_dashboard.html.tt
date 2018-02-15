@@ -1,5 +1,4 @@
 <p>See, also: <a href="[% dtr_link | none %]">this month's daily turnover report</a>.</p>
-<p>See, also: <a href="[% dico_link | none %]">daily ico report</a>.</p>
 <p>Summary of period starting at [% start_date %] and ending [% end_date %].</p>
 <div id="rd-tabs">
   <ul>

@@ -8,7 +8,6 @@ use open qw[ :encoding(UTF-8) ];
 use LWP::UserAgent;
 use Text::Trim;
 use File::Copy;
-use Locale::Country 'code2country';
 use Data::Dumper;
 use HTML::Entities;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
@@ -398,7 +397,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         phone
         secret_question
         is_vip
-        tax_identification_number
         citizen
         address_1
         address_2
@@ -437,10 +435,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     print $result if $result;
 
     # Filter keys for tax residence
-    if (my @matching_keys = grep { /tax_residence/ } keys %input) {
-        my $tax_residence = join(",", sort grep { length } @input{@matching_keys});
-        $client->tax_residence($tax_residence);
+    my (@tax_residence_multiple, $tax_residence);
+    if (ref $input{tax_residence} eq 'ARRAY') {
+        @tax_residence_multiple = @{$input{tax_residence}};
+    } else {
+        @tax_residence_multiple = ($input{tax_residence});
     }
+    $tax_residence = join(",", sort grep { length } @tax_residence_multiple);
 
     my @number_updates = qw/
         custom_max_acbal
@@ -542,20 +543,29 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
             $client->clr_status('document_under_review');
         }
-        if ($key eq 'myaffiliates_token') {
-            # $client->myaffiliates_token_registered(1);
-            $client->myaffiliates_token($input{$key}) if $input{$key};
+
+        if ($key eq 'myaffiliates_token' and $input{$key}) {
+            $client->myaffiliates_token($input{$key});
         }
 
         if ($input{mifir_id} and $client->mifir_id eq '' and $broker eq 'MF') {
-            if (length($input{mifir_id}) > 35) {
-                code_exit_BO(
-                    "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p></p>"
-                );
-            }
+            code_exit_BO(
+                "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p>"
+            ) if (length($input{mifir_id}) > 35);
             $client->mifir_id($input{mifir_id});
         }
 
+        if ($key eq 'tax_residence') {
+            code_exit_BO("<p style=\"color:red; font-weight:bold;\">Tax residence cannot be set empty if value already exists</p>")
+                if ($client->tax_residence and not $tax_residence);
+            $client->tax_residence($tax_residence);
+        }
+
+        if ($key eq 'tax_identification_number') {
+            code_exit_BO("<p style=\"color:red; font-weight:bold;\">Tax residence cannot be set empty if value already exists</p>")
+                if ($client->tax_identification_number and not $input{tax_identification_number});
+            $client->tax_identification_number($input{tax_identification_number});
+        }
     }
 
     if (not $client->save) {
@@ -677,17 +687,15 @@ BOM::Backoffice::Request::template->process(
         actions  => get_untrusted_types(),
     }) || die BOM::Backoffice::Request::template->error();
 
-# Show Self-Exclusion link if this client has self-exclusion settings.
-if ($client->self_exclusion) {
-    Bar("$loginid SELF-EXCLUSION SETTINGS");
-    print "$encoded_loginid has enabled <a id='self-exclusion' href=\""
-        . request()->url_for(
-        'backoffice/f_setting_selfexclusion.cgi',
-        {
-            broker  => $broker,
-            loginid => $loginid
-        }) . "\">self-exclusion</a> settings.";
-}
+# Show Self-Exclusion link
+Bar("$loginid SELF-EXCLUSION SETTINGS");
+print "Configure <a id='self-exclusion' href=\""
+    . request()->url_for(
+    'backoffice/f_setting_selfexclusion.cgi',
+    {
+        broker  => $broker,
+        loginid => $loginid
+    }) . "\">self-exclusion</a> settings for $encoded_loginid.";
 
 Bar("$loginid PAYMENT AGENT DETAILS");
 
