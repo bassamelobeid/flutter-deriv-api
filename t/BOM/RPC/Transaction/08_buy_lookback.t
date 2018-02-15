@@ -74,7 +74,7 @@ subtest 'buy' => sub {
 
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidPrice', 'Invalid precision for price');
 
-    $params->{args}{price} = financialrounding('price', 'USD', 1.12);
+    $params->{args}{price} = financialrounding('price', 'USD', 1.10);
     $params->{contract_parameters}{multiplier} = 1;
 
     my $old_balance   = $client->default_account->load->balance;
@@ -98,7 +98,7 @@ subtest 'buy' => sub {
     like($result->{shortcode}, qr/LBFLOATCALL_R_75_1_\d{10}_\d{10}/, 'shortcode is correct');
     is(
         $result->{longcode},
-        'Win USD 1 times Volatility 75 Index\'s close-low over the next 2 minutes.',
+        'Win USD 1 times Volatility 75 Index\'s close minus low over the next 2 minutes.',
         'longcode is correct'
     );
 
