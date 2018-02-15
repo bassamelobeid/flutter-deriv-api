@@ -395,7 +395,7 @@ sub _validate_input_parameters {
         if ($self->multiplier < $self->minimum_multiplier) {
             return {
                 message           => 'below minimum allowed multiplier',
-                message_to_client => [$ERROR_MAPPING->{MinimumMultiplier} . '(' . $self->minimum_multiplier . ').'],
+                message_to_client => [$ERROR_MAPPING->{MinimumMultiplier} . ' ' . $self->minimum_multiplier . '.'],
             };
         } elsif (int($self->multiplier * 10) != ($self->multiplier * 10)) {
             return {
