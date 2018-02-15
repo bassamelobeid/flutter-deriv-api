@@ -8,7 +8,7 @@ use BOM::Test::Helper::Redis 'is_within_threshold';
 my @redis = qw(shared_redis redis_pricer ws_redis_master);
 
 for my $server (@redis) {
-    my $redis = Binary::WebSocketAPI::v3::Instance::Redis->$server();
+    my $redis = Binary::WebSocketAPI::v3::Instance::Redis->can($server)->();
 
     is_within_threshold $server, $redis->backend->info('keyspace');
 }
