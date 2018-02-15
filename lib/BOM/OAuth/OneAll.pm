@@ -20,9 +20,7 @@ sub callback {
     # from the stash.
     # For optimization reason, the URI should be contructed afterwards
     # checking for presence of connection token in request parameters.
-    my $connection_token = $c->param('connection_token')
-        // URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0])->query_param('provider_connection_token')
-        // '';
+    my $connection_token = $c->param('connection_token') // $c->_get_provider_token() // '';
     my $redirect_uri = $c->req->url->path('/oauth2/authorize')->to_abs;
     # Redirect client to authorize subroutine if there is no connection token provided
     # or request came from Japan.
@@ -33,7 +31,7 @@ sub callback {
     my $brand_name = BOM::OAuth::Helper->extract_brand_from_params($c->stash('request')->params) // $c->stash('brand')->name;
 
     unless ($brand_name) {
-        $c->session(_oneall_error => 'Invalid brand name.');
+        $c->session(error => 'Invalid brand name.');
         return $c->redirect_to($redirect_uri);
     }
 
@@ -47,7 +45,7 @@ sub callback {
     # wrong pub/private keys might be a reason of bad status code
     my $status_code = $data->{response}->{request}->{status}->{code};
     if ($status_code != 200) {
-        $c->session(_oneall_error => localize('Failed to get user identity.'));
+        $c->session(error => localize('Failed to get user identity.'));
         stats_inc('login.oneall.connection_failure', {tags => ["brand:$brand_name", "status_code:$status_code"]});
         return $c->redirect_to($redirect_uri);
     }
@@ -68,13 +66,12 @@ sub callback {
         # Redirect client to login page if social signup flag is not found.
         # As the main purpose of this package is to serve
         # clients with social login only.
-        $c->session('_oneall_error', localize("Invalid login attempt. Please log in with your email and password instead."));
+        $c->session('error', localize("Invalid login attempt. Please log in with your email and password instead."));
         return $c->redirect_to($redirect_uri);
     }
-
     # Create virtual client if user not found
     # consequently initialize user_id and link account to social login.
-    unless ($user_id) {
+    if (not $user_id) {
         # create user based on email by fly if account does not exist yet
         $user = $c->__create_virtual_user($email, $brand_name) unless $user;
         # connect oneall provider data to user identity
@@ -93,11 +90,17 @@ sub callback {
 sub redirect {
     my $c                = shift;
     my $dir              = $c->param('dir') // '';
-    my $connection_token = $c->param('connection_token')
-        // URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0])->query_param('provider_connection_token')
-        // '';
+    my $connection_token = $c->param('connection_token') // $c->_get_provider_token() // '';
 
     return $c->redirect_to($dir . '?connection_token=' . $connection_token);
+}
+
+sub _get_provider_token {
+    my $c = shift;
+
+    my $request = URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0]);
+
+    return $request->query_param('provider_connection_token');
 }
 
 sub _get_email {
