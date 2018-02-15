@@ -273,7 +273,7 @@ if ($input{whattodo} eq 'uploadID') {
         sub _is_duplicate_upload_error = sub {
             my $dbh = shift;
 
-            return $dbh->state =~ /^23505$/
+            return $dbh->state eq '23505'
                 and $dbh->errstr =~ /duplicate_upload_error/;
         }
 
