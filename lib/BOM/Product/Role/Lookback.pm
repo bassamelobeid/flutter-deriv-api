@@ -6,8 +6,7 @@ use List::Util qw(min max first);
 use Format::Util::Numbers qw/financialrounding/;
 use YAML::XS qw(LoadFile);
 use LandingCompany::Commission qw(get_underlying_base_commission);
-
-use BOM::Product::Static;
+use LandingCompany::Registry;
 
 my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
 
@@ -22,6 +21,12 @@ has multiplier => (
 );
 
 has minimum_multiplier => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+has factor => (
     is         => 'ro',
     isa        => 'Num',
     lazy_build => 1,
@@ -43,10 +48,19 @@ sub _build_lookback_base_commission {
     return $underlying_base;
 }
 
+sub _build_factor {
+    my $self          = shift;
+    my $currency_type = LandingCompany::Registry::get_currency_type($self->currency);
+    my $factor        = $currency_type eq 'crypto' ? $minimum_multiplier_config->{'crypto_factor'} : 1;
+    return $factor;
+}
+
 sub _build_minimum_multiplier {
-    my $self   = shift;
-    my $symbol = $self->underlying->symbol;
-    return $minimum_multiplier_config->{$symbol} // 0;
+    my $self               = shift;
+    my $symbol             = $self->underlying->symbol;
+    my $minimum_multiplier = $minimum_multiplier_config->{$symbol} / $self->factor;
+
+    return $minimum_multiplier // 0;
 }
 
 has [qw(spot_min_max)] => (
@@ -128,7 +142,9 @@ override _build_ask_price => sub {
 
     my $final_price = max(0.50, ($theo_price + $commission));
 
-    return financialrounding('price', $self->currency, $final_price) * $self->multiplier;
+    #Here to avoid issue due to rounding strategy, we round the price of unit of min multiplier.
+    #Example, for fiat it is 0.1.
+    return financialrounding('price', $self->currency, $final_price * (0.1 / $self->factor)) * $self->multiplier * 10 * $self->factor;
 };
 
 override _build_bid_price => sub {
