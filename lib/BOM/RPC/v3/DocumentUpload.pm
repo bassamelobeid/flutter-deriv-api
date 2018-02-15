@@ -7,6 +7,7 @@ use BOM::Platform::Context qw (localize);
 use Date::Utility;
 use BOM::Platform::Email qw(send_email);
 use Try::Tiny;
+use feature 'state';
 
 use BOM::RPC::Registry '-dsl';
 
@@ -202,29 +203,21 @@ sub validate_expiration_date {
 sub create_upload_error {
     my $reason = shift || 'unkown';
 
-    # Default values
-    my $error_code = 'UploadDenied';
-    my $message    = localize('Sorry, an error occurred while processing your request.');
+    state $default_error_code = 'UploadDenied';
+    state $default_error_msg  = 'Sorry, an error occurred while processing your request.';
+    state $errors             = {
+        virtual            => ["Virtual accounts don't require document uploads."],
+        already_expired    => ['Expiration date cannot be less than or equal to current date.'],
+        missing_exp_date   => ['Expiration date is required.'],
+        missing_doc_id     => ['Document ID is required.'],
+        doc_not_found      => ['Document not found.'],
+        max_size           => [sprintf("Maximum file size reached. Maximum allowed is %d", MAX_FILE_SIZE)],
+        duplicate_document => ['Document already uploaded.', 'DuplicateUpload'],
+        checksum_mismatch  => ['Checksum verification failed.', 'ChecksumMismatch'],
+    };
 
-    if ($reason eq 'virtual') {
-        $message = localize("Virtual accounts don't require document uploads.");
-    } elsif ($reason eq 'already_expired') {
-        $message = localize('Expiration date cannot be less than or equal to current date.');
-    } elsif ($reason eq 'missing_exp_date') {
-        $message = localize('Expiration date is required.');
-    } elsif ($reason eq 'missing_doc_id') {
-        $message = localize('Document ID is required.');
-    } elsif ($reason eq 'doc_not_found') {
-        $message = localize('Document not found.');
-    } elsif ($reason eq 'max_size') {
-        $message = localize('Maximum file size reached. Maximum allowed is [_1]', MAX_FILE_SIZE);
-    } elsif ($reason eq 'duplicate_document') {
-        $error_code = 'DuplicateUpload';                        # Unique code for front-end handling
-        $message    = localize('Document already uploaded.');
-    } elsif ($reason eq 'checksum_mismatch') {
-        $error_code = 'ChecksumMismatch';                          # Unique code for front-end handling
-        $message    = localize('Checksum verification failed.');
-    }
+    my $error_code = $errors->{$reason}[1] || $default_error_code;
+    my $message = localize($errors->{$reason}[0] || $default_error_msg);
 
     return BOM::RPC::v3::Utility::create_error({
         code              => $error_code,
