@@ -105,7 +105,7 @@ subtest 'call params validation' => sub {
     $params->{token} = $token;
 
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
-    scope_guard { restore_time() }
+    scope_guard { restore_time() };
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is @{$result->{accounts}}, 3, 'if no loginid from or to passed then it returns accounts';
 
