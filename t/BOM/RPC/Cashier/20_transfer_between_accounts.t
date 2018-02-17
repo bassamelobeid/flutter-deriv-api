@@ -4,6 +4,8 @@ use warnings;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
+use Test::MockTime;
+use Guard;
 use Test::FailWarnings;
 use Test::Warn;
 
@@ -102,6 +104,8 @@ subtest 'call params validation' => sub {
     $token = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
     $params->{token} = $token;
 
+    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+    scope_guard { restore_time() }
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is @{$result->{accounts}}, 3, 'if no loginid from or to passed then it returns accounts';
 
