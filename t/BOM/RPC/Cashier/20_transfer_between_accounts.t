@@ -4,7 +4,7 @@ use warnings;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
-use Test::MockTime;
+use Test::MockTime qw(:all);
 use Guard;
 use Test::FailWarnings;
 use Test::Warn;
