@@ -24,6 +24,9 @@ use utf8;
 
 my ($t, $rpc_ct);
 
+set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+scope_guard { restore_time() };
+
 subtest 'Initialization' => sub {
     lives_ok {
         $t = Test::Mojo->new('BOM::RPC');
@@ -104,8 +107,6 @@ subtest 'call params validation' => sub {
     $token = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
     $params->{token} = $token;
 
-    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
-    scope_guard { restore_time() };
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is @{$result->{accounts}}, 3, 'if no loginid from or to passed then it returns accounts';
 
@@ -173,8 +174,8 @@ subtest 'validation' => sub {
     # random loginid to make it fail
     $params->{token} = $token;
     $params->{args}->{account_from} = 'CR123';
-    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
-    scope_guard { restore_time() };
+    #set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+    #scope_guard { restore_time() };
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for loginid that does not exists';
     is $result->{error}->{message_to_client}, 'Transfers between accounts are not available for your account.',
@@ -338,8 +339,8 @@ subtest $method => sub {
     };
 
     subtest 'Validate transfers' => sub {
-        set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
-        scope_guard { restore_time() };
+        #set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+        #scope_guard { restore_time() };
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
         $params->{args} = {
