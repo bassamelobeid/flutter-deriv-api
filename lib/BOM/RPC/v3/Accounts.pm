@@ -1025,8 +1025,10 @@ rpc set_settings => sub {
 
         $cli->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 
-        # As per CRS/FATCA regulatory requirement we need to save this information as client status
-        # maintaining previous updates as well
+        # As per CRS/FATCA regulatory requirement we need to
+        # save this information as client status, so updating
+        # tax residence and tax number will create client status
+        # as we have database trigger for that now
         if ((
                    $tax_residence
                 or $tax_identification_number
@@ -1036,13 +1038,6 @@ rpc set_settings => sub {
         {
             $cli->tax_residence($tax_residence)                         if $tax_residence;
             $cli->tax_identification_number($tax_identification_number) if $tax_identification_number;
-
-            BOM::Platform::Account::Real::maltainvest::set_crs_tin_status($cli);
-        }
-        if ((!$tax_residence || !$tax_identification_number) && $cli->landing_company->short ne 'maltainvest') {
-            ### Allow to clean tax info for Non-MF
-            $cli->tax_residence('')             unless $tax_residence;
-            $cli->tax_identification_number('') unless $tax_identification_number;
         }
 
         my $set_status = $update_professional_status->($cli);
