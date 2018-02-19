@@ -13,6 +13,7 @@ use File::ShareDir;
 use Locale::Country::Extra;
 use Brands;
 use WebService::MyAffiliates;
+use Format::Util::Numbers qw( financialrounding roundcommon);
 
 use BOM::RPC::Registry '-dsl';
 
@@ -468,7 +469,7 @@ Returns any of the following:
 =item * A hashref that contains the updated details of the user's MT5 account.
 
 =back
-    
+
 =cut
 
 rpc mt5_set_settings => sub {
@@ -747,15 +748,21 @@ rpc mt5_deposit => sub {
 
     return $error_sub->(localize("Only a maximum of two decimal points are allowed for the deposit amount.")) if ($amount !~ /^\d+(?:\.\d{0,2})?$/);
 
-    return $error_sub->(localize("Invalid amount provided.")) if financialrounding(amount => $amount) != $amount;
+    return $error_sub->(localize("Invalid amount provided.")) if roundcommon(0.01, $amount) != $amount;
 
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
 
-    my $fm_client = Client::Account->new({loginid => $fm_loginid});
+    my $fm_client;
+    try {
+        $fm_client = Client::Account->new({loginid => $fm_loginid});
+    } or return $error_sub->(localize('Invalid loginid - [_1].', $fm_loginid));
 
     # only for real money account
     return BOM::RPC::v3::Utility::permission_error() if ($fm_client->is_virtual);
+
+    my $fm_client_currency = $fm_client->default_account ? $fm_client->default_account->currency_code : undef;
+    return $error_sub->(localize('Please set currency for existsing account [_1].', $fm_loginid)) unless $fm_client_currency;
 
     return BOM::RPC::v3::Utility::permission_error() if (not _mt5_is_real_account($fm_client, $to_mt5));
 
@@ -775,14 +782,16 @@ rpc mt5_deposit => sub {
     # a fixed 1% fee on all conversions, but this is only ever applied when converting
     # between currencies - we do not apply for USD -> USD transfers for example.
     my $mt5_amount = try {
-        return ($fm_client->currency ne $mt5_currency)
-            ? financialrounding(amount => amount_from_to_currency($fm_client->currency, $mt5_currency, $amount, CURRENCY_CONVERSION_MAX_AGE) * 0.99)
+        return ($fm_client_currency ne $mt5_currency)
+            ? financialrounding('amount', $fm_client_currency,
+            amount_from_to_currency($fm_client_currency, $mt5_currency, $amount, CURRENCY_CONVERSION_MAX_AGE) * 0.99)
             : $amount;
     }
     catch {
         warn "Conversion failed for mt5_deposit: $_";
-        return undef
+        return undef;
     };
+    return $error_sub->(localize("Conversion rate not available for this currency.")) unless defined $mt5_amount;
 
     return $error_sub->(localize("Deposit amount must be greater than 1 [_1].",  $mt5_currency)) if $mt5_amount < 1;
     return $error_sub->(localize("Deposit amount must be less than 20000 [_1].", $mt5_currency)) if $mt5_amount > 20000;
@@ -827,7 +836,7 @@ rpc mt5_deposit => sub {
     }
 
     my $comment   = "Transfer from $fm_loginid to MT5 account $to_mt5.";
-    my $account   = $fm_client->set_default_account($fm_client->currency);
+    my $account   = $fm_client->default_account;
     my ($payment) = $account->add_payment({
         amount               => -$amount,
         payment_gateway_code => 'account_transfer',
@@ -899,24 +908,28 @@ rpc mt5_withdrawal => sub {
 
     return $error_sub->(localize("Only a maximum of two decimal points are allowed for the withdrawal amount."))
         if ($amount !~ /^\d+(?:\.\d{0,2})?$/);
-    return $error_sub->(localize("Invalid amount provided.")) if financialrounding(amount => $amount) != $amount;
+    return $error_sub->(localize("Invalid amount provided.")) if roundcommon(0.01, $amount) != $amount;
 
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $fm_mt5, $to_loginid]);
 
-    my $to_client = Client::Account->new({loginid => $to_loginid});
+    my $to_client;
+    try {
+        $to_client = Client::Account->new({loginid => $to_loginid});
+    } or return $error_sub->(localize('Invalid loginid - [_1].', $to_loginid));
 
     # only for real money account
     return BOM::RPC::v3::Utility::permission_error() if ($to_client->is_virtual);
 
-    my $settings;
+    my $to_client_currency = $to_client->default_account ? $to_client->default_account->currency_code : undef;
+    return $error_sub->(localize('Please set currency for existsing account [_1].', $to_loginid)) unless $to_client_currency;
 
+    my $settings;
     return BOM::RPC::v3::Utility::permission_error() unless ($settings = _mt5_is_real_account($to_client, $fm_mt5));
 
     # check for fully authenticated only if it's not gaming account
     # as of now we only support gaming for binary brand, in future if we
     # support for champion please revisit this
-
     return $error_sub->(localize('Please authenticate your account.'))
         if (($settings->{group} // '') !~ /^real\\costarica$/ and not $client->client_fully_authenticated);
 
@@ -939,13 +952,14 @@ rpc mt5_withdrawal => sub {
 
     # The MT5 account may be in a different currency, we allow this with a 1% conversion fee.
     my $mt5_amount = try {
-        return ($to_client->currency ne $mt5_currency)
-            ? financialrounding(amount => amount_from_to_currency($mt5_currency, $to_client->currency, $amount, CURRENCY_CONVERSION_MAX_AGE) * 0.99)
+        return ($to_client_currency ne $mt5_currency)
+            ? financialrounding('amount', $mt5_currency,
+            amount_from_to_currency($mt5_currency, $to_client_currency, $amount, CURRENCY_CONVERSION_MAX_AGE) * 0.99)
             : $amount;
     }
     catch {
         warn "Conversion failed for mt5_withdrawal: $_";
-        return undef
+        return undef;
     };
     return $error_sub->(localize("Conversion rate not available for this currency.")) unless defined $mt5_amount;
 
@@ -977,7 +991,7 @@ rpc mt5_withdrawal => sub {
 
     return try {
         # deposit to Binary a/c
-        my $account = $to_client->set_default_account($to_client->currency);
+        my $account = $to_client->default_account;
         my ($payment) = $account->add_payment({
             amount               => $amount,
             payment_gateway_code => 'account_transfer',
