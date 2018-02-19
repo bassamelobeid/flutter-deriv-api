@@ -1420,15 +1420,14 @@ sub sell_expired_contracts {
                     };
 
                 # price_slippage will not happen to expired contract, hence not needed.
-                my $quants_bet_variables;
-                $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+                push @quants_bet_variables,
+                    BOM::Database::Model::DataCollection::QuantsBetVariables->new({
                         data_object_params => _build_pricing_comment({
                                 contract => $contract,
                                 action   => 'autosell_expired_contract',
                             }
                         )->[1],
                     });
-                push @quants_bet_variables, $quants_bet_variables;
 
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
@@ -1441,11 +1440,10 @@ sub sell_expired_contracts {
                     source        => $source,
                     };
                 #empty list for virtual
-                my $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-                    data_object_params => {},
-                });
-
-                push @quants_bet_variables, $quants_bet_variables;
+                push @quants_bet_variables,
+                    BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+                        data_object_params => {},
+                    });
             } else {
                 my $cpve = $contract->primary_validation_error;
                 if ($cpve) {
