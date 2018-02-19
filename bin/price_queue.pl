@@ -51,13 +51,8 @@ Path::Tiny->new($pid_file)->spew($$) if $pid_file;
 
 _subscribe_priority_queue() if $priority;
 
-while (1) {
-    if ($priority) {
-        _process_priority_queue();
-    } else {
-        _process_price_queue();
-    }
-}
+my $queue_processor = $priority ? \&_process_priority_queue : \&_process_price_queue;
+$queue_processor->() while 1;
 
 exit;
 
