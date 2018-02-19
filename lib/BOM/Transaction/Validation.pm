@@ -81,9 +81,15 @@ sub validate_trx_buy {
     $res = $self->_is_valid_to_buy($self->transaction->client);
     return $res if $res;
 
-    my @client_validation_method =
-        qw/ check_trade_status _validate_client_status _validate_available_currency _validate_currency validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_self_exclusion _validate_offerings_buy _is_valid_to_buy/
-        ;    # do _is_valid_to_buy as last of the validation
+    my @client_validation_method = qw/ check_trade_status
+        _validate_client_status
+        _validate_available_currency
+        _validate_currency validate_tnc
+        _validate_iom_withdrawal_limit
+        _validate_jurisdictional_restrictions
+        _validate_client_self_exclusion
+        _validate_offerings_buy
+        _is_valid_to_buy/;    # do _is_valid_to_buy as last of the validation
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
