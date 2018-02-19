@@ -10,6 +10,7 @@ use JSON::MaybeXS;
 use Log::Any '$log', default_adapter => ['Stdout', log_level => 'warn'];
 use Getopt::Long;
 use Try::Tiny;
+use Path::Tiny ();
 
 no indirect;
 
@@ -42,7 +43,11 @@ my $redis       = BOM::Platform::RedisReplicated::redis_pricer;
 my $redis_sub   = BOM::Platform::RedisReplicated::redis_pricer(timeout => 60);
 my $iteration   = 0;
 
-GetOptions 'priority' => \my $priority;
+GetOptions
+    'pid-file=s' => \my $pid_file,
+    'priority'   => \my $priority;
+
+Path::Tiny->new($pid_file)->spew($$) if $pid_file;
 
 _subscribe_priority_queue() if $priority;
 
