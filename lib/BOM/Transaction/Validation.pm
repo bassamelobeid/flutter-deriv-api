@@ -37,13 +37,10 @@ sub validate_trx_sell {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
-    my @client_validation_method = qw/ check_trade_status _validate_available_currency _validate_currency /;
-    push @client_validation_method, qw(_validate_iom_withdrawal_limit _validate_offerings_sell);
+    my @client_validation_method =
+        qw/ check_trade_status _validate_available_currency _validate_currency _validate_iom_withdrawal_limit _validate_offerings_sell /;
 
-    my @contract_validation_method = qw/_is_valid_to_sell/;
-    push @contract_validation_method, '_validate_sell_pricing_adjustment';
-
-    push @contract_validation_method, qw(_validate_date_pricing);
+    my @contract_validation_method = qw/_is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing/;
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
@@ -84,11 +81,9 @@ sub validate_trx_buy {
     $res = $self->_is_valid_to_buy($self->transaction->client);
     return $res if $res;
 
-    my @client_validation_method = qw/ check_trade_status _validate_client_status _validate_available_currency _validate_currency /;
-    push @client_validation_method,
-        qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_self_exclusion _validate_offerings_buy);
-
-    push @client_validation_method, '_is_valid_to_buy';    # do this is as last of the validation
+    my @client_validation_method =
+        qw/ check_trade_status _validate_client_status _validate_available_currency _validate_currency validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_self_exclusion _validate_offerings_buy _is_valid_to_buy/
+        ;    # do _is_valid_to_buy as last of the validation
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
