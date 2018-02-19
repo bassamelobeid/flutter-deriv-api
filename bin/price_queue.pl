@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use BOM::Platform::RedisReplicated;
 use DataDog::DogStatsd::Helper;
-use Time::HiRes;
+use Time::HiRes qw(time clock_nanosleep CLOCK_REALTIME);
 use LWP::Simple;
 use List::UtilsBy qw(extract_by);
 use JSON::MaybeXS;
@@ -86,11 +86,11 @@ sub _process_priority_queue {
 }
 
 sub _sleep_to_next_second {
-    my $t = Time::HiRes::time();
+    my $t = time();
 
     my $sleep = 1 - ($t - int($t));
     $log->debugf('sleeping at %s for %s secs...', $t, $sleep);
-    Time::HiRes::usleep($sleep * 1_000_000);
+    clock_nanosleep(CLOCK_REALTIME, $sleep * 1_000_000_000);
 
     return undef;
 }
