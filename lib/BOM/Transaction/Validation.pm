@@ -84,7 +84,8 @@ sub validate_trx_buy {
     my @client_validation_method = qw/ check_trade_status
         _validate_client_status
         _validate_available_currency
-        _validate_currency validate_tnc
+        _validate_currency
+        validate_tnc
         _validate_iom_withdrawal_limit
         _validate_jurisdictional_restrictions
         _validate_client_self_exclusion
