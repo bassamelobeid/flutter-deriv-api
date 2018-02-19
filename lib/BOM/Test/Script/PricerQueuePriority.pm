@@ -9,7 +9,10 @@ my $script;
 
 BEGIN {
     if (BOM::Test::on_qa()) {
-        $script = BOM::Test::Script->new(script => '/home/git/regentmarkets/bom-pricing/bin/price_queue_priority.pl');
+        $script = BOM::Test::Script->new(
+            script => '/home/git/regentmarkets/bom-pricing/bin/price_queue.pl',
+            args   => '--priority'
+        );
         $script->start_script_if_not_running;
     }
 }
