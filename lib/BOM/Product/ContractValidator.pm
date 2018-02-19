@@ -6,6 +6,7 @@ use warnings;
 use Time::HiRes;
 use Date::Utility;
 use List::Util qw(any first);
+use Scalar::Util::Numeric qw(isint);
 
 use LandingCompany::Registry;
 
@@ -392,15 +393,17 @@ sub _validate_input_parameters {
     }
 
     if ($self->category_code eq 'lookback') {
+        my $check_step_size = $self->multiplier / $self->minimum_multiplier;
+
         if ($self->multiplier < $self->minimum_multiplier) {
             return {
                 message           => 'below minimum allowed multiplier',
                 message_to_client => [$ERROR_MAPPING->{MinimumMultiplier} . ' ' . $self->minimum_multiplier . '.'],
             };
-        } elsif (int($self->multiplier * 10 * $self->factor) != ($self->multiplier * 10 * $self->factor)) {
+        } elsif (not isint($check_step_size)) {
             return {
-                message           => 'multiplier cannot be more than one decimal place',
-                message_to_client => [$ERROR_MAPPING->{MultiplierDecimalPlace}],
+                message           => 'Multiplier has to increase in a step size of min multiplier',
+                message_to_client => [$ERROR_MAPPING->{MultiplierDecimalPlace} . ' ' . $self->minimum_multiplier . '.'],
             };
         }
     }
