@@ -144,7 +144,7 @@ override _build_ask_price => sub {
 
     #Here to avoid issue due to rounding strategy, we round the price of unit of min multiplier.
     #Example, for fiat it is 0.1.
-    return financialrounding('price', $self->currency, $final_price * (0.1 / $self->factor)) * $self->multiplier * 10 * $self->factor;
+    return financialrounding('price', $self->currency, $final_price) * $self->multiplier;
 };
 
 override _build_bid_price => sub {
