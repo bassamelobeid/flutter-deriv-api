@@ -122,14 +122,17 @@ sub set_allow_copiers {
     $user->add_loginid({loginid => $loginid});
     $user->save;
 
+    my $args = {
+        set_settings    => 1,
+        allow_copiers   => 1
+    };
+    if (not $client->is_virtual){
+        # This field is unrelated to the test, but required for this call to succeed on a real money account
+        $args->{account_opening_reason} = "Speculative";
+    }
+
     my $res = BOM::RPC::v3::Accounts::set_settings({
-        args => {
-            set_settings    => 1,
-            allow_copiers   => 1,
-            
-            # This field is unrelated to the test, but required for this call to succeed
-            account_opening_reason   => "Speculative",
-        },
+        args => $args,
         client => $client,
         website_name => 'Binary.com',
         client_ip    => '127.0.0.1',
