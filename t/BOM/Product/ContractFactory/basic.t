@@ -91,7 +91,7 @@ subtest 'produce_contract exception' => sub {
             isa_ok $_, 'BOM::Product::Exception';
             my $missing = (keys %$undef)[0];
             $missing = $missing eq 'duration' ? 'date_expiry or duration' : $missing;
-            is $_->message_to_client->[0], "Missing required contract parameters ($missing ).";
+            is $_->message_to_client->[0], "Missing required contract parameters ($missing).";
         }
     }
 };
