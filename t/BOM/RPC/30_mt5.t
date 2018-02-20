@@ -32,13 +32,14 @@ my %DETAILS = (
 );
 
 my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+my $exchange_rate            = 1.2;
 $mocked_CurrencyConverter->mock(
     'in_USD',
     sub {
         my $price         = shift;
         my $from_currency = shift;
 
-        $from_currency eq 'EUR' and return 1.24 * $price;
+        $from_currency eq 'EUR' and return $exchange_rate * $price;
         $from_currency eq 'USD' and return 1 * $price;
 
         return 0;
@@ -158,13 +159,14 @@ subtest 'deposit' => sub {
         args     => {
             from_binary => $test_client->loginid,
             to_mt5      => "__MOCK__",
-            amount      => 150,
+            amount      => 180,
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
-    # TODO(leonerd): assert that account balance is now 1000-150 = 850
+    # assert that account balance is now 1000-180 = 820
+    cmp_ok $test_client->default_account->load->balance, '==', 820, "Correct balance after deposited to mt5 account";
 };
 
 subtest 'withdrawal' => sub {
@@ -182,6 +184,9 @@ subtest 'withdrawal' => sub {
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
+
+    cmp_ok $test_client->default_account->load->balance, '==', 820 + 150 * $exchange_rate * 0.99,
+        "Correct balance from EUR to USD with conversion of $exchange_rate and fees 1%";
 };
 
 done_testing();

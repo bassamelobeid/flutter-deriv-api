@@ -859,21 +859,27 @@ rpc mt5_deposit => sub {
     $payment->save(cascade => 1);
 
     # deposit to MT5 a/c
-    my $status = BOM::MT5::User::deposit({
-        login   => $to_mt5,
-        amount  => $mt5_amount,
-        comment => $comment
-    });
+    my ($status, $error);
+    try {
+        $status = BOM::MT5::User::deposit({
+            login   => $to_mt5,
+            amount  => $mt5_amount,
+            comment => $comment
+        });
+    }
+    catch {
+        $error = $_;
+    };
 
-    if ($status->{error}) {
+    if ($error = $error // $status->{error}) {
         _send_email(
             loginid => $fm_loginid,
             mt5_id  => $to_mt5,
             amount  => $amount,
             action  => 'deposit',
-            error   => $status->{error},
+            error   => $error,
         );
-        return $error_sub->($status->{error});
+        return $error_sub->($error);
     }
 
     return {
@@ -900,7 +906,9 @@ rpc mt5_withdrawal => sub {
         my ($msg_client, $msg) = @_;
         BOM::RPC::v3::Utility::create_error({
             code              => 'MT5WithdrawalError',
-            message_to_client => localize('There was an error processing the request.') . ' ' . $msg_client,
+            message_to_client => $msg_client
+            ? localize('There was an error processing the request.') . ' ' . $msg_client
+            : localize('There was an error processing the request.'),
             ($msg) ? (message => $msg) : (),
         });
     };
@@ -980,11 +988,14 @@ rpc mt5_withdrawal => sub {
 
     my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
     # withdraw from MT5 a/c
-    my $status = BOM::MT5::User::withdrawal({
-        login   => $fm_mt5,
-        amount  => $amount,
-        comment => $comment
-    });
+    my $status;
+    try {
+        $status = BOM::MT5::User::withdrawal({
+            login   => $fm_mt5,
+            amount  => $amount,
+            comment => $comment
+        });
+    } or return $error_sub->();
 
     if ($status->{error}) {
         return $error_sub->($status->{error});
@@ -994,7 +1005,7 @@ rpc mt5_withdrawal => sub {
         # deposit to Binary a/c
         my $account = $to_client->default_account;
         my ($payment) = $account->add_payment({
-            amount               => $amount,
+            amount               => $mt5_amount,
             payment_gateway_code => 'account_transfer',
             payment_type_code    => 'internal_transfer',
             status               => 'OK',
@@ -1003,7 +1014,7 @@ rpc mt5_withdrawal => sub {
         });
         my ($txn) = $payment->add_transaction({
             account_id    => $account->id,
-            amount        => $amount,
+            amount        => $mt5_amount,
             staff_loginid => $to_loginid,
             referrer_type => 'payment',
             action_type   => 'deposit',
