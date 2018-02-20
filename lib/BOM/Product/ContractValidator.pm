@@ -393,17 +393,16 @@ sub _validate_input_parameters {
     }
 
     if ($self->category_code eq 'lookback') {
-        my $check_step_size = $self->multiplier / $self->minimum_multiplier;
 
         if ($self->multiplier < $self->minimum_multiplier) {
             return {
                 message           => 'below minimum allowed multiplier',
                 message_to_client => [$ERROR_MAPPING->{MinimumMultiplier} . ' ' . $self->minimum_multiplier . '.'],
             };
-        } elsif (not isint($check_step_size)) {
+        } elsif (int($self->multiplier * 1000) != ($self->multiplier * 1000)) {
             return {
-                message           => 'Multiplier has to increase in a step size of min multiplier',
-                message_to_client => [$ERROR_MAPPING->{MultiplierDecimalPlace} . ' ' . $self->minimum_multiplier . '.'],
+                message           => 'Multiplier cannot be more than 3 decimal places.',
+                message_to_client => [$ERROR_MAPPING->{MultiplierDecimalPlace}],
             };
         }
     }
