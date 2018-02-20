@@ -121,8 +121,38 @@ lives_ok {
     $trader = create_client;
     $copier = create_client;
 
-    $trader->allow_copiers(1);
-    $trader->save;
+    my $email = 'unit_test@binary.com';
+    my $loginid = $trader->loginid;
+    my $user    = BOM::Platform::User->create(
+        email    => $email,
+        password => '1234',
+    );
+    $user->add_loginid({loginid => $loginid});
+    $user->save;
+
+    my $res = BOM::RPC::v3::Accounts::set_settings({
+        args => {
+            set_settings    => 1,
+            allow_copiers   => 1,
+            address_line_1   => "Test Address Line 1",
+            address_line_2   => "Test Address Line 2",
+            address_city   => "Test City",
+            address_state   => "Test State",
+            address_postcode   => "123456",
+            phone   => "1234567890",
+            place_of_birth   => "ar",
+            tax_residence   => "hk",
+            tax_identification_number   => "987654321",
+            account_opening_reason   => "Speculative",
+            request_professional_status   => 1
+        },
+        client => $trader,
+        website_name => 'Binary.com',
+        client_ip    => '127.0.0.1',
+        user_agent   => 'sdssasd',
+        language     => 'en',
+    });
+    is($res->{status}, 1);
 
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
     my $token_details = BOM::RPC::v3::Utility::get_token_details($token);
@@ -139,12 +169,12 @@ lives_ok {
 
     is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $balance);
 
-    my $res = BOM::RPC::v3::CopyTrading::copy_start({
-            args => {
-                copy_start => $token,
-            },
-            client => $copier
-        });
+    $res = BOM::RPC::v3::CopyTrading::copy_start({
+        args => {
+            copy_start => $token,
+        },
+        client => $copier
+    });
 
     ok($res && $res->{status}, "start following");
 }
