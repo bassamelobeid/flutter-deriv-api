@@ -8,6 +8,7 @@ use YAML::XS qw(LoadFile);
 use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use BOM::Product::Static;
+use BOM::Market::DataDecimate;
 
 my $multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_contract_multiplier.yml');
 
@@ -57,11 +58,17 @@ has [qw(spot_min_max)] => (
 sub _build_spot_min_max {
     my $self = shift;
 
-    my ($high, $low) = @{
-        $self->underlying->get_high_low_for_period({
-                start => $self->date_start->epoch + 1,
-                end   => $self->date_expiry->epoch,
-            })}{'high', 'low'};
+    my $decimate = BOM::Market::DataDecimate->new;
+    my @ticks    = $decimate->get({
+        underlying  => $self->underlying,
+        start_epoch => $self->date_start->epoch + 1,
+        end_epoch   => $self->date_expiry->epoch,
+        backprice   => $self->underlying->for_date,
+        decimate    => 0,
+    });
+
+    my $low  = min(@ticks);
+    my $high = max(@ticks);
 
     my $high_low = {
         high => $high // $self->pricing_spot,
