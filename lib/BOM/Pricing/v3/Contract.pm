@@ -408,6 +408,7 @@ sub get_bid {
         #   and HIGHLOW with 2 barriers).
         #2. It is a changing barrier(s) over the life of the options.
         $response->{barrier_count} = 2 if ($contract->code eq 'LBHIGHLOW');
+        $response->{multiplier} = $contract->multiplier unless ($contract->is_binary);
         if ($contract->entry_spot) {
             my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
             $response->{entry_tick}      = $entry_spot;
@@ -422,7 +423,6 @@ sub get_bid {
             }
 
             unless ($contract->is_binary) {
-                $response->{multiplier} = $contract->multiplier;
                 my $min_barrier = $contract->make_barrier($contract->spot_min);
                 my $max_barrier = $contract->make_barrier($contract->spot_max);
                 if ($contract->code eq 'LBHIGHLOW') {
