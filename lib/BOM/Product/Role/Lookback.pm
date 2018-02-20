@@ -59,7 +59,7 @@ sub _build_spot_min_max {
     my $self = shift;
 
     my $decimate = BOM::Market::DataDecimate->new;
-    my @ticks    = $decimate->get({
+    my $ticks    = $decimate->get({
         underlying  => $self->underlying,
         start_epoch => $self->date_start->epoch + 1,
         end_epoch   => $self->date_expiry->epoch,
@@ -67,8 +67,10 @@ sub _build_spot_min_max {
         decimate    => 0,
     });
 
-    my $low  = min(@ticks);
-    my $high = max(@ticks);
+    my @quotes = map { $_->{quote} } @$ticks;
+
+    my $low  = min(@quotes);
+    my $high = max(@quotes);
 
     my $high_low = {
         high => $high // $self->pricing_spot,
