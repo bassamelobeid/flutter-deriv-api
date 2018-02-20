@@ -126,17 +126,9 @@ sub set_allow_copiers {
         args => {
             set_settings    => 1,
             allow_copiers   => 1,
-            address_line_1   => "Test Address Line 1",
-            address_line_2   => "Test Address Line 2",
-            address_city   => "Test City",
-            address_state   => "Test State",
-            address_postcode   => "123456",
-            phone   => "1234567890",
-            place_of_birth   => "ar",
-            tax_residence   => "hk",
-            tax_identification_number   => "987654321",
+            
+            # This field is unrelated to the test, but required for this call to succeed
             account_opening_reason   => "Speculative",
-            request_professional_status   => 1
         },
         client => $client,
         website_name => 'Binary.com',
@@ -144,7 +136,7 @@ sub set_allow_copiers {
         user_agent   => '12_copiers.t',
         language     => 'en',
     });
-    is($res->{status}, 1);
+    is($res->{status}, 1, "allow_copiers set successfully");
 }
 
 ####################################################################
