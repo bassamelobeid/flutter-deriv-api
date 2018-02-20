@@ -710,7 +710,8 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
 
     foreach my $shortcode (@short_codes) {
         try {
-            $longcodes{$shortcode} = $shortcode =~ /^BINARYICO/ ? localize('Binary ICO') : localize(shortcode_to_longcode($shortcode));
+            $longcodes{$shortcode} =
+                $shortcode =~ /^BINARYICO/ ? localize('Binary ICO') : localize(shortcode_to_longcode($shortcode, $params->{currency}));
         }
         catch {
             warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $_;

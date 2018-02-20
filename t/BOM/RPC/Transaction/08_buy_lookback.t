@@ -60,12 +60,12 @@ subtest 'buy' => sub {
     $params->{source}              = 1;
     $params->{contract_parameters} = {
         "proposal"      => 1,
-        "unit"          => "50",
+        "multiplier"    => "1",
         "contract_type" => "LBFLOATCALL",
         "currency"      => "USD",
         "duration"      => "120",
         "duration_unit" => "s",
-        "symbol"        => "R_50",
+        "symbol"        => "R_75",
         "amount_type"   => "payout",
         "barrier"       => "S20P",
     };
@@ -74,7 +74,8 @@ subtest 'buy' => sub {
 
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidPrice', 'Invalid precision for price');
 
-    $params->{args}{price} = financialrounding('price', 'USD', 7.59 * 0.5);
+    $params->{args}{price} = financialrounding('price', 'USD', 1.12);
+    $params->{contract_parameters}{multiplier} = 1;
 
     my $old_balance   = $client->default_account->load->balance;
     my $result        = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
@@ -94,10 +95,10 @@ subtest 'buy' => sub {
     my $new_balance = formatnumber('amount', 'USD', $client->default_account->load->balance);
     is($new_balance, $result->{balance_after}, 'balance is changed');
     ok($old_balance - $new_balance - $result->{buy_price} < 0.0001, 'balance reduced');
-    like($result->{shortcode}, qr/LBFLOATCALL_R_50_50_\d{10}_\d{10}_S20P_0/, 'shortcode is correct');
+    like($result->{shortcode}, qr/LBFLOATCALL_R_75_1_\d{10}_\d{10}/, 'shortcode is correct');
     is(
         $result->{longcode},
-        'Receive 0.1 per point difference between Volatility 50 Index\'s exit spot and lowest value at 2 minutes after contract start time.',
+        'Win USD 1 times Volatility 75 Index\'s close minus low over the next 2 minutes.',
         'longcode is correct'
     );
 
