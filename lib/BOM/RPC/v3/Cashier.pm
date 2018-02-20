@@ -1339,7 +1339,7 @@ sub _validate_transfer_between_accounts {
 
     return _transfer_between_accounts_error(
         localize(
-            'Invalid amount. Amount provided can not have more than [_1] decimal places',
+            'Invalid amount. Amount provided can not have more than [_1] decimal places.',
             Format::Util::Numbers::get_precision_config()->{amount}->{$currency})) if ($amount != financialrounding('amount', $currency, $amount));
 
     my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
