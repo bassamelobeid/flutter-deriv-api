@@ -127,6 +127,9 @@ sub _validate_input_parameters {
     BOM::Product::Exception->throw(error_code => 'MissingRequiredStart')
         unless $params->{date_start};    # date_expiry is validated in BOM::Product::Categorizer
 
+    BOM::Product::Exception->throw(error_code => 'MissingRequiredMultiplier')
+        if ($params->{category}->code eq 'lookback' and not defined $params->{multiplier});
+
     my $start  = Date::Utility->new($params->{date_start});
     my $expiry = Date::Utility->new($params->{date_expiry});
 

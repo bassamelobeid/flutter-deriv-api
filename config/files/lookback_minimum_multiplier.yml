@@ -1,0 +1,19 @@
+#
+#Note:
+#multipliers by underlying are chosen as the smallest possible denomination {0.1,0.01,0.001,…} 
+#where a unit price of a 1 minute lookback float call contract would be above {currency}0.5
+#based on the latest spot on Feb 1st 2018 6:18pm MYT as below
+#
+#The miminum multiplier below are for fiat. For cryptos, we will divide below numbers by 100;
+crypto_factor: 100
+#
+#R_10 : 9557.251
+#R_25 : 3040.307
+#R_50 : 371.3011
+#R_75 : 52492.7777
+#R_100: 2781.41
+R_10 : 1.0
+R_25 : 1.0
+R_50 : 5.0
+R_75 : 0.1
+R_100 : 0.2
