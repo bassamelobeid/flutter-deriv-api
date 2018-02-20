@@ -110,19 +110,11 @@ sub sell_one_bet {
     return @{$result}{qw| balance_after sold_for |};
 }
 
-####################################################################
-# real tests begin here
-####################################################################
-
-my $balance;
-my ($trader, $trader_acc, $copier, $trader_acc_mapper, $copier_acc_mapper, $txnid, $fmbid, $balance_after, $buy_price);
-
-lives_ok {
-    $trader = create_client;
-    $copier = create_client;
+sub set_allow_copiers {
+    my $client = shift;
 
     my $email = 'unit_test@binary.com';
-    my $loginid = $trader->loginid;
+    my $loginid = $client->loginid;
     my $user    = BOM::Platform::User->create(
         email    => $email,
         password => '1234',
@@ -146,13 +138,27 @@ lives_ok {
             account_opening_reason   => "Speculative",
             request_professional_status   => 1
         },
-        client => $trader,
+        client => $client,
         website_name => 'Binary.com',
         client_ip    => '127.0.0.1',
-        user_agent   => 'sdssasd',
+        user_agent   => '12_copiers.t',
         language     => 'en',
     });
     is($res->{status}, 1);
+}
+
+####################################################################
+# real tests begin here
+####################################################################
+
+my $balance;
+my ($trader, $trader_acc, $copier, $trader_acc_mapper, $copier_acc_mapper, $txnid, $fmbid, $balance_after, $buy_price);
+
+lives_ok {
+    $trader = create_client;
+    $copier = create_client;
+
+    set_allow_copiers($trader);
 
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
     my $token_details = BOM::RPC::v3::Utility::get_token_details($token);
@@ -169,7 +175,7 @@ lives_ok {
 
     is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $balance);
 
-    $res = BOM::RPC::v3::CopyTrading::copy_start({
+    my $res = BOM::RPC::v3::CopyTrading::copy_start({
         args => {
             copy_start => $token,
         },
