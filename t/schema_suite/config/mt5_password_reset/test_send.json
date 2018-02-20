@@ -1,9 +1,0 @@
-{
-  "token": "[_1]",
-  "args" : {
-    "mt5_password_reset": "1",
-    "login": "[_1]",
-    "new_password": "[_2]",
-    "password_type": "[_3]"
-  }
-}
