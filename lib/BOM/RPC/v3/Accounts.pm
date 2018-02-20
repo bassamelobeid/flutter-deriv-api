@@ -923,7 +923,6 @@ rpc set_settings => sub {
                 message_to_client => localize("Value of place_of_birth cannot be changed.")}
         ) if ($client->place_of_birth and $args->{place_of_birth} and $args->{place_of_birth} ne $client->place_of_birth);
 
-
         if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
             $err = BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
@@ -936,9 +935,9 @@ rpc set_settings => sub {
     }
     return $err if $err->{error};
 
-    $err = BOM::RPC::v3::Utility::permission_error() if
-        $allow_copiers &&
-            ( ( $client->landing_company->short ne 'costarica' && not $client->is_virtual ) || $client->get_status('ico_only') );
+    $err = BOM::RPC::v3::Utility::permission_error()
+        if $allow_copiers
+        && (($client->landing_company->short ne 'costarica' && not $client->is_virtual) || $client->get_status('ico_only'));
     return $err if $err->{error};
 
     if (
