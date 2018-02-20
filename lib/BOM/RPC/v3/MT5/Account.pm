@@ -691,6 +691,37 @@ rpc mt5_password_change => sub {
     return 1;
 };
 
+rpc mt5_password_reset => sub {
+    my $params = shift;
+    my $client = $params->{client};
+    my $args   = $params->{args};
+    my $login  = $args->{login};
+
+    # MT5 login not belongs to user
+    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
+
+    return _mt5_set_password($args->{login}, $args->{new_password}, $args->{password_type});
+};
+
+
+sub _mt5_set_password {
+    my $login        = shift;
+    my $new_password = shift;
+    my $pwd_type     = shift;
+
+    my $status = BOM::MT5::User::password_change({
+        login         => $login,
+        new_password  => $new_password,
+        password_type => $pwd_type,
+    });
+    if ($status->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'MT5PasswordChangeError',
+                message_to_client => $status->{error}});
+    }
+    return {status => 1};
+}
+
 sub _send_email {
     my %args = @_;
     my ($loginid, $mt5_id, $amount, $action, $error) = @args{qw(loginid mt5_id amount action error)};
