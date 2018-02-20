@@ -13,7 +13,8 @@ use File::ShareDir;
 use Locale::Country::Extra;
 use Brands;
 use WebService::MyAffiliates;
-use Format::Util::Numbers qw( financialrounding roundcommon);
+use Format::Util::Numbers qw/ financialrounding roundcommon/;
+use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -784,7 +785,7 @@ rpc mt5_deposit => sub {
     my $mt5_amount = try {
         return ($fm_client_currency ne $mt5_currency)
             ? financialrounding('amount', $fm_client_currency,
-            amount_from_to_currency($fm_client_currency, $mt5_currency, $amount, CURRENCY_CONVERSION_MAX_AGE) * 0.99)
+            amount_from_to_currency($amount, $fm_client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99)
             : $amount;
     }
     catch {
@@ -954,7 +955,7 @@ rpc mt5_withdrawal => sub {
     my $mt5_amount = try {
         return ($to_client_currency ne $mt5_currency)
             ? financialrounding('amount', $mt5_currency,
-            amount_from_to_currency($mt5_currency, $to_client_currency, $amount, CURRENCY_CONVERSION_MAX_AGE) * 0.99)
+            amount_from_to_currency($amount, $mt5_currency, $to_client_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99)
             : $amount;
     }
     catch {

@@ -3,6 +3,9 @@ use warnings;
 
 use Test::Most;
 use Test::Mojo;
+use Test::MockModule;
+
+use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
 
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -27,6 +30,19 @@ my %DETAILS = (
     country  => 'Malta',
     balance  => '1234.56',
 );
+
+my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+$mocked_CurrencyConverter->mock(
+    'in_USD',
+    sub {
+        my $price         = shift;
+        my $from_currency = shift;
+
+        $from_currency eq 'EUR' and return 1.24 * $price;
+        $from_currency eq 'USD' and return 1 * $price;
+
+        return 0;
+    });
 
 # Setup a test user
 my $test_client = create_client('MF');    # broker_code = MF to ensure ID_DOCUMENT passes
