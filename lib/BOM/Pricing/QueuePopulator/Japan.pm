@@ -175,6 +175,7 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
                     skips_price_validation => 1,
                     symbol                 => $symbol,
                     trading_period_start   => $contract_parameters->{trading_period}{date_start}{epoch},
+                    product_type           => 'multi_barrier',
                 );
                 $log->tracef("Contract parameters will be %s", \@pricing_queue_args);
                 push @jobs, "PRICER_KEYS::" . Encode::encode_utf8(JSON::MaybeXS->new->encode(\@pricing_queue_args));
