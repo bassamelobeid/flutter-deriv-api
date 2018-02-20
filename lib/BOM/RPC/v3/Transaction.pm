@@ -133,7 +133,9 @@ rpc buy => sub {
     $error = _validate_price($price, $currency);
     return $error if $error;
 
-    $error = _validate_amount($amount, $currency);
+    #Temporary fix to skip amount validation for lookback.
+    my $nonbinary_list = 'LBFLOATCALL|LBFLOATPUT|LBHIGHLOW';
+    $error = _validate_amount($amount, $currency) if ($contract_parameters->{bet_type} !~ /$nonbinary_list/);
     return $error if $error;
 
     if (defined $price and defined $amount and defined $amount_type and $amount_type eq 'stake') {
