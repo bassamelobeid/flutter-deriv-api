@@ -190,6 +190,9 @@ sub _get_ask {
             if ($contract->underlying->feed_license eq 'realtime') {
                 $response->{spot} = $contract->current_spot;
             }
+
+            $response->{multiplier} = $contract->multiplier unless $contract->is_binary;
+
         }
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
@@ -396,16 +399,41 @@ sub get_bid {
         $response->{is_settleable} = $contract->is_settleable;
 
         $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
+        #TODO:
+        #This is just a tactical/temporary solution for now for the UI to work.
+        #For the strategic solution
+        #we will need to refactor Finance-Contract and bom.
+        #It is a bit complicated compared to our other existing products because:
+        #1. Lookback contract comes with 2 different number of barriers(FLOATCALL/PUT with 1 barrier
+        #   and HIGHLOW with 2 barriers).
+        #2. It is a changing barrier(s) over the life of the options.
+        $response->{barrier_count} = 2 if ($contract->code eq 'LBHIGHLOW');
+        $response->{multiplier} = $contract->multiplier unless ($contract->is_binary);
         if ($contract->entry_spot) {
             my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
             $response->{entry_tick}      = $entry_spot;
             $response->{entry_spot}      = $entry_spot;
             $response->{entry_tick_time} = $contract->entry_spot_epoch;
+
             if ($contract->two_barriers) {
                 $response->{high_barrier} = $contract->high_barrier->as_absolute;
                 $response->{low_barrier}  = $contract->low_barrier->as_absolute;
             } elsif ($contract->barrier) {
                 $response->{barrier} = $contract->barrier->as_absolute;
+            }
+
+            unless ($contract->is_binary) {
+                my $min_barrier = $contract->make_barrier($contract->spot_min);
+                my $max_barrier = $contract->make_barrier($contract->spot_max);
+                if ($contract->code eq 'LBHIGHLOW') {
+                    $response->{high_barrier} = $max_barrier->as_absolute;
+                    $response->{low_barrier}  = $min_barrier->as_absolute;
+                    delete $response->{barrier} if exists $response->{barrier};
+                } elsif ($contract->code eq 'LBFLOATCALL') {
+                    $response->{barrier} = $min_barrier->as_absolute;
+                } elsif ($contract->code eq 'LBFLOATPUT') {
+                    $response->{barrier} = $max_barrier->as_absolute;
+                }
             }
         }
 
@@ -508,7 +536,7 @@ sub send_ask {
 
     # Here we have to do something like this because we are re-using
     # amout in the API for specifiying no of contracts.
-    $params->{args}->{unit} //= $params->{args}->{amount};
+    $params->{args}->{multiplier} //= $params->{args}->{amount};
 
     # copy country_code when it is available.
     $params->{args}->{country_code} = $params->{country_code} if $params->{country_code};
