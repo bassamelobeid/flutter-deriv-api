@@ -317,8 +317,9 @@ Returns an arrayref, where each array element contains the following values (in 
 sub generate_asset_index {
     my ($country_code, $landing_company_name, $language) = @_;
 
-    my $config = BOM::Platform::Runtime->instance->get_offerings_config;
-    my $offerings = LandingCompany::Registry::get($landing_company_name)->basic_offerings_for_country($country_code, $config);
+    my $config          = BOM::Platform::Runtime->instance->get_offerings_config;
+    my $landing_company = LandingCompany::Registry::get($landing_company_name);
+    my $offerings       = $landing_company->basic_offerings_for_country($country_code, $config);
 
     my $asset_index = BOM::Product::Offerings::DisplayHelper->new(offerings => $offerings)->decorate_tree(
         markets => {

@@ -76,7 +76,7 @@ subtest 'prepare_ask' => sub {
     my $params = {
         "proposal"      => 1,
         "subscribe"     => 1,
-        "unit"          => "2",
+        "multiplier"    => "5",
         "contract_type" => "LBFLOATCALL",
         "currency"      => "USD",
         "symbol"        => "R_50",
@@ -88,7 +88,7 @@ subtest 'prepare_ask' => sub {
         'barrier'     => 'S0P',
         'subscribe'   => 1,
         'duration'    => '15m',
-        'unit'        => '2',
+        'multiplier'  => '5',
         'bet_type'    => 'LBFLOATCALL',
         'underlying'  => 'R_50',
         'currency'    => 'USD',
@@ -176,6 +176,7 @@ subtest 'get_bid' => sub {
             barrier_count
             audit_details
             status
+            multiplier
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
@@ -215,10 +216,10 @@ subtest $method => sub {
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol'       => 'R_50',
-            'longcode'     => "Receive 0.1 per point difference between Volatility 50 Index's exit spot and lowest value at 50 seconds after contract start time.",
+            'longcode'     => "Win USD 100 times Volatility 50 Index's close minus low over the next 50 seconds.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
-            'barrier'      => 'S20P',
+            'barrier'      => '0.0001',
         },
         'result is ok'
     );
@@ -228,12 +229,13 @@ subtest $method => sub {
 subtest 'get_ask' => sub {
     my $params = {
         "proposal"         => 1,
-        "unit"             => "100",
+        "multiplier"             => "100",
         "contract_type"    => "LBFLOATCALL",
         "currency"         => "USD",
         "duration"         => "15",
         "duration_unit"    => "m",
         "symbol"           => "R_50",
+        "landing_company"  =>"virtual",
     };
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -247,9 +249,10 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '20.82',
-        'ask_price'           => '20.82',
-        'longcode'            => "Receive 0.1 per point difference between Volatility 50 Index's exit spot and lowest value at 15 minutes after contract start time.",
+        'display_value'       => '208.00',
+        'ask_price'           => '208.00',
+        'longcode'            => "Win USD 100 times Volatility 50 Index's close minus low over the next 15 minutes.",
+        'multiplier'          => '100',
         'spot'                => '963.3054',
         'payout'              => '0',
         'contract_parameters' => {
@@ -260,11 +263,12 @@ subtest 'get_ask' => sub {
             'underlying'            => 'R_50',
             'currency'              => 'USD',
             base_commission         => '0.015',
-            'unit'                  => '100',
+            'multiplier'            => '100',
             'app_markup_percentage' => 0,
             'proposal'              => 1,
             'date_start'            => ignore(),
             'skip_stream_results_adjustment' => 1,
+            'landing_company'       => 'virtual'
         }
     };
 
@@ -276,21 +280,22 @@ subtest 'send_ask' => sub {
         client_ip => '127.0.0.1',
         args      => {
             "proposal"         => 1,
-            "unit"             => "100",
+            "multiplier"             => "100",
             "contract_type"    => "LBFLOATCALL",
             "currency"         => "USD",
             "duration"         => "15",
             "duration_unit"    => "m",
             "symbol"           => "R_50",
+            "landing_company"  => "virtual",
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys =
-        [sort { $a cmp $b } (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout contract_parameters))];
+        [sort { $a cmp $b } (qw(longcode spot display_value multiplier ask_price spot_time date_start rpc_time payout contract_parameters))];
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        'Receive 0.1 per point difference between Volatility 50 Index\'s exit spot and lowest value at 15 minutes after contract start time.',
+        'Win USD 100 times Volatility 50 Index\'s close minus low over the next 15 minutes.',
         'long code  is correct'
     );
 };
@@ -341,7 +346,7 @@ sub _create_contract {
         bet_type              => $args{bet_type} // 'LBFLOATCALL',
         currency              => 'USD',
         current_tick          => $args{current_tick} // $tick,
-        unit                  => 100,
+        multiplier                  => 100,
         date_start            => $args{date_start} // $date_start,
         date_expiry           => $args{date_expiry} // $date_expiry,
         barrier               => $args{barrier} // 'S20P',
