@@ -74,8 +74,8 @@ has [qw(spot_min_max)] => (
 sub _build_spot_min_max {
     my $self = shift;
 
-    my $decimate = BOM::Market::DataDecimate->new;
-    my $ticks    = $decimate->get({
+    my $decimate = BOM::Market::DataDecimate->new({market => $self->market->name});
+    my $ticks = $decimate->get({
         underlying  => $self->underlying,
         start_epoch => $self->date_start->epoch + 1,
         end_epoch   => $self->date_expiry->epoch,
