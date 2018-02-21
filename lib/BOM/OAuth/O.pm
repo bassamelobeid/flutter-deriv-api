@@ -232,19 +232,12 @@ sub _login {
 
         # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
         my @clients = $user->clients;
-        $client = $clients[0];
-
-        # get 1st loginid, which is not currently self-excluded until
-        if (exists $result->{self_excluded}) {
-            $client = firstval { !exists $result->{self_excluded}->{$_->loginid} } (@clients);
-        }
+        $client = $user->get_default_client();
 
         if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}) {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         } elsif ($client->get_status('disabled')) {
             $err = localize('This account has been disabled.');
-        } elsif (my $self_exclusion_dt = $client->get_self_exclusion_until_dt) {
-            $err = localize('Sorry, you have excluded yourself until [_1].', $self_exclusion_dt);
         }
     }
 
@@ -397,8 +390,7 @@ sub _get_client {
         loginid      => $c->session('_loginid'),
         db_operation => 'replica'
     });
-    return if $client->get_status('disabled');
-    return if $client->get_self_exclusion_until_dt;    # Excluded
+    return undef if $client->get_status('disabled');
 
     return $client;
 }
