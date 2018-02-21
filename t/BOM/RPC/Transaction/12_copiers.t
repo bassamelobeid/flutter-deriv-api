@@ -228,33 +228,42 @@ subtest 'Setup and fund trader' => sub {
     start_copy_trade($trader, $copier);
 };
 
-subtest 'Follower validation' => sub {
+subtest 'Invalid trade type error' => sub {
     my $wrong_copier = create_client;
     top_up $wrong_copier, 'USD', 15000;
 
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
-    my ($wrong_copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $wrong_copier->loginid);
-
-    my $extra_args;
-
-    $extra_args = {
+    my $extra_args = {
             trade_types => 'CAL',
     };
     start_copy_trade_with_error_code($trader, $wrong_copier, 'InvalidTradeType', 'following attepmt. InvalidTradeType', $extra_args);
+};
 
-    $extra_args = {
+subtest 'Invalid symbol error' => sub {
+    my $wrong_copier = create_client;
+    top_up $wrong_copier, 'USD', 15000;
+
+    my $extra_args = {
             trade_types => 'CALL',
             assets      => 'R666'
     };
     start_copy_trade_with_error_code($trader, $wrong_copier, 'InvalidSymbol', 'following attepmt. InvalidSymbol', $extra_args);
-
-    start_copy_trade_with_error_code(undef, $wrong_copier, 'InvalidToken', 'following attepmt. InvalidToken');
-
-    start_copy_trade_with_error_code($wrong_copier, $trader, 'CopyTradingNotAllowed', 'following attepmt. CopyTradingNotAllowed');
-
 };
 
-subtest 'Wrong currency' => sub {
+subtest 'Invalid token error' => sub {
+    my $wrong_copier = create_client;
+    top_up $wrong_copier, 'USD', 15000;
+
+    start_copy_trade_with_error_code(undef, $wrong_copier, 'InvalidToken', 'following attepmt. InvalidToken');
+};
+
+subtest 'Copy trading not allowed error' => sub {
+    my $wrong_copier = create_client;
+    top_up $wrong_copier, 'USD', 15000;
+
+    start_copy_trade_with_error_code($wrong_copier, $trader, 'CopyTradingNotAllowed', 'following attepmt. CopyTradingNotAllowed');
+};
+
+subtest 'Wrong currency error' => sub {
     my $wrong_copier = create_client('MF');
     top_up $wrong_copier, 'EUR', 1000;
 
@@ -262,7 +271,6 @@ subtest 'Wrong currency' => sub {
             trade_types => 'CALL',
     };
     start_copy_trade_with_error_code($trader, $wrong_copier, 'CopyTradingWrongCurrency', 'check currency', $extra_args);
-
 };
 
 subtest 'Buy USD bet' => sub {
