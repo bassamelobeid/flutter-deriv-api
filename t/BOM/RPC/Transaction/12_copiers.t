@@ -228,51 +228,6 @@ subtest 'Setup and fund trader' => sub {
     start_copy_trade($trader, $copier);
 };
 
-subtest 'Invalid trade type error' => sub {
-    my $wrong_copier = create_client;
-    top_up $wrong_copier, 'USD', 15000;
-
-    my $extra_args = {
-            trade_types => 'CAL',
-    };
-    start_copy_trade_with_error_code($trader, $wrong_copier, 'InvalidTradeType', 'following attepmt. InvalidTradeType', $extra_args);
-};
-
-subtest 'Invalid symbol error' => sub {
-    my $wrong_copier = create_client;
-    top_up $wrong_copier, 'USD', 15000;
-
-    my $extra_args = {
-            trade_types => 'CALL',
-            assets      => 'R666'
-    };
-    start_copy_trade_with_error_code($trader, $wrong_copier, 'InvalidSymbol', 'following attepmt. InvalidSymbol', $extra_args);
-};
-
-subtest 'Invalid token error' => sub {
-    my $wrong_copier = create_client;
-    top_up $wrong_copier, 'USD', 15000;
-
-    start_copy_trade_with_error_code(undef, $wrong_copier, 'InvalidToken', 'following attepmt. InvalidToken');
-};
-
-subtest 'Copy trading not allowed error' => sub {
-    my $wrong_copier = create_client;
-    top_up $wrong_copier, 'USD', 15000;
-
-    start_copy_trade_with_error_code($wrong_copier, $trader, 'CopyTradingNotAllowed', 'following attepmt. CopyTradingNotAllowed');
-};
-
-subtest 'Wrong currency error' => sub {
-    my $wrong_copier = create_client('MF');
-    top_up $wrong_copier, 'EUR', 1000;
-
-    my $extra_args = {
-            trade_types => 'CALL',
-    };
-    start_copy_trade_with_error_code($trader, $wrong_copier, 'CopyTradingWrongCurrency', 'check currency', $extra_args);
-};
-
 subtest 'Buy USD bet' => sub {
     ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
 
@@ -336,7 +291,55 @@ subtest 'Unfollow' => sub {
     is(int($copier_acc_mapper->get_balance), int($copier_balance), "correct copier balance");
 
     is(int($trader_acc_mapper->get_balance), int($trader_balance - $buy_price), "correct trader balance");
+};
 
+####################################################################
+# error checking
+####################################################################
+
+subtest 'Invalid trade type error' => sub {
+    my $wrong_copier = create_client;
+    top_up $wrong_copier, 'USD', 15000;
+
+    my $extra_args = {
+            trade_types => 'CAL',
+    };
+    start_copy_trade_with_error_code($trader, $wrong_copier, 'InvalidTradeType', 'following attepmt. InvalidTradeType', $extra_args);
+};
+
+subtest 'Invalid symbol error' => sub {
+    my $wrong_copier = create_client;
+    top_up $wrong_copier, 'USD', 15000;
+
+    my $extra_args = {
+            trade_types => 'CALL',
+            assets      => 'R666'
+    };
+    start_copy_trade_with_error_code($trader, $wrong_copier, 'InvalidSymbol', 'following attepmt. InvalidSymbol', $extra_args);
+};
+
+subtest 'Invalid token error' => sub {
+    my $wrong_copier = create_client;
+    top_up $wrong_copier, 'USD', 15000;
+
+    start_copy_trade_with_error_code(undef, $wrong_copier, 'InvalidToken', 'following attepmt. InvalidToken');
+};
+
+subtest 'Copy trading not allowed error' => sub {
+    my $wrong_copier = create_client;
+    top_up $wrong_copier, 'USD', 15000;
+
+    start_copy_trade_with_error_code($wrong_copier, $trader, 'CopyTradingNotAllowed', 'following attepmt. CopyTradingNotAllowed');
+};
+
+subtest 'Wrong currency error' => sub {
+    my $wrong_copier = create_client('MF');
+    top_up $wrong_copier, 'EUR', 1000;
+
+    my $extra_args = {
+            trade_types => 'CALL',
+    };
+    start_copy_trade_with_error_code($trader, $wrong_copier, 'CopyTradingWrongCurrency', 'check currency', $extra_args);
 };
 
 done_testing;
