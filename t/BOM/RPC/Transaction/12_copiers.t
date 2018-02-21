@@ -131,14 +131,17 @@ sub set_allow_copiers {
         $args->{account_opening_reason} = "Speculative";
     }
 
-    my $res = BOM::RPC::v3::Accounts::set_settings({
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+
+    my $res = $c->call_ok('set_settings', {
         args => $args,
-        client => $client,
+        token => $token,
         website_name => 'Binary.com',
         client_ip    => '127.0.0.1',
         user_agent   => '12_copiers.t',
         language     => 'en',
-    });
+    })->result;
+
     is($res->{status}, 1, "allow_copiers set successfully");
 }
 
