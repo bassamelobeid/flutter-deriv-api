@@ -18,7 +18,7 @@ lives_ok {
 'Initialized';
 
 eq_or_diff [sort keys %{Finance::Contract::Category->get_all_contract_categories}],
-    [sort qw(callput endsinout touchnotouch staysinout asian digits vanilla coinauction reset)],
+    [sort qw(callput endsinout touchnotouch staysinout asian digits vanilla coinauction lookback reset)],
     "Correct list of all contract categories";
 
 eq_or_diff [sort $udb->available_expiry_types], [sort qw(intraday daily tick)], 'Correct list of available expiry types.';
