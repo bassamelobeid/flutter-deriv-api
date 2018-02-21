@@ -91,7 +91,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         date_pricing => $now,
                         duration     => $duration . 's',
                         currency     => $payout_currency,
-                        unit         => 1,
+                        multiplier   => 1,
                         %$barrier,
                     };
 
@@ -107,7 +107,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
 
                     is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$code}),
                         'theo price matches [' . $code . " - " . $c->shortcode . ']';
-
+                    
                 }
             }
         }

@@ -6,6 +6,7 @@ use warnings;
 use Time::HiRes;
 use Date::Utility;
 use List::Util qw(any first);
+use Scalar::Util::Numeric qw(isint);
 
 use LandingCompany::Registry;
 
@@ -387,6 +388,21 @@ sub _validate_input_parameters {
                     . "[underlying_symbol: "
                     . $self->underlying->symbol . "]",
                 message_to_client => [$ERROR_MAPPING->{TradingDayEndExpiry}],
+            };
+        }
+    }
+
+    if ($self->category_code eq 'lookback') {
+
+        if ($self->multiplier < $self->minimum_multiplier) {
+            return {
+                message           => 'below minimum allowed multiplier',
+                message_to_client => [$ERROR_MAPPING->{MinimumMultiplier} . ' ' . $self->minimum_multiplier . '.'],
+            };
+        } elsif (not isint($self->multiplier * 1000)) {
+            return {
+                message           => 'Multiplier cannot be more than 3 decimal places.',
+                message_to_client => [$ERROR_MAPPING->{MultiplierDecimalPlace}],
             };
         }
     }

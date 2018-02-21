@@ -12,13 +12,10 @@ use Cache::RedisDB;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Platform::RedisReplicated;
-use BOM::MarketData qw(create_underlying);
 
 initialize_realtime_ticks_db();
 
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
-use BOM::Market::DataDecimate;
 
 my $now = Date::Utility->new;
 
@@ -54,56 +51,31 @@ my $bet_params = {
     underlying   => 'R_100',
     date_start   => $now,
     date_pricing => $now,
-    duration     => '1h',
+    duration     => '15m',
     currency     => 'USD',
     multiplier   => 1,
 };
 
-#setup raw cache for R_100
-my $single_data = {
-                 'symbol' => 'R_100',
-                 'epoch' => $now->epoch - 1,
-                 'quote' => '100',
-               };
-my $decimate_cache = BOM::Market::DataDecimate->new;
-
-my $key          = $decimate_cache->_make_key('R_100', 0);
-$decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch - 1, $decimate_cache->encoder->encode($single_data));
-
-$single_data = {
-                 'symbol' => 'R_100',
-                 'epoch' => $now->epoch,
-                 'quote' => '101',
-               };
-
-$decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch, $decimate_cache->encoder->encode($single_data));
-
-$single_data = {
-                 'symbol' => 'R_100',
-                 'epoch' => $now->epoch + 1,
-                 'quote' => '103',
-               };
-
-$decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch + 1, $decimate_cache->encoder->encode($single_data));
-
-subtest 'spot min max' => sub {
+subtest 'minimum lookback price and rounding strategy' => sub {
     create_ticks(([100, $now->epoch - 1, 'R_100']));
     my $c = produce_contract($bet_params);
 
-    is $c->pricing_spot, 100, 'pricing spot is available';
-    is $c->spot_min,     100, 'spot min is available';
-    is $c->spot_max,     100, 'spot max is available';
     ok $c->ask_price,    'can price';
+    is $c->ask_price, 0.5, 'ok. Min price of 0.50';
 
-    create_ticks(([101, $now->epoch, 'R_100'], [103, $now->epoch + 1, 'R_100']));
-    $bet_params->{date_start}   = $now->epoch - 1;
-    $bet_params->{date_pricing} = $now->epoch + 61;
-    $c                          = produce_contract($bet_params);
+    $bet_params->{multiplier} = 1.9;
 
-    is $c->pricing_spot, 103, 'pricing spot is available';
-    is $c->spot_min,     101, 'spot min is available';
-    is $c->spot_max,     103, 'spot max is available';
-    ok $c->bid_price,    'can price';
+    $c = produce_contract($bet_params);
+
+    ok $c->ask_price,    'can price';
+    is $c->ask_price, 0.95, 'ok. correct price when multiplier is 1.9';
+
+    $bet_params->{multiplier} = 19;
+
+    $c = produce_contract($bet_params);
+
+    ok $c->ask_price,    'can price';
+    is $c->ask_price, 9.50, 'ok. correct price when multplier is 19';
 };
 
 done_testing;
