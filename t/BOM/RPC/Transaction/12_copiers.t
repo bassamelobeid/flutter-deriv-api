@@ -113,7 +113,7 @@ sub sell_one_bet {
 sub set_allow_copiers {
     my $client = shift;
 
-    my $email = 'unit_test@binary.com';
+    my $email = $client->email;
     my $loginid = $client->loginid;
     my $user    = BOM::Platform::User->create(
         email    => $email,
@@ -149,7 +149,7 @@ sub set_allow_copiers {
 my $balance;
 my ($trader, $trader_acc, $copier, $trader_acc_mapper, $copier_acc_mapper, $txnid, $fmbid, $balance_after, $buy_price);
 
-lives_ok {
+subtest 'Setup and fund trader' => sub {
     $trader = create_client;
     $copier = create_client;
 
@@ -178,10 +178,9 @@ lives_ok {
     });
 
     ok($res && $res->{status}, "start following");
-}
-'trader funded';
+};
 
-lives_ok {
+subtest 'Follower validation' => sub {
     my $wrong_copier = create_client;
     top_up $wrong_copier, 'USD', 15000;
 
@@ -226,10 +225,9 @@ lives_ok {
         });
 
     is($res->{error}{code}, 'CopyTradingNotAllowed', "following attepmt. CopyTradingNotAllowed");
-}
-'following validation';
+};
 
-lives_ok {
+subtest 'Wrong currency' => sub {
     my $wrong_copier = create_client('MF');
     top_up $wrong_copier, 'EUR', 1000;
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
@@ -242,18 +240,16 @@ lives_ok {
             client => $wrong_copier
         });
     is($res->{error}{code}, 'CopyTradingWrongCurrency', 'check currency');
-}
-'Wrong currency';
+};
 
-lives_ok {
+subtest 'Buy USD bet' => sub {
     ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
 
     $balance -= $buy_price;
     is(int $balance_after, int $balance, 'correct balance_after');
-}
-'bought USD bet';
+};
 
-lives_ok {
+subtest 'Fund copier' => sub {
     top_up $copier, 'USD', 14999;
     $copier_acc_mapper = BOM::Database::DataMapper::Account->new({
         'client_loginid' => $copier->loginid,
@@ -261,21 +257,19 @@ lives_ok {
     });
 
     is(int $copier_acc_mapper->get_balance, 15000, 'USD balance is 15000 got: ' . $balance);
-}
-'copier funded';
+};
 
-lives_ok {
+subtest 'Buy 2nd USD bet' => sub {
     ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
 
     is(int $copier_acc_mapper->get_balance, int(15000 - $buy_price), 'correct copier balance');
     $balance -= $buy_price;
     is(int $balance_after, int $balance, 'correct balance_after');
-}
-'bought 2nd USD bet';
+};
 
 sleep 1;
 
-lives_ok {
+subtest 'Sell 2nd USD bet' => sub {
     my $copier_balance = $copier_acc_mapper->get_balance + 0;
     my $trader_balance = $trader_acc_mapper->get_balance + 0;
 
@@ -288,10 +282,9 @@ lives_ok {
     is(int $copier_acc_mapper->get_balance, int($copier_balance + $sell_price), "correct copier balance");
 
     is(int $trader_acc_mapper->get_balance, int($trader_balance + $sell_price), "correct trader balance");
-}
-'sell 2nd a bet';
+};
 
-lives_ok {
+subtest 'Get trader copiers' => sub {
     my $copiers = BOM::Database::DataMapper::Copier->new(
         broker_code => $trader->broker_code,
         operation   => 'replica',
@@ -300,10 +293,9 @@ lives_ok {
         });
     is(scalar @$copiers, 1, 'get_trade_copiers');
     note explain $copiers;
-}
-'get_trader_copiers';
+};
 
-lives_ok {
+subtest 'Unfollow' => sub {
     my $loginid = $trader->loginid;
 
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
@@ -323,7 +315,6 @@ lives_ok {
 
     is(int($trader_acc_mapper->get_balance), int($trader_balance - $buy_price), "correct trader balance");
 
-}
-'unfollowing';
+};
 
 done_testing;
