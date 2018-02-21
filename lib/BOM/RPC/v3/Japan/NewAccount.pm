@@ -267,17 +267,7 @@ sub get_jp_settings {
         my $assessment = $json->decode($client->financial_assessment->data);
         $jp_settings->{$_} = $assessment->{$_} foreach (keys %{BOM::Platform::Account::Real::japan::get_other_input_mapping()});
 
-        $jp_settings->{$_} = $assessment->{$_}->{answer} for qw(
-            annual_income
-            financial_asset
-            trading_experience_equities
-            trading_experience_commodities
-            trading_experience_foreign_currency_deposit
-            trading_experience_margin_fx
-            trading_experience_investment_trust
-            trading_experience_public_bond
-            trading_experience_option_trading
-        );
+        $jp_settings->{$_} = $assessment->{$_}->{answer} foreach (keys %{BOM::Platform::Account::Real::japan::get_input_to_category_mapping()});
     }
     return $jp_settings;
 }
@@ -315,7 +305,7 @@ sub set_jp_settings {
         'trading_purpose'                             => localize('{JAPAN ONLY}Purpose of trading'),
         'hedge_asset'                                 => localize('{JAPAN ONLY}Classification of assets requiring hedge'),
         'hedge_asset_amount'                          => localize('{JAPAN ONLY}Amount of hedging assets'),
-        'motivation_cicumstances'                     => localize('{JAPAN ONLY}Motivation/Circumstances'),
+        'motivation_circumstances'                    => localize('{JAPAN ONLY}Motivation/Circumstances'),
     };
 
     my $fin_change = 0;
