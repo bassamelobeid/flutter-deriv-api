@@ -128,12 +128,6 @@ rpc authorize => sub {
             message_to_client => BOM::Platform::Context::localize("Account is disabled.")}
     ) unless BOM::RPC::v3::Utility::is_account_available($client);
 
-    if (my $limit_excludeuntil = $client->get_self_exclusion_until_dt) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'SelfExclusion',
-                message_to_client => BOM::Platform::Context::localize("Sorry, you have excluded yourself until [_1].", $limit_excludeuntil)});
-    }
-
     my ($user, $token_type) = (BOM::Platform::User->new({email => $client->email}));
     if (length $token == 15) {
         $token_type = 'api_token';
