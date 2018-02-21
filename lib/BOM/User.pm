@@ -28,7 +28,7 @@ sub create {
 # support either email or id or loginid
 sub new {
     my ($class, $args) = @_;
-    die 'BOM::Platform::User->new called without args' unless $args;
+    die "$class->new called without args" unless $args;
 
     die "no email nor id or loginid" unless $args->{email} || $args->{id} || $args->{loginid};
 
