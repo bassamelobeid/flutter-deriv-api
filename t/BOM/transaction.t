@@ -273,7 +273,8 @@ subtest 'japan KLFB' => sub {
         +{
             limit      => 1000,
             date       => $now->minus_time_interval('1d')->date,
-            updated_by => 'jb'
+            updated_by => 'jb',
+            name       => 'test'
         });
     my $contract = produce_contract({
         underlying   => 'frxUSDJPY',
@@ -283,6 +284,8 @@ subtest 'japan KLFB' => sub {
         duration     => '1d',
         current_tick => $tick,
         barrier      => 'S10P',
+        product_type => 'multi_barrier',
+        trading_period_start => $now->epoch,
     });
 
     my $error = do {
@@ -316,7 +319,8 @@ subtest 'japan KLFB' => sub {
         +{
             limit      => 1001,
             date       => $now->minus_time_interval('1d')->date,
-            updated_by => 'jb'
+            updated_by => 'jb',
+            name       => 'test'
         });
 
     $error = do {

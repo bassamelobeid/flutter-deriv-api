@@ -159,7 +159,7 @@ sub _validate_offerings_sell {
 sub _validate_offerings {
     my ($self, $client, $action) = @_;
 
-    my $method = $client->landing_company->short =~ /japan/ ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
+    my $method = $self->transaction->contract->is_parameters_predefined ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
     my $offerings_obj = $client->landing_company->$method($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
 
     my $err = $offerings_obj->validate_offerings($self->transaction->contract->metadata($action));
@@ -318,6 +318,7 @@ sub _validate_sell_pricing_adjustment_non_binary {
         $final_value = $recomputed_price;
     } elsif (abs($move) > $allowed_move) {
         return $self->_write_to_rejected({
+            type              => 'slippage',
             action            => 'sell',
             amount            => $requested_price,
             recomputed_amount => $recomputed_price
@@ -452,6 +453,7 @@ sub _validate_trade_pricing_adjustment_non_binary {
         $final_value = $recomputed_amount;
     } elsif (abs($move) > $allowed_move) {
         return $self->_write_to_rejected({
+            type              => 'slippage',
             action            => 'buy',
             amount            => $amount,
             recomputed_amount => $recomputed_amount
