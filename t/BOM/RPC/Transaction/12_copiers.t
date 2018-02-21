@@ -183,7 +183,7 @@ subtest 'Setup and fund trader' => sub {
         },
         token => $copier_token,
         %default_call_params
-    })->result;
+    })->has_no_error->result;
 
     ok($res && $res->{status}, "start following");
 };
@@ -238,15 +238,18 @@ subtest 'Wrong currency' => sub {
     my $wrong_copier = create_client('MF');
     top_up $wrong_copier, 'EUR', 1000;
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
-
-    my $res = BOM::RPC::v3::CopyTrading::copy_start({
-            args => {
-                copy_start  => $token,
-                trade_types => 'CALL',
-            },
-            client => $wrong_copier
-        });
-    is($res->{error}{code}, 'CopyTradingWrongCurrency', 'check currency');
+    
+    my ($wrong_copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $wrong_copier->loginid);
+    
+    my $res = $c->call_ok('copy_start', {
+        args => {
+            copy_start => $token,
+            trade_types => 'CALL',
+        },
+        token => $wrong_copier_token,
+        %default_call_params
+    })->has_error->error_code_is('CopyTradingWrongCurrency', 'check currency');
+    
 };
 
 subtest 'Buy USD bet' => sub {
@@ -306,14 +309,17 @@ subtest 'Unfollow' => sub {
     my $loginid = $trader->loginid;
 
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-
-    my $res = BOM::RPC::v3::CopyTrading::copy_stop({
-            args => {
-                copy_stop => $token,
-            },
-            client => $copier
-        });
+    my ($copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid);
+    
+    my $res = $c->call_ok('copy_stop', {
+        args => {
+            copy_stop => $token,
+        },
+        token => $copier_token,
+        %default_call_params
+    })->has_no_error->result;
     ok($res && $res->{status}, "stop following");
+
     my $copier_balance = $copier_acc_mapper->get_balance + 0;
     my $trader_balance = $trader_acc_mapper->get_balance + 0;
 
