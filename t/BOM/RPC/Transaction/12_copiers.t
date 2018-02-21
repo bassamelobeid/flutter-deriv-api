@@ -148,6 +148,42 @@ sub set_allow_copiers {
     is($res->{status}, 1, "allow_copiers set successfully");
 }
 
+sub start_copy_trade {
+    my $trader = shift;
+    my $copier = shift;
+
+    set_allow_copiers($trader);
+
+    my ($trader_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
+    my ($copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid);
+
+    my $res = $c->call_ok('copy_start', {
+        args => {
+            copy_start => $trader_token,
+        },
+        token => $copier_token,
+        %default_call_params
+    })->has_no_error->result;
+    ok($res && $res->{status}, "start following");
+}
+
+sub stop_copy_trade {
+    my $trader = shift;
+    my $copier = shift;
+
+    my ($trader_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
+    my ($copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid);
+
+    my $res = $c->call_ok('copy_stop', {
+        args => {
+            copy_stop => $trader_token,
+        },
+        token => $copier_token,
+        %default_call_params
+    })->has_no_error->result;
+    ok($res && $res->{status}, "stop following");
+}
+
 ####################################################################
 # real tests begin here
 ####################################################################
@@ -159,10 +195,6 @@ subtest 'Setup and fund trader' => sub {
     $trader = create_client;
     $copier = create_client;
 
-    set_allow_copiers($trader);
-
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($token);
     $trader_acc_mapper = BOM::Database::DataMapper::Account->new({
         'client_loginid' => $trader->loginid,
         'currency_code'  => 'USD',
@@ -176,16 +208,7 @@ subtest 'Setup and fund trader' => sub {
 
     is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $balance);
 
-    my ($copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid);
-    my $res = $c->call_ok('copy_start', {
-        args => {
-            copy_start => $token,
-        },
-        token => $copier_token,
-        %default_call_params
-    })->has_no_error->result;
-
-    ok($res && $res->{status}, "start following");
+    start_copy_trade($trader, $copier);
 };
 
 subtest 'Follower validation' => sub {
@@ -306,19 +329,7 @@ subtest 'Get trader copiers' => sub {
 };
 
 subtest 'Unfollow' => sub {
-    my $loginid = $trader->loginid;
-
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-    my ($copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid);
-    
-    my $res = $c->call_ok('copy_stop', {
-        args => {
-            copy_stop => $token,
-        },
-        token => $copier_token,
-        %default_call_params
-    })->has_no_error->result;
-    ok($res && $res->{status}, "stop following");
+    stop_copy_trade($trader, $copier);
 
     my $copier_balance = $copier_acc_mapper->get_balance + 0;
     my $trader_balance = $trader_acc_mapper->get_balance + 0;
