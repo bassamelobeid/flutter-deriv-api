@@ -124,7 +124,7 @@ my %jp_acc_financial_data = (
     trading_purpose                             => 'Hedging',
     hedge_asset                                 => 'Foreign currency deposit',
     hedge_asset_amount                          => 1_000_000,
-    motivation_cicumstances                     => 'Web Advertisement',
+    motivation_circumstances                    => 'Web Advertisement',
 );
 
 my %jp_agreement = (

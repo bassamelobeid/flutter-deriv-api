@@ -107,7 +107,7 @@ sub get_agreement {
     return $agreement;
 }
 
-sub _get_input_to_category_mapping {
+sub get_input_to_category_mapping {
     return {
         annual_income                               => 'annual_income_score',
         financial_asset                             => 'financial_asset_score',
@@ -118,7 +118,17 @@ sub _get_input_to_category_mapping {
         trading_experience_investment_trust         => 'trading_experience_score',
         trading_experience_public_bond              => 'trading_experience_score',
         trading_experience_option_trading           => 'binary_options_score',
-        motivation_cicumstances                     => 'motivation_cicumstances_score',
+    };
+}
+
+# these fields will not be included in
+# financial assessment score calculation
+sub get_other_input_mapping {
+    return {
+        trading_purpose    => ["Targeting short-term profits", "Targeting medium-term / long-term profits", "Both the above", "Hedging"],
+        hedge_asset        => ["Foreign currency deposit",     "Margin FX",                                 "Other"],
+        hedge_asset_amount => 1,
+        motivation_circumstances => ["Web Advertisement", "Homepage", "Introduction of acquaintance", "Other"],
     };
 }
 
@@ -183,15 +193,9 @@ sub get_financial_input_mapping {
             '1-3 years'          => 10,
             '3-5 years'          => 10,
             'Over 5 years'       => 10,
-        },
-        motivation_cicumstances_score => {
-            'Web Advertisement'            => 0,
-            'Homepage'                     => 0,
-            'Introduction of acquaintance' => 0,
-            'Other'                        => 0,
-        },
-    };
-    my $input_to_category = _get_input_to_category_mapping();
+        }};
+
+    my $input_to_category = get_input_to_category_mapping();
 
     my $score_map;
     foreach (keys %$input_to_category) {
@@ -203,7 +207,7 @@ sub get_financial_input_mapping {
 sub get_financial_assessment_score {
     my $details           = shift;
     my $score_map         = get_financial_input_mapping();
-    my $input_to_category = _get_input_to_category_mapping();
+    my $input_to_category = get_input_to_category_mapping();
 
     my $data;
     foreach my $key (keys %$score_map) {
@@ -226,7 +230,7 @@ sub get_financial_assessment_score {
         }
     }
 
-    foreach ('trading_purpose', 'hedge_asset', 'hedge_asset_amount') {
+    foreach (keys %{get_other_input_mapping()}) {
         $data->{$_} = $details->{$_};
     }
 
