@@ -118,6 +118,7 @@ sub _get_input_to_category_mapping {
         trading_experience_investment_trust         => 'trading_experience_score',
         trading_experience_public_bond              => 'trading_experience_score',
         trading_experience_option_trading           => 'binary_options_score',
+        motivation_cicumstances                     => 'motivation_cicumstances_score',
     };
 }
 
@@ -182,6 +183,12 @@ sub get_financial_input_mapping {
             '1-3 years'          => 10,
             '3-5 years'          => 10,
             'Over 5 years'       => 10,
+        },
+        motivation_cicumstances_score => {
+            'Web Advertisement'            => 0,
+            'Homepage'                     => 0,
+            'Introduction of acquaintance' => 0,
+            'Other'                        => 0,
         },
     };
     my $input_to_category = _get_input_to_category_mapping();
