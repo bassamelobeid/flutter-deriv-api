@@ -38,6 +38,7 @@ before_install:
       regentmarkets/bom
       regentmarkets/bom-postgres
       regentmarkets/bom-market
+      regentmarkets/bom-user
       binary-com/translations-websockets-api
 
     - /tmp/travis-scripts/postgres_restart.sh
