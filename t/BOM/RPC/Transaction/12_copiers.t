@@ -28,6 +28,12 @@ use BOM::Test::RPC::Client;
 
 use Test::BOM::RPC::Contract;
 
+my %default_call_params = (
+    client_ip    => '127.0.0.1',
+    user_agent   => '12_copiers.t',
+    language     => 'EN',
+);
+
 Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
 my $mock_rpc = Test::MockModule->new('BOM::Transaction::Validation');
 $mock_rpc->mock(_validate_tnc => sub { note "mocked BOM::Transaction::Validation->validate_tnc returning nothing"; undef });
@@ -136,10 +142,7 @@ sub set_allow_copiers {
     my $res = $c->call_ok('set_settings', {
         args => $args,
         token => $token,
-        website_name => 'Binary.com',
-        client_ip    => '127.0.0.1',
-        user_agent   => '12_copiers.t',
-        language     => 'en',
+        %default_call_params
     })->result;
 
     is($res->{status}, 1, "allow_copiers set successfully");
@@ -173,12 +176,14 @@ subtest 'Setup and fund trader' => sub {
 
     is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $balance);
 
-    my $res = BOM::RPC::v3::CopyTrading::copy_start({
+    my ($copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid);
+    my $res = $c->call_ok('copy_start', {
         args => {
             copy_start => $token,
         },
-        client => $copier
-    });
+        token => $copier_token,
+        %default_call_params
+    })->result;
 
     ok($res && $res->{status}, "start following");
 };
@@ -188,46 +193,45 @@ subtest 'Follower validation' => sub {
     top_up $wrong_copier, 'USD', 15000;
 
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
+    my ($wrong_copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $wrong_copier->loginid);
 
-    my $res = BOM::RPC::v3::CopyTrading::copy_start({
-            args => {
-                copy_start  => $token,
-                trade_types => 'CAL',
-            },
-            client => $wrong_copier
-        });
+    my $res = $c->call_ok('copy_start', {
+        args => {
+            copy_start => $token,
+            trade_types => 'CAL',
+        },
+        token => $wrong_copier_token,
+        %default_call_params
+    })->has_error->error_code_is('InvalidTradeType', 'following attepmt. InvalidTradeType');
 
-    is($res && $res->{error}{code}, 'InvalidTradeType', "following attepmt. InvalidTradeType");
-    $res = BOM::RPC::v3::CopyTrading::copy_start({
-            args => {
-                copy_start  => $token,
-                trade_types => 'CALL',
-                assets      => 'R666'
-            },
-            client => $wrong_copier
-        });
-
-    ok($res && $res->{error}{code}, "following attepmt. Invalid symbol");
-
-    $res = BOM::RPC::v3::CopyTrading::copy_start({
-            args => {
-                copy_start => "Invalid",
-            },
-            client => $wrong_copier
-        });
-
-    is($res->{error}{code}, "InvalidToken", "following attepmt. InvalidToken");
+    $res = $c->call_ok('copy_start', {
+        args => {
+            copy_start => $token,
+            trade_types => 'CALL',
+            assets      => 'R666'
+        },
+        token => $wrong_copier_token,
+        %default_call_params
+    })->has_error->error_code_is('InvalidSymbol', 'following attepmt. Invalid symbol');
+    
+    $res = $c->call_ok('copy_start', {
+        args => {
+            copy_start => "Invalid",
+        },
+        token => $wrong_copier_token,
+        %default_call_params
+    })->has_error->error_code_is('InvalidToken', 'following attepmt. InvalidToken');
 
     my ($token1) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $wrong_copier->loginid);
 
-    $res = BOM::RPC::v3::CopyTrading::copy_start({
-            args => {
-                copy_start => $token1,
-            },
-            client => $trader
-        });
+    $res = $c->call_ok('copy_start', {
+        args => {
+            copy_start => $token1,
+        },
+        token => $token,
+        %default_call_params
+    })->has_error->error_code_is('CopyTradingNotAllowed', 'following attepmt. CopyTradingNotAllowed');
 
-    is($res->{error}{code}, 'CopyTradingNotAllowed', "following attepmt. CopyTradingNotAllowed");
 };
 
 subtest 'Wrong currency' => sub {
