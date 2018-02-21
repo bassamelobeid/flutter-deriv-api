@@ -28,6 +28,7 @@ before_install:
       regentmarkets/bom-test
       regentmarkets/bom
       regentmarkets/bom-postgres
+      regentmarkets/bom-platform
 
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
