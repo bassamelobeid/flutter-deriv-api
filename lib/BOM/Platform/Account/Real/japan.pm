@@ -128,7 +128,7 @@ sub get_other_input_mapping {
         trading_purpose    => ["Targeting short-term profits", "Targeting medium-term / long-term profits", "Both the above", "Hedging"],
         hedge_asset        => ["Foreign currency deposit",     "Margin FX",                                 "Other"],
         hedge_asset_amount => 1,
-        motivation_circumstances => ["Web Advertisement", "Homepage", "Introduction of acquaintance", "Other"],
+        motivation_circumstances => ["Web Advertisement", "Homepage", "Introduction by acquaintance", "Other"],
     };
 }
 
