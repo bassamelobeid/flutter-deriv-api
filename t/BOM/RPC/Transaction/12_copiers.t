@@ -201,96 +201,129 @@ sub stop_copy_trade {
 }
 
 ####################################################################
+# setup clients
+####################################################################
+
+my $trader_CR = create_client('CR', 0, {email => 'trader_cr@binary.com'});
+my $copier_CR = create_client('CR', 0, {email => 'copier_cr@binary.com'});
+set_allow_copiers($trader_CR);
+
+my $trader_VRTC = create_client('VRTC', 0, {email => 'trader_vrtc@binary.com'});
+my $copier_VRTC = create_client('VRTC', 0, {email => 'copier_vrtc@binary.com'});
+set_allow_copiers($trader_VRTC);
+
+####################################################################
 # real tests begin here
 ####################################################################
 
 my $balance;
 my ($trader, $trader_acc, $copier, $trader_acc_mapper, $copier_acc_mapper, $txnid, $fmbid, $balance_after, $buy_price);
 
-subtest 'Setup and fund trader' => sub {
-    $trader = create_client;
-    $copier = create_client;
+my @test_pairs = (
+    [$trader_CR, $copier_CR],
+    [$trader_CR, $copier_VRTC],
+    [$trader_VRTC, $copier_CR],
+    [$trader_VRTC, $copier_VRTC]
+);
 
-    $trader_acc_mapper = BOM::Database::DataMapper::Account->new({
-        'client_loginid' => $trader->loginid,
-        'currency_code'  => 'USD',
-    });
+foreach my $pair (@test_pairs){
+    my $test_name = join(' ','Trader:',$pair->[0]->loginid,'Copier:',$pair->[1]->loginid);
+    subtest $test_name => sub {
+        copy_trading_test_routine($pair->[0], $pair->[1]);
+    };
+}
 
-    $balance = 15000;
-    top_up $trader, 'USD', $balance;
-    top_up $copier, 'USD', 1;
+sub copy_trading_test_routine {
 
-    isnt($trader_acc = $trader->find_account(query => [currency_code => 'USD'])->[0], undef, 'got USD account');
+    $trader = shift;
+    $copier = shift;
 
-    is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $balance);
+    subtest 'Setup and fund trader' => sub {
 
-    set_allow_copiers($trader);
-    start_copy_trade($trader, $copier);
-};
-
-subtest 'Buy USD bet' => sub {
-    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-
-    $balance -= $buy_price;
-    is(int $balance_after, int $balance, 'correct balance_after');
-};
-
-subtest 'Fund copier' => sub {
-    top_up $copier, 'USD', 14999;
-    $copier_acc_mapper = BOM::Database::DataMapper::Account->new({
-        'client_loginid' => $copier->loginid,
-        'currency_code'  => 'USD',
-    });
-
-    is(int $copier_acc_mapper->get_balance, 15000, 'USD balance is 15000 got: ' . $balance);
-};
-
-subtest 'Buy 2nd USD bet' => sub {
-    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-
-    is(int $copier_acc_mapper->get_balance, int(15000 - $buy_price), 'correct copier balance');
-    $balance -= $buy_price;
-    is(int $balance_after, int $balance, 'correct balance_after');
-};
-
-sleep 1;
-
-subtest 'Sell 2nd USD bet' => sub {
-    my $copier_balance = $copier_acc_mapper->get_balance + 0;
-    my $trader_balance = $trader_acc_mapper->get_balance + 0;
-
-    ($balance_after, my $sell_price) = sell_one_bet(
-        $trader_acc,
-        +{
-            id => $fmbid,
+        $trader_acc_mapper = BOM::Database::DataMapper::Account->new({
+            'client_loginid' => $trader->loginid,
+            'currency_code'  => 'USD',
         });
 
-    is(int $copier_acc_mapper->get_balance, int($copier_balance + $sell_price), "correct copier balance");
+        $balance = 15000;
+        top_up $trader, 'USD', $balance;
+        top_up $copier, 'USD', 1;
 
-    is(int $trader_acc_mapper->get_balance, int($trader_balance + $sell_price), "correct trader balance");
-};
+        isnt($trader_acc = $trader->find_account(query => [currency_code => 'USD'])->[0], undef, 'got USD account');
 
-subtest 'Get trader copiers' => sub {
-    my $copiers = BOM::Database::DataMapper::Copier->new(
-        broker_code => $trader->broker_code,
-        operation   => 'replica',
-        )->get_trade_copiers({
-            trader_id => $trader->loginid,
+        is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $balance);
+
+        start_copy_trade($trader, $copier);
+    };
+
+    subtest 'Buy USD bet' => sub {
+        ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
+
+        $balance -= $buy_price;
+        is(int $balance_after, int $balance, 'correct balance_after');
+    };
+
+    subtest 'Fund copier' => sub {
+        top_up $copier, 'USD', 14999;
+        $copier_acc_mapper = BOM::Database::DataMapper::Account->new({
+            'client_loginid' => $copier->loginid,
+            'currency_code'  => 'USD',
         });
-    is(scalar @$copiers, 1, 'get_trade_copiers');
-    note explain $copiers;
-};
 
-subtest 'Unfollow' => sub {
-    stop_copy_trade($trader, $copier);
+        is(int $copier_acc_mapper->get_balance, 15000, 'USD balance is 15000 got: ' . $balance);
+    };
 
-    my $copier_balance = $copier_acc_mapper->get_balance + 0;
-    my $trader_balance = $trader_acc_mapper->get_balance + 0;
+    subtest 'Buy 2nd USD bet' => sub {
+        ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
 
-    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-    is(int($copier_acc_mapper->get_balance), int($copier_balance), "correct copier balance");
+        is(int $copier_acc_mapper->get_balance, int(15000 - $buy_price), 'correct copier balance');
+        $balance -= $buy_price;
+        is(int $balance_after, int $balance, 'correct balance_after');
+    };
 
-    is(int($trader_acc_mapper->get_balance), int($trader_balance - $buy_price), "correct trader balance");
+    sleep 1;
+
+    subtest 'Sell 2nd USD bet' => sub {
+        my $copier_balance = $copier_acc_mapper->get_balance + 0;
+        my $trader_balance = $trader_acc_mapper->get_balance + 0;
+
+        ($balance_after, my $sell_price) = sell_one_bet(
+            $trader_acc,
+            +{
+                id => $fmbid,
+            });
+
+        is(int $copier_acc_mapper->get_balance, int($copier_balance + $sell_price), "correct copier balance");
+
+        is(int $trader_acc_mapper->get_balance, int($trader_balance + $sell_price), "correct trader balance");
+    };
+
+    subtest 'Get trader copiers' => sub {
+        my $copiers = BOM::Database::DataMapper::Copier->new(
+            broker_code => $trader->broker_code,
+            operation   => 'replica',
+            )->get_trade_copiers({
+                trader_id => $trader->loginid,
+            });
+        is(scalar @$copiers, 1, 'get_trade_copiers');
+        note explain $copiers;
+    };
+
+    subtest 'Unfollow' => sub {
+        stop_copy_trade($trader, $copier);
+
+        my $copier_balance = $copier_acc_mapper->get_balance + 0;
+        my $trader_balance = $trader_acc_mapper->get_balance + 0;
+
+        ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
+        is(int($copier_acc_mapper->get_balance), int($copier_balance), "correct copier balance");
+
+        is(int($trader_acc_mapper->get_balance), int($trader_balance - $buy_price), "correct trader balance");
+
+        # Reset accounts back to zero
+        top_up $trader, 'USD', $trader_acc_mapper->get_balance * (-1);
+        top_up $copier, 'USD', $copier_acc_mapper->get_balance * (-1);
+    };
 };
 
 ####################################################################
