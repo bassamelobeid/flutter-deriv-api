@@ -149,10 +149,7 @@ sub set_allow_copiers {
 }
 
 sub start_copy_trade {
-    my $trader = shift;
-    my $copier = shift;
-
-    set_allow_copiers($trader);
+    my ($trader, $copier) = @_;
 
     my ($trader_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
     my ($copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid);
@@ -167,9 +164,28 @@ sub start_copy_trade {
     ok($res && $res->{status}, "start following");
 }
 
+sub start_copy_trade_with_error_code {
+    my $trader      = shift;
+    my $copier      = shift;
+    my $error_code  = shift;
+    my $error_msg   = shift;
+    my $extra_args  = shift || {};
+
+    my ($trader_token) = (defined $trader) ? BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid) : "Invalid";
+    my ($copier_token) = (defined $copier) ? BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid) : "Invalid";
+
+    my $res = $c->call_ok('copy_start', {
+        args => {
+            copy_start => $trader_token,
+            %$extra_args
+        },
+        token => $copier_token,
+        %default_call_params
+    })->has_error->error_code_is($error_code, $error_msg);
+}
+
 sub stop_copy_trade {
-    my $trader = shift;
-    my $copier = shift;
+    my ($trader, $copier) = @_;
 
     my ($trader_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
     my ($copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid);
@@ -208,6 +224,7 @@ subtest 'Setup and fund trader' => sub {
 
     is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $balance);
 
+    set_allow_copiers($trader);
     start_copy_trade($trader, $copier);
 };
 
@@ -218,61 +235,34 @@ subtest 'Follower validation' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
     my ($wrong_copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $wrong_copier->loginid);
 
-    my $res = $c->call_ok('copy_start', {
-        args => {
-            copy_start => $token,
-            trade_types => 'CAL',
-        },
-        token => $wrong_copier_token,
-        %default_call_params
-    })->has_error->error_code_is('InvalidTradeType', 'following attepmt. InvalidTradeType');
+    my $extra_args;
 
-    $res = $c->call_ok('copy_start', {
-        args => {
-            copy_start => $token,
+    $extra_args = {
+            trade_types => 'CAL',
+    };
+    start_copy_trade_with_error_code($trader, $wrong_copier, 'InvalidTradeType', 'following attepmt. InvalidTradeType', $extra_args);
+
+    $extra_args = {
             trade_types => 'CALL',
             assets      => 'R666'
-        },
-        token => $wrong_copier_token,
-        %default_call_params
-    })->has_error->error_code_is('InvalidSymbol', 'following attepmt. Invalid symbol');
-    
-    $res = $c->call_ok('copy_start', {
-        args => {
-            copy_start => "Invalid",
-        },
-        token => $wrong_copier_token,
-        %default_call_params
-    })->has_error->error_code_is('InvalidToken', 'following attepmt. InvalidToken');
+    };
+    start_copy_trade_with_error_code($trader, $wrong_copier, 'InvalidSymbol', 'following attepmt. InvalidSymbol', $extra_args);
 
-    my ($token1) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $wrong_copier->loginid);
+    start_copy_trade_with_error_code(undef, $wrong_copier, 'InvalidToken', 'following attepmt. InvalidToken');
 
-    $res = $c->call_ok('copy_start', {
-        args => {
-            copy_start => $token1,
-        },
-        token => $token,
-        %default_call_params
-    })->has_error->error_code_is('CopyTradingNotAllowed', 'following attepmt. CopyTradingNotAllowed');
+    start_copy_trade_with_error_code($wrong_copier, $trader, 'CopyTradingNotAllowed', 'following attepmt. CopyTradingNotAllowed');
 
 };
 
 subtest 'Wrong currency' => sub {
     my $wrong_copier = create_client('MF');
     top_up $wrong_copier, 'EUR', 1000;
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
-    
-    my ($wrong_copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $wrong_copier->loginid);
-    
-    my $res = $c->call_ok('copy_start', {
-        args => {
-            copy_start => $token,
+
+    my $extra_args = {
             trade_types => 'CALL',
-        },
-        token => $wrong_copier_token,
-        %default_call_params
-    })->has_error->error_code_is('CopyTradingWrongCurrency', 'check currency');
-    
+    };
+    start_copy_trade_with_error_code($trader, $wrong_copier, 'CopyTradingWrongCurrency', 'check currency', $extra_args);
+
 };
 
 subtest 'Buy USD bet' => sub {
