@@ -1,0 +1,58 @@
+sudo: required
+dist: precise
+group: deprecated-2017Q1
+language: perl
+perl:
+    - "5.14.2-thr"
+matrix:
+    fast_finish: true
+notifications:
+    slack:
+        rooms:
+            - binary-group:6t92829RicGEft1kCkpKLPj9#test-failures
+        on_success: never
+        on_failure: always
+        on_pull_requests: false
+
+cache: apt
+before_install:
+    - git clone ssh://git@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
+    - /tmp/travis-scripts-init/clone_branch.sh regentmarkets/travis-scripts
+    - /tmp/travis-scripts/setup_ssh.sh
+    - sudo mkdir -p /home/git/binary-com
+    - sudo mkdir -p /home/git/regentmarkets
+    - . /tmp/travis-scripts/setup_perl.sh
+    - /tmp/travis-scripts/fixHostName.sh
+
+    - /tmp/travis-scripts/parallel_clone_branch.sh
+      regentmarkets/bom-test
+      regentmarkets/bom
+      regentmarkets/bom-postgres
+
+    - /tmp/travis-scripts/postgres_restart.sh
+    - /tmp/travis-scripts/redis.sh
+    - sudo mkdir -p /etc/rmg/
+    - sudo touch /etc/rmg/version
+    - sudo chown $(id -u) /etc/rmg/version
+
+install:
+    - source /tmp/travis-scripts/devbox_path.sh
+    - sudo ln -s $PWD /home/git/regentmarkets/bom-platform
+    - /tmp/travis-scripts/devbox.sh *.yml
+
+    - /tmp/travis-scripts/remove_postgresdb_config.sh
+    - /tmp/travis-scripts/setup_clientdb.sh
+    - /tmp/travis-scripts/setup_feeddb.sh
+    - /tmp/travis-scripts/setup_authdb.sh
+    - /tmp/travis-scripts/setup_usersdb.sh
+    - /tmp/travis-scripts/setup_chronicledb.sh
+
+    - /tmp/travis-scripts/setup_logs.sh
+    - . /tmp/travis-scripts/setup_perl5lib.sh
+script:
+    - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
+    - make $TEST_SUITE
+    - sudo service binary_pgbouncer status
+
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh
