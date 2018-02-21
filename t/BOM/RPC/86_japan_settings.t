@@ -46,6 +46,7 @@ my %jp_client_details = (
     trading_purpose                             => 'Hedging',
     hedge_asset                                 => 'Foreign currency deposit',
     hedge_asset_amount                          => 1000000,
+    motivation_cicumstances                     => 'Web Advertisement',
     agree_use_electronic_doc                    => 1,
     agree_warnings_and_policies                 => 1,
     confirm_understand_own_judgment             => 1,
@@ -87,19 +88,10 @@ my @jp_only = qw(
     gender
     occupation
     daily_loss_limit
-    annual_income
-    financial_asset
-    trading_experience_equities
-    trading_experience_commodities
-    trading_experience_foreign_currency_deposit
-    trading_experience_margin_fx
-    trading_experience_investment_trust
-    trading_experience_public_bond
-    trading_experience_option_trading
-    trading_purpose
-    hedge_asset
-    hedge_asset_amount
 );
+
+push @jp_only, keys %{BOM::Platform::Account::Real::japan::get_input_to_category_mapping()};
+push @jp_only, keys %{BOM::Platform::Account::Real::japan::get_other_input_mapping()};
 
 subtest 'VRTJ get_settings' => sub {
     $res = BOM::RPC::v3::Accounts::get_settings({client => $vr_client});
