@@ -28,6 +28,7 @@ before_install:
       regentmarkets/bom-postgres
       binary-com/translations-websockets-api
       regentmarkets/bom-market
+      regentmarkets/bom-user
 
     - /tmp/travis-scripts/redis.sh
     - /tmp/travis-scripts/setup_logs.sh

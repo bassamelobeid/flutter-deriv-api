@@ -20,7 +20,7 @@ use Brands;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 use BOM::OAuth::Helper;
@@ -99,7 +99,7 @@ sub authorize {
         return $c->render(%template_params);
     }
 
-    my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
+    my $user = BOM::User->new({email => $client->email}) or die "no user for email " . $client->email;
 
     my $redirect_uri = $app->{redirect_uri};
 
@@ -190,7 +190,7 @@ sub _login {
         if ($oneall_user_id) {
             $password = '**SOCIAL-LOGIN-ONEALL**';
 
-            $user = BOM::Platform::User->new({id => $oneall_user_id});
+            $user = BOM::User->new({id => $oneall_user_id});
             unless ($user) {
                 $err = localize('Invalid user.');
                 last;
@@ -206,7 +206,7 @@ sub _login {
                 last;
             }
 
-            $user = BOM::Platform::User->new({email => $email});
+            $user = BOM::User->new({email => $email});
             unless ($user) {
                 $err = localize('Incorrect email or password.');
                 last;

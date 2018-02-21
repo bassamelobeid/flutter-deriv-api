@@ -4,7 +4,7 @@ use Test::More;
 use Test::Mojo;
 use Test::MockModule;
 use BOM::Platform::Password;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -42,7 +42,7 @@ my $password = 'jskjd8292922';
     $client_cr->save;
     my $vr_1 = $client_vr->loginid;
     my $cr_1 = $client_cr->loginid;
-    my $user = BOM::Platform::User->create(
+    my $user = BOM::User->create(
         email    => $email,
         password => $hash_pwd
     );
