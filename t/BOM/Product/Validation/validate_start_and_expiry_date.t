@@ -163,7 +163,7 @@ subtest 'date start blackouts' => sub {
                 set_by      => 'test',
                 base_amount => '0.1',
             }));
-    ok $c->is_valid_to_buy, 'valid to buy at one second before 30-Mar-16 close';
+    ok !$c->is_valid_to_buy, 'invalid to buy at one second before 30-Mar-16 close';
 
     my $friday_close                     = Date::Utility->new('2016-04-01 21:00:00');
     my $ten_minute_before_friday_close   = $friday_close->minus_time_interval('10m');
@@ -339,16 +339,32 @@ subtest 'date start blackouts' => sub {
     ok !$c->is_valid_to_buy, 'invalid to buy';
     is_deeply(
         ($c->primary_validation_error)[0]->{message_to_client},
-        ['Trading on forex contracts with duration less than 5 hours is not available from [_1] to [_2]', '21:00:00', '23:00:00'],
+        ['Trading on forex contracts with duration less than 5 hours is not available from [_1] to [_2]', '21:00:00', '23:59:59'],
         'throws error'
     );
+
+    my $GMT_23 = $bet_params->{date_pricing}->truncate_to_day->plus_time_interval('23h');
+    $bet_params->{date_pricing} = $bet_params->{date_start} = $GMT_23;
+    $bet_params->{current_tick} = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxAUDUSD',
+        epoch      => $GMT_23->epoch
+    });
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is_deeply(
+        ($c->primary_validation_error)[0]->{message_to_client},
+        ['Trading on forex contracts with duration less than 5 hours is not available from [_1] to [_2]', '21:00:00', '23:59:59'],
+        'throws error'
+    );
+
     $bet_params->{underlying} = 'R_100';
     $bet_params->{duration}   = '4h59m59s';
     $c                        = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for random';
-    $bet_params->{underlying}      = 'frxAUDUSD';
-    $bet_params->{barrier}         = 76.8999;
-    $bet_params->{landing_company} = 'japan';
+    $bet_params->{underlying}           = 'frxAUDUSD';
+    $bet_params->{barrier}              = 76.8999;
+    $bet_params->{product_type}         = 'multi_barrier';
+    $bet_params->{trading_period_start} = time;
     Cache::RedisDB->flushall;
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

@@ -6,6 +6,7 @@ use warnings;
 use Time::HiRes;
 use Date::Utility;
 use List::Util qw(any first);
+use Scalar::Util::Numeric qw(isint);
 
 use LandingCompany::Registry;
 
@@ -391,6 +392,21 @@ sub _validate_input_parameters {
         }
     }
 
+    if ($self->category_code eq 'lookback') {
+
+        if ($self->multiplier < $self->minimum_multiplier) {
+            return {
+                message           => 'below minimum allowed multiplier',
+                message_to_client => [$ERROR_MAPPING->{MinimumMultiplier} . ' ' . $self->minimum_multiplier . '.'],
+            };
+        } elsif (not isint($self->multiplier * 1000)) {
+            return {
+                message           => 'Multiplier cannot be more than 3 decimal places.',
+                message_to_client => [$ERROR_MAPPING->{MultiplierDecimalPlace}],
+            };
+        }
+    }
+
     return;
 }
 
@@ -515,17 +531,17 @@ sub _validate_start_and_expiry_date {
         [[$start_epoch, $end_epoch], $self->forward_blackouts,     $ERROR_MAPPING->{TradingNotAvailable}],
     );
 
-    # disable contracts with duration < 5 hours at 21:00 to 23:00GMT due to quiet period.
+    # disable contracts with duration < 5 hours at 21:00 to 24:00GMT due to quiet period.
     # did not inlcude this in date_start_blackouts because we want a different message to client.
     if ($self->disable_trading_at_quiet_period and ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities')) {
         my $pricing_hour = $self->date_pricing->hour;
         my $five_hour_in_years = 5 * 3600 / (86400 * 365);
-        if ($self->timeinyears->amount < $five_hour_in_years && ($pricing_hour >= 21 && $pricing_hour < 23)) {
+        if ($self->timeinyears->amount < $five_hour_in_years && ($pricing_hour >= 21 && $pricing_hour < 24)) {
             my $pricing_date = $self->date_pricing->date;
             push @blackout_checks,
                 [
                 [$start_epoch],
-                [[map { Date::Utility->new($pricing_date)->plus_time_interval($_)->epoch } qw(21h 23h)]],
+                [[map { Date::Utility->new($pricing_date)->plus_time_interval($_)->epoch } qw(21h 23h59m59s)]],
                 $ERROR_MAPPING->{TradingSuspendedSpecificHours}];
         }
     }
@@ -704,12 +720,14 @@ sub _build_date_start_blackouts {
     my $calendar   = $self->trading_calendar;
     my $start      = $self->date_start;
 
-    # We need to set sod_blackout_start for forex on Monday morning because otherwise, if there is no tick ,it will always take Friday's last tick and trigger the missing feed check
+    # We need to set sod_blackout_start for forex if the previous calendar day is a non-trading day. Otherwise, if there is no tick ,it will always take last tick on the day before and trigger missing feed check.
     if (my $sod = $calendar->opening_on($underlying->exchange, $start)) {
         my $sod_blackout =
-              ($underlying->sod_blackout_start) ? $underlying->sod_blackout_start
-            : ($underlying->market->name eq 'forex' and $self->is_forward_starting and $start->day_of_week == 1) ? '10m'
-            :                                                                                                      '';
+            ($underlying->sod_blackout_start) ? $underlying->sod_blackout_start
+            : (     $underlying->market->name eq 'forex'
+                and $self->is_forward_starting
+                and not $self->trading_calendar->trades_on($self->underlying->exchange, $start->minus_time_interval('1d'))) ? '10m'
+            : '';
         if ($sod_blackout) {
             push @periods, [$sod->epoch, $sod->plus_time_interval($sod_blackout)->epoch];
         }

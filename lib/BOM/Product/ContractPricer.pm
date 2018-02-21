@@ -3,7 +3,7 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
-use JSON qw(from_json);
+use JSON::MaybeXS;
 use Math::Util::CalculatedValue::Validatable;
 use List::Util qw(max);
 use List::MoreUtils qw(none all);
@@ -257,7 +257,8 @@ sub _create_new_interface_engine {
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         my $backprice = ($self->underlying->for_date) ? 1 : 0;
-        my $apply_equal_tick_discount = ($self->code eq 'CALLE' or $self->code eq 'PUTE') ? 0 : 1;
+        # do not discount for EURUSD because because we have high tick expiry volume on it. We might revise this in the future.
+        my $apply_equal_tick_discount = ($self->code eq 'CALLE' or $self->code eq 'PUTE' or $self->underlying->symbol eq 'frxEURUSD') ? 0 : 1;
         %pricing_parameters = (
             apply_equal_tick_discount => $apply_equal_tick_discount,
             contract_type             => $self->pricing_code,
@@ -429,7 +430,7 @@ sub _build_forqqq {
 sub _build_otm_threshold {
     my $self = shift;
 
-    my $custom_otm       = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold // {});
+    my $custom_otm       = JSON::MaybeXS->new->decode(BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold // {});
     my @known_conditions = qw(expiry_type is_atm_bet);
     my %mapper           = (
         underlying_symbol => $self->underlying->symbol,
@@ -494,6 +495,17 @@ sub _build_base_commission {
         $args->{landing_company} = $self->landing_company;
     }
     my $underlying_base = get_underlying_base_commission($args);
+
+    if (my $custom_commission = $self->risk_profile->get_commission()) {
+        $underlying_base = $custom_commission;
+    }
+
+    # we are adding extra commission on these contracts for volatility indices because we have clients taking advantage of our fixed feed generation
+    # frequency (every 2-second a tick on the even second). By buying a 15-second  deep ITM contract on the even second, the actual contract duration is 14-second because
+    # we will always use the previous tick to settle the contract. Shorter deep ITM contract is more expensive, so the client is paying cheaper for a 14-second contract.
+    if (not $self->for_sale and $self->market->name eq 'volidx' and not $self->is_atm_bet and $self->remaining_time->seconds < 60) {
+        $underlying_base = max(0.023, $underlying_base);
+    }
 
     return $underlying_base * $per_market_scaling / 100;
 }

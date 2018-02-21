@@ -8,7 +8,7 @@ use Test::Most tests => 5;
 use Test::Warnings;
 use Volatility::EconomicEvents;
 use YAML::XS qw(LoadFile);
-use LandingCompany::Offerings;
+use LandingCompany::Registry;
 use Date::Utility;
 
 use BOM::Market::DataDecimate;
@@ -20,9 +20,11 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-
+use BOM::Platform::Runtime;
 use Test::BOM::UnitTestPrice;
 
+
+BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}');
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 my $volsurfaces = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_volsurfaces.yml');
@@ -116,7 +118,7 @@ my %skip_type = (
     LBHIGHLOW   => 1,
 );
 
-my @ct = grep { not $skip_type{$_} } grep { !$equal{$_} } LandingCompany::Offerings->get('costarica', $offerings_cfg)->query({
+my @ct = grep { not $skip_type{$_} } grep { !$equal{$_} } LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg)->query({
         underlying_symbol => $underlying->symbol,
         expiry_type       => 'intraday',
         start_type        => 'spot'

@@ -10,7 +10,7 @@ Help for getting insight into what is offered.
 
 To be deprecated in favor of LandingCompany::Offerings
 
-my $offerings = BOM::Product::Offerings::DisplayHelper->new(offerings => LandingCompany::Offerings->get('costarica'));
+my $offerings = BOM::Product::Offerings::DisplayHelper->new(offerings => LandingCompany::Registry::get('costarica')->basic_offerings());
 
 =cut
 
@@ -23,7 +23,7 @@ use Finance::Asset::SubMarket;
 use Finance::Contract::Category;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-
+use List::UtilsBy qw(sort_by);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Chronicle;
@@ -245,8 +245,8 @@ sub _build_tree {
                 parent      => $market_info,
             };
             foreach my $ul (
-                sort { $a->display_name cmp $b->display_name }
-                map  { create_underlying($_) } $offerings_obj->query({
+                sort_by { $_->display_name =~ s{([0-9]+)}{sprintf "%-09.09d", $1}ger }
+                map { create_underlying($_) } $offerings_obj->query({
                         market    => $market->name,
                         submarket => $submarket->name
                     },
@@ -333,4 +333,3 @@ sub get_items_on_level {
 __PACKAGE__->meta->make_immutable;
 
 1;
-

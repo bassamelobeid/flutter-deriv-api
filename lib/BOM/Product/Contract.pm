@@ -59,6 +59,7 @@ use BOM::Product::Types;
 use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
 use BOM::Product::Static;
+use BOM::Product::Exception;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
 
 use BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -99,7 +100,13 @@ sub absolute_barrier_multiplier {
 
 sub supplied_barrier_type {
     my $self = shift;
-    return $self->high_barrier->supplied_type if $self->two_barriers;
+
+    if ($self->two_barriers) {
+        # die here to prevent exception thrown later in pip sizing non interger barrier.
+        BOM::Product::Exception->throw(error_code => 'InvalidBarrierDifferentType')
+            if $self->high_barrier->supplied_type ne $self->low_barrier->supplied_type;
+        return $self->high_barrier->supplied_type;
+    }
     return $self->barrier->supplied_type;
 }
 
@@ -820,6 +827,12 @@ sub _build_exit_tick {
     return $exit_tick;
 }
 
+# TO DO, landing_company to be moved out from Contract.
+has landing_company => (
+    is      => 'ro',
+    default => undef,
+);
+
 sub _build_risk_profile {
     my $self = shift;
 
@@ -834,6 +847,7 @@ sub _build_risk_profile {
         submarket_name                 => $self->underlying->submarket->name,
         underlying_risk_profile        => $self->underlying->risk_profile,
         underlying_risk_profile_setter => $self->underlying->risk_profile_setter,
+        $self->landing_company ? (landing_company => $self->landing_company) : (),
     );
 }
 
@@ -1098,6 +1112,51 @@ sub metadata {
         contract_duration => $contract_duration,
         for_sale          => ($action ne 'buy'),
     };
+}
+
+sub is_parameters_predefined {
+    return 0;
+}
+
+sub barrier_tier {
+    my $self = shift;
+
+    # we do not need definition for two barrier contracts and only applicable to callput
+    return 'none' if $self->two_barriers or $self->category->code ne 'callput';
+
+    my $barrier       = $self->barrier->as_absolute;
+    my $current_spot  = $self->current_spot;
+    my $diff          = $current_spot - $barrier;
+    my $barrier_count = BOM::Product::Contract::PredefinedParameters::barrier_count_for_underlying($self->underlying->symbol);
+
+    my $pip_size_at = $self->underlying->symbol =~ /JPY/ ? 0.01 : 0.0001;
+    # multi-barriers are set 5 pips apart from each other.
+    my $maximum_difference = $pip_size_at * $barrier_count * 5;
+
+    my $which_tier;
+    # if difference between spot and barrier is more than the $maximum_difference (15 pips away) then we apply the max commission.
+    $which_tier = 'max' if abs($diff) > $maximum_difference;
+    unless (defined $which_tier) {
+        for (1 .. $barrier_count) {
+            my $tier_difference = $pip_size_at * $_ * 5;
+            if (abs($diff) <= $tier_difference) {
+                $which_tier = $_;
+                last;
+            }
+        }
+    }
+
+    # something went wrong, charge the max commission for this barrier.
+    $which_tier = 'max' unless defined $which_tier;
+
+    my $highlow;
+    if ($self->code =~ /CALL/) {
+        $highlow = $diff > 0 ? 'ITM' : 'OTM';
+    } elsif ($self->code =~ /PUT/) {
+        $highlow = $diff < 0 ? 'ITM' : 'OTM';
+    }
+
+    return (join '_', ($highlow, $which_tier));
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.

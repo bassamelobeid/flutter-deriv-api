@@ -2,7 +2,6 @@ use Test::Most;
 use Test::Warnings;
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -21,7 +20,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'N150',
+        symbol => 'FCHI',
         date   => Date::Utility->new,
     });
 
@@ -85,9 +84,9 @@ is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'forward 
 
 delete $bet_params->{date_start};
 $bet_params->{bet_type}   = 'CALL';
-$bet_params->{underlying} = 'N150';
+$bet_params->{underlying} = 'FCHI';
 
-lives_ok { $bet = produce_contract($bet_params); } 'Can create example N150 bet';
+lives_ok { $bet = produce_contract($bet_params); } 'Can create example FCHI bet';
 is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'unsupported symbol';
 
 delete $bet_params->{date_start};

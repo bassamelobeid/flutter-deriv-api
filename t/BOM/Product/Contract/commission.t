@@ -4,10 +4,10 @@ use strict;
 use warnings;
 
 use Test::MockModule;
-use Test::More tests => 6;
+use Test::More;
 use Test::Warnings;
 use Date::Utility;
-use JSON qw(to_json);
+use JSON::MaybeXS;
 use Math::Util::CalculatedValue::Validatable;
 use Format::Util::Numbers qw/roundcommon/;
 
@@ -45,6 +45,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }]});
 
 my $now = Date::Utility->new;
+BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', $now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -64,19 +65,19 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now,
-    }) for qw(FCHI FTSE);
+    }) for qw(FCHI);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol        => $_,
         recorded_date => $now,
-    }) for qw(FCHI FTSE);
+    }) for qw(FCHI);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix');
 my %custom_otm =
     map { rand(1234) => {conditions => {market => $_, expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
-BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(to_json(\%custom_otm));
+BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(JSON::MaybeXS->new->encode(\%custom_otm));
 
 subtest 'payout' => sub {
     my $payout                = 10;
@@ -135,25 +136,27 @@ subtest 'payout' => sub {
     }
 
     $c = produce_contract({
-        bet_type        => 'CALL',
-        underlying      => 'frxUSDJPY',
-        barrier         => 'S50000P',
-        duration        => '1h',
-        currency        => 'JPY',
-        payout          => 1000,
-        landing_company => 'japan'
+        bet_type             => 'CALL',
+        underlying           => 'frxUSDJPY',
+        barrier              => 'S50000P',
+        duration             => '1h',
+        currency             => 'JPY',
+        payout               => 1000,
+        product_type         => 'multi_barrier',
+        trading_period_start => time,
     });
 
     cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex intraday non atm contract for japan is floored to 5%';
 
     $c = produce_contract({
-        bet_type        => 'CALL',
-        underlying      => 'frxUSDJPY',
-        barrier         => 'S5000000P',
-        duration        => '2d',
-        currency        => 'JPY',
-        payout          => 1000,
-        landing_company => 'japan'
+        bet_type             => 'CALL',
+        underlying           => 'frxUSDJPY',
+        barrier              => 'S5000000P',
+        duration             => '2d',
+        currency             => 'JPY',
+        payout               => 1000,
+        product_type         => 'multi_barrier',
+        trading_period_start => time,
     });
     cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex daily non atm contract for japan is floored to 5%';
 
@@ -470,13 +473,38 @@ subtest 'flexible commission check for different markets' => sub {
     test_flexible_commission 'frxUSDJPY', 'forex',       70;
     test_flexible_commission 'frxXAUUSD', 'commodities', 70;
     test_flexible_commission 'FCHI',      'indices',     170;
-    test_flexible_commission 'FTSE',      'indices',     25;
 
     test_flexible_commission 'R_100',     'volidx',      10000;
     test_flexible_commission 'frxEURUSD', 'forex',       10000;
     test_flexible_commission 'frxUSDJPY', 'forex',       10000;
     test_flexible_commission 'frxXAUUSD', 'commodities', 10000;
     test_flexible_commission 'FCHI',      'indices',     10000;
-    test_flexible_commission 'FTSE',      'indices',     10000;
 };
 
+subtest 'non ATM volatility indices variable commission structure' => sub {
+    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"yyy": {"market": "volidx", "commission": "0.1", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
+    );
+    my $args = {
+        bet_type   => "CALL",
+        underlying => 'R_100',
+        duration   => '59s',
+        payout     => 100,
+        currency   => 'USD',
+        barrier    => 'S10P',
+    };
+    my $c = produce_contract($args);
+    is $c->base_commission, 10, 'base commission is 10% if custom commission is matched';
+    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{}');
+    $c = produce_contract($args);
+    is $c->base_commission, 2.3, 'base commission is 0.023 for less than 1-minute non ATM contract on R_100';
+    $args->{duration} = '60s';
+    $c = produce_contract($args);
+    is $c->base_commission, 1.5, 'base commission is 0.015 for 1-minute non ATM contract on R_100';
+    $args->{barrier}  = 'S0P';
+    $args->{duration} = '59s';
+    is $c->base_commission, 1.5, 'base commission is 0.015 for less than 1-minute ATM contract on R_100';
+
+};
+
+done_testing;

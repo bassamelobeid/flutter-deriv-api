@@ -7,7 +7,6 @@ use Test::More qw( no_plan );
 use Test::Warn;
 use Test::MockModule;
 use File::Spec;
-use JSON qw(decode_json);
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);

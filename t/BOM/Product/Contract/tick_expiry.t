@@ -7,7 +7,6 @@ use Test::More tests => 4;
 use Test::Warnings;
 use Test::Exception;
 use Test::MockModule;
-use JSON qw(decode_json);
 use File::Spec;
 use File::Slurp;
 

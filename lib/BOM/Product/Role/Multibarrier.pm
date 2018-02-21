@@ -1,4 +1,4 @@
-package BOM::Product::Role::Japan;
+package BOM::Product::Role::Multibarrier;
 
 use Moose::Role;
 use List::Util qw(first);
@@ -6,9 +6,13 @@ use Data::Dumper;
 
 use BOM::Platform::RiskProfile;
 use BOM::Product::Static;
-use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
+use BOM::Product::Contract::PredefinedParameters qw(get_predefined_barriers_by_contract_category get_expired_barriers);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+
+override is_parameters_predefined => sub {
+    return 1;
+};
 
 override disable_trading_at_quiet_period => sub {
     return 0;
@@ -23,9 +27,9 @@ override apply_market_inefficient_limit => sub {
     return 0;
 };
 
-has landing_company => (
-    is      => 'ro',
-    default => 'japan',
+has trading_period_start => (
+    is       => 'ro',
+    required => 1,
 );
 
 =head2 predefined_contracts
@@ -43,43 +47,27 @@ has predefined_contracts => (
 sub _build_predefined_contracts {
     my $self = shift;
 
-    my @contracts =
-        grep { $_->{contract_type} eq $self->code } @{
-        available_contracts_for_symbol({
-                symbol          => $self->underlying->symbol,
-                date            => $self->underlying->for_date,
-                landing_company => $self->landing_company,
-            }
-        )->{available}};
+    my $predefined_barriers = get_predefined_barriers_by_contract_category($self->underlying->symbol, $self->underlying->for_date);
+    my $windows_for_category = $predefined_barriers->{$self->category->code};
 
-    # restructure contract information for easier processing
+    return {} unless $windows_for_category;
+
+    my $is_path_dependent = $self->category->is_path_dependent;
     my %info;
-    foreach my $d (@contracts) {
-        push @{$info{$d->{trading_period}{date_expiry}{epoch}}{available_barriers}}, @{$d->{available_barriers}};
-        push @{$info{$d->{trading_period}{date_expiry}{epoch}}{expired_barriers}},   @{$d->{expired_barriers}};
+    foreach my $key (keys %$windows_for_category) {
+        my $data = $windows_for_category->{$key};
+        my ($start_epoch, $expiry_epoch) = split '-', $key;
+        my $tp = {
+            date_start  => {epoch => $start_epoch},
+            date_expiry => {epoch => $expiry_epoch},
+        };
+        my $expired_barriers = $is_path_dependent ? get_expired_barriers($self->underlying, $data->{available_barriers}, $tp) : [];
+        push @{$info{$expiry_epoch}{available_barriers}}, @{$data->{available_barriers}};
+        push @{$info{$expiry_epoch}{expired_barriers}},   @$expired_barriers;
     }
 
     return \%info;
 }
-
-override risk_profile => sub {
-    my $self = shift;
-
-    return BOM::Platform::RiskProfile->new(
-        underlying                     => $self->underlying,
-        contract_category              => $self->category_code,
-        expiry_type                    => $self->expiry_type,
-        start_type                     => ($self->is_forward_starting ? 'forward' : 'spot'),
-        currency                       => $self->currency,
-        barrier_category               => $self->barrier_category,
-        landing_company                => $self->landing_company,
-        symbol                         => $self->underlying->symbol,
-        market_name                    => $self->underlying->market->name,
-        submarket_name                 => $self->underlying->submarket->name,
-        underlying_risk_profile        => $self->underlying->risk_profile,
-        underlying_risk_profile_setter => $self->underlying->risk_profile_setter,
-    );
-};
 
 around _validate_start_and_expiry_date => sub {
     my $orig = shift;
@@ -89,12 +77,12 @@ around _validate_start_and_expiry_date => sub {
 
     return unless %{$self->predefined_contracts};
 
-    # for japan, we only allow pre-defined start and expiry times.
+    # for multi-barrier, we only allow pre-defined start and expiry times.
     my $available_contracts = $self->predefined_contracts;
     my $expiry_epoch        = $self->date_expiry->epoch;
     if (not $available_contracts->{$expiry_epoch}) {
         return {
-            message           => 'Invalid contract expiry[' . $self->date_expiry->datetime . '] for japan at ' . $self->date_pricing->datetime . '.',
+            message => 'Invalid contract expiry[' . $self->date_expiry->datetime . '] for multi-barrier at ' . $self->date_pricing->datetime . '.',
             message_to_client => [$ERROR_MAPPING->{InvalidExpiryTime}],
         };
     }
@@ -121,9 +109,7 @@ override _validate_barrier_type => sub {
     my $self = shift;
 
     foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-
         if (defined $self->$barrier and $self->$barrier->barrier_type ne 'absolute') {
-
             return {
                 message           => 'barrier should be absolute',
                 message_to_client => [$ERROR_MAPPING->{PredefinedNeedAbsoluteBarrier}],
@@ -153,7 +139,7 @@ sub _subvalidate_single_barrier {
                     . $self->date_expiry->datetime
                     . '] and contract type['
                     . $self->code
-                    . '] for japan at '
+                    . '] for multi-barrier at '
                     . $self->date_pricing->datetime . '.',
                 message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
             };
@@ -192,7 +178,7 @@ sub _subvalidate_double_barrier {
                     . $self->date_expiry->datetime
                     . '] and contract type['
                     . $self->code
-                    . '] for japan at '
+                    . '] for multi-barrier at '
                     . $self->date_pricing->datetime . '.',
                 message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
             };
@@ -204,10 +190,10 @@ sub _subvalidate_double_barrier {
 
 # Compose a string containing all the pricing info that needed to be log for Japan
 sub japan_pricing_info {
-    my ($self, $trading_window_start, $opposite_contract) = @_;
+    my ($self, $trading_period_start, $opposite_contract) = @_;
 
     my $bid_price = $self->payout - $opposite_contract->ask_price;
-    my @pricing_info = ($self->shortcode, $trading_window_start, $self->ask_price, $bid_price, $self->_date_pricing_milliseconds);
+    my @pricing_info = ($self->shortcode, $trading_period_start, $self->ask_price, $bid_price, $self->_date_pricing_milliseconds);
 
     my $extra = $self->extra_info('string');
     my $pricing_info = join ',', @pricing_info, $extra;
