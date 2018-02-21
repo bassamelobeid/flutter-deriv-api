@@ -93,24 +93,6 @@ sub login {
     } elsif (not @clients = $self->clients) {
         $error = localize('This account is unavailable.');
         BOM::Platform::AuditLog::log('Account disabled', $self->email);
-    } elsif (
-        @self_excluded = grep {
-            $_->get_self_exclusion_until_dt
-        } @clients
-        and @self_excluded == @clients
-        )
-    {
-        # If all accounts are self excluded - show error
-        # Print the earliest time until user has excluded himself
-        my ($client) = sort {
-            my $tmp_a = $a->get_self_exclusion_until_dt;
-            $tmp_a =~ s/GMT$//;
-            my $tmp_b = $b->get_self_exclusion_until_dt;
-            $tmp_b =~ s/GMT$//;
-            Date::Utility->new($tmp_a)->epoch <=> Date::Utility->new($tmp_b)->epoch
-        } @self_excluded;
-        $error = localize('Sorry, you have excluded yourself until [_1].', $client->get_self_exclusion_until_dt);
-        BOM::Platform::AuditLog::log('Account self excluded', $self->email);
     }
 
     $self->add_login_history({
