@@ -399,7 +399,7 @@ sub _validate_input_parameters {
                 message           => 'below minimum allowed multiplier',
                 message_to_client => [$ERROR_MAPPING->{MinimumMultiplier} . ' ' . $self->minimum_multiplier . '.'],
             };
-        } elsif (int($self->multiplier * 1000) != ($self->multiplier * 1000)) {
+        } elsif (not isint($self->multiplier * 1000)) {
             return {
                 message           => 'Multiplier cannot be more than 3 decimal places.',
                 message_to_client => [$ERROR_MAPPING->{MultiplierDecimalPlace}],
